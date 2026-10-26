@@ -1,4 +1,4 @@
-import { localNotice } from "../src/api/notices";
+import { localNotice } from "../src/protocol/notices";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";

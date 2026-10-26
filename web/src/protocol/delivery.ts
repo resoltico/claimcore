@@ -1,4 +1,4 @@
-import type { ApiResult, EndpointOutcome } from "../api/types";
+import type { ApiResult, EndpointOutcome } from "./types";
 
 /** Only a correlated acceptance can resolve uncertainty about an earlier attempt. */
 export const mutationAccepted = (result: ApiResult<EndpointOutcome>): boolean =>

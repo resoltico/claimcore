@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 
@@ -458,7 +459,7 @@ let private malformedBusinessInput () =
     match frame.Result with
     | FrameResult.Reply value ->
         Expect.equal
-            (Frames.outcome (TypedReply.json value))
+            (Frames.outcome (ServiceReply.json value))
             (Some "REJECTED")
             "Business refusal is an admitted result."
     | _ -> failtest "Expected a business refusal."

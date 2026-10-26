@@ -17,7 +17,7 @@
     "vite.config.ts",
     "playwright.config.ts",
     "scripts",
-    "lint",
-    "../contracts/client.ts"
+    "../contracts/client.ts",
+    "prettier.config.mjs"
   ]
 }

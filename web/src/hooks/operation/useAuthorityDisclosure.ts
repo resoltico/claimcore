@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import type { Notice } from "../../api/notices";
+import type { Notice } from "../../protocol/notices";
 
 // A refusal invalidates the whole disclosure snapshot, independently of the authored draft.
 // A further refusal clears that snapshot too, and waits for explicit reload instead of looping.

@@ -46,7 +46,7 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (CaseAct.Open
+                (UnvalidatedCaseAct.Open
                     {
                         IncidentDate = "2026-08-01"
                         IncidentNotificationDate = "2026-08-03"
@@ -58,18 +58,18 @@ let view reference =
                     })
         }
 
-    Case.decide (DateOnly(2026, 10, 13)) request None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) request None
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
-let receipt id reference =
+let receipt id (reference: string) =
     {
         OperationId = id
         Position = position
         Subject =
             ReceiptSubject.Case
                 {
-                    Reference = reference
+                    Reference = CaseFixtures.reference reference
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
@@ -81,7 +81,7 @@ let receipt id reference =
         RecordedBy = operationId
     }
 
-let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
+let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
         Subject =
             ReceiptSubject.Authority
@@ -109,16 +109,16 @@ let description =
 type Stub() =
     let calls = ResizeArray<string>()
     member _.Calls = List.ofSeq calls
-    member val AdmissionOpen = true with get, set
+    member val RuntimeAvailable = true with get, set
     member val Error: exn option = None with get, set
 
-    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteResult> =
+    member val Execute: UnvalidatedCaseRequest * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) ->
             Task.FromResult(
                 ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: ClaimCore.Contract.AuthorityRequest * CancellationToken
+    member val ExecuteAuthority: ClaimCore.Domain.AuthorityRequest * CancellationToken
         -> Task<ExecuteResult> =
         (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
 
@@ -132,23 +132,11 @@ type Stub() =
         | None -> Task.FromResult result
 
     member _.InvocationContext principal =
-        let unused () =
-            invalidOp "A transport handler stub must not access storage."
-
         let store =
-            { new ILedgerStore with
-                member _.ResolveOperation(_, _, _, _) = unused ()
-                member _.WriteCase(_, _, _, _, _) = unused ()
-                member _.WriteAuthority(_, _, _, _, _, _) = unused ()
-                member _.ReadAuthorityTarget(_, _, _, _, _) = unused ()
-                member _.ReadCase(_, _, _, _) = unused ()
-                member _.ListCases(_, _, _, _, _) = unused ()
-                member _.ReadHistory(_, _, _, _, _) = unused ()
-                member _.ListActors(_, _, _, _) = unused ()
-                member _.ListGrants(_, _, _, _, _) = unused ()
-                member _.ReadOperation(_, _, _) = unused ()
-                member _.ReadActor(_, _) = unused ()
-            }
+            new MemoryStore.Store(DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
+
+        store.ReadFailure <- Some StoreFailure.Unavailable
+        store.WriteFailure <- Some StoreFailure.Unavailable
 
         let calendar =
             { new IBusinessCalendar with
@@ -158,15 +146,15 @@ type Stub() =
                     DateOnly.FromDateTime instant.UtcDateTime
             }
 
-        Handlers.context operationId store calendar principal
+        Handlers.context operationId (store :> IStore) calendar principal
 
     member this.Handlers =
         function
         | ActorEndpoint.Context ->
-            Handlers.read Api.context (fun _ () _ ->
+            Route.read Api.context (fun _ () _ ->
                 this.Invoke "context" (ReadReply.Succeeded description))
         | ActorEndpoint.Preview ->
-            Handlers.define
+            Route.bind
                 Api.operationPreview
                 (fun input ->
                     {
@@ -190,7 +178,7 @@ type Stub() =
                             Outcome = outcome
                         })
         | ActorEndpoint.Execute ->
-            Handlers.define
+            Route.bind
                 Api.operationExecute
                 (fun input ->
                     {
@@ -217,12 +205,12 @@ type Stub() =
                                 }
                     })
         | ActorEndpoint.Resolve ->
-            Handlers.define
+            Route.bind
                 Api.operationResolve
                 (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
                 (fun _ _ _ -> this.Invoke "operation.resolve" ResolveReply.NotAccepted)
         | ActorEndpoint.CaseGet ->
-            Handlers.read Api.caseGet (fun _ request _ ->
+            Route.read Api.caseGet (fun _ request _ ->
                 this.Invoke
                     "case.get"
                     (ReadReply.Succeeded
@@ -231,7 +219,7 @@ type Stub() =
                             Advice = { Acts = []; History = [] }
                         }))
         | ActorEndpoint.CaseList ->
-            Handlers.read Api.caseList (fun _ _ _ ->
+            Route.read Api.caseList (fun _ _ _ ->
                 this.Invoke
                     "case.list"
                     (ReadReply.Succeeded
@@ -241,20 +229,20 @@ type Stub() =
                             Offers = []
                         }))
         | ActorEndpoint.CaseHistory ->
-            Handlers.read Api.caseHistory (fun _ _ _ ->
+            Route.read Api.caseHistory (fun _ _ _ ->
                 this.Invoke
                     "case.history"
                     (ReadReply.Succeeded { Entries = []; NextCursor = None }))
         | ActorEndpoint.Observe ->
-            Handlers.read Api.operationObserve (fun _ request _ ->
+            Route.read Api.operationObserve (fun _ request _ ->
                 this.Invoke
                     "operation.observe"
                     (ReadReply.Succeeded(receipt request.OperationId "WEB-001")))
         | ActorEndpoint.AuthorityGrants ->
-            Handlers.read Api.authorityGrants (fun _ request _ ->
+            Route.read Api.authorityGrants (fun _ request _ ->
                 let principal =
                     PrincipalKey.human "https://identity.example/" "synthetic-target"
-                    |> Result.defaultWith failwith
+                    |> Result.defaultWith (AuthorityInputFailures.token >> failwith)
 
                 this.Invoke
                     "authority.grants"
@@ -270,7 +258,7 @@ type Stub() =
                             NextCursor = None
                         }))
         | ActorEndpoint.AuthorityList ->
-            Handlers.read Api.authorityList (fun _ _ _ ->
+            Route.read Api.authorityList (fun _ _ _ ->
                 this.Invoke
                     "authority.list"
                     (ReadReply.Succeeded { Items = []; NextCursor = None }))

@@ -29,15 +29,14 @@ let private subjects count =
     [
         for index in 1..count ->
             PrincipalKey.human "https://issuer.example/" ("synthetic-growth-" + string index)
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
     ]
 
 let private authority (actor: HandlerContext) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
                     (OperationInput.Authority(
                         authorityRequest
@@ -72,15 +71,14 @@ let private openCases (actor: HandlerContext) count =
     task {
         for index in 0 .. count - 1 do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
                     (OperationInput.Case(
                         request
                             (1000 + index)
                             ("synthetic-growth-" + string index)
                             0L
-                            (CaseAct.Open registration)
+                            (UnvalidatedCaseAct.Open registration)
                     ))
                     (token))
 
@@ -95,26 +93,26 @@ let private act revision =
         }
 
     match (revision - 1L) % 8L with
-    | 0L -> CaseAct.AmendRegistration amended
+    | 0L -> UnvalidatedCaseAct.AmendRegistration amended
     | 1L ->
-        CaseAct.Decide
+        UnvalidatedCaseAct.Decide
             {
                 PaymentDecisionDate = "2026-08-04"
                 PayableAmount = "100.00"
                 PayableCurrency = "EUR"
             }
-    | 2L -> CaseAct.RecordPayment { PaymentDate = "2026-08-05" }
-    | 3L -> CaseAct.ClearPayment
+    | 2L -> UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
+    | 3L -> UnvalidatedCaseAct.ClearPayment
     | 4L ->
-        CaseAct.Correct
+        UnvalidatedCaseAct.Correct
             {
                 Registration = RegistrationGroup.Replace amended
                 Decision = DecisionGroup.Keep
                 Payment = PaymentGroup.Keep
             }
-    | 5L -> CaseAct.WithdrawDecision
-    | 6L -> CaseAct.Close
-    | _ -> CaseAct.Reopen
+    | 5L -> UnvalidatedCaseAct.WithdrawDecision
+    | 6L -> UnvalidatedCaseAct.Close
+    | _ -> UnvalidatedCaseAct.Reopen
 
 let private writeLane (actor: HandlerContext) workload lane =
     task {
@@ -139,8 +137,7 @@ let private writeLane (actor: HandlerContext) workload lane =
 
             let watch = Stopwatch.StartNew()
 
-            let! result =
-                (Handlers.call Api.operationExecute actor (OperationInput.Case authored) (token))
+            let! result = (Core.execute actor (OperationInput.Case authored) (token))
 
             accepted result |> ignore
 
@@ -190,16 +187,14 @@ let private timeout (database: PostgresFixture.Database) =
                     LockMilliseconds = 100
                 }
             )
-            :> ILedgerStore
+            :> IStore
 
         let watch = Stopwatch.StartNew()
 
         let! result =
-            store.WriteCase(
-                database.Fixture.Owner,
-                id 999999,
-                "synthetic-growth-timeout",
-                (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
+            store.Write(
+                (fun _ ->
+                    Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>)),
                 token
             )
 
@@ -258,8 +253,7 @@ let private report
 let private history workload (actor: HandlerContext) =
     task {
         let! history =
-            (Handlers.call
-                Api.caseHistory
+            (Core.history
                 actor
                 ({
                     CaseReference = "synthetic-growth-0"

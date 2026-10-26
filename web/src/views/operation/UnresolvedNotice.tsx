@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { unresolvedOperation } from "./unresolvedOperation";
 import { service, resultNotice } from "../../api/service";
-import type { Notice } from "../../api/notices";
+import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 

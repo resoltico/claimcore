@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.StoreContractTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open System
 open System.Threading
@@ -20,86 +22,125 @@ let private withFixture factory run =
     }
 
 let private storedPage result =
-    result
-    |> Result.defaultWith (fun _ -> failtest "Store read failed")
-    |> Result.defaultWith (fun _ -> failtest "Store selection refused")
+    result |> Result.defaultWith (fun _ -> failtest "Store read failed")
+
+type private HistoryInspection =
+    {
+        Case: StoredCase option
+        Entries: StoredEntry list
+        Next: int64 option
+    }
 
 let private history fixture reference after limit =
-    fixture.Store.ReadHistory(
-        fixture.Owner,
-        reference,
-        (fun _ -> Ok after),
-        limit,
+    fixture.Store.Read(
+        (fun tx ->
+            task {
+                let id =
+                    ClaimCore.RecordFormat.CaseReferenceId.encode fixture.InstallationId reference
+
+                let! current = tx.FindCase id
+                let! page = tx.HistoryPage(id, after, limit)
+
+                return
+                    {
+                        Case = current
+                        Entries = page.Items
+                        Next = page.Next
+                    }
+            }),
+        CancellationToken.None
+    )
+
+let private casePage fixture principal visibility after limit =
+    fixture.Store.Read(
+        (fun tx ->
+            task {
+                let! actor = tx.Authority(principal, None)
+
+                return!
+                    tx.CasePage(
+                        visibility,
+                        actor.Actor.Value.ActorId,
+                        ActorAuthorization.readRoles principal,
+                        ActorAuthorization.invalidRoles principal,
+                        after,
+                        limit
+                    )
+            }),
         CancellationToken.None
     )
 
 let private listCases fixture visibility after limit =
-    fixture.Store.ListCases(
-        fixture.Owner,
-        ActorAuthorization.readRoles fixture.Owner,
-        (fun _ ->
-            Ok
-                {
-                    Visibility = visibility
-                    AfterReference = after
-                }),
-        limit,
-        CancellationToken.None
-    )
+    casePage fixture fixture.Owner visibility after limit
 
 let private genesis fixture =
     task {
         let mutable calls = 0
 
-        let decide (view: AuthorityLockedView) =
-            calls <- calls + 1
-            Expect.equal view.Head.Sequence 0L "Genesis head"
-            Expect.isTrue (view.Head.EntryHash = Array.zeroCreate 32) "Zero previous hash"
-            Expect.isNone view.Read.Actor.Actor "No actor before provisioning"
-            AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner view
-
         let! result =
-            fixture.Store.WriteAuthority(
-                fixture.Owner,
-                id 1,
-                fixture.Owner,
-                None,
-                decide,
+            fixture.Store.Write(
+                (fun tx ->
+                    task {
+                        calls <- calls + 1
+
+                        let! view =
+                            ExecutionFacts.target
+                                tx
+                                fixture.InstallationId
+                                fixture.Owner
+                                (id 1)
+                                fixture.Owner
+                                None
+
+                        Expect.equal tx.Head.Sequence 0L "Genesis head"
+
+                        Expect.isTrue
+                            (tx.Head.EntryHash = Array.zeroCreate 32)
+                            "Zero previous hash"
+
+                        Expect.isNone view.Actor.Actor "No actor before provisioning"
+
+                        return!
+                            AuthorityExecution.provision
+                                fixture.InstallationId
+                                (id 1)
+                                fixture.Owner
+                                tx.Head
+                                false
+                                tx.Nonce
+                                view
+                            |> ExecutionFacts.persist tx tx.ProjectAuthority
+                    }),
                 CancellationToken.None
             )
 
         match result with
-        | Ok(Decision.Proceed receipt) -> Expect.equal receipt.Position.Sequence 1L "First sequence"
+        | Ok(Verdict.Proceed receipt) -> Expect.equal receipt.Position.Sequence 1L "First sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
-        let! actor = fixture.Store.ReadActor(fixture.Owner, CancellationToken.None)
+        let! actor = inspectAuthority fixture (fixture.Owner) (CancellationToken.None)
 
         match actor with
-        | Ok {
-                 Actor = ({ Actor = Some _ } as authority)
-             } ->
+        | Ok({ Actor = Some _ } as authority) ->
             Expect.equal authority.Installation [ Role.Owner ] "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
-        let! entry = fixture.Store.ReadOperation(fixture.Owner, id 1, CancellationToken.None)
+        let! entry = inspectOperation fixture (fixture.Owner) (id 1) (CancellationToken.None)
 
         match entry with
-        | Ok { Entry = Some entry } -> Expect.equal entry.Sequence 1L "Readable acceptance"
+        | Ok { ExistingOperation = Some entry } ->
+            Expect.equal entry.Sequence 1L "Readable acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
 let private replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
 
         let! result =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case original)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Case original) (CancellationToken.None))
 
         let receipt = accepted result
 
@@ -109,19 +150,14 @@ let private replayAndRefusal fixture =
             "One entry per authority operation and case operation"
 
         let! replay =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case original)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Case original) (CancellationToken.None))
 
         Expect.equal replay.Outcome (ExecuteResult.AlreadyAccepted receipt) "Original receipt"
 
         let! stale =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 0L CaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 0L UnvalidatedCaseAct.Close))
                 (CancellationToken.None))
 
         Expect.equal
@@ -130,7 +166,7 @@ let private replayAndRefusal fixture =
             "No stale acceptance"
 
         let! view =
-            fixture.Store.ReadCase(fixture.Owner, None, "CONTRACT-001", CancellationToken.None)
+            inspectCase fixture (fixture.Owner) (None) ("CONTRACT-001") (CancellationToken.None)
 
         match view with
         | Ok { Case = Some record } ->
@@ -147,55 +183,63 @@ let private replayAndRefusal fixture =
 let private lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (CaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case original)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Case original) (CancellationToken.None))
 
         let first = accepted opened
         let mutable calls = 0
 
-        let decide (view: CaseLockedView) =
-            calls <- calls + 1
-            Expect.equal view.Head.Sequence first.Position.Sequence "Current head"
-
-            Expect.equal
-                (Convert.ToHexStringLower view.Head.EntryHash)
-                first.Position.EntryHash
-                "Previous accepted link"
-
-            Expect.equal
-                (view.Read.Case |> Option.map (fun record -> record.Snapshot.Revision))
-                (Some 1L)
-                "Current case"
-
-            Expect.equal
-                (view.Read.ExistingOperation |> Option.map _.OperationId)
-                (Some original.OperationId)
-                "Existing identity in the same view"
-
-            CaseDecisions.execute
-                fixture.InstallationId
-                fixture.Calendar
-                fixture.Owner
-                original
-                view
-
         let! result =
-            fixture.Store.WriteCase(
-                fixture.Owner,
-                original.OperationId,
-                original.CaseReference,
-                decide,
+            fixture.Store.Write(
+                (fun tx ->
+                    task {
+                        let! view =
+                            ExecutionFacts.case
+                                tx
+                                fixture.InstallationId
+                                fixture.Owner
+                                (Some original.OperationId)
+                                original.CaseReference
+
+                        let! fenced = ExecutionFacts.fenced tx view.Actor original.OperationId
+                        calls <- calls + 1
+                        Expect.equal tx.Head.Sequence first.Position.Sequence "Current head"
+
+                        Expect.equal
+                            (Convert.ToHexStringLower tx.Head.EntryHash)
+                            first.Position.EntryHash
+                            "Previous accepted link"
+
+                        Expect.equal
+                            (view.Case |> Option.map (fun record -> record.Snapshot.Revision))
+                            (Some 1L)
+                            "Current case"
+
+                        Expect.equal
+                            (view.ExistingOperation |> Option.map _.OperationId)
+                            (Some original.OperationId)
+                            "Existing identity in the same view"
+
+                        return!
+                            CaseExecution.execute
+                                fixture.InstallationId
+                                fixture.Calendar
+                                fixture.Owner
+                                (CaseFixtures.command original)
+                                tx.Head
+                                fenced
+                                tx.Nonce
+                                view
+                            |> ExecutionFacts.persist tx tx.ProjectCase
+
+                    }),
                 CancellationToken.None
             )
 
         match result with
-        | Ok(Decision.Replay receipt) -> Expect.equal receipt first "Locked replay"
+        | Ok(Verdict.Replay receipt) -> Expect.equal receipt first "Locked replay"
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
@@ -206,19 +250,19 @@ let private caseUpdate fixture =
         let! actor = caseWorker fixture
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 10 "CONTRACT-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
         let! closed =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 1L CaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 1L UnvalidatedCaseAct.Close))
                 (CancellationToken.None))
 
         let receipt = accepted closed
@@ -227,14 +271,14 @@ let private caseUpdate fixture =
         let! rows = history fixture "CONTRACT-001" 0L 1
         let page = storedPage rows
         Expect.equal page.Entries.Length 1 "Bounded page"
-        Expect.equal page.NextAfterRevision (Some 1L) "Continuation"
+        Expect.equal page.Next (Some 1L) "Continuation"
 
         let! operation =
-            fixture.Store.ReadOperation(fixture.Owner, id 11, CancellationToken.None)
+            inspectOperation fixture (fixture.Owner) (id 11) (CancellationToken.None)
 
         match operation with
         | Ok {
-                 Entry = Some entry
+                 ExistingOperation = Some entry
                  Case = Some record
              } ->
             Expect.equal entry.Sequence receipt.Position.Sequence "Operation position"
@@ -264,7 +308,7 @@ let private erasureReadback fixture (actor: HandlerContext) =
             "Only erasable columns are cleared"
 
         let! other =
-            fixture.Store.ReadCase(fixture.Owner, None, "CONTRACT-002", CancellationToken.None)
+            inspectCase fixture (fixture.Owner) (None) ("CONTRACT-002") (CancellationToken.None)
 
         match other with
         | Ok {
@@ -277,10 +321,11 @@ let private erasureReadback fixture (actor: HandlerContext) =
         | _ -> failtest "Other case changed"
 
         let! replay =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 10 "CONTRACT-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         Expect.equal
@@ -289,10 +334,11 @@ let private erasureReadback fixture (actor: HandlerContext) =
             "Erased requests cannot replay"
 
         let! reopen =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 13 "contract-001" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 13 "contract-001" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         Expect.equal
@@ -312,22 +358,19 @@ let private caseErasure fixture =
 
         for n, reference in [ 10, "CONTRACT-001"; 11, "CONTRACT-002" ] do
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L (CaseAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L (UnvalidatedCaseAct.Erase)
 
         let! result =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case erase)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Case erase) (CancellationToken.None))
 
         Expect.equal
             (accepted result |> caseReceipt).Snapshot
@@ -340,7 +383,7 @@ let private caseErasure fixture =
 let private existingCaseId fixture reference =
     task {
         let! result =
-            fixture.Store.ReadCase(fixture.Owner, None, reference, CancellationToken.None)
+            inspectCase fixture (fixture.Owner) (None) (reference) (CancellationToken.None)
 
         return
             match result with
@@ -352,11 +395,10 @@ let private assignedReader (actor: HandlerContext) =
     task {
         let principal =
             PrincipalKey.human "https://issuer.example/" "assigned-reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 15) principal AdmittedAuthorityAct.Register
@@ -379,10 +421,11 @@ let private caseVisibility fixture =
 
         for n, reference in [ 10, "C"; 11, "A"; 12, "B" ] do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -391,37 +434,28 @@ let private caseVisibility fixture =
         let first = storedPage first
 
         Expect.equal
-            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            (first.Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "A"; "B" ]
             "Reference-key order"
 
-        Expect.equal first.NextAfterReference (Some "B") "Last visible key"
+        Expect.equal first.Next (Some "B") "Last visible key"
 
         let! principal = assignedReader actor
 
-        let! only =
-            fixture.Store.ListCases(
-                principal,
-                ActorAuthorization.readRoles principal,
-                (fun _ ->
-                    Ok
-                        {
-                            Visibility = CaseVisibility.Assigned
-                            AfterReference = None
-                        }),
-                1,
-                CancellationToken.None
-            )
+        let! only = casePage fixture principal CaseVisibility.Assigned None 1
 
         Expect.equal
-            ((storedPage only).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage only).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "C" ]
             "Visibility precedes limit"
 
         let! next = listCases fixture CaseVisibility.Every (Some "B") 2
 
         Expect.equal
-            ((storedPage next).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage next).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "C" ]
             "Continuation"
     }
@@ -429,8 +463,7 @@ let private caseVisibility fixture =
 let private registerReader (owner: HandlerContext) target =
     task {
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 owner
                 (OperationInput.Authority(
                     authorityRequest (id 2) target AdmittedAuthorityAct.Register
@@ -448,15 +481,13 @@ let private authorityChanges fixture =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         do! registerReader owner target
-        let! read = fixture.Store.ReadActor(target, CancellationToken.None)
+        let! read = inspectAuthority fixture (target) (CancellationToken.None)
 
         match read with
-        | Ok {
-                 Actor = ({ Actor = Some actor } as authority)
-             } ->
+        | Ok({ Actor = Some actor } as authority) ->
             Expect.equal actor.ActorId (id 2) "Registration identity"
 
             Expect.equal authority.Installation [ Role.CaseReader ] "Added grant"
@@ -468,8 +499,7 @@ let private authorityChanges fixture =
         acceptedAuthority removed
 
         let! disabled =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 owner
                 (OperationInput.Authority(
                     authorityRequest (id 5) target (AdmittedAuthorityAct.Disable)
@@ -477,12 +507,10 @@ let private authorityChanges fixture =
                 (CancellationToken.None))
 
         acceptedAuthority disabled
-        let! read = fixture.Store.ReadActor(target, CancellationToken.None)
+        let! read = inspectAuthority fixture (target) (CancellationToken.None)
 
         match read with
-        | Ok {
-                 Actor = ({ Actor = Some actor } as authority)
-             } ->
+        | Ok({ Actor = Some actor } as authority) ->
             Expect.isFalse actor.Enabled "Disabled"
             Expect.isEmpty authority.Installation "Removed"
         | _ -> failtest "Missing actor"
@@ -494,10 +522,11 @@ let private foldedOrdering fixture =
 
         for n, reference in [ 20, "Ref-b"; 21, "ref-A"; 22, "REF-C" ] do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request n reference 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -506,15 +535,17 @@ let private foldedOrdering fixture =
         let first = storedPage first
 
         Expect.equal
-            (first.Items |> List.map (fun record -> record.Snapshot.Reference))
+            (first.Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "ref-A" ]
             "Authored spelling with ASCII-key order"
 
-        Expect.equal first.NextAfterReference (Some "REF-A") "Continuation is folded"
-        let! second = listCases fixture CaseVisibility.Every first.NextAfterReference 1
+        Expect.equal first.Next (Some "REF-A") "Continuation is folded"
+        let! second = listCases fixture CaseVisibility.Every first.Next 1
 
         Expect.equal
-            ((storedPage second).Items |> List.map (fun record -> record.Snapshot.Reference))
+            ((storedPage second).Items
+             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
             [ "Ref-b" ]
             "Continuation uses the same order"
     }
@@ -523,11 +554,10 @@ let private scopedHandler fixture (admin: HandlerContext) reference =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "scoped-handler"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 30) target AdmittedAuthorityAct.Register
@@ -546,11 +576,7 @@ let private scopedHandler fixture (admin: HandlerContext) reference =
 let private checkScopedAdvice (actor: HandlerContext) reference =
     task {
         let! result =
-            (Handlers.call
-                Api.caseGet
-                actor
-                ({ CaseReference = reference })
-                (CancellationToken.None))
+            (Core.get actor ({ CaseReference = reference }) (CancellationToken.None))
 
         match result with
         | ReadReply.Succeeded value ->
@@ -579,10 +605,9 @@ let private advisedCase fixture reference =
         let! admin = caseWorker fixture
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
-                (OperationInput.Case(request 20 reference 0L (CaseAct.Open registration)))
+                (OperationInput.Case(request 20 reference 0L (UnvalidatedCaseAct.Open registration)))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -595,10 +620,9 @@ let private advisedCase fixture reference =
             }
 
         let! decided =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
-                (OperationInput.Case(request 21 reference 1L (CaseAct.Decide decision)))
+                (OperationInput.Case(request 21 reference 1L (UnvalidatedCaseAct.Decide decision)))
                 (CancellationToken.None))
 
         accepted decided |> ignore
@@ -608,11 +632,7 @@ let private advisedCase fixture reference =
 let private refusedAdvice fixture (actor: HandlerContext) pending =
     task {
         let! refused =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case pending)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Case pending) (CancellationToken.None))
 
         Expect.equal
             refused.Outcome
@@ -620,8 +640,7 @@ let private refusedAdvice fixture (actor: HandlerContext) pending =
             "Revocation is decided again under lock"
 
         let! current =
-            (Handlers.call
-                Api.caseGet
+            (Core.get
                 actor
                 ({
                     CaseReference = pending.CaseReference
@@ -660,7 +679,7 @@ let private revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction: Correction =
+        let correction: CorrectionInput =
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -671,14 +690,10 @@ let private revokedAdvice fixture =
                 Payment = PaymentGroup.Keep
             }
 
-        let pending = request 35 reference 2L (CaseAct.Correct correction)
+        let pending = request 35 reference 2L (UnvalidatedCaseAct.Correct correction)
 
         let! preview =
-            (Handlers.call
-                Api.operationPreview
-                actor
-                (OperationInput.Case pending)
-                (CancellationToken.None))
+            (Core.previewReply actor (OperationInput.Case pending) (CancellationToken.None))
 
         match preview.Outcome with
         | PreviewResult.Reviewed _ -> ()
@@ -702,11 +717,10 @@ let private scopedWorker fixture =
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "many-scopes"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 20) principal AdmittedAuthorityAct.Register
@@ -724,11 +738,10 @@ let private scopedWorker fixture =
             let reference = $"SCOPE-{number}"
 
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     admin
                     (OperationInput.Case(
-                        request (100 + number) reference 0L (CaseAct.Open registration)
+                        request (100 + number) reference 0L (UnvalidatedCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -753,7 +766,7 @@ let private scopedAuthority fixture =
         let! principal = scopedWorker fixture
 
         let! read =
-            fixture.Store.ReadCase(principal, None, "SCOPE-1", CancellationToken.None)
+            inspectCase fixture (principal) (None) ("SCOPE-1") (CancellationToken.None)
 
         let view = read |> Result.defaultWith (fun _ -> failtest "Scoped case read")
 
@@ -765,7 +778,7 @@ let private scopedAuthority fixture =
         Expect.equal view.Actor.Cases.Count 1 "Unrelated case grants are not read"
 
         let! identity =
-            fixture.Store.ReadCase(principal, Some(id 102), "SCOPE-1", CancellationToken.None)
+            inspectCase fixture (principal) (Some(id 102)) ("SCOPE-1") (CancellationToken.None)
 
         let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
 
@@ -775,20 +788,20 @@ let private scopedAuthority fixture =
             "Existing operation adds only its own case authority"
 
         let! observed =
-            fixture.Store.ReadOperation(principal, id 102, CancellationToken.None)
+            inspectOperation fixture (principal) (id 102) (CancellationToken.None)
 
         let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
         Expect.equal observed.Actor.Cases.Count 1 "Observation reads the accepted entry scope only"
-        let! context = fixture.Store.ReadActor(principal, CancellationToken.None)
+        let! context = inspectAuthority fixture (principal) (CancellationToken.None)
         let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
-        Expect.isEmpty context.Actor.Cases "Context never enumerates assigned grants"
-        Expect.isTrue context.Actor.HasAssignedCases "EXISTS reports assigned visibility"
+        Expect.isEmpty context.Cases "Context never enumerates assigned grants"
+        Expect.isTrue context.HasAssignedCases "EXISTS reports assigned visibility"
 
-        let pending = request 102 "SCOPE-1" 1L (CaseAct.AmendRegistration registration)
+        let pending =
+            request 102 "SCOPE-1" 1L (UnvalidatedCaseAct.AmendRegistration registration)
 
         let! conflict =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 (Handlers.context fixture.InstallationId fixture.Store fixture.Calendar principal)
                 (OperationInput.Case pending)
                 (CancellationToken.None))
@@ -802,8 +815,7 @@ let private scopedAuthority fixture =
 let private authorityReview fixture principal input =
     task {
         let! preview =
-            (Handlers.call
-                Api.operationPreview
+            (Core.previewReply
                 (core fixture principal)
                 (OperationInput.Authority input)
                 (CancellationToken.None))
@@ -813,13 +825,13 @@ let private authorityReview fixture principal input =
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit.")
 
         let! read =
-            fixture.Store.ReadAuthorityTarget(
-                principal,
-                request.OperationId,
-                request.Target,
-                AuthorityRequests.targetCase request,
-                CancellationToken.None
-            )
+            inspectTarget
+                fixture
+                (principal)
+                (request.OperationId)
+                (request.Target)
+                (AuthorityRequests.targetCase request)
+                (CancellationToken.None)
 
         let view =
             read |> Result.defaultWith (fun _ -> failtest "Authority snapshot must load.")
@@ -831,23 +843,19 @@ let private ledgerHead fixture =
     task {
         let mutable loaded = None
 
-        let decide (view: AuthorityLockedView) =
-            loaded <- Some view.Head
-            Decision.Refuse Refusal.ResourceUnavailable
-
-        let! result =
-            fixture.Store.WriteAuthority(
-                fixture.Owner,
-                id 999999,
-                fixture.Owner,
-                None,
-                decide,
+        let! result: Result<Verdict<unit>, StoreFailure> =
+            fixture.Store.Write(
+                (fun tx ->
+                    task {
+                        loaded <- Some tx.Head
+                        return Verdict.Refuse Refusal.ResourceUnavailable
+                    }),
                 CancellationToken.None
             )
 
         Expect.equal
             result
-            (Ok(Decision.Refuse Refusal.ResourceUnavailable))
+            (Ok(Verdict.Refuse Refusal.ResourceUnavailable))
             "The head probe appends nothing."
 
         return loaded |> Option.get
@@ -875,11 +883,7 @@ let private authorityReviewRefusals fixture =
                 "Fresh authority preview enforces the execution refusal."
 
             let! execution =
-                (Handlers.call
-                    Api.operationExecute
-                    actor
-                    (OperationInput.Authority input)
-                    (CancellationToken.None))
+                (Core.execute actor (OperationInput.Authority input) (CancellationToken.None))
 
             Expect.equal
                 execution.Outcome
@@ -896,11 +900,10 @@ let private authorityReadIsNotManage fixture =
 
         let auditor =
             PrincipalKey.human "https://issuer.example/" "preview-auditor"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 2) auditor AdmittedAuthorityAct.Register
@@ -929,8 +932,7 @@ let private authorityReadIsNotManage fixture =
             "Read authority cannot authorize mutation preview."
 
         let! execution =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 (core fixture auditor)
                 (OperationInput.Authority input)
                 (CancellationToken.None))
@@ -947,7 +949,7 @@ let private authorityReviewReplay fixture =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "preview-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let input = authorityRequest (id 2) target AdmittedAuthorityAct.Register
         let! before = ledgerHead fixture
@@ -968,11 +970,7 @@ let private authorityReviewReplay fixture =
         Expect.equal after before "A successful preview appends no entry."
 
         let! execution =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Authority input)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Authority input) (CancellationToken.None))
 
         let receipt = accepted execution
 
@@ -1002,21 +1000,21 @@ let private grantReviewTarget fixture =
         let! actor = caseWorker fixture
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 10 "REVIEW-CASE" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "REVIEW-CASE" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
         let target =
             PrincipalKey.human "https://issuer.example/" "grant-preview-target"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 11) target AdmittedAuthorityAct.Register
@@ -1090,13 +1088,13 @@ let private authorityGrantReview fixture =
         Expect.equal after before "Grant preview writes neither ledger nor projections."
 
         let! targetRead =
-            fixture.Store.ReadAuthorityTarget(
-                fixture.Owner,
-                id 14,
-                target,
-                Some "REVIEW-CASE",
-                CancellationToken.None
-            )
+            inspectTarget
+                fixture
+                (fixture.Owner)
+                (id 14)
+                (target)
+                (Some "REVIEW-CASE")
+                (CancellationToken.None)
 
         let targetRead =
             targetRead
@@ -1122,11 +1120,10 @@ let private authorityReviewRechecks fixture =
 
         let other =
             PrincipalKey.human "https://issuer.example/" "other-preview-owner"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 2) other AdmittedAuthorityAct.Register
@@ -1151,11 +1148,7 @@ let private authorityReviewRechecks fixture =
         let! before = ledgerHead fixture
 
         let! execution =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Authority input)
-                (CancellationToken.None))
+            (Core.execute actor (OperationInput.Authority input) (CancellationToken.None))
 
         Expect.equal
             execution.Outcome

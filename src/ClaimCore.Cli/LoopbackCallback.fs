@@ -17,7 +17,7 @@ module internal LoopbackTransport =
             else None
 
         match executable with
-        | None -> Error "OIDC_BROWSER_UNAVAILABLE"
+        | None -> Error AccessFailure.OidcBrowserUnavailable
         | Some executable ->
             try
                 let start =
@@ -33,26 +33,26 @@ module internal LoopbackTransport =
                 use child = Process.Start start
 
                 if isNull child then
-                    Error "OIDC_BROWSER_UNAVAILABLE"
+                    Error AccessFailure.OidcBrowserUnavailable
                 else
                     Ok()
             with
             | :? ComponentModel.Win32Exception
-            | :? InvalidOperationException -> Error "OIDC_BROWSER_UNAVAILABLE"
+            | :? InvalidOperationException -> Error AccessFailure.OidcBrowserUnavailable
 
     let private callbackUri host (target: string) =
         if
             not (target.StartsWith("/", StringComparison.Ordinal))
             || target.StartsWith("//", StringComparison.Ordinal)
         then
-            Error "OIDC_CALLBACK_INVALID"
+            Error AccessFailure.OidcCallbackInvalid
         else
             match Uri.TryCreate("http://" + host + target, UriKind.Absolute) with
             | true, uri ->
                 match Option.ofObj uri with
                 | Some uri when uri.AbsolutePath = "/" && uri.Fragment = "" -> Ok uri.AbsoluteUri
-                | _ -> Error "OIDC_CALLBACK_INVALID"
-            | _ -> Error "OIDC_CALLBACK_INVALID"
+                | _ -> Error AccessFailure.OidcCallbackInvalid
+            | _ -> Error AccessFailure.OidcCallbackInvalid
 
     let parseRequest host (source: string) =
         let lines = source.Split("\r\n", StringSplitOptions.None)
@@ -67,7 +67,7 @@ module internal LoopbackTransport =
 
         match lines[0].Split(' ', StringSplitOptions.None) with
         | [| "GET"; target; "HTTP/1.1" |] when hosts = [| host |] -> callbackUri host target
-        | _ -> Error "OIDC_CALLBACK_INVALID"
+        | _ -> Error AccessFailure.OidcCallbackInvalid
 
     let readHeaders (stream: NetworkStream) cancelled =
         task {
@@ -104,7 +104,7 @@ module internal LoopbackTransport =
             elif count = 0 then
                 return Ok None
             else
-                return Error "OIDC_CALLBACK_INVALID"
+                return Error AccessFailure.OidcCallbackInvalid
         }
 
     let readConnection (stream: NetworkStream) (cancelled: CancellationToken) =
@@ -175,7 +175,7 @@ module internal LoopbackTransport =
 type internal LoopbackBrowser() =
     let listener = new TcpListener(IPAddress.Loopback, 0)
     let mutable invoked = 0
-    let mutable failure: string option = None
+    let mutable failure: AccessFailure option = None
     do listener.Start 1
     let host = (listener.LocalEndpoint :?> IPEndPoint).ToString()
 
@@ -199,7 +199,7 @@ type internal LoopbackBrowser() =
                 return BrowserResult(ResultType = BrowserResultType.Timeout)
             | :? IO.IOException
             | :? SocketException ->
-                failure <- Some "OIDC_CALLBACK_INVALID"
+                failure <- Some AccessFailure.OidcCallbackInvalid
                 return BrowserResult(ResultType = BrowserResultType.HttpError)
         }
 

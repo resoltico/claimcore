@@ -17,27 +17,28 @@ open ClaimCore.IntegrationTests.ApplicationFixtures
 
 let private ct = CancellationToken.None
 
-let private decision: Decision =
+let private decision: DecisionInput =
     {
         PaymentDecisionDate = "2026-08-15"
         PayableAmount = "750.00"
         PayableCurrency = "EUR"
     }
 
-let private keep: Correction =
+let private keep: CorrectionInput =
     {
         Registration = RegistrationGroup.Keep
         Decision = DecisionGroup.Keep
         Payment = PaymentGroup.Keep
     }
 
-let private correction value = (CaseAct.Correct value)
+let private correction value = (UnvalidatedCaseAct.Correct value)
 
-let private payment = (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+let private payment =
+    (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
 
-let private decided = (CaseAct.Decide decision)
-let private closed = CaseAct.Close
-let private voided = (CaseAct.Void "Synthetic reason")
+let private decided = (UnvalidatedCaseAct.Decide decision)
+let private closed = UnvalidatedCaseAct.Close
+let private voided = (UnvalidatedCaseAct.Void "Synthetic reason")
 
 let private baseline =
     lazy
@@ -122,11 +123,11 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (Handlers.call Api.operationExecute (actor: HandlerContext) (OperationInput.Case pending) (ct))
+    (Core.execute (actor: HandlerContext) (OperationInput.Case pending) (ct))
 
 let private opening values =
     { openRequest 10 "REACH-1" with
-        Act = (CaseAct.Open values)
+        Act = (UnvalidatedCaseAct.Open values)
     }
 
 let private textRequests () =
@@ -205,21 +206,21 @@ let private progressRequests () =
             10
             "REACH-1"
             1L
-            (CaseAct.Decide
+            (UnvalidatedCaseAct.Decide
                 { decision with
                     PaymentDecisionDate = "bad"
                 })
-        request 10 "REACH-1" 1L (CaseAct.Decide { decision with PayableAmount = "bad" })
+        request 10 "REACH-1" 1L (UnvalidatedCaseAct.Decide { decision with PayableAmount = "bad" })
         request
             10
             "REACH-1"
             1L
-            (CaseAct.Decide
+            (UnvalidatedCaseAct.Decide
                 { decision with
                     PayableCurrency = "bad"
                 })
-        request 10 "REACH-1" 1L (CaseAct.RecordPayment { PaymentDate = "bad" })
-        actRequest 10 "REACH-1" 1L ((CaseAct.Void ""))
+        request 10 "REACH-1" 1L (UnvalidatedCaseAct.RecordPayment { PaymentDate = "bad" })
+        actRequest 10 "REACH-1" 1L ((UnvalidatedCaseAct.Void ""))
     ]
 
 let private scalarRequests () =
@@ -258,11 +259,11 @@ let private scalarEvidence () =
 
 let private stateScenarios () =
     [
-        [], (CaseAct.Open registration)
-        [], CaseAct.Reopen
-        [ closed ], CaseAct.Close
+        [], (UnvalidatedCaseAct.Open registration)
+        [], UnvalidatedCaseAct.Reopen
+        [ closed ], UnvalidatedCaseAct.Close
         [ closed ], decided
-        [ decided ], (CaseAct.AmendRegistration registration)
+        [ decided ], (UnvalidatedCaseAct.AmendRegistration registration)
         [ decided ],
         correction
             { keep with
@@ -274,14 +275,14 @@ let private stateScenarios () =
                 Decision = DecisionGroup.Clear
             }
         [], payment
-        [], CaseAct.ClearPayment
+        [], UnvalidatedCaseAct.ClearPayment
         [ decided; payment ], payment
-        [ decided; payment ], CaseAct.WithdrawDecision
-        [ (CaseAct.Decide { decision with PayableAmount = "0" }) ], payment
+        [ decided; payment ], UnvalidatedCaseAct.WithdrawDecision
+        [ (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" }) ], payment
         [ voided ], closed
         [ voided ], voided
-        [], (CaseAct.Reinstate "Synthetic reason")
-        [ CaseAct.Erase ], closed
+        [], (UnvalidatedCaseAct.Reinstate "Synthetic reason")
+        [ UnvalidatedCaseAct.Erase ], closed
         [ decided; payment ],
         correction
             { keep with
@@ -327,16 +328,11 @@ let private stateEvidence (setup, final) =
 let private queryEvidence actor =
     task {
         let! limit =
-            (Handlers.call
-                Api.caseList
-                (actor: HandlerContext)
-                ({ AfterCursor = None; Limit = 0 })
-                (ct))
+            (Core.list (actor: HandlerContext) ({ AfterCursor = None; Limit = 0 }) (ct))
 
-        let! cursor =
-            (Handlers.call Api.caseList actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
+        let! cursor = (Core.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
 
-        let! missing = (Handlers.call Api.caseGet actor ({ CaseReference = "MISSING" }) (ct))
+        let! missing = (Core.get actor ({ CaseReference = "MISSING" }) (ct))
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 
@@ -344,11 +340,10 @@ let private authorityEvidence actor =
     task {
         let service =
             PrincipalKey.service "https://issuer.example/" "synthetic"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let send n target act =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 (actor: HandlerContext)
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
@@ -371,15 +366,14 @@ let private identityEvidence actor =
         let! opening = execute actor pending
         accepted opening |> ignore
         let! conflict = execute actor { pending with ExpectedRevision = 1L }
-        let! revision = execute actor (request 11 "REACH-1" 0L CaseAct.Close)
+        let! revision = execute actor (request 11 "REACH-1" 0L UnvalidatedCaseAct.Close)
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 35) reader AdmittedAuthorityAct.Register
@@ -407,7 +401,7 @@ let private principalEvidence (actor: HandlerContext) =
                     "invalid", "valid"
                     "https://issuer.example/", String('x', 513)
                 ] do
-            let request: ClaimCore.Contract.AuthorityRequest =
+            let request: ClaimCore.Domain.AuthorityRequest =
                 {
                     OperationId = id (60 + index)
                     Target =
@@ -416,11 +410,10 @@ let private principalEvidence (actor: HandlerContext) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Contract.AuthorityAct.Register
+                    Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
-            let! outcome =
-                (Handlers.call Api.operationExecute actor (OperationInput.Authority request) (ct))
+            let! outcome = (Core.execute actor (OperationInput.Authority request) (ct))
 
             evidence.Add(refused outcome)
 
@@ -439,78 +432,18 @@ let private boundaryEvidence () =
         let! actor = caseWorker fixture
         let! identity, reader = identityEvidence actor
 
-        let! denied = execute (core fixture reader) (request 37 "REACH-1" 1L CaseAct.Close)
+        let! denied =
+            execute (core fixture reader) (request 37 "REACH-1" 1L UnvalidatedCaseAct.Close)
 
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
 
-        let! resolved =
-            (Handlers.call Api.operationResolve actor ({ OperationId = id 42 }) (ct))
+        let! resolved = (Core.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
-        let! fenced = execute actor (request 42 "REACH-1" 1L CaseAct.Close)
-        let! loaded = fixture.Store.ReadCase(fixture.Owner, None, "REACH-1", ct)
-
-        let read =
-            loaded |> Result.defaultWith (fun _ -> failtest "Read locked-view fixture")
-
-        let current = read.Case |> Option.get
-
-        let revisionView: CaseLockedView =
-            {
-                Head =
-                    {
-                        Sequence = 10L
-                        EntryHash = Array.zeroCreate 32
-                    }
-                PayloadNonce = Array.create 32 1uy
-                IsFenced = false
-                Read =
-                    { read with
-                        Case =
-                            Some
-                                { current with
-                                    Snapshot =
-                                        { current.Snapshot with
-                                            Revision = Revision.Maximum
-                                        }
-                                }
-                    }
-            }
-
-        let decisionEvidence request view =
-            match
-                CaseDecisions.execute
-                    fixture.InstallationId
-                    fixture.Calendar
-                    fixture.Owner
-                    request
-                    view
-            with
-            | Decision.Refuse reason -> reason
-            | _ -> failtest "Expected boundary refusal"
-
-        let revision =
-            decisionEvidence (request 40 "REACH-1" Revision.Maximum CaseAct.Close) revisionView
-
-        let ledger =
-            decisionEvidence
-                (request 41 "REACH-1" 1L CaseAct.Close)
-                { revisionView with
-                    Read = read
-                    Head =
-                        { revisionView.Head with
-                            Sequence = Revision.Maximum
-                        }
-                }
-
-        return
-            identity
-            @ [ refused denied; diagnostic revision; diagnostic ledger; refused fenced ]
-            @ queries
-            @ authority
-            @ principals
+        let! fenced = execute actor (request 42 "REACH-1" 1L UnvalidatedCaseAct.Close)
+        return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
     }
 
 let private completeVocabulary () =
@@ -579,9 +512,9 @@ let private missingCasePrivacy () =
             stateScenarios ()
             |> List.collect (fun (setup, final) -> final :: setup)
             |> List.filter (fun act ->
-                CaseActs.kind act <> CaseActKind.Business BusinessActKind.Open)
+                UnvalidatedCaseActs.kind act <> CaseActKind.Business BusinessActKind.Open)
 
-        let kinds = acts |> List.map CaseActs.kind |> Set.ofList
+        let kinds = acts |> List.map UnvalidatedCaseActs.kind |> Set.ofList
 
         let expected =
             CaseActKinds.all

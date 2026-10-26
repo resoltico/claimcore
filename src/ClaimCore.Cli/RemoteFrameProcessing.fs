@@ -2,7 +2,6 @@ namespace ClaimCore.Cli
 
 open ClaimCore.Contract
 
-
 open System
 open System.IO
 open System.Threading
@@ -43,7 +42,7 @@ module private FrameInvocation =
                     match! access.Token cancelled with
                     | Error _ when cancelled.IsCancellationRequested ->
                         return CliReply.local ClientFailure.Cancelled
-                    | Error "OIDC_CREDENTIAL_UNAVAILABLE" ->
+                    | Error AccessFailure.OidcCredentialUnavailable ->
                         return
                             CliReply.local (
                                 ClientFailure.ConfigurationIssue(
@@ -132,7 +131,6 @@ type RemoteFrameProcessor
             | Some reply ->
                 delivery.Write reply
 
-
                 reply.ExitCode
         with error ->
             delivery.Failure error
@@ -150,7 +148,6 @@ type RemoteFrameProcessor
                 | None -> running <- false
                 | Some reply ->
                     delivery.Write reply
-
 
                     exitCode <- reply.ExitCode
 

@@ -46,11 +46,11 @@ let private requests () =
 
 
         let first = RequestRecord.decode 65536 (bytes vectors.Head) |> Fixtures.accepted
-        Expect.equal first.CaseReference "Demo-0001" "Independent authored target"
+        Expect.equal first.Authored.CaseReference "Demo-0001" "Independent authored target"
         Expect.equal first.ExpectedRevision 0L "Independent initial revision"
 
-        match first.Act with
-        | (CaseAct.Open registration) ->
+        match first.Authored.Act with
+        | (UnvalidatedCaseAct.Open registration) ->
             Expect.equal
                 registration.ClaimantName
                 "Rīgas Tulkojumu Birojs SIA"
@@ -64,13 +64,20 @@ let private snapshot () =
         let vector = root.GetProperty "snapshot"
         let encoded = bytes vector
         let observed = CaseRecord.decodeSnapshot encoded |> Fixtures.accepted
-        Expect.equal observed.Reference "Demo-0001" "Independent reference"
+        Expect.equal (CaseReference.format observed.Reference) "Demo-0001" "Independent reference"
         Expect.equal observed.Revision 1L "Independent revision"
 
         match observed.State with
         | CaseState.Active(fields) ->
-            Expect.equal fields.Registration.ClaimedAmount "1000" "Canonical monetary spelling"
-            Expect.equal fields.Registration.IncidentCountry "LV" "Country syntax"
+            Expect.equal
+                (Money.format fields.Registration.ClaimedAmount)
+                "1000"
+                "Canonical monetary spelling"
+
+            Expect.equal
+                (CountryCode.format fields.Registration.IncidentCountry)
+                "LV"
+                "Country syntax"
 
             Expect.isNone
                 (fields.Decision |> Option.map _.PaymentDecisionDate)
@@ -78,6 +85,30 @@ let private snapshot () =
         | _ -> failtest "Expected ACTIVE live snapshot"
 
         Expect.isTrue (CaseRecord.encodeSnapshot observed = encoded) "Independent snapshot bytes"
+
+        let variedScale =
+            text vector "canonicalUtf8"
+            |> fun source ->
+                source.Replace("\"claimedAmount\":\"1000\"", "\"claimedAmount\":\"1000.00\"")
+            |> Encoding.UTF8.GetBytes
+
+        Expect.notEqual
+            variedScale
+            encoded
+            "The control really changes the retained scalar spelling"
+
+        let typed = CaseRecord.decodeSnapshot variedScale |> Fixtures.accepted
+        Expect.equal typed observed "A durable scalar spelling becomes the same typed value"
+
+        Expect.equal
+            (Case.ofAccepted typed |> Result.map Case.snapshot)
+            (Ok observed)
+            "Restoration does not re-render and compare string fields"
+
+        Expect.equal
+            (CaseRecord.encodeSnapshot typed)
+            encoded
+            "Typed values emit the unchanged canonical bytes"
 
         let extra =
             text vector "canonicalUtf8"
@@ -104,7 +135,7 @@ let private authority () =
         Expect.equal
             request.Act
             (RecordedAuthorityAct.Operation(
-                ClaimCore.Contract.AuthorityAct.Grant
+                ClaimCore.Domain.AuthorityAct.Grant
                     {
                         Role = "CASE_HANDLER"
                         Scope = GrantTarget.CaseReference "Demo-0001"
@@ -218,19 +249,29 @@ let private malformedIdentity () =
         let request =
             Fixtures.request
                 0L
-                (CaseAct.Open
+                (UnvalidatedCaseAct.Open
                     { Fixtures.registration with
                         ClaimedAmount = amount
                     })
 
-        Expect.equal
-            (Case.canonical request)
-            request
-            "Canonical identity preserves malformed authored scalars"
+        let wire = ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Write request
 
-        Expect.isError
-            (Case.validateRequest request)
-            "Malformed business values retain their rejection path"
+        let admitted =
+            ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Read "$" wire
+            |> Fixtures.accepted
+
+        Expect.equal admitted request "Wire admission preserves malformed authored scalars"
+
+        let expected =
+            if amount = "" then
+                Violation.TextRequired
+            else
+                Violation.DecimalFormat(18, 4)
+
+        Expect.equal
+            (Case.parse admitted |> Result.map ignore)
+            (Error(Refusal.InvalidInput(InputTarget.Field BusinessField.ClaimedAmount, expected)))
+            "The original malformed spelling reaches its field-specific diagnostic"
 
 [<Tests>]
 let tests =

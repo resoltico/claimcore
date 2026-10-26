@@ -5,47 +5,16 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
-// This port probe never evaluates a decision or stores accepted state.
-type private PortProbe
-    (write: CancellationToken -> Task<Result<Decision<OperationReceipt>, StoreFailure>>) =
-    let mutable calls = 0
-    member _.Calls = calls
-
-    member private _.Unavailable(ct: CancellationToken) =
-        calls <- calls + 1
-
-        Task.FromResult(
-            Error(
-                if ct.IsCancellationRequested then
-                    StoreFailure.Cancelled
-                else
-                    StoreFailure.Unavailable
-            )
-        )
-
-    interface ILedgerStore with
-        member this.ResolveOperation(_, _, _, ct) = this.Unavailable ct
-
-        member _.WriteCase(_, _, _, _, ct) =
-            calls <- calls + 1
-            write ct
-
-        member _.WriteAuthority(_, _, _, _, _, ct) =
-            calls <- calls + 1
-            write ct
-
-        member this.ReadAuthorityTarget(_, _, _, _, ct) = this.Unavailable ct
-        member this.ReadCase(_, _, _, ct) = this.Unavailable ct
-        member this.ReadActor(_, ct) = this.Unavailable ct
-        member this.ReadOperation(_, _, ct) = this.Unavailable ct
-        member this.ListCases(_, _, _, _, ct) = this.Unavailable ct
-        member this.ReadHistory(_, _, _, _, ct) = this.Unavailable ct
-        member this.ListGrants(_, _, _, _, ct) = this.Unavailable ct
-        member this.ListActors(_, _, _, ct) = this.Unavailable ct
+let private unavailable () =
+    let store = new ClaimCore.TestSupport.MemoryStore.Store(instant)
+    store.ReadFailure <- Some StoreFailure.Unavailable
+    store.WriteFailure <- Some StoreFailure.Unavailable
+    store
 
 let private inputs () =
     [
@@ -55,8 +24,8 @@ let private inputs () =
 
 let private malformed () =
     async {
-        let probe = PortProbe(fun _ -> failtest "Invalid work reached storage")
-        let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
+        use probe = unavailable ()
+        let core = Handlers.context installation (probe :> IStore) calendar owner
 
         let invalid =
             [
@@ -65,7 +34,11 @@ let private malformed () =
                         OperationId = Guid.Empty
                     }
                 OperationInput.Case(
-                    actRequest 471 "BOUNDARY" 1L (CaseAct.Void Unchecked.defaultof<string>)
+                    actRequest
+                        471
+                        "BOUNDARY"
+                        1L
+                        (UnvalidatedCaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(
                     authorityRequest Guid.Empty other AdmittedAuthorityAct.Register
@@ -74,12 +47,10 @@ let private malformed () =
 
         for input in invalid do
             let! execute =
-                (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
-                |> Async.AwaitTask
+                (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             let! preview =
-                (Handlers.call Api.operationPreview core (input) (CancellationToken.None))
-                |> Async.AwaitTask
+                (Core.previewReply core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             Expect.isTrue
                 (match execute.Outcome with
@@ -105,13 +76,12 @@ let private failures () =
                 StoreFailure.Internal, ExecuteResult.Failed CoreFault.InternalError
                 StoreFailure.CommitOutcomeUnknown, ExecuteResult.OutcomeUnknown
             ] do
-            let probe = PortProbe(fun _ -> Task.FromResult(Error failure))
-            let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
+            use probe = unavailable ()
+            probe.WriteFailure <- Some failure
+            let core = Handlers.context installation (probe :> IStore) calendar owner
 
             for input in inputs () do
-                let! reply =
-                    (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
-                    |> Async.AwaitTask
+                let! reply = (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
                 Expect.equal
                     reply.OperationId
@@ -127,17 +97,14 @@ let private cancelled () =
     async {
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
-        let probe = PortProbe(fun _ -> failtest "Predispatch cancellation reached write")
-        let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
+        use probe = unavailable ()
+        let core = Handlers.context installation (probe :> IStore) calendar owner
 
         for input in inputs () do
-            let! execute =
-                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
-                |> Async.AwaitTask
+            let! execute = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             let! preview =
-                (Handlers.call Api.operationPreview core (input) (cancellation.Token))
-                |> Async.AwaitTask
+                (Core.previewReply core (input) (cancellation.Token)) |> Async.AwaitTask
 
             Expect.equal
                 execute.OperationId
@@ -156,15 +123,14 @@ let private cancelled () =
 
         Expect.equal probe.Calls 0 "No writes or previews dispatched"
 
-        let! context =
-            (Handlers.call Api.context core () cancellation.Token) |> Async.AwaitTask
+        let! context = (Core.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            (Handlers.call Api.caseGet core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            (Core.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
             |> Async.AwaitTask
 
         let! observed =
-            (Handlers.call Api.operationObserve core ({ OperationId = id 470 }) (cancellation.Token))
+            (Core.observe core ({ OperationId = id 470 }) (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled context"
@@ -175,41 +141,44 @@ let private cancelled () =
 let private committed () =
     async {
         for input in inputs () do
-            let receipt =
-                match input with
-                | OperationInput.Case request ->
-                    let _, _, receipt = decide request (locked worker None None) |> appended
-                    receipt
-                | OperationInput.Authority input ->
-                    let request = AuthorityRequests.admit input |> Fixtures.accepted
+            use memory = new ClaimCore.TestSupport.MemoryStore.Store(instant)
 
-                    match
-                        AuthorityDecisions.execute
-                            installation
-                            owner
-                            request
-                            (authorityView worker AuthorityView.empty None)
-                    with
-                    | Decision.Proceed(_, _, receipt) -> receipt
-                    | _ -> failtest "Expected accepted authority fixture"
+            memory.SeedActor
+                worker.Actor.Value
+                (worker.Installation |> List.map (fun role -> role, None))
 
             use cancellation = new CancellationTokenSource()
+            let inner = memory :> IStore
 
             let probe =
-                PortProbe(fun _ ->
-                    cancellation.Cancel()
-                    Task.FromResult(Ok(Decision.Proceed receipt)))
+                { new IStore with
+                    member _.Read(work, ct) = inner.Read(work, ct)
 
-            let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
+                    member _.Write(work, ct) =
+                        task {
+                            let! result = inner.Write(work, ct)
+                            cancellation.Cancel()
+                            return result
+                        }
+                }
 
-            let! reply =
-                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
+            let core = Handlers.context installation probe calendar owner
+
+            let! reply = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
+
+            let! observed =
+                Core.observe
+                    core
+                    {
+                        OperationId = OperationInput.operationId input
+                    }
+                    CancellationToken.None
                 |> Async.AwaitTask
 
-            Expect.equal
-                reply.Outcome
-                (ExecuteResult.Accepted receipt)
-                "Completed acceptance is forwarded despite cancellation"
+            match reply.Outcome, observed with
+            | ExecuteResult.Accepted receipt, ReadReply.Succeeded stored ->
+                Expect.equal receipt stored "Completed acceptance is forwarded despite cancellation"
+            | _ -> failtest "Committed acceptance and stored receipt must agree"
 
             Expect.isTrue
                 cancellation.IsCancellationRequested

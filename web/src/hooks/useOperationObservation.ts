@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { resultNotice, service, type OperationReceipt } from "../api/service";
 
 type ObservationFeedback = {

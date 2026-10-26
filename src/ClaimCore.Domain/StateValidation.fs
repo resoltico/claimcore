@@ -1,12 +1,11 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 open ClaimCore.Domain.ResultFlow
 
 /// Invariants apply equally to historical restoration and every newly proposed business state.
 module internal StateValidation =
-    let progress (facts: Validation.Facts) value =
+    let progress (facts: Registration) value =
         result {
             match PaymentProgress.decision value with
             | None -> return ()
@@ -26,11 +25,11 @@ module internal StateValidation =
                             decision.PaymentDecisionDate
                             paid
 
-                    if decision.PayableAmount.Value = 0M then
+                    if Money.value decision.PayableAmount = 0M then
                         return! Error Refusal.ZeroDecisionCannotBePaid
         }
 
-    let newlyAssertedDates today (before: Validation.Facts) prior (after: Validation.Facts) next =
+    let newlyAssertedDates today (before: Registration) prior (after: Registration) next =
         let asserted field previous candidate =
             match candidate with
             | None -> Ok()

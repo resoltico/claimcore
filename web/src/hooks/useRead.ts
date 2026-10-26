@@ -1,4 +1,4 @@
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";

@@ -15,11 +15,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "registrar"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 3) principal AdmittedAuthorityAct.Register
@@ -40,17 +39,13 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         11
                         "PROBE-1"
                         1L
-                        (CaseAct.AmendRegistration
+                        (UnvalidatedCaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })
 
                 let! amended =
-                    (Handlers.call
-                        Api.operationExecute
-                        admin
-                        (OperationInput.Case amendment)
-                        (CancellationToken.None))
+                    (Core.execute admin (OperationInput.Case amendment) (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -63,15 +58,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
         let actor =
-            Handlers.context
-                fixture.InstallationId
-                (store :> ILedgerStore)
-                fixture.Calendar
-                principal
+            Handlers.context fixture.InstallationId (store :> IStore) fixture.Calendar principal
 
         let! result =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(openRequest 10 "PROBE-1"))
                 (CancellationToken.None))
@@ -80,15 +70,14 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (disclosedFields receipt).Registration.ClaimantName
+            (PartyName.format (disclosedFields receipt).Registration.ClaimantName)
             registration.ClaimantName
             "Disclosure uses the write's locked context"
 
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
 
         let! denied =
-            (Handlers.call
-                Api.caseGet
+            (Core.get
                 (core fixture principal)
                 ({ CaseReference = "PROBE-1" })
                 (CancellationToken.None))

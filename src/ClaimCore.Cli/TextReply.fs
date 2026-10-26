@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 open ClaimCore.Json
 
@@ -46,20 +47,20 @@ module internal TextReply =
 
     let private fieldLines language fields =
         let rows placement =
-            FieldTable.rows
-            |> List.filter (fun row -> row.Placement = placement)
+            Record.fields
+            |> List.filter (fun row -> row.Group = placement)
             |> List.map (fun row ->
                 line
                     language
-                    (FieldTable.labelId row.Field)
-                    (displayed language (row.AcceptedValue fields)))
+                    (RecordFields.labelId row.Field)
+                    (displayed language (RecordFields.value fields row.Field)))
 
-        rows FieldPlacement.TopLevel
+        rows None
         @ (Vocabulary.all RecordGroup.vocabulary
            |> List.collect (fun group ->
                (label language (Vocabulary.messageKey RecordGroup.vocabulary group "label")
                 + ":")
-               :: rows (FieldPlacement.Grouped group)))
+               :: rows (Some group)))
 
     let private offerAct =
         function
@@ -69,7 +70,10 @@ module internal TextReply =
 
     let private caseLines language (value: CaseReadModel) =
         [
-            line language (FieldTable.labelId BusinessField.CaseReference) value.Snapshot.Reference
+            line
+                language
+                (RecordFields.labelId BusinessField.CaseReference)
+                (CaseReference.format value.Snapshot.Reference)
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)
@@ -93,7 +97,7 @@ module internal TextReply =
             match receipt.Subject with
             | ReceiptSubject.Case value ->
                 CaseActKinds.token value.Act,
-                value.Reference,
+                CaseReference.format value.Reference,
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     number value.Revision
@@ -190,7 +194,7 @@ module internal TextReply =
              String.concat
                  "  "
                  [
-                     item.Reference
+                     CaseReference.format item.Reference
                      number item.Revision
                      CaseState.token item.State + "  " + status
                  ]))
@@ -214,14 +218,15 @@ module internal TextReply =
         let act =
             input
             |> Option.map (function
-                | OperationInput.Case value -> CaseActKinds.token (CaseActs.kind value.Act)
+                | OperationInput.Case value ->
+                    CaseActKinds.token (UnvalidatedCaseActs.kind value.Act)
                 | OperationInput.Authority value ->
                     AuthorityKinds.token (AuthorityActs.kind value.Act))
             |> Option.defaultValue "—"
 
         let target =
             match review with
-            | OperationReview.Case value -> value.Proposed.Reference
+            | OperationReview.Case value -> CaseReference.format value.Proposed.Reference
             | OperationReview.Authority value ->
                 let principal =
                     match input with
@@ -264,10 +269,13 @@ module internal TextReply =
 
                 let after = CaseState.fields value.Proposed.State
 
-                FieldTable.rows
+                Record.fields
                 |> List.choose (fun row ->
-                    let previous = before |> Option.bind row.AcceptedValue
-                    let next = after |> Option.bind row.AcceptedValue
+                    let previous =
+                        before |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+
+                    let next =
+                        after |> Option.bind (fun fields -> RecordFields.value fields row.Field)
 
                     if previous = next then
                         None
@@ -275,7 +283,7 @@ module internal TextReply =
                         Some(
                             line
                                 language
-                                (FieldTable.labelId row.Field)
+                                (RecordFields.labelId row.Field)
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
@@ -284,7 +292,7 @@ module internal TextReply =
 
     let private diagnosticTargetIdentity =
         function
-        | InputTarget.Field field -> FieldTable.labelId field
+        | InputTarget.Field field -> RecordFields.labelId field
         | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
         | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
         | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
@@ -366,65 +374,43 @@ module internal TextReply =
             "antiforgeryToken: " + Option.defaultValue "—" value.AntiforgeryToken
         ]
 
-    let private previewLines language request (reply: TypedReply) =
-        match (TypedReply.value<PreviewReply> reply).Outcome with
+    let private previewLines language request (reply: PreviewReply) =
+        match reply.Outcome with
         | PreviewResult.Reviewed review -> reviewLines language request review
         | PreviewResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
         | PreviewResult.Rejected refusal -> refusalLines language refusal
         | PreviewResult.Failed fault -> faultLines language fault
 
-    let private executeLines language (reply: TypedReply) =
-        match (TypedReply.value<ExecuteReply> reply).Outcome with
+    let private executeLines language (reply: ExecuteReply) =
+        match reply.Outcome with
         | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
         | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
         | ExecuteResult.Rejected refusal -> refusalLines language refusal
         | ExecuteResult.Failed fault -> faultLines language fault
         | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
 
-    let private resolveLines language (reply: TypedReply) =
-        match TypedReply.value<ResolveReply> reply with
+    let private resolveLines language (reply: ResolveReply) =
+        match reply with
         | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
         | ResolveReply.NotAccepted -> [ label language "cli.text.notAccepted" ]
         | ResolveReply.Rejected refusal -> refusalLines language refusal
         | ResolveReply.Failed fault -> faultLines language fault
 
-    let private actorLines language request actor (reply: TypedReply) =
-        match actor with
-        | ActorEndpoint.Context ->
-            TypedReply.value<ReadReply<ActorContext>> reply
-            |> readLines language contextLines
-        | ActorEndpoint.CaseGet ->
-            TypedReply.value<ReadReply<CaseReadModel>> reply
-            |> readLines language (caseLines language)
-        | ActorEndpoint.CaseList ->
-            TypedReply.value<ReadReply<CaseSummaryPage>> reply
-            |> readLines language (casePage language)
-        | ActorEndpoint.CaseHistory ->
-            TypedReply.value<ReadReply<HistoryResultPage>> reply
-            |> readLines language (historyLines language)
-        | ActorEndpoint.Observe ->
-            TypedReply.value<ReadReply<OperationReceipt>> reply
-            |> readLines language (receiptLines language "ACCEPTED")
-        | ActorEndpoint.AuthorityList ->
-            TypedReply.value<ReadReply<ActorReviewPage>> reply
-            |> readLines language (actorPage language)
-        | ActorEndpoint.AuthorityGrants ->
-            TypedReply.value<ReadReply<AuthorityGrantPage>> reply
-            |> readLines language (grantPage language)
-        | ActorEndpoint.Preview -> previewLines language request reply
-
-        | ActorEndpoint.Execute -> executeLines language reply
-
-        | ActorEndpoint.Resolve -> resolveLines language reply
-
-    let private replyLines language request (reply: TypedReply) =
-        match reply.Endpoint with
-        | EndpointId.Host HostEndpoint.Session ->
-            TypedReply.value<ReadReply<Session>> reply |> readLines language sessionLines
-        | EndpointId.Host HostEndpoint.Logout ->
-            TypedReply.value<ReadReply<unit>> reply
-            |> readLines language (fun () -> [ "—" ])
-        | EndpointId.Actor actor -> actorLines language request actor reply
+    let private replyLines language request =
+        function
+        | ServiceReply.Session(_, reply) -> readLines language sessionLines reply
+        | ServiceReply.Logout(_, reply) -> readLines language (fun () -> [ "—" ]) reply
+        | ServiceReply.Preview(_, reply) -> previewLines language request reply
+        | ServiceReply.Execute(_, reply) -> executeLines language reply
+        | ServiceReply.CaseGet(_, reply) -> readLines language (caseLines language) reply
+        | ServiceReply.CaseList(_, reply) -> readLines language (casePage language) reply
+        | ServiceReply.CaseHistory(_, reply) -> readLines language (historyLines language) reply
+        | ServiceReply.Observe(_, reply) ->
+            readLines language (receiptLines language "ACCEPTED") reply
+        | ServiceReply.Resolve(_, reply) -> resolveLines language reply
+        | ServiceReply.AuthorityList(_, reply) -> readLines language (actorPage language) reply
+        | ServiceReply.AuthorityGrants(_, reply) -> readLines language (grantPage language) reply
+        | ServiceReply.Context(_, reply) -> readLines language contextLines reply
 
     let private resultLines language request =
         function

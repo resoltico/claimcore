@@ -101,9 +101,7 @@ let tests =
         "OIDC startup requests"
         [
             testCase
-                "[CC-WEB-001] startup requests one exact discovery path for root and path issuers"
+                "startup requests one exact discovery path for root and path issuers"
                 discoveryPaths
-            testCase
-                "[CC-WEB-001] startup deadline covers a suspended metadata body"
-                suspendedStartup
+            testCase "startup deadline covers a suspended metadata body" suspendedStartup
         ]

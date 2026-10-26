@@ -63,7 +63,6 @@ let private frameOracle cli =
             cells[1]
             "Published frame bytes match the authored vector"
 
-
 let private diagnosticRoute cli =
     let result = invoke cli [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
 
@@ -95,7 +94,6 @@ let private diagnosticRoute cli =
                 "EOF"
             ] do
             Expect.stringContains guidance route "Repairable framing and schema guidance"
-
 
 let qualify cli =
     selectedInputs cli

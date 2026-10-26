@@ -11,7 +11,7 @@ const expectHistoryRequest = (body: unknown) => {
   }
   expect(JSON.parse(body)).toMatchObject({ detail: "SUMMARY", caseReference: "CASE-1", limit: 50 });
 };
-it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001]", async () => {
+it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL", async () => {
   const { summary, full } = historyVariants();
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, init) => {
     if (typeof init?.body !== "string") {

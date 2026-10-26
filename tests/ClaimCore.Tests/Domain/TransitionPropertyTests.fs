@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TransitionPropertyTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open Expecto
@@ -9,16 +11,17 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.PropertyHarness
 
-type private Step = { Act: CaseAct; Stale: bool }
+type private Step =
+    { Act: UnvalidatedCaseAct; Stale: bool }
 
 let private businessActs =
     [
-        CaseAct.Open registration
-        CaseAct.AmendRegistration
+        UnvalidatedCaseAct.Open registration
+        UnvalidatedCaseAct.AmendRegistration
             { registration with
                 ClaimantName = "Amended Synthetic Name"
             }
-        CaseAct.Correct
+        UnvalidatedCaseAct.Correct
             {
                 Registration =
                     RegistrationGroup.Replace
@@ -28,21 +31,21 @@ let private businessActs =
                 Decision = DecisionGroup.Keep
                 Payment = PaymentGroup.Keep
             }
-        CaseAct.Decide decision
-        CaseAct.Decide { decision with PayableAmount = "0" }
-        CaseAct.WithdrawDecision
-        CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        CaseAct.ClearPayment
-        CaseAct.Close
-        CaseAct.Reopen
+        UnvalidatedCaseAct.Decide decision
+        UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" }
+        UnvalidatedCaseAct.WithdrawDecision
+        UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        UnvalidatedCaseAct.ClearPayment
+        UnvalidatedCaseAct.Close
+        UnvalidatedCaseAct.Reopen
     ]
 
 let private acts =
     businessActs
     @ [
-        CaseAct.Void "Entry error"
-        CaseAct.Reinstate "Entry confirmed"
-        CaseAct.Erase
+        UnvalidatedCaseAct.Void "Entry error"
+        UnvalidatedCaseAct.Reinstate "Entry confirmed"
+        UnvalidatedCaseAct.Erase
     ]
 
 let private stepGenerator =
@@ -54,22 +57,23 @@ let private stepGenerator =
 
 let private initial: CaseSnapshot =
     {
-        Reference = "UNIT-001"
+        Reference = CaseFixtures.reference "UNIT-001"
         State =
             CaseState.Active(
                 {
-                    CaseReference = "UNIT-001"
+                    CaseReference = CaseFixtures.reference "UNIT-001"
                     Status = CaseStatus.Opened
                     Registration =
-                        {
-                            IncidentDate = "2026-08-01"
-                            IncidentNotificationDate = "2026-08-03"
-                            IncidentCountry = "LV"
-                            ClaimantName = "Example Claimant Ltd"
-                            InsurerName = "Example Alleged Insurer"
-                            ClaimedAmount = "1000"
-                            ClaimedCurrency = "EUR"
-                        }
+                        CaseFixtures.registration
+                            {
+                                IncidentDate = "2026-08-01"
+                                IncidentNotificationDate = "2026-08-03"
+                                IncidentCountry = "LV"
+                                ClaimantName = "Example Claimant Ltd"
+                                InsurerName = "Example Alleged Insurer"
+                                ClaimedAmount = "1000"
+                                ClaimedCurrency = "EUR"
+                            }
                     Decision = None
                     Payment = None
                 }
@@ -92,7 +96,7 @@ let private checkSequence steps =
                              expected.Revision)
                         step.Act
 
-                let result = Case.decide today candidate (Some current)
+                let result = CaseFixtures.decide today candidate (Some current)
                 let nextExpected = TransitionOracle.advance expected step.Stale step.Act
                 let observed = result |> Result.map Case.snapshot
                 let matches = TransitionOracle.matches nextExpected observed
@@ -104,26 +108,26 @@ let private checkSequence steps =
 
 let private acceptingPath =
     [
-        CaseAct.Decide decision
-        CaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        CaseAct.Close
-        CaseAct.Reopen
-        CaseAct.ClearPayment
-        CaseAct.WithdrawDecision
-        CaseAct.AmendRegistration registration
-        CaseAct.Close
-        CaseAct.Close
-        CaseAct.Reopen
+        UnvalidatedCaseAct.Decide decision
+        UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        UnvalidatedCaseAct.Close
+        UnvalidatedCaseAct.Reopen
+        UnvalidatedCaseAct.ClearPayment
+        UnvalidatedCaseAct.WithdrawDecision
+        UnvalidatedCaseAct.AmendRegistration registration
+        UnvalidatedCaseAct.Close
+        UnvalidatedCaseAct.Close
+        UnvalidatedCaseAct.Reopen
     ]
     |> List.map (fun act -> { Act = act; Stale = false })
     |> fun steps ->
         let tail =
             [
-                CaseAct.Void "Entry error"
-                CaseAct.Close
-                CaseAct.Reinstate "Entry confirmed"
-                CaseAct.Erase
-                CaseAct.Open registration
+                UnvalidatedCaseAct.Void "Entry error"
+                UnvalidatedCaseAct.Close
+                UnvalidatedCaseAct.Reinstate "Entry confirmed"
+                UnvalidatedCaseAct.Erase
+                UnvalidatedCaseAct.Open registration
             ]
 
         steps @ (tail |> List.map (fun act -> { Act = act; Stale = false }))
@@ -139,16 +143,18 @@ let private sequenceProperty =
 
 let private negativeControls () =
     let decided =
-        TransitionOracle.advance initial false ((CaseAct.Decide decision)) |> Option.get
+        TransitionOracle.advance initial false ((UnvalidatedCaseAct.Decide decision))
+        |> Option.get
 
     let paid =
         TransitionOracle.advance
             decided
             false
-            ((CaseAct.RecordPayment { PaymentDate = "2026-08-20" }))
+            ((UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }))
         |> Option.get
 
-    let closed = TransitionOracle.advance paid false (CaseAct.Close) |> Option.get
+    let closed =
+        TransitionOracle.advance paid false (UnvalidatedCaseAct.Close) |> Option.get
 
     let controls =
         [
@@ -199,16 +205,21 @@ let private reach state =
     | OpenDecided -> decided ()
     | OpenZeroDecision ->
         opened ()
-        |> apply (CaseAct.Decide { decision with PayableAmount = "0" })
+        |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" })
         |> accepted
     | OpenPaid -> paid ()
-    | ClosedUndecided -> opened () |> apply CaseAct.Close |> accepted
-    | ClosedDecided -> decided () |> apply CaseAct.Close |> accepted
-    | ClosedPaid -> paid () |> apply CaseAct.Close |> accepted
+    | ClosedUndecided -> opened () |> apply UnvalidatedCaseAct.Close |> accepted
+    | ClosedDecided -> decided () |> apply UnvalidatedCaseAct.Close |> accepted
+    | ClosedPaid -> paid () |> apply UnvalidatedCaseAct.Close |> accepted
     | Voided ->
-        Case.decide today (actRequest 1L ((CaseAct.Void "Entry error"))) (Some(opened ()))
+        CaseFixtures.decide
+            today
+            (actRequest 1L ((UnvalidatedCaseAct.Void "Entry error")))
+            (Some(opened ()))
         |> accepted
-    | Erased -> Case.decide today (actRequest 1L (CaseAct.Erase)) (Some(opened ())) |> accepted
+    | Erased ->
+        CaseFixtures.decide today (actRequest 1L (UnvalidatedCaseAct.Erase)) (Some(opened ()))
+        |> accepted
 
 let private expectedBusiness =
     function
@@ -235,11 +246,11 @@ let private executionMatchesAdvertisement claim expected =
     |> List.forall (fun act ->
         let candidate =
             { actRequest view.Revision act with
-                CaseReference = view.Reference
+                CaseReference = CaseReference.format view.Reference
             }
 
-        let accepted = Case.decide today candidate (Some claim) |> Result.isOk
-        accepted = Set.contains (CaseActs.name act) expected)
+        let accepted = CaseFixtures.decide today candidate (Some claim) |> Result.isOk
+        accepted = Set.contains (UnvalidatedCaseActs.name act) expected)
 
 let private availabilityProperty =
     property {
@@ -270,10 +281,10 @@ let tests =
         [
             testCase "accepted and rejected sequences match complete independent state" (fun () ->
                 Expect.isTrue (checkSequence acceptingPath) "Complete fixed acceptance path"
-                run "CC-PROP-TRANSITION-001" sequenceProperty)
+                run "case transition sequence" sequenceProperty)
             testCase
                 "sequence oracle rejects refusal-only and corrupt accepted outcomes"
                 negativeControls
             testCase "reachable states match the independent availability matrix" (fun () ->
-                run "CC-PROP-AVAILABILITY-001" availabilityProperty)
+                run "state act eligibility" availabilityProperty)
         ]

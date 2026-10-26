@@ -1,6 +1,7 @@
 module ClaimCore.Tests.HostingTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading.Tasks
@@ -13,9 +14,9 @@ let tests =
     testList
         "runtime lifetime"
         [
-            testCase "[CC-RUN-001] shutdown closes admission and disposes exactly once" (fun () ->
+            testCase "shutdown closes admission and disposes exactly once" (fun () ->
                 let mutable closes = 0
-                let gate = AdmissionGate(fun () -> closes <- closes + 1)
+                let gate = RuntimeLeases(fun () -> closes <- closes + 1)
                 let lease = gate.Acquire() |> Option.defaultWith (fun () -> failtest "Admission")
                 let stopping = gate.Stop()
                 Expect.isFalse stopping.IsCompleted "Admitted work is pending"
@@ -28,7 +29,7 @@ let tests =
                 "bound expiry returns while admitted work retains the source until drain"
                 (async {
                     let mutable closes = 0
-                    let gate = AdmissionGate(fun () -> closes <- closes + 1)
+                    let gate = RuntimeLeases(fun () -> closes <- closes + 1)
 
                     use lease =
                         gate.Acquire() |> Option.defaultWith (fun () -> failtest "Admission")
@@ -58,7 +59,7 @@ let tests =
                             Outcome = ExecuteResult.Accepted receipt
                         }
 
-                    let gate = AdmissionGate(ignore)
+                    let gate = RuntimeLeases(ignore)
                     let mutable factoryCalls = 0
 
                     let call action =
@@ -104,7 +105,7 @@ let tests =
 
                     Expect.equal zone.TimeZoneId "Europe/Riga" "Zone retained")
             testCase "shutdown bounds must be finite and nonnegative" (fun () ->
-                let gate = AdmissionGate(ignore)
+                let gate = RuntimeLeases(ignore)
 
                 for bound in [ TimeSpan.FromMilliseconds(-1.); TimeSpan.MaxValue ] do
                     Expect.throws

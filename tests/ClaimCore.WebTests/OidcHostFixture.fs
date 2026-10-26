@@ -1,6 +1,7 @@
 module internal ClaimCore.WebTests.OidcHostFixture
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport
 
@@ -79,7 +80,7 @@ let private authenticationRoutes (application: WebApplication) configuration =
         "/auth/bearer",
         Func<HttpContext, Task<IResult>>(fun context ->
             task {
-                match! Admission.bearerActor configuration context with
+                match! RequestGate.bearerActor configuration context with
                 | Ok _ -> return Results.NoContent()
                 | Error _ -> return Results.Unauthorized()
             })
@@ -92,7 +93,7 @@ type Host
         root: X509Certificate2,
         forActor,
         stage: string -> unit,
-        ?handlers: ActorEndpoint -> AnyHandler
+        ?handlers: ActorEndpoint -> ClaimCore.Application.Route
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
 
@@ -143,7 +144,7 @@ type Host
         HostRoutes.map
             assets
             web
-            (defaultArg handlers ClaimCore.Application.Handlers.forActor)
+            (defaultArg handlers ClaimCore.Application.Handlers.route)
             (fun principal action ->
                 task { let! value = action (forActor principal) in return Some value })
             application

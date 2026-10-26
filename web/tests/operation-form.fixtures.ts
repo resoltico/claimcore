@@ -1,4 +1,4 @@
-import type { CurrentCase } from "../src/api/types";
+import type { CurrentCase } from "../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
 import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";

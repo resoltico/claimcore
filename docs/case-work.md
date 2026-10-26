@@ -1,0 +1,110 @@
+# Case work
+
+ClaimCore records the handler's assertions about a claim. It records facts, decisions and payment dates;
+it does not adjudicate coverage or transfer money.
+
+Use [getting started](getting-started.md) to try the register, or the [generated CLI reference](cli.md) to
+look up an act. The sections below explain the business meaning and the limits of correction and erasure.
+
+## Business record
+
+### Exact public business record
+
+A case has thirteen business fields: incident date, this handler's first notification date, incident country,
+claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
+payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
+The [typed record declaration](../src/ClaimCore.Domain/Record.fs) owns the field structure; the generated catalog supplies input guidance.
+
+Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
+null; status begins OPENED. The view places the seven registration members in `registration`, the three
+decision members in `decision`, and the payment date in `payment`. A recorded group contains all its members;
+null means the whole group is unrecorded, with no invented zero or date. Claimant may identify a person or
+organization; insurer records the handler's assertion.
+
+The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Domain/Values.fs).
+Resource lookup folds ASCII letter case within an installation; accepted snapshots retain the initial spelling.
+Operation identity compares amounts by value and references after ASCII case folding. Respelled equal values
+under the same operation ID replay the original acceptance. The ledger retains the request as authored.
+There are no policy, coverage, reserve, banking, address, notes or attachment fields.
+
+## State and acts
+
+### Core-owned act availability and revalidation
+
+A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
+needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
+
+- OPEN creates revision one with expected revision zero. AMEND_REGISTRATION replaces registration on an open,
+  undecided case.
+- DECIDE and WITHDRAW_DECISION record or remove an unpaid decision. RECORD_PAYMENT and CLEAR_PAYMENT record
+  or remove its payment date. Clearing recorded facts does not reverse a real transfer.
+- CLOSE and REOPEN change status. Ordinary editing of a closed case requires reopening.
+- CORRECT changes existing facts atomically while preserving reference and status. An open case needs an
+  existing decision; a closed case permits correction independently of payment progress.
+
+Before ordinary registration editing, clear payment and withdraw the decision. A correction instead supplies
+all three tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
+KEEP, REPLACE their complete tuples, or CLEAR. KEEP reads accepted state under the ledger lock.
+
+A correction cannot be all-KEEP, make a no-op revision, add a missing decision/payment, or silently carry an
+old payment assertion to a replaced payable amount. Clearing a paid decision also clears payment. Replacing
+it requires explicit payment replacement/reaffirmation or clearing. Acceptance creates one complete revision;
+refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domain/Case.fs) own these rules.
+
+Current core advice filters eligible work by the actor's resource rights. Unauthorized correction groups stay
+KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
+revision; an offered act or preview grants no commit authority.
+
+### Case stewardship
+
+Lifecycle state is ACTIVE, VOIDED or ERASED. Active and voided cases retain separate open/closed status
+and payment progress; erased cases carry no business fields.
+VOID records an entry-error reason and blocks business work while preserving fields and history.
+REINSTATE records a reason and restores ACTIVE state on a voided case. Both leave business fields unchanged.
+Reasons use the same current text admission profile as names.
+
+A human DATA_STEWARD may void, reinstate or erase; CASE_HANDLER alone cannot. Each acceptance advances one
+revision. ERASE clears the case's business projection and complete live payload history, retaining reference,
+revision and ledger metadata. It is final: the reference cannot be opened again and erased request content
+cannot replay. [Operations](operating.md#erasure-limits) explains the physical limits.
+
+## Scalars
+
+Permanent syntax and current admission live in [Domain value modules](../src/ClaimCore.Domain/Values.fs). The [validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns their diagnostics to input targets.
+Retained reads and verification enforce permanent format/state invariants, without applying today's admission
+to old assertions. Unchanged retained names and dates may be reaffirmed.
+
+Dates are real YYYY-MM-DD values in years 0001–9999. Present dates follow incident ≤ notification ≤ decision
+≤ payment. Newly asserted event dates cannot exceed the supplied business date, derived from the database
+instant and installation zone. Clearing then recording a date makes a new assertion; reaffirming an unchanged
+date remains possible after a clock change.
+
+Amounts are unsigned decimal strings, with at most eighteen integer and four fractional digits. No exponents,
+redundant leading zeroes or rounding are accepted. Views show canonical decimal value; replay identity compares that value while the retained request
+keeps the authored amount spelling. Currency and country check uppercase ASCII syntax, not ISO
+membership. ZZ means unknown/international country; translated country names are display hints.
+
+Retained business text is nonempty, excludes NUL, unpaired surrogates and Unicode noncharacters, and obeys
+permanent byte bounds. Newly asserted names/reasons contain 1–200 Unicode scalars, without surrounding
+whitespace, controls, line/paragraph separators or explicitly forbidden invisible/directional characters.
+Joining characters and permitted format characters remain allowed. The [display policy](../src/ClaimCore.Contract/Messages/TextDisplay.fs)
+exposes bounded suspicious-scalar warnings without rewriting raw values.
+
+## Revisions and history
+
+Execution compares expected revision with locked current state. Retained exact replay preserves original
+acceptance without another entry, subject to [current disclosure](integrating.md#disclosure-and-cursors). Different
+content under a used ID refuses. Rejection changes no accepted state.
+
+Retained revisions and sequences use the exact-integer format bound defined by
+[Revision](../src/ClaimCore.Domain/CaseModel.fs). SQL and durable decoding enforce that format.
+
+See the [glossary](glossary.md) for project terminology.
+
+## Use the browser
+
+Sign in and choose a view offered by current grants. Review shows a proposal; confirmation submits the prepared
+change, and execution checks current state and rights again. Language, display formats and navigation are
+independent preferences. Suspicious-Unicode warnings preserve authored values.
+
+For interrupted submission or reload, use the [delivery recovery guide](integrating.md#delivery-recovery).

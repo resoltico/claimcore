@@ -173,7 +173,7 @@ it("reports a found observation without a receipt as a protocol failure", async 
   );
   expect(await screen.findByRole("alert")).toBeVisible();
 });
-it("focuses and describes invalid operation identity then clears the stale error [CC-WEB-001]", async () => {
+it("focuses and describes invalid operation identity then clears the stale error", async () => {
   const sample = hostCases().find((value) => value.id === "input-invalid");
   if (sample === undefined) {
     throw new Error("UUID host diagnostic fixture is required.");
@@ -207,7 +207,7 @@ it("focuses and describes invalid operation identity then clears the stale error
   expect(input).not.toHaveAttribute("aria-invalid", "true");
   expect(screen.queryByRole("alert")).toBeNull();
 });
-it("requires an exact nonempty reference without silently trimming lookup [CC-WEB-001]", async () => {
+it("requires an exact nonempty reference without silently trimming lookup", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
       offers: context.offers,

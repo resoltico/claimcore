@@ -16,11 +16,7 @@ let private authorityAndCursor () =
 
     let ungranted = actor owner (id 1) [] []
 
-    let read: ActorReadView =
-        {
-            Actor = ungranted
-            ObservedAt = instant
-        }
+    let read = ungranted
 
     Expect.equal
         (Queries.selectCases owner page read)
@@ -33,7 +29,7 @@ let private authorityAndCursor () =
         "Authority precedes token parsing"
 
     Expect.equal
-        (Queries.selectActors owner page { read with Actor = worker })
+        (Queries.selectActors owner page worker)
         (Error Refusal.InvalidCursor)
         "Authorized malformed cursor refuses"
 
@@ -46,15 +42,11 @@ let private authorityAndCursor () =
             Limit = 1
         }
 
-    let view: GrantReadView =
-        {
-            Actor = worker
-            ObservedAt = instant
-            Target = target.Actor
-        }
+    let caller = worker
+    let view = target.Actor
 
     Expect.equal
-        (Queries.selectGrants owner grants view)
+        (Queries.selectGrants owner grants caller view)
         (Ok None)
         "Enabled ungranted target is reviewable"
 
@@ -62,17 +54,17 @@ let private authorityAndCursor () =
         target.Actor |> Option.map (fun value -> { value with Enabled = false })
 
     Expect.equal
-        (Queries.selectGrants owner grants { view with Target = disabled })
+        (Queries.selectGrants owner grants caller disabled)
         (Ok None)
         "Disabled target remains reviewable"
 
     Expect.equal
-        (Queries.selectGrants owner grants { view with Target = None })
+        (Queries.selectGrants owner grants caller None)
         (Error Refusal.ResourceUnavailable)
         "Absent target remains private"
 
     Expect.equal
-        (Queries.selectGrants owner grants { view with Actor = ungranted })
+        (Queries.selectGrants owner grants ungranted view)
         (Error Refusal.ResourceUnavailable)
         "Grant review needs installation authority"
 
@@ -90,22 +82,21 @@ let private authorityAndCursor () =
 let private history () =
     let _, entry, current, _ = created 460 "QUERY-HISTORY"
 
-    let read: HistoryReadView =
-        {
-            Actor = actor owner (id 1) [ Role.CaseReader ] []
-            ObservedAt = instant
-            Case = Some current
-        }
+    let reader = actor owner (id 1) [ Role.CaseReader ] []
+    let read = Some current
 
     let request: HistoryRequest =
         {
-            CaseReference = current.Snapshot.Reference
+            CaseReference = CaseReference.format current.Snapshot.Reference
             AfterCursor = None
             Limit = 1
             Detail = HistoryDetail.Summary
         }
 
-    Expect.equal (Queries.selectHistory owner request read) (Ok 0L) "Reader may select summary"
+    Expect.equal
+        (Queries.selectHistory owner request reader read)
+        (Ok 0L)
+        "Reader may select summary"
 
     Expect.equal
         (Queries.selectHistory
@@ -113,24 +104,22 @@ let private history () =
             { request with
                 Detail = HistoryDetail.Full
             }
+            reader
             read)
         (Error Refusal.ResourceUnavailable)
         "Reader cannot select full history"
 
     Expect.equal
-        (Queries.selectHistory owner request { read with Case = None })
+        (Queries.selectHistory owner request reader None)
         (Error Refusal.ResourceUnavailable)
         "Absent case stays private"
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            read.Actor
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner reader (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner read.Actor entry.Subject)
+        (LedgerEntries.canObserve owner reader entry.Subject)
         "Case rights observe accepted case metadata"
 
 let private resources () =
@@ -161,13 +150,9 @@ let private resources () =
 let private context () =
     let ungranted = actor owner (id 1) [] []
 
-    let view: ActorReadView =
-        {
-            Actor = ungranted
-            ObservedAt = instant
-        }
+    let view = ungranted
 
-    match Queries.contextResult calendar owner view with
+    match Queries.contextResult calendar owner instant view with
     | ReadReply.Succeeded value ->
         Expect.isEmpty value.Capabilities "Enabled actor has context without implied capabilities"
         Expect.isEmpty value.Views "No views before grants"
@@ -182,12 +167,7 @@ let private context () =
     | _ -> failtest "Enabled ungranted actor needs context"
 
     Expect.equal
-        (Queries.contextResult
-            calendar
-            owner
-            { view with
-                Actor = AuthorityView.empty
-            })
+        (Queries.contextResult calendar owner instant AuthorityView.empty)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Unregistered actor has no context"
 
@@ -197,7 +177,7 @@ let private context () =
         }
 
     Expect.equal
-        (Queries.contextResult calendar owner { view with Actor = disabled })
+        (Queries.contextResult calendar owner instant disabled)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Disabled actor has no context"
 
@@ -209,22 +189,16 @@ let private context () =
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            scoped
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner scoped (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Scoped auditor cannot observe installation authority"
 
     Expect.equal
-        (Queries.selectActors owner { AfterCursor = None; Limit = 50 } { view with Actor = scoped })
+        (Queries.selectActors owner { AfterCursor = None; Limit = 50 } scoped)
         (Error Refusal.ResourceUnavailable)
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue
-        (LedgerEntries.canObserve
-            owner
-            worker
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner worker (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Installation owner may observe authority"
 
 [<Tests>]

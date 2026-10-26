@@ -64,10 +64,11 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 10 "synthetic-a" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         accepted opened |> ignore
@@ -91,13 +92,13 @@ let row (database: PostgresFixture.Database) sequence =
 
 let private subject =
     function
-    | LedgerSubject.Case value ->
+    | RecordedTarget.Case value ->
         "CASE",
         CaseActKinds.token value.Act,
         value.CaseId,
         Some value.Revision,
         Some value.BusinessDate
-    | LedgerSubject.Authority value ->
+    | RecordedTarget.Authority value ->
         "AUTHORITY", RecordedAuthorityActs.token value.Act, value.TargetActorId, None, None
 
 let private updateSql =
@@ -229,22 +230,22 @@ let payload request snapshot (value: LedgerRow) =
 
 let caseSubject change (value: LedgerRow) =
     match value.Metadata.Subject with
-    | LedgerSubject.Case current ->
+    | RecordedTarget.Case current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Subject = LedgerSubject.Case(change current)
+                    Subject = RecordedTarget.Case(change current)
                 }
         }
     | _ -> failtest "Case fixture is required"
 
 let authoritySubject change (value: LedgerRow) =
     match value.Metadata.Subject with
-    | LedgerSubject.Authority current ->
+    | RecordedTarget.Authority current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Subject = LedgerSubject.Authority(change current)
+                    Subject = RecordedTarget.Authority(change current)
                 }
         }
     | _ -> failtest "Authority fixture is required"

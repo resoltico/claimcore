@@ -109,7 +109,7 @@ it("coalesces duplicate page loads for one in-flight cursor", async () => {
   });
   expect(hook.current.items).toEqual(["same"]);
 });
-it("starts a changed history mode at the same cursor while its cancelled predecessor is pending [CC-WEB-001]", async () => {
+it("starts a changed history mode at the same cursor while its cancelled predecessor is pending", async () => {
   let complete: (value: ApiResult<ListResponse>) => void = () => undefined;
   const first = new Promise<ApiResult<ListResponse>>((resolve) => {
     complete = resolve;

@@ -1,16 +1,15 @@
 namespace ClaimCore.RecordFormat
 
 open System
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 
-type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
+type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
 
 [<RequireQualifiedAccess>]
 type RecordedAuthorityAct =
     | ProvisionOwner
-    | Operation of ClaimCore.Contract.AuthorityAct
+    | Operation of ClaimCore.Domain.AuthorityAct
 
 type AuthorityRequestRecord =
     {
@@ -87,7 +86,12 @@ module AuthorityRecord =
         | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke {
                                                                        Scope = GrantTarget.CaseReference reference
                                                                    }) ->
-            CaseReference.validate reference |> Result.isOk
+            (CaseReference.parse
+             >> Result.map ignore
+             >> Result.mapError (fun violation ->
+                 Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                reference
+            |> Result.isOk
         | _ -> true
 
     let private validate request =

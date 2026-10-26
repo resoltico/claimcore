@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.DatabaseTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Security.Cryptography
@@ -48,22 +49,28 @@ let private populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! outcome =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "synthetic-a" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    request
+                        10
+                        "synthetic-a"
+                        0L
+                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                 ))
                 (token))
 
         let receipt = accepted outcome
 
         let! second =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 11 "synthetic-b" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    request
+                        11
+                        "synthetic-b"
+                        0L
+                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                 ))
                 (token))
 
@@ -94,10 +101,10 @@ let private erasureFixture (database: PostgresFixture.Database) =
 
 let private erased (actor: HandlerContext) =
     task {
-        let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Contract.CaseAct.Erase)
+        let request =
+            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.UnvalidatedCaseAct.Erase)
 
-        let! result =
-            (Handlers.call Api.operationExecute actor (OperationInput.Case request) (token))
+        let! result = (Core.execute actor (OperationInput.Case request) (token))
 
         return accepted result
     }
@@ -166,7 +173,7 @@ let private concurrentInitialization (database: PostgresFixture.Database) =
         Expect.isTrue waiting "Every initializer waits before namespace discovery"
         Expect.isFalse namespacePresent "No installation work precedes the administration lock"
         Expect.equal (ids |> Array.distinct |> Array.length) 1 "One immutable installation"
-        let! installation = Admission.openRuntime database.RuntimeSource token
+        let! installation = InstallationCheck.openRuntime database.RuntimeSource token
 
         Expect.equal
             installation.InstallationId
@@ -259,7 +266,7 @@ let tests =
 
                         let other =
                             PrincipalKey.human "https://issuer.example/" "other"
-                            |> Result.defaultWith failtest
+                            |> Result.defaultWith (string >> failtest)
 
                         let! otherResult =
                             LedgerAdministration.provisionOwner
@@ -343,7 +350,8 @@ let tests =
 
                             do!
                                 refused
-                                    (fun () -> Admission.openRuntime database.RuntimeSource token)
+                                    (fun () ->
+                                        InstallationCheck.openRuntime database.RuntimeSource token)
                                     $"{name} rejected"
                         }))
             testCase "runtime admission refuses remote connections without verified TLS" (fun () ->
@@ -359,13 +367,13 @@ let tests =
                     settings.SslMode <- mode
 
                     Expect.throws
-                        (fun () -> Admission.transport settings)
+                        (fun () -> InstallationCheck.transport settings)
                         "Unverified remote TLS rejected"
 
                 let verified =
                     Npgsql.NpgsqlConnectionStringBuilder("Host=remote.example;SSL Mode=VerifyFull")
 
-                Admission.transport verified)
+                InstallationCheck.transport verified)
             testCaseAsync
                 "post-erasure expectation rejects an actual pre-erasure backup restore"
                 (run (fun database ->
@@ -562,7 +570,8 @@ let tests =
 
                             do!
                                 refused
-                                    (fun () -> Admission.openRuntime database.RuntimeSource token)
+                                    (fun () ->
+                                        InstallationCheck.openRuntime database.RuntimeSource token)
                                     "Owner authority is refused"
                         }))
         ]

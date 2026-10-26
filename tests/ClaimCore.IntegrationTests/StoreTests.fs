@@ -14,8 +14,7 @@ open ClaimCore.TestSupport.StoreFixtures
 let private serviceCases (admin: HandlerContext) principal =
     task {
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 400) principal AdmittedAuthorityAct.Register
@@ -28,11 +27,10 @@ let private serviceCases (admin: HandlerContext) principal =
             let reference = $"SERVICE-{number}"
 
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     admin
                     (OperationInput.Case(
-                        request (410 + number) reference 0L (CaseAct.Open registration)
+                        request (410 + number) reference 0L (UnvalidatedCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -57,7 +55,7 @@ let private serviceScopeCorruption () =
         try
             let principal =
                 PrincipalKey.service "https://issuer.example/" "scoped-service"
-                |> Result.defaultWith failtest
+                |> Result.defaultWith (string >> failtest)
 
             let! admin = caseWorker database.Fixture |> Async.AwaitTask
             do! serviceCases admin principal |> Async.AwaitTask
@@ -81,11 +79,7 @@ let private serviceScopeCorruption () =
                     principal
 
             let! hidden =
-                (Handlers.call
-                    Api.caseGet
-                    service
-                    ({ CaseReference = "SERVICE-1" })
-                    (CancellationToken.None))
+                (Core.get service ({ CaseReference = "SERVICE-1" }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             Expect.equal
@@ -94,17 +88,15 @@ let private serviceScopeCorruption () =
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
-                (Handlers.call
-                    Api.caseList
-                    service
-                    ({ AfterCursor = None; Limit = 50 })
-                    (CancellationToken.None))
+                (Core.list service ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             match visible with
             | ReadReply.Succeeded page ->
                 Expect.equal
-                    (page.Items |> List.map (fun (summary: CaseSummary) -> summary.Reference))
+                    (page.Items
+                     |> List.map (fun (summary: CaseSummary) ->
+                         CaseReference.format summary.Reference))
                     [ "SERVICE-2" ]
                     "Assigned SQL cannot disclose through a corrupt human-only row"
             | _ -> failtest "Valid independent case must remain readable"

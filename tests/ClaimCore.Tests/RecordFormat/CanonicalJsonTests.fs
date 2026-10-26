@@ -156,7 +156,7 @@ let tests =
             refusalTests
             cultureTest
             testCase "canonical parse is idempotent over 200 fixed cases" (fun () ->
-                run "CC-PROP-CANONICAL-ROUNDTRIP-001" roundTrip)
+                run "canonical JSON round trip" roundTrip)
             testCase "layout, escapes and member order preserve 200 identities" (fun () ->
-                run "CC-PROP-CANONICAL-SPELLING-001" respelling)
+                run "canonical JSON spelling" respelling)
         ]

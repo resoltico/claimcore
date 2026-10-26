@@ -4,6 +4,7 @@ open System
 open System.Text.Json
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -48,7 +49,7 @@ let private references () =
                 "Accepted history has permanent reference grammar"
 
             Expect.equal
-                (ClaimCore.Domain.CaseReference.validate value |> Result.isOk)
+                (ClaimCore.Domain.CaseReference.parse value |> Result.isOk)
                 expected
                 "Permanent format matches Domain"
 

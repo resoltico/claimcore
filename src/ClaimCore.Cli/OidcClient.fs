@@ -17,13 +17,13 @@ module OidcClient =
                 if not response.IsError then
                     return Ok response
                 elif response.ErrorType = ResponseErrorType.PolicyViolation then
-                    return Error "OIDC_METADATA_INVALID"
+                    return Error AccessFailure.OidcMetadataInvalid
                 else
-                    return Error "OIDC_METADATA_UNAVAILABLE"
+                    return Error AccessFailure.OidcMetadataUnavailable
             with
             | :? HttpRequestException
             | :? OperationCanceledException
-            | :? IO.IOException -> return Error "OIDC_METADATA_UNAVAILABLE"
+            | :? IO.IOException -> return Error AccessFailure.OidcMetadataUnavailable
             | :? ArgumentException
-            | :? InvalidOperationException -> return Error "OIDC_METADATA_INVALID"
+            | :? InvalidOperationException -> return Error AccessFailure.OidcMetadataInvalid
         }

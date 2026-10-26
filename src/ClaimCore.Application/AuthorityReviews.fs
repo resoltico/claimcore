@@ -1,23 +1,24 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 /// Review display is derived from an already-admitted projection; it decides no authority rules.
 module internal AuthorityReviews =
-    let private grant role caseId (view: AuthorityReadView) =
+    let private grant role caseId (view: AuthorityFacts) =
         let scope, roles =
             match caseId with
             | None -> GrantTarget.Installation, view.Target.Installation
             | Some id ->
                 let record = view.TargetCase |> Option.get
 
-                GrantTarget.CaseReference record.Snapshot.Reference,
+                GrantTarget.CaseReference(CaseReference.format record.Snapshot.Reference),
                 (view.Target.Cases |> Map.tryFind id |> Option.defaultValue [])
 
         let value: AuthorityGrant = { Role = role; Scope = scope }
         value, (if List.contains role roles then [ value ] else [])
 
-    let describe (view: AuthorityReadView) projection =
+    let describe (view: AuthorityFacts) projection =
         let before: AuthorityState =
             {
                 Enabled = view.Target.Actor |> Option.exists _.Enabled

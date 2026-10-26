@@ -6,6 +6,35 @@ open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
+[<RequireQualifiedAccess>]
+type AuthorityInputFailure =
+    | IssuerInvalid
+    | IdentityInvalid
+    | PrincipalInvalid
+    | RoleInvalid
+    | ActInvalid
+
+module AuthorityInputFailures =
+    let vocabulary =
+        Vocabulary.define
+            "AuthorityInputFailure"
+            [
+                AuthorityInputFailure.IssuerInvalid
+                AuthorityInputFailure.IdentityInvalid
+                AuthorityInputFailure.PrincipalInvalid
+                AuthorityInputFailure.RoleInvalid
+                AuthorityInputFailure.ActInvalid
+            ]
+            (function
+             | AuthorityInputFailure.IssuerInvalid -> "ACTOR_ISSUER_INVALID"
+             | AuthorityInputFailure.IdentityInvalid -> "ACTOR_IDENTITY_INVALID"
+             | AuthorityInputFailure.PrincipalInvalid -> "ACTOR_PRINCIPAL_INVALID"
+             | AuthorityInputFailure.RoleInvalid -> "AUTHORITY_ROLE_INVALID"
+             | AuthorityInputFailure.ActInvalid -> "AUTHORITY_ACT_INVALID")
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
 /// Identity is the exact configured issuer plus its immutable subject or client ID.
 /// Email, display name, groups and a database login are deliberately absent.
 [<StructuralEquality; StructuralComparison>]
@@ -22,7 +51,7 @@ module PrincipalKey =
                 || value.Length > 2048
                 || not (UnicodeText.isPersisted value)
             then
-                Error "ACTOR_ISSUER_INVALID"
+                Error AuthorityInputFailure.IssuerInvalid
             else
                 let parsed = Uri(value, UriKind.Absolute)
 
@@ -35,9 +64,9 @@ module PrincipalKey =
                 then
                     Ok value
                 else
-                    Error "ACTOR_ISSUER_INVALID"
+                    Error AuthorityInputFailure.IssuerInvalid
         with :? UriFormatException ->
-            Error "ACTOR_ISSUER_INVALID"
+            Error AuthorityInputFailure.IssuerInvalid
 
     let private identifier maximum value =
         if
@@ -47,7 +76,7 @@ module PrincipalKey =
         then
             Ok value
         else
-            Error "ACTOR_IDENTITY_INVALID"
+            Error AuthorityInputFailure.IdentityInvalid
 
     let admit kind issuerValue subject =
         let issue target value =
@@ -72,11 +101,11 @@ module PrincipalKey =
 
     let human issuerValue subject =
         admit PrincipalKinds.Human issuerValue subject
-        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
+        |> Result.mapError (fun _ -> AuthorityInputFailure.PrincipalInvalid)
 
     let service issuerValue clientId =
         admit PrincipalKinds.Service issuerValue clientId
-        |> Result.mapError (fun _ -> "ACTOR_PRINCIPAL_INVALID")
+        |> Result.mapError (fun _ -> AuthorityInputFailure.PrincipalInvalid)
 
     /// Private storage projection; never infer identity from email, display name or groups.
     let internal storageParts =
@@ -97,7 +126,7 @@ module PrincipalKey =
         match kind with
         | PrincipalKinds.Human -> human issuerValue stableValue
         | PrincipalKinds.Service -> service issuerValue stableValue
-        | _ -> Error "ACTOR_PRINCIPAL_INVALID"
+        | _ -> Error AuthorityInputFailure.PrincipalInvalid
 
     let internal isHuman =
         function

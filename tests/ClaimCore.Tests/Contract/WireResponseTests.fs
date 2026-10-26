@@ -3,6 +3,7 @@ module ClaimCore.Tests.WireResponseTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 open System
@@ -37,12 +38,7 @@ let private examples () =
         let value = StrictJson.read Limits.MaximumResponseBytes raw |> accepted
         let expected = sample.GetProperty("valid").GetBoolean()
 
-        let encoded =
-            endpoint.Accept
-                { new IEndpointVisitor<Result<ClaimCore.Json.JsonValue, Problem>> with
-                    member _.Visit endpoint =
-                        endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
-                }
+        let encoded = endpoint.NormalizeOutput value
 
         Expect.equal
             (Result.isOk encoded)
@@ -121,10 +117,13 @@ let private frames () =
 
     let reply: ClaimCore.Cli.FrameReply =
         {
-            Endpoint = Some "session.logout"
+            Endpoint = Some(EndpointId.Host HostEndpoint.Logout)
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(TypedReply.ofValue Api.logout (ReadReply.Succeeded()))
+            Result =
+                FrameResult.Reply(
+                    ClaimCore.Tests.CliReplies.ofValue Api.logout (ReadReply.Succeeded())
+                )
         }
 
     let roundTrip value =

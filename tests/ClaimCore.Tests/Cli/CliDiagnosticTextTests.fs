@@ -3,14 +3,18 @@ module ClaimCore.Tests.CliDiagnosticTextTests
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Cli
 
 let private frame refusal =
     {
-        Endpoint = Some Api.caseGet.Token
+        Endpoint = Some(EndpointId.Actor ActorEndpoint.CaseGet)
         OperationId = None
         Delivery = DeliveryState.Delivered
-        Result = FrameResult.Reply(TypedReply.ofValue Api.caseGet (ReadReply.Rejected refusal))
+        Result =
+            FrameResult.Reply(
+                ClaimCore.Tests.CliReplies.ofValue Api.caseGet (ReadReply.Rejected refusal)
+            )
     }
 
 let private assertTarget target identity violation =

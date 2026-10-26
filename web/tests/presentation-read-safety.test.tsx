@@ -172,7 +172,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   view.unmount();
 };
 it.each(languages)(
-  "protects ordinary list, detail, history and absent lookup references in %s [CC-WEB-001]",
+  "protects ordinary list, detail, history and absent lookup references in %s",
   async (language) => {
     preferences(language);
     for (const { value, points } of [

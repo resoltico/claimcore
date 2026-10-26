@@ -93,7 +93,6 @@ let private corpus response filename () =
                 expected
                 "Independent validator judges the frozen example."
 
-
             let altered = JsonNode.Parse(value.GetRawText()) |> nonNull
             altered["unexpectedMember"] <- JsonValue.Create true
             use invalid = JsonDocument.Parse(altered.ToJsonString())

@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.PostgresFixture
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -36,7 +37,7 @@ let private failureCategory (error: exn) =
 
 let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"
-    |> Result.defaultWith invalidOp
+    |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
 
 let private calendar =
     { new IBusinessCalendar with
@@ -89,7 +90,7 @@ let private admittedDatabase
 
     let fixture =
         {
-            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> ILedgerStore
+            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
             InstallationId = installationId
             Owner = owner
             Calendar = calendar
@@ -138,10 +139,10 @@ let internal createFor owner =
             settings.Password <- "synthetic-only"
             let runtime = NpgsqlDataSource.Create(settings.ConnectionString)
             sources <- runtime :: sources
-            let! admitted = Admission.openRuntime runtime CancellationToken.None
+            let! admitted = InstallationCheck.openRuntime runtime CancellationToken.None
 
             if admitted.InstallationId <> installationId then
-                invalidOp "Admission changed identity."
+                invalidOp "InstallationCheck changed identity."
 
             return admittedDatabase container sources ownerSource runtime installationId owner
         with error ->

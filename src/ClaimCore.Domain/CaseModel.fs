@@ -1,6 +1,5 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 open ClaimCore.Json
 
 open System
@@ -14,12 +13,20 @@ module Revision =
     [<Literal>]
     let Maximum = SafeInteger.Maximum
 
+    /// JSON's exact-integer bound is a permanent format limit.
+    let successor revision =
+        let value = Checked.(+) revision 1L
+
+        if value > Maximum then
+            raise (OverflowException "The successor is outside the exact-integer format.")
+
+        value
+
 /// A retained snapshot that cannot represent accepted state; never an input diagnostic.
 [<RequireQualifiedAccess>]
 type RecordViolation =
     | InvalidScalar of InputTarget * Violation
     | InvalidProgress
-    | NonCanonicalFields
     | RevisionOutOfRange
     | ReferenceMismatch
 

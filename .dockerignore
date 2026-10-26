@@ -9,7 +9,6 @@
 !.config
 !.config/dotnet-tools.json
 !.editorconfig
-!prettier.config.mjs
 !src
 !src/**
 !tests
@@ -18,8 +17,6 @@
 !eng/**
 !web
 !web/**
-!config
-!config/**
 !contracts
 !contracts/**
 !db

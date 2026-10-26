@@ -1,8 +1,9 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
-type ResolveRequest = { OperationId: Guid }
 
 [<RequireQualifiedAccess>]
 type ResolveReply =

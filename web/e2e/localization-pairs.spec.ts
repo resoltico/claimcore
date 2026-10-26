@@ -10,7 +10,7 @@ import {
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
 import { endpoints } from "@contracts/client";
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 import type { Language } from "../src/presentation/preferences";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {

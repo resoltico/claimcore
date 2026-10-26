@@ -78,7 +78,7 @@ test.afterEach(async () => {
   }
 });
 for (const [name, role, scoped] of cases) {
-  test(`admits the ${name} workflow without wider grants through published Web [CC-AUTH-001]`, async ({
+  test(`admits the ${name} workflow without wider grants through published Web`, async ({
     page,
     browser,
   }) => {

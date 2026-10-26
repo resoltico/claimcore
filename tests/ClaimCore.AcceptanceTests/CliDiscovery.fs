@@ -85,7 +85,6 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
             (alias.StandardOutput = topic.StandardOutput)
             "Both entry points render identical core content"
 
-
 let private missingConfiguration
     (invoke: string list -> byte array option -> ProcessRunner.Result)
     =

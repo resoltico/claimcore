@@ -1,6 +1,6 @@
 import { consumerContractIdentity } from "@contracts/client";
-import { localNotice } from "../api/notices";
-import type { Notice } from "../api/notices";
+import { localNotice } from "../protocol/notices";
+import type { Notice } from "../protocol/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type ApiResult,

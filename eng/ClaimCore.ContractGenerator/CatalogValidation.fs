@@ -2,6 +2,7 @@ namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Cli
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -133,6 +134,7 @@ module CatalogValidation =
         let families =
             [
                 "label"
+                "endpoint"
                 "field"
                 "act"
                 "group"

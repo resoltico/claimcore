@@ -1,12 +1,11 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
 type internal PaymentProgress =
     | Undecided
-    | Decided of decision: Validation.Decision
-    | Paid of decision: Validation.Decision * paidDate: System.DateOnly
+    | Decided of decision: Decision
+    | Paid of decision: Decision * paidDate: CalendarDate
 
 /// Complete groups are retained as typed state; no paid state can omit its decision.
 module internal PaymentProgress =

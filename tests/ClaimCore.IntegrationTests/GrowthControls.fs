@@ -18,7 +18,7 @@ let private token = CancellationToken.None
 let private current (database: PostgresFixture.Database) reference =
     task {
         let! read =
-            database.Fixture.Store.ReadCase(database.Fixture.Owner, None, reference, token)
+            inspectCase database.Fixture (database.Fixture.Owner) (None) (reference) (token)
 
         match read with
         | Ok { Case = Some record } -> return record.Snapshot
@@ -59,18 +59,21 @@ let private sameCase database (actor: HandlerContext) =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                CaseAct.Reopen
-            | _ -> CaseAct.Close
+                UnvalidatedCaseAct.Reopen
+            | _ -> UnvalidatedCaseAct.Close
 
         let! replies =
             Task.WhenAll
                 [|
                     for index in 0..1 ->
-                        (Handlers.call
-                            Api.operationExecute
+                        (Core.execute
                             actor
                             (OperationInput.Case(
-                                request (710000 + index) snapshot.Reference snapshot.Revision act
+                                request
+                                    (710000 + index)
+                                    (CaseReference.format snapshot.Reference)
+                                    snapshot.Revision
+                                    act
                             ))
                             (token))
                 |]
@@ -101,8 +104,8 @@ let private sameCase database (actor: HandlerContext) =
 let private revocation (database: PostgresFixture.Database) owner principal =
     task {
         let! snapshot = current database "synthetic-growth-0"
-        let writerGate = SubmissionStorage.Barrier(database.Fixture.Store, id 710010)
-        let revokeGate = SubmissionStorage.Barrier(database.Fixture.Store, id 710011)
+        let writerGate = SubmissionStorage.Barrier(database.Fixture.Store)
+        let revokeGate = SubmissionStorage.Barrier(database.Fixture.Store)
         let fixture = database.Fixture
 
         let writer =
@@ -116,14 +119,15 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                CaseAct.Reopen
-            | _ -> CaseAct.Close
+                UnvalidatedCaseAct.Reopen
+            | _ -> UnvalidatedCaseAct.Close
 
         let write =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 writer
-                (OperationInput.Case(request 710010 snapshot.Reference snapshot.Revision act))
+                (OperationInput.Case(
+                    request 710010 (CaseReference.format snapshot.Reference) snapshot.Revision act
+                ))
                 (token))
 
         let revoke =
@@ -169,13 +173,22 @@ let private longCase database (actor: HandlerContext) =
         let watch = Stopwatch.StartNew()
 
         for index in 0..999 do
-            let act = if closed then CaseAct.Reopen else CaseAct.Close
+            let act =
+                if closed then
+                    UnvalidatedCaseAct.Reopen
+                else
+                    UnvalidatedCaseAct.Close
 
             let! reply =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
-                    (OperationInput.Case(request (720000 + index) snapshot.Reference revision act))
+                    (OperationInput.Case(
+                        request
+                            (720000 + index)
+                            (CaseReference.format snapshot.Reference)
+                            revision
+                            act
+                    ))
                     (token))
 
             accepted reply |> ignore
@@ -183,7 +196,7 @@ let private longCase database (actor: HandlerContext) =
             revision <- revision + 1L
             closed <- not closed
 
-        let! final = current database snapshot.Reference
+        let! final = current database (CaseReference.format snapshot.Reference)
 
         Expect.equal
             final.Revision
@@ -214,16 +227,19 @@ let private erase (database: PostgresFixture.Database) (actor: HandlerContext) =
         let! snapshot = current database "synthetic-growth-999"
 
         let! erased =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 730001 snapshot.Reference snapshot.Revision CaseAct.Erase
+                    request
+                        730001
+                        (CaseReference.format snapshot.Reference)
+                        snapshot.Revision
+                        UnvalidatedCaseAct.Erase
                 ))
                 (token))
 
         accepted erased |> ignore
-        let! final = current database snapshot.Reference
+        let! final = current database (CaseReference.format snapshot.Reference)
         Expect.equal final.State CaseState.Erased "Erasure clears the final projection"
 
         let! revoked =

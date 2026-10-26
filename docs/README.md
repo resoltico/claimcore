@@ -1,24 +1,13 @@
 # Documentation
 
-## Evaluate
+Start with the task you want to complete:
 
-Start a [fresh local installation](getting-started.md), then use the [case work guide](domain.md)
-for facts, decisions, corrections and stewardship.
+- [Getting started](getting-started.md): create a fresh synthetic installation and record a case.
+- [Case work](case-work.md): understand decisions, payment facts, correction and stewardship.
+- [Operating](operating.md): host the service, administer authority and databases, and manage retention.
+- [Integrating](integrating.md): use HTTPS or CLI, validate results and handle delivery recovery.
+- [Contributing](contributing.md): build, verify and change the implementation.
 
-## Operate
-
-Use [operations](operations.md) for access, sessions, erasure, backups and restore;
-[database administration](database.md) for initialization, owner provisioning and verification;
-and the [browser and HTTPS host guide](web.md) for hosting.
-
-## Integrate
-
-The [service and CLI guide](api.md) explains authentication, requests and delivery outcomes.
-Use the [generated CLI reference](cli.md) and [examples](../examples/README.md) for command syntax,
-and the [OpenAPI contract](../contracts/openapi.json) for wire shapes.
-
-## Contribute
-
-Read [development](development.md) for setup and verification, [architecture](architecture.md) for
-component ownership and invariants, and [contributing](../CONTRIBUTING.md) for delivery.
-The owner reviews and merges changes.
+The [generated CLI reference](cli.md) owns verbs and flags; [OpenAPI](../contracts/openapi.json) owns wire
+shapes. [Examples](../examples/README.md) provide independent synthetic request files.
+See the [glossary](glossary.md) for terminology.

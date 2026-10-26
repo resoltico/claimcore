@@ -1,9 +1,9 @@
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { sendHttp } from "./transport";
 import { responseBytes } from "./responseBytes";
-import type { ApiResult, ServiceResponse } from "./types";
+import type { ApiResult, ServiceResponse } from "../protocol/types";
 import { withinResponseDeadline } from "./responseDeadline";
-import { localNotice } from "./notices";
+import { localNotice } from "../protocol/notices";
 import {
   type EndpointId,
   endpoints,
@@ -12,8 +12,8 @@ import {
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
 import { correlateReply, isHostFailure, isResponse } from "../protocol/client";
-export type * from "./types";
-export { isCurrentCase } from "./types";
+export type * from "../protocol/types";
+export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
 const responseLimit = strictByteProfile.maximumResponseBytes;
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {

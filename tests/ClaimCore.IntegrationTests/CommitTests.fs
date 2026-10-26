@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.CommitTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -26,8 +27,7 @@ let private token = CancellationToken.None
 
 let private replay (database: PostgresFixture.Database) (actor: HandlerContext) operation landed =
     task {
-        let! replay =
-            (Handlers.call Api.operationExecute actor (OperationInput.Case operation) (token))
+        let! replay = (Core.execute actor (OperationInput.Case operation) (token))
 
         if landed then
             Expect.isTrue
@@ -48,7 +48,7 @@ let private replay (database: PostgresFixture.Database) (actor: HandlerContext) 
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> ILedgerStore
+        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> IStore
 
     let actor =
         Handlers.context
@@ -99,16 +99,14 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
 
-        let! unknown =
-            (Handlers.call Api.operationResolve throughProxy ({ OperationId = id 140 }) (token))
+        let! unknown = (Core.resolve throughProxy ({ OperationId = id 140 }) (token))
 
         Expect.equal
             unknown
             (ResolveReply.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
-        let! repeated =
-            (Handlers.call Api.operationResolve actor ({ OperationId = id 140 }) (token))
+        let! repeated = (Core.resolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated
@@ -116,10 +114,11 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             "Resolve repeats safely whether the first fence landed or aborted"
 
         let! delayed =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
-                (OperationInput.Case(request 140 "LOST-RESOLUTION" 0L (CaseAct.Open registration)))
+                (OperationInput.Case(
+                    request 140 "LOST-RESOLUTION" 0L (UnvalidatedCaseAct.Open registration)
+                ))
                 (token))
 
         Expect.equal
@@ -155,21 +154,16 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
 
         let target =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
-            |> Result.defaultWith failtest
+            |> Result.defaultWith (string >> failtest)
 
         let request = authorityRequest (id 145) target AdmittedAuthorityAct.Register
 
         let! unknown =
-            (Handlers.call
-                Api.operationExecute
-                (proxyCore database source)
-                (OperationInput.Authority request)
-                (token))
+            (Core.execute (proxyCore database source) (OperationInput.Authority request) (token))
 
         Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "Authority commit loss is unknown"
 
-        let! repeated =
-            (Handlers.call Api.operationExecute actor (OperationInput.Authority request) (token))
+        let! repeated = (Core.execute actor (OperationInput.Authority request) (token))
 
         Expect.isTrue
             (match repeated.Outcome, landed with
@@ -191,7 +185,12 @@ let private repeatedInitialization (database: PostgresFixture.Database) =
         Expect.equal repeated id "Repetition preserves the landed or freshly installed identity"
     }
 
-let private commitEvidence drop (operation: CaseRequest) (proxy: CommitProxy.Proxy) result =
+let private commitEvidence
+    drop
+    (operation: UnvalidatedCaseRequest)
+    (proxy: CommitProxy.Proxy)
+    result
+    =
     task {
         if drop = CommitProxy.Drop.Never then
             accepted result |> ignore
@@ -264,14 +263,10 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Contract.CaseAct.Open registration)
+                                    (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
 
                             let! result =
-                                (Handlers.call
-                                    Api.operationExecute
-                                    throughProxy
-                                    (OperationInput.Case operation)
-                                    (token))
+                                (Core.execute throughProxy (OperationInput.Case operation) (token))
 
                             do! commitEvidence drop operation proxy result
 

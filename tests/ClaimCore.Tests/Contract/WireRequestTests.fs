@@ -51,12 +51,7 @@ let private examples () =
                 StrictJson.read Limits.MaximumRequestBytes (Encoding.UTF8.GetBytes raw)
                 |> accepted
 
-            let encoded =
-                endpoint.Accept
-                    { new IEndpointVisitor<JsonValue> with
-                        member _.Visit endpoint =
-                            endpoint.Input.Read "$" value |> accepted |> endpoint.Input.Write
-                    }
+            let encoded = endpoint.NormalizeInput value |> accepted
 
             Expect.equal
                 (CanonicalWriter.bytes encoded)

@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 
 /// A format number identifies one byte grammar and its admissible value set.
 module RecordVersions =

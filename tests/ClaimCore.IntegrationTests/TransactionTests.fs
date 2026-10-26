@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.TransactionTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -81,27 +82,23 @@ let private instantOrdering (database: PostgresFixture.Database) =
 
 let private waiter (database: PostgresFixture.Database) settings =
     let store =
-        LedgerStore(database.RuntimeSource, database.Fixture.InstallationId, settings)
-        :> ILedgerStore
+        LedgerStore(database.RuntimeSource, database.Fixture.InstallationId, settings) :> IStore
 
     let result =
-        store.WriteCase(
-            database.Fixture.Owner,
-            id 20,
-            "synthetic-timeout",
-            (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
+        store.Write(
+            (fun _ -> Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>)),
             token
         )
 
     result
 
-let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandler =
+let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
     match result with
     | Ok {
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            State = (ClaimCore.Contract.CaseState.Active(fields) | CaseState.Voided(fields))
+                                            State = (ClaimCore.Domain.CaseState.Active(fields) | CaseState.Voided(fields))
                                         }
                          }
          } ->
@@ -110,7 +107,10 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
             hasHandler
             "Authority belongs to this snapshot"
 
-        Expect.equal fields.Registration.ClaimantName name "Data belongs to this snapshot"
+        Expect.equal
+            (PartyName.format fields.Registration.ClaimantName)
+            name
+            "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
 
 [<Tests>]
@@ -127,15 +127,15 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    (Handlers.call
-                                        Api.operationExecute
+                                    (Core.execute
                                         actor
                                         (OperationInput.Case(
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
-                                                (ClaimCore.Contract.CaseAct.Open registration)
+                                                (ClaimCore.Domain.UnvalidatedCaseAct.Open
+                                                    registration)
                                         ))
                                         (token))
                             |]
@@ -212,7 +212,7 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(Decision.Refuse Refusal.ResourceUnavailable))
+                            (Ok(Verdict.Refuse Refusal.ResourceUnavailable))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token
@@ -222,8 +222,7 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ =
-                            (Handlers.call Api.caseGet actor ({ CaseReference = "absent" }) (token))
+                        let! _ = (Core.get actor ({ CaseReference = "absent" }) (token))
 
                         return ()
                     }))
@@ -319,14 +318,9 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Contract.CaseAct.Open registration)
+                                (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
 
-                        let! failed =
-                            (Handlers.call
-                                Api.operationExecute
-                                actor
-                                (OperationInput.Case operation)
-                                (token))
+                        let! failed = (Core.execute actor (OperationInput.Case operation) (token))
 
                         Expect.equal
                             failed.Outcome
@@ -342,12 +336,7 @@ let tests =
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
-                        let! retry =
-                            (Handlers.call
-                                Api.operationExecute
-                                actor
-                                (OperationInput.Case operation)
-                                (token))
+                        let! retry = (Core.execute actor (OperationInput.Case operation) (token))
 
                         accepted retry |> ignore
                     }))
@@ -387,15 +376,14 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            (Handlers.call
-                                Api.operationExecute
+                            (Core.execute
                                 actor
                                 (OperationInput.Case(
                                     request
                                         20
                                         "synthetic-snapshot"
                                         0L
-                                        (ClaimCore.Contract.CaseAct.Open registration)
+                                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                                 ))
                                 (token))
 
@@ -411,12 +399,12 @@ let tests =
                                 token
 
                         let reading =
-                            database.Fixture.Store.ReadCase(
-                                database.Fixture.Owner,
-                                None,
-                                "synthetic-snapshot",
-                                token
-                            )
+                            inspectCase
+                                database.Fixture
+                                (database.Fixture.Owner)
+                                (None)
+                                ("synthetic-snapshot")
+                                (token)
 
                         do! waitForWaiter database
 
@@ -433,12 +421,12 @@ let tests =
                         snapshot result registration.ClaimantName true
 
                         let! after =
-                            database.Fixture.Store.ReadCase(
-                                database.Fixture.Owner,
-                                None,
-                                "synthetic-snapshot",
-                                token
-                            )
+                            inspectCase
+                                database.Fixture
+                                (database.Fixture.Owner)
+                                (None)
+                                ("synthetic-snapshot")
+                                (token)
 
                         snapshot after "Changed synthetic" false
                     }))

@@ -107,16 +107,17 @@ let private delayedDelivery () =
             Expect.isTrue token.CanUse "Successful short reply retains initial validity"
             Expect.isFalse token.CanReuse "Short-lived token cannot enter the reuse margin"
         | Error reason ->
-            Expect.equal reason "OIDC_TOKEN_UNAVAILABLE" "No secret or provider details"
+            Expect.equal
+                (AccessFailures.token reason)
+                "OIDC_TOKEN_UNAVAILABLE"
+                "No secret or provider details"
 
 [<Tests>]
 let tests =
     testList
         "CLI token lifetimes"
         [
-            testCase "[CC-CLI-003] rollback cannot extend elapsed token reuse" rollbackBudget
-            testCase "[CC-CLI-003] forward wall jumps retain conservative UTC expiry" forwardWall
-            testCase
-                "[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime"
-                delayedDelivery
+            testCase "rollback cannot extend elapsed token reuse" rollbackBudget
+            testCase "forward wall jumps retain conservative UTC expiry" forwardWall
+            testCase "delayed token delivery cannot create fresh reuse lifetime" delayedDelivery
         ]

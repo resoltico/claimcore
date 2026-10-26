@@ -15,33 +15,44 @@ type BuildIdentity =
 module BuildIdentity =
     let private requiredText value =
         match Option.ofObj value with
-        | Some text when not (String.IsNullOrWhiteSpace(text)) -> text
-        | _ ->
-            invalidOp "Required compiled release metadata is missing. Rebuild the complete project."
+        | Some text when not (String.IsNullOrWhiteSpace text) -> Ok text
+        | _ -> Error "Required compiled release metadata is missing. Rebuild the complete project."
 
     let private attribute<'T when 'T :> Attribute> (assembly: Assembly) =
         match assembly.GetCustomAttributes(typeof<'T>, false) with
-        | [| value |] -> value :?> 'T
-        | _ -> invalidOp "Required compiled release attribute is missing or duplicated."
+        | [| value |] -> Ok(value :?> 'T)
+        | _ -> Error "Required compiled release attribute is missing or duplicated."
+
+    let private textAttribute<'T when 'T :> Attribute> get assembly =
+        attribute<'T> assembly |> Result.bind (get >> requiredText)
 
     let private read (assembly: Assembly) =
-        let numeric =
-            assembly.GetName().Version
-            |> Option.ofObj
-            |> Option.defaultWith (fun () -> invalidOp "Compiled assembly version is missing.")
+        match assembly.GetName().Version |> Option.ofObj with
+        | None -> Error "Compiled assembly version is missing."
+        | Some numeric ->
+            textAttribute<AssemblyProductAttribute> _.Product assembly
+            |> Result.bind (fun product ->
+                textAttribute<AssemblyInformationalVersionAttribute>
+                    _.InformationalVersion
+                    assembly
+                |> Result.bind (fun version ->
+                    textAttribute<AssemblyFileVersionAttribute> _.Version assembly
+                    |> Result.map (fun file ->
+                        {
+                            Product = product
+                            Version = version
+                            AssemblyVersion = numeric.ToString()
+                            FileVersion = file
+                        })))
 
-        {
-            Product = (attribute<AssemblyProductAttribute> assembly).Product |> requiredText
-            Version =
-                (attribute<AssemblyInformationalVersionAttribute> assembly).InformationalVersion
-                |> requiredText
-            AssemblyVersion = numeric.ToString()
-            FileVersion = (attribute<AssemblyFileVersionAttribute> assembly).Version |> requiredText
-        }
-
-    let current = read typeof<BuildIdentity>.Assembly
+    let current = read typeof<BuildIdentity>.Assembly |> Result.defaultWith invalidOp
 
     let requireCompatibleAssembly assembly =
-        if read assembly <> current then
-            invalidOp
-                "Mixed first-party release identities are unsupported. Deploy one complete build."
+        read assembly
+        |> Result.bind (fun identity ->
+            if identity = current then
+                Ok()
+            else
+                Error
+                    "Mixed first-party release identities are unsupported. Deploy one complete build.")
+        |> Result.defaultWith invalidOp

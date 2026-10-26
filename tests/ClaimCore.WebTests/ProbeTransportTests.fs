@@ -89,9 +89,9 @@ let tests =
         "HTTPS probe transport"
         [
             testCaseAsync
-                "[CC-WEB-001] probe retains TLS and HTTP public identity at a distinct socket"
+                "probe retains TLS and HTTP public identity at a distinct socket"
                 (async { do! retainsPublicIdentity () |> Async.AwaitTask })
             testCaseAsync
-                "[CC-WEB-001] probe refuses mismatched names and untrusted roots"
+                "probe refuses mismatched names and untrusted roots"
                 (async { do! refusesCertificateMismatch () |> Async.AwaitTask })
         ]

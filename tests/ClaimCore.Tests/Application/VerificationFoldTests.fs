@@ -1,5 +1,6 @@
 module ClaimCore.Tests.VerificationFoldTests
 
+open ClaimCore.TestSupport
 open ClaimCore.Contract
 
 open System
@@ -54,7 +55,7 @@ let private row payload =
             RecordedAt = instant
             PayloadCommitment = commitment
             Subject =
-                LedgerSubject.Authority
+                RecordedTarget.Authority
                     {
                         TargetActorId = id
                         Act = AuthorityKind.ProvisionOwner
@@ -68,7 +69,7 @@ let private row payload =
             OperationId = id
             ActorId = id
             RecordedAt = instant
-            Subject = StoredSubject.Authority(id, AuthorityKind.ProvisionOwner)
+            Subject = EntryTarget.Authority(id, AuthorityKind.ProvisionOwner)
             PayloadCommitment = commitment
             PayloadNonce = Some nonce
             Payload = Some payload
@@ -80,7 +81,7 @@ let private history: CaseHistory =
     {
         Revision = 1L
         Snapshot = None
-        Reference = Some "SYNTHETIC"
+        Reference = Some(CaseFixtures.reference "SYNTHETIC")
         State = CaseState.Active()
         MissingPayloadAt = None
         PresentPayloadAt = None
@@ -202,14 +203,14 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Subject = StoredSubject.Authority(id, AuthorityKind.Register)
+                    Subject = EntryTarget.Authority(id, AuthorityKind.Register)
                 }
 
             let request: AuthorityRequestRecord =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act = RecordedAuthorityAct.Operation(ClaimCore.Contract.AuthorityAct.Register)
+                    Act = RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
                 }
 
             AuthorityFold.apply

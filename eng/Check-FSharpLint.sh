@@ -11,7 +11,7 @@ run_pattern() {
   first_source="$(find "${root}" -type f -name "*.${extension}" -print -quit)"
   if [[ -n "${first_source}" ]]; then
     dotnet fsharplint lint --file-type wildcard "${root}/**/*.${extension}" \
-      --lint-config config/fsharplint.json
+      --lint-config eng/fsharplint.json
   fi
 }
 
@@ -23,7 +23,7 @@ run_individual() (
   trap 'rm -f -- "${source_list}"' EXIT
   find "${root}" -type f -name "*.${extension}" -print0 >"${source_list}"
   while IFS= read -r -d '' source; do
-    dotnet fsharplint lint --file-type file "${source}" --lint-config config/fsharplint.json
+    dotnet fsharplint lint --file-type file "${source}" --lint-config eng/fsharplint.json
   done <"${source_list}"
 )
 

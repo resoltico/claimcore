@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 
 open System
@@ -13,7 +14,7 @@ open ClaimCore.HostSecurity
 open ClaimCore.Web.Composition
 
 [<NoEquality; NoComparison>]
-type WebAdmissionLimits =
+type RequestGateLimits =
     {
         MaximumJsonBytes: int
         CorePermitLimit: int
@@ -41,7 +42,7 @@ type WebConfiguration =
         Certificate: X509Certificate2
         SessionIdle: TimeSpan
         SessionAbsolute: TimeSpan
-        Admission: WebAdmissionLimits
+        RequestGate: RequestGateLimits
         Oidc: OidcConfiguration option
     }
 
@@ -71,7 +72,7 @@ module Configuration =
             | true, value when value >= 1 && value <= maximum -> value
             | _ -> WebStartupDiagnostics.refuse (WebStartupProblem.InvalidSetting setting)
 
-    let private admission () =
+    let private requestLimits () =
         {
             MaximumJsonBytes =
                 boundedInt
@@ -185,7 +186,7 @@ module Configuration =
                 WebStartupProblem.ConnectionFileRefused
                 WebStartupProblem.ConnectionFileEmpty
 
-        let configuredAdmission = admission ()
+        let configuredLimits = requestLimits ()
         let configuredOidc = oidc ()
 
         try
@@ -201,7 +202,7 @@ module Configuration =
                 Certificate = configuredCertificate
                 SessionIdle = sessionIdle
                 SessionAbsolute = sessionAbsolute
-                Admission = configuredAdmission
+                RequestGate = configuredLimits
                 Oidc = configuredOidc
             }
         with _ ->

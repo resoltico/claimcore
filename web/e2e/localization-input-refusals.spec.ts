@@ -63,7 +63,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
 };
 
 for (const language of ["en", "lv", "ar"] as const) {
-  test(`refuses localized authoring digits and currency alphabets in ${language} [CC-DOM-001]`, async ({
+  test(`refuses localized authoring digits and currency alphabets in ${language}`, async ({
     page,
   }) => {
     await openAuthenticated(page);
@@ -101,7 +101,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     }
     await reviewDecimal(page, language);
   });
-  test(`offers KEEP for missing recorded groups and refuses forged correction in ${language} [CC-DOM-002]`, async ({
+  test(`offers KEEP for missing recorded groups and refuses forged correction in ${language}`, async ({
     page,
   }) => {
     await openAuthenticated(page);

@@ -8,10 +8,14 @@
     <Compile Include="Support/PropertyHarness.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
     <Compile Include="Support/Fixtures.fs" />
+    <Compile Include="Support/CliReplies.fs" />
     <Compile Include="Architecture/ProjectReferences.fs" />
     <Compile Include="Architecture/NegativeFixtures.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
+    <Compile Include="Json/CodecDefinitionTests.fs" />
+    <Compile Include="Contract/BuildIdentityTests.fs" />
+    <Compile Include="Database/OwnerInputTests.fs" />
     <Compile Include="Contract/VocabularyTests.fs" />
     <Compile Include="Contract/WireCodecTests.fs" />
     <Compile Include="Contract/WireRequestTests.fs" />
@@ -33,7 +37,7 @@
     <Compile Include="Domain/DomainValidationTests.fs" />
     <Compile Include="Application/AvailabilityTests.fs" />
     <Compile Include="Domain/ScalarRuleTests.fs" />
-    <Compile Include="Contract/FieldTableTests.fs" />
+    <Compile Include="Contract/RecordDeclarationTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
@@ -44,6 +48,8 @@
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
     <Compile Include="Domain/CaseReferenceIdTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
+    <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/CoreBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />

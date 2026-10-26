@@ -6,7 +6,7 @@ import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui } from "./localization-support";
 import { endpoints } from "@contracts/client";
 
-test("associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001]", async ({
+test("associates malformed operation lookup guidance and prevents empty case lookup", async ({
   page,
 }) => {
   await openAuthenticated(page);

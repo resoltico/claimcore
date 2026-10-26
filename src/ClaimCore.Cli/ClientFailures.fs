@@ -65,30 +65,26 @@ module CliReply =
 
     let private frame invocation delivery result =
         {
-            Endpoint = Some(Api.id (Frames.endpoint invocation))
+            Endpoint = Some (Frames.endpoint invocation).Id
             OperationId = Frames.operationId invocation
             Delivery = delivery
             Result = result
         }
 
     let result invocation reply =
-        let typed =
-            TypedReply.read (Frames.endpoint invocation) reply
-            |> Result.defaultWith (fun _ ->
-                invalidArg (nameof reply) "Reply does not match the endpoint codec.")
-
-        if
-            not (Correlation.matches (Frames.endpoint invocation) (Frames.input invocation) reply)
-        then
-            invalidArg (nameof reply) "Reply does not match the prepared request."
-
-        let delivery =
-            if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then
-                DeliveryState.Uncertain
+        ServiceReply.read (Frames.endpoint invocation) reply
+        |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
+        |> Result.bind (fun typed ->
+            if not (ServiceReply.correlates (Frames.input invocation) typed) then
+                Error CliFailure.InvalidResponse
             else
-                DeliveryState.Delivered
+                let delivery =
+                    if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then
+                        DeliveryState.Uncertain
+                    else
+                        DeliveryState.Delivered
 
-        frame invocation delivery (FrameResult.Reply typed) |> encoded
+                frame invocation delivery (FrameResult.Reply typed) |> encoded |> Ok)
 
     let serviceFailure invocation (failure: HostFailure) =
         let delivery =

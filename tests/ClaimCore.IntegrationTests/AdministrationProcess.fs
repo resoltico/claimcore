@@ -78,7 +78,15 @@ let invoke binary connectionFile ownerFile arguments expected =
         config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
         config.Environment["CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE"] <- ownerFile
         let! code, output, errors = execute config
-        Expect.equal code expected ("Administration process exit: " + String.concat " " arguments)
+
+        Expect.equal
+            code
+            expected
+            ("Administration process exit: "
+             + String.concat " " arguments
+             + ". Public reply: "
+             + output)
+
         Expect.equal errors.Length 0 "No provider/private detail on stderr"
 
         Expect.equal

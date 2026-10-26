@@ -748,13 +748,6 @@
   },
   {
     "arguments": {},
-    "expected": "The ledger has reached its final sequence.",
-    "isolated": "The ledger has reached its final sequence.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "en"
-  },
-  {
-    "arguments": {},
     "expected": "This case is not voided.",
     "isolated": "This case is not voided.",
     "key": "diagnostic.NOT_VOIDED",
@@ -788,13 +781,6 @@
     "expected": "Use a value from 1 through «maximumPageSize».",
     "isolated": "Use a value from 1 through «maximumPageSize».",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "en"
-  },
-  {
-    "arguments": {},
-    "expected": "The case has reached its final revision.",
-    "isolated": "The case has reached its final revision.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "en"
   },
   {
@@ -2595,112 +2581,112 @@
     "arguments": {},
     "expected": "Read a case",
     "isolated": "Read a case",
-    "key": "label.read.case.get.label",
+    "key": "endpoint.case.get.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read the current accepted case view and available acts.",
     "isolated": "Read the current accepted case view and available acts.",
-    "key": "label.read.case.get.meaning",
+    "key": "endpoint.case.get.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "List cases",
     "isolated": "List cases",
-    "key": "label.read.case.list.label",
+    "key": "endpoint.case.list.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read one page of cases visible to the actor.",
     "isolated": "Read one page of cases visible to the actor.",
-    "key": "label.read.case.list.meaning",
+    "key": "endpoint.case.list.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read case history",
     "isolated": "Read case history",
-    "key": "label.read.case.history.label",
+    "key": "endpoint.case.history.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read accepted history for one case, within current disclosure permissions.",
     "isolated": "Read accepted history for one case, within current disclosure permissions.",
-    "key": "label.read.case.history.meaning",
+    "key": "endpoint.case.history.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Observe an operation",
     "isolated": "Observe an operation",
-    "key": "label.read.operation.observe.label",
+    "key": "endpoint.operation.observe.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read an accepted operation receipt when it is visible to the actor.",
     "isolated": "Read an accepted operation receipt when it is visible to the actor.",
-    "key": "label.read.operation.observe.meaning",
+    "key": "endpoint.operation.observe.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Resolve an operation",
     "isolated": "Resolve an operation",
-    "key": "label.read.operation.resolve.label",
+    "key": "endpoint.operation.resolve.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read the author’s receipt or durably prevent the operation from being accepted.",
     "isolated": "Read the author’s receipt or durably prevent the operation from being accepted.",
-    "key": "label.read.operation.resolve.meaning",
+    "key": "endpoint.operation.resolve.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "List actors",
     "isolated": "List actors",
-    "key": "label.read.authority.list.label",
+    "key": "endpoint.authority.list.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read registered actors and available authority acts.",
     "isolated": "Read registered actors and available authority acts.",
-    "key": "label.read.authority.list.meaning",
+    "key": "endpoint.authority.list.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read actor grants",
     "isolated": "Read actor grants",
-    "key": "label.read.authority.grants.label",
+    "key": "endpoint.authority.grants.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read one page of grants for the selected actor.",
     "isolated": "Read one page of grants for the selected actor.",
-    "key": "label.read.authority.grants.meaning",
+    "key": "endpoint.authority.grants.meaning",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read context",
     "isolated": "Read context",
-    "key": "label.read.context.label",
+    "key": "endpoint.context.label",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read the authenticated actor’s capabilities and available resources.",
     "isolated": "Read the authenticated actor’s capabilities and available resources.",
-    "key": "label.read.context.meaning",
+    "key": "endpoint.context.meaning",
     "language": "en"
   },
   {
@@ -3866,13 +3852,6 @@
   },
   {
     "arguments": {},
-    "expected": "Ir sasniegts pēdējais virsgrāmatas kārtas numurs.",
-    "isolated": "Ir sasniegts pēdējais virsgrāmatas kārtas numurs.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
     "expected": "Šī lieta nav anulēta.",
     "isolated": "Šī lieta nav anulēta.",
     "key": "diagnostic.NOT_VOIDED",
@@ -3906,13 +3885,6 @@
     "expected": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
     "isolated": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
-    "expected": "Lieta ir sasniegusi savu pēdējo redakciju.",
-    "isolated": "Lieta ir sasniegusi savu pēdējo redakciju.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "lv"
   },
   {
@@ -5713,112 +5685,112 @@
     "arguments": {},
     "expected": "Lasīt lietu",
     "isolated": "Lasīt lietu",
-    "key": "label.read.case.get.label",
+    "key": "endpoint.case.get.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt lietas pašreizējo pieņemto skatu un pieejamās darbības.",
     "isolated": "Lasīt lietas pašreizējo pieņemto skatu un pieejamās darbības.",
-    "key": "label.read.case.get.meaning",
+    "key": "endpoint.case.get.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lietu saraksts",
     "isolated": "Lietu saraksts",
-    "key": "label.read.case.list.label",
+    "key": "endpoint.case.list.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt vienu dalībniekam redzamo lietu lapu.",
     "isolated": "Lasīt vienu dalībniekam redzamo lietu lapu.",
-    "key": "label.read.case.list.meaning",
+    "key": "endpoint.case.list.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt lietas vēsturi",
     "isolated": "Lasīt lietas vēsturi",
-    "key": "label.read.case.history.label",
+    "key": "endpoint.case.history.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt vienas lietas pieņemto vēsturi atbilstoši pašreizējām piekļuves tiesībām.",
     "isolated": "Lasīt vienas lietas pieņemto vēsturi atbilstoši pašreizējām piekļuves tiesībām.",
-    "key": "label.read.case.history.meaning",
+    "key": "endpoint.case.history.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Novērot operāciju",
     "isolated": "Novērot operāciju",
-    "key": "label.read.operation.observe.label",
+    "key": "endpoint.operation.observe.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt pieņemtas operācijas apliecinājumu, ja tas ir redzams dalībniekam.",
     "isolated": "Lasīt pieņemtas operācijas apliecinājumu, ja tas ir redzams dalībniekam.",
-    "key": "label.read.operation.observe.meaning",
+    "key": "endpoint.operation.observe.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Atrisināt operāciju",
     "isolated": "Atrisināt operāciju",
-    "key": "label.read.operation.resolve.label",
+    "key": "endpoint.operation.resolve.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt autora apliecinājumu vai neatgriezeniski liegt operācijas pieņemšanu.",
     "isolated": "Lasīt autora apliecinājumu vai neatgriezeniski liegt operācijas pieņemšanu.",
-    "key": "label.read.operation.resolve.meaning",
+    "key": "endpoint.operation.resolve.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Dalībnieku saraksts",
     "isolated": "Dalībnieku saraksts",
-    "key": "label.read.authority.list.label",
+    "key": "endpoint.authority.list.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt reģistrētos dalībniekus un pieejamās pilnvaru darbības.",
     "isolated": "Lasīt reģistrētos dalībniekus un pieejamās pilnvaru darbības.",
-    "key": "label.read.authority.list.meaning",
+    "key": "endpoint.authority.list.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt dalībnieka pilnvaras",
     "isolated": "Lasīt dalībnieka pilnvaras",
-    "key": "label.read.authority.grants.label",
+    "key": "endpoint.authority.grants.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt vienu atlasītā dalībnieka pilnvaru lapu.",
     "isolated": "Lasīt vienu atlasītā dalībnieka pilnvaru lapu.",
-    "key": "label.read.authority.grants.meaning",
+    "key": "endpoint.authority.grants.meaning",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt kontekstu",
     "isolated": "Lasīt kontekstu",
-    "key": "label.read.context.label",
+    "key": "endpoint.context.label",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Lasīt autentificētā dalībnieka iespējas un pieejamos resursus.",
     "isolated": "Lasīt autentificētā dalībnieka iespējas un pieejamos resursus.",
-    "key": "label.read.context.meaning",
+    "key": "endpoint.context.meaning",
     "language": "lv"
   },
   {
@@ -6984,13 +6956,6 @@
   },
   {
     "arguments": {},
-    "expected": "وصل السجل إلى رقم التسلسل الأخير.",
-    "isolated": "وصل السجل إلى رقم التسلسل الأخير.",
-    "key": "diagnostic.LEDGER_SEQUENCE_EXHAUSTED",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
     "expected": "هذا الملف غير ملغى.",
     "isolated": "هذا الملف غير ملغى.",
     "key": "diagnostic.NOT_VOIDED",
@@ -7024,13 +6989,6 @@
     "expected": "استخدم قيمة من 1 إلى «maximumPageSize».",
     "isolated": "استخدم قيمة من 1 إلى ⁨«maximumPageSize»⁩.",
     "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
-    "expected": "وصلت الحالة إلى مراجعتها الأخيرة.",
-    "isolated": "وصلت الحالة إلى مراجعتها الأخيرة.",
-    "key": "diagnostic.REVISION_EXHAUSTED",
     "language": "ar"
   },
   {
@@ -8831,112 +8789,112 @@
     "arguments": {},
     "expected": "قراءة قضية",
     "isolated": "قراءة قضية",
-    "key": "label.read.case.get.label",
+    "key": "endpoint.case.get.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة العرض المقبول الحالي للقضية والأفعال المتاحة.",
     "isolated": "قراءة العرض المقبول الحالي للقضية والأفعال المتاحة.",
-    "key": "label.read.case.get.meaning",
+    "key": "endpoint.case.get.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قائمة القضايا",
     "isolated": "قائمة القضايا",
-    "key": "label.read.case.list.label",
+    "key": "endpoint.case.list.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة صفحة من القضايا المرئية للجهة.",
     "isolated": "قراءة صفحة من القضايا المرئية للجهة.",
-    "key": "label.read.case.list.meaning",
+    "key": "endpoint.case.list.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة سجل القضية",
     "isolated": "قراءة سجل القضية",
-    "key": "label.read.case.history.label",
+    "key": "endpoint.case.history.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة السجل المقبول لقضية واحدة وفق صلاحيات الكشف الحالية.",
     "isolated": "قراءة السجل المقبول لقضية واحدة وفق صلاحيات الكشف الحالية.",
-    "key": "label.read.case.history.meaning",
+    "key": "endpoint.case.history.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "مراقبة عملية",
     "isolated": "مراقبة عملية",
-    "key": "label.read.operation.observe.label",
+    "key": "endpoint.operation.observe.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة إيصال عملية مقبولة إذا كان مرئياً للجهة.",
     "isolated": "قراءة إيصال عملية مقبولة إذا كان مرئياً للجهة.",
-    "key": "label.read.operation.observe.meaning",
+    "key": "endpoint.operation.observe.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "حسم عملية",
     "isolated": "حسم عملية",
-    "key": "label.read.operation.resolve.label",
+    "key": "endpoint.operation.resolve.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة إيصال صاحب العملية أو منع قبولها بصورة دائمة.",
     "isolated": "قراءة إيصال صاحب العملية أو منع قبولها بصورة دائمة.",
-    "key": "label.read.operation.resolve.meaning",
+    "key": "endpoint.operation.resolve.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قائمة الجهات",
     "isolated": "قائمة الجهات",
-    "key": "label.read.authority.list.label",
+    "key": "endpoint.authority.list.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة الجهات المسجلة وأفعال الصلاحيات المتاحة.",
     "isolated": "قراءة الجهات المسجلة وأفعال الصلاحيات المتاحة.",
-    "key": "label.read.authority.list.meaning",
+    "key": "endpoint.authority.list.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة صلاحيات الجهة",
     "isolated": "قراءة صلاحيات الجهة",
-    "key": "label.read.authority.grants.label",
+    "key": "endpoint.authority.grants.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة صفحة من صلاحيات الجهة المحددة.",
     "isolated": "قراءة صفحة من صلاحيات الجهة المحددة.",
-    "key": "label.read.authority.grants.meaning",
+    "key": "endpoint.authority.grants.meaning",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة السياق",
     "isolated": "قراءة السياق",
-    "key": "label.read.context.label",
+    "key": "endpoint.context.label",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "قراءة قدرات الجهة الموثقة والموارد المتاحة.",
     "isolated": "قراءة قدرات الجهة الموثقة والموارد المتاحة.",
-    "key": "label.read.context.meaning",
+    "key": "endpoint.context.meaning",
     "language": "ar"
   },
   {

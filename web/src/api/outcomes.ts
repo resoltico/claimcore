@@ -1,6 +1,6 @@
 import { mutationUncertain } from "../protocol/delivery";
-import type { ApiResult, EndpointOutcome } from "./types";
-import { localNotice, type Notice } from "./notices";
+import type { ApiResult, EndpointOutcome } from "../protocol/types";
+import { localNotice, type Notice } from "../protocol/notices";
 export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   if (result.kind === "deliveryFailure") {
     return result.notice;

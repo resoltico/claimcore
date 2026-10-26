@@ -33,7 +33,7 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
         Subject =
             ClaimCore.Contract.ReceiptSubject.Case
                 {
-                    Reference = "UNIT-001"
+                    Reference = CaseFixtures.reference "UNIT-001"
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
                     Snapshot =
@@ -66,12 +66,12 @@ let private admitted codec value =
     use document = JsonDocument.Parse(encoded.AsMemory())
     document.RootElement.Clone()
 
-let private caseRequest values : ClaimCore.Contract.CaseRequest =
+let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
     {
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Contract.CaseAct.Open values
+        Act = ClaimCore.Domain.UnvalidatedCaseAct.Open values
     }
 
 let private contextCodec () =
@@ -99,7 +99,7 @@ let private queryCodecs () =
         [
             snapshot
             { snapshot with
-                State = ClaimCore.Contract.CaseState.Erased
+                State = ClaimCore.Domain.CaseState.Erased
             }
         ] do
         admitted
@@ -157,14 +157,17 @@ let private executeOutcomes () =
 
             let frame: ClaimCore.Cli.FrameReply =
                 {
-                    Endpoint = Some "operation.execute"
+                    Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
                     OperationId = Some id
                     Delivery =
                         if exit = 4 then
                             DeliveryState.Uncertain
                         else
                             DeliveryState.Delivered
-                    Result = FrameResult.Reply(TypedReply.ofValue Api.operationExecute reply)
+                    Result =
+                        FrameResult.Reply(
+                            ClaimCore.Tests.CliReplies.ofValue Api.operationExecute reply
+                        )
                 }
 
             Expect.equal
@@ -185,7 +188,7 @@ let private disclosures () =
                 Subject =
                     ClaimCore.Contract.ReceiptSubject.Case
                         {
-                            Reference = "UNIT-001"
+                            Reference = CaseFixtures.reference "UNIT-001"
                             Revision = 1L
                             Act = CaseActKind.Business BusinessActKind.Open
                             Snapshot = snapshot
@@ -223,7 +226,7 @@ let private previewCodecs () =
         [
             PreviewResult.Reviewed(OperationReview.Case review)
             PreviewResult.AlreadyAccepted receipt
-            PreviewResult.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
+            PreviewResult.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
             PreviewResult.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
@@ -235,11 +238,10 @@ let private diagnostics () =
 
     for value in
         [
-            ClaimCore.Contract.Refusal.LedgerExhausted
-            ClaimCore.Contract.Refusal.InvalidCursor
-            ClaimCore.Contract.Refusal.LastOwner
-            ClaimCore.Contract.Refusal.ActNotPermitted
-            ClaimCore.Contract.Refusal.ResourceUnavailable
+            ClaimCore.Domain.Refusal.InvalidCursor
+            ClaimCore.Domain.Refusal.LastOwner
+            ClaimCore.Domain.Refusal.ActNotPermitted
+            ClaimCore.Domain.Refusal.ResourceUnavailable
         ] do
         let result = admitted Api.caseGet.Output (ReadReply.Rejected value)
 
@@ -260,7 +262,7 @@ let private actionExpectations =
         "CORRECT_INPUT",
         Some "limit",
         None
-        ClaimCore.Contract.Refusal.InvalidCursor,
+        ClaimCore.Domain.Refusal.InvalidCursor,
         RecommendedAction.ReadCurrent,
         "READ_CURRENT",
         Some "cursor",
@@ -404,13 +406,13 @@ let private retainedText () =
             { viewFields original with
                 Registration =
                     { (viewFields original).Registration with
-                        ClaimantName = name
+                        ClaimantName = CaseFixtures.name name
                     }
             }
 
         let snapshot =
             { original with
-                State = ClaimCore.Contract.CaseState.Active(fields)
+                State = ClaimCore.Domain.CaseState.Active(fields)
             }
 
         let prior = Case.ofAccepted snapshot |> accepted
@@ -431,12 +433,12 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (CaseAct.AmendRegistration values)
+        let reaffirm = request 1L (UnvalidatedCaseAct.AmendRegistration values)
 
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Contract.CaseAct.AmendRegistration values
+                Act = ClaimCore.Domain.UnvalidatedCaseAct.AmendRegistration values
             }
 
         Codec.decode
@@ -446,19 +448,19 @@ let private retainedText () =
         |> accepted
         |> ignore
 
-        Case.decide today reaffirm (Some prior) |> accepted |> ignore
+        CaseFixtures.decide today reaffirm (Some prior) |> accepted |> ignore
 
         let changed =
             { reaffirm with
                 Act =
-                    (CaseAct.AmendRegistration
+                    (UnvalidatedCaseAct.AmendRegistration
                         { values with
                             ClaimantName = name + "B"
                         })
             }
 
         Expect.isError
-            (Case.decide today changed (Some prior))
+            (CaseFixtures.decide today changed (Some prior))
             "New assertions follow current admission"
 
 let private authorityWire kind issuer subject =
@@ -625,5 +627,5 @@ let tests =
             testCase "strict frames reject hostile shapes and preserve original bytes" rejectFrames
             testCase "wire integers enforce lexemes and safe boundaries" integerLexemes
             testCase "all frame and HTTP decoders are total for bounded hostile bytes" (fun () ->
-                PropertyHarness.run "CC-FUZZ-INVOCATION-001" decoderProperty)
+                PropertyHarness.run "invocation byte decoder" decoderProperty)
         ]

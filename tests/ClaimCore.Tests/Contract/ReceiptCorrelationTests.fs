@@ -1,8 +1,11 @@
 module ClaimCore.Tests.ReceiptCorrelationTests
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
 let private other = Guid.Parse "10000000-0000-4000-8000-000000000002"
@@ -13,12 +16,12 @@ let private request =
             OperationId = id
             CaseReference = "SYNTHETIC-1"
             ExpectedRevision = 2L
-            Act = CaseAct.Close
+            Act = UnvalidatedCaseAct.Close
         }
 
 let private caseReceipt =
     {
-        Reference = "synthetic-1"
+        Reference = CaseFixtures.reference "synthetic-1"
         Revision = 3L
         Act = CaseActKind.Business BusinessActKind.Close
         Snapshot = SnapshotDisclosure.Withheld
@@ -67,7 +70,7 @@ let private contradictions () =
             receipt (
                 ReceiptSubject.Case
                     { caseReceipt with
-                        Reference = "SYNTHETIC-2"
+                        Reference = CaseFixtures.reference "SYNTHETIC-2"
                     }
             )
             receipt (ReceiptSubject.Case { caseReceipt with Revision = 2L })

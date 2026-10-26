@@ -43,7 +43,7 @@ module AccessTokens =
         seconds
         =
         match value with
-        | null -> Error "OIDC_RESPONSE_INVALID"
+        | null -> Error AccessFailure.OidcResponseInvalid
         | value ->
             try
                 if
@@ -56,26 +56,26 @@ module AccessTokens =
                         |> Seq.forall (fun c -> Char.IsAsciiLetterOrDigit c || "-._~+/=".Contains c)
                     )
                 then
-                    Error "OIDC_RESPONSE_INVALID"
+                    Error AccessFailure.OidcResponseInvalid
                 else
                     let token = AccessToken(value, seconds, clock, observedUtc, observedTimestamp)
 
                     if token.CanUse then
                         Ok token
                     else
-                        Error "OIDC_TOKEN_UNAVAILABLE"
+                        Error AccessFailure.OidcTokenUnavailable
             with :? ArgumentException ->
-                Error "OIDC_RESPONSE_INVALID"
+                Error AccessFailure.OidcResponseInvalid
 
     let internal fromResponseAt clock observedUtc observedTimestamp (response: TokenResponse) =
         if response.IsError then
-            Error "OIDC_TOKEN_UNAVAILABLE"
+            Error AccessFailure.OidcTokenUnavailable
         elif
             response.Raw
             |> Option.ofObj
             |> Option.forall (fun raw -> System.Text.Encoding.UTF8.GetByteCount raw > 32768)
         then
-            Error "OIDC_RESPONSE_INVALID"
+            Error AccessFailure.OidcResponseInvalid
         else
             try
                 fromPartsAt
@@ -90,4 +90,4 @@ module AccessTokens =
             | :? InvalidOperationException
             | :? FormatException
             | :? OverflowException
-            | :? ArgumentException -> Error "OIDC_RESPONSE_INVALID"
+            | :? ArgumentException -> Error AccessFailure.OidcResponseInvalid

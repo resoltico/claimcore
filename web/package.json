@@ -21,8 +21,7 @@
     "dead-code": "knip",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "test:coverage": "vitest run --coverage",
-    "boundaries:check": "node scripts/boundary-controls.mjs"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -31,7 +30,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@oxlint/plugins": "1.89.0",
     "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
@@ -41,7 +39,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "@vitest/coverage-v8": "5.0.5",
-    "eslint": "10.13.0",
     "eslint-import-resolver-typescript": "4.4.4",
     "eslint-plugin-import-x": "4.17.1",
     "eslint-plugin-react-hooks": "7.1.1",

@@ -7,6 +7,7 @@ open System.Text
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 open ClaimCore.Application
@@ -243,12 +244,17 @@ let private localizedReplyRendering () =
 
             let frame =
                 {
-                    Endpoint = Some(example.GetProperty("endpoint").GetString() |> nonNull)
+                    Endpoint =
+                        Some(
+                            example.GetProperty("endpoint").GetString()
+                            |> nonNull
+                            |> ClaimCore.Tests.CliReplies.endpointId
+                        )
                     OperationId = None
                     Delivery = DeliveryState.Delivered
                     Result =
                         FrameResult.Reply(
-                            TypedReply.read
+                            ServiceReply.read
                                 (Api.tryFind (
                                     example.GetProperty("endpoint").GetString() |> nonNull
                                  )
@@ -261,7 +267,7 @@ let private localizedReplyRendering () =
             let expected =
                 JsonValue.Object
                     [
-                        "endpoint", JsonValue.String frame.Endpoint.Value
+                        "endpoint", JsonValue.String(EndpointIds.token frame.Endpoint.Value)
                         "operationId", JsonValue.Null
                         "delivery", JsonValue.String "DELIVERED"
                         "result", reply
@@ -360,10 +366,11 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
 
     let frame =
         {
-            Endpoint = Some "operation.preview"
+            Endpoint = Some(EndpointId.Actor ActorEndpoint.Preview)
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(TypedReply.ofValue Api.operationPreview response)
+            Result =
+                FrameResult.Reply(ClaimCore.Tests.CliReplies.ofValue Api.operationPreview response)
         }
 
     frame

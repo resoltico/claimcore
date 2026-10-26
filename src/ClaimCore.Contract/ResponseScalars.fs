@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -43,16 +45,26 @@ module ResponseScalars =
                 Some Formats.dateCharacters,
                 Some Formats.dateCharacters
             ))
-            (fun value ->
-                DateOnly.TryParseExact(
-                    value,
-                    Formats.CalendarDateFormat,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None
-                )
-                |> fst)
+            (fun value -> CalendarDate.parse value |> Result.isOk)
 
-    let businessField = Vocabulary.tokens FieldTable.vocabulary |> tokens
+    let private parsed parse format codec =
+        codec
+        |> mapResult
+            (fun path raw ->
+                parse raw
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "value outside its wire grammar"
+                    }))
+            format
+
+    let calendarDate = parsed CalendarDate.parse CalendarDate.format date
+    let caseReference = parsed CaseReference.parse CaseReference.format reference
+    let countryCode = parsed CountryCode.parse CountryCode.format country
+    let partyName = parsed PartyName.parse PartyName.format nonempty
+
+    let businessField = Vocabulary.tokens RecordFields.vocabulary |> tokens
 
     let capability = Capabilities.all |> List.map Capabilities.token |> tokens
 

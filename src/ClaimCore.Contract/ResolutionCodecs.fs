@@ -1,5 +1,6 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
 open ClaimCore.Json
 
 open ClaimCore.Contract.Protocol
@@ -7,11 +8,7 @@ open ClaimCore.Contract.Protocol
 module ResolutionCodecs =
     open Codec
 
-    let request =
-        (record (fun id -> { ResolveRequest.OperationId = id }): Fields<ResolveRequest, _>)
-        |> field "operationId" _.OperationId uuid
-        |> build
-        |> named "ResolveRequest"
+    let request = Record.resolve.Codec RequestCodecs.readProfile
 
     let private data codec = record id |> field "data" id codec
 

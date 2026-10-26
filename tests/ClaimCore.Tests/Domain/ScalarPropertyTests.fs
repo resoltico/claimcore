@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ScalarPropertyTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -12,10 +14,6 @@ open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.PropertyHarness
 
 type private Sample = { Raw: string; Accepted: bool }
-
-let private restoreWith transform =
-    let fields = opened () |> Case.snapshot |> (fun view -> transform (viewFields view))
-    Case.ofAccepted (snapshot 1L fields)
 
 let private validDate =
     Gen.int32 (Range.constant DateOnly.MinValue.DayNumber DateOnly.MaxValue.DayNumber)
@@ -44,23 +42,9 @@ let private dateProperty =
     property {
         let! sample = Gen.frequency [ 3, validDate; 2, invalidDate ]
 
-        let result =
-            restoreWith (fun fields ->
-                { fields with
-                    Registration =
-                        { fields.Registration with
-                            IncidentDate = sample.Raw
-                            IncidentNotificationDate = sample.Raw
-                        }
-                })
-
         return
-            match result, sample.Accepted with
-            | Ok claim, true ->
-                let fields = (Case.snapshot claim |> viewFields)
-
-                fields.Registration.IncidentDate = sample.Raw
-                && fields.Registration.IncidentNotificationDate = sample.Raw
+            match CalendarDate.parse sample.Raw, sample.Accepted with
+            | Ok date, true -> CalendarDate.format date = sample.Raw
             | Error _, false -> true
             | _ -> false
     }
@@ -115,12 +99,12 @@ let private amountProperty =
         let candidate =
             request
                 0L
-                (CaseAct.Open
+                (UnvalidatedCaseAct.Open
                     { registration with
                         ClaimedAmount = sample.Raw
                     })
 
-        let result = Case.decide today candidate None
+        let result = CaseFixtures.decide today candidate None
 
         return Result.isOk result = sample.Accepted
     }
@@ -141,17 +125,7 @@ let private invalidCurrency =
 let private currencyProperty =
     property {
         let! sample = Gen.frequency [ 3, validCurrency; 2, invalidCurrency ]
-
-        let result =
-            restoreWith (fun fields ->
-                { fields with
-                    Registration =
-                        { fields.Registration with
-                            ClaimedCurrency = sample.Raw
-                        }
-                })
-
-        return Result.isOk result = sample.Accepted
+        return Result.isOk (Money.parse "1" sample.Raw) = sample.Accepted
     }
 
 type private TextTarget =
@@ -186,7 +160,7 @@ let private validateText target value =
             }
         | Reference -> registration
 
-    let candidate = request 0L (CaseAct.Open facts)
+    let candidate = request 0L (UnvalidatedCaseAct.Open facts)
 
     let candidate =
         if target = Reference then
@@ -194,7 +168,7 @@ let private validateText target value =
         else
             candidate
 
-    Case.decide today candidate None |> Result.map ignore
+    CaseFixtures.decide today candidate None |> Result.map ignore
 
 let private validText =
     gen {
@@ -241,12 +215,10 @@ let tests =
     testList
         "Hedgehog scalar boundaries"
         [
-            testCase "Gregorian date grammar and range" (fun () ->
-                run "CC-PROP-DATE-001" dateProperty)
-            testCase "amount precision and magnitude" (fun () ->
-                run "CC-PROP-AMOUNT-001" amountProperty)
+            testCase "Gregorian date grammar and range" (fun () -> run "calendar date" dateProperty)
+            testCase "amount precision and magnitude" (fun () -> run "money amount" amountProperty)
             testCase "uppercase ASCII currency grammar" (fun () ->
-                run "CC-PROP-CURRENCY-001" currencyProperty)
+                run "currency code" currencyProperty)
             testCase "Unicode text and length boundaries" (fun () ->
                 let invalidValues =
                     [
@@ -268,5 +240,5 @@ let tests =
                 |> List.iter (fun value ->
                     Expect.isError (validateText Claimant value) "Exact Domain text boundary")
 
-                run "CC-PROP-TEXT-001" textProperty)
+                run "business text" textProperty)
         ]

@@ -3,7 +3,7 @@ import { endpoints } from "@contracts/client";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { randomUUID } from "node:crypto";
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 
 export const refusedRead = async (
   page: Page,

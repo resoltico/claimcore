@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 
 /// A finite product vocabulary supplies its spelling, ordering and union coverage.

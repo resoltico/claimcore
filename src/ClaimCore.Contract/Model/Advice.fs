@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
 type RuntimeContext =
@@ -19,11 +21,6 @@ type View =
 type InstallationOffer =
     | Open
     | AuthorityAct of AuthorityKind
-
-[<RequireQualifiedAccess>]
-type HistoryDetail =
-    | Summary
-    | Full
 
 type CorrectionChoices =
     {
@@ -72,18 +69,9 @@ type AdvisoryReview =
         Context: RuntimeContext
     }
 
-module HistoryDetails =
-    let vocabulary =
-        Vocabulary.define
-            "historyDetail"
-            [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ]
-
 module Views =
     let vocabulary =
-        Vocabulary.define
-            "view"
-            [
-                View.Cases, "CASES"
-                View.Authority, "AUTHORITY"
-                View.Operations, "OPERATIONS"
-            ]
+        Vocabulary.define "view" [ View.Cases; View.Authority; View.Operations ] (function
+            | View.Cases -> "CASES"
+            | View.Authority -> "AUTHORITY"
+            | View.Operations -> "OPERATIONS")

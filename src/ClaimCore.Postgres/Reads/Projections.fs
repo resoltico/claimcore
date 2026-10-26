@@ -17,103 +17,79 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let private amount index row =
-        let text = required<string> index row
+    let private date field row =
+        DatabaseSession.namedCalendarDate (CaseProjectionLayout.name field) row
+        |> CalendarDate.ofDate
 
-        let grammar = FieldRules.amount.Grammar
+    let private field<'T> field row =
+        DatabaseSession.namedValue<'T> (CaseProjectionLayout.name field) row
 
-        if
-            not (
-                Regex.IsMatch(
-                    text,
-                    "\\A" + grammar + "\\z",
-                    RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
-                )
-            )
-        then
-            raise (RecordCorruptException "Invalid stored amount.")
+    let private optionalField<'T> field row =
+        DatabaseSession.namedOptional<'T> (CaseProjectionLayout.name field) row
 
-        match
-            Decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture)
-        with
-        | true, amount -> amount.ToString("0.####", CultureInfo.InvariantCulture)
-        | _ -> raise (RecordCorruptException "Invalid stored amount.")
-
-    let private date index row =
-        (DatabaseSession.calendarDate index row)
-            .ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture)
-
-    let private optionalText formatter index (row: obj array) =
-        if Convert.IsDBNull row[index] then
-            None
-        else
-            Some(formatter index row)
+    let private optionalDate field row =
+        DatabaseSession.namedOptional<string> (CaseProjectionLayout.name field) row
+        |> Option.map (fun _ -> date field row)
 
     let caseColumns = CaseProjectionLayout.select
 
     let private fields reference row : CaseFields =
         let decision =
             match
-                optionalText
-                    date
-                    (CaseProjectionLayout.ordinal BusinessField.PaymentDecisionDate)
-                    row,
-                optionalText amount (CaseProjectionLayout.ordinal BusinessField.PayableAmount) row,
-                optional<string> (CaseProjectionLayout.ordinal BusinessField.PayableCurrency) row
+                optionalDate BusinessField.PaymentDecisionDate row,
+                optionalField<string> BusinessField.PayableAmount row,
+                optionalField<string> BusinessField.PayableCurrency row
             with
             | None, None, None -> None
             | Some date, Some amount, Some currency ->
                 Some
                     {
                         PaymentDecisionDate = date
-                        PayableAmount = amount
-                        PayableCurrency = currency
+                        PayableAmount = Money.parse amount currency |> parsed
                     }
             | _ -> raise (RecordCorruptException "Incomplete stored decision.")
 
         {
             CaseReference = reference
             Status =
-                CaseStatuses.parse (
-                    required<string> (CaseProjectionLayout.ordinal BusinessField.Status) row
-                )
+                CaseStatuses.parse (field<string> BusinessField.Status row)
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid stored status."))
             Registration =
                 {
-                    IncidentDate =
-                        date (CaseProjectionLayout.ordinal BusinessField.IncidentDate) row
-                    IncidentNotificationDate =
-                        date
-                            (CaseProjectionLayout.ordinal BusinessField.IncidentNotificationDate)
-                            row
+                    IncidentDate = date BusinessField.IncidentDate row
+                    IncidentNotificationDate = date BusinessField.IncidentNotificationDate row
                     IncidentCountry =
-                        required (CaseProjectionLayout.ordinal BusinessField.IncidentCountry) row
+                        field<string> BusinessField.IncidentCountry row
+                        |> CountryCode.parse
+                        |> parsed
                     ClaimantName =
-                        required (CaseProjectionLayout.ordinal BusinessField.ClaimantName) row
+                        field<string> BusinessField.ClaimantName row |> PartyName.parse |> parsed
                     InsurerName =
-                        required (CaseProjectionLayout.ordinal BusinessField.InsurerName) row
+                        field<string> BusinessField.InsurerName row |> PartyName.parse |> parsed
                     ClaimedAmount =
-                        amount (CaseProjectionLayout.ordinal BusinessField.ClaimedAmount) row
-                    ClaimedCurrency =
-                        required (CaseProjectionLayout.ordinal BusinessField.ClaimedCurrency) row
+                        Money.parse
+                            (field<string> BusinessField.ClaimedAmount row)
+                            (field<string> BusinessField.ClaimedCurrency row)
+                        |> parsed
                 }
             Decision = decision
             Payment =
-                optionalText date (CaseProjectionLayout.ordinal BusinessField.PaymentDate) row
-                |> Option.map (fun value -> { PaymentDate = value })
+                optionalDate BusinessField.PaymentDate row
+                |> Option.map (fun date -> { PaymentDate = date })
         }
 
-    let caseRow (row: obj array) : StoredCase =
+    let caseRow (row: Map<string, obj>) : StoredCase =
         let reference =
-            required<string> (CaseProjectionLayout.ordinal BusinessField.CaseReference) row
+            field<string> BusinessField.CaseReference row |> CaseReference.parse |> parsed
 
         let view =
-            match required<string> CaseProjectionLayout.stateOrdinal row with
+            match DatabaseSession.namedValue<string> "state" row with
             | "ERASED" ->
                 if
-                    row[CaseProjectionLayout.payloadOrdinal ..]
-                    |> Array.exists (Convert.IsDBNull >> not)
+                    CaseProjectionLayout.payloadColumns
+                    |> List.exists (fun name ->
+                        not (Convert.IsDBNull(DatabaseSession.namedValue<obj> name row)))
                 then
                     raise (RecordCorruptException "Erased projection retains business fields.")
 
@@ -125,21 +101,21 @@ module internal Projections =
         let snapshot =
             {
                 Reference = reference
-                Revision = required<int64> CaseProjectionLayout.revisionOrdinal row
+                Revision = DatabaseSession.namedValue<int64> "revision" row
                 State = view
             }
 
         Case.ofAccepted snapshot |> parsed |> ignore
 
         {
-            CaseId = required 0 row
+            CaseId = DatabaseSession.namedValue "case_id" row
             Snapshot = snapshot
         }
 
     let caseById connection id token =
         task {
             let! rows =
-                DatabaseSession.rows
+                DatabaseSession.namedRows
                     connection
                     ($"SELECT {caseColumns} FROM claimcore.cases WHERE case_id=$1")
                     [| box id |]
@@ -235,7 +211,7 @@ module internal Projections =
 
     let operationCases entry =
         match entry |> Option.map (fun (entry: StoredEntry) -> entry.Subject) with
-        | Some(StoredSubject.Case(id, _, _, _)) -> [ id ]
+        | Some(EntryTarget.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 
     let actorRow row : Actor =
@@ -254,7 +230,14 @@ module internal Projections =
         let scope =
             match caseId, optional<string> 1 row with
             | None, None -> GrantTarget.Installation
-            | Some _, Some reference when CaseReference.validate reference |> Result.isOk ->
+            | Some _, Some reference when
+                (CaseReference.parse
+                 >> Result.map ignore
+                 >> Result.mapError (fun violation ->
+                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                    reference
+                |> Result.isOk
+                ->
                 GrantTarget.CaseReference reference
             | _ -> raise (RecordCorruptException "Invalid grant projection.")
 

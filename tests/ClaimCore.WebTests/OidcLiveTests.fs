@@ -155,5 +155,5 @@ let private liveIdentity () =
 [<Tests>]
 let tests =
     testCaseTask
-        "[CC-WEB-001] owned Keycloak proves HTTPS, PKCE, bearer refusal controls and key rotation"
+        "owned Keycloak proves HTTPS, PKCE, bearer refusal controls and key rotation"
         liveIdentity

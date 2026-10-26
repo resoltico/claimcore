@@ -6,6 +6,7 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
@@ -117,7 +118,7 @@ let private byteBoundaries () =
 
 let private reply result delivery =
     {
-        Endpoint = Some "operation.execute"
+        Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
         OperationId = Some id
         Delivery = delivery
         Result = result
@@ -159,7 +160,7 @@ let private results () =
         )
 
     let output =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
 
@@ -199,7 +200,7 @@ let private exits () =
         "Protocol refusal retains its exit."
 
     let output =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
 
@@ -225,11 +226,11 @@ let private refusingFrames () =
             "Unknown, extra and duplicate frame members refuse."
 
     Expect.isError
-        (TypedReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        (ServiceReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
         "A malformed raw reply cannot construct a typed value."
 
     let typed =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
                 ExecuteReply.OperationId = id
@@ -238,7 +239,7 @@ let private refusingFrames () =
 
     let invalid =
         { reply (FrameResult.Reply typed) DeliveryState.Delivered with
-            Endpoint = Some Api.context.Token
+            Endpoint = Some(EndpointId.Actor ActorEndpoint.Context)
         }
 
     Expect.throws
@@ -250,7 +251,7 @@ let private operationEcho () =
 
     for actual, expected in [ id, true; other, false ] do
         let output =
-            TypedReply.ofValue
+            ClaimCore.Tests.CliReplies.ofValue
                 Api.operationExecute
                 {
 
@@ -259,10 +260,10 @@ let private operationEcho () =
                 }
 
         Expect.equal
-            (Correlation.matches
+            (ClaimCore.Tests.CliReplies.correlates
                 (Frames.endpoint prepared)
                 (Frames.input prepared)
-                (TypedReply.json output))
+                (ServiceReply.json output))
             expected
             "Only the frozen operation ID settles a mutation."
 
@@ -298,7 +299,7 @@ let private grantEcho () =
         let output = Api.authorityGrants.Output.Write(ReadReply.Succeeded page)
 
         Expect.equal
-            (Correlation.matches endpoint input output)
+            (ClaimCore.Tests.CliReplies.correlates endpoint input output)
             expected
             "A grants page echoes its target actor."
 
@@ -306,7 +307,7 @@ let private grantEcho () =
         Api.authorityGrants.Output.Write(ReadReply.Rejected Refusal.ResourceUnavailable)
 
     Expect.isTrue
-        (Correlation.matches endpoint input refused)
+        (ClaimCore.Tests.CliReplies.correlates endpoint input refused)
         "A refusal carries no disclosed actor."
 
 [<Tests>]

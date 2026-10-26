@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.AuthFoundationTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Text
@@ -162,18 +163,18 @@ let private middlewarePolicy () =
 
 let private exclusiveCredentialMode () =
     let context = DefaultHttpContext()
-    Expect.equal (Admission.credentialMode context) CredentialMode.Missing "No credential"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Missing "No credential"
 
     context.Request.Headers["Authorization"] <- "Bearer synthetic"
-    Expect.equal (Admission.credentialMode context) CredentialMode.Bearer "Bearer only"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Bearer "Bearer only"
 
     context.Request.Headers["Cookie"] <- "__Host-ClaimCoreSession=synthetic"
-    Expect.equal (Admission.credentialMode context) CredentialMode.Mixed "No mixed mode"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Mixed "No mixed mode"
 
     context.Request.Headers.Remove("Authorization") |> ignore
 
     Expect.equal
-        (Admission.credentialMode context)
+        (RequestGate.credentialMode context)
         CredentialMode.BrowserCookie
         "Server-side browser cookie only"
 
@@ -182,12 +183,10 @@ let tests =
     testList
         "OIDC authentication foundation"
         [
-            testCase "[CC-WEB-001] production issuer requires HTTPS and exact URI" issuerPolicy
-            testCase "[CC-WEB-001] human and service principals remain distinct" principalIdentity
-            testCase "[CC-WEB-001] metadata pins issuer and secure endpoints" metadataValidation
-            testCase
-                "[CC-WEB-001] bearer principal uses explicit client classification"
-                accessTokenIdentity
-            testCase "[CC-WEB-001] middleware pins OIDC and JWT validation policy" middlewarePolicy
-            testCase "[CC-WEB-001] browser and bearer credentials never mix" exclusiveCredentialMode
+            testCase "production issuer requires HTTPS and exact URI" issuerPolicy
+            testCase "human and service principals remain distinct" principalIdentity
+            testCase "metadata pins issuer and secure endpoints" metadataValidation
+            testCase "bearer principal uses explicit client classification" accessTokenIdentity
+            testCase "middleware pins OIDC and JWT validation policy" middlewarePolicy
+            testCase "browser and bearer credentials never mix" exclusiveCredentialMode
         ]

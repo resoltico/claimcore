@@ -1,12 +1,11 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 [<NoComparison>]
 type Claim =
     internal
         {
-            Facts: Validation.Facts
+            Facts: Registration
             Progress: PaymentProgress
             Status: CaseStatus
         }

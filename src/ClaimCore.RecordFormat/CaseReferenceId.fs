@@ -10,7 +10,12 @@ module CaseReferenceId =
     let encode installationId reference =
         if
             installationId = Guid.Empty
-            || CaseReference.validate reference |> Result.isError
+            || (CaseReference.parse
+                >> Result.map ignore
+                >> Result.mapError (fun violation ->
+                    Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                reference
+               |> Result.isError
         then
             invalidArg (nameof reference) "Use a nonempty installation and valid case reference."
 

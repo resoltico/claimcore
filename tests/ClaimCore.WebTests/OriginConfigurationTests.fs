@@ -24,6 +24,4 @@ let private origin () =
 
 [<Tests>]
 let tests =
-    testCase
-        "[CC-WEB-001] accepts one explicit HTTPS authority and rejects ambiguous origins"
-        origin
+    testCase "accepts one explicit HTTPS authority and rejects ambiguous origins" origin

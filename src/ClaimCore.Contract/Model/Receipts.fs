@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
 type LedgerPosition = { Sequence: int64; EntryHash: string }
@@ -12,7 +14,7 @@ type SnapshotDisclosure =
 
 type CaseReceipt =
     {
-        Reference: string
+        Reference: CaseReference
         Revision: int64
         Act: CaseActKind
         Snapshot: SnapshotDisclosure

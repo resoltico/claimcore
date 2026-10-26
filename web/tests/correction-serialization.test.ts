@@ -5,7 +5,7 @@ import { correctionSerializations } from "./correction-serialization.fixtures";
 for (const status of ["OPENED", "CLOSED"] as const) {
   describe(`correction serialization while ${status}`, () => {
     it.each(correctionSerializations)(
-      "encodes literal %s/%s/%s request [CC-DOM-002]",
+      "encodes literal %s/%s/%s request",
       (registration, decision, payment, expected) => {
         const values = {
           ...initialOperationValues(

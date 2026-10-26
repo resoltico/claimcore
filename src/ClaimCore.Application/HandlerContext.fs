@@ -8,7 +8,7 @@ type HandlerContext =
     internal
         {
             InstallationId: Guid
-            Store: ILedgerStore
+            Store: IStore
             Calendar: IBusinessCalendar
             Principal: PrincipalKey
         }

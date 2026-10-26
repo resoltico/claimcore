@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 import { startOpen, reviewDraft, recordReviewed } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 
-test("records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001]", async ({
+test("records supplementary scalar boundaries through Web for published native readback", async ({
   page,
 }) => {
   await openAuthenticated(page);

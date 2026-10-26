@@ -35,8 +35,8 @@ module internal StoredEntries =
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 
-            StoredSubject.Authority(target, kind),
-            LedgerSubject.Authority { TargetActorId = target; Act = kind }
+            EntryTarget.Authority(target, kind),
+            RecordedTarget.Authority { TargetActorId = target; Act = kind }
         | "CASE" ->
             let revision = DatabaseSession.value<int64> 10 row
 
@@ -46,8 +46,8 @@ module internal StoredEntries =
 
             let date = DatabaseSession.calendarDate 11 row
 
-            StoredSubject.Case(target, revision, kind, date),
-            LedgerSubject.Case
+            EntryTarget.Case(target, revision, kind, date),
+            RecordedTarget.Case
                 {
                     CaseId = target
                     Revision = revision

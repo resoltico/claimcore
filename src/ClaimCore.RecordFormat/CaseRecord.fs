@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 
@@ -13,7 +12,11 @@ module CaseRecord =
     let private codec: Codec<CaseSnapshot> =
         Codec.record (fun revision state ->
             let view = LiveCase.toState state
-            let fields = CaseState.fields view |> Option.get
+
+            let fields =
+                match state with
+                | LiveCase.Active fields
+                | LiveCase.Voided fields -> fields
 
             {
                 Reference = fields.CaseReference

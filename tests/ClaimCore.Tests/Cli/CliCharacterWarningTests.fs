@@ -131,12 +131,12 @@ let private rendered exampleName customize verify =
 
     let frame =
         {
-            Endpoint = Some endpoint
+            Endpoint = Some(ClaimCore.Tests.CliReplies.endpointId endpoint)
             OperationId = None
             Delivery = DeliveryState.Delivered
             Result =
                 FrameResult.Reply(
-                    TypedReply.read (Api.tryFind endpoint |> Option.get) value
+                    ServiceReply.read (Api.tryFind endpoint |> Option.get) value
                     |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
                 )
         }

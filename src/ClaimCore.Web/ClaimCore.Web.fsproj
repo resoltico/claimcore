@@ -7,15 +7,16 @@
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Content Remove="wwwroot/**/*" />
     <None Remove="wwwroot/**/*" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Composition/AuthenticatedSubject.fs" />
+    <Compile Include="AuthenticationFailure.fs" />
+    <Compile Include="Composition/AuthenticatedPrincipal.fs" />
     <Compile Include="Composition/BusinessCalendar.fs" />
-    <Compile Include="Composition/AdmissionGate.fs" />
-    <Compile Include="Composition/Dispatch.fs" />
+    <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
     <Compile Include="Composition/ServiceRuntime.fs" />
     <Compile Include="StartupDiagnostics.fs" />
@@ -31,7 +32,7 @@
     <Compile Include="HttpBody.fs" />
     <Compile Include="AuthMiddleware.fs" />
     <Compile Include="Headers.fs" />
-    <Compile Include="Admission.fs" />
+    <Compile Include="RequestGate.fs" />
     <Compile Include="RequestLog.fs" />
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="RouteSupport.fs" />

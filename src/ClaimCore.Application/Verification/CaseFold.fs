@@ -10,7 +10,7 @@ type internal CaseHistory =
     {
         Revision: int64
         Snapshot: CaseSnapshot option
-        Reference: string option
+        Reference: CaseReference option
         State: CaseState<unit>
         MissingPayloadAt: int64 option
         PresentPayloadAt: int64 option
@@ -126,7 +126,7 @@ module internal CaseFold =
             let identity =
                 ClaimCore.RecordFormat.CaseReferenceId.encode
                     installationId
-                    record.Snapshot.Reference
+                    (CaseReference.format record.Snapshot.Reference)
                     =
                     record.CaseId
 

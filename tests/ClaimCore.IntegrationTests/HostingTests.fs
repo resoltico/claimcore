@@ -4,6 +4,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -50,11 +51,14 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
                     (OperationInput.Case(
-                        request n reference 0L (ClaimCore.Contract.CaseAct.Open registration)
+                        request
+                            n
+                            reference
+                            0L
+                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                     ))
                     (token))
 
@@ -67,7 +71,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = None; Limit = 1 }) (token)))
+                (Core.list actor ({ AfterCursor = None; Limit = 1 }) (token)))
 
         let cursor =
             match page with
@@ -78,7 +82,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! same =
             call first database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Core.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match same with
         | ReadReply.Succeeded page ->
@@ -92,7 +96,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Core.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match continued with
         | ReadReply.Succeeded page ->
@@ -210,15 +214,14 @@ let tests =
 
                         let! result =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Handlers.call
-                                    Api.operationExecute
+                                (Core.execute
                                     actor
                                     (OperationInput.Case(
                                         request
                                             30
                                             "synthetic-hosting"
                                             0L
-                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                                     ))
                                     (token)))
 
@@ -229,10 +232,10 @@ let tests =
                         let! after =
                             runtime.WithActor(
                                 database.Fixture.Owner,
-                                fun actor -> (Handlers.call Api.context actor () token)
+                                fun actor -> (Core.context actor () token)
                             )
 
-                        Expect.isNone after "Admission closed"
+                        Expect.isNone after "InstallationCheck closed"
                     }))
             for name, change, expected in
                 [
@@ -329,15 +332,14 @@ let tests =
 
                         let running =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Handlers.call
-                                    Api.operationExecute
+                                (Core.execute
                                     actor
                                     (OperationInput.Case(
                                         request
                                             40
                                             "synthetic-drain"
                                             0L
-                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
                                     ))
                                     (token)))
 
@@ -372,15 +374,15 @@ let tests =
                             "Admitted transaction still committed exactly once"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
-                Admission.serverVersion (System.Version(18, 6))
+                InstallationCheck.serverVersion (System.Version(18, 6))
 
                 for version in
                     [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
                     let mutable result = None
 
                     try
-                        Admission.serverVersion version
-                    with AdmissionRefusal fault ->
+                        InstallationCheck.serverVersion version
+                    with InstallationRefusal fault ->
                         result <- Some fault
 
                     Expect.equal

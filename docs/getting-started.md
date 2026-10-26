@@ -2,7 +2,7 @@
 
 This walkthrough takes a fresh checkout to a signed-in browser and one accepted synthetic case. It creates
 a separate PostgreSQL installation, HTTPS identity provider and Web service. Use fictional data: the included
-certificates and identity configuration are for evaluation. Read [Operations](operations.md) before using real data.
+certificates and identity configuration are for evaluation. Read [Operations](operating.md) before using real data.
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ Compose waits for IdP readiness before Web; its management listener is container
 successful initializer exit and healthy Web; repeat `ps -a` during startup. PostgreSQL has no host port. Web
 has a read-only root/configuration, bounded ephemeral `/tmp`, and a protected persistent key-ring
 directory (protected session tickets are in PostgreSQL). The producer configures your UID/GID for ClaimCore; PostgreSQL/Keycloak retain required ownership.
-Preserve/protect keys across restarts under the [session policy](operations.md#access-review-and-sessions).
+Preserve/protect keys across restarts under the [session policy](operating.md#access-review-and-sessions).
 Initialization refuses unsupported schemas untouched; configuration generation refuses existing paths.
 
 ## Trust the certificate and sign in
@@ -125,9 +125,9 @@ claimcore authority grant \
 ```
 
 Review the target and installation grant, then run the same verb without `--preview` to execute. The CLI
-prepares a fresh operation ID; use explicit `--operation-id` when an automation caller needs its chosen stable
-ID. Require ACCEPTED or ALREADY_ACCEPTED. If delivery is uncertain, preserve the last stderr frame. Resend it unchanged through `call`, or use
-`operation resolve OPERATION_ID` for a final answer. Keep its original ID until the outcome is settled. `CASE_HANDLER` permits
+prepares a fresh operation ID; use explicit `--operation-id` when automation needs a chosen stable ID.
+Inspect the typed result. For interrupted delivery, follow [delivery recovery](integrating.md#delivery-recovery).
+`CASE_HANDLER` permits
 registration, decisions and closing. Grant PAYMENT_RECORDER separately when the human also records/clears
 payments. OWNER alone never grants case work. Use `--dry-run` to inspect a frame without authentication;
 [examples](../examples/README.md) show case verbs and equivalent frames. These are synthetic evaluation
@@ -155,5 +155,7 @@ the retained keys and private inputs are no longer needed.
 
 If startup or login fails, inspect only this project's status and private diagnostics. Check ports,
 certificate trust and expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
-redacted reporting. See [Operations](operations.md) for backups, trusted checkpoints and the limits of
+redacted reporting. See [Operations](operating.md) for backups, trusted checkpoints and the limits of
 live-database erasure.
+
+See the [glossary](glossary.md) for project terminology.

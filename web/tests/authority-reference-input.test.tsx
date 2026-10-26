@@ -145,7 +145,7 @@ it.each(
     })),
   ),
 )(
-  "binds and focuses a case-scoped grant reference in $language with active=$active [CC-WEB-001]",
+  "binds and focuses a case-scoped grant reference in $language with active=$active",
   async ({ locale, active }) => {
     const user = userEvent.setup();
     const preview = rejectedPreview();

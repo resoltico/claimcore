@@ -1,21 +1,20 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 module Catalog =
     let document: CatalogDocument =
         {
             Fields =
-                FieldTable.rows
+                Record.fields
                 |> List.map (fun row ->
                     {
                         Name = row.Field
-                        Group =
-                            (match row.Placement with
-                             | FieldPlacement.TopLevel -> None
-                             | FieldPlacement.Grouped group -> Some group)
-                        LabelId = FieldTable.labelId row.Field
-                        MeaningId = FieldTable.meaningId row.Field
-                        Scalar = row.Scalar
-                        AllowsAbsence = row.Optional
+                        Group = row.Group
+                        LabelId = RecordFields.labelId row.Field
+                        MeaningId = RecordFields.meaningId row.Field
+                        Scalar = RecordFields.descriptor row.Field
+                        AllowsAbsence = row.AllowsAbsence
                     })
             InputFields =
                 Vocabulary.all TechnicalInputs.vocabulary
@@ -36,7 +35,7 @@ module Catalog =
                                  ))
                         Scalar =
                             if input = TechnicalInput.Reason then
-                                Some(ScalarRule.Text FieldRules.freeText)
+                                Some(ScalarRule.Text PartyName.descriptor)
                             else
                                 None
                     })

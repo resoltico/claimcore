@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 open System
@@ -100,6 +101,13 @@ let private examples filename =
     |> Seq.map (fun (key, values) -> key, values |> Seq.map snd |> Seq.toList)
     |> Map.ofSeq
 
+let private collectEndpoint (source: Seeds) (endpoint: Endpoint<'Input, 'Output>) =
+    for value in source.Requests[endpoint.Token] do
+        collect source "request" typeof<'Input> (box (endpoint.Input.Read "$" value |> admitted))
+
+    for value in source.Replies[endpoint.Token] do
+        collect source "reply" typeof<'Output> (box (endpoint.Output.Read "$" value |> admitted))
+
 let private load () =
     let source =
         {
@@ -110,21 +118,18 @@ let private load () =
             Replies = examples "wire-response-examples.json"
         }
 
-    for endpoint in Api.all do
-        endpoint.Accept
-            { new IEndpointVisitor<bool> with
-                member _.Visit(endpoint: Endpoint<'Input, 'Output>) =
-                    for value in source.Requests[endpoint.Token] do
-                        let typed = endpoint.Input.Read "$" value |> admitted
-                        collect source "request" typeof<'Input> (box typed)
-
-                    for value in source.Replies[endpoint.Token] do
-                        let typed = endpoint.Output.Read "$" value |> admitted
-                        collect source "reply" typeof<'Output> (box typed)
-
-                    true
-            }
-        |> ignore
+    collectEndpoint source Api.session
+    collectEndpoint source Api.logout
+    collectEndpoint source Api.context
+    collectEndpoint source Api.caseGet
+    collectEndpoint source Api.caseList
+    collectEndpoint source Api.caseHistory
+    collectEndpoint source Api.operationPreview
+    collectEndpoint source Api.operationExecute
+    collectEndpoint source Api.operationObserve
+    collectEndpoint source Api.operationResolve
+    collectEndpoint source Api.authorityList
+    collectEndpoint source Api.authorityGrants
 
     source
 
@@ -379,7 +384,32 @@ let private choose (source: Seeds) context kind =
 
     values |> Seq.toArray |> Gen.item
 
+let private domainValue (kind: Type) =
+    if kind = typeof<CaseReference> then
+        Some(reference |> Gen.map (CaseFixtures.reference >> box))
+    elif kind = typeof<CalendarDate> then
+        Some(date |> Gen.map (CaseFixtures.date >> box))
+    elif kind = typeof<CountryCode> then
+        Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
+    elif kind = typeof<PartyName> then
+        Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<Money> then
+        Some(
+            gen {
+                let! amount = amount
+                let! currency = uppercase 3
+                return box (CaseFixtures.money amount currency)
+            }
+        )
+    else
+        None
+
 let rec private fresh response source context (kind: Type) (value: obj | null) =
+    match domainValue kind with
+    | Some generator -> generator
+    | None -> freshRepresentation response source context kind value
+
+and private freshRepresentation response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
         generatedString response source context |> Gen.map box
     elif kind = typeof<Guid> then
@@ -472,19 +502,33 @@ let private codecProperty response (codec: Codec<'T>) samples =
 
     }
 
-let private requestProperty (endpoint: AnyEndpoint) =
-    endpoint.Accept
-        { new IEndpointVisitor<Property<bool>> with
-            member _.Visit endpoint =
-                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Token]
-        }
+let private endpointProperty response (endpoint: Endpoint<'Input, 'Output>) =
+    if response then
+        codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Token]
+    else
+        codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Token]
 
-let private replyProperty (endpoint: AnyEndpoint) =
-    endpoint.Accept
-        { new IEndpointVisitor<Property<bool>> with
-            member _.Visit endpoint =
-                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Token]
-        }
+let private actorProperty response actor =
+    match actor with
+    | ActorEndpoint.Preview -> endpointProperty response Api.operationPreview
+    | ActorEndpoint.Execute -> endpointProperty response Api.operationExecute
+    | ActorEndpoint.CaseGet -> endpointProperty response Api.caseGet
+    | ActorEndpoint.CaseList -> endpointProperty response Api.caseList
+    | ActorEndpoint.CaseHistory -> endpointProperty response Api.caseHistory
+    | ActorEndpoint.Observe -> endpointProperty response Api.operationObserve
+    | ActorEndpoint.Resolve -> endpointProperty response Api.operationResolve
+    | ActorEndpoint.AuthorityList -> endpointProperty response Api.authorityList
+    | ActorEndpoint.AuthorityGrants -> endpointProperty response Api.authorityGrants
+    | ActorEndpoint.Context -> endpointProperty response Api.context
+
+let private propertyFor response (route: ClaimCore.Contract.Route) =
+    match route.Id with
+    | EndpointId.Host HostEndpoint.Session -> endpointProperty response Api.session
+    | EndpointId.Host HostEndpoint.Logout -> endpointProperty response Api.logout
+    | EndpointId.Actor actor -> actorProperty response actor
+
+let private requestProperty route = propertyFor false route
+let private replyProperty route = propertyFor true route
 
 let private closedUnionCoverage (source: Seeds) =
     let missing =
@@ -519,34 +563,17 @@ let private seedCases () =
     closedUnionCoverage source
 
     for endpoint in Api.all do
-        endpoint.Accept
-            { new IEndpointVisitor<bool> with
-                member _.Visit endpoint =
-                    for value in source.Requests[endpoint.Token] do
-                        endpoint.Input.Read "$" value
-                        |> admitted
-                        |> endpoint.Input.Write
-                        |> CanonicalWriter.bytes
-                        |> fun encoded ->
-                            Expect.equal
-                                encoded
-                                (CanonicalWriter.bytes value)
-                                "Every request seed round trips."
+        for value in source.Requests[endpoint.Token] do
+            Expect.equal
+                (endpoint.NormalizeInput value |> admitted |> CanonicalWriter.bytes)
+                (CanonicalWriter.bytes value)
+                "Every request seed round trips through its actual typed codec"
 
-                    for value in source.Replies[endpoint.Token] do
-                        endpoint.Output.Read "$" value
-                        |> admitted
-                        |> endpoint.Output.Write
-                        |> CanonicalWriter.bytes
-                        |> fun encoded ->
-                            Expect.equal
-                                encoded
-                                (CanonicalWriter.bytes value)
-                                "Every response seed round trips."
-
-                    true
-            }
-        |> ignore
+        for value in source.Replies[endpoint.Token] do
+            Expect.equal
+                (endpoint.NormalizeOutput value |> admitted |> CanonicalWriter.bytes)
+                (CanonicalWriter.bytes value)
+                "Every response seed round trips through its actual typed codec"
 
 [<Tests>]
 let tests =
@@ -556,8 +583,8 @@ let tests =
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
             for endpoint in Api.all do
                 testCase (Api.id endpoint + " request DTO property") (fun () ->
-                    run (wireId endpoint false) (requestProperty endpoint))
+                    run (wireName endpoint false) (requestProperty endpoint))
 
                 testCase (Api.id endpoint + " reply DTO property") (fun () ->
-                    run (wireId endpoint true) (replyProperty endpoint))
+                    run (wireName endpoint true) (replyProperty endpoint))
         ]

@@ -24,7 +24,10 @@ let private trustRootScope () =
         (value :> IDisposable).Dispose()
         failtest "A local test root must not authorize a remote production endpoint"
     | Error reason ->
-        Expect.equal reason "TLS_TRUST_ROOT_SCOPE_INVALID" "No remote custom trust root"
+        Expect.equal
+            (AccessFailures.token reason)
+            "TLS_TRUST_ROOT_SCOPE_INVALID"
+            "No remote custom trust root"
 
 let private leafPurpose () =
     use rsa = RSA.Create(2048)
@@ -91,9 +94,7 @@ let tests =
     testList
         "CLI TLS trust"
         [
-            testCase
-                "[CC-WEB-001] private TLS root validity has exact boundaries"
-                rootValidityBoundaries
+            testCase "private TLS root validity has exact boundaries" rootValidityBoundaries
             testCase "private test trust root is confined to loopback" trustRootScope
-            testCase "[CC-WEB-001] issuer TLS leaf requires server purpose" leafPurpose
+            testCase "issuer TLS leaf requires server purpose" leafPurpose
         ]

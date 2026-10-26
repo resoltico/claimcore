@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 
 open System.Net.Http
@@ -16,10 +18,14 @@ module EndpointEffects =
         Vocabulary.define
             "effect"
             [
-                EndpointEffect.Read, "READ_ONLY"
-                EndpointEffect.OperationalWrite, "OPERATIONAL_WRITE"
-                EndpointEffect.LedgerExecution, "LEDGER_EXECUTION"
+                EndpointEffect.Read
+                EndpointEffect.OperationalWrite
+                EndpointEffect.LedgerExecution
             ]
+            (function
+             | EndpointEffect.Read -> "READ_ONLY"
+             | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
+             | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION")
 
     let token = Vocabulary.token vocabulary
 
@@ -28,43 +34,11 @@ type HostEndpoint =
     | Session
     | Logout
 
-[<RequireQualifiedAccess>]
-type ActorEndpoint =
-    | Preview
-    | Execute
-    | CaseGet
-    | CaseList
-    | CaseHistory
-    | Observe
-    | Resolve
-    | AuthorityList
-    | AuthorityGrants
-    | Context
-
 module HostEndpoints =
     let vocabulary =
-        Vocabulary.define
-            "endpoint"
-            [ HostEndpoint.Session, "session"; HostEndpoint.Logout, "session.logout" ]
-
-    let all = Vocabulary.all vocabulary
-
-module ActorEndpoints =
-    let vocabulary =
-        Vocabulary.define
-            "endpoint"
-            [
-                ActorEndpoint.Preview, "operation.preview"
-                ActorEndpoint.Execute, "operation.execute"
-                ActorEndpoint.CaseGet, "case.get"
-                ActorEndpoint.CaseList, "case.list"
-                ActorEndpoint.CaseHistory, "case.history"
-                ActorEndpoint.Observe, "operation.observe"
-                ActorEndpoint.Resolve, "operation.resolve"
-                ActorEndpoint.AuthorityList, "authority.list"
-                ActorEndpoint.AuthorityGrants, "authority.grants"
-                ActorEndpoint.Context, "context"
-            ]
+        Vocabulary.define "endpoint" [ HostEndpoint.Session; HostEndpoint.Logout ] (function
+            | HostEndpoint.Session -> "session"
+            | HostEndpoint.Logout -> "session.logout")
 
     let all = Vocabulary.all vocabulary
 
@@ -91,11 +65,37 @@ type Endpoint<'In, 'Out> =
 
     member this.Token = EndpointIds.token this.Id
 
-type IEndpointVisitor<'Result> =
-    abstract Visit<'In, 'Out> : Endpoint<'In, 'Out> -> 'Result
+[<NoEquality; NoComparison>]
+type Route =
+    {
+        Id: EndpointId
+        Method: HttpMethod
+        Effect: EndpointEffect
+        InputSchema: Schema
+        OutputSchema: Schema
+        InputDefinitions: Map<string, Schema>
+        OutputDefinitions: Map<string, Schema>
+        NormalizeInput: JsonValue -> Result<JsonValue, Problem>
+        NormalizeOutput: JsonValue -> Result<JsonValue, Problem>
+    }
 
-type AnyEndpoint =
-    abstract Accept<'Result> : IEndpointVisitor<'Result> -> 'Result
+    member this.Token = EndpointIds.token this.Id
+
+module Route =
+    let describe (endpoint: Endpoint<'Input, 'Output>) =
+        {
+            Id = endpoint.Id
+            Method = endpoint.Method
+            Effect = endpoint.Effect
+            InputSchema = endpoint.Input.Schema
+            OutputSchema = endpoint.Output.Schema
+            InputDefinitions = endpoint.Input.Definitions
+            OutputDefinitions = endpoint.Output.Definitions
+            NormalizeInput =
+                fun value -> endpoint.Input.Read "$" value |> Result.map endpoint.Input.Write
+            NormalizeOutput =
+                fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
+        }
 
 module Api =
     let private endpoint id method effect input output =
@@ -205,58 +205,34 @@ module Api =
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
 
-    let private boxed endpoint : AnyEndpoint =
-        { new AnyEndpoint with
-            member _.Accept visitor = visitor.Visit endpoint
-        }
 
     let forHost =
         function
-        | HostEndpoint.Session -> boxed session
-        | HostEndpoint.Logout -> boxed logout
+        | HostEndpoint.Session -> Route.describe session
+        | HostEndpoint.Logout -> Route.describe logout
 
     let forActor =
         function
-        | ActorEndpoint.Context -> boxed context
-        | ActorEndpoint.CaseGet -> boxed caseGet
-        | ActorEndpoint.CaseList -> boxed caseList
-        | ActorEndpoint.CaseHistory -> boxed caseHistory
-        | ActorEndpoint.Preview -> boxed operationPreview
-        | ActorEndpoint.Execute -> boxed operationExecute
-        | ActorEndpoint.Resolve -> boxed operationResolve
-        | ActorEndpoint.Observe -> boxed operationObserve
-        | ActorEndpoint.AuthorityList -> boxed authorityList
-        | ActorEndpoint.AuthorityGrants -> boxed authorityGrants
+        | ActorEndpoint.Context -> Route.describe context
+        | ActorEndpoint.CaseGet -> Route.describe caseGet
+        | ActorEndpoint.CaseList -> Route.describe caseList
+        | ActorEndpoint.CaseHistory -> Route.describe caseHistory
+        | ActorEndpoint.Preview -> Route.describe operationPreview
+        | ActorEndpoint.Execute -> Route.describe operationExecute
+        | ActorEndpoint.Resolve -> Route.describe operationResolve
+        | ActorEndpoint.Observe -> Route.describe operationObserve
+        | ActorEndpoint.AuthorityList -> Route.describe authorityList
+        | ActorEndpoint.AuthorityGrants -> Route.describe authorityGrants
 
     let all =
         (HostEndpoints.all |> List.map forHost)
         @ (ActorEndpoints.all |> List.map forActor)
 
-    let identity (endpoint: AnyEndpoint) =
-        endpoint.Accept
-            { new IEndpointVisitor<EndpointId> with
-                member _.Visit value = value.Id
-            }
-
-    let id (endpoint: AnyEndpoint) =
-        endpoint.Accept
-            { new IEndpointVisitor<string> with
-                member _.Visit value = value.Token
-            }
-
+    let identity (endpoint: Route) = endpoint.Id
+    let id (endpoint: Route) = endpoint.Token
     let path endpoint = "/api/" + id endpoint
-
-    let method (endpoint: AnyEndpoint) =
-        endpoint.Accept
-            { new IEndpointVisitor<HttpMethod> with
-                member _.Visit value = value.Method
-            }
-
-    let effect (endpoint: AnyEndpoint) =
-        endpoint.Accept
-            { new IEndpointVisitor<EndpointEffect> with
-                member _.Visit value = value.Effect
-            }
+    let method (endpoint: Route) = endpoint.Method
+    let effect (endpoint: Route) = endpoint.Effect
 
     let executesLedger endpoint =
         effect endpoint = EndpointEffect.LedgerExecution
@@ -264,16 +240,8 @@ module Api =
     let tryFind name =
         all |> List.tryFind (fun endpoint -> id endpoint = name)
 
-    let admitInput (endpoint: AnyEndpoint) value =
-        endpoint.Accept
-            { new IEndpointVisitor<Result<unit, Problem>> with
-                member _.Visit endpoint =
-                    endpoint.Input.Read "$" value |> Result.map ignore
-            }
+    let admitInput (endpoint: Route) value =
+        endpoint.NormalizeInput value |> Result.map ignore
 
-    let admitOutput (endpoint: AnyEndpoint) value =
-        endpoint.Accept
-            { new IEndpointVisitor<Result<unit, Problem>> with
-                member _.Visit endpoint =
-                    endpoint.Output.Read "$" value |> Result.map ignore
-            }
+    let admitOutput (endpoint: Route) value =
+        endpoint.NormalizeOutput value |> Result.map ignore

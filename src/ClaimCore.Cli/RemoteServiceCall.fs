@@ -23,9 +23,11 @@ module RemoteServiceCall =
             invalid frame
 
     let private readReply frame bytes =
-        StrictJson.read MaximumResponseBytes bytes
-        |> Result.map (fun reply -> encode frame (fun () -> CliReply.result frame reply))
-        |> Result.defaultWith (fun _ -> invalid frame)
+        encode frame (fun () ->
+            StrictJson.read MaximumResponseBytes bytes
+            |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
+            |> Result.bind (CliReply.result frame)
+            |> Result.defaultWith (fun _ -> invalid frame))
 
     let internal readResponse frame (response: HttpResponseMessage) cancelled =
         task {

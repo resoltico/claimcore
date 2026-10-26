@@ -18,9 +18,9 @@ a separate credential. Current permissions and receipt disclosure are decided wi
 The IdP, service host, database owner and backup operator remain trusted. Hashes detect inconsistency against
 trusted retained evidence; they cannot establish independent freshness or defeat an administrator rewriting all
 evidence. Live erasure cannot reach old row versions, WAL, exports, replicas or backups. Even retained references
-may identify people. Read [Operations](docs/operations.md) before handling personal data.
+may identify people. Read [Operations](docs/operating.md) before handling personal data.
 
-[Private-file admission](docs/operations.md#private-configuration) follows secret-volume symlinks and allows group
+[Private-file admission](docs/operating.md#private-configuration) follows secret-volume symlinks and allows group
 read. It checks neither ownership nor ACLs and does not freeze concurrent changes. Protect the Web key ring
 separately and back it up with the database. Database-backed session sharing is qualified under the documented
 clock conditions; arbitrary multi-host deployment is outside that evidence.
@@ -31,4 +31,6 @@ the affected revision in reports; no security-fix commitment is made for unmaint
 
 Dependency/image declarations are pinned in source and lockfiles. Image or dependency changes need review and
 verification. ClaimCore ships no PostgreSQL image. See the [database declaration](db/postgresql-baseline.json)
-and [dependency guidance](docs/development.md#dependency-pins).
+and [dependency guidance](docs/contributing.md#dependencies).
+
+See the [glossary](docs/glossary.md) for project terminology.

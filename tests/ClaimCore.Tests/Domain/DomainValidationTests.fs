@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DomainValidationTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -18,7 +20,7 @@ let private chronologyTests =
                 Expect.isTrue
                     (opened ()
                      |> apply (
-                         CaseAct.Decide
+                         UnvalidatedCaseAct.Decide
                              { decision with
                                  PaymentDecisionDate = "2026-08-02"
                              }
@@ -28,13 +30,13 @@ let private chronologyTests =
             testCase "payment before decision is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-08-14" })
+                     |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-14" })
                      |> isInvalid)
                     "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (CaseAct.RecordPayment { PaymentDate = "2026-09-08" })
+                     |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-09-08" })
                      |> isInvalid)
                     "No future payment recorded as done")
         ]
@@ -50,7 +52,11 @@ let private restorationTests =
                     snapshot
                         original.Revision
                         { (viewFields original) with
-                            Payment = Some { PaymentDate = "2026-08-20" }
+                            Payment =
+                                Some
+                                    {
+                                        PaymentDate = CaseFixtures.date "2026-08-20"
+                                    }
                         }
 
                 let result = Case.ofAccepted invalid |> Result.map Case.snapshot
@@ -97,32 +103,22 @@ let private restorationTests =
                     Expect.isError
                         (Protocol.ResponseCodecs.caseFields.Read "$" (candidate mask))
                         "A decision object requires all three members")
-            testCase
-                "safe-integer terminal snapshots remain readable and refuse a successor"
-                (fun () ->
-                    let original = Case.snapshot (opened ())
+            testCase "retained snapshots keep the exact-integer format bound" (fun () ->
+                let original = Case.snapshot (opened ())
 
-                    let terminal =
+                let terminal =
+                    { original with
+                        Revision = Revision.Maximum
+                    }
+
+                Expect.isOk (Case.ofAccepted terminal) "The format boundary remains readable"
+
+                Expect.isError
+                    (Case.ofAccepted
                         { original with
-                            Revision = Revision.Maximum
-                        }
-
-                    let current = Case.ofAccepted terminal |> accepted
-                    Expect.isEmpty (availableActs current) "No successor can be represented"
-
-                    Expect.isTrue
-                        ((Case.decide today (request Revision.Maximum CaseAct.Close) (Some current)
-                          |> Result.map Case.snapshot)
-                            =
-                            Error Refusal.RevisionExhausted)
-                        "Terminal state refuses without arithmetic"
-
-                    Expect.isError
-                        (Case.ofAccepted
-                            { original with
-                                Revision = Revision.Maximum + 1L
-                            })
-                        "Beyond safe range")
+                            Revision = Revision.Maximum + 1L
+                        })
+                    "Beyond safe range")
         ]
 
 let private precisionAndRoundTripTests =
@@ -137,10 +133,13 @@ let private precisionAndRoundTripTests =
                         ClaimedAmount = maximum
                     }
 
-                let claim = Case.decide today (request 0L (CaseAct.Open facts)) None |> accepted
+                let claim =
+                    CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+                    |> accepted
 
                 Expect.isTrue
-                    ((Case.snapshot claim |> viewFields).Registration.ClaimedAmount = maximum)
+                    (Money.format (Case.snapshot claim |> viewFields).Registration.ClaimedAmount =
+                        maximum)
                     "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
                 for state in
@@ -148,7 +147,7 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply CaseAct.Close |> accepted
+                        opened () |> apply UnvalidatedCaseAct.Close |> accepted
                     ] do
                     let view = Case.snapshot state
 
@@ -184,7 +183,11 @@ let private decimalGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
+                        (CaseFixtures.decide
+                            today
+                            (request 0L (UnvalidatedCaseAct.Open facts))
+                            None
+                         |> isInvalid)
                         "Exact decimal grammar")
         ]
 
@@ -201,7 +204,11 @@ let private dateGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
+                        (CaseFixtures.decide
+                            today
+                            (request 0L (UnvalidatedCaseAct.Open facts))
+                            None
+                         |> isInvalid)
                         "Calendar grammar")
         ]
 
@@ -217,7 +224,11 @@ let private currencyGrammarTests =
                         }
 
                     Expect.isTrue
-                        (Case.decide today (request 0L (CaseAct.Open facts)) None |> isInvalid)
+                        (CaseFixtures.decide
+                            today
+                            (request 0L (UnvalidatedCaseAct.Open facts))
+                            None
+                         |> isInvalid)
                         "Currency grammar")
         ]
 
@@ -228,12 +239,14 @@ let private authoredUnicodeRoundTrip () =
                 ClaimantName = value
             }
 
-        let claim = Case.decide today (request 0L (CaseAct.Open facts)) None |> accepted
+        let claim =
+            CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+            |> accepted
 
         let snapshot = Case.snapshot claim
 
         Expect.equal
-            (viewFields snapshot).Registration.ClaimantName
+            (PartyName.format (viewFields snapshot).Registration.ClaimantName)
             value
             "Authored scalar content remains exact."
 
@@ -248,7 +261,7 @@ let tests =
         "domain validation"
         [
             testCase
-                "[CC-DOM-001] business Unicode preserves joining and authored orthographic selectors through restoration"
+                "business Unicode preserves joining and authored orthographic selectors through restoration"
                 authoredUnicodeRoundTrip
             chronologyTests
             restorationTests

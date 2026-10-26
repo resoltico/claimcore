@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open ClaimCore.RecordFormat
@@ -8,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
-    type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
+    type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
 
     let private ownerGrant: ActorGrant =
         {
@@ -186,7 +187,7 @@ module internal AuthorityFold =
         result {
             let! id, kind =
                 match entry.Subject with
-                | StoredSubject.Authority(id, kind) -> Ok(id, kind)
+                | EntryTarget.Authority(id, kind) -> Ok(id, kind)
                 | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
             do!

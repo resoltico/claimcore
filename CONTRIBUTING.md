@@ -1,25 +1,12 @@
 # Contributing
 
-Start with the [domain guide](docs/domain.md), then the [architecture](docs/architecture.md) and
-[development workflow](docs/development.md). Read the behavior tests and owning code before changing a contract.
-Challenge consequential assumptions with direct observations and independent examples.
+Use the [contribution guide](docs/contributing.md) for setup, ownership, verification and delivery.
+Read the affected behavior tests and [case-work guide](docs/case-work.md) before changing behavior.
+The [glossary](docs/glossary.md) defines project terminology.
 
-Keep a change complete across its consumers. Contract owns public models, vocabulary, field identities,
-codecs and the operation catalog. Domain/Application decide behavior and authorization; RecordFormat owns
-durable bytes. Postgres persists decisions, Web composes the service, and the clients derive operation
-syntax and bindings from Contract. Regenerate the [generator-owned outputs](docs/development.md#generated-contracts-and-boundary-verification)
-and review their diffs. Update affected callers, SQL, lockfiles, tests, locales and documentation.
-Follow the [database compatibility policy](docs/architecture.md#durable-records).
+Preserve unrelated work and private state. Use synthetic examples in public issues and pull requests;
+follow [Security](SECURITY.md) for anything requiring private handling.
 
-Use synthetic data and owned isolated fixtures. Preserve existing installations, private files and unrelated
-work. Run the required gate from an isolated clean checkout, report failures as well as successes, and distinguish
-partial checks from complete qualification. Growth qualification is separate and runs before releases or on demand.
-Follow the repository guidance in [AGENTS.md](AGENTS.md).
-
-The owner reviews and merges. Gate is the required pull-request check; passing it records execution evidence.
-Publishing changes does not authorize merge, approval, auto-merge, tagging, release or protection changes.
-Version bumps, tags and releases remain owner-controlled. Follow the release-summary policy in
-[CHANGELOG.md](CHANGELOG.md). Preserve unrelated released sections and requirement anchors.
-
-Original code and contributions use [MPL-2.0](LICENSE). Covered binary/browser redistribution must provide
-corresponding covered source and tell recipients how to obtain it. Third-party licenses/notices remain distinct.
+The owner reviews and merges changes. Passing checks record execution evidence and do not authorize
+merging, tagging, publishing or changing repository protections. Follow [AGENTS.md](AGENTS.md) when using
+a coding agent.

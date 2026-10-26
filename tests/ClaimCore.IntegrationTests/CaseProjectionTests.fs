@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CaseProjectionTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -12,6 +14,8 @@ open ClaimCore.RecordFormat
 let private installation = Guid.Parse "80000000-0000-4000-8000-000000000001"
 
 let private snapshot (reference: string) : CaseSnapshot =
+    let reference = CaseFixtures.reference reference
+
     {
         Reference = reference
         Revision = 1L
@@ -21,15 +25,16 @@ let private snapshot (reference: string) : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
-                        {
-                            IncidentDate = "2026-08-01"
-                            IncidentNotificationDate = "2026-08-03"
-                            IncidentCountry = "LV"
-                            ClaimantName = "Synthetic Party"
-                            InsurerName = "Synthetic Insurer"
-                            ClaimedAmount = "1000.00"
-                            ClaimedCurrency = "EUR"
-                        }
+                        CaseFixtures.registration
+                            {
+                                IncidentDate = "2026-08-01"
+                                IncidentNotificationDate = "2026-08-03"
+                                IncidentCountry = "LV"
+                                ClaimantName = "Synthetic Party"
+                                InsurerName = "Synthetic Insurer"
+                                ClaimedAmount = "1000.00"
+                                ClaimedCurrency = "EUR"
+                            }
                     Decision = None
                     Payment = None
                 }
@@ -38,7 +43,7 @@ let private snapshot (reference: string) : CaseSnapshot =
 
 let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
-        CaseId = CaseReferenceId.encode installation snapshot.Reference
+        CaseId = CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
         Snapshot = snapshot
     }
 
@@ -95,7 +100,7 @@ let private liveState () =
             { a with
                 Snapshot =
                     { a.Snapshot with
-                        Reference = "another"
+                        Reference = CaseFixtures.reference "another"
                     }
             }
             { a with
@@ -121,7 +126,7 @@ let private liveState () =
                                 { fields with
                                     Registration =
                                         { fields.Registration with
-                                            ClaimedAmount = "2000.00"
+                                            ClaimedAmount = CaseFixtures.money "2000.00" "EUR"
                                         }
                                 }
                             )
@@ -163,7 +168,10 @@ let private erasedState () =
         [
             { row with CaseId = Guid.Empty }
             { row with
-                Snapshot = { erased with Reference = "another" }
+                Snapshot =
+                    { erased with
+                        Reference = CaseFixtures.reference "another"
+                    }
             }
             { row with
                 Snapshot = { erased with Revision = 1L }
@@ -185,26 +193,30 @@ let private erasedState () =
 
 let private projectionFields: CaseFields =
     {
-        CaseReference = "synthetic-layout"
+        CaseReference = CaseFixtures.reference "synthetic-layout"
         Status = CaseStatus.Closed
         Registration =
-            {
-                IncidentDate = "2026-08-01"
-                IncidentNotificationDate = "2026-08-03"
-                IncidentCountry = "LV"
-                ClaimantName = "Synthetic claimant"
-                InsurerName = "Synthetic insurer"
-                ClaimedAmount = "1234.5678"
-                ClaimedCurrency = "EUR"
-            }
+            CaseFixtures.registration
+                {
+                    IncidentDate = "2026-08-01"
+                    IncidentNotificationDate = "2026-08-03"
+                    IncidentCountry = "LV"
+                    ClaimantName = "Synthetic claimant"
+                    InsurerName = "Synthetic insurer"
+                    ClaimedAmount = "1234.5678"
+                    ClaimedCurrency = "EUR"
+                }
         Decision =
             Some
                 {
-                    PaymentDecisionDate = "2026-08-04"
-                    PayableAmount = "987.6543"
-                    PayableCurrency = "USD"
+                    Decision.PaymentDecisionDate = CaseFixtures.date "2026-08-04"
+                    PayableAmount = CaseFixtures.money "987.6543" "USD"
                 }
-        Payment = Some { PaymentDate = "2026-08-05" }
+        Payment =
+            Some
+                {
+                    PaymentDate = CaseFixtures.date "2026-08-05"
+                }
     }
 
 
@@ -230,6 +242,30 @@ let private projectionRow id : objnull array =
     |]
 
 
+// This header is authored independently of the production declaration and SQL builder.
+let private namedProjectionRow values =
+    let names =
+        [|
+            "case_id"
+            "case_reference"
+            "revision"
+            "state"
+            "incident_date"
+            "incident_notification_date"
+            "incident_country"
+            "claimant_name"
+            "insurer_name"
+            "claimed_amount"
+            "claimed_currency"
+            "payment_decision_date"
+            "payable_amount"
+            "payable_currency"
+            "payment_date"
+            "status"
+        |]
+
+    Array.zip names (Array.map nonNull values) |> Map.ofArray
+
 let private projectionBindings () =
     let fields = projectionFields
 
@@ -240,11 +276,13 @@ let private projectionBindings () =
             State = CaseState.Voided(fields)
         }
 
-    let id = CaseReferenceId.encode installation fields.CaseReference
+    let id =
+        CaseReferenceId.encode installation (CaseReference.format fields.CaseReference)
+
     let row = projectionRow id
 
     Expect.equal
-        (Projections.caseRow (Array.map nonNull row))
+        (Projections.caseRow (namedProjectionRow row))
         { CaseId = id; Snapshot = snapshot }
         "Every decoded field has its own value"
 
@@ -276,7 +314,7 @@ let private projectionBindings () =
     swapped[8] <- row[7]
 
     Expect.notEqual
-        (Projections.caseRow (Array.map nonNull swapped)).Snapshot
+        (Projections.caseRow (namedProjectionRow swapped)).Snapshot
         snapshot
         "Swapped text bindings are observable"
 

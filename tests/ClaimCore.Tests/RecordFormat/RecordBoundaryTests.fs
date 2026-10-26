@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RecordBoundaryTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -13,8 +15,8 @@ open ClaimCore.Tests.Fixtures
 
 let private recordBytes revision =
     let original =
-        request 0L (CaseAct.Open registration)
-        |> RequestRecord.encode
+        request 0L (UnvalidatedCaseAct.Open registration)
+        |> CaseFixtures.encode
         |> Encoding.UTF8.GetString
 
     original.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + revision)
@@ -35,7 +37,7 @@ let private revisions () =
 
     Expect.equal
         (RequestRecord.encode zero)
-        (RequestRecord.encode (request 0L (CaseAct.Open registration)))
+        (CaseFixtures.encode (request 0L (UnvalidatedCaseAct.Open registration)))
         "Negative zero has one canonical identity"
 
     let terminal =
@@ -65,7 +67,7 @@ let private textFormats () =
         { viewFields original with
             Registration =
                 { (viewFields original).Registration with
-                    ClaimantName = "A‮B"
+                    ClaimantName = CaseFixtures.name "A‮B"
                 }
         }
 
@@ -82,17 +84,17 @@ let private textFormats () =
     let reaffirm =
         request
             1L
-            (CaseAct.AmendRegistration
+            (UnvalidatedCaseAct.AmendRegistration
                 { registration with
-                    ClaimantName = oldFields.Registration.ClaimantName
+                    ClaimantName = PartyName.format oldFields.Registration.ClaimantName
                 })
 
     Expect.equal
-        (RequestRecord.decode 65536 (RequestRecord.encode reaffirm))
-        (Ok reaffirm)
+        (RequestRecord.decode 65536 (CaseFixtures.encode reaffirm))
+        (Ok(CaseFixtures.command reaffirm))
         "Request codec preserves grandfatherable assertions"
 
-    let encoded = RequestRecord.encode reaffirm |> Encoding.UTF8.GetString
+    let encoded = CaseFixtures.encode reaffirm |> Encoding.UTF8.GetString
 
     for escaped in
         [
@@ -153,33 +155,34 @@ let private envelope () =
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (asWire durable))
         "Provisioning is never case-work authority API input"
 
-    let case = request 0L (CaseAct.Open registration) |> RequestRecord.encode
+    let case = request 0L (UnvalidatedCaseAct.Open registration) |> CaseFixtures.encode
 
     Expect.isError
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input case)
         "Durable format is not a wire member"
 
     let authored =
-        { request 1L CaseAct.Close with
+        { request 1L UnvalidatedCaseAct.Close with
             CaseReference = "unit-001"
         }
 
     Expect.isTrue
-        (RequestRecord.encode authored <> RequestRecord.encode (request 1L CaseAct.Close))
+        (CaseFixtures.encode authored
+         <> CaseFixtures.encode (request 1L UnvalidatedCaseAct.Close))
         "Canonical request identity preserves authored reference case"
 
 let private culture () =
     let original = CultureInfo.CurrentCulture
     let replacement = CultureInfo("ar-EG").Clone() :?> CultureInfo
     replacement.NumberFormat.NegativeSign <- "~"
-    let request = request 0L (CaseAct.Open registration)
-    let expected = RequestRecord.encode request
+    let request = request 0L (UnvalidatedCaseAct.Open registration)
+    let expected = CaseFixtures.encode request
 
     try
         CultureInfo.CurrentCulture <- replacement
 
         Expect.isTrue
-            (RequestRecord.encode request = expected)
+            (CaseFixtures.encode request = expected)
             "Durable request bytes are culture independent"
 
         Expect.isOk (RequestRecord.decode 65536 expected) "Durable parsing is culture independent"

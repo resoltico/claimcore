@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -143,7 +144,7 @@ let private handshakeRefusals () =
             Expect.equal host.HandlerStub.Calls [ "operation.execute" ] "One matching dispatch"
         })
 
-let private admissionRefusals () =
+let private gateRefusals () =
     loggedIn true (fun host token ->
         task {
             let! status, _ =
@@ -182,7 +183,7 @@ let private outcomes () =
                 [
                     ExecuteResult.Accepted accepted, "ACCEPTED"
                     ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteResult.Rejected((ClaimCore.Contract.Refusal.CaseVoided)), "REJECTED"
+                    ExecuteResult.Rejected((ClaimCore.Domain.Refusal.CaseVoided)), "REJECTED"
                     ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]
@@ -366,10 +367,10 @@ let private completionFailure () =
                 "A returned core result is completed before response encoding"
         })
 
-let private closedAdmission () =
+let private closedRuntime () =
     loggedIn true (fun host token ->
         task {
-            host.HandlerStub.AdmissionOpen <- false
+            host.HandlerStub.RuntimeAvailable <- false
 
             for endpoint in [ "context"; "operation.preview"; "operation.execute" ] do
                 let! status, response = host.Call(endpoint, body endpoint, token)
@@ -394,7 +395,7 @@ let private closedAdmission () =
                         "Unavailable reply retains the original ID"
 
             Expect.isNone host.HandlerStub.Principal "Denied work never invokes the actor factory"
-            Expect.isEmpty host.HandlerStub.Calls "No core call after admission closes"
+            Expect.isEmpty host.HandlerStub.Calls "No core call after runtime leases close"
         })
 
 let private principalAdmission () =
@@ -474,14 +475,14 @@ let tests =
             testCase "authority preview reaches the shared core without recording" authorityPreview
             testCase "core completion precedes response encoding failure" completionFailure
             testCase
-                "closed admission preserves typed read preview and execute failures"
-                closedAdmission
+                "closed runtime preserves typed read preview and execute failures"
+                closedRuntime
             testCase
                 "matching contract dispatches; missing and different contracts never dispatch"
                 handshakeRefusals
             testCase
                 "antiforgery, shapes, methods and literal paths have refusing controls"
-                admissionRefusals
+                gateRefusals
             testCase
                 "every execute outcome reaches HTTP without cancellation reclassification"
                 outcomes

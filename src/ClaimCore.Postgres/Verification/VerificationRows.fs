@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open ClaimCore.Application
 open ClaimCore.Application.VerificationChecks
@@ -23,6 +24,7 @@ module internal VerificationRows =
     let private fold
         connection
         sql
+        readRow
         decode
         append
         initial
@@ -41,8 +43,7 @@ module internal VerificationRows =
                 if not found then
                     reading <- false
                 else
-                    let row = Array.zeroCreate<obj> reader.FieldCount
-                    reader.GetValues row |> ignore
+                    let row = readRow reader
 
                     state <-
                         state
@@ -59,6 +60,7 @@ module internal VerificationRows =
                 fold
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
+                    DatabaseSession.namedRow
                     Projections.caseRow
                     (ProjectionVerification.caseProjection installationId histories)
                     Set.empty
@@ -74,6 +76,7 @@ module internal VerificationRows =
                 fold
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
+                    DatabaseSession.row
                     Projections.actorRow
                     ProjectionVerification.actor
                     Map.empty
@@ -87,6 +90,7 @@ module internal VerificationRows =
                     fold
                         connection
                         "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
+                        DatabaseSession.row
                         grant
                         ProjectionVerification.grant
                         actors

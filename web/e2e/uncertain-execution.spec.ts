@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/api/types";
+import type { ServiceResponse } from "../src/protocol/types";
 
 const dropFirstReply = async (
   page: Page,
@@ -67,7 +67,7 @@ const expectUnknownOperation = async (page: Page) => {
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(1);
 };
 
-test("retries one lost accepted reply with the exact reviewed operation and bytes [CC-WEB-001]", async ({
+test("retries one lost accepted reply with the exact reviewed operation and bytes", async ({
   page,
 }) => {
   await openAuthenticated(page);

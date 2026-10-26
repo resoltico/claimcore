@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 
 [<RequireQualifiedAccess>]
 type CoreFault =
@@ -10,38 +12,34 @@ type CoreFault =
     | OperationContentConflict
 
 module CoreFaults =
-    let private policies =
-        [
-            CoreFault.InternalError,
-            FaultDiagnosticIds.InternalError,
-            RecommendedAction.StopAndInvestigate
-            CoreFault.StoreUnavailable,
-            FaultDiagnosticIds.StoreUnavailable,
-            RecommendedAction.RetrySafe
-            CoreFault.StoreIntegrityError,
-            FaultDiagnosticIds.StoreIntegrityError,
-            RecommendedAction.StopAndInvestigate
-            CoreFault.SchemaMismatch,
-            FaultDiagnosticIds.SchemaMismatch,
-            RecommendedAction.StopAndInvestigate
-            CoreFault.OperationContentConflict,
-            FaultDiagnosticIds.OperationContentConflict,
-            RecommendedAction.StopAndInvestigate
-        ]
-
-    let private policy reason =
-        policies |> List.find (fun (value, _, _) -> value = reason)
+    let private policy =
+        function
+        | CoreFault.InternalError ->
+            FaultDiagnosticIds.InternalError, RecommendedAction.StopAndInvestigate
+        | CoreFault.StoreUnavailable ->
+            FaultDiagnosticIds.StoreUnavailable, RecommendedAction.RetrySafe
+        | CoreFault.StoreIntegrityError ->
+            FaultDiagnosticIds.StoreIntegrityError, RecommendedAction.StopAndInvestigate
+        | CoreFault.SchemaMismatch ->
+            FaultDiagnosticIds.SchemaMismatch, RecommendedAction.StopAndInvestigate
+        | CoreFault.OperationContentConflict ->
+            FaultDiagnosticIds.OperationContentConflict, RecommendedAction.StopAndInvestigate
 
     let vocabulary =
-        policies
-        |> List.map (fun (reason, id, _) -> reason, id)
-        |> Vocabulary.define "fault"
+        Vocabulary.define
+            "fault"
+            [
+                CoreFault.InternalError
+                CoreFault.StoreUnavailable
+                CoreFault.StoreIntegrityError
+                CoreFault.SchemaMismatch
+                CoreFault.OperationContentConflict
+            ]
+            (policy >> fst)
 
     let all = Vocabulary.entries vocabulary
     let token = Vocabulary.token vocabulary
-
-    let internal action reason =
-        let _, _, action = policy reason in action
+    let internal action reason = policy reason |> snd
 
     let definitions: DiagnosticDefinition list =
         all |> List.map (fun (_, id) -> { Id = id; Parameters = [] })

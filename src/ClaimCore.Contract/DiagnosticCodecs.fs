@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -53,9 +55,9 @@ module DiagnosticCodecs =
 
     let private targetKind =
         function
-        | Refusal.InvalidInput _ -> 1
-        | Refusal.InvalidCursor -> 2
-        | Refusal.OperationResolved -> 3
+        | RefusalCode.InvalidInput _ -> 1
+        | RefusalCode.InvalidCursor -> 2
+        | RefusalCode.OperationResolved -> 3
         | _ -> 0
 
     let private target kind =
@@ -98,15 +100,33 @@ module DiagnosticCodecs =
                 Refusals.actualRevision reason,
                 Refusals.parameters reason |> Map.ofList)
 
+    // Published shape order must survive removal of a shape's first diagnostic code.
+    let private shapeOrder ((names, action, hasRevision, location), _) =
+        let priority =
+            match action with
+            | RecommendedAction.CorrectInput -> 0
+            | RecommendedAction.ReadCurrent ->
+                if hasRevision then 1
+                elif location = 3 then 4
+                else 5
+            | RecommendedAction.NoneRequired -> 2
+            | RecommendedAction.StopAndInvestigate -> 3
+            | RecommendedAction.RetrySafe -> 6
+            | RecommendedAction.ReplayExact -> 7
+            | RecommendedAction.Reauthenticate -> 8
+
+        priority, names
+
     let diagnostic =
-        Refusals.all
-        |> List.groupBy (fun (reason, row) ->
-            Refusals.parameters reason |> List.map fst |> List.sort,
-            row.Action,
-            Refusals.actualRevision reason |> Option.isSome,
-            targetKind reason)
+        RefusalCodes.all
+        |> List.groupBy (fun code ->
+            RefusalCodes.parameters code |> List.map DiagnosticArguments.token |> List.sort,
+            RefusalCodes.action code,
+            code = RefusalCode.RevisionConflict,
+            targetKind code)
+        |> List.sortBy shapeOrder
         |> List.map (fun (key, rows) ->
-            let codes = rows |> List.map (fun (_, row) -> row.Code)
+            let codes = rows |> List.map RefusalCodes.token
 
             branch
                 (fun value -> value)

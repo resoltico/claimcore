@@ -28,17 +28,22 @@ type Fixture(database: PostgresFixture.Database) =
 
 let createFor issuer subject =
     task {
-        let principal = PrincipalKey.human issuer subject |> Result.defaultWith invalidOp
+        let principal =
+            PrincipalKey.human issuer subject
+            |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
+
         let! database = PostgresFixture.createFor principal
         let fixture = database.Fixture
 
         try
             let! owner = caseWorker fixture
-            let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
+
+            let service =
+                PrincipalKey.service issuer "service"
+                |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
 
             let! registered =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
                     (OperationInput.Authority(
                         authorityRequest (id 20) service AdmittedAuthorityAct.Register
@@ -53,10 +58,11 @@ let createFor issuer subject =
             acceptedAuthority granted
 
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
-                    (OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)))
+                    (OperationInput.Case(
+                        request 10 "SYNTHETIC-001" 0L (UnvalidatedCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted opened |> ignore

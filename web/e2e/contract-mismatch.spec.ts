@@ -4,9 +4,7 @@ import { openAuthenticated } from "./session-helpers";
 import { startOpen } from "./case-workflow";
 import { consumerContractIdentity } from "@contracts/client";
 
-test("a real contract refusal prompts reload without replaying the draft [CC-WEB-001]", async ({
-  page,
-}) => {
+test("a real contract refusal prompts reload without replaying the draft", async ({ page }) => {
   await openAuthenticated(page);
   await startOpen(page, `MISMATCH-${randomUUID()}`);
   let previews = 0;

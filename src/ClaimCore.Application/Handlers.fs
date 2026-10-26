@@ -4,20 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Contract
-
-[<NoEquality; NoComparison>]
-type Handler<'Input, 'Output> =
-    {
-        Endpoint: Endpoint<'Input, 'Output>
-        Invoke: HandlerContext -> 'Input -> CancellationToken -> Task<'Output>
-        Unavailable: 'Input -> 'Output
-    }
-
-type IHandlerVisitor<'Result> =
-    abstract Visit<'Input, 'Output> : Handler<'Input, 'Output> -> 'Result
-
-type AnyHandler =
-    abstract Accept<'Result> : IHandlerVisitor<'Result> -> 'Result
+open ClaimCore.Domain
 
 module Handlers =
     let internal context installationId store calendar principal =
@@ -31,32 +18,17 @@ module Handlers =
             Principal = principal
         }
 
-    let define endpoint unavailable invoke : AnyHandler =
-        let handler =
-            {
-                Endpoint = endpoint
-                Unavailable = unavailable
-                Invoke = invoke
-            }
-
-        { new AnyHandler with
-            member _.Accept visitor = visitor.Visit handler
-        }
-
-    let read endpoint invoke =
-        define endpoint (fun _ -> ReadReply.Failed CoreFault.StoreUnavailable) invoke
-
-    let forActor =
+    let route =
         function
-        | ActorEndpoint.Context -> read Api.context Core.context
-        | ActorEndpoint.CaseGet -> read Api.caseGet Core.get
-        | ActorEndpoint.CaseList -> read Api.caseList Core.list
-        | ActorEndpoint.CaseHistory -> read Api.caseHistory Core.history
-        | ActorEndpoint.Observe -> read Api.operationObserve Core.observe
-        | ActorEndpoint.AuthorityList -> read Api.authorityList Core.actors
-        | ActorEndpoint.AuthorityGrants -> read Api.authorityGrants Core.grants
+        | ActorEndpoint.Context -> Route.read Api.context Core.context
+        | ActorEndpoint.CaseGet -> Route.read Api.caseGet Core.get
+        | ActorEndpoint.CaseList -> Route.read Api.caseList Core.list
+        | ActorEndpoint.CaseHistory -> Route.read Api.caseHistory Core.history
+        | ActorEndpoint.Observe -> Route.read Api.operationObserve Core.observe
+        | ActorEndpoint.AuthorityList -> Route.read Api.authorityList Core.actors
+        | ActorEndpoint.AuthorityGrants -> Route.read Api.authorityGrants Core.grants
         | ActorEndpoint.Preview ->
-            define
+            Route.bind
                 Api.operationPreview
                 (fun input ->
                     {
@@ -65,7 +37,7 @@ module Handlers =
                     })
                 Core.previewReply
         | ActorEndpoint.Execute ->
-            define
+            Route.bind
                 Api.operationExecute
                 (fun input ->
                     {
@@ -74,42 +46,7 @@ module Handlers =
                     })
                 Core.execute
         | ActorEndpoint.Resolve ->
-            define
+            Route.bind
                 Api.operationResolve
                 (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
                 Core.resolve
-
-    let endpoint (handler: AnyHandler) =
-        handler.Accept
-            { new IHandlerVisitor<AnyEndpoint> with
-                member _.Visit handler =
-                    { new AnyEndpoint with
-                        member _.Accept visitor = visitor.Visit handler.Endpoint
-                    }
-            }
-
-    let call
-        (endpoint: Endpoint<'Input, 'Output>)
-        context
-        (input: 'Input)
-        cancellation
-        : Task<'Output> =
-        let actor =
-            match endpoint.Id with
-            | EndpointId.Actor actor -> actor
-            | EndpointId.Host _ ->
-                invalidArg (nameof endpoint) "Host endpoints have no Application handler."
-
-        (forActor actor).Accept
-            { new IHandlerVisitor<Task<'Output>> with
-                member _.Visit handler =
-                    // Reference identity witnesses equality of the erased generic types.
-                    // A record with a forged identity cannot reach either cast.
-                    if not (obj.ReferenceEquals(endpoint, handler.Endpoint)) then
-                        invalidArg (nameof endpoint) "Use the registered typed endpoint."
-
-                    task {
-                        let! reply = handler.Invoke context (unbox (box input)) cancellation
-                        return unbox (box reply)
-                    }
-            }

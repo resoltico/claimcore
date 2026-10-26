@@ -1,6 +1,7 @@
 module ClaimCore.Tests.RemoteClientTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 
 open System

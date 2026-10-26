@@ -149,14 +149,10 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         Api.all
         |> List.map (fun endpoint ->
             let schema =
-                endpoint.Accept
-                    { new IEndpointVisitor<Schema> with
-                        member _.Visit endpoint =
-                            if response then
-                                endpoint.Output.Schema
-                            else
-                                endpoint.Input.Schema
-                    }
+                (if response then
+                     endpoint.OutputSchema
+                 else
+                     endpoint.InputSchema)
 
             quote (Api.id endpoint) + ":" + check schema)
         |> String.concat ","
@@ -182,12 +178,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
 
         let roots =
             Api.all
-            |> List.collect (fun endpoint ->
-                endpoint.Accept
-                    { new IEndpointVisitor<Schema list> with
-                        member _.Visit endpoint =
-                            [ endpoint.Input.Schema; endpoint.Output.Schema ]
-                    })
+            |> List.collect (fun endpoint -> [ endpoint.InputSchema; endpoint.OutputSchema ])
 
         let reachable =
             SchemaJson.reachable definitions (CatalogCodecs.codec.Schema :: roots)

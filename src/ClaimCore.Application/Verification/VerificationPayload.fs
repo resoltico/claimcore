@@ -7,9 +7,9 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; NoComparison>]
 type internal VerifiedPayload =
-    | Case of CaseRequest * CaseSnapshot option
+    | Case of CaseCommand * CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | Erased
 
@@ -33,7 +33,11 @@ module internal VerificationPayload =
                     (request.OperationId = entry.OperationId
                      && request.ExpectedRevision = revision - 1L
                      && CaseActs.kind request.Act = act
-                     && CaseReferenceId.encode installationId request.CaseReference = id)
+                     && CaseReferenceId.encode
+                         installationId
+                         (CaseReference.format request.Reference)
+                         =
+                         id)
 
             if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
                 do!
@@ -53,8 +57,8 @@ module internal VerificationPayload =
                         (Some entry.Sequence)
                         VerificationFinding.PayloadFormat
                         (snapshot.Revision = revision
-                         && CaseReference.key snapshot.Reference =
-                             CaseReference.key request.CaseReference)
+                         && CaseReference.identity snapshot.Reference =
+                             CaseReference.identity request.Reference)
 
                 return VerifiedPayload.Case(request, Some snapshot)
         }
@@ -78,7 +82,7 @@ module internal VerificationPayload =
 
     let read installationId (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce, entry.Subject with
-        | None, None, StoredSubject.Case _ -> Ok VerifiedPayload.Erased
+        | None, None, EntryTarget.Case _ -> Ok VerifiedPayload.Erased
         | Some bytes, Some nonce, _ ->
             result {
                 let! commitment =
@@ -96,8 +100,8 @@ module internal VerificationPayload =
 
                 return!
                     match entry.Subject with
-                    | StoredSubject.Case(id, revision, act, _) ->
+                    | EntryTarget.Case(id, revision, act, _) ->
                         case installationId entry id revision act payload
-                    | StoredSubject.Authority(_, kind) -> authority entry kind payload
+                    | EntryTarget.Authority(_, kind) -> authority entry kind payload
             }
         | _ -> Error(problem entry.Sequence)

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -16,25 +18,26 @@ let private maximum = 9007199254740991L
 
 let private fields length : CaseFields =
     {
-        CaseReference = reference
+        CaseReference = CaseFixtures.reference reference
         Status = CaseStatus.Closed
         Registration =
-            {
-                IncidentDate = "2026-08-01"
-                IncidentNotificationDate = "2026-08-03"
-                IncidentCountry = "LV"
-                ClaimantName = String(char 1, length)
-                InsurerName = String(char 1, length)
-                ClaimedAmount = "999999999999999999.9999"
-                ClaimedCurrency = "EUR"
-            }
+            CaseFixtures.registration
+                {
+                    IncidentDate = "2026-08-01"
+                    IncidentNotificationDate = "2026-08-03"
+                    IncidentCountry = "LV"
+                    ClaimantName = String(char 1, length)
+                    InsurerName = String(char 1, length)
+                    ClaimedAmount = "999999999999999999.9999"
+                    ClaimedCurrency = "EUR"
+                }
         Decision = None
         Payment = None
     }
 
 let private snapshot length : CaseSnapshot =
     {
-        Reference = reference
+        Reference = CaseFixtures.reference reference
         Revision = maximum
         State = CaseState.Voided(fields length)
     }
@@ -52,7 +55,7 @@ let private receipt disclosure : OperationReceipt =
         Subject =
             ReceiptSubject.Case
                 {
-                    Reference = reference
+                    Reference = CaseFixtures.reference reference
                     Revision = maximum
                     Act = (CaseActKind.Business BusinessActKind.AmendRegistration)
                     Snapshot = disclosure
@@ -110,7 +113,7 @@ let private authorityFixture () =
 
     let principal =
         PrincipalKey.human (prefix + String('+', 2048 - prefix.Length)) (String(char 1, 512))
-        |> Result.defaultWith failwith
+        |> Result.defaultWith (AuthorityInputFailures.token >> failwith)
 
     let actor: ActorSummary =
         {

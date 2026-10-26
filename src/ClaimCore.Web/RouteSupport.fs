@@ -20,18 +20,17 @@ module internal RouteSupport =
         RequestLog.outcome "HOST_FAILURE" context
         WebWire.hostFailure reason
 
-    let admissionFailure context =
+    let gateFailure context =
         function
-        | AdmissionFailure.UntrustedConnection ->
+        | GateFailure.UntrustedConnection ->
             hostFailure context HostFailureReason.ConnectionRejected
-        | AdmissionFailure.OriginRejected
-        | AdmissionFailure.FetchMetadataRejected ->
-            hostFailure context HostFailureReason.OriginRejected
-        | AdmissionFailure.UnsupportedMediaType ->
+        | GateFailure.OriginRejected
+        | GateFailure.FetchMetadataRejected -> hostFailure context HostFailureReason.OriginRejected
+        | GateFailure.UnsupportedMediaType ->
             hostFailure context HostFailureReason.MediaTypeRejected
-        | AdmissionFailure.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
-        | AdmissionFailure.SessionRejected -> hostFailure context HostFailureReason.SessionRejected
-        | AdmissionFailure.AntiforgeryRejected ->
+        | GateFailure.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
+        | GateFailure.SessionRejected -> hostFailure context HostFailureReason.SessionRejected
+        | GateFailure.AntiforgeryRejected ->
             hostFailure context HostFailureReason.AntiforgeryRejected
 
     let inputFailure context =

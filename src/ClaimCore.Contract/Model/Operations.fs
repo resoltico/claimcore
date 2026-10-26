@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 module OperationSubjects =
     [<Literal>]
     let Case = "CASE"
@@ -9,8 +11,8 @@ module OperationSubjects =
 
 [<RequireQualifiedAccess>]
 type OperationInput =
-    | Case of CaseRequest
-    | Authority of ClaimCore.Contract.AuthorityRequest
+    | Case of UnvalidatedCaseRequest
+    | Authority of ClaimCore.Domain.AuthorityRequest
 
 module OperationInput =
     let operationId =

@@ -17,12 +17,12 @@ module OAuthTokenClient =
         =
         task {
             if endpoint.Scheme <> Uri.UriSchemeHttps then
-                return Error "OIDC_TOKEN_ENDPOINT_INVALID"
+                return Error AccessFailure.OidcTokenEndpointInvalid
             else
                 match PrivateInputs.text CliConfigurationLimits.MaximumSecretBytes secretFile with
-                | Error _ -> return Error "OIDC_CREDENTIAL_UNAVAILABLE"
+                | Error _ -> return Error AccessFailure.OidcCredentialUnavailable
                 | Ok secret when String.IsNullOrWhiteSpace secret ->
-                    return Error "OIDC_CREDENTIAL_UNAVAILABLE"
+                    return Error AccessFailure.OidcCredentialUnavailable
                 | Ok secret ->
                     use deadline = HttpRequestDeadline.link client cancelled
 
@@ -44,7 +44,7 @@ module OAuthTokenClient =
                     with
                     | :? OperationCanceledException
                     | :? HttpRequestException
-                    | :? IO.IOException -> return Error "OIDC_TOKEN_UNAVAILABLE"
+                    | :? IO.IOException -> return Error AccessFailure.OidcTokenUnavailable
         }
 
     let acquire client endpoint clientId secretFile cancelled =

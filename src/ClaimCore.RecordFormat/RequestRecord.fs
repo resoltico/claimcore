@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 
@@ -8,8 +7,8 @@ module RequestRecord =
     let private codec = RecordCodecs.caseOperation |> Codec.named "CaseRequestRecord"
 
     let private validate request =
-        match Case.validateRequest request with
-        | Ok() -> Ok request
+        match Case.parse request with
+        | Ok command -> Ok command
         | Error(Refusal.InvalidInput(target, _)) ->
             Error
                 {
@@ -32,7 +31,5 @@ module RequestRecord =
             })
         |> Result.bind validate
 
-    let encode request =
-        match validate request with
-        | Error _ -> invalidArg (nameof request) "Invalid case-request format."
-        | Ok value -> codec.Write value |> CanonicalWriter.bytes
+    let encode (command: CaseCommand) =
+        codec.Write command.Authored |> CanonicalWriter.bytes

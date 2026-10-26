@@ -172,6 +172,6 @@ let tests =
             testCase "deployment failure stages are bounded and closed" stageControls
             testSequenced
             <| testCaseAsync
-                "[CC-WEB-001][CC-DB-002] fresh Compose owner login and session restart use generated private inputs"
+                "fresh Compose owner login and session restart use generated private inputs"
                 (freshDeployment ())
         ]

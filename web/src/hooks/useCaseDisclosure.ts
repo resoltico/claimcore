@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { service, resultNotice, type ServiceResponse } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 
 type CaseView = Extract<ServiceResponse<"case.get">["outcome"], { kind: "SUCCEEDED" }>["data"];
 type Disclosure = {

@@ -8,6 +8,7 @@ open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 let private copySourceFile (root: string) directory relative =
@@ -85,8 +86,7 @@ let private copySource root parent =
     directory
 
 let private changeStructuralVocabulary directory =
-    let path =
-        Path.Combine(directory, "src/ClaimCore.Contract/Vocabulary/CaseTokens.fs")
+    let path = Path.Combine(directory, "src/ClaimCore.Domain/Record.fs")
 
     let original = File.ReadAllText path
 

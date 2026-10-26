@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Application
 
@@ -34,29 +35,29 @@ module internal ApiRoutes =
 
     let private admit (configuration: WebConfiguration) (context: HttpContext) =
         match configuration.Oidc with
-        | None -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | None -> Task.FromResult(Error GateFailure.SessionRejected)
         | Some oidc ->
-            Admission.actorPost
+            RequestGate.actorPost
                 oidc
                 configuration.Binding
-                configuration.Admission.MaximumJsonBytes
+                configuration.RequestGate.MaximumJsonBytes
                 (context.RequestServices.GetRequiredService<IAntiforgery>())
                 context
 
     let private input
-        (handler: AnyHandler)
+        (handler: ClaimCore.Application.Route)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
         task {
-            match! HttpBody.readRequest configuration.Admission.MaximumJsonBytes context with
+            match! HttpBody.readRequest configuration.RequestGate.MaximumJsonBytes context with
             | Error problem -> return Error(RouteSupport.inputFailure context problem)
             | Ok bytes ->
-                match StrictJson.read configuration.Admission.MaximumJsonBytes bytes with
+                match StrictJson.read configuration.RequestGate.MaximumJsonBytes bytes with
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
-                    match Dispatch.prepare handler value with
+                    match handler.Prepare value with
                     | Error _ ->
                         return
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
@@ -66,7 +67,7 @@ module internal ApiRoutes =
         }
 
     let handle handler configuration withActor (context: HttpContext) =
-        let endpoint = Handlers.endpoint handler
+        let endpoint = handler.Description
 
         task {
             HttpHeaders.noStore context
@@ -75,7 +76,7 @@ module internal ApiRoutes =
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match! admit configuration context with
-                | Error reason -> return RouteSupport.admissionFailure context reason
+                | Error reason -> return RouteSupport.gateFailure context reason
                 | Ok principal ->
                     match! input handler configuration context with
                     | Error result -> return result
@@ -95,16 +96,18 @@ module internal ApiRoutes =
                                 context.RequestAborted
 
                         let! result =
-                            withActor (AuthenticatedSubjects.key principal) (fun core ->
-                                prepared.Invoke core cancellation (fun () ->
+                            withActor (AuthenticatedPrincipals.key principal) (fun core ->
+                                prepared (Some core) cancellation (fun () ->
                                     RouteSupport.markCompleted context))
 
-                        let outcome =
-                            match result with
-                            | Some reply -> reply
-                            | None ->
-                                RouteSupport.markCompleted context
-                                prepared.Unavailable()
+                        let! outcome =
+                            task {
+                                match result with
+                                | Some reply -> return reply
+                                | None ->
+                                    RouteSupport.markCompleted context
+                                    return! prepared None cancellation ignore
+                            }
 
                         return RouteSupport.reply outcome context
         }

@@ -1,6 +1,5 @@
 namespace ClaimCore.RecordFormat
 
-open ClaimCore.Contract
 
 open System
 open System.Buffers.Binary
@@ -23,7 +22,7 @@ type AuthorityEntryMetadata =
     }
 
 [<RequireQualifiedAccess>]
-type LedgerSubject =
+type RecordedTarget =
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
 
@@ -35,7 +34,7 @@ type LedgerMetadata =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Subject: LedgerSubject
+        Subject: RecordedTarget
         PayloadCommitment: byte array
     }
 
@@ -145,12 +144,12 @@ module LedgerEntry =
 
     let private subjectBytes =
         function
-        | LedgerSubject.Authority subject ->
+        | RecordedTarget.Authority subject ->
             if subject.TargetActorId = Guid.Empty then
                 invalidArg (nameof subject) "Invalid authority subject."
 
             2uy, authorityCode subject.Act, subject.TargetActorId, 0L, 0
-        | LedgerSubject.Case subject ->
+        | RecordedTarget.Case subject ->
             if
                 subject.CaseId = Guid.Empty
                 || subject.Revision < 1L

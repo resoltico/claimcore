@@ -1,5 +1,7 @@
 module internal ClaimCore.Tests.DecisionFixtures
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
@@ -13,15 +15,15 @@ let installation = id 500
 
 let owner =
     PrincipalKey.human "https://issuer.example/" "owner"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let other =
     PrincipalKey.human "https://issuer.example/" "other"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let service =
     PrincipalKey.service "https://issuer.example/" "service"
-    |> Result.defaultWith failtest
+    |> Result.defaultWith (string >> failtest)
 
 let calendar =
     { new IBusinessCalendar with
@@ -55,9 +57,17 @@ let head =
 let nonce = Array.init 32 (fun index -> byte (index + 1))
 
 let opening n reference =
-    request n reference 0L (CaseAct.Open registration)
+    request n reference 0L (UnvalidatedCaseAct.Open registration)
 
-let locked authority current existing : CaseLockedView =
+type LockedFacts<'Facts> =
+    {
+        Head: LedgerHead
+        PayloadNonce: byte array
+        IsFenced: bool
+        Read: 'Facts
+    }
+
+let locked authority current existing : LockedFacts<CaseFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -72,11 +82,39 @@ let locked authority current existing : CaseLockedView =
     }
 
 let decide request view =
-    CaseDecisions.execute installation calendar owner request view
+    CaseExecution.execute
+        installation
+        calendar
+        owner
+        (ClaimCore.TestSupport.CaseFixtures.command request)
+        view.Head
+        view.IsFenced
+        view.PayloadNonce
+        view.Read
+
+let executeAuthority installation principal request (view: LockedFacts<AuthorityFacts>) =
+    AuthorityExecution.execute
+        installation
+        principal
+        request
+        view.Head
+        view.IsFenced
+        view.PayloadNonce
+        view.Read
+
+let provisionAuthority installation operation principal (view: LockedFacts<AuthorityFacts>) =
+    AuthorityExecution.provision
+        installation
+        operation
+        principal
+        view.Head
+        view.IsFenced
+        view.PayloadNonce
+        view.Read
 
 let appended =
     function
-    | Decision.Proceed(entry, projection, receipt) -> entry, projection, receipt
+    | Verdict.Proceed(entry, projection, receipt) -> entry, projection, receipt
     | _ -> failtest "Expected a pure append decision"
 
 let created n reference =
@@ -92,7 +130,7 @@ let created n reference =
 
     request, LedgerEntries.stored entry, current, receipt
 
-let authorityView caller target existing : AuthorityLockedView =
+let authorityView caller target existing : LockedFacts<AuthorityFacts> =
     {
         Head = head
         PayloadNonce = nonce

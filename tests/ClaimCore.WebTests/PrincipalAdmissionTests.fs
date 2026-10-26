@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.PrincipalAdmissionTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Text
@@ -166,19 +167,13 @@ let tests =
             testCase
                 "verified client claims agree exactly and distinct services keep distinct identities"
                 clientClaims
+            testCase "claim names select identity with ordinal case sensitivity" exactClaimNames
+            testCase "repeated subject and client claims are refused in every order" ambiguousClaims
             testCase
-                "[CC-WEB-001] claim names select identity with ordinal case sensitivity"
-                exactClaimNames
-            testCase
-                "[CC-WEB-001] repeated subject and client claims are refused in every order"
-                ambiguousClaims
-            testCase
-                "[CC-WEB-001] composite and unauthenticated principals cannot select an actor"
+                "composite and unauthenticated principals cannot select an actor"
                 multipleIdentities
             testCase
-                "[CC-WEB-001] root and slash-ended issuer metadata preserve exact identity"
+                "root and slash-ended issuer metadata preserve exact identity"
                 rootIssuerDiscovery
-            testCase
-                "[CC-WEB-001] discovery refuses nonobjects and duplicate members"
-                metadataShapes
+            testCase "discovery refuses nonobjects and duplicate members" metadataShapes
         ]

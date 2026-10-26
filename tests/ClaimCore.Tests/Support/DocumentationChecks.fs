@@ -13,42 +13,6 @@ open Markdig.Extensions.AutoIdentifiers
 let private pipeline =
     MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.GitHub).Build()
 
-let private contractHeading = Regex(@"^\[?(CC-[A-Z]+-[0-9]{3})\]?(?:\s|$)")
-
-let contracts documents =
-    let headings =
-        documents
-        |> Seq.collect (fun (_, text) ->
-            Markdown.Parse(text, pipeline).Descendants<HeadingBlock>()
-            |> Seq.map (fun heading ->
-                heading.Inline
-                |> Option.ofObj
-                |> Option.toList
-                |> Seq.collect (fun value -> value.Descendants<LiteralInline>())
-                |> Seq.map (fun literal -> literal.Content.ToString())
-                |> String.concat ""))
-        |> Seq.filter (fun text ->
-            text.StartsWith("CC-", StringComparison.Ordinal)
-            || text.StartsWith("[CC-", StringComparison.Ordinal))
-        |> Seq.toList
-
-    let parsed = headings |> List.map (fun text -> text, contractHeading.Match text)
-
-    let duplicates =
-        parsed
-        |> List.filter (snd >> _.Success)
-        |> List.map (fun (_, value) -> value.Groups[1].Value)
-        |> List.countBy id
-        |> List.filter (snd >> (<) 1)
-
-    [
-        for heading, found in parsed do
-            if not found.Success then
-                yield "Malformed contract heading: " + heading
-        for token, _ in duplicates do
-            yield "Duplicate contract heading: " + token
-    ]
-
 let private anchors text =
     let parsed = Markdown.Parse(text, pipeline)
 
@@ -150,4 +114,3 @@ let repository root =
         |> Map.ofArray
 
     links documents (fun path -> File.Exists path || Directory.Exists path)
-    @ contracts (Map.toSeq documents)

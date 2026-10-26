@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseDecisionTests
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Contract
@@ -16,7 +18,7 @@ let private replay () =
 
     Expect.equal
         (decide request view)
-        (Decision.Replay receipt)
+        (Verdict.Replay receipt)
         "Replay retains receipt and executor"
 
     for changed in
@@ -26,7 +28,7 @@ let private replay () =
             }
             { request with
                 Act =
-                    CaseAct.Open
+                    UnvalidatedCaseAct.Open
                         { registration with
                             ClaimedAmount = "1000"
                         }
@@ -34,7 +36,7 @@ let private replay () =
         ] do
         Expect.equal
             (decide changed view)
-            (Decision.Replay receipt)
+            (Verdict.Replay receipt)
             "Equivalent amount and reference spellings retain the original receipt"
 
     let later =
@@ -46,11 +48,18 @@ let private replay () =
 
     Expect.equal
         (decide request laterView)
-        (Decision.Replay receipt)
+        (Verdict.Replay receipt)
         "Replay precedes current revision checks"
 
-    match CaseDecisions.review installation calendar owner request laterView.Read with
-    | Decision.Replay accepted -> Expect.equal accepted receipt "Preview observes exact acceptance"
+    match
+        CaseExecution.review
+            installation
+            calendar
+            owner
+            (CaseFixtures.command request)
+            laterView.Read
+    with
+    | Verdict.Replay accepted -> Expect.equal accepted receipt "Preview observes exact acceptance"
     | _ -> failtest "Preview must find the accepted identity"
 
 let private authorization () =
@@ -59,14 +68,14 @@ let private authorization () =
 
     Expect.equal
         (decide request (locked revoked (Some current) (Some entry)))
-        (Decision.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse Refusal.ResourceUnavailable)
         "Revocation precedes identity disclosure"
 
     let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.CaseHandler ] ]
 
     Expect.equal
         (decide (opening 12 "NEW-CASE") (locked scoped None None))
-        (Decision.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse Refusal.ResourceUnavailable)
         "Case handling cannot create another resource"
 
     let disabled =
@@ -76,15 +85,17 @@ let private authorization () =
 
     Expect.equal
         (decide request (locked disabled (Some current) (Some entry)))
-        (Decision.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse Refusal.ResourceUnavailable)
         "Disabled actor cannot replay"
 
 let private reviewAndTime () =
     let request = opening 13 "PURE-REVIEW"
     let view = locked worker None None
 
-    match CaseDecisions.review installation calendar owner request view.Read with
-    | Decision.Proceed(None, after) ->
+    match
+        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+    with
+    | Verdict.Proceed(None, after) ->
         Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"
     | _ -> failtest "Expected a pure proposed state"
 
@@ -98,7 +109,7 @@ let private reviewAndTime () =
 
     Expect.equal
         (decide request early)
-        (Decision.Refuse(
+        (Verdict.Refuse(
             Refusal.InvalidInput(
                 InputTarget.Field BusinessField.IncidentNotificationDate,
                 Violation.FutureDate
@@ -109,15 +120,18 @@ let private reviewAndTime () =
     let _, _, current, _ = created 14 "PURE-REVIEW-CURRENT"
 
     Expect.equal
-        (decide (opening 13 current.Snapshot.Reference) (locked worker (Some current) None))
-        (Decision.Refuse Refusal.CaseAlreadyExists)
+        (decide
+            (opening 13 (CaseReference.format current.Snapshot.Reference))
+            (locked worker (Some current) None))
+        (Verdict.Refuse Refusal.CaseAlreadyExists)
         "An earlier preview cannot authorize opening after another acceptance"
 
-    let stale = actRequest 15 current.Snapshot.Reference 0L CaseAct.Close
+    let stale =
+        actRequest 15 (CaseReference.format current.Snapshot.Reference) 0L UnvalidatedCaseAct.Close
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
-        (Decision.Refuse(Refusal.RevisionConflict 1L))
+        (Verdict.Refuse(Refusal.RevisionConflict 1L))
         "Execution rechecks the current revision"
 
 let private integrityAndPrivacy () =
@@ -130,7 +144,7 @@ let private integrityAndPrivacy () =
 
     Expect.equal
         (decide original (locked worker (Some current) (Some corrupted)))
-        (Decision.Fail CoreFault.OperationContentConflict)
+        (Verdict.Fail CoreFault.OperationContentConflict)
         "Stored corruption discloses no receipt"
 
     let _, _, readable, _ = created 17 "READABLE-CASE"
@@ -138,21 +152,21 @@ let private integrityAndPrivacy () =
 
     let different =
         { original with
-            CaseReference = readable.Snapshot.Reference
+            CaseReference = (CaseReference.format readable.Snapshot.Reference)
             ExpectedRevision = 1L
-            Act = CaseAct.Close
+            Act = UnvalidatedCaseAct.Close
         }
 
     Expect.equal
         (decide different (locked scoped (Some readable) (Some entry)))
-        (Decision.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse Refusal.ResourceUnavailable)
         "An inaccessible existing operation does not leak through another readable case"
 
-let private capacityAndFence () =
-    let request, entry, current, receipt = created 18 "PURE-CAPACITY"
+let private boundsAndFence () =
+    let _, _, current, _ = created 18 "PURE-BOUND"
 
     let full =
-        { locked worker (Some current) None with
+        { locked worker None None with
             Head =
                 { head with
                     Sequence = Revision.Maximum
@@ -160,21 +174,9 @@ let private capacityAndFence () =
         }
 
     Expect.equal
-        (decide { request with OperationId = id 19 } full)
-        (Decision.Refuse Refusal.LedgerExhausted)
-        "Fresh work stops before arithmetic"
-
-    Expect.equal
-        (decide
-            request
-            { full with
-                Read =
-                    { full.Read with
-                        ExistingOperation = Some entry
-                    }
-            })
-        (Decision.Replay receipt)
-        "Exact replay remains possible at capacity"
+        (decide (opening 19 "BOUND-LEDGER") full)
+        (Verdict.Fail CoreFault.InternalError)
+        "An unrepresentable ledger successor is an internal fault"
 
     let fenced =
         { locked worker None None with
@@ -183,7 +185,7 @@ let private capacityAndFence () =
 
     Expect.equal
         (decide (opening 20 "PURE-FENCE") fenced)
-        (Decision.Refuse Refusal.OperationResolved)
+        (Verdict.Refuse Refusal.OperationResolved)
         "Fenced identity cannot append"
 
     let maxRevision =
@@ -196,10 +198,14 @@ let private capacityAndFence () =
 
     Expect.equal
         (decide
-            (actRequest 21 current.Snapshot.Reference Revision.Maximum CaseAct.Close)
+            (actRequest
+                21
+                (CaseReference.format current.Snapshot.Reference)
+                Revision.Maximum
+                UnvalidatedCaseAct.Close)
             (locked worker (Some maxRevision) None))
-        (Decision.Refuse Refusal.RevisionExhausted)
-        "Revision exhaustion is checked without overflow"
+        (Verdict.Fail CoreFault.InternalError)
+        "A format-valid record at the bound yields CORE_INTERNAL_ERROR"
 
 let private rawOpening =
     """{"kind":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
@@ -239,17 +245,17 @@ let private wireSpelling () =
 
     Expect.equal
         (decide (decodeWire respelledOpening) later)
-        (Decision.Replay receipt)
+        (Verdict.Replay receipt)
         "Raw JSON re-spelling retains original receipt, executor and instant"
 
     Expect.equal
         (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.0"))) later)
-        (Decision.Replay receipt)
+        (Verdict.Replay receipt)
         "Equivalent decimal value retains the original receipt"
 
     Expect.equal
         (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.01"))) later)
-        (Decision.Refuse Refusal.IdempotencyConflict)
+        (Verdict.Refuse Refusal.IdempotencyConflict)
         "A different amount still conflicts"
 
 [<Tests>]
@@ -264,5 +270,7 @@ let tests =
             testCase
                 "corruption faults and foreign identity privacy remain distinct"
                 integrityAndPrivacy
-            testCase "head revision and operation fences retain refusal precedence" capacityAndFence
+            testCase
+                "unrepresentable successors are internal faults and fences prevent append"
+                boundsAndFence
         ]

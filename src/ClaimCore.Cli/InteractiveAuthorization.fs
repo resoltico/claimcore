@@ -36,14 +36,14 @@ module InteractiveAuthorization =
                 browser.Failure
                 |> Option.defaultValue (
                     if transport.Dispatch.IsSome then
-                        "OIDC_TOKEN_UNAVAILABLE"
+                        AccessFailure.OidcTokenUnavailable
                     else
-                        "OIDC_CALLBACK_INVALID"
+                        AccessFailure.OidcCallbackInvalid
                 )
             )
         else
             match transport.Dispatch with
-            | None -> Error "OIDC_TOKEN_UNAVAILABLE"
+            | None -> Error AccessFailure.OidcTokenUnavailable
             | Some dispatch ->
                 AccessTokens.fromResponseAt
                     clock
@@ -70,7 +70,7 @@ module InteractiveAuthorization =
             with
             | :? OperationCanceledException
             | :? HttpRequestException
-            | :? IO.IOException -> return Error "OIDC_TOKEN_UNAVAILABLE"
+            | :? IO.IOException -> return Error AccessFailure.OidcTokenUnavailable
             | :? InvalidOperationException
-            | :? ArgumentException -> return Error "OIDC_METADATA_INVALID"
+            | :? ArgumentException -> return Error AccessFailure.OidcMetadataInvalid
         }

@@ -1,7 +1,10 @@
 module ClaimCore.Tests.ReceiptDisclosureTests
 
+open ClaimCore.TestSupport
+
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
@@ -44,8 +47,10 @@ let private disclosure () =
     let registrar = actor owner (id 1) [ Role.CaseRegistrar ] []
     let view = locked registrar (Some superseded) (Some entry)
 
-    match CaseDecisions.review installation calendar owner request view.Read with
-    | Decision.Replay value ->
+    match
+        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+    with
+    | Verdict.Replay value ->
         Expect.equal
             (caseReceipt value).Snapshot
             SnapshotDisclosure.Withheld
@@ -88,15 +93,15 @@ let private foreignScope () =
 
     let request =
         { original with
-            CaseReference = caseA.Snapshot.Reference
+            CaseReference = CaseReference.format caseA.Snapshot.Reference
             ExpectedRevision = 1L
-            Act = CaseAct.Close
+            Act = UnvalidatedCaseAct.Close
         }
 
     let read = (locked both (Some caseA) (Some entry)).Read
 
-    match CaseDecisions.review installation calendar owner request read with
-    | Decision.Refuse Refusal.IdempotencyConflict -> ()
+    match CaseExecution.review installation calendar owner (CaseFixtures.command request) read with
+    | Verdict.Refuse Refusal.IdempotencyConflict -> ()
     | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
     let narrowed =
@@ -107,8 +112,10 @@ let private foreignScope () =
                 }
         }
 
-    match CaseDecisions.review installation calendar owner request narrowed with
-    | Decision.Refuse Refusal.ResourceUnavailable -> ()
+    match
+        CaseExecution.review installation calendar owner (CaseFixtures.command request) narrowed
+    with
+    | Verdict.Refuse Refusal.ResourceUnavailable -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
@@ -141,23 +148,18 @@ let private roles role readable full () =
             full
             "Superseded disclosure requires full history"
 
-        let read: HistoryReadView =
-            {
-                Actor = authority
-                Case = Some later
-                ObservedAt = instant
-            }
+
 
         let query: HistoryRequest =
             {
-                CaseReference = current.Snapshot.Reference
+                CaseReference = CaseReference.format current.Snapshot.Reference
                 AfterCursor = None
                 Limit = 50
                 Detail = HistoryDetail.Full
             }
 
         Expect.equal
-            (Queries.selectHistory owner query read |> Result.isOk)
+            (Queries.selectHistory owner query authority (Some later) |> Result.isOk)
             full
             "Full-history selection shares policy"
 
@@ -166,7 +168,11 @@ let private stewardship () =
     let steward = actor owner (id 1) [ Role.DataSteward ] []
 
     let request =
-        actRequest 206 current.Snapshot.Reference 1L (CaseAct.Void "Entered in error")
+        actRequest
+            206
+            (CaseReference.format current.Snapshot.Reference)
+            1L
+            (UnvalidatedCaseAct.Void "Entered in error")
 
     let draft, projection, first =
         decide request (locked steward (Some current) None) |> appended
@@ -177,7 +183,11 @@ let private stewardship () =
         | _ -> failtest "Update"
 
     let restore =
-        actRequest 207 current.Snapshot.Reference 2L (CaseAct.Reinstate "Confirmed")
+        actRequest
+            207
+            (CaseReference.format current.Snapshot.Reference)
+            2L
+            (UnvalidatedCaseAct.Reinstate "Confirmed")
 
     let _, projection, _ =
         decide restore (locked steward (Some voided) None) |> appended
@@ -188,7 +198,7 @@ let private stewardship () =
         | _ -> failtest "Update"
 
     match decide request (locked steward (Some restored) (Some(LedgerEntries.stored draft))) with
-    | Decision.Replay replay ->
+    | Verdict.Replay replay ->
         Expect.equal replay.RecordedBy first.RecordedBy "Original executor"
         Expect.equal replay.Position first.Position "Original position"
 

@@ -7,12 +7,13 @@ open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
-    | Case of request: CaseRequest * snapshot: CaseSnapshot option
+    | Case of request: CaseCommand * snapshot: CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | ErasedCase
 
+[<NoComparison>]
 type internal ValidatedEntry =
     private
         {
@@ -46,10 +47,10 @@ module internal LedgerEntries =
 
     let private metadataSubject =
         function
-        | StoredSubject.Authority(target, act) ->
-            LedgerSubject.Authority { TargetActorId = target; Act = act }
-        | StoredSubject.Case(id, revision, act, date) ->
-            LedgerSubject.Case
+        | EntryTarget.Authority(target, act) ->
+            RecordedTarget.Authority { TargetActorId = target; Act = act }
+        | EntryTarget.Case(id, revision, act, date) ->
+            RecordedTarget.Case
                 {
                     CaseId = id
                     Revision = revision
@@ -68,7 +69,7 @@ module internal LedgerEntries =
         request
         snapshot
         : EntryDraft =
-        if head.Sequence < 0L || head.Sequence >= Revision.Maximum then
+        if head.Sequence < 0L then
             invalidArg (nameof head) "Ledger head cannot advance."
 
         let payload =
@@ -82,7 +83,7 @@ module internal LedgerEntries =
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
-        let sequence = head.Sequence + 1L
+        let sequence = Revision.successor head.Sequence
 
         let metadata =
             {
@@ -129,9 +130,9 @@ module internal LedgerEntries =
 
     let canObserve principal actor =
         function
-        | StoredSubject.Case(id, _, _, _) ->
+        | EntryTarget.Case(id, _, _, _) ->
             ActorAuthorization.can principal actor Capability.ReadHistory (ResourceScope.Case id)
-        | StoredSubject.Authority _ ->
+        | EntryTarget.Authority _ ->
             ActorAuthorization.can
                 principal
                 actor
@@ -141,12 +142,12 @@ module internal LedgerEntries =
     let private validMetadata (entry: StoredEntry) =
         let subject =
             match entry.Subject with
-            | StoredSubject.Case(id, revision, act, _) ->
+            | EntryTarget.Case(id, revision, act, _) ->
                 id <> Guid.Empty
                 && revision >= 1L
                 && revision <= Revision.Maximum
                 && ((revision = 1L) = (act = (CaseActKind.Business BusinessActKind.Open)))
-            | StoredSubject.Authority(id, _) -> id <> Guid.Empty
+            | EntryTarget.Authority(id, _) -> id <> Guid.Empty
 
         entry.Sequence >= 1L
         && entry.Sequence <= Revision.Maximum
@@ -170,7 +171,7 @@ module internal LedgerEntries =
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
             && CaseActs.kind request.Act = act
-            && CaseReferenceId.encode installationId request.CaseReference = id
+            && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
             if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
                 if Array.isEmpty data.Snapshot then
@@ -181,8 +182,8 @@ module internal LedgerEntries =
                 match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
                 | Ok snapshot when
                     snapshot.Revision = revision
-                    && CaseReference.key snapshot.Reference =
-                        CaseReference.key request.CaseReference
+                    && CaseReference.identity snapshot.Reference =
+                        CaseReference.identity request.Reference
                     ->
                     Ok(EntryContent.Case(request, Some snapshot))
                 | _ -> Error CoreFault.StoreIntegrityError
@@ -215,14 +216,14 @@ module internal LedgerEntries =
         else
             let content =
                 match entry.Subject, entry.Payload, entry.PayloadNonce with
-                | StoredSubject.Case _, None, None -> Ok EntryContent.ErasedCase
+                | EntryTarget.Case _, None, None -> Ok EntryContent.ErasedCase
                 | _ ->
                     payload entry
                     |> Result.bind (fun data ->
                         match entry.Subject with
-                        | StoredSubject.Case(id, revision, act, _) ->
+                        | EntryTarget.Case(id, revision, act, _) ->
                             caseContent installationId entry id revision act data
-                        | StoredSubject.Authority(target, act) ->
+                        | EntryTarget.Authority(target, act) ->
                             authorityContent entry target act data)
 
             content
@@ -278,7 +279,10 @@ module internal LedgerEntries =
             || (Case.ofAccepted record.Snapshot |> Result.isError)
             ->
             Error CoreFault.StoreIntegrityError
-        | Some record when CaseReferenceId.encode installationId record.Snapshot.Reference <> id ->
+        | Some record when
+            CaseReferenceId.encode installationId (CaseReference.format record.Snapshot.Reference)
+            <> id
+            ->
             Error CoreFault.StoreIntegrityError
         | Some record ->
             let shown =
@@ -312,9 +316,9 @@ module internal LedgerEntries =
 
         let subject =
             match entry.Subject, validated.Content with
-            | StoredSubject.Case(id, revision, act, _), content ->
+            | EntryTarget.Case(id, revision, act, _), content ->
                 caseReceipt validated.InstallationId principal actor current id revision act content
-            | StoredSubject.Authority(target, act), EntryContent.Authority _ ->
+            | EntryTarget.Authority(target, act), EntryContent.Authority _ ->
                 Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
 
@@ -330,7 +334,7 @@ module internal LedgerEntries =
 
     let summary (current: StoredCase) (entry: StoredEntry) =
         match entry.Subject with
-        | StoredSubject.Case(id, revision, act, _) when
+        | EntryTarget.Case(id, revision, act, _) when
             validMetadata entry
             && id = current.CaseId
             && revision <= current.Snapshot.Revision
@@ -358,19 +362,19 @@ module internal OperationIdentity =
         receipt
         =
         match existing with
-        | None -> Decision.Proceed()
+        | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
-            Decision.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse Refusal.ResourceUnavailable
         | Some entry when entry.OperationId <> operationId ->
-            Decision.Fail CoreFault.StoreIntegrityError
+            Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
             match LedgerEntries.validate installationId entry with
-            | Error fault -> Decision.Fail fault
+            | Error fault -> Verdict.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> Decision.Refuse Refusal.ResourceUnavailable
+                | None -> Verdict.Refuse Refusal.ResourceUnavailable
                 | Some accepted when accepted = bytes ->
                     receipt validated
-                    |> Result.map Decision.Replay
-                    |> Result.defaultWith Decision.Fail
-                | Some _ -> Decision.Refuse Refusal.IdempotencyConflict
+                    |> Result.map Verdict.Replay
+                    |> Result.defaultWith Verdict.Fail
+                | Some _ -> Verdict.Refuse Refusal.IdempotencyConflict

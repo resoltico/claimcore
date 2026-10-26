@@ -17,6 +17,8 @@
     <Compile Include="FixtureDisposal.fs" />
     <Compile Include="PostgresBaseline.fs" />
     <Compile Include="PostgresReadiness.fs" />
+    <Compile Include="CaseFixtures.fs" />
+    <Compile Include="MemoryStore.fs" />
     <Compile Include="StoreFixtures.fs" />
     <Compile Include="PostgresFixture.fs" />
     <Compile Include="IdentityReadiness.fs" />

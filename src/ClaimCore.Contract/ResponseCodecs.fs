@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 open ClaimCore.Json
 open System
@@ -12,43 +14,58 @@ module ResponseCodecs =
     let private principal = RequestCodecs.principal
     let private scope = RequestCodecs.scope
 
+    let private moneyProblem amountField currencyField path =
+        function
+        | MoneyViolation.Amount _ ->
+            {
+                Path = path + "." + amountField
+                Reason = "value outside its wire grammar"
+            }
+        | MoneyViolation.Currency _ ->
+            {
+                Path = path + "." + currencyField
+                Reason = "value outside its wire grammar"
+            }
+
     let private registration =
         (record (fun incident notification country claimant insurer amount currency ->
-            {
-                Registration.IncidentDate = incident
-                IncidentNotificationDate = notification
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            })
+            Money.parse amount currency
+            |> Result.map (fun money ->
+                {
+                    Registration.IncidentDate = incident
+                    IncidentNotificationDate = notification
+                    IncidentCountry = country
+                    ClaimantName = claimant
+                    InsurerName = insurer
+                    ClaimedAmount = money
+                }))
         : Fields<Registration, _>)
-        |> field "incidentDate" _.IncidentDate date
-        |> field "incidentNotificationDate" _.IncidentNotificationDate date
-        |> field "incidentCountry" _.IncidentCountry country
-        |> field "claimantName" _.ClaimantName nonempty
-        |> field "insurerName" _.InsurerName nonempty
-        |> field "claimedAmount" _.ClaimedAmount amount
-        |> field "claimedCurrency" _.ClaimedCurrency currency
-        |> build
+        |> field "incidentDate" _.IncidentDate calendarDate
+        |> field "incidentNotificationDate" _.IncidentNotificationDate calendarDate
+        |> field "incidentCountry" _.IncidentCountry countryCode
+        |> field "claimantName" _.ClaimantName partyName
+        |> field "insurerName" _.InsurerName partyName
+        |> field "claimedAmount" (fun value -> Money.format value.ClaimedAmount) amount
+        |> field "claimedCurrency" (fun value -> Money.currency value.ClaimedAmount) currency
+        |> buildResult (moneyProblem "claimedAmount" "claimedCurrency")
 
     let private decision =
         (record (fun date amount currency ->
-            {
-                Decision.PaymentDecisionDate = date
-                PayableAmount = amount
-                PayableCurrency = currency
-            })
+            Money.parse amount currency
+            |> Result.map (fun money ->
+                {
+                    Decision.PaymentDecisionDate = date
+                    PayableAmount = money
+                }))
         : Fields<Decision, _>)
-        |> field "paymentDecisionDate" _.PaymentDecisionDate date
-        |> field "payableAmount" _.PayableAmount amount
-        |> field "payableCurrency" _.PayableCurrency currency
-        |> build
+        |> field "paymentDecisionDate" _.PaymentDecisionDate calendarDate
+        |> field "payableAmount" (fun value -> Money.format value.PayableAmount) amount
+        |> field "payableCurrency" (fun value -> Money.currency value.PayableAmount) currency
+        |> buildResult (moneyProblem "payableAmount" "payableCurrency")
 
     let private payment =
         (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
-        |> field "paymentDate" _.PaymentDate date
+        |> field "paymentDate" _.PaymentDate calendarDate
         |> build
 
     let caseFields =
@@ -61,7 +78,7 @@ module ResponseCodecs =
                 Payment = payment
             })
         : Fields<CaseFields, _>)
-        |> field "caseReference" _.CaseReference reference
+        |> field "caseReference" _.CaseReference caseReference
         |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
@@ -122,7 +139,7 @@ module ResponseCodecs =
                 State = view
             })
         : Fields<CaseSnapshot, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.Reference reference
+        |> field (Record.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field "state" _.State caseState
         |> build
@@ -230,7 +247,7 @@ module ResponseCodecs =
                 Advice = advice
             })
         : Fields<CaseReadModel, _>)
-        |> field (FieldTable.key BusinessField.CaseReference) _.Snapshot.Reference reference
+        |> field (Record.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision sequence
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
@@ -344,7 +361,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration (Vocabulary.entries FieldTable.vocabulary))
+        |> field "field" _.FieldName (enumeration (Vocabulary.entries RecordFields.vocabulary))
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
@@ -361,7 +378,7 @@ module ResponseCodecs =
         : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list FieldTable.rows.Length fieldChange)
+        |> field "changes" _.Changes (list Record.fields.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
     let actorSummary =
@@ -510,7 +527,7 @@ module ResponseCodecs =
                 State = state
             })
         : Fields<CaseSummary, _>)
-        |> field "caseReference" _.Reference reference
+        |> field "caseReference" _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field "state" _.State state
         |> build

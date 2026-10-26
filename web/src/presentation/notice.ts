@@ -1,4 +1,4 @@
-import type { Notice } from "../api/notices";
+import type { Notice } from "../protocol/notices";
 import { diagnosticParameters as requirements } from "@contracts/messages";
 import { exactInteger } from "./format";
 import { renderKey, translate } from "./messages";

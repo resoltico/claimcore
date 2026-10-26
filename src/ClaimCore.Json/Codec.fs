@@ -24,6 +24,18 @@ type Schema =
     | OneOf of variants: Schema list * discriminator: (string * (string * string) list) option
     | Ref of string
 
+/// Named schema meaning is shared by codecs, OpenAPI and CLI framing.
+module SchemaDefinitions =
+    let merge (left: Map<string, Schema>) (right: Map<string, Schema>) =
+        Map.fold
+            (fun definitions key value ->
+                match Map.tryFind key definitions with
+                | Some existing when existing <> value ->
+                    invalidArg (nameof right) "Named schema definitions disagree."
+                | _ -> Map.add key value definitions)
+            left
+            right
+
 /// One definition yields the decoder, the encoder and the schema, so they cannot diverge.
 [<NoEquality; NoComparison>]
 type Codec<'T> =
@@ -76,16 +88,6 @@ module WriterProfile =
         writeString writer value
 
 module Codec =
-    let private merge (left: Map<string, Schema>) (right: Map<string, Schema>) =
-        right
-        |> Map.fold
-            (fun state key value ->
-                match Map.tryFind key state with
-                | Some existing when existing <> value ->
-                    invalidArg "codec" "Named codec definitions disagree."
-                | _ -> Map.add key value state)
-            left
-
     let private fail path reason = Error { Path = path; Reason = reason }
 
     let text: Codec<string> =
@@ -110,9 +112,12 @@ module Codec =
             Definitions = Map.empty
         }
 
+    let private orderedBounds lower upper minimum maximum message =
+        if minimum < lower || maximum > upper || minimum > maximum then
+            invalidArg (nameof minimum) message
+
     let boundedText minimum maximum =
-        if minimum < 0 || maximum < minimum then
-            invalidArg (nameof minimum) "Use ordered text-length bounds."
+        orderedBounds 0 Int32.MaxValue minimum maximum "Use ordered text-length bounds."
 
         let within (value: string) =
             let length = value.EnumerateRunes() |> Seq.length
@@ -173,12 +178,12 @@ module Codec =
         |> named "Uuid"
 
     let integer minimum maximum : Codec<int64> =
-        if
-            minimum < -JsonValue.MaximumInteger
-            || maximum > JsonValue.MaximumInteger
-            || minimum > maximum
-        then
-            invalidArg (nameof minimum) "Use ordered safe-integer bounds."
+        orderedBounds
+            (-JsonValue.MaximumInteger)
+            JsonValue.MaximumInteger
+            minimum
+            maximum
+            "Use ordered safe-integer bounds."
 
         {
             Read =
@@ -322,6 +327,15 @@ module Codec =
             Definitions = codec.Definitions
         }
 
+    /// Preserve an admitted representation while its typed interpretation can still refuse.
+    let mapResult read write (codec: Codec<'T>) : Codec<'U> =
+        {
+            Read = fun path element -> codec.Read path element |> Result.bind (read path)
+            Write = fun value -> codec.Write(write value)
+            Schema = codec.Schema
+            Definitions = codec.Definitions
+        }
+
     let constrained schema accepts (codec: Codec<'T>) =
         { codec with
             Read =
@@ -342,8 +356,7 @@ module Codec =
         }
 
     let boundedList minimum maximum codec =
-        if minimum < 0 || maximum < minimum then
-            invalidArg (nameof minimum) "Use ordered array bounds."
+        orderedBounds 0 Int32.MaxValue minimum maximum "Use ordered array bounds."
 
         list maximum codec
         |> constrained (Schema.Array(codec.Schema, minimum, maximum)) (fun values ->
@@ -378,7 +391,8 @@ module Codec =
                         | _ -> fail path ("missing member " + name))
             WriteFields = fun whole -> fields.WriteFields whole @ [ name, codec.Write(get whole) ]
             Properties = fields.Properties @ [ name, codec.Schema ]
-            PropertyDefinitions = merge fields.PropertyDefinitions codec.Definitions
+            PropertyDefinitions =
+                SchemaDefinitions.merge fields.PropertyDefinitions codec.Definitions
             OptionalMembers = fields.OptionalMembers
         }
 
@@ -404,7 +418,8 @@ module Codec =
                        |> Option.map (fun value -> [ name, codec.Write value ])
                        |> Option.defaultValue [])
             Properties = fields.Properties @ [ name, codec.Schema ]
-            PropertyDefinitions = merge fields.PropertyDefinitions codec.Definitions
+            PropertyDefinitions =
+                SchemaDefinitions.merge fields.PropertyDefinitions codec.Definitions
             OptionalMembers = name :: fields.OptionalMembers
         }
 
@@ -428,6 +443,19 @@ module Codec =
             Schema = Schema.Object(fields.Properties, fields.OptionalMembers)
             Definitions = fields.PropertyDefinitions
         }
+
+    /// A record constructor may validate relationships between separately encoded members.
+    let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
+        {
+            ReadFields =
+                fun path element ->
+                    fields.ReadFields path element |> Result.bind (Result.mapError (describe path))
+            WriteFields = fields.WriteFields
+            Properties = fields.Properties
+            PropertyDefinitions = fields.PropertyDefinitions
+            OptionalMembers = fields.OptionalMembers
+        }
+        |> build
 
     // ----- tagged unions ------------------------------------------------------------------
 
@@ -483,7 +511,7 @@ module Codec =
                     Map.add
                         (caseName case)
                         case.VariantSchema
-                        (merge state case.VariantDefinitions))
+                        (SchemaDefinitions.merge state case.VariantDefinitions))
                 Map.empty
 
         let union =
@@ -555,7 +583,9 @@ module Codec =
             Schema = Schema.Ref name
             Definitions =
                 cases
-                |> List.fold (fun state case -> merge state case.VariantDefinitions) Map.empty
+                |> List.fold
+                    (fun state case -> SchemaDefinitions.merge state case.VariantDefinitions)
+                    Map.empty
                 |> Map.add name (Schema.OneOf(cases |> List.map _.VariantSchema, None))
         }
 
@@ -589,7 +619,7 @@ module Codec =
                         JsonValue.Object(members @ [ name, memberCodec.Write() ])
                     | _ -> invalidOp "A member requires an object codec."
             Schema = Schema.Object(properties @ [ name, memberCodec.Schema ], optional)
-            Definitions = merge codec.Definitions memberCodec.Definitions
+            Definitions = SchemaDefinitions.merge codec.Definitions memberCodec.Definitions
         }
 
     /// RecordFormat chooses the format number and owns the named durable codec value.

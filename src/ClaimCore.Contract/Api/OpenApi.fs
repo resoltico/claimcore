@@ -13,15 +13,6 @@ module OpenApi =
     let private array = JsonValue.Array
     let private schema = SchemaJson.value prefix
 
-    let private merge left right =
-        Map.fold
-            (fun state key value ->
-                match Map.tryFind key state with
-                | Some existing when existing <> value -> invalidOp "OpenAPI definitions disagree."
-                | _ -> Map.add key value state)
-            left
-            right
-
     let private content shape =
         object [ "application/json", object [ "schema", schema shape ] ]
 
@@ -101,7 +92,7 @@ module OpenApi =
 
         object (success :: failures)
 
-    let private operation (endpoint: Endpoint<'In, 'Out>) =
+    let private operation (endpoint: Route) =
         let parameters = [ header "ClaimCore-Contract" true ResponseScalars.digest.Schema ]
 
         let parameters =
@@ -117,7 +108,7 @@ module OpenApi =
                 "x-claimcore-effect", text (EndpointEffects.token endpoint.Effect)
                 "parameters", array parameters
                 "security", security endpoint.Token
-                "responses", responses endpoint.Output.Schema
+                "responses", responses endpoint.OutputSchema
             ]
 
         object (
@@ -130,20 +121,16 @@ module OpenApi =
                     object
                         [
                             "required", JsonValue.Boolean true
-                            "content", content endpoint.Input.Schema
+                            "content", content endpoint.InputSchema
                         ]
                 ]
         )
 
-    let private inspected (endpoint: AnyEndpoint) =
-        endpoint.Accept
-            { new IEndpointVisitor<_> with
-                member _.Visit value =
-                    value.Token,
-                    value.Method.Method.ToLowerInvariant(),
-                    operation value,
-                    merge value.Input.Definitions value.Output.Definitions
-            }
+    let private inspected (endpoint: Route) =
+        endpoint.Token,
+        endpoint.Method.Method.ToLowerInvariant(),
+        operation endpoint,
+        SchemaDefinitions.merge endpoint.InputDefinitions endpoint.OutputDefinitions
 
     let private securitySchemes =
         object
@@ -170,16 +157,11 @@ module OpenApi =
     let definitions =
         let roots =
             Api.all
-            |> List.collect (fun endpoint ->
-                endpoint.Accept
-                    { new IEndpointVisitor<_> with
-                        member _.Visit value =
-                            [ value.Input.Schema; value.Output.Schema ]
-                    })
+            |> List.collect (fun endpoint -> [ endpoint.InputSchema; endpoint.OutputSchema ])
 
         endpoints
         |> List.fold
-            (fun state (_, _, _, definitions) -> merge state definitions)
+            (fun state (_, _, _, definitions) -> SchemaDefinitions.merge state definitions)
             HostFailureCodecs.reply.Definitions
         |> fun definitions ->
             SchemaJson.reachable definitions (HostFailureCodecs.reply.Schema :: roots)

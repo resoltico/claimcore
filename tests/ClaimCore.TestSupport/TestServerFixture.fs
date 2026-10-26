@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.TestServerFixture
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 
 open System
@@ -54,7 +55,7 @@ let configuration certificate =
         Certificate = certificate
         SessionIdle = TimeSpan.FromMinutes 30.
         SessionAbsolute = TimeSpan.FromHours 8.
-        Admission = limits
+        RequestGate = limits
         Oidc = Some oidc
     }
 
@@ -164,12 +165,12 @@ type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
             assets
             (configuration certificate)
             (if forActor.IsSome then
-                 ClaimCore.Application.Handlers.forActor
+                 ClaimCore.Application.Handlers.route
              else
                  facade.Handlers)
             (fun principal action ->
                 task {
-                    if not facade.AdmissionOpen then
+                    if not facade.RuntimeAvailable then
                         return None
                     else
                         facade.Principal <- Some principal

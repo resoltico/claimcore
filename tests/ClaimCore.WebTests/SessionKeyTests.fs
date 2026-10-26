@@ -228,19 +228,19 @@ let tests =
         "Database session adapter"
         [
             testCaseAsync
-                "[CC-WEB-001] session retrieval awaits storage"
+                "session retrieval awaits storage"
                 (async { do! awaited () |> Async.AwaitTask })
             testCaseAsync
-                "[CC-WEB-001] key loss invalidates protected tickets"
+                "key loss invalidates protected tickets"
                 (async { do! protectionFailures () |> Async.AwaitTask })
             testCaseAsync
-                "[CC-WEB-001] key ring survives restart"
+                "key ring survives restart"
                 (async { do! keyContinuity () |> Async.AwaitTask })
             testCaseAsync
-                "[CC-WEB-001] database failure fails closed"
+                "database failure fails closed"
                 (async { do! storageFailure () |> Async.AwaitTask })
             testCaseAsync
-                "[CC-WEB-001] request abort reaches session storage"
+                "request abort reaches session storage"
                 (async { do! requestAbort () |> Async.AwaitTask })
-            testCase "[CC-WEB-001] key directory is owner-only" keyDirectory
+            testCase "key directory is owner-only" keyDirectory
         ]

@@ -2,24 +2,34 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 /// Authorship permits receipt metadata; current authority still controls snapshot disclosure.
 module internal Resolution =
-    let resolve installationId principal operationId (view: OperationReadView) =
-        if not (ActorAuthorization.validActor principal view.Actor) then
-            ResolveReply.Rejected Refusal.ResourceUnavailable
-        else
-            match view.Entry with
-            | Some entry when entry.OperationId <> operationId ->
-                ResolveReply.Failed CoreFault.StoreIntegrityError
-            | Some entry when entry.ActorId = view.Actor.Actor.Value.ActorId ->
-                LedgerEntries.validate installationId entry
-                |> Result.bind (LedgerEntries.receipt principal view.Actor view.Case)
-                |> Result.map ResolveReply.Accepted
-                |> Result.defaultWith ResolveReply.Failed
-            | _ -> ResolveReply.NotAccepted
+    let resolve
+        installation
+        principal
+        operation
+        (actor: AuthorityView)
+        (entry: StoredEntry option)
+        (current: StoredCase option)
+        =
+        match actor.Actor with
+        | _ when not (ActorAuthorization.validActor principal actor) ->
+            Verdict.Refuse Refusal.ResourceUnavailable
+        | Some owner ->
+            match entry with
+            | Some entry when entry.OperationId <> operation ->
+                Verdict.Fail CoreFault.StoreIntegrityError
+            | Some entry when entry.ActorId = owner.ActorId ->
+                LedgerEntries.validate installation entry
+                |> Result.bind (LedgerEntries.receipt principal actor current)
+                |> Result.map Verdict.Replay
+                |> Result.defaultWith Verdict.Fail
+            | _ -> Verdict.Proceed owner.ActorId
+        | None -> Verdict.Refuse Refusal.ResourceUnavailable
 
-    let run (store: ILedgerStore) installationId principal (request: ResolveRequest) token =
+    let run (store: IStore) installation principal (request: ResolveRequest) token =
         task {
             if request.OperationId = Guid.Empty then
                 return
@@ -28,20 +38,36 @@ module internal Resolution =
                     )
             else
                 let! result =
-                    store.ResolveOperation(
-                        principal,
-                        request.OperationId,
-                        resolve installationId principal request.OperationId,
+                    store.Write(
+                        (fun tx ->
+                            task {
+                                let! actor, entry, current =
+                                    ExecutionFacts.operation tx principal request.OperationId
+
+                                match
+                                    resolve
+                                        installation
+                                        principal
+                                        request.OperationId
+                                        actor
+                                        entry
+                                        current
+                                with
+                                | Verdict.Proceed actor ->
+                                    do! tx.Fence(actor, request.OperationId)
+                                    return Verdict.Proceed()
+                                | other -> return Verdict.map ignore other
+                            }),
                         token
                     )
 
                 return
-                    result
-                    |> Result.defaultWith (fun failure ->
-                        ResolveReply.Failed(
-                            match failure with
-                            | StoreFailure.Cancelled
-                            | StoreFailure.CommitOutcomeUnknown -> CoreFault.StoreUnavailable
-                            | value -> Queries.fault value
-                        ))
+                    match result with
+                    | Ok(Verdict.Proceed()) -> ResolveReply.NotAccepted
+                    | Ok(Verdict.Replay receipt) -> ResolveReply.Accepted receipt
+                    | Ok(Verdict.Refuse refusal) -> ResolveReply.Rejected refusal
+                    | Ok(Verdict.Fail fault) -> ResolveReply.Failed fault
+                    | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
+                        ResolveReply.Failed CoreFault.StoreUnavailable
+                    | Error failure -> ResolveReply.Failed(Queries.fault failure)
         }

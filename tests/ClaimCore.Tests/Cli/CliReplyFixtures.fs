@@ -1,7 +1,10 @@
 module ClaimCore.Tests.CliReplyFixtures
 
+open ClaimCore.TestSupport
+
 open System
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -13,7 +16,7 @@ let caseRequest =
         CaseReference = "x"
         ExpectedRevision = 0L
         Act =
-            CaseAct.Open
+            UnvalidatedCaseAct.Open
                 { Fixtures.registration with
                     IncidentDate = "2026-01-01"
                     ClaimantName = "x"
@@ -35,24 +38,25 @@ let authorityRequest =
 let snapshot =
     let fields: CaseFields =
         {
-            CaseReference = "x"
+            CaseReference = CaseFixtures.reference "x"
             Status = CaseStatus.Opened
             Registration =
-                {
-                    IncidentDate = "2026-01-01"
-                    IncidentNotificationDate = "2026-01-01"
-                    IncidentCountry = "LV"
-                    ClaimantName = "x"
-                    InsurerName = "x"
-                    ClaimedAmount = "0"
-                    ClaimedCurrency = "EUR"
-                }
+                CaseFixtures.registration
+                    {
+                        IncidentDate = "2026-01-01"
+                        IncidentNotificationDate = "2026-01-01"
+                        IncidentCountry = "LV"
+                        ClaimantName = "x"
+                        InsurerName = "x"
+                        ClaimedAmount = "0"
+                        ClaimedCurrency = "EUR"
+                    }
             Decision = None
             Payment = None
         }
 
     {
-        Reference = "x"
+        Reference = CaseFixtures.reference "x"
         Revision = 1L
         State = CaseState.Active(fields)
     }
@@ -68,7 +72,7 @@ let receipt =
         Subject =
             ReceiptSubject.Case
                 {
-                    Reference = "x"
+                    Reference = CaseFixtures.reference "x"
                     Revision = 1L
                     Act = CaseActKind.Business BusinessActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld

@@ -11,9 +11,9 @@ module internal Persistence =
     let entry connection (entry: EntryDraft) token =
         let subjectKind, subjectId, revision, act, date =
             match entry.Subject with
-            | StoredSubject.Authority(target, kind) ->
+            | EntryTarget.Authority(target, kind) ->
                 "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
-            | StoredSubject.Case(id, revision, kind, date) ->
+            | EntryTarget.Case(id, revision, kind, date) ->
                 "CASE", id, Some revision, CaseActKinds.token kind, Some date
 
         DatabaseSession.execute

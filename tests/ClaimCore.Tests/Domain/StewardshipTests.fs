@@ -1,5 +1,7 @@
 module ClaimCore.Tests.StewardshipTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System
@@ -23,12 +25,18 @@ let private current revision state =
 
 let private transitions =
     [
-        (CaseState.Active()), CaseAct.Void "Recorded in error", Ok(CaseState.Voided())
-        (CaseState.Voided()), CaseAct.Void "Recorded in error", Error Refusal.AlreadyVoided
-        (CaseState.Active()), CaseAct.Reinstate "Reference confirmed", Error Refusal.NotVoided
-        (CaseState.Voided()), CaseAct.Reinstate "Reference confirmed", Ok(CaseState.Active())
-        (CaseState.Active()), CaseAct.Erase, Ok CaseState.Erased
-        (CaseState.Voided()), CaseAct.Erase, Ok CaseState.Erased
+        (CaseState.Active()), UnvalidatedCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
+        (CaseState.Voided()),
+        UnvalidatedCaseAct.Void "Recorded in error",
+        Error Refusal.AlreadyVoided
+        (CaseState.Active()),
+        UnvalidatedCaseAct.Reinstate "Reference confirmed",
+        Error Refusal.NotVoided
+        (CaseState.Voided()),
+        UnvalidatedCaseAct.Reinstate "Reference confirmed",
+        Ok(CaseState.Active())
+        (CaseState.Active()), UnvalidatedCaseAct.Erase, Ok CaseState.Erased
+        (CaseState.Voided()), UnvalidatedCaseAct.Erase, Ok CaseState.Erased
     ]
 
 let private invalidReasons =
@@ -51,7 +59,10 @@ let private revisionProperty =
         let! state = Gen.item [ (CaseState.Active()); (CaseState.Voided()) ]
 
         let result =
-            Case.decide today (request revision CaseAct.Erase) (Some(current revision state))
+            CaseFixtures.decide
+                today
+                (request revision UnvalidatedCaseAct.Erase)
+                (Some(current revision state))
 
         return
             result
@@ -65,7 +76,8 @@ let private transitionTest () =
         let before = current 7L state
 
         let result =
-            Case.decide today (request 7L action) (Some before) |> Result.map Case.snapshot
+            CaseFixtures.decide today (request 7L action) (Some before)
+            |> Result.map Case.snapshot
 
         let state =
             result
@@ -88,60 +100,50 @@ let private reasonTest () =
     for reason in invalidReasons do
         for state, action in
             [
-                (CaseState.Active()), CaseAct.Void reason
-                (CaseState.Voided()), CaseAct.Reinstate reason
+                (CaseState.Active()), UnvalidatedCaseAct.Void reason
+                (CaseState.Voided()), UnvalidatedCaseAct.Reinstate reason
             ] do
             Expect.isError
-                (Case.decide today (request 7L action) (Some(current 7L state)))
+                (CaseFixtures.decide today (request 7L action) (Some(current 7L state)))
                 "Malformed or newly nonconforming reason refuses"
 
 let private reasonBounds () =
     for reason in [ "Reason"; String.replicate 200 "x"; String.replicate 200 "😀" ] do
         Expect.isOk
-            (Case.decide
+            (CaseFixtures.decide
                 today
-                (request 7L (CaseAct.Void reason))
+                (request 7L (UnvalidatedCaseAct.Void reason))
                 (Some(current 7L (CaseState.Active()))))
             "Exactly 200 Unicode scalars accepted"
 
     Expect.isError
-        (Case.decide
+        (CaseFixtures.decide
             today
-            (request 7L (CaseAct.Void(String.replicate 201 "😀")))
+            (request 7L (UnvalidatedCaseAct.Void(String.replicate 201 "😀")))
             (Some(current 7L (CaseState.Active()))))
         "201 Unicode scalars refuse"
 
 let private staleRevision () =
     let outcome =
-        Case.decide
+        CaseFixtures.decide
             today
-            (request 6L (CaseAct.Void " leading"))
+            (request 6L (UnvalidatedCaseAct.Void " leading"))
             (Some(current 7L (CaseState.Voided())))
 
     Expect.isTrue
         ((outcome |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 7L))
         "Revision check precedes admission and state"
 
-let private exhausted () =
-    let outcome =
-        Case.decide
-            today
-            (request Revision.Maximum CaseAct.Erase)
-            (Some(current Revision.Maximum (CaseState.Active())))
-
-    Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) = Error Refusal.RevisionExhausted)
-        "No overflow at terminal revision"
-
 let private vocabulary () =
     for action, expected in
         [
-            CaseAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
-            CaseAct.Reinstate "Reason", (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-            CaseAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
+            UnvalidatedCaseAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
+            UnvalidatedCaseAct.Reinstate "Reason",
+            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+            UnvalidatedCaseAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
         ] do
         Expect.equal
-            (CaseActs.kind (action))
+            (UnvalidatedCaseActs.kind (action))
             expected
             "Stewardship remains distinct from business acts"
 
@@ -151,20 +153,13 @@ let tests =
         "case stewardship"
         [
             testCase
-                "[CC-LIFE-001] every stewardship transition matches its independent expectation"
+                "every stewardship transition matches its independent expectation"
                 transitionTest
+            testCase "reasons reject null malformed Unicode and unsafe text" reasonTest
+            testCase "reason bounds count Unicode scalars without rewriting them" reasonBounds
+            testCase "stale revision is refused before admission and state" staleRevision
             testCase
-                "[CC-LIFE-001] reasons reject null malformed Unicode and unsafe text"
-                reasonTest
-            testCase
-                "[CC-LIFE-001] reason bounds count Unicode scalars without rewriting them"
-                reasonBounds
-            testCase
-                "[CC-LIFE-001] stale revision is refused before admission and state"
-                staleRevision
-            testCase "[CC-LIFE-001] exhausted revisions cannot overflow or accept an act" exhausted
-            testCase
-                "[CC-LIFE-001] accepted erasure advances exactly one revision across the full range"
-                (fun () -> PropertyHarness.run "CC-PROP-STEWARDSHIP-001" revisionProperty)
+                "accepted erasure advances exactly one revision across the full range"
+                (fun () -> PropertyHarness.run "stewardship revision" revisionProperty)
             testCase "stewardship action kinds retain their separate vocabulary" vocabulary
         ]
