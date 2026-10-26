@@ -58,81 +58,74 @@ module RequestCodecs =
         |> build
         |> named "Payment"
 
+    let private correctionVariants group variants =
+        CorrectionActions.forGroup group
+        |> List.map (fun action ->
+            variants
+            |> List.find (fun make -> (make "mode").Tag = CorrectionActions.token action))
+
     let registrationGroup =
         tagged
             "RegistrationGroup"
             "mode"
-            [
-                unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Keep)
-                    RegistrationGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    RegistrationGroup.Replace
-                    (function
-                    | RegistrationGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id registration)
-            ]
+            (correctionVariants
+                RecordGroup.Registration
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        RegistrationGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        RegistrationGroup.Replace
+                        (function
+                        | RegistrationGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id registration)
+                ])
 
     let decisionGroup =
         tagged
             "DecisionGroup"
             "mode"
-            [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) DecisionGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    DecisionGroup.Replace
-                    (function
-                    | DecisionGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id decision)
-                unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Clear)
-                    DecisionGroup.Clear
-            ]
+            (correctionVariants
+                RecordGroup.Decision
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        DecisionGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        DecisionGroup.Replace
+                        (function
+                        | DecisionGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id decision)
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        DecisionGroup.Clear
+                ])
 
     let paymentGroup =
         tagged
             "PaymentGroup"
             "mode"
-            [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) PaymentGroup.Keep
-                variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
-                    PaymentGroup.Replace
-                    (function
-                    | PaymentGroup.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id payment)
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
-            ]
-
-    /// The permitted selectors are the tags of the wire union, not a parallel mode list.
-    let correctionActions =
-        let actions (codec: Codec<'T>) =
-            let schema =
-                match codec.Schema with
-                | Schema.Ref name -> Map.find name codec.Definitions
-                | schema -> schema
-
-            match schema with
-            | Schema.OneOf(_, Some("mode", cases)) ->
-                cases
-                |> List.map (fun (token, _) ->
-                    CorrectionActions.all
-                    |> List.find (fun action -> CorrectionActions.token action = token))
-            | _ -> invalidOp "A correction input must be a tagged mode union."
-
-        let registration = actions registrationGroup
-        let decision = actions decisionGroup
-        let payment = actions paymentGroup
-
-        function
-        | CorrectionGroup.Registration -> registration
-        | CorrectionGroup.Decision -> decision
-        | CorrectionGroup.Payment -> payment
+            (correctionVariants
+                RecordGroup.Payment
+                [
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        PaymentGroup.Keep
+                    variant
+                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        PaymentGroup.Replace
+                        (function
+                        | PaymentGroup.Replace value -> Some value
+                        | _ -> None)
+                        (record id |> field "values" id payment)
+                    unitVariant
+                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        PaymentGroup.Clear
+                ])
 
     let correction =
         (record (fun v0 v1 v2 ->

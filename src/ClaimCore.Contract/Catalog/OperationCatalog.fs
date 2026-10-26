@@ -46,7 +46,7 @@ module TechnicalInputs =
 [<RequireQualifiedAccess>]
 type CatalogInputName =
     | Field of BusinessField
-    | Group of CorrectionGroup
+    | Group of RecordGroup
     | Technical of TechnicalInput
 
 [<RequireQualifiedAccess>]
@@ -102,14 +102,13 @@ module OperationCatalog =
     let inputKey =
         function
         | CatalogInputName.Field field -> FieldTable.key field
-        | CatalogInputName.Group group -> CorrectionGroup.token group
+        | CatalogInputName.Group group -> RecordGroup.token group
         | CatalogInputName.Technical input -> TechnicalInputs.token input
 
     let inputMessage name part =
         match name with
         | CatalogInputName.Field field -> Vocabulary.messageKey FieldTable.vocabulary field part
-        | CatalogInputName.Group group ->
-            Vocabulary.messageKey CorrectionGroup.vocabulary group part
+        | CatalogInputName.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group part
         | CatalogInputName.Technical input ->
             Vocabulary.messageKey TechnicalInputs.vocabulary input part
 
@@ -140,7 +139,7 @@ module OperationCatalog =
 
     let private fields group prefill =
         FieldTable.rows
-        |> List.filter (fun row -> row.Group = group)
+        |> List.filter (fun row -> row.Placement = group)
         |> List.map (fun row ->
             input
                 (CatalogInputName.Field row.Field)
@@ -204,14 +203,10 @@ module OperationCatalog =
         caseEntry kind [ "values", obj (fields group prefill) ]
 
     let private correction group =
-        let fieldGroup =
-            match group with
-            | CorrectionGroup.Registration -> FieldGroup.Registration
-            | CorrectionGroup.Decision -> FieldGroup.Decision
-            | CorrectionGroup.Payment -> FieldGroup.Payment
+        let fieldGroup = FieldPlacement.Grouped group
 
         let branches =
-            Protocol.RequestCodecs.correctionActions group
+            CorrectionActions.forGroup group
             |> List.map (fun action ->
                 let body =
                     if action = CorrectionGroupAction.Replace then
@@ -221,7 +216,7 @@ module OperationCatalog =
 
                 CorrectionActions.token action, obj body)
 
-        CorrectionGroup.token group,
+        RecordGroup.token group,
         CatalogShape.Variants(
             "mode",
             CatalogSelection.ByChoice(CatalogInputName.Group group),
@@ -230,19 +225,26 @@ module OperationCatalog =
 
     let private caseEntries =
         [
-            caseFields (CaseActKind.Business BusinessActKind.Open) FieldGroup.Registration false
+            caseFields
+                (CaseActKind.Business BusinessActKind.Open)
+                (FieldPlacement.Grouped RecordGroup.Registration)
+                false
             caseFields
                 (CaseActKind.Business BusinessActKind.AmendRegistration)
-                FieldGroup.Registration
+                (FieldPlacement.Grouped RecordGroup.Registration)
                 true
             caseEntry
                 (CaseActKind.Business BusinessActKind.Correct)
-                [
-                    "groups", obj (Vocabulary.all CorrectionGroup.vocabulary |> List.map correction)
-                ]
-            caseFields (CaseActKind.Business BusinessActKind.Decide) FieldGroup.Decision true
+                [ "groups", obj (Vocabulary.all RecordGroup.vocabulary |> List.map correction) ]
+            caseFields
+                (CaseActKind.Business BusinessActKind.Decide)
+                (FieldPlacement.Grouped RecordGroup.Decision)
+                true
             caseEntry (CaseActKind.Business BusinessActKind.WithdrawDecision) []
-            caseFields (CaseActKind.Business BusinessActKind.RecordPayment) FieldGroup.Payment false
+            caseFields
+                (CaseActKind.Business BusinessActKind.RecordPayment)
+                (FieldPlacement.Grouped RecordGroup.Payment)
+                false
             caseEntry (CaseActKind.Business BusinessActKind.ClearPayment) []
             caseEntry (CaseActKind.Business BusinessActKind.Close) []
             caseEntry (CaseActKind.Business BusinessActKind.Reopen) []
@@ -412,7 +414,7 @@ module OperationCatalog =
     let private diagnostics =
         function
         | CatalogInputName.Field field -> [ FieldTable.key field ]
-        | CatalogInputName.Group group -> [ CorrectionGroup.token group ]
+        | CatalogInputName.Group group -> [ RecordGroup.token group ]
         | CatalogInputName.Technical TechnicalInput.OperationId -> [ "operationId" ]
         | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> [ "expectedRevision" ]
         | CatalogInputName.Technical TechnicalInput.Issuer -> [ "principal.issuer" ]
@@ -446,10 +448,10 @@ module OperationCatalog =
                             |> Option.map (fun field ->
                                 let row = FieldTable.forField field
 
-                                match row.Group with
-                                | FieldGroup.Identity
-                                | FieldGroup.Status -> [ row.Key ]
-                                | group -> [ FieldGroup.token group; row.Key ])
+                                match row.Placement with
+                                | FieldPlacement.TopLevel -> [ row.Key ]
+                                | FieldPlacement.Grouped group ->
+                                    [ RecordGroup.token group; row.Key ])
                         Required = spec.Required
                         Default = spec.Default
                         DiagnosticTargets = diagnostics spec.Name

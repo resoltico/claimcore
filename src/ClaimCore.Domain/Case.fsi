@@ -23,4 +23,4 @@ module Case =
     val snapshot: CaseRecord -> CaseSnapshot
     val decide: DateOnly -> CaseRequest -> CaseRecord option -> Result<CaseRecord, Refusal>
     val eligibleActs: CaseRecord -> CaseActKind list
-    val correctionActions: CaseRecord -> CorrectionGroup -> CorrectionGroupAction list
+    val correctionActions: CaseRecord -> RecordGroup -> CorrectionGroupAction list

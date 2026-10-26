@@ -69,7 +69,7 @@ module internal Core =
     let private businessFields =
         function
         | None -> Map.empty
-        | Some { View = CaseView.Live(fields, _) } -> FieldDefinitions.values fields |> Map.ofList
+        | Some { View = CaseView.Live(fields, _) } -> FieldTable.values fields |> Map.ofList
         | Some { View = CaseView.Erased } -> Map.empty
 
     let private changes act before after =
@@ -81,7 +81,7 @@ module internal Core =
             let previous = businessFields before
             let next = businessFields (Some after)
 
-            FieldDefinitions.all
+            FieldTable.rows
             |> List.choose (fun field ->
                 let before = Map.tryFind field.Field previous |> Option.flatten
                 let after = Map.tryFind field.Field next |> Option.flatten

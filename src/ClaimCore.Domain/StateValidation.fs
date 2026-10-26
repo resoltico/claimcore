@@ -14,8 +14,8 @@ module internal StateValidation =
                 do!
                     Validation.onOrBefore
                         (InputTarget.Field BusinessField.PaymentDecisionDate)
-                        facts.NotificationDate
-                        decision.Date
+                        facts.IncidentNotificationDate
+                        decision.PaymentDecisionDate
 
                 match PaymentProgress.paymentDate value with
                 | None -> return ()
@@ -23,10 +23,10 @@ module internal StateValidation =
                     do!
                         Validation.onOrBefore
                             (InputTarget.Field BusinessField.PaymentDate)
-                            decision.Date
+                            decision.PaymentDecisionDate
                             paid
 
-                    if decision.Payable.Value = 0M then
+                    if decision.PayableAmount.Value = 0M then
                         return! Error Refusal.ZeroDecisionCannotBePaid
         }
 
@@ -47,14 +47,14 @@ module internal StateValidation =
             do!
                 asserted
                     (InputTarget.Field BusinessField.IncidentNotificationDate)
-                    (Some before.NotificationDate)
-                    (Some after.NotificationDate)
+                    (Some before.IncidentNotificationDate)
+                    (Some after.IncidentNotificationDate)
 
             do!
                 asserted
                     (InputTarget.Field BusinessField.PaymentDecisionDate)
-                    (PaymentProgress.decision prior |> Option.map _.Date)
-                    (PaymentProgress.decision next |> Option.map _.Date)
+                    (PaymentProgress.decision prior |> Option.map _.PaymentDecisionDate)
+                    (PaymentProgress.decision next |> Option.map _.PaymentDecisionDate)
 
             do!
                 asserted

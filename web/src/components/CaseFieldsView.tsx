@@ -62,7 +62,7 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
           value={acceptedSummary(p, values, revision, fields)}
         />
       </div>
-      {rows(fields.filter((field) => field.group === "identity" || field.group === "status"))}
+      {rows(fields.filter((field) => field.group === null))}
       {groups.map((group) => (
         <section key={group}>
           <h3>{p.text(`group.${group}.label`)}</h3>

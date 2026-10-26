@@ -123,7 +123,7 @@
         "maximumCharacters": null
       },
       "allowsAbsence": false,
-      "group": "identity"
+      "group": null
     },
     {
       "name": "paymentDecisionDate",
@@ -202,7 +202,7 @@
         ]
       },
       "allowsAbsence": false,
-      "group": "status"
+      "group": null
     }
   ],
   "acts": [

@@ -73,7 +73,7 @@ module MessageGeneration =
             |> List.collect (fun act ->
                 match act.Inputs with
                 | ActInputShape.CorrectionGroups groups ->
-                    groups |> List.map (fun group -> CorrectionGroup.token group.Name)
+                    groups |> List.map (fun group -> RecordGroup.token group.Name)
                 | _ -> [])
             |> List.distinct
             |> List.map (fun name -> name + ".action", JsonValue.String name)

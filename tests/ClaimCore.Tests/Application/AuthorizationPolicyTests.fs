@@ -380,17 +380,17 @@ let private absentCorrectionValues () =
     let record = opened ()
 
     Expect.equal
-        (Case.correctionActions record CorrectionGroup.Decision)
+        (Case.correctionActions record RecordGroup.Decision)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing decision"
 
     Expect.equal
-        (Case.correctionActions record CorrectionGroup.Payment)
+        (Case.correctionActions record RecordGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "A correction cannot introduce a missing payment"
 
     Expect.equal
-        (Case.correctionActions (decided ()) CorrectionGroup.Payment)
+        (Case.correctionActions (decided ()) RecordGroup.Payment)
         [ CorrectionGroupAction.Keep ]
         "Decision presence does not permit introducing a payment through correction"
 

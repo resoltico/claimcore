@@ -3075,6 +3075,40 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "record-group-target-registration",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "registration",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "record-group-target-decision",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "tag": "REJECTED",
+          "data": {
+            "code": "INPUT_TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "decision",
+            "actualRevision": null,
+            "limits": {}
+          }
+        }
+      }
     }
   ]
 }

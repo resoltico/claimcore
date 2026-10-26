@@ -74,7 +74,7 @@ cannot replay. [Operations](operations.md#erasure-limits) explains the physical 
 ## Scalars
 
 Permanent syntax lives in [Contract Formats](../src/ClaimCore.Contract/Formats.fs); current admission is composed
-in [Domain field definitions](../src/ClaimCore.Domain/FieldDefinitions.fs) and [validation](../src/ClaimCore.Domain/Validation.fs).
+in [Contract field rows](../src/ClaimCore.Contract/Fields/FieldTable.fs) and [validation](../src/ClaimCore.Domain/Validation.fs).
 Retained reads and verification enforce permanent format/state invariants, without applying today's admission
 to old assertions. Unchanged retained names and dates may be reaffirmed.
 

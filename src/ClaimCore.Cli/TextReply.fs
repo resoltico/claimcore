@@ -55,29 +55,27 @@ module internal TextReply =
 
     let private fieldValue (row: FieldRow) value =
         let group =
-            match row.Group with
-            | FieldGroup.Identity
-            | FieldGroup.Status -> value
-            | group -> memberValue (FieldGroup.token group) value
+            match row.Placement with
+            | FieldPlacement.TopLevel -> value
+            | FieldPlacement.Grouped group -> memberValue (RecordGroup.token group) value
 
         memberValue row.Key group
 
     let private fieldLines language value =
         let rows group =
             FieldTable.rows
-            |> List.filter (fun row -> row.Group = group)
+            |> List.filter (fun row -> row.Placement = group)
             |> List.map (fun row ->
                 line
                     language
                     (FieldTable.labelId row.Field)
                     (fieldValue row value |> displayed language))
 
-        rows FieldGroup.Identity
-        @ rows FieldGroup.Status
-        @ ([ FieldGroup.Registration; FieldGroup.Decision; FieldGroup.Payment ]
+        rows FieldPlacement.TopLevel
+        @ ([ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
            |> List.collect (fun group ->
-               (label language ("group." + FieldGroup.token group + ".label") + ":")
-               :: rows group))
+               (label language ("group." + RecordGroup.token group + ".label") + ":")
+               :: rows (FieldPlacement.Grouped group)))
 
     let private stateFields state = memberValue "fields" state
 
@@ -319,8 +317,7 @@ module internal TextReply =
         | InputTarget.Field field -> FieldTable.labelId field
         | InputTarget.OperationId -> (authorityFieldLabel "operationId")
         | InputTarget.ExpectedRevision -> (authorityFieldLabel "expectedRevision")
-        | InputTarget.PaymentGroup ->
-            Vocabulary.messageKey CorrectionGroup.vocabulary CorrectionGroup.Payment "label"
+        | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
         | InputTarget.Reason ->
             OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
         | InputTarget.PrincipalIssuer -> (authorityFieldLabel "issuer")

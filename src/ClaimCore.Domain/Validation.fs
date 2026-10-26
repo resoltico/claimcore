@@ -15,14 +15,18 @@ module internal Validation =
     type Facts =
         {
             IncidentDate: DateOnly
-            NotificationDate: DateOnly
-            Country: string
-            Claimant: string
-            Insurer: string
-            Claimed: Amount
+            IncidentNotificationDate: DateOnly
+            IncidentCountry: string
+            ClaimantName: string
+            InsurerName: string
+            ClaimedAmount: Amount
         }
 
-    type Decision = { Date: DateOnly; Payable: Amount }
+    type Decision =
+        {
+            PaymentDecisionDate: DateOnly
+            PayableAmount: Amount
+        }
 
     let invalid field violation =
         Error(Refusal.InvalidInput(field, violation))
@@ -40,28 +44,44 @@ module internal Validation =
         elif not (UnicodeText.isPersisted value) then
             invalid field Violation.MalformedUnicode
         elif freeText && Encoding.UTF8.GetByteCount value > Formats.MaximumFreeTextBytes then
-            invalid field (Violation.TooLong TextAdmission.MaximumCharacters)
+            invalid field (Violation.TooLong Admission.MaximumCharacters)
         else
             Ok value
 
-    /// Permanent text syntax is selected only from text inputs.
-    let text input (value: string) =
-        let field = ScalarInputs.textTarget input
-        let constraints = FieldDefinitions.text input
+    let private textRule =
+        function
+        | InputTarget.Field field -> FieldTable.textRule field
+        | InputTarget.Reason -> FieldRules.freeText
+        | target -> invalidArg (nameof target) "Expected a text field or reason."
 
-        representable field constraints.MaximumCharacters.IsSome value
+    /// Apply the row's permanent grammar and its own diagnostic.
+    let textField (row: FieldRow) (value: string) =
+        let target = InputTarget.Field row.Field
+
+        let constraints =
+            match row.Scalar with
+            | ScalarRule.Text rule -> rule
+            | _ -> invalidArg (nameof row) "Expected a text field."
+
+        representable target constraints.MaximumCharacters.IsSome value
         |> Result.bind (fun value ->
             if
                 constraints.Format.Grammar
                 |> Option.exists (fun pattern -> not (matches pattern value))
             then
                 invalid
-                    field
-                    (match input with
-                     | TextInput.CaseReference -> Violation.ReferenceFormat
-                     | _ -> Violation.CountryFormat)
+                    target
+                    (row.GrammarViolation
+                     |> Option.defaultWith (fun () ->
+                         invalidOp "A grammar requires its own violation."))
             else
                 Ok value)
+
+    let text target value =
+        match target with
+        | InputTarget.Field field -> textField (FieldTable.forField field) value
+        | InputTarget.Reason -> representable target true value
+        | _ -> invalidArg (nameof target) "Expected a text field or reason."
 
     let private formatting scalar =
         let ranges =
@@ -80,10 +100,8 @@ module internal Validation =
         || List.exists (fun (first, last) -> scalar >= first && scalar <= last) ranges
 
     /// Called only after format validation, when a value is newly asserted.
-    let admission input (value: string) =
-        let field = ScalarInputs.textTarget input
-
-        match (FieldDefinitions.text input).MaximumCharacters with
+    let admission field (value: string) =
+        match (textRule field).MaximumCharacters with
         | None -> Ok()
         | Some maximum ->
             if String.IsNullOrWhiteSpace value then
@@ -104,14 +122,22 @@ module internal Validation =
             if before = Some after then Ok() else admission field after
 
         result {
-            do! changed TextInput.ClaimantName (previous |> Option.map _.Claimant) facts.Claimant
+            do!
+                changed
+                    (InputTarget.Field BusinessField.ClaimantName)
+                    (previous |> Option.map _.ClaimantName)
+                    facts.ClaimantName
 
-            do! changed TextInput.InsurerName (previous |> Option.map _.Insurer) facts.Insurer
+            do!
+                changed
+                    (InputTarget.Field BusinessField.InsurerName)
+                    (previous |> Option.map _.InsurerName)
+                    facts.InsurerName
         }
 
     let date input (value: string) =
-        let field = ScalarInputs.dateTarget input
-        let constraints = FieldDefinitions.calendarDate
+        let field = InputTarget.Field input
+        let constraints = FieldTable.dateRule input
 
         match
             DateOnly.TryParseExact(
@@ -142,10 +168,7 @@ module internal Validation =
             invalid field (Violation.FutureDate)
 
     let private amountValue (value: string) =
-        if
-            String.IsNullOrEmpty value
-            || not (matches FieldDefinitions.amount.Grammar value)
-        then
+        if String.IsNullOrEmpty value || not (matches FieldRules.amount.Grammar value) then
             None
         else
             match
@@ -163,10 +186,12 @@ module internal Validation =
         |> Option.map (fun amount -> amount.ToString("0.####", CultureInfo.InvariantCulture))
         |> Option.defaultValue value
 
-    let amount input rawAmount rawCurrency =
-        let amountField, currencyField = ScalarInputs.amountTargets input
-        let amountRule = FieldDefinitions.amount
-        let currencyRule = FieldDefinitions.currency
+    let amount input currencyInput rawAmount rawCurrency =
+        let amountField, currencyField =
+            InputTarget.Field input, InputTarget.Field currencyInput
+
+        let amountRule = FieldTable.amountRule input
+        let currencyRule = FieldTable.currencyRule currencyInput
 
         result {
             let! valueText = representable amountField false rawAmount
@@ -188,10 +213,10 @@ module internal Validation =
 
     let registration (input: Registration) =
         result {
-            let! incident = date DateInput.IncidentDate input.IncidentDate
+            let! incident = date BusinessField.IncidentDate input.IncidentDate
 
             let! notification =
-                date DateInput.IncidentNotificationDate input.IncidentNotificationDate
+                date BusinessField.IncidentNotificationDate input.IncidentNotificationDate
 
             do!
                 onOrBefore
@@ -199,37 +224,47 @@ module internal Validation =
                     incident
                     notification
 
-            let! country = text TextInput.IncidentCountry input.IncidentCountry
+            let! country =
+                text (InputTarget.Field BusinessField.IncidentCountry) input.IncidentCountry
 
-            let! claimant = text TextInput.ClaimantName input.ClaimantName
+            let! claimant =
+                text (InputTarget.Field BusinessField.ClaimantName) input.ClaimantName
 
-            let! insurer = text TextInput.InsurerName input.InsurerName
+            let! insurer = text (InputTarget.Field BusinessField.InsurerName) input.InsurerName
 
             let! claimed =
-                amount AmountInput.ClaimedAmount input.ClaimedAmount input.ClaimedCurrency
+                amount
+                    BusinessField.ClaimedAmount
+                    BusinessField.ClaimedCurrency
+                    input.ClaimedAmount
+                    input.ClaimedCurrency
 
             return
                 {
                     IncidentDate = incident
-                    NotificationDate = notification
-                    Country = country
-                    Claimant = claimant
-                    Insurer = insurer
-                    Claimed = claimed
+                    IncidentNotificationDate = notification
+                    IncidentCountry = country
+                    ClaimantName = claimant
+                    InsurerName = insurer
+                    ClaimedAmount = claimed
                 }
         }
 
     let decision (input: ClaimCore.Contract.Decision) =
         result {
-            let! decisionDate = date DateInput.PaymentDecisionDate input.PaymentDecisionDate
+            let! decisionDate = date BusinessField.PaymentDecisionDate input.PaymentDecisionDate
 
             let! payable =
-                amount AmountInput.PayableAmount input.PayableAmount input.PayableCurrency
+                amount
+                    BusinessField.PayableAmount
+                    BusinessField.PayableCurrency
+                    input.PayableAmount
+                    input.PayableCurrency
 
             return
                 {
-                    Date = decisionDate
-                    Payable = payable
+                    PaymentDecisionDate = decisionDate
+                    PayableAmount = payable
                 }
         }
 

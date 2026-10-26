@@ -49,7 +49,7 @@ module internal Eligibility =
         match progress with
         | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
         | PaymentProgress.Paid _ -> Error Refusal.PaymentAlreadyRecorded
-        | PaymentProgress.Decided value when value.Payable.Value = 0M ->
+        | PaymentProgress.Decided value when value.PayableAmount.Value = 0M ->
             Error Refusal.ZeroDecisionCannotBePaid
         | PaymentProgress.Decided _ -> Ok()
 

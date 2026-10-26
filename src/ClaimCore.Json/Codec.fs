@@ -41,7 +41,7 @@ type Fields<'Whole, 'Ctor> =
         ReadFields: string -> JsonValue -> Result<'Ctor, Problem>
         WriteFields: 'Whole -> (string * JsonValue) list
         Properties: (string * Schema) list
-        FieldDefinitions: Map<string, Schema>
+        PropertyDefinitions: Map<string, Schema>
         OptionalMembers: string list
     }
 
@@ -357,7 +357,7 @@ module Codec =
             ReadFields = fun _ _ -> Ok ctor
             WriteFields = fun _ -> []
             Properties = []
-            FieldDefinitions = Map.empty
+            PropertyDefinitions = Map.empty
             OptionalMembers = []
         }
 
@@ -377,7 +377,7 @@ module Codec =
                         | _ -> fail path ("missing member " + name))
             WriteFields = fun whole -> fields.WriteFields whole @ [ name, codec.Write(get whole) ]
             Properties = fields.Properties @ [ name, codec.Schema ]
-            FieldDefinitions = merge fields.FieldDefinitions codec.Definitions
+            PropertyDefinitions = merge fields.PropertyDefinitions codec.Definitions
             OptionalMembers = fields.OptionalMembers
         }
 
@@ -403,7 +403,7 @@ module Codec =
                        |> Option.map (fun value -> [ name, codec.Write value ])
                        |> Option.defaultValue [])
             Properties = fields.Properties @ [ name, codec.Schema ]
-            FieldDefinitions = merge fields.FieldDefinitions codec.Definitions
+            PropertyDefinitions = merge fields.PropertyDefinitions codec.Definitions
             OptionalMembers = name :: fields.OptionalMembers
         }
 
@@ -425,7 +425,7 @@ module Codec =
                     |> Result.bind (fun () -> fields.ReadFields path element)
             Write = fun value -> JsonValue.Object(fields.WriteFields value)
             Schema = Schema.Object(fields.Properties, fields.OptionalMembers)
-            Definitions = fields.FieldDefinitions
+            Definitions = fields.PropertyDefinitions
         }
 
     // ----- tagged unions ------------------------------------------------------------------
@@ -459,7 +459,7 @@ module Codec =
                     (tagMember, Schema.Const tag) :: fields.Properties,
                     fields.OptionalMembers
                 )
-            VariantDefinitions = fields.FieldDefinitions
+            VariantDefinitions = fields.PropertyDefinitions
         }
 
     /// A case that carries nothing but its tag.

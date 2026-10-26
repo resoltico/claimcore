@@ -6,12 +6,16 @@
     <Compile Include="Vocabulary/Vocabulary.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="Formats.fs" />
-    <Compile Include="Fields/FieldKinds.fs" />
+    <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/Corrections.fs" />
+    <Compile Include="Fields/FieldKinds.fs" />
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
     <Compile Include="Model/CaseInputs.fs" />
     <Compile Include="Model/CaseFields.fs" />
+    <Compile Include="Fields/ScalarRules.fs" />
+    <Compile Include="Fields/FieldRules.fs" />
+    <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Fields/FieldTable.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />

@@ -111,16 +111,12 @@ module ActorAuthorization =
 
     let correctionCapability =
         function
-        | CorrectionGroup.Registration -> Capability.Register
-        | CorrectionGroup.Decision -> Capability.Decide
-        | CorrectionGroup.Payment -> Capability.RecordPayment
+        | RecordGroup.Registration -> Capability.Register
+        | RecordGroup.Decision -> Capability.Decide
+        | RecordGroup.Payment -> Capability.RecordPayment
 
     let correctionGroups =
-        [
-            CorrectionGroup.Registration
-            CorrectionGroup.Decision
-            CorrectionGroup.Payment
-        ]
+        [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
         |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
@@ -132,13 +128,13 @@ module ActorAuthorization =
             [
                 match correction.Registration with
                 | RegistrationGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Registration
+                | _ -> yield correctionCapability RecordGroup.Registration
                 match correction.Decision with
                 | DecisionGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Decision
+                | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
                 | PaymentGroup.Keep -> ()
-                | _ -> yield correctionCapability CorrectionGroup.Payment
+                | _ -> yield correctionCapability RecordGroup.Payment
             ]
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 

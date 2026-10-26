@@ -1,57 +1,5 @@
 namespace ClaimCore.Contract
 
-open System
-
-/// Permanent text representability and syntax. Policy is never a generic schema assertion.
-type TextFormatConstraints =
-    {
-        MinimumCharacters: int
-        Grammar: string option
-    }
-
-type ScalarTextConstraints =
-    {
-        Format: TextFormatConstraints
-        MaximumCharacters: int option
-    }
-
-/// Exact Gregorian calendar-date input rules.
-type CalendarDateScalarRule =
-    {
-        ExactFormat: string
-        Minimum: DateOnly
-        Maximum: DateOnly
-    }
-
-/// Exact non-negative decimal-text input rules.
-type AmountScalarRule =
-    {
-        Text: ScalarTextConstraints
-        Grammar: string
-        MaximumIntegerDigits: int
-        MaximumFractionalDigits: int
-    }
-
-/// Exact uppercase ASCII currency-token input rules.
-type CurrencyScalarRule =
-    {
-        Text: ScalarTextConstraints
-        Grammar: string
-        ExactCharacters: int
-    }
-
-/// Catalog supplies closed status vocabulary; Domain owns transitions.
-type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
-
-/// Typed scalar rules are the Domain authority for adapter-visible field constraints.
-[<RequireQualifiedAccess>]
-type ScalarRule =
-    | CalendarDate of CalendarDateScalarRule
-    | Text of ScalarTextConstraints
-    | Amount of AmountScalarRule
-    | Currency of CurrencyScalarRule
-    | CaseStatus of CaseStatusScalarRule
-
 /// A act form may begin blank or reuse a current business-field value as a suggestion.
 [<RequireQualifiedAccess>]
 type PrefillSource =
@@ -71,7 +19,7 @@ type FieldInputDefinition =
 /// the authoritative accepted value and CLEAR deliberately removes a value that is present.
 type CorrectionGroupDefinition =
     {
-        Name: CorrectionGroup
+        Name: RecordGroup
         LabelId: string
         MeaningId: string
         Actions: CorrectionGroupAction list
@@ -186,7 +134,7 @@ type CatalogEntry =
 type FieldPresentationDefinition =
     {
         Name: BusinessField
-        Group: FieldGroup
+        Group: RecordGroup option
         LabelId: string
         MeaningId: string
         Scalar: ScalarRule

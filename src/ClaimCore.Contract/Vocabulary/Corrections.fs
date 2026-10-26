@@ -1,19 +1,19 @@
 namespace ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
-type CorrectionGroup =
+type RecordGroup =
     | Registration
     | Decision
     | Payment
 
-module CorrectionGroup =
+module RecordGroup =
     let vocabulary =
         Vocabulary.define
             "group"
             [
-                CorrectionGroup.Registration, "registration"
-                CorrectionGroup.Decision, "decision"
-                CorrectionGroup.Payment, "payment"
+                RecordGroup.Registration, "registration"
+                RecordGroup.Decision, "decision"
+                RecordGroup.Payment, "payment"
             ]
 
     let token = Vocabulary.token vocabulary
@@ -36,3 +36,9 @@ module CorrectionActions =
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
+
+    let forGroup =
+        function
+        | RecordGroup.Registration -> [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ]
+        | RecordGroup.Decision
+        | RecordGroup.Payment -> all

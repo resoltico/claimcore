@@ -16,9 +16,9 @@ module internal Advice =
                 [ CorrectionGroupAction.Keep ]
 
         {
-            Registration = actions CorrectionGroup.Registration
-            Decision = actions CorrectionGroup.Decision
-            Payment = actions CorrectionGroup.Payment
+            Registration = actions RecordGroup.Registration
+            Decision = actions RecordGroup.Decision
+            Payment = actions RecordGroup.Payment
         }
 
     let private usable (choices: CorrectionChoices) =

@@ -36,20 +36,21 @@ module private BusinessState =
             Registration =
                 {
                     IncidentDate = Validation.dateText claim.Facts.IncidentDate
-                    IncidentNotificationDate = Validation.dateText claim.Facts.NotificationDate
-                    IncidentCountry = claim.Facts.Country
-                    ClaimantName = claim.Facts.Claimant
-                    InsurerName = claim.Facts.Insurer
-                    ClaimedAmount = Validation.amountText claim.Facts.Claimed
-                    ClaimedCurrency = claim.Facts.Claimed.Currency
+                    IncidentNotificationDate =
+                        Validation.dateText claim.Facts.IncidentNotificationDate
+                    IncidentCountry = claim.Facts.IncidentCountry
+                    ClaimantName = claim.Facts.ClaimantName
+                    InsurerName = claim.Facts.InsurerName
+                    ClaimedAmount = Validation.amountText claim.Facts.ClaimedAmount
+                    ClaimedCurrency = claim.Facts.ClaimedAmount.Currency
                 }
             Decision =
                 PaymentProgress.decision claim.Progress
                 |> Option.map (fun value ->
                     {
-                        PaymentDecisionDate = Validation.dateText value.Date
-                        PayableAmount = Validation.amountText value.Payable
-                        PayableCurrency = value.Payable.Currency
+                        PaymentDecisionDate = Validation.dateText value.PaymentDecisionDate
+                        PayableAmount = Validation.amountText value.PayableAmount
+                        PayableCurrency = value.PayableAmount.Currency
                     })
             Payment =
                 PaymentProgress.paymentDate claim.Progress
@@ -77,7 +78,7 @@ module private BusinessState =
                 match fields.Payment with
                 | None -> Ok None
                 | Some value ->
-                    Validation.date DateInput.PaymentDate value.PaymentDate
+                    Validation.date BusinessField.PaymentDate value.PaymentDate
                     |> retained
                     |> Result.map Some
 
@@ -115,7 +116,7 @@ module private BusinessState =
                 Validation.notFuture
                     (InputTarget.Field BusinessField.IncidentNotificationDate)
                     today
-                    facts.NotificationDate
+                    facts.IncidentNotificationDate
 
             do! Validation.assertedText None facts
 
@@ -288,10 +289,10 @@ module Case =
         | CaseAct.Void _, Disposition.Voided -> Error Refusal.AlreadyVoided
         | CaseAct.Reinstate _, Disposition.Active -> Error Refusal.NotVoided
         | CaseAct.Void reason, Disposition.Active ->
-            Validation.admission TextInput.Reason reason
+            Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
         | CaseAct.Reinstate reason, Disposition.Voided ->
-            Validation.admission TextInput.Reason reason
+            Validation.admission InputTarget.Reason reason
             |> Result.map (fun () -> CaseState.Live(claim, Disposition.Active))
         | CaseAct.Erase, _ -> Ok CaseState.Erased
         | _ -> invalidArg (nameof act) "Expected a stewardship act."

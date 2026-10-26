@@ -62,7 +62,11 @@ let private principalAndPayment () =
     assertTarget InputTarget.PrincipalIssuer "input.issuer.label" Violation.PrincipalFormat
 
     assertTarget InputTarget.PrincipalSubject "input.subject.label" Violation.TextRequired
-    assertTarget InputTarget.PaymentGroup "group.payment.label" Violation.PaymentClearRequired
+
+    assertTarget
+        (InputTarget.Group RecordGroup.Payment)
+        "group.payment.label"
+        Violation.PaymentClearRequired
 
 let private remainingTargets () =
     assertTarget InputTarget.OperationId "input.operationId.label" Violation.OperationIdRequired

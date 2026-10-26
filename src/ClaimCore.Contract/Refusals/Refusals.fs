@@ -1,28 +1,6 @@
 namespace ClaimCore.Contract
 
 [<RequireQualifiedAccess>]
-type Violation =
-    | TextRequired
-    | MalformedUnicode
-    | SurroundingWhitespace
-    | TooLong of maximumCharacters: int
-    | ControlCharacters
-    | FormattingCharacter
-    | ReferenceFormat
-    | CountryFormat
-    | PrincipalFormat
-    | CalendarDateRequired
-    | ChronologicalOrder
-    | FutureDate
-    | DecimalFormat of integerDigits: int * fractionDigits: int
-    | CurrencyFormat
-    | OperationIdRequired
-    | ExpectedRevisionRange
-    | PageLimitRange of maximumPageSize: int
-    | PaymentClearRequired
-    | PaymentAcknowledgementRequired
-
-[<RequireQualifiedAccess>]
 type Refusal =
     | InvalidInput of InputTarget * Violation
     | RevisionConflict of actualRevision: int64
@@ -246,8 +224,14 @@ module Refusals =
             Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
             Refusal.InvalidInput(InputTarget.ExpectedRevision, Violation.ExpectedRevisionRange)
             Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
-            Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentClearRequired)
-            Refusal.InvalidInput(InputTarget.PaymentGroup, Violation.PaymentAcknowledgementRequired)
+            Refusal.InvalidInput(
+                (InputTarget.Group RecordGroup.Payment),
+                Violation.PaymentClearRequired
+            )
+            Refusal.InvalidInput(
+                (InputTarget.Group RecordGroup.Payment),
+                Violation.PaymentAcknowledgementRequired
+            )
             Refusal.RevisionConflict 1L
             Refusal.CaseAlreadyExists
             Refusal.CaseErased

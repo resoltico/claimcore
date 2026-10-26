@@ -8,7 +8,7 @@ open System
 open Expecto
 open ClaimCore.Domain
 
-let private scalar name = (FieldDefinitions.forField name).Scalar
+let private scalar name = (FieldTable.forField name).Scalar
 
 let private expectText name maximum =
     match scalar name with
@@ -105,3 +105,44 @@ let private numericAndStatusRuleTests =
 [<Tests>]
 let tests =
     testList "scalar admission contracts" [ textAndDateRuleTests; numericAndStatusRuleTests ]
+
+[<Tests>]
+let grammarDiagnostics =
+    testCase
+        "field grammar diagnostics use their row, with swapped-row negative controls"
+        (fun () ->
+            for field, invalid, valid, expected, wrong in
+                [
+                    BusinessField.CaseReference,
+                    "has space",
+                    "UNIT-1",
+                    Violation.ReferenceFormat,
+                    Violation.CountryFormat
+                    BusinessField.IncidentCountry,
+                    "Latvia",
+                    "LV",
+                    Violation.CountryFormat,
+                    Violation.ReferenceFormat
+                ] do
+                let row = FieldTable.forField field
+
+                let check row =
+                    Expect.equal
+                        (Validation.textField row invalid)
+                        (Error(Refusal.InvalidInput(InputTarget.Field field, expected)))
+                        "Grammar failures retain field-specific diagnostics"
+
+                check row
+
+                Expect.equal
+                    (Validation.text (InputTarget.Field field) valid)
+                    (Ok valid)
+                    "Valid control is admitted"
+
+                Expect.throws
+                    (fun () ->
+                        check
+                            { row with
+                                GrammarViolation = Some wrong
+                            })
+                    "A swapped diagnostic is detected")

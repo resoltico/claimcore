@@ -3629,13 +3629,19 @@
                     "const": "paymentDate"
                   },
                   {
+                    "const": "registration"
+                  },
+                  {
+                    "const": "decision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
                     "const": "operationId"
                   },
                   {
                     "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
                   },
                   {
                     "const": "reason"
@@ -3729,13 +3735,19 @@
                     "const": "paymentDate"
                   },
                   {
+                    "const": "registration"
+                  },
+                  {
+                    "const": "decision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
                     "const": "operationId"
                   },
                   {
                     "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
                   },
                   {
                     "const": "reason"
@@ -3837,13 +3849,19 @@
                     "const": "paymentDate"
                   },
                   {
+                    "const": "registration"
+                  },
+                  {
+                    "const": "decision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
                     "const": "operationId"
                   },
                   {
                     "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
                   },
                   {
                     "const": "reason"
@@ -3951,13 +3969,19 @@
                     "const": "paymentDate"
                   },
                   {
+                    "const": "registration"
+                  },
+                  {
+                    "const": "decision"
+                  },
+                  {
+                    "const": "payment"
+                  },
+                  {
                     "const": "operationId"
                   },
                   {
                     "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
                   },
                   {
                     "const": "reason"

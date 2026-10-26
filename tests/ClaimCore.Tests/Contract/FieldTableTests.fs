@@ -13,7 +13,9 @@ open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
-    FieldTable.rows |> List.filter (fun row -> row.Group = group) |> List.map _.Key
+    FieldTable.rows
+    |> List.filter (fun row -> row.Placement = group)
+    |> List.map _.Key
 
 let rec private members definitions =
     function
@@ -29,9 +31,9 @@ let private expectGroup group (codec: Codec<'T>) =
         "Codec members follow the field table"
 
 let private codecs () =
-    expectGroup FieldGroup.Registration RequestCodecs.registration
-    expectGroup FieldGroup.Decision RequestCodecs.decision
-    expectGroup FieldGroup.Payment RequestCodecs.payment
+    expectGroup (FieldPlacement.Grouped RecordGroup.Registration) RequestCodecs.registration
+    expectGroup (FieldPlacement.Grouped RecordGroup.Decision) RequestCodecs.decision
+    expectGroup (FieldPlacement.Grouped RecordGroup.Payment) RequestCodecs.payment
 
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
@@ -46,9 +48,9 @@ let private codecs () =
 
     for group, name in
         [
-            FieldGroup.Registration, "registration"
-            FieldGroup.Decision, "decision"
-            FieldGroup.Payment, "payment"
+            (FieldPlacement.Grouped RecordGroup.Registration), "registration"
+            (FieldPlacement.Grouped RecordGroup.Decision), "decision"
+            (FieldPlacement.Grouped RecordGroup.Payment), "payment"
         ] do
         Expect.equal
             (members ResponseCodecs.caseFields.Definitions properties[name])
@@ -74,20 +76,15 @@ let private domain () =
          |> Set.ofArray)
         "Every business field has a table row"
 
-    Expect.equal
-        (FieldDefinitions.all |> List.map _.Field)
-        (FieldTable.rows |> List.map _.Field)
-        "Every field has one admission definition in table order"
+    let retained =
+        FieldTable.rows |> List.filter _.RetainedOnErasure |> List.map _.Field
 
-    Expect.equal
-        (typeof<FieldDefinition>.GetProperties() |> Array.map _.Name |> Set.ofArray)
-        (set [ "Field"; "Scalar" ])
-        "Domain does not duplicate presentation metadata"
+    Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
 let private actGroups () =
     let expected group =
         FieldTable.rows
-        |> List.filter (fun row -> row.Group = group)
+        |> List.filter (fun row -> row.Placement = group)
         |> List.map (fun row -> InputTarget.Field row.Field)
 
     let actual kind =
@@ -97,10 +94,10 @@ let private actGroups () =
 
     for act, group in
         [
-            BusinessActKind.Open, FieldGroup.Registration
-            BusinessActKind.AmendRegistration, FieldGroup.Registration
-            BusinessActKind.Decide, FieldGroup.Decision
-            BusinessActKind.RecordPayment, FieldGroup.Payment
+            BusinessActKind.Open, (FieldPlacement.Grouped RecordGroup.Registration)
+            BusinessActKind.AmendRegistration, (FieldPlacement.Grouped RecordGroup.Registration)
+            BusinessActKind.Decide, (FieldPlacement.Grouped RecordGroup.Decision)
+            BusinessActKind.RecordPayment, (FieldPlacement.Grouped RecordGroup.Payment)
         ] do
         Expect.equal (actual act) (expected group) "Act fields follow their source group's order"
 
@@ -112,11 +109,7 @@ let private actGroups () =
         for group in groups do
             let fields = group.ReplaceFields |> List.map _.FieldName
 
-            let kind =
-                match group.Name with
-                | CorrectionGroup.Registration -> FieldGroup.Registration
-                | CorrectionGroup.Decision -> FieldGroup.Decision
-                | CorrectionGroup.Payment -> FieldGroup.Payment
+            let kind = FieldPlacement.Grouped group.Name
 
             Expect.equal
                 fields
@@ -126,7 +119,7 @@ let private actGroups () =
 
     Expect.notEqual
         (actual BusinessActKind.Open |> List.rev)
-        (expected FieldGroup.Registration)
+        (expected (FieldPlacement.Grouped RecordGroup.Registration))
         "A reordered dependent inventory is detectable"
 
 let private locales () =

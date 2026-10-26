@@ -192,12 +192,8 @@ module CatalogCodecs =
             ]
 
     let private correctionGroup =
-        [
-            CorrectionGroup.Registration
-            CorrectionGroup.Decision
-            CorrectionGroup.Payment
-        ]
-        |> List.map (fun value -> value, CorrectionGroup.token value)
+        [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
+        |> List.map (fun value -> value, RecordGroup.token value)
         |> enumeration
 
     let private correctionAction =
@@ -325,14 +321,7 @@ module CatalogCodecs =
         |> field "meaningId" _.MeaningId (text)
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
-        |> field
-            "group"
-            _.Group
-            (enumeration (
-                FieldTable.rows
-                |> List.map (fun row -> row.Group, FieldGroup.token row.Group)
-                |> List.distinct
-            ))
+        |> field "group" _.Group (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> build
         |> named "Presentation.FieldPresentationDefinition"
 

@@ -18,11 +18,14 @@ module ContractCatalog =
     let defaults =
         {
             Fields =
-                FieldDefinitions.all
+                FieldTable.rows
                 |> List.map (fun field ->
                     {
                         Name = field.Field
-                        Group = (FieldTable.forField field.Field).Group
+                        Group =
+                            match field.Placement with
+                            | FieldPlacement.TopLevel -> None
+                            | FieldPlacement.Grouped group -> Some group
                         LabelId = FieldTable.labelId field.Field
                         MeaningId = FieldTable.meaningId field.Field
                         Scalar = field.Scalar
@@ -49,7 +52,7 @@ module ContractCatalog =
                             OperationCatalog.inputMessage
                                 (CatalogInputName.Technical TechnicalInput.Reason)
                                 "meaning"
-                        Scalar = ScalarRule.Text(FieldDefinitions.text TextInput.Reason)
+                        Scalar = ScalarRule.Text(FieldRules.freeText)
                     }
                 ]
             AuthorityTarget = definitions.AuthorityTarget

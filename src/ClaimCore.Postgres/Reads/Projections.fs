@@ -20,7 +20,7 @@ module internal Projections =
     let private amount index row =
         let text = required<string> index row
 
-        let grammar = FieldDefinitions.amount.Grammar
+        let grammar = FieldRules.amount.Grammar
 
         if
             not (
