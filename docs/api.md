@@ -125,3 +125,5 @@ A later ordinary execute refusal or fault cannot disprove the earlier commit. Ac
 or a final resolution settles it. Session stops on 4/130 or an oversized frame. Output failure after dispatch
 preserves exit 4. Complete writes/newline/flush establish OS acceptance, without proving downstream persistence.
 Preparation compacts admitted JSON once while preserving strings, amount spelling, reference, ID and revision.
+
+See the [glossary](glossary.md) for project terminology.

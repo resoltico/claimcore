@@ -157,3 +157,5 @@ If startup or login fails, inspect only this project's status and private diagno
 certificate trust and expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
 redacted reporting. See [Operations](operations.md) for backups, trusted checkpoints and the limits of
 live-database erasure.
+
+See the [glossary](glossary.md) for project terminology.

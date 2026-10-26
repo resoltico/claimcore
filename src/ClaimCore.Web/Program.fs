@@ -75,7 +75,7 @@ let private writeHostFailure context reason =
 let private configureKestrel (configuration: WebConfiguration) (builder: WebApplicationBuilder) =
     builder.WebHost.ConfigureKestrel(fun options ->
         options.AddServerHeader <- false
-        options.Limits.MaxRequestBodySize <- int64 configuration.Admission.MaximumJsonBytes
+        options.Limits.MaxRequestBodySize <- int64 configuration.RequestGate.MaximumJsonBytes
 
         options.Listen(
             configuration.Binding.ListenAddress,
@@ -120,7 +120,7 @@ let private requireTrustedConnection
     (next: RequestDelegate)
     : Task =
     (task {
-        if Admission.trustedConnection configuration.Binding context then
+        if RequestGate.trustedConnection configuration.Binding context then
             do! next.Invoke(context)
         else
             do! writeHostFailure context HostFailureReason.ConnectionRejected
@@ -158,7 +158,7 @@ let private configuredBuilder
 
     AuthMiddleware.configure oidc configuration.SessionAbsolute builder.Services
 
-    RateLimits.configure configuration.Admission builder.Services
+    RateLimits.configure configuration.RequestGate builder.Services
     builder.Services.AddAuthorization() |> ignore
     builder
 

@@ -49,7 +49,7 @@ module Runtime =
             try
                 let source = NpgsqlDataSource.Create connectionString
                 owned <- Some source
-                let! installation = Admission.openRuntime source cancellationToken
+                let! installation = InstallationCheck.openRuntime source cancellationToken
                 return Ok(new RuntimeResource(source, installation) :> IRuntime)
             with error ->
                 owned |> Option.iter _.Dispose()
@@ -57,7 +57,7 @@ module Runtime =
                 return
                     Error(
                         match error with
-                        | AdmissionRefusal fault -> fault
+                        | InstallationRefusal fault -> fault
                         | :? InstallationConfigurationException ->
                             RuntimeOpenFault.InstallationInvalid
                         | :? OperationCanceledException -> RuntimeOpenFault.Cancelled
@@ -154,7 +154,7 @@ module AdministrationFailures =
     let classify (error: exn) =
         match error with
         | :? AdministrationOutcomeUnknownException -> AdministrationFailure.OutcomeUnknown
-        | AdmissionRefusal _
+        | InstallationRefusal _
         | :? ArgumentException
         | :? InvalidOperationException -> AdministrationFailure.Refused
         | :? PostgresException as postgres when
@@ -167,7 +167,7 @@ module AdministrationFailures =
 [<Sealed>]
 type Administration(connectionString: string) =
     let source =
-        Admission.transport (NpgsqlConnectionStringBuilder connectionString)
+        InstallationCheck.transport (NpgsqlConnectionStringBuilder connectionString)
         NpgsqlDataSource.Create connectionString
 
     member _.Initialize(timeZone, cancellationToken) =

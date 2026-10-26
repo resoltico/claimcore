@@ -176,9 +176,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                 |> Map.values
                 |> Seq.choose (fun entry ->
                     match entry.Subject with
-                    | StoredSubject.Case(caseId, revision, _, _) when
-                        caseId = id && revision > after
-                        ->
+                    | EntryTarget.Case(caseId, revision, _, _) when caseId = id && revision > after ->
                         Some(revision, copyEntry entry)
                     | _ -> None)
                 |> Seq.sortBy fst
@@ -187,7 +185,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
 
             let revision (entry: StoredEntry) =
                 match entry.Subject with
-                | StoredSubject.Case(_, revision, _, _) -> revision
+                | EntryTarget.Case(_, revision, _, _) -> revision
                 | _ -> failwith "Invalid history fixture"
 
             Task.FromResult(page limit revision rows)
@@ -336,7 +334,7 @@ type private Writer(get, set, observed, head, nonce, read) =
                     state.Entries
                     |> Map.map (fun _ entry ->
                         match entry.Subject with
-                        | StoredSubject.Case(caseId, _, _, _) when caseId = id ->
+                        | EntryTarget.Case(caseId, _, _, _) when caseId = id ->
                             { entry with
                                 Payload = None
                                 PayloadNonce = None

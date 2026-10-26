@@ -35,12 +35,12 @@ module internal ApiRoutes =
 
     let private admit (configuration: WebConfiguration) (context: HttpContext) =
         match configuration.Oidc with
-        | None -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | None -> Task.FromResult(Error GateFailure.SessionRejected)
         | Some oidc ->
-            Admission.actorPost
+            RequestGate.actorPost
                 oidc
                 configuration.Binding
-                configuration.Admission.MaximumJsonBytes
+                configuration.RequestGate.MaximumJsonBytes
                 (context.RequestServices.GetRequiredService<IAntiforgery>())
                 context
 
@@ -50,10 +50,10 @@ module internal ApiRoutes =
         (context: HttpContext)
         =
         task {
-            match! HttpBody.readRequest configuration.Admission.MaximumJsonBytes context with
+            match! HttpBody.readRequest configuration.RequestGate.MaximumJsonBytes context with
             | Error problem -> return Error(RouteSupport.inputFailure context problem)
             | Ok bytes ->
-                match StrictJson.read configuration.Admission.MaximumJsonBytes bytes with
+                match StrictJson.read configuration.RequestGate.MaximumJsonBytes bytes with
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
@@ -76,7 +76,7 @@ module internal ApiRoutes =
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
                 match! admit configuration context with
-                | Error reason -> return RouteSupport.admissionFailure context reason
+                | Error reason -> return RouteSupport.gateFailure context reason
                 | Ok principal ->
                     match! input handler configuration context with
                     | Error result -> return result
@@ -96,7 +96,7 @@ module internal ApiRoutes =
                                 context.RequestAborted
 
                         let! result =
-                            withActor (AuthenticatedSubjects.key principal) (fun core ->
+                            withActor (AuthenticatedPrincipals.key principal) (fun core ->
                                 prepared (Some core) cancellation (fun () ->
                                     RouteSupport.markCompleted context))
 

@@ -74,7 +74,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            StoredSubject.Case(
+            EntryTarget.Case(
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),

@@ -12,3 +12,5 @@ packages. Include the source revision when asking a question or reporting a prob
 Public issues must exclude connection strings, credentials, request files, claimant information, database
 extracts, private terminal captures and unredacted logs. A maintainer may close a report that cannot be handled
 safely in public.
+
+See the [glossary](docs/glossary.md) for project terminology.

@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.AdmissionEdgeTests
+module ClaimCore.WebTests.RequestGateEdgeTests
 
 open ClaimCore.Contract
 open ClaimCore.Domain
@@ -27,7 +27,7 @@ let private jsonShapeTests () =
     accepted.Request.Headers["Sec-Fetch-Site"] <- "same-origin"
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 accepted)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 accepted)
         (Ok())
         "JSON admission accepts the exact local shape"
 
@@ -36,16 +36,16 @@ let private jsonShapeTests () =
     duplicateHost.Request.Headers["Host"] <- StringValues([| origin.Authority; origin.Authority |])
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 duplicateHost)
-        (Error AdmissionFailure.UntrustedConnection)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 duplicateHost)
+        (Error GateFailure.UntrustedConnection)
         "Host header cardinality is exact"
 
     let wrongMedia = context ()
     wrongMedia.Request.ContentType <- "application/jsonx"
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 wrongMedia)
-        (Error AdmissionFailure.UnsupportedMediaType)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 wrongMedia)
+        (Error GateFailure.UnsupportedMediaType)
         "JSON media is not prefix matched"
 
 let private connectionRefusals () =
@@ -53,24 +53,24 @@ let private connectionRefusals () =
     absentPeer.Connection.RemoteIpAddress <- null
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 absentPeer)
-        (Error AdmissionFailure.UntrustedConnection)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 absentPeer)
+        (Error GateFailure.UntrustedConnection)
         "An absent remote address is never assumed local"
 
     let remotePeer = context ()
     remotePeer.Connection.RemoteIpAddress <- IPAddress.Parse("192.0.2.1")
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 remotePeer)
-        (Error AdmissionFailure.UntrustedConnection)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 remotePeer)
+        (Error GateFailure.UntrustedConnection)
         "A non-loopback peer cannot submit work"
 
     let wrongHost = context ()
     wrongHost.Request.Headers.Host <- "attacker.example"
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 wrongHost)
-        (Error AdmissionFailure.UntrustedConnection)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 wrongHost)
+        (Error GateFailure.UntrustedConnection)
         "A loopback peer cannot redirect the host authority"
 
 let private browserOriginRefusals () =
@@ -78,8 +78,8 @@ let private browserOriginRefusals () =
     missingOrigin.Request.Headers.Remove("Origin") |> ignore
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 missingOrigin)
-        (Error AdmissionFailure.OriginRejected)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 missingOrigin)
+        (Error GateFailure.OriginRejected)
         "A browser mutation requires an explicit origin"
 
     let duplicateOrigin = context ()
@@ -93,16 +93,19 @@ let private browserOriginRefusals () =
         )
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 duplicateOrigin)
-        (Error AdmissionFailure.OriginRejected)
+        (RequestGate.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            32
+            duplicateOrigin)
+        (Error GateFailure.OriginRejected)
         "Duplicated origin headers are not accepted"
 
     let crossSite = context ()
     crossSite.Request.Headers["Sec-Fetch-Site"] <- "cross-site"
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 crossSite)
-        (Error AdmissionFailure.FetchMetadataRejected)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 crossSite)
+        (Error GateFailure.FetchMetadataRejected)
         "Cross-site fetch metadata is refused"
 
 let private mediaAndLengthBoundaries () =
@@ -110,15 +113,15 @@ let private mediaAndLengthBoundaries () =
     missingMedia.Request.ContentType <- null
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 missingMedia)
-        (Error AdmissionFailure.UnsupportedMediaType)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 missingMedia)
+        (Error GateFailure.UnsupportedMediaType)
         "Missing media type does not default to JSON"
 
     let parameterizedJson = context ()
     parameterizedJson.Request.ContentType <- "Application/Json; charset=utf-8"
 
     Expect.equal
-        (Admission.postShape
+        (RequestGate.postShape
             (WebBindings.create origin "127.0.0.1" origin.Port)
             32
             parameterizedJson)
@@ -129,7 +132,7 @@ let private mediaAndLengthBoundaries () =
     atLimit.Request.ContentLength <- Nullable 32L
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 atLimit)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 atLimit)
         (Ok())
         "An exact endpoint Content-Length is admitted"
 
@@ -137,22 +140,22 @@ let private mediaAndLengthBoundaries () =
     overLimit.Request.ContentLength <- Nullable 33L
 
     Expect.equal
-        (Admission.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 overLimit)
-        (Error AdmissionFailure.BodyTooLarge)
+        (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 overLimit)
+        (Error GateFailure.BodyTooLarge)
         "Oversized Content-Length is refused before body reads"
 
 let private sessionTests () =
     let request = context ()
-    Expect.equal (Admission.credentialMode request) CredentialMode.Missing "No credential"
+    Expect.equal (RequestGate.credentialMode request) CredentialMode.Missing "No credential"
     request.Request.Headers["Cookie"] <- "__Host-ClaimCoreSession=synthetic-opaque"
 
     Expect.equal
-        (Admission.credentialMode request)
+        (RequestGate.credentialMode request)
         CredentialMode.BrowserCookie
         "One browser credential is recognized"
 
     request.Request.Headers["Authorization"] <- "Bearer synthetic-token"
-    Expect.equal (Admission.credentialMode request) CredentialMode.Mixed "Mixed paths fail closed"
+    Expect.equal (RequestGate.credentialMode request) CredentialMode.Mixed "Mixed paths fail closed"
 
 let private antiforgeryTests () =
     let rejecting =
@@ -168,22 +171,22 @@ let private antiforgeryTests () =
         }
 
     Expect.equal
-        (Admission.validateAntiforgery rejecting (context ())
+        (RequestGate.validateAntiforgery rejecting (context ())
          |> Async.AwaitTask
          |> Async.RunSynchronously)
-        (Error AdmissionFailure.AntiforgeryRejected)
+        (Error GateFailure.AntiforgeryRejected)
         "CSRF failure is classified before endpoint parsing"
 
 [<Tests>]
 let tests =
     testList
-        "HTTP admission"
+        "HTTP request gates"
         [
             testCase "[CC-WEB-001] admits only the exact local JSON shape" jsonShapeTests
             testCase
                 "[CC-WEB-001] keeps the mutable browser session registry server-side"
                 sessionTests
-            testCase "[CC-WEB-001] returns typed CSRF admission refusal" antiforgeryTests
+            testCase "[CC-WEB-001] returns typed CSRF gate refusal" antiforgeryTests
             testCase
                 "[CC-WEB-001] rejects absent and remote peers or wrong host authority"
                 connectionRefusals

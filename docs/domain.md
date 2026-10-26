@@ -104,3 +104,5 @@ content under a used ID refuses. Rejection changes no accepted state.
 
 Retained revisions and sequences use the exact-integer format bound defined by
 [Revision](../src/ClaimCore.Domain/CaseModel.fs). SQL and durable decoding enforce that format.
+
+See the [glossary](glossary.md) for project terminology.

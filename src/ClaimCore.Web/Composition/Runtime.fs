@@ -17,7 +17,7 @@ type internal IRuntime =
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
 
 module internal ActorAccess =
-    let run (gate: AdmissionGate) forActor principal action =
+    let run (gate: RuntimeLeases) forActor principal action =
         task {
             match gate.Acquire() with
             | None -> return None
@@ -28,12 +28,12 @@ module internal ActorAccess =
         }
 
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
-    let gate = AdmissionGate(fun () -> storage.Dispose())
+    let gate = RuntimeLeases(fun () -> storage.Dispose())
 
     let sessionAction action =
         task {
             match gate.Acquire() with
-            | None -> return invalidOp "Runtime admission is closed."
+            | None -> return invalidOp "Runtime leases are closed."
             | Some lease ->
                 use _lease = lease
                 return! action storage.Sessions

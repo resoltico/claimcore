@@ -8,16 +8,16 @@ open System.Net
 open Npgsql
 open ClaimCore.Application
 
-/// Immutable installation configuration read by runtime admission.
+/// Immutable installation configuration read by installation checks.
 type Installation =
     {
         InstallationId: Guid
         BusinessTimeZone: string
     }
 
-exception internal AdmissionRefusal of RuntimeOpenFault
+exception internal InstallationRefusal of RuntimeOpenFault
 
-module internal Admission =
+module internal InstallationCheck =
     let transport (settings: NpgsqlConnectionStringBuilder) =
         let loopback (host: string) =
             match IPAddress.TryParse host with
@@ -26,11 +26,11 @@ module internal Admission =
 
         if (nonNull settings.Host).Split(',') |> Array.exists (loopback >> not) then
             if settings.SslMode <> SslMode.VerifyFull then
-                raise (AdmissionRefusal RuntimeOpenFault.InvalidTransport)
+                raise (InstallationRefusal RuntimeOpenFault.InvalidTransport)
 
     let internal serverVersion value =
         if not (ServerSupport.supports value) then
-            raise (AdmissionRefusal RuntimeOpenFault.UnsupportedServer)
+            raise (InstallationRefusal RuntimeOpenFault.UnsupportedServer)
 
     let private role connection token =
         task {
@@ -42,10 +42,10 @@ module internal Admission =
                     token
 
             if rows.IsEmpty then
-                raise (AdmissionRefusal RuntimeOpenFault.SchemaMismatch)
+                raise (InstallationRefusal RuntimeOpenFault.SchemaMismatch)
 
             if rows.Length <> 1 || DatabaseSession.value<bool> 0 rows.Head then
-                raise (AdmissionRefusal RuntimeOpenFault.UnsafeRole)
+                raise (InstallationRefusal RuntimeOpenFault.UnsafeRole)
         }
 
     let private head connection token =
@@ -69,8 +69,8 @@ module internal Admission =
                     DatabaseSession.value<int64> 0 row <> last
                     || DatabaseSession.value<byte array> 1 row <> hash
                 then
-                    raise (AdmissionRefusal RuntimeOpenFault.HeadMismatch)
-            | _ -> raise (AdmissionRefusal RuntimeOpenFault.HeadMismatch)
+                    raise (InstallationRefusal RuntimeOpenFault.HeadMismatch)
+            | _ -> raise (InstallationRefusal RuntimeOpenFault.HeadMismatch)
         }
 
     let openRuntime (source: NpgsqlDataSource) token =

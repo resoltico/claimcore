@@ -47,10 +47,10 @@ module internal LedgerEntries =
 
     let private metadataSubject =
         function
-        | StoredSubject.Authority(target, act) ->
-            LedgerSubject.Authority { TargetActorId = target; Act = act }
-        | StoredSubject.Case(id, revision, act, date) ->
-            LedgerSubject.Case
+        | EntryTarget.Authority(target, act) ->
+            RecordedTarget.Authority { TargetActorId = target; Act = act }
+        | EntryTarget.Case(id, revision, act, date) ->
+            RecordedTarget.Case
                 {
                     CaseId = id
                     Revision = revision
@@ -130,9 +130,9 @@ module internal LedgerEntries =
 
     let canObserve principal actor =
         function
-        | StoredSubject.Case(id, _, _, _) ->
+        | EntryTarget.Case(id, _, _, _) ->
             ActorAuthorization.can principal actor Capability.ReadHistory (ResourceScope.Case id)
-        | StoredSubject.Authority _ ->
+        | EntryTarget.Authority _ ->
             ActorAuthorization.can
                 principal
                 actor
@@ -142,12 +142,12 @@ module internal LedgerEntries =
     let private validMetadata (entry: StoredEntry) =
         let subject =
             match entry.Subject with
-            | StoredSubject.Case(id, revision, act, _) ->
+            | EntryTarget.Case(id, revision, act, _) ->
                 id <> Guid.Empty
                 && revision >= 1L
                 && revision <= Revision.Maximum
                 && ((revision = 1L) = (act = (CaseActKind.Business BusinessActKind.Open)))
-            | StoredSubject.Authority(id, _) -> id <> Guid.Empty
+            | EntryTarget.Authority(id, _) -> id <> Guid.Empty
 
         entry.Sequence >= 1L
         && entry.Sequence <= Revision.Maximum
@@ -216,14 +216,14 @@ module internal LedgerEntries =
         else
             let content =
                 match entry.Subject, entry.Payload, entry.PayloadNonce with
-                | StoredSubject.Case _, None, None -> Ok EntryContent.ErasedCase
+                | EntryTarget.Case _, None, None -> Ok EntryContent.ErasedCase
                 | _ ->
                     payload entry
                     |> Result.bind (fun data ->
                         match entry.Subject with
-                        | StoredSubject.Case(id, revision, act, _) ->
+                        | EntryTarget.Case(id, revision, act, _) ->
                             caseContent installationId entry id revision act data
-                        | StoredSubject.Authority(target, act) ->
+                        | EntryTarget.Authority(target, act) ->
                             authorityContent entry target act data)
 
             content
@@ -316,9 +316,9 @@ module internal LedgerEntries =
 
         let subject =
             match entry.Subject, validated.Content with
-            | StoredSubject.Case(id, revision, act, _), content ->
+            | EntryTarget.Case(id, revision, act, _), content ->
                 caseReceipt validated.InstallationId principal actor current id revision act content
-            | StoredSubject.Authority(target, act), EntryContent.Authority _ ->
+            | EntryTarget.Authority(target, act), EntryContent.Authority _ ->
                 Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
 
@@ -334,7 +334,7 @@ module internal LedgerEntries =
 
     let summary (current: StoredCase) (entry: StoredEntry) =
         match entry.Subject with
-        | StoredSubject.Case(id, revision, act, _) when
+        | EntryTarget.Case(id, revision, act, _) when
             validMetadata entry
             && id = current.CaseId
             && revision <= current.Snapshot.Revision

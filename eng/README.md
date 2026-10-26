@@ -14,3 +14,5 @@ iteration. Run `bash eng/verify.sh growth` separately before release or on deman
 The [source release procedure](../docs/development.md#source-releases) explains the owner's inputs to the
 [release workflow](../.github/workflows/release.yml).
 CI success records executed checks, without granting release approval.
+
+See the [glossary](../docs/glossary.md) for project terminology.

@@ -8,8 +8,8 @@ type ShutdownOutcome =
     | Drained
     | BoundExpired
 
-/// Closing admission never cancels or reclassifies work that already holds a lease.
-type internal AdmissionGate(close: unit -> unit) =
+/// Closing runtime leases never cancels or reclassifies work that already holds a lease.
+type internal RuntimeLeases(close: unit -> unit) =
     let sync = obj ()
 
     let drained =

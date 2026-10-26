@@ -34,9 +34,9 @@ module HostRoutes =
             else
                 let! authenticated =
                     task {
-                        match configuration.Oidc, Admission.credentialMode context with
+                        match configuration.Oidc, RequestGate.credentialMode context with
                         | Some oidc, CredentialMode.BrowserCookie ->
-                            let! principal = Admission.actorGet oidc configuration.Binding context in
+                            let! principal = RequestGate.actorGet oidc configuration.Binding context in
                             return Result.isOk principal
                         | _ -> return false
                     }
@@ -61,14 +61,14 @@ module HostRoutes =
             if not (ApiRoutes.handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
             else
-                match configuration.Oidc, Admission.credentialMode context with
+                match configuration.Oidc, RequestGate.credentialMode context with
                 | Some oidc, CredentialMode.BrowserCookie ->
                     let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
 
                     match!
-                        Admission.actorPost oidc configuration.Binding 1024 antiforgery context
+                        RequestGate.actorPost oidc configuration.Binding 1024 antiforgery context
                     with
-                    | Error reason -> return RouteSupport.admissionFailure context reason
+                    | Error reason -> return RouteSupport.gateFailure context reason
                     | Ok _ ->
                         match! HttpBody.readRequest 1024 context with
                         | Error problem -> return RouteSupport.inputFailure context problem

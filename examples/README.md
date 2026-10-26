@@ -64,3 +64,5 @@ Retain that frame privately and pass it unchanged to `call`. A later `NOT_STARTE
 ordinary refusal, failure or observation cannot disprove an earlier commit. Use `claimcore operation resolve OPERATION_ID` for final acceptance or non-acceptance. A correlated acceptance or exact replay also confirms acceptance. Discarding it does not cancel
 the operation. `operation.observe` reports retained acceptance metadata and cannot prove that
 submitted content matches it. See the [delivery contract](../docs/api.md).
+
+See the [glossary](../docs/glossary.md) for project terminology.

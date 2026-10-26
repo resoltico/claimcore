@@ -92,13 +92,13 @@ let row (database: PostgresFixture.Database) sequence =
 
 let private subject =
     function
-    | LedgerSubject.Case value ->
+    | RecordedTarget.Case value ->
         "CASE",
         CaseActKinds.token value.Act,
         value.CaseId,
         Some value.Revision,
         Some value.BusinessDate
-    | LedgerSubject.Authority value ->
+    | RecordedTarget.Authority value ->
         "AUTHORITY", RecordedAuthorityActs.token value.Act, value.TargetActorId, None, None
 
 let private updateSql =
@@ -230,22 +230,22 @@ let payload request snapshot (value: LedgerRow) =
 
 let caseSubject change (value: LedgerRow) =
     match value.Metadata.Subject with
-    | LedgerSubject.Case current ->
+    | RecordedTarget.Case current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Subject = LedgerSubject.Case(change current)
+                    Subject = RecordedTarget.Case(change current)
                 }
         }
     | _ -> failtest "Case fixture is required"
 
 let authoritySubject change (value: LedgerRow) =
     match value.Metadata.Subject with
-    | LedgerSubject.Authority current ->
+    | RecordedTarget.Authority current ->
         { value with
             Metadata =
                 { value.Metadata with
-                    Subject = LedgerSubject.Authority(change current)
+                    Subject = RecordedTarget.Authority(change current)
                 }
         }
     | _ -> failtest "Authority fixture is required"

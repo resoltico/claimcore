@@ -80,7 +80,7 @@ let private authenticationRoutes (application: WebApplication) configuration =
         "/auth/bearer",
         Func<HttpContext, Task<IResult>>(fun context ->
             task {
-                match! Admission.bearerActor configuration context with
+                match! RequestGate.bearerActor configuration context with
                 | Ok _ -> return Results.NoContent()
                 | Error _ -> return Results.Unauthorized()
             })

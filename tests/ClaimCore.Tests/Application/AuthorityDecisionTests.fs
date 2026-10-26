@@ -125,7 +125,7 @@ let private provision () =
 
     Expect.equal
         entry.Subject
-        (StoredSubject.Authority(id 104, AuthorityKind.ProvisionOwner))
+        (EntryTarget.Authority(id 104, AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
     let target = actor owner (id 104) [ Role.Owner ] []

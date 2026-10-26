@@ -173,7 +173,7 @@ let private concurrentInitialization (database: PostgresFixture.Database) =
         Expect.isTrue waiting "Every initializer waits before namespace discovery"
         Expect.isFalse namespacePresent "No installation work precedes the administration lock"
         Expect.equal (ids |> Array.distinct |> Array.length) 1 "One immutable installation"
-        let! installation = Admission.openRuntime database.RuntimeSource token
+        let! installation = InstallationCheck.openRuntime database.RuntimeSource token
 
         Expect.equal
             installation.InstallationId
@@ -350,7 +350,8 @@ let tests =
 
                             do!
                                 refused
-                                    (fun () -> Admission.openRuntime database.RuntimeSource token)
+                                    (fun () ->
+                                        InstallationCheck.openRuntime database.RuntimeSource token)
                                     $"{name} rejected"
                         }))
             testCase "runtime admission refuses remote connections without verified TLS" (fun () ->
@@ -366,13 +367,13 @@ let tests =
                     settings.SslMode <- mode
 
                     Expect.throws
-                        (fun () -> Admission.transport settings)
+                        (fun () -> InstallationCheck.transport settings)
                         "Unverified remote TLS rejected"
 
                 let verified =
                     Npgsql.NpgsqlConnectionStringBuilder("Host=remote.example;SSL Mode=VerifyFull")
 
-                Admission.transport verified)
+                InstallationCheck.transport verified)
             testCaseAsync
                 "post-erasure expectation rejects an actual pre-erasure backup restore"
                 (run (fun database ->
@@ -569,7 +570,8 @@ let tests =
 
                             do!
                                 refused
-                                    (fun () -> Admission.openRuntime database.RuntimeSource token)
+                                    (fun () ->
+                                        InstallationCheck.openRuntime database.RuntimeSource token)
                                     "Owner authority is refused"
                         }))
         ]

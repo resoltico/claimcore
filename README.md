@@ -62,3 +62,5 @@ Original code and documentation use the [Mozilla Public License 2.0](LICENSE). T
 their licenses and notices. [CHANGELOG.md](CHANGELOG.md) records release changes.
 
 See the [generated CLI reference](docs/cli.md) for verbs, inputs and choices.
+
+See the [glossary](docs/glossary.md) for project terminology.

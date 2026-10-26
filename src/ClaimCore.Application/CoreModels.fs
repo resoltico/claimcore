@@ -8,7 +8,7 @@ open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-/// Admission vocabulary shared by persistence and the composition root.
+/// Installation opening failures shared by persistence and the composition root.
 [<RequireQualifiedAccess>]
 type RuntimeOpenFault =
     | InvalidTransport
@@ -51,3 +51,7 @@ module internal Verdict =
         | Verdict.Fail fault -> Verdict.Fail fault
 
     let map mapping value = bind (mapping >> Verdict.Proceed) value
+
+type IBusinessCalendar =
+    abstract TimeZoneId: string
+    abstract DateAt: instant: DateTimeOffset -> DateOnly

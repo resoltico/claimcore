@@ -157,7 +157,7 @@ module OperationCatalog =
     let private message entry part =
         match entry.Act with
         | Some act -> Vocabulary.messageKey ActKinds.vocabulary act part
-        | None -> "label.read." + entry.Endpoint + "." + part
+        | None -> "endpoint." + entry.Endpoint + "." + part
 
     let labelId entry = message entry "label"
     let meaningId entry = message entry "meaning"

@@ -211,7 +211,7 @@ module internal Projections =
 
     let operationCases entry =
         match entry |> Option.map (fun (entry: StoredEntry) -> entry.Subject) with
-        | Some(StoredSubject.Case(id, _, _, _)) -> [ id ]
+        | Some(EntryTarget.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 
     let actorRow row : Actor =

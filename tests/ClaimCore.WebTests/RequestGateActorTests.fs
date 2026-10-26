@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.AdmissionActorTests
+module ClaimCore.WebTests.RequestGateActorTests
 
 open ClaimCore.Contract
 open ClaimCore.Domain
@@ -90,11 +90,11 @@ let private cookieContext provider =
     request
 
 let private actorGet request =
-    Admission.actorGet configuration (WebBindings.create origin "127.0.0.1" origin.Port) request
+    RequestGate.actorGet configuration (WebBindings.create origin "127.0.0.1" origin.Port) request
     |> _.GetAwaiter().GetResult()
 
 let private actorPostWith selectedAntiforgery request =
-    Admission.actorPost
+    RequestGate.actorPost
         configuration
         (WebBindings.create origin "127.0.0.1" origin.Port)
         32
@@ -145,7 +145,7 @@ let private bearerRefusals () =
 
             Expect.equal
                 (actorPost request)
-                (Error AdmissionFailure.SessionRejected)
+                (Error GateFailure.SessionRejected)
                 "Invalid bearer has no actor"
 
             Expect.equal calls.Value 1 "Bearer failure never falls back to a cookie")
@@ -162,22 +162,20 @@ let private bearerShapeRefusals () =
                 (Error expected)
                 "Bearer transport is refused before authentication"
 
-        refused
-            (fun request -> request.Request.Scheme <- "http")
-            AdmissionFailure.UntrustedConnection
+        refused (fun request -> request.Request.Scheme <- "http") GateFailure.UntrustedConnection
 
         refused
             (fun request ->
                 request.Request.Headers.Origin <- origin.GetLeftPart(UriPartial.Authority))
-            AdmissionFailure.OriginRejected
+            GateFailure.OriginRejected
 
         refused
             (fun request -> request.Request.ContentType <- "text/plain")
-            AdmissionFailure.UnsupportedMediaType
+            GateFailure.UnsupportedMediaType
 
         refused
             (fun request -> request.Request.ContentLength <- Nullable 33L)
-            AdmissionFailure.BodyTooLarge
+            GateFailure.BodyTooLarge
 
         Expect.equal calls.Value 0 "Malformed bearer transport cannot reach authentication")
 
@@ -199,7 +197,7 @@ let private browserIdentity () =
 
             Expect.equal
                 (actorPost request)
-                (Error AdmissionFailure.SessionRejected)
+                (Error GateFailure.SessionRejected)
                 "Invalid cookie has no actor"
 
             Expect.equal calls.Value 1 "Cookie refusal reaches authentication once")
@@ -215,31 +213,29 @@ let private browserShapeRefusals () =
                 (Error expected)
                 "Browser transport refuses unsafe shape"
 
-        refused
-            (fun request -> request.Request.Scheme <- "http")
-            AdmissionFailure.UntrustedConnection
+        refused (fun request -> request.Request.Scheme <- "http") GateFailure.UntrustedConnection
 
         refused
             (fun request -> request.Request.Headers.Remove("Origin") |> ignore)
-            AdmissionFailure.OriginRejected
+            GateFailure.OriginRejected
 
         refused
             (fun request -> request.Request.Headers["Sec-Fetch-Site"] <- "cross-site")
-            AdmissionFailure.FetchMetadataRejected
+            GateFailure.FetchMetadataRejected
 
         refused
             (fun request -> request.Request.ContentType <- "text/plain")
-            AdmissionFailure.UnsupportedMediaType
+            GateFailure.UnsupportedMediaType
 
         refused
             (fun request -> request.Request.ContentLength <- Nullable 33L)
-            AdmissionFailure.BodyTooLarge
+            GateFailure.BodyTooLarge
 
         let csrfRequest = cookieContext provider
 
         Expect.equal
             (actorPostWith refusingAntiforgery csrfRequest)
-            (Error AdmissionFailure.AntiforgeryRejected)
+            (Error GateFailure.AntiforgeryRejected)
             "CSRF refusal precedes actor authentication"
 
         Expect.equal calls.Value 0 "Unsafe browser transport cannot reach authentication")
@@ -252,28 +248,26 @@ let private getShapeRefusals () =
             configure request
             Expect.equal (actorGet request) (Error expected) "GET transport refuses unsafe shape"
 
-        refused
-            (fun request -> request.Request.Scheme <- "http")
-            AdmissionFailure.UntrustedConnection
+        refused (fun request -> request.Request.Scheme <- "http") GateFailure.UntrustedConnection
 
         refused
             (fun request ->
                 request.Request.Headers.Origin <- origin.GetLeftPart(UriPartial.Authority))
-            AdmissionFailure.OriginRejected
+            GateFailure.OriginRejected
 
         refused
             (fun request -> request.Connection.RemoteIpAddress <- IPAddress.Parse("192.0.2.1"))
-            AdmissionFailure.UntrustedConnection
+            GateFailure.UntrustedConnection
 
         Expect.equal calls.Value 0 "Unsafe GET transport cannot reach authentication")
 
 [<Tests>]
 let tests =
     testList
-        "Web actor admission after synthetic authentication"
+        "Web actor gate after synthetic authentication"
         [
             testCase
-                "[CC-WEB-001] bearer actor admission binds verified client and subject"
+                "[CC-WEB-001] bearer actor gate binds verified client and subject"
                 bearerIdentity
             testCase
                 "[CC-WEB-001] failed or malformed bearer identities never select an actor"
@@ -282,7 +276,7 @@ let tests =
                 "[CC-WEB-001] bearer transport refuses unsafe shapes before authentication"
                 bearerShapeRefusals
             testCase
-                "[CC-WEB-001] browser cookie admission binds and rechecks a human actor"
+                "[CC-WEB-001] browser cookie gate binds and rechecks a human actor"
                 browserIdentity
             testCase
                 "[CC-WEB-001] browser cookie refuses unsafe transport before actor lookup"

@@ -235,7 +235,7 @@ let tests =
                                 fun actor -> (Core.context actor () token)
                             )
 
-                        Expect.isNone after "Admission closed"
+                        Expect.isNone after "InstallationCheck closed"
                     }))
             for name, change, expected in
                 [
@@ -374,15 +374,15 @@ let tests =
                             "Admitted transaction still committed exactly once"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
-                Admission.serverVersion (System.Version(18, 6))
+                InstallationCheck.serverVersion (System.Version(18, 6))
 
                 for version in
                     [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
                     let mutable result = None
 
                     try
-                        Admission.serverVersion version
-                    with AdmissionRefusal fault ->
+                        InstallationCheck.serverVersion version
+                    with InstallationRefusal fault ->
                         result <- Some fault
 
                     Expect.equal

@@ -70,3 +70,5 @@ Append-only guards permit accepted append and case-payload clearing. They cannot
 trusted owner; [erasure limits](operations.md#erasure-limits) explain the exception. A data-only restore into an
 initialized schema is unsupported because these guards reject reconstruction. Use a full restore into an empty
 database under the operator's procedure, then verify independent evidence.
+
+See the [glossary](glossary.md) for project terminology.

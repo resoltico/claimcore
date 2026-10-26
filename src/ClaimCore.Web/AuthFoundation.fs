@@ -71,13 +71,13 @@ module PrincipalIdentity =
 
     let human (issuer: Uri) subject =
         if nonBlank subject then
-            AuthenticatedSubjects.human issuer.AbsoluteUri subject
+            AuthenticatedPrincipals.human issuer.AbsoluteUri subject
         else
             Error AuthenticationFailure.SubjectInvalid
 
     let service (issuer: Uri) clientId =
         if nonBlank clientId then
-            AuthenticatedSubjects.service issuer.AbsoluteUri clientId
+            AuthenticatedPrincipals.service issuer.AbsoluteUri clientId
         else
             Error AuthenticationFailure.ClientInvalid
 

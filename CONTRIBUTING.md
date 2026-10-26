@@ -23,3 +23,5 @@ Version bumps, tags and releases remain owner-controlled. Follow the release-sum
 
 Original code and contributions use [MPL-2.0](LICENSE). Covered binary/browser redistribution must provide
 corresponding covered source and tell recipients how to obtain it. Third-party licenses/notices remain distinct.
+
+See the [glossary](docs/glossary.md) for project terminology.

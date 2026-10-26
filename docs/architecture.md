@@ -133,3 +133,5 @@ The generator admits source text with the single Contract Template grammar, vali
 and producer references, and emits typed message arguments. Both clients preserve authored values. Contract's display-warning policy identifies suspicious Unicode
 without changing raw values. [Development](development.md#generated-contracts-and-boundary-verification)
 explains freshness and independent contract checks.
+
+See the [glossary](glossary.md) for project terminology.

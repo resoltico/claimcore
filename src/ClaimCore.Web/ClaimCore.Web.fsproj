@@ -14,9 +14,9 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="AuthenticationFailure.fs" />
-    <Compile Include="Composition/AuthenticatedSubject.fs" />
+    <Compile Include="Composition/AuthenticatedPrincipal.fs" />
     <Compile Include="Composition/BusinessCalendar.fs" />
-    <Compile Include="Composition/AdmissionGate.fs" />
+    <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
     <Compile Include="Composition/ServiceRuntime.fs" />
     <Compile Include="StartupDiagnostics.fs" />
@@ -32,7 +32,7 @@
     <Compile Include="HttpBody.fs" />
     <Compile Include="AuthMiddleware.fs" />
     <Compile Include="Headers.fs" />
-    <Compile Include="Admission.fs" />
+    <Compile Include="RequestGate.fs" />
     <Compile Include="RequestLog.fs" />
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="RouteSupport.fs" />

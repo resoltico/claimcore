@@ -45,7 +45,7 @@ module internal RateLimits =
                 do! busy context
         }
 
-    let configure (limits: WebAdmissionLimits) (services: IServiceCollection) =
+    let configure (limits: RequestGateLimits) (services: IServiceCollection) =
         services.AddSingleton<DynamicIngress>() |> ignore
 
         services.AddRateLimiter(fun options ->

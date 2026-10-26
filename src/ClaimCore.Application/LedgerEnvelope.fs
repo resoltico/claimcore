@@ -8,7 +8,7 @@ type internal LedgerAppend<'projection> =
     {
         ObservedAt: DateTimeOffset
         ActorId: Guid
-        Subject: StoredSubject
+        Subject: EntryTarget
         Snapshot: byte array
         Current: StoredCase option
         Projection: 'projection

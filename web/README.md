@@ -24,3 +24,5 @@ npm --prefix web run build
 `build` typechecks, produces `dist` and generates notices from the locked production graph. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
 
 [Development](../docs/development.md#verification-stages) owns the frontend stage and real-browser qualification, including complete three-engine PR qualification, isolated engine jobs and serial workers within each stateful fixture. Formatting, type-aware lint, module boundaries, unit completion, audit, licenses, Knip and notices are checked. Coverage is optional; CSS is checked through formatting and browser layout/accessibility, without a separate semantic linter.
+
+See the [glossary](../docs/glossary.md) for project terminology.

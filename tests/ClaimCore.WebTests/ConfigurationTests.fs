@@ -98,8 +98,8 @@ let private limits () =
     configured (fun _ _ ->
         let value = Configuration.load ()
         use _certificates = Configuration.ownCertificates value
-        Expect.equal value.Admission.MaximumJsonBytes 65536 "Default bound"
-        Expect.equal value.Admission.CorePermitLimit 4 "Default permits"
+        Expect.equal value.RequestGate.MaximumJsonBytes 65536 "Default bound"
+        Expect.equal value.RequestGate.CorePermitLimit 4 "Default permits"
 
         for name, value in
             [

@@ -27,7 +27,7 @@ type internal StoredCase =
     { CaseId: Guid; Snapshot: CaseSnapshot }
 
 [<RequireQualifiedAccess>]
-type internal StoredSubject =
+type internal EntryTarget =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: Guid * act: AuthorityKind
 
@@ -38,7 +38,7 @@ type internal StoredEntry =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Subject: StoredSubject
+        Subject: EntryTarget
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
@@ -58,7 +58,7 @@ type internal EntryDraft =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Subject: StoredSubject
+        Subject: EntryTarget
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array
@@ -123,7 +123,3 @@ type internal IStore =
     abstract Write:
         (IWriteTx -> Task<Verdict<'T>>) * CancellationToken ->
             Task<Result<Verdict<'T>, StoreFailure>>
-
-type IBusinessCalendar =
-    abstract TimeZoneId: string
-    abstract DateAt: instant: DateTimeOffset -> DateOnly

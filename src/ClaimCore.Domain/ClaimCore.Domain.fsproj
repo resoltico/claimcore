@@ -8,7 +8,6 @@
     <Compile Include="Record.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Formats.fs" />
-    <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />

@@ -32,3 +32,5 @@ the affected revision in reports; no security-fix commitment is made for unmaint
 Dependency/image declarations are pinned in source and lockfiles. Image or dependency changes need review and
 verification. ClaimCore ships no PostgreSQL image. See the [database declaration](db/postgresql-baseline.json)
 and [dependency guidance](docs/development.md#dependency-pins).
+
+See the [glossary](docs/glossary.md) for project terminology.

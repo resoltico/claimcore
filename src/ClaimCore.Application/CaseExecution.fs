@@ -53,7 +53,7 @@ module internal CaseExecution =
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private admission installationId principal request bytes (view: CaseFacts) =
+    let private authorizeIdentity installationId principal request bytes (view: CaseFacts) =
         match permission principal view.Actor request view.Case with
         | Error refusal -> Verdict.Refuse refusal
         | Ok() ->
@@ -107,7 +107,7 @@ module internal CaseExecution =
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
             Subject =
-                StoredSubject.Case(
+                EntryTarget.Case(
                     id,
                     snapshot.Revision,
                     CaseActs.kind request.Act,
@@ -121,7 +121,7 @@ module internal CaseExecution =
     let review installationId calendar principal (command: CaseCommand) (view: CaseFacts) =
         let identity = Case.canonical command |> RequestRecord.encode
 
-        admission installationId principal command identity view
+        authorizeIdentity installationId principal command identity view
         |> Verdict.bind (fun () -> propose installationId calendar command view)
 
     let execute
@@ -136,7 +136,7 @@ module internal CaseExecution =
         =
         let identity = Case.canonical command |> RequestRecord.encode
 
-        admission installationId principal command identity view
+        authorizeIdentity installationId principal command identity view
         |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
         |> Verdict.bind (fun () -> propose installationId calendar command view)
         |> Verdict.bind (fun (_, after) ->

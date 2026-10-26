@@ -12,7 +12,7 @@ open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Http
 
 [<RequireQualifiedAccess>]
-type AdmissionFailure =
+type GateFailure =
     | UntrustedConnection
     | OriginRejected
     | FetchMetadataRejected
@@ -28,21 +28,21 @@ type internal CredentialMode =
     | Bearer
     | Mixed
 
-module Admission =
+module RequestGate =
     let private oidcHuman (configuration: OidcConfiguration) (context: HttpContext) =
         task {
             let! authentication =
                 context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme)
 
             if not authentication.Succeeded then
-                return Error AdmissionFailure.SessionRejected
+                return Error GateFailure.SessionRejected
             else
                 match authentication.Principal |> Option.ofObj with
-                | None -> return Error AdmissionFailure.SessionRejected
+                | None -> return Error GateFailure.SessionRejected
                 | Some principal ->
                     match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
                     | Ok actor -> return Ok actor
-                    | Error _ -> return Error AdmissionFailure.SessionRejected
+                    | Error _ -> return Error GateFailure.SessionRejected
         }
 
     let bearerActor (configuration: OidcConfiguration) (context: HttpContext) =
@@ -50,10 +50,10 @@ module Admission =
             let! authentication = context.AuthenticateAsync(AuthMiddleware.BearerScheme)
 
             if not authentication.Succeeded then
-                return Error AdmissionFailure.SessionRejected
+                return Error GateFailure.SessionRejected
             else
                 match authentication.Principal |> Option.ofObj with
-                | None -> return Error AdmissionFailure.SessionRejected
+                | None -> return Error GateFailure.SessionRejected
                 | Some principal ->
                     match
                         PrincipalIdentity.fromAccessToken
@@ -62,7 +62,7 @@ module Admission =
                             principal
                     with
                     | Ok actor -> return Ok actor
-                    | Error _ -> return Error AdmissionFailure.SessionRejected
+                    | Error _ -> return Error GateFailure.SessionRejected
         }
 
     /// One credential mode per request. A failed bearer never falls back to a browser cookie.
@@ -79,7 +79,7 @@ module Admission =
     let verifiedPrincipal (configuration: OidcConfiguration) (context: HttpContext) =
         match credentialMode context with
         | CredentialMode.Mixed
-        | CredentialMode.Missing -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | CredentialMode.Missing -> Task.FromResult(Error GateFailure.SessionRejected)
         | CredentialMode.Bearer -> bearerActor configuration context
         | CredentialMode.BrowserCookie -> oidcHuman configuration context
 
@@ -123,19 +123,19 @@ module Admission =
 
     let postShape origin maximumBytes context =
         if not (trustedConnection origin context) then
-            Error AdmissionFailure.UntrustedConnection
+            Error GateFailure.UntrustedConnection
         elif not (matchingOrigin origin context) then
-            Error AdmissionFailure.OriginRejected
+            Error GateFailure.OriginRejected
         elif not (sameOriginFetch context) then
-            Error AdmissionFailure.FetchMetadataRejected
+            Error GateFailure.FetchMetadataRejected
         elif not (contentType context) then
-            Error AdmissionFailure.UnsupportedMediaType
+            Error GateFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
             |> Option.ofNullable
             |> Option.exists (fun length -> length > int64 maximumBytes)
         then
-            Error AdmissionFailure.BodyTooLarge
+            Error GateFailure.BodyTooLarge
         else
             Ok()
 
@@ -145,7 +145,7 @@ module Admission =
                 do! antiforgery.ValidateRequestAsync(context)
                 return Ok()
             with :? AntiforgeryValidationException ->
-                return Error AdmissionFailure.AntiforgeryRejected
+                return Error GateFailure.AntiforgeryRejected
         }
 
     let validatePost origin maximumBytes antiforgery context =
@@ -155,28 +155,28 @@ module Admission =
 
     let private bearerShape origin maximumBytes (context: HttpContext) =
         if not (trustedConnection origin context) || not context.Request.IsHttps then
-            Error AdmissionFailure.UntrustedConnection
+            Error GateFailure.UntrustedConnection
         elif context.Request.Headers.ContainsKey("Origin") then
-            Error AdmissionFailure.OriginRejected
+            Error GateFailure.OriginRejected
         elif not (contentType context) then
-            Error AdmissionFailure.UnsupportedMediaType
+            Error GateFailure.UnsupportedMediaType
         elif
             context.Request.ContentLength
             |> Option.ofNullable
             |> Option.exists (fun length -> length > int64 maximumBytes)
         then
-            Error AdmissionFailure.BodyTooLarge
+            Error GateFailure.BodyTooLarge
         else
             Ok()
 
     let actorGet configuration origin (context: HttpContext) =
         if not (trustedConnection origin context) || not context.Request.IsHttps then
-            Task.FromResult(Error AdmissionFailure.UntrustedConnection)
+            Task.FromResult(Error GateFailure.UntrustedConnection)
         elif
             credentialMode context = CredentialMode.Bearer
             && context.Request.Headers.ContainsKey("Origin")
         then
-            Task.FromResult(Error AdmissionFailure.OriginRejected)
+            Task.FromResult(Error GateFailure.OriginRejected)
         else
             verifiedPrincipal configuration context
 
@@ -190,13 +190,13 @@ module Admission =
     let actorPost configuration origin maximumBytes antiforgery (context: HttpContext) =
         match credentialMode context with
         | CredentialMode.Missing
-        | CredentialMode.Mixed -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | CredentialMode.Mixed -> Task.FromResult(Error GateFailure.SessionRejected)
         | CredentialMode.Bearer ->
             match bearerShape origin maximumBytes context with
             | Error failure -> Task.FromResult(Error failure)
             | Ok() -> verifiedPrincipal configuration context
         | CredentialMode.BrowserCookie ->
             if not context.Request.IsHttps then
-                Task.FromResult(Error AdmissionFailure.UntrustedConnection)
+                Task.FromResult(Error GateFailure.UntrustedConnection)
             else
                 browserPost configuration origin maximumBytes antiforgery context

@@ -97,3 +97,5 @@ Streaming therefore promises no constant total-system memory.
 Run [synthetic growth qualification](development.md#synthetic-growth-qualification) before release and on demand,
 then qualify actual storage, workloads and concurrency. Those measurements establish neither an SLA nor a
 production capacity guarantee. Timeout/cancellation guards remain enforced.
+
+See the [glossary](glossary.md) for project terminology.

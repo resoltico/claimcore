@@ -187,3 +187,5 @@ controls exercise EPIPE, descriptors/PTYs, Unicode bytes, append/shared offsets,
 regular-file failure through a managed helper. Linux additionally checks /dev/full. OS write acceptance does
 not prove downstream consumption; both-output loss still leaves uncertain mutation exit 4, and sessions stop
 before later frames.
+
+See the [glossary](glossary.md) for project terminology.

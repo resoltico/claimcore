@@ -187,7 +187,7 @@ module internal AuthorityFold =
         result {
             let! id, kind =
                 match entry.Subject with
-                | StoredSubject.Authority(id, kind) -> Ok(id, kind)
+                | EntryTarget.Authority(id, kind) -> Ok(id, kind)
                 | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
             do!

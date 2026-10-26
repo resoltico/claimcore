@@ -55,7 +55,7 @@ let private row payload =
             RecordedAt = instant
             PayloadCommitment = commitment
             Subject =
-                LedgerSubject.Authority
+                RecordedTarget.Authority
                     {
                         TargetActorId = id
                         Act = AuthorityKind.ProvisionOwner
@@ -69,7 +69,7 @@ let private row payload =
             OperationId = id
             ActorId = id
             RecordedAt = instant
-            Subject = StoredSubject.Authority(id, AuthorityKind.ProvisionOwner)
+            Subject = EntryTarget.Authority(id, AuthorityKind.ProvisionOwner)
             PayloadCommitment = commitment
             PayloadNonce = Some nonce
             Payload = Some payload
@@ -203,7 +203,7 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Subject = StoredSubject.Authority(id, AuthorityKind.Register)
+                    Subject = EntryTarget.Authority(id, AuthorityKind.Register)
                 }
 
             let request: AuthorityRequestRecord =

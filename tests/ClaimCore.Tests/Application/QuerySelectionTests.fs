@@ -115,10 +115,7 @@ let private history () =
         "Absent case stays private"
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            reader
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner reader (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
@@ -192,10 +189,7 @@ let private context () =
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            scoped
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner scoped (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Scoped auditor cannot observe installation authority"
 
     Expect.equal
@@ -204,10 +198,7 @@ let private context () =
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue
-        (LedgerEntries.canObserve
-            owner
-            worker
-            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve owner worker (EntryTarget.Authority(id 1, AuthorityKind.Register)))
         "Installation owner may observe authority"
 
 [<Tests>]

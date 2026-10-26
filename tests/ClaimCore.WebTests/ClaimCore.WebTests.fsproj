@@ -10,10 +10,10 @@
     <Compile Include="AuthTrustTests.fs" />
     <Compile Include="OidcStartupTests.fs" />
     <Compile Include="OidcStartupCancellationTests.fs" />
-    <Compile Include="AdmissionEdgeTests.fs" />
-    <Compile Include="AdmissionActorTests.fs" />
+    <Compile Include="RequestGateEdgeTests.fs" />
+    <Compile Include="RequestGateActorTests.fs" />
     <Compile Include="OriginConfigurationTests.fs" />
-    <Compile Include="BindingAdmissionTests.fs" />
+    <Compile Include="BindingGateTests.fs" />
     <Compile Include="ProbeTransportTests.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="OidcLiveKeys.fs" />

@@ -139,10 +139,10 @@ let internal createFor owner =
             settings.Password <- "synthetic-only"
             let runtime = NpgsqlDataSource.Create(settings.ConnectionString)
             sources <- runtime :: sources
-            let! admitted = Admission.openRuntime runtime CancellationToken.None
+            let! admitted = InstallationCheck.openRuntime runtime CancellationToken.None
 
             if admitted.InstallationId <> installationId then
-                invalidOp "Admission changed identity."
+                invalidOp "InstallationCheck changed identity."
 
             return admittedDatabase container sources ownerSource runtime installationId owner
         with error ->

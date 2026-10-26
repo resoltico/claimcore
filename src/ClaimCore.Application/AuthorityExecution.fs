@@ -101,7 +101,13 @@ module internal AuthorityExecution =
                         Error CoreFault.StoreIntegrityError)
             | _ -> Ok()
 
-    let private admission installationId principal operationId bytes (view: AuthorityFacts) =
+    let private authorizeIdentity
+        installationId
+        principal
+        operationId
+        bytes
+        (view: AuthorityFacts)
+        =
         if
             not (
                 ActorAuthorization.can
@@ -172,7 +178,7 @@ module internal AuthorityExecution =
                 match action with
                 | AuthorityAction.ProvisionOwner -> targetId
                 | AuthorityAction.User _ -> LedgerEnvelope.actorId view.Actor
-            Subject = StoredSubject.Authority(targetId, RecordedAuthorityActs.kind record.Act)
+            Subject = EntryTarget.Authority(targetId, RecordedAuthorityActs.kind record.Act)
             Snapshot = Array.empty
             Current = None
             Projection = projection
@@ -182,7 +188,7 @@ module internal AuthorityExecution =
         let record = AuthorityRequests.toRecord request
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
-        admission installationId principal request.OperationId bytes view
+        authorizeIdentity installationId principal request.OperationId bytes view
         |> Verdict.bind (fun () ->
             propose
                 installationId
@@ -238,7 +244,7 @@ module internal AuthorityExecution =
             request.Target
             (AuthorityAction.User request.Act)
             (AuthorityRequests.toRecord request)
-            (fun bytes -> admission installationId principal request.OperationId bytes view)
+            (fun bytes -> authorizeIdentity installationId principal request.OperationId bytes view)
             head
             fenced
             nonce

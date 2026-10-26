@@ -62,3 +62,5 @@ independent. Readiness establishes installation/schema access, without proving f
 
 See [Web composition](../src/ClaimCore.Web/Composition/) for handler mounting and [browser source](../web/README.md)
 for the transport/form modules. [API](api.md) owns byte admission, correlation and delivery semantics.
+
+See the [glossary](glossary.md) for project terminology.

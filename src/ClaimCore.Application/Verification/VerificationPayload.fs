@@ -82,7 +82,7 @@ module internal VerificationPayload =
 
     let read installationId (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce, entry.Subject with
-        | None, None, StoredSubject.Case _ -> Ok VerifiedPayload.Erased
+        | None, None, EntryTarget.Case _ -> Ok VerifiedPayload.Erased
         | Some bytes, Some nonce, _ ->
             result {
                 let! commitment =
@@ -100,8 +100,8 @@ module internal VerificationPayload =
 
                 return!
                     match entry.Subject with
-                    | StoredSubject.Case(id, revision, act, _) ->
+                    | EntryTarget.Case(id, revision, act, _) ->
                         case installationId entry id revision act payload
-                    | StoredSubject.Authority(_, kind) -> authority entry kind payload
+                    | EntryTarget.Authority(_, kind) -> authority entry kind payload
             }
         | _ -> Error(problem entry.Sequence)

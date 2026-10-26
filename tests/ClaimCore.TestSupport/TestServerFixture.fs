@@ -55,7 +55,7 @@ let configuration certificate =
         Certificate = certificate
         SessionIdle = TimeSpan.FromMinutes 30.
         SessionAbsolute = TimeSpan.FromHours 8.
-        Admission = limits
+        RequestGate = limits
         Oidc = Some oidc
     }
 
@@ -170,7 +170,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
                  facade.Handlers)
             (fun principal action ->
                 task {
-                    if not facade.AdmissionOpen then
+                    if not facade.RuntimeAvailable then
                         return None
                     else
                         facade.Principal <- Some principal

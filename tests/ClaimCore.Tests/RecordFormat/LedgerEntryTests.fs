@@ -21,13 +21,13 @@ let private text (element: JsonElement) (name: string) =
 
 let private subject (vector: JsonElement) =
     if text vector "subject" = "AUTHORITY" then
-        LedgerSubject.Authority
+        RecordedTarget.Authority
             {
                 TargetActorId = Guid.Parse(text vector "subjectId")
                 Act = AuthorityKind.Grant
             }
     else
-        LedgerSubject.Case
+        RecordedTarget.Case
             {
                 CaseId = Guid.Parse(text vector "subjectId")
                 Revision = vector.GetProperty("caseRevision").GetInt64()
@@ -50,7 +50,7 @@ let private metadata vector : LedgerMetadata =
 
 let private caseMetadata (entry: LedgerMetadata) =
     match entry.Subject with
-    | LedgerSubject.Case value -> value
+    | RecordedTarget.Case value -> value
     | _ -> failtest "Case seed required"
 
 // These independent encoding vectors are not provisioned authority histories.
@@ -161,7 +161,7 @@ let private allMetadataFields () =
                 }
                 { entry with
                     Subject =
-                        LedgerSubject.Authority
+                        RecordedTarget.Authority
                             {
                                 TargetActorId = otherId
                                 Act = AuthorityKind.Grant
@@ -178,7 +178,7 @@ let private allMetadataFields () =
             @ (subjects
                |> List.map (fun value ->
                    { entry with
-                       Subject = LedgerSubject.Case value
+                       Subject = RecordedTarget.Case value
                    })) do
             Expect.isTrue
                 (LedgerEntry.hash candidate <> original)
@@ -269,7 +269,7 @@ let tests =
 
                         let candidate =
                             { entry with
-                                Subject = LedgerSubject.Authority subject
+                                Subject = RecordedTarget.Authority subject
                             }
 
                         Expect.equal
@@ -280,7 +280,7 @@ let tests =
                         let changed =
                             { candidate with
                                 Subject =
-                                    LedgerSubject.Authority
+                                    RecordedTarget.Authority
                                         { subject with
                                             TargetActorId = entry.OperationId
                                         }
@@ -293,7 +293,7 @@ let tests =
                     let invalid =
                         { entry with
                             Subject =
-                                LedgerSubject.Authority
+                                RecordedTarget.Authority
                                     {
                                         TargetActorId = Guid.Empty
                                         Act = AuthorityKind.Grant
@@ -404,7 +404,7 @@ let tests =
                             (fun () ->
                                 LedgerEntry.hash
                                     { entry with
-                                        Subject = LedgerSubject.Case invalid
+                                        Subject = RecordedTarget.Case invalid
                                     }
                                 |> ignore)
                             "Invalid case metadata refused"))
@@ -455,7 +455,7 @@ let tests =
                             LedgerEntry.preimage
                                 { entry with
                                     Subject =
-                                        LedgerSubject.Case
+                                        RecordedTarget.Case
                                             { case with
                                                 BusinessDate = DateOnly.MinValue
                                             }
@@ -465,7 +465,7 @@ let tests =
                             LedgerEntry.preimage
                                 { entry with
                                     Subject =
-                                        LedgerSubject.Authority
+                                        RecordedTarget.Authority
                                             {
                                                 TargetActorId = entry.ActorId
                                                 Act = AuthorityKind.Grant

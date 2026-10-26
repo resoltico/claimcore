@@ -58,7 +58,7 @@ module internal TransactionPages =
 
             let revision (entry: StoredEntry) =
                 match entry.Subject with
-                | StoredSubject.Case(_, revision, _, _) -> revision
+                | EntryTarget.Case(_, revision, _, _) -> revision
                 | _ -> raise (RecordCorruptException "Invalid case history.")
 
             return page limit revision entries

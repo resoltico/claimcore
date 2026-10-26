@@ -163,18 +163,18 @@ let private middlewarePolicy () =
 
 let private exclusiveCredentialMode () =
     let context = DefaultHttpContext()
-    Expect.equal (Admission.credentialMode context) CredentialMode.Missing "No credential"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Missing "No credential"
 
     context.Request.Headers["Authorization"] <- "Bearer synthetic"
-    Expect.equal (Admission.credentialMode context) CredentialMode.Bearer "Bearer only"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Bearer "Bearer only"
 
     context.Request.Headers["Cookie"] <- "__Host-ClaimCoreSession=synthetic"
-    Expect.equal (Admission.credentialMode context) CredentialMode.Mixed "No mixed mode"
+    Expect.equal (RequestGate.credentialMode context) CredentialMode.Mixed "No mixed mode"
 
     context.Request.Headers.Remove("Authorization") |> ignore
 
     Expect.equal
-        (Admission.credentialMode context)
+        (RequestGate.credentialMode context)
         CredentialMode.BrowserCookie
         "Server-side browser cookie only"
 

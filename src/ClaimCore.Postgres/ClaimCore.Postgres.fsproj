@@ -3,10 +3,10 @@
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Admission/ServerSupport.fs" />
+    <Compile Include="InstallationCheck/ServerSupport.fs" />
     <Compile Include="DatabaseSession.fs" />
     <Compile Include="Schema/Baseline.fs" />
-    <Compile Include="Admission/Admission.fs" />
+    <Compile Include="InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/CaseProjectionLayout.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />

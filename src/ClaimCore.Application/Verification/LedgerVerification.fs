@@ -20,7 +20,7 @@ module internal LedgerVerification =
 
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
-        | StoredSubject.Authority _, VerifiedPayload.Authority request ->
+        | EntryTarget.Authority _, VerifiedPayload.Authority request ->
             AuthorityFold.apply
                 installationId
                 (fun id -> Map.containsKey id state.Cases)
@@ -28,7 +28,7 @@ module internal LedgerVerification =
                 entry
                 request
             |> Result.map (fun actors -> state.Cases, actors)
-        | StoredSubject.Case(id, revision, act, _), _ ->
+        | EntryTarget.Case(id, revision, act, _), _ ->
             result {
                 let! cases = CaseFold.apply state.Cases entry id revision act payload
 

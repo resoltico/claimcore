@@ -22,3 +22,5 @@ and the [OpenAPI contract](../contracts/openapi.json) for wire shapes.
 Read [development](development.md) for setup and verification, [architecture](architecture.md) for
 component ownership and invariants, and [contributing](../CONTRIBUTING.md) for delivery.
 The owner reviews and merges changes.
+
+See the [glossary](glossary.md) for project terminology.

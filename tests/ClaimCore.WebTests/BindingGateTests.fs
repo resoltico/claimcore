@@ -1,4 +1,4 @@
-module ClaimCore.WebTests.BindingAdmissionTests
+module ClaimCore.WebTests.BindingGateTests
 
 open System
 open System.Net
@@ -21,34 +21,34 @@ let private peerBoundary () =
     let forwarded = request "claims.example.test" "192.0.2.20"
 
     Expect.isFalse
-        (Admission.trustedConnection local forwarded)
+        (RequestGate.trustedConnection local forwarded)
         "Loopback binding refuses remote peers"
 
     Expect.isTrue
-        (Admission.trustedConnection container forwarded)
+        (RequestGate.trustedConnection container forwarded)
         "Explicit container binding permits forwarded TCP peers"
 
     Expect.equal
-        (Admission.postShape container 32 forwarded)
+        (RequestGate.postShape container 32 forwarded)
         (Ok())
         "Exact public origin is preserved"
 
     forwarded.Request.Headers.Host <- "foreign.example.test"
 
     Expect.isFalse
-        (Admission.trustedConnection container forwarded)
+        (RequestGate.trustedConnection container forwarded)
         "Container publication never permits foreign Host"
 
     forwarded.Request.Headers.Host <- "claims.example.test"
     forwarded.Request.Headers.Origin <- "https://foreign.example.test"
 
     Expect.equal
-        (Admission.postShape container 32 forwarded)
-        (Error AdmissionFailure.OriginRejected)
+        (RequestGate.postShape container 32 forwarded)
+        (Error GateFailure.OriginRejected)
         "Origin remains exact"
 
     forwarded.Connection.RemoteIpAddress <- null
-    Expect.isFalse (Admission.trustedConnection container forwarded) "Unknown peer is refused"
+    Expect.isFalse (RequestGate.trustedConnection container forwarded) "Unknown peer is refused"
 
 let private invalidBindings () =
     let origin = Uri("https://localhost:5443")

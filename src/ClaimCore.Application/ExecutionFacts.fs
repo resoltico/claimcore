@@ -25,7 +25,7 @@ type internal AuthorityFacts =
 module internal ExecutionFacts =
     let private operationCase (entry: StoredEntry option) =
         match entry |> Option.map _.Subject with
-        | Some(StoredSubject.Case(id, _, _, _)) -> Some id
+        | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | _ -> None
 
     let authority (tx: IReadTx) principal caseIds =

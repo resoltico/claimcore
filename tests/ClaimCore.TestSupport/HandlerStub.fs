@@ -109,7 +109,7 @@ let description =
 type Stub() =
     let calls = ResizeArray<string>()
     member _.Calls = List.ofSeq calls
-    member val AdmissionOpen = true with get, set
+    member val RuntimeAvailable = true with get, set
     member val Error: exn option = None with get, set
 
     member val Execute: UnvalidatedCaseRequest * CancellationToken -> Task<ExecuteResult> =
