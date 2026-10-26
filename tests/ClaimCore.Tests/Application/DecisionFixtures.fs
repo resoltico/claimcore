@@ -76,7 +76,7 @@ let decide request view =
 
 let appended =
     function
-    | LedgerDecision.Append(entry, projection, receipt) -> entry, projection, receipt
+    | Decision.Proceed(entry, projection, receipt) -> entry, projection, receipt
     | _ -> failtest "Expected a pure append decision"
 
 let created n reference =

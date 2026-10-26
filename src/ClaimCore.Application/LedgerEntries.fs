@@ -347,26 +347,30 @@ module internal LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
 
-[<RequireQualifiedAccess>]
-type internal IdentityDecision =
-    | Fresh
-    | Replay of ValidatedEntry
-    | Refuse of Refusal
-    | Fail of CoreFault
-
 module internal OperationIdentity =
-    let decide installationId principal actor operationId bytes (existing: StoredEntry option) =
+    let decide
+        installationId
+        principal
+        actor
+        operationId
+        bytes
+        (existing: StoredEntry option)
+        receipt
+        =
         match existing with
-        | None -> IdentityDecision.Fresh
+        | None -> Decision.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
-            IdentityDecision.Refuse Refusal.ResourceUnavailable
+            Decision.Refuse Refusal.ResourceUnavailable
         | Some entry when entry.OperationId <> operationId ->
-            IdentityDecision.Fail CoreFault.StoreIntegrityError
+            Decision.Fail CoreFault.StoreIntegrityError
         | Some entry ->
             match LedgerEntries.validate installationId entry with
-            | Error fault -> IdentityDecision.Fail fault
+            | Error fault -> Decision.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> IdentityDecision.Refuse Refusal.ResourceUnavailable
-                | Some accepted when accepted = bytes -> IdentityDecision.Replay validated
-                | Some _ -> IdentityDecision.Refuse Refusal.IdempotencyConflict
+                | None -> Decision.Refuse Refusal.ResourceUnavailable
+                | Some accepted when accepted = bytes ->
+                    receipt validated
+                    |> Result.map Decision.Replay
+                    |> Result.defaultWith Decision.Fail
+                | Some _ -> Decision.Refuse Refusal.IdempotencyConflict

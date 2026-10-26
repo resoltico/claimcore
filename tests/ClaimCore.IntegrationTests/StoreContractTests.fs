@@ -69,8 +69,7 @@ let private genesis fixture =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Appended receipt) ->
-            Expect.equal receipt.Position.Sequence 1L "First sequence"
+        | Ok(Decision.Proceed receipt) -> Expect.equal receipt.Position.Sequence 1L "First sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -196,7 +195,7 @@ let private lockedView fixture =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Replayed receipt) -> Expect.equal receipt first "Locked replay"
+        | Ok(Decision.Replay receipt) -> Expect.equal receipt first "Locked replay"
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
@@ -834,7 +833,7 @@ let private ledgerHead fixture =
 
         let decide (view: AuthorityLockedView) =
             loaded <- Some view.Head
-            LedgerDecision.Refuse Refusal.ResourceUnavailable
+            Decision.Refuse Refusal.ResourceUnavailable
 
         let! result =
             fixture.Store.WriteAuthority(
@@ -848,7 +847,7 @@ let private ledgerHead fixture =
 
         Expect.equal
             result
-            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
+            (Ok(Decision.Refuse Refusal.ResourceUnavailable))
             "The head probe appends nothing."
 
         return loaded |> Option.get

@@ -80,20 +80,6 @@ type internal EntryDraft =
         Payload: byte array
     }
 
-[<RequireQualifiedAccess>]
-type internal LedgerDecision<'projection> =
-    | Append of EntryDraft * 'projection * OperationReceipt
-    | Replay of OperationReceipt
-    | Refuse of Refusal
-    | Fail of CoreFault
-
-[<RequireQualifiedAccess>]
-type internal LedgerWriteResult =
-    | Appended of OperationReceipt
-    | Replayed of OperationReceipt
-    | Refused of Refusal
-    | Failed of CoreFault
-
 type internal AuthorityReadView =
     {
         ObservedAt: DateTimeOffset
@@ -202,18 +188,19 @@ type internal ILedgerStore =
         principal: PrincipalKey *
         operationId: Guid *
         caseReference: string *
-        decide: (CaseLockedView -> LedgerDecision<CaseProjection>) *
+        decide: (CaseLockedView -> Decision<EntryDraft * CaseProjection * OperationReceipt>) *
         cancellationToken: CancellationToken ->
-            Task<Result<LedgerWriteResult, StoreFailure>>
+            Task<Result<Decision<OperationReceipt>, StoreFailure>>
 
     abstract WriteAuthority:
         principal: PrincipalKey *
         operationId: Guid *
         target: PrincipalKey *
         targetCaseReference: string option *
-        decide: (AuthorityLockedView -> LedgerDecision<AuthorityProjection>) *
+        decide:
+            (AuthorityLockedView -> Decision<EntryDraft * AuthorityProjection * OperationReceipt>) *
         cancellationToken: CancellationToken ->
-            Task<Result<LedgerWriteResult, StoreFailure>>
+            Task<Result<Decision<OperationReceipt>, StoreFailure>>
 
     abstract ReadAuthorityTarget:
         principal: PrincipalKey *

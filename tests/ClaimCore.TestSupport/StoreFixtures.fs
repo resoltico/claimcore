@@ -100,7 +100,7 @@ let internal bootstrap fixture =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Appended _) -> ()
+        | Ok(Decision.Proceed _) -> ()
         | _ -> failtest "Initial owner must be accepted."
 
         return core fixture fixture.Owner

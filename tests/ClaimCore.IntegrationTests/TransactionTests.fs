@@ -89,7 +89,7 @@ let private waiter (database: PostgresFixture.Database) settings =
             database.Fixture.Owner,
             id 20,
             "synthetic-timeout",
-            (fun _ -> LedgerDecision.Refuse Refusal.ResourceUnavailable),
+            (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
             token
         )
 
@@ -212,7 +212,7 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(LedgerWriteResult.Refused Refusal.ResourceUnavailable))
+                            (Ok(Decision.Refuse Refusal.ResourceUnavailable))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token

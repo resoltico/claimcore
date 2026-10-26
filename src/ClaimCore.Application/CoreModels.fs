@@ -34,3 +34,21 @@ type AdmittedAuthorityRequest =
         Target: PrincipalKey
         Act: AdmittedAuthorityAct
     }
+
+[<RequireQualifiedAccess; NoComparison>]
+type internal Decision<'proceed> =
+    | Proceed of 'proceed
+    | Replay of OperationReceipt
+    | Refuse of Refusal
+    | Fail of CoreFault
+
+module internal Decision =
+    let bind next =
+        function
+        | Decision.Proceed value -> next value
+        | Decision.Replay receipt -> Decision.Replay receipt
+        | Decision.Refuse refusal -> Decision.Refuse refusal
+        | Decision.Fail fault -> Decision.Fail fault
+
+    let map mapping value =
+        bind (mapping >> Decision.Proceed) value

@@ -199,7 +199,7 @@ let private timeout (database: PostgresFixture.Database) =
                 database.Fixture.Owner,
                 id 999999,
                 "synthetic-growth-timeout",
-                (fun _ -> LedgerDecision.Refuse Refusal.ResourceUnavailable),
+                (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
                 token
             )
 

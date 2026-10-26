@@ -10,7 +10,8 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 // This port probe never evaluates a decision or stores accepted state.
-type private PortProbe(write: CancellationToken -> Task<Result<LedgerWriteResult, StoreFailure>>) =
+type private PortProbe
+    (write: CancellationToken -> Task<Result<Decision<OperationReceipt>, StoreFailure>>) =
     let mutable calls = 0
     member _.Calls = calls
 
@@ -189,7 +190,7 @@ let private committed () =
                             request
                             (authorityView worker AuthorityView.empty None)
                     with
-                    | LedgerDecision.Append(_, _, receipt) -> receipt
+                    | Decision.Proceed(_, _, receipt) -> receipt
                     | _ -> failtest "Expected accepted authority fixture"
 
             use cancellation = new CancellationTokenSource()
@@ -197,7 +198,7 @@ let private committed () =
             let probe =
                 PortProbe(fun _ ->
                     cancellation.Cancel()
-                    Task.FromResult(Ok(LedgerWriteResult.Appended receipt)))
+                    Task.FromResult(Ok(Decision.Proceed receipt)))
 
             let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 

@@ -96,7 +96,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
-        LedgerDecision.Append(entry, CaseProjection.Insert(id, snapshot), receipt)
+        Decision.Proceed(entry, CaseProjection.Insert(id, snapshot), receipt)
 
     task {
         let! result =
@@ -109,7 +109,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             )
 
         match result with
-        | Ok(LedgerWriteResult.Appended _) -> ()
+        | Ok(Decision.Proceed _) -> ()
         | _ -> failtest "Historical fixture append failed"
     }
 

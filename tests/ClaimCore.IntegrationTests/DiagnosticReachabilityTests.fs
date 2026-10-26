@@ -488,7 +488,7 @@ let private boundaryEvidence () =
                     request
                     view
             with
-            | LedgerDecision.Refuse reason -> reason
+            | Decision.Refuse reason -> reason
             | _ -> failtest "Expected boundary refusal"
 
         let revision =

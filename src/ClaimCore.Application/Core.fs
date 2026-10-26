@@ -10,10 +10,10 @@ open ClaimCore.Domain
 module internal Core =
     let private mutationResult =
         function
-        | LedgerWriteResult.Refused error -> ExecuteResult.Rejected error
-        | LedgerWriteResult.Failed fault -> ExecuteResult.Failed fault
-        | LedgerWriteResult.Appended receipt -> ExecuteResult.Accepted receipt
-        | LedgerWriteResult.Replayed receipt -> ExecuteResult.AlreadyAccepted receipt
+        | Decision.Refuse error -> ExecuteResult.Rejected error
+        | Decision.Fail fault -> ExecuteResult.Failed fault
+        | Decision.Proceed receipt -> ExecuteResult.Accepted receipt
+        | Decision.Replay receipt -> ExecuteResult.AlreadyAccepted receipt
 
     let private mutationFailure =
         function
@@ -32,7 +32,7 @@ module internal Core =
     let private write
         (ct: CancellationToken)
         admit
-        (persist: 'request -> Task<Result<LedgerWriteResult, StoreFailure>>)
+        (persist: 'request -> Task<Result<Decision<OperationReceipt>, StoreFailure>>)
         =
         task {
             if ct.IsCancellationRequested then
@@ -136,12 +136,10 @@ module internal Core =
                     | Error failure -> return PreviewResult.Failed(Queries.fault failure)
                     | Ok view ->
                         match decide request view with
-                        | LedgerReviewDecision.Refuse refusal ->
-                            return PreviewResult.Rejected refusal
-                        | LedgerReviewDecision.Fail fault -> return PreviewResult.Failed fault
-                        | LedgerReviewDecision.Replay receipt ->
-                            return PreviewResult.AlreadyAccepted receipt
-                        | LedgerReviewDecision.Proposed proposal ->
+                        | Decision.Refuse refusal -> return PreviewResult.Rejected refusal
+                        | Decision.Fail fault -> return PreviewResult.Failed fault
+                        | Decision.Replay receipt -> return PreviewResult.AlreadyAccepted receipt
+                        | Decision.Proceed proposal ->
                             return PreviewResult.Reviewed(render request view proposal)
         }
 

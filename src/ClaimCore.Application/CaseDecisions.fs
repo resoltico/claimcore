@@ -49,7 +49,7 @@ module internal CaseDecisions =
 
     let private admission installationId principal request bytes (view: CaseReadView) =
         match permission principal view.Actor request view.Case with
-        | Error refusal -> IdentityDecision.Refuse refusal
+        | Error refusal -> Decision.Refuse refusal
         | Ok() ->
             OperationIdentity.decide
                 installationId
@@ -58,6 +58,7 @@ module internal CaseDecisions =
                 request.OperationId
                 bytes
                 view.ExistingOperation
+                (LedgerEntries.receipt principal view.Actor view.Case)
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
         let before =
@@ -66,11 +67,11 @@ module internal CaseDecisions =
             | Some record -> current installationId record |> Result.map Some
 
         match before with
-        | Error fault -> LedgerReviewDecision.Fail fault
+        | Error fault -> Decision.Fail fault
         | Ok before ->
             match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> LedgerReviewDecision.Refuse(refusal)
-            | Ok after -> LedgerReviewDecision.Proposed(before, after)
+            | Error refusal -> Decision.Refuse(refusal)
+            | Ok after -> Decision.Proceed(before, after)
 
     let private project
         installationId
