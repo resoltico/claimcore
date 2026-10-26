@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Json
 
 open System
 open System.Globalization
@@ -200,9 +200,6 @@ module Codec =
             Definitions = Map.empty
         }
 
-    [<Literal>]
-    let private InstantFormat = Formats.InstantFormat
-
     /// RFC 3339 UTC with exactly six fractional digits, matching ledger precision.
     let instant: Codec<DateTimeOffset> =
         {
@@ -214,13 +211,14 @@ module Codec =
                         match
                             DateTimeOffset.TryParseExact(
                                 raw,
-                                InstantFormat,
+                                JsonFormats.InstantFormat,
                                 CultureInfo.InvariantCulture,
                                 DateTimeStyles.AssumeUniversal ||| DateTimeStyles.AdjustToUniversal
                             )
                         with
                         | true, value when
-                            value.ToString(InstantFormat, CultureInfo.InvariantCulture) = raw
+                            value.ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture) =
+                                raw
                             ->
                             Ok value
                         | _ ->
@@ -233,7 +231,7 @@ module Codec =
                     JsonValue.String(
                         value
                             .ToUniversalTime()
-                            .ToString(InstantFormat, CultureInfo.InvariantCulture)
+                            .ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture)
                     )
             Schema =
                 Schema.String(
@@ -263,9 +261,6 @@ module Codec =
             Schema = Schema.OneOf(cases |> List.map (snd >> Schema.Const), None)
             Definitions = Map.empty
         }
-
-    /// A finite vocabulary owns its spelling, ordering and complete union coverage.
-    let vocabulary values = enumeration (Vocabulary.entries values)
 
     let nullable (codec: Codec<'T>) : Codec<'T option> =
         {

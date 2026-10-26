@@ -4,6 +4,7 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 [<NoComparison>]

@@ -8,6 +8,7 @@ open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 
 let private copySourceFile (root: string) directory relative =
     let target = Path.Combine(directory, relative)

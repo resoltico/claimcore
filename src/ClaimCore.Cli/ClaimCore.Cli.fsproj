@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CliIdentity.fs" />

@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open System.Text
 open System.Text.Json
 open ClaimCore.Contract
+open ClaimCore.Json
 
 module Discovery =
     let versionJson () =

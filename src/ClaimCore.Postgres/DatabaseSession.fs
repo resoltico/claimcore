@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Globalization
@@ -97,7 +98,7 @@ module internal DatabaseSession =
 
     let recordedInstant index row =
         let text = value<string> index row
-        let format = Formats.InstantFormat + " 'AD'"
+        let format = JsonFormats.InstantFormat + " 'AD'"
 
         match
             DateTimeOffset.TryParseExact(

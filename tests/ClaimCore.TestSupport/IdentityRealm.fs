@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.IdentityRealm
 
+open ClaimCore.Json
+
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes

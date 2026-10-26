@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 open System

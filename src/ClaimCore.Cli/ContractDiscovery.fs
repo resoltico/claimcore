@@ -6,6 +6,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 /// Offline discovery consumes the same tracked resources published for HTTPS clients.

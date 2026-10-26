@@ -6,6 +6,7 @@ open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let private codec = Api.caseHistory.Output

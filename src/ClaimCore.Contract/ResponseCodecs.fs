@@ -1,6 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open System
 open System.Globalization
 
@@ -112,8 +113,8 @@ module ResponseCodecs =
         |> build
         |> named "CaseSnapshot"
 
-    let private correctionAction = vocabulary CorrectionActions.vocabulary
-    let private historyDetail = vocabulary HistoryDetails.vocabulary
+    let private correctionAction = VocabularyCodec.create CorrectionActions.vocabulary
+    let private historyDetail = VocabularyCodec.create HistoryDetails.vocabulary
 
     let private authorityKind =
         Vocabulary.entries AuthorityKinds.vocabulary
@@ -281,7 +282,7 @@ module ResponseCodecs =
                 (enumeration (
                     Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
                 )))
-        |> field "views" _.Views (list 3 (vocabulary Views.vocabulary))
+        |> field "views" _.Views (list 3 (VocabularyCodec.create Views.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"

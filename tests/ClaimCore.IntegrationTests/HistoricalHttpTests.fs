@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System.Text
 open System.Text.Json

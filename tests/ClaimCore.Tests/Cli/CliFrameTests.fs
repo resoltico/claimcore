@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliFrameTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO

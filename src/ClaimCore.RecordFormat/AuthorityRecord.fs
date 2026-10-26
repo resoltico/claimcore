@@ -2,6 +2,7 @@ namespace ClaimCore.RecordFormat
 
 open System
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Domain
 
 type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct

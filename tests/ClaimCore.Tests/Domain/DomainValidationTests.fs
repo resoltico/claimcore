@@ -1,6 +1,7 @@
 module ClaimCore.Tests.DomainValidationTests
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open Expecto
 open ClaimCore.Domain

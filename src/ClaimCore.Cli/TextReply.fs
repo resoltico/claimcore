@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Text
 open ClaimCore.Contract
+open ClaimCore.Json
 
 /// Human output is a rendering of admitted replies, never an input or policy mechanism.
 module internal TextReply =

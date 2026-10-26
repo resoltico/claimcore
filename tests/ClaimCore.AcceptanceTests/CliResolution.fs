@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliResolution
 
+open ClaimCore.Json
+
 open System
 open System.IO
 open System.Text

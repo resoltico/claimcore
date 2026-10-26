@@ -3,6 +3,7 @@ module ClaimCore.Tests.ContractTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Text

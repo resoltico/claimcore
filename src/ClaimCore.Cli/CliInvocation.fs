@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 [<RequireQualifiedAccess>]

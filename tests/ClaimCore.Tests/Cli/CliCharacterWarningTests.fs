@@ -6,6 +6,7 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Cli
 
 let private warningCases =

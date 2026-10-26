@@ -10,6 +10,7 @@ open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.Web.Composition
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures

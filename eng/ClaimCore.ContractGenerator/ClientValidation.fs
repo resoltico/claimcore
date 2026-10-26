@@ -2,6 +2,7 @@ namespace ClaimCore.ContractGeneration
 
 open System.Text.Json
 open ClaimCore.Contract
+open ClaimCore.Json
 
 /// Emits specialized checks for the finite codec vocabulary; no runtime schema interpretation.
 module ClientValidation =

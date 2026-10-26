@@ -3,6 +3,7 @@ module ClaimCore.Tests.CaseDecisionTests
 open System
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat

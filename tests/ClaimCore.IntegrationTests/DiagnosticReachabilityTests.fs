@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.Threading

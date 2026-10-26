@@ -3,6 +3,7 @@ module ClaimCore.Tests.WireResponseTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 open System
 open System.IO
@@ -38,7 +39,7 @@ let private examples () =
 
         let encoded =
             endpoint.Accept
-                { new IEndpointVisitor<Result<ClaimCore.Contract.JsonValue, Problem>> with
+                { new IEndpointVisitor<Result<ClaimCore.Json.JsonValue, Problem>> with
                     member _.Visit endpoint =
                         endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
                 }

@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Json
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.ContractGeneration
 open ClaimCore.TestSupport
 

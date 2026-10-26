@@ -6,6 +6,7 @@ open System.Security.Cryptography
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.ContractGeneration
 
 let private bytes (value: string) = Encoding.UTF8.GetBytes value

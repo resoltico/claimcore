@@ -3,6 +3,7 @@ namespace ClaimCore.ContractGeneration
 open System.Text
 open System.Text.Json
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 /// Types and runtime argument metadata are projections of admitted templates.

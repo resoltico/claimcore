@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Json
 
 open System
 open System.Globalization

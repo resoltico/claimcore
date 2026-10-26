@@ -6,6 +6,7 @@ open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let private document () =
@@ -89,9 +90,9 @@ let private phases () =
         for phase in
             [ None; Some ExecutionPhase.NotStarted; Some ExecutionPhase.StartedUnconfirmed ] do
             let value =
-                ClaimCore.Contract.JsonValue.Object
+                ClaimCore.Json.JsonValue.Object
                     [
-                        "code", ClaimCore.Contract.JsonValue.String code
+                        "code", ClaimCore.Json.JsonValue.String code
                         "phase",
                         (Codec.nullable (Codec.enumeration DeliveryTokens.phases)).Write phase
                     ]
@@ -115,12 +116,12 @@ let private phases () =
 
 let rec private prose path =
     function
-    | ClaimCore.Contract.JsonValue.Object fields ->
+    | ClaimCore.Json.JsonValue.Object fields ->
         fields
         |> List.collect (fun (key, value) ->
             (if key = "description" then [ path, value ] else [])
             @ prose (path @ [ key ]) value)
-    | ClaimCore.Contract.JsonValue.Array values -> values |> List.collect (prose path)
+    | ClaimCore.Json.JsonValue.Array values -> values |> List.collect (prose path)
     | _ -> []
 
 let private fixedDescriptions () =
@@ -142,7 +143,7 @@ let private responseLabels () =
 
     for path, value in descriptions do
         match List.rev path, value with
-        | _ :: "responses" :: _, ClaimCore.Contract.JsonValue.String text ->
+        | _ :: "responses" :: _, ClaimCore.Json.JsonValue.String text ->
             Expect.isTrue
                 (System.Text.RegularExpressions.Regex.IsMatch(text, "^HTTP [1-5][0-9]{2}$"))
                 "Descriptions contain only a fixed status label"

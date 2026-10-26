@@ -28,9 +28,6 @@ module Formats =
     [<Literal>]
     let CalendarDateFormat = "yyyy-MM-dd"
 
-    [<Literal>]
-    let InstantFormat = "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'"
-
     let private digits (value: int) =
         value.ToString(CultureInfo.InvariantCulture)
 

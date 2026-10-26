@@ -4,6 +4,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 [<NoEquality; NoComparison>]

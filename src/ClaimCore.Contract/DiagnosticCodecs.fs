@@ -1,6 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 module DiagnosticCodecs =
     open Codec

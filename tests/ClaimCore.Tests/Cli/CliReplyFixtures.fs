@@ -2,6 +2,7 @@ module ClaimCore.Tests.CliReplyFixtures
 
 open System
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let id = Guid.Parse "10000000-0000-4000-8000-000000000001"

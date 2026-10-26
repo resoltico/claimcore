@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliDisclosure
 
+open ClaimCore.Json
+
 open System
 open System.IO
 open System.Text

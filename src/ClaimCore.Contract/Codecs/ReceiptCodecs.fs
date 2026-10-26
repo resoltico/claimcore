@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open ClaimCore.Contract.Protocol
 
 module ReceiptCodecs =

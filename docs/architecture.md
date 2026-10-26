@@ -9,18 +9,19 @@ Postgres loads the authoritative view and persists the result. One database owns
 
 | Project | Owns | Direct project dependencies |
 | --- | --- | --- |
-| Contract | Public models, vocabulary, formats, codecs, registry, fields, operation catalog and messages | None |
-| Domain | Validated case state, admission and transitions | Contract |
-| RecordFormat | Versioned durable encodings | Domain, Contract |
-| Application | Authorization, decisions, query selection and verification folds | Domain, RecordFormat, Contract |
-| Postgres | Transactions, reads, projections and schema administration | Application, Domain, RecordFormat, Contract |
-| HostSecurity | Managed private-file admission and TLS purposes | None |
-| Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, HostSecurity |
-| CLI | HTTPS client, command grammar and frames | Contract, HostSecurity |
+| Json | Domain-free JSON values, strict admission, writers, codecs and schemas | None |
+| Contract | Public models, vocabulary, formats, codecs, registry, fields, operation catalog and messages | Json |
+| Domain | Validated case state, admission and transitions | Contract, Json |
+| RecordFormat | Versioned durable encodings | Domain, Contract, Json |
+| Application | Authorization, decisions, query selection and verification folds | Domain, RecordFormat, Contract, Json |
+| Postgres | Transactions, reads, projections and schema administration | Application, Domain, RecordFormat, Contract, Json |
+| HostSecurity | Managed private-file admission, HTTPS origins and TLS purposes | None |
+| Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, HostSecurity, Json |
+| CLI | HTTPS client, command grammar and frames | Contract, HostSecurity, Json |
 | Database | Owner administration | Application, Postgres, Contract, HostSecurity |
 
 The [compiled architecture tests](../tests/ClaimCore.Tests/Architecture/) check the evaluated project graph
-and forbidden dependencies, including I/O, clocks and randomness in the four pure projects. Rejecting fixture
+and forbidden dependencies, including I/O, clocks and randomness in the pure projects. Rejecting fixture
 assemblies exercise those guards. The published CLI closure cannot contain server decision or persistence
 assemblies. Pure code receives time, authority and state explicitly.
 

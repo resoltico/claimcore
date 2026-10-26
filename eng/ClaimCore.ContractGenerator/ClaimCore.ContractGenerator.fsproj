@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
     <Compile Include="CatalogRendering.fs" />

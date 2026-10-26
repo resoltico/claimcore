@@ -1,6 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 
 module RequestCodecs =
@@ -372,7 +373,7 @@ module RequestCodecs =
             })
         : Fields<HistoryRequest, _>)
         |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
-        |> field "detail" _.Detail (vocabulary HistoryDetails.vocabulary)
+        |> field "detail" _.Detail (VocabularyCodec.create HistoryDetails.vocabulary)
         |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
         |> field "limit" _.Limit (integer 1L (int64 Limits.MaximumPageSize) |> map int int64)
         |> build

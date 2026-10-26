@@ -9,6 +9,7 @@ open Expecto
 open Microsoft.OpenApi
 open global.Json.Schema
 open ClaimCore.Contract
+open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 

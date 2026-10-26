@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Contract
+open ClaimCore.Json
 
 module ContractArtifacts =
     let all () =

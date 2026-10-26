@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Json
+
 open System
 open System.Globalization
 open ClaimCore.Contract.Protocol
@@ -11,13 +13,13 @@ module CatalogCodecs =
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
     let private many codec = list Int32.MaxValue codec
 
-    let private fieldName = vocabulary FieldTable.vocabulary
+    let private fieldName = VocabularyCodec.create FieldTable.vocabulary
 
-    let private inputTarget = vocabulary InputTargets.vocabulary
+    let private inputTarget = VocabularyCodec.create InputTargets.vocabulary
 
-    let private caseStatus = vocabulary CaseStatuses.vocabulary
+    let private caseStatus = VocabularyCodec.create CaseStatuses.vocabulary
 
-    let private caseKind = vocabulary CaseActKinds.vocabulary
+    let private caseKind = VocabularyCodec.create CaseActKinds.vocabulary
 
     let private authorityKind =
         AuthorityKinds.all
@@ -25,9 +27,9 @@ module CatalogCodecs =
         |> List.map (fun value -> value, AuthorityKinds.token value)
         |> enumeration
 
-    let private role = vocabulary RoleTokens.vocabulary
+    let private role = VocabularyCodec.create RoleTokens.vocabulary
 
-    let private capability = vocabulary Capabilities.vocabulary
+    let private capability = VocabularyCodec.create Capabilities.vocabulary
 
     let private date =
         ResponseScalars.date
@@ -273,7 +275,7 @@ module CatalogCodecs =
                 AuthorityInputPrimitive.Scope, "SCOPE"
                 AuthorityInputPrimitive.Boolean, "BOOLEAN"
             ]
-        |> vocabulary
+        |> VocabularyCodec.create
 
     let private authorityInput =
         (record (fun v0 v1 v2 ->
@@ -506,7 +508,7 @@ module CatalogCodecs =
                 InputSource.OperationIdentity, "OPERATION_IDENTITY"
                 InputSource.ExpectedRevision, "EXPECTED_REVISION"
             ]
-        |> vocabulary
+        |> VocabularyCodec.create
 
     let private binding =
         record
