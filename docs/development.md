@@ -79,8 +79,8 @@ installations or prune unrelated containers/volumes.
 ## Disk use and retained evidence
 
 [Native report retention](../eng/native-reports.sh) protects active runs and bounds retained completed
-managed reports. Old unmanaged directories are untouched; review them separately before owner cleanup.
-This policy bounds new report retention, not total artifacts or cache use.
+managed reports. Unmanaged directories are untouched; review them separately before owner cleanup.
+This policy bounds managed report retention, not total artifacts or cache use.
 
 NuGet/npm caches retain downloads keyed by lockfiles; locked restore/npm ci/audit still run. SDK-free frontend
 and acceptance share the same exact npm download key, without broad fallbacks. Build outputs, node_modules,
@@ -166,8 +166,8 @@ the directory-writer/FIFO race; Windows refuses private inputs.
 Public releases distribute tagged source archives through [GitHub Releases](https://github.com/resoltico/claimcore/releases).
 They contain no installable application packages. Build and publication instructions above apply to that source.
 
-Keep pending release notes in [CHANGELOG.md](../CHANGELOG.md), covering the complete delivered change since the
-preceding published normal release. Version, date and tag assignment belong to the owner's release step.
+Prepare pending release summaries under the policy in [CHANGELOG.md](../CHANGELOG.md).
+Version, date and tag assignment require the owner's release authorization.
 The release commit must agree across [Directory.Build.props](../Directory.Build.props), the dated changelog
 heading and the annotated version tag. Complete the required verification and separate growth qualification
 for the release candidate before publishing.

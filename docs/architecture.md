@@ -27,7 +27,7 @@ assemblies. Pure code receives time, authority and state explicitly.
 
 The [generator](../eng/ClaimCore.ContractGenerator/) serializes Contract's typed operation catalog and
 produces OpenAPI, TypeScript admission and [message contracts](../contracts/messages.ts). It also writes the
-[CLI reference](cli.md). CLI syntax and browser paths come from the same catalog tree; current core advice
+[CLI reference](cli.md). CLI syntax and browser paths come from the same derived catalog entries; current core advice
 limits offered work. Neither adapter owns another business policy.
 
 #### Durable records
@@ -64,8 +64,8 @@ without establishing freshness or operator approval.
 
 [AuthorizationPolicy](../src/ClaimCore.Application/AuthorizationPolicy.fs) owns roles and capabilities.
 Grants default-deny at installation or case scope. IdP membership and database roles convey no case rights.
-OWNER administers authority; case work needs separate grants. Roles granting a human-only capability require a human principal. At least one enabled human installation
-owner must remain.
+OWNER administers authority; case work needs separate grants. Roles granting a human-only capability require
+a human principal. At least one enabled human installation owner must remain.
 
 Authorization precedes operation replay/conflict disclosure. Absent and inaccessible resources share a
 refusal. Current snapshots require case read; superseded snapshots require full history. Receipts report

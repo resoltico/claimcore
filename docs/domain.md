@@ -43,7 +43,8 @@ needs no decision or payment. Use `claimcore describe` for current inputs and co
 - DECIDE and WITHDRAW_DECISION record or remove an unpaid decision. RECORD_PAYMENT and CLEAR_PAYMENT record
   or remove its payment date. Clearing recorded facts does not reverse a real transfer.
 - CLOSE and REOPEN change status. Ordinary editing of a closed case requires reopening.
-- CORRECT changes existing facts atomically while preserving reference and status, including on a closed case.
+- CORRECT changes existing facts atomically while preserving reference and status. An open case needs an
+  existing decision; a closed case permits correction independently of payment progress.
 
 Before ordinary registration editing, clear payment and withdraw the decision. A correction instead supplies
 all three tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
@@ -62,9 +63,11 @@ revision; an offered act or preview grants no commit authority.
 
 ### CC-LIFE-001 — Case stewardship
 
-Disposition is independent of status and payment. VOID records an entry-error reason and blocks business work
-while preserving history. REINSTATE records a reason and restores ordinary work on a voided case. Both leave
-business fields unchanged. Reasons use the same current text admission profile as names.
+Lifecycle state is ACTIVE, VOIDED or ERASED. Active and voided cases retain separate open/closed status
+and payment progress; erased cases carry no business fields.
+VOID records an entry-error reason and blocks business work while preserving fields and history.
+REINSTATE records a reason and restores ACTIVE state on a voided case. Both leave business fields unchanged.
+Reasons use the same current text admission profile as names.
 
 A human DATA_STEWARD may void, reinstate or erase; CASE_HANDLER alone cannot. Each acceptance advances one
 revision. ERASE clears the case's business projection and complete live payload history, retaining reference,

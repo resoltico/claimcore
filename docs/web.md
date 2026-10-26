@@ -11,8 +11,7 @@ the browser.
 ## Review and record a change
 
 Forms take fields, prefill paths and tagged branches from the generated catalog, localized text from the
-generated message contract, and
-permitted work from core advice. Review shows a proposal; confirmation sends a frozen request with its exact
+generated core and browser catalogs, and permitted work from core advice. Review shows a proposal; confirmation sends a frozen request with its exact
 operation ID and expected revision. Execution rechecks current authority and state.
 
 An uncertain submit offers **Send again** and **Check outcome**. Send again uses the exact frozen bytes.
@@ -26,13 +25,13 @@ data in the new context. Authority refusal invalidates context, offers and actor
 Revalidation failures wait for explicit reload; page cursor errors reset their local page. Selected-actor grant
 pages carry that response's target header. Prepared authority requests survive read-view remounts.
 
-Current, voided and erased records remain distinct, as do DISCLOSED, WITHHELD and ERASED receipt snapshots.
+ACTIVE, VOIDED and ERASED case states remain distinct, as do DISCLOSED, WITHHELD and ERASED receipt snapshots.
 Erasure review explains copies and backups outside live erasure. Observation finds accepted metadata but cannot
 establish that uncertain submitted content matched it.
 
 ## Language, display and navigation
 
-English, Latvian and Arabic use the same source catalogs and Template grammar checks. Latvian/Arabic text still needs native
+English, Latvian and Arabic use shared core and browser-owned source catalogs with one Template grammar. Latvian/Arabic text needs native
 review. RTL layout, display-format preferences, country hints and suspicious-Unicode warnings preserve raw
 business strings. Navigation focuses destination headings; background reads leave focus in place. Read failures
 offer an explicit reload, and views default-deny before context succeeds. Human assistive-technology review
@@ -61,5 +60,5 @@ probe links request abort, shutdown and a two-second cancellation deadline throu
 remains held until cleanup finishes; the deadline is not a hard response-time guarantee. Liveness remains
 independent. Readiness establishes installation/schema access, without proving freshness or case outcomes.
 
-See [Web composition](../src/ClaimCore.Web/Composition/) for dispatch and [browser source](../web/README.md)
+See [Web composition](../src/ClaimCore.Web/Composition/) for handler mounting and [browser source](../web/README.md)
 for the transport/form modules. [API](api.md) owns byte admission, correlation and delivery semantics.

@@ -10,7 +10,8 @@ the catalog entries, and `claimcore schema ENDPOINT request|response` shows a wi
 An operation's **subject** is CASE or AUTHORITY. A grant's **scope** is installation or case reach.
 Every tagged union uses **kind**. A case's **state** is ACTIVE, VOIDED or ERASED; active and voided
 states carry fields, while erased states carry no payload. A **record group** is registration,
-decision or payment. Identity (`caseReference`, `revision`) sits outside the state payload.
+decision or payment. Case views and summaries retain top-level `caseReference` and `revision` even when erased.
+Full views carry business values in `state.fields`; summaries carry only `state.status` for active or voided cases.
 The [case guide](domain.md) explains the business meaning.
 
 ## HTTPS requests and replies
@@ -52,8 +53,9 @@ Contract identity is SHA-256 of canonical derived OpenAPI. It identifies wire st
 changes leave it unchanged. The tracked contract artifacts are [openapi.json](../contracts/openapi.json),
 [client.ts](../contracts/client.ts), [catalog.json](../contracts/catalog.json) and
 [messages.ts](../contracts/messages.ts). The same generator
-also owns [the CLI reference](cli.md). Catalog bodies define operations once; paths, branches, flags and
-synopses are derived from them.
+also owns [the CLI reference](cli.md). Endpoint input codecs define request structure; the catalog derives
+paths and tagged branches from those schemas. Typed annotations supply operands, defaults, switches and
+prefill details, from which CLI flags and synopses are derived.
 [Development](development.md#generated-contracts-and-boundary-verification) explains regeneration and checks.
 
 Pagination independently authorizes each page. Follow non-null nextCursor even after a short page; null ends

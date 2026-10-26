@@ -10,7 +10,7 @@ no database access. [Browser and host](../docs/web.md) explains review, consent 
 - [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
 - [operation/operationForm.ts](src/operation/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed catalog bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE and AUTHORITY.
 - [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available acts and outcome meaning.
-- [presentation](src/presentation/) renders authored [source catalogs](../src/ClaimCore.Contract/Localization/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. While unresolved, sessionStorage holds only the operation ID, scope and act; reload offers Check outcome without retained request bytes.
+- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Contract/Localization/) and browser-owned [chrome catalogs](locales/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. While unresolved, sessionStorage holds only the operation ID, subject and act; reload offers Check outcome without retained request bytes.
 
 ## Build locally
 
@@ -21,6 +21,6 @@ npm --prefix web ci
 npm --prefix web run build
 ```
 
-`build` typechecks, produces `dist` and generates notices from the locked production graph. Pseudolocalization runs at runtime. The F# generator owns the four tracked [contract outputs](../contracts/) and [CLI reference](../docs/cli.md); web commands consume them without invoking .NET. Ordinary .NET builds do not run npm.
+`build` typechecks, produces `dist` and generates notices from the locked production graph. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
 
 [Development](../docs/development.md#verification-stages) owns the frontend stage and real-browser qualification, including complete three-engine PR qualification, isolated engine jobs and serial workers within each stateful fixture. Formatting, type-aware lint, module boundaries, unit completion, audit, licenses, Knip and notices are checked. Coverage is optional; CSS is checked through formatting and browser layout/accessibility, without a separate semantic linter.
