@@ -100,6 +100,16 @@ module CliInvocations =
         | [ "--json" ] -> Ok(CliInvocation.Version true)
         | _ -> Error CliUsageIssue.Invocation
 
+    let private admitSchema arguments =
+        if
+            arguments
+            |> List.exists (fun (item: string) ->
+                item.StartsWith("-", System.StringComparison.Ordinal))
+        then
+            Error CliUsageIssue.Options
+        else
+            schemaSelector arguments |> Result.map CliInvocation.Schema
+
     let admit arguments =
         match arguments with
         | [] -> help "overview" "en"
@@ -110,15 +120,7 @@ module CliInvocations =
         | "version" :: tail -> admitVersion tail
         | "help" :: tail -> admitHelp tail
         | "describe" :: tail -> admitDescribe tail
-        | "schema" :: tail when
-            not (
-                List.exists
-                    (fun (item: string) -> item.StartsWith("-", System.StringComparison.Ordinal))
-                    tail
-            )
-            ->
-            schemaSelector tail |> Result.map CliInvocation.Schema
-        | "schema" :: _ -> Error CliUsageIssue.Options
+        | "schema" :: tail -> admitSchema tail
         | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
             Ok(CliInvocation.Verb arguments)
         | head :: _ when List.contains head CliCommands.acts -> Error CliUsageIssue.Invocation
