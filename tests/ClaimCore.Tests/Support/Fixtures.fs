@@ -26,12 +26,12 @@ let decision =
         PayableCurrency = "EUR"
     }
 
-let request revision command =
+let request revision act =
     {
         OperationId = Guid.Parse("20000000-0000-4000-8000-000000000001")
         CaseReference = "UNIT-001"
         ExpectedRevision = revision
-        Act = command
+        Act = act
     }
 
 let accepted result =
@@ -42,8 +42,8 @@ let accepted result =
 let opened () =
     Case.decide today (request 0L (CaseAct.Open registration)) None |> accepted
 
-let apply command claim =
-    Case.decide today (request (Case.snapshot claim).Revision command) (Some claim)
+let apply act claim =
+    Case.decide today (request (Case.snapshot claim).Revision act) (Some claim)
 
 let decided () =
     opened () |> apply (CaseAct.Decide decision) |> accepted

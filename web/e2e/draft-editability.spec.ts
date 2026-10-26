@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { openCase, reviewDraft, startCommand, startOpen } from "./case-workflow";
+import { openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
 test("protects exact amendment edits on action change and Back while untouched drafts leave directly", async ({
@@ -8,7 +8,7 @@ test("protects exact amendment edits on action change and Back while untouched d
 }) => {
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
-  await startCommand(page, "Amend registration");
+  await startAct(page, "Amend registration");
   await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("CLOSE");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -30,7 +30,7 @@ test("protects exact amendment edits on action change and Back while untouched d
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
     "1,200.5",
   );
-  await startCommand(page, "Amend registration");
+  await startAct(page, "Amend registration");
   await page.getByRole("button", { name: "Back to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 });

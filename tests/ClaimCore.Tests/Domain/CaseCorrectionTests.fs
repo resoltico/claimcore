@@ -26,7 +26,7 @@ let private paidCorrectionTests =
             testCase "paid corrections replace related facts in one complete revision" (fun () ->
                 let before = paid ()
 
-                let command =
+                let act =
                     correct
                         (RegistrationGroup.Replace changedRegistration)
                         (DecisionGroup.Replace
@@ -35,7 +35,7 @@ let private paidCorrectionTests =
                             })
                         (PaymentGroup.Replace { PaymentDate = "2026-08-21" })
 
-                let after = before |> apply command |> accepted |> Case.snapshot
+                let after = before |> apply act |> accepted |> Case.snapshot
 
                 Expect.equal after.Revision ((Case.snapshot before).Revision + 1L) "One revision"
                 Expect.equal (viewFields after).Status CaseStatus.Opened "Status is retained"
@@ -58,21 +58,19 @@ let private paidCorrectionTests =
             testCase "paid decision replacement requires explicit payment action" (fun () ->
                 let before = paid ()
 
-                let command =
+                let act =
                     correct
                         RegistrationGroup.Keep
                         (DecisionGroup.Replace { decision with PayableAmount = "650" })
                         PaymentGroup.Keep
 
-                Expect.isError (before |> apply command) "Paid decision is not silently reused")
+                Expect.isError (before |> apply act) "Paid decision is not silently reused")
             testCase "clearing a paid decision requires clearing its payment record" (fun () ->
                 let before = paid ()
 
-                let command = correct RegistrationGroup.Keep DecisionGroup.Clear PaymentGroup.Keep
+                let act = correct RegistrationGroup.Keep DecisionGroup.Clear PaymentGroup.Keep
 
-                Expect.isError
-                    (before |> apply command)
-                    "Payment cannot outlive a cleared decision")
+                Expect.isError (before |> apply act) "Payment cannot outlive a cleared decision")
         ]
 
 let private closedCorrectionTests =
@@ -136,18 +134,18 @@ let private validationTests =
         "correction validation"
         [
             testCase "correction cannot add a decision to an undecided case" (fun () ->
-                let command =
+                let act =
                     correct
                         (RegistrationGroup.Replace changedRegistration)
                         (DecisionGroup.Replace decision)
                         PaymentGroup.Keep
 
                 Expect.equal
-                    (opened () |> apply command)
+                    (opened () |> apply act)
                     (Error Refusal.CorrectionRequiresExistingValue)
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
-                let command =
+                let act =
                     correct
                         (RegistrationGroup.Replace
                             { changedRegistration with
@@ -158,7 +156,7 @@ let private validationTests =
                         PaymentGroup.Keep
 
                 Expect.isTrue
-                    (paid () |> apply command |> isInvalid)
+                    (paid () |> apply act |> isInvalid)
                     "New correction dates use business time")
         ]
 

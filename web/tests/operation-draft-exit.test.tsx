@@ -21,14 +21,14 @@ const current: CurrentCase = {
     disposition: "ACTIVE",
   },
 };
-const open = (command: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
+const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
   const close = vi.fn();
   render(
     <OperationEditor
       token="synthetic"
       definition={definition}
       current={current}
-      initialAct={command}
+      initialAct={act}
       onClose={close}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}

@@ -201,7 +201,7 @@ const assertAuthoredCase = (request: CaseInput) => {
 };
 it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
-  async (command) => {
+  async (act) => {
     expect(acts).toHaveLength(12);
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));
@@ -209,25 +209,25 @@ it.each(acts)(
       <OperationEditor
         token="token"
         definition={productMetadata}
-        current={command.kind === "OPEN" ? null : currentFor(command.kind)}
-        initialAct={command.kind}
+        current={act.kind === "OPEN" ? null : currentFor(act.kind)}
+        initialAct={act.kind}
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
       />,
     );
     expect(
-      screen.getByRole("heading", { name: createPresenter(defaults).actLabel(command.kind) }),
+      screen.getByRole("heading", { name: createPresenter(defaults).actLabel(act.kind) }),
     ).toBeVisible();
-    authorCase(command.kind);
+    authorCase(act.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     const dialog = await screen.findByRole("dialog");
-    if (command.kind === "DECIDE") {
+    if (act.kind === "DECIDE") {
       expect(dialog).toHaveTextContent("5.0000");
       expect([...dialog.querySelectorAll("bdi")].map((node) => node.textContent)).toContain("5");
     }
-    if (command.kind === "CORRECT") {
+    if (act.kind === "CORRECT") {
       expect(dialog).toHaveTextContent("Synthetic correction");
     }
     await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
@@ -238,8 +238,8 @@ it.each(acts)(
       "/api/operation.execute",
     ]);
     expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
-    expect(calls[1]!.input.act.kind).toBe(command.kind);
-    expect(calls[1]!.input.expectedRevision).toBe(command.kind === "OPEN" ? 0 : 1);
+    expect(calls[1]!.input.act.kind).toBe(act.kind);
+    expect(calls[1]!.input.expectedRevision).toBe(act.kind === "OPEN" ? 0 : 1);
     assertAuthoredCase(calls[1]!.input);
   },
 );
@@ -337,12 +337,12 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
 };
 it.each(authorityActs)(
   "renders, reviews and submits real authority act $kind through production transport",
-  async (command) => {
+  async (act) => {
     expect(authorityActs).toHaveLength(5);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
-    await authorAuthority(command.kind);
+    await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     await screen.findByRole("heading", { name: "Review changes" });
@@ -355,7 +355,7 @@ it.each(authorityActs)(
     });
     await screen.findByText(calls[0]!.input.operationId, { exact: true });
     expect(before).toContain(calls[0]!.input.operationId);
-    expect(calls[0]!.input.act.kind).toBe(command.kind);
+    expect(calls[0]!.input.act.kind).toBe(act.kind);
     expect(calls[0]!.input.target).toEqual({
       kind: "HUMAN",
       issuer: "https://issuer.example/",

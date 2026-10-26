@@ -97,7 +97,7 @@ const historyWithTwoReceipts = () => {
   };
 };
 
-it("shows current fields, server command labels, full expandable history and retryable history pages", async () => {
+it("shows current fields, server act labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   const extendedHistory = historyWithTwoReceipts();
@@ -109,7 +109,7 @@ it("shows current fields, server command labels, full expandable history and ret
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
   );
-  const [back, command] = [vi.fn(), vi.fn()];
+  const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
       token="token"
@@ -117,12 +117,12 @@ it("shows current fields, server command labels, full expandable history and ret
       reloadSignal={0}
       definition={definition.catalog}
       onBack={back}
-      onAct={command}
+      onAct={act}
     />,
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await screen.findByRole("button", { name: /Close the case/u }));
-  expect(command).toHaveBeenCalledWith(current, "CLOSE");
+  expect(act).toHaveBeenCalledWith(current, "CLOSE");
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
   await user.click((await screen.findAllByText(/Open a case · revision/u))[0]!);
   expect(screen.getAllByText(/10000000-0000-4000-8000-000000000001/u)).toHaveLength(3);
@@ -173,7 +173,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   first.unmount();
 });
 
-it("routes dashboard list selections and the new-case command into the typed editor", async () => {
+it("routes dashboard list selections and the new-case act into the typed editor", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(

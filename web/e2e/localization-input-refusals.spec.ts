@@ -2,7 +2,7 @@ import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { openCase, startOpen, startCommand } from "./case-workflow";
+import { openCase, startOpen, startAct } from "./case-workflow";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import {
   confirmReview,
@@ -107,7 +107,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     const reference = `MISSING-${randomUUID()}`;
     await openCase(page, reference);
-    await startCommand(page, "Close the case");
+    await startAct(page, "Close the case");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
@@ -116,7 +116,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await confirmReview(page);
     await page.getByRole("button", { name: "Record changes" }).click();
     await page.getByRole("button", { name: "Return to case" }).click();
-    await startCommand(page, "Correct case facts");
+    await startAct(page, "Correct case facts");
     await selectLanguage(page, language);
     const mode = page.locator('[name="act.groups.decision.mode"]');
     await expect(mode).toHaveValue("KEEP");

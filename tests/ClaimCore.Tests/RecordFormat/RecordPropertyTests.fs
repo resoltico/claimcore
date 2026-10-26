@@ -38,7 +38,7 @@ let private registrationGenerator =
             }
     }
 
-let private commandsGenerator =
+let private actsGenerator =
     gen {
         let! registration = registrationGenerator
         let! payable = Gen.uint32 (Range.constant 0u 1_000_000u)
@@ -87,11 +87,11 @@ let private requestsGenerator =
         let! operationId = Gen.guid
         let! reference = Gen.string (Range.constant 1 20) Gen.alphaNum
         let! version = Gen.int64 (Range.constant 0L 1_000_000L)
-        let! acts = commandsGenerator
+        let! acts = actsGenerator
 
         return
             acts
-            |> List.map (fun command ->
+            |> List.map (fun act ->
                 {
                     OperationId =
                         if operationId = Guid.Empty then
@@ -100,7 +100,7 @@ let private requestsGenerator =
                             operationId
                     CaseReference = reference
                     ExpectedRevision = version
-                    Act = command
+                    Act = act
                 })
     }
 
@@ -127,11 +127,11 @@ let private correctionModesMatch (request: CaseRequest) (encoded: byte array) =
             | PaymentGroup.Clear -> "CLEAR"
 
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
-        let command = document.RootElement.GetProperty("act").GetProperty("groups")
+        let groups = document.RootElement.GetProperty("act").GetProperty("groups")
 
         [ "registration", registration; "decision", decision; "payment", payment ]
         |> List.forall (fun (group, expected) ->
-            command.GetProperty(group).GetProperty("mode").GetString() = expected)
+            groups.GetProperty(group).GetProperty("mode").GetString() = expected)
     | _ -> true
 
 let private requestRoundTripProperty =
@@ -230,7 +230,7 @@ let tests =
     testList
         "Hedgehog canonical records"
         [
-            testCase "all command and correction group shapes retain external meaning" (fun () ->
+            testCase "all act and correction group shapes retain external meaning" (fun () ->
                 run "CC-PROP-RECORD-001" requestRoundTripProperty)
             testCase "layout is insignificant but semantic changes affect identity" (fun () ->
                 run "CC-PROP-FINGERPRINT-001" fingerprintProperty)

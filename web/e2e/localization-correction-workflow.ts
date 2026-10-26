@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
-import { startCommand } from "./case-workflow";
+import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
@@ -140,7 +140,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   ).toBeVisible();
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
-  await startCommand(page, "Correct case facts");
+  await startAct(page, "Correct case facts");
   await selectLanguage(page, language);
   for (const [group, mode] of Object.entries(modes)) {
     await page.locator(`[name="act.groups.${group}.mode"]`).selectOption(mode);

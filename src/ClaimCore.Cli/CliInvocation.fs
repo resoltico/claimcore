@@ -92,7 +92,8 @@ module CliInvocations =
                     )))
 
     let private alias command flag =
-        List.contains command CliCommands.acts && List.contains flag CliCommands.aliases
+        List.contains command CliCommands.commands
+        && List.contains flag CliCommands.aliases
 
     let private admitVersion =
         function
@@ -123,7 +124,7 @@ module CliInvocations =
         | "schema" :: tail -> admitSchema tail
         | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
             Ok(CliInvocation.Verb arguments)
-        | head :: _ when List.contains head CliCommands.acts -> Error CliUsageIssue.Invocation
+        | head :: _ when List.contains head CliCommands.commands -> Error CliUsageIssue.Invocation
         | _ -> Ok(CliInvocation.Verb arguments)
 
     let usageLanguage arguments =

@@ -39,7 +39,7 @@ module CliCommands =
 
     let aliases = [ "--help"; "-h" ]
 
-    let acts = [ "help"; "version"; "describe"; "schema"; "call"; "session" ]
+    let commands = [ "help"; "version"; "describe"; "schema"; "call"; "session" ]
 
     /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
     let synopses =

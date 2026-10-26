@@ -3,13 +3,13 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { completeCommand, openCase } from "./case-workflow";
+import { completeAct, openCase } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const reference = (): string => `BROWSER-${randomUUID()}`;
 
 const decide = async (page: Page): Promise<void> => {
-  await completeCommand(page, "Record payment decision", {
+  await completeAct(page, "Record payment decision", {
     "Payment decision date": "2026-09-03",
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",
@@ -22,11 +22,11 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   const caseReference = reference();
   await openAuthenticated(page);
   const opened = await openCase(page, caseReference);
-  await completeCommand(page, "Amend registration", {
+  await completeAct(page, "Amend registration", {
     "Claimant name": "Synthetic amended claimant",
   });
   await decide(page);
-  await completeCommand(page, "Withdraw payment decision");
+  await completeAct(page, "Withdraw payment decision");
   await expect(page.locator("section.case-fields").first().getByText("Revision 4")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(4);
@@ -61,11 +61,11 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await decide(page);
-  await completeCommand(page, "Record actual payment", { "Payment date": "2026-09-05" });
-  await completeCommand(page, "Correct an erroneous payment record");
-  await completeCommand(page, "Close the case");
+  await completeAct(page, "Record actual payment", { "Payment date": "2026-09-05" });
+  await completeAct(page, "Correct an erroneous payment record");
+  await completeAct(page, "Close the case");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
-  await completeCommand(page, "Reopen the case");
+  await completeAct(page, "Reopen the case");
   await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(6);

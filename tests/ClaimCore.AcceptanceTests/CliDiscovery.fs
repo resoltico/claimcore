@@ -138,7 +138,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for command in CliCommands.acts do
+    for command in CliCommands.commands do
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None
             Expect.equal result.ExitCode 0 "Alias never opens stdin/config/network"

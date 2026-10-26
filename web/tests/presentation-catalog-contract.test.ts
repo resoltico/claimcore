@@ -33,7 +33,7 @@ it("preserves independent English diagnostics and parameter formatting", () => {
     "The completed response could not be delivered.",
   );
 });
-it("resolves business meaning through descriptor message identities", () => {
+it("resolves business meaning through catalog message identities", () => {
   const p = createPresenter(defaults);
   for (const field of catalog.fields) {
     expect(p.fieldLabel(field.name)).toBe(renderKey(defaults, field.labelId));

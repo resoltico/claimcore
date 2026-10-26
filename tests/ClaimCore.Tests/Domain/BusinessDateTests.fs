@@ -7,8 +7,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private applyAt date command claim =
-    Case.decide date (request (Case.snapshot claim).Revision command) (Some claim)
+let private applyAt date act claim =
+    Case.decide date (request (Case.snapshot claim).Revision act) (Some claim)
 
 let private future field result =
     Expect.equal
@@ -121,7 +121,7 @@ let private closedCorrectionRetainsDates =
         (fun () ->
             let before = paid () |> apply CaseAct.Close |> accepted
 
-            let command =
+            let act =
                 CaseAct.Correct
                     {
                         Registration =
@@ -134,7 +134,7 @@ let private closedCorrectionRetainsDates =
                     }
 
             let after =
-                before |> applyAt (DateOnly(2026, 7, 31)) command |> accepted |> Case.snapshot
+                before |> applyAt (DateOnly(2026, 7, 31)) act |> accepted |> Case.snapshot
 
             Expect.equal (viewFields after).Status CaseStatus.Closed "Correction retains closure"
 
@@ -148,7 +148,7 @@ let private correctionIncidentIsBounded =
     testCase
         "[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates"
         (fun () ->
-            let command =
+            let act =
                 CaseAct.Correct
                     {
                         Registration =
@@ -161,14 +161,14 @@ let private correctionIncidentIsBounded =
                     }
 
             paid ()
-            |> applyAt (DateOnly(2026, 7, 31)) command
+            |> applyAt (DateOnly(2026, 7, 31)) act
             |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private spellingDoesNotRevise =
     testCase
         "[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback"
         (fun () ->
-            let command =
+            let act =
                 CaseAct.Correct
                     {
                         Registration = RegistrationGroup.Keep
@@ -176,7 +176,7 @@ let private spellingDoesNotRevise =
                         Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
                     }
 
-            let result = paid () |> applyAt (DateOnly(2026, 7, 31)) command
+            let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act
 
             Expect.equal result (Error Refusal.CorrectionNoChanges) "No spelling-only revision")
 

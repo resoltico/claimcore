@@ -2,16 +2,14 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { openCase, reviewDraft, startCommand } from "./case-workflow";
+import { openCase, reviewDraft, startAct } from "./case-workflow";
 import { expectAccessible, openAuthenticated, progress } from "./session-helpers";
 
-test("prefills metadata fields and confirms dirty command changes before review", async ({
-  page,
-}) => {
+test("prefills metadata fields and confirms dirty act changes before review", async ({ page }) => {
   const caseReference = `DESCRIPTORS-${randomUUID()}`;
   await openAuthenticated(page);
   await openCase(page, caseReference);
-  await startCommand(page, "Amend registration");
+  await startAct(page, "Amend registration");
   await progress("metadata-amend-editor");
   const claimant = page.getByLabel("Claimant name");
   await expect(claimant).toHaveValue("Synthetic claimant");

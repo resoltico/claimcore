@@ -96,7 +96,7 @@ let private checkChoice
     =
     let snapshot = Case.snapshot before
 
-    let command =
+    let act =
         CaseAct.Correct
             {
                 Registration = registration
@@ -104,7 +104,7 @@ let private checkChoice
                 Payment = payment
             }
 
-    let result = before |> apply command
+    let result = before |> apply act
 
     let expected =
         permitted (viewFields snapshot) registrationChanged decisionMode paymentMode
@@ -141,7 +141,7 @@ let private zeroPaid =
     testCase
         "[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision"
         (fun () ->
-            let command =
+            let act =
                 CaseAct.Correct
                     {
                         Registration = RegistrationGroup.Keep
@@ -150,12 +150,12 @@ let private zeroPaid =
                     }
 
             Expect.equal
-                (paid () |> apply command)
+                (paid () |> apply act)
                 (Error Refusal.ZeroDecisionCannotBePaid)
                 "No zero payment assertion"
 
             let cleared =
-                match command with
+                match act with
                 | CaseAct.Correct value ->
                     CaseAct.Correct
                         { value with

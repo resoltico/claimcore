@@ -1,4 +1,4 @@
-// Literal wire oracles are independent of draft encoding and descriptor helpers.
+// Literal wire oracles are independent of draft encoding and catalog helpers.
 export const correctionSerializations = [
   [
     "KEEP",

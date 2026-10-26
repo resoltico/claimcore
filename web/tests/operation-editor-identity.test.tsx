@@ -18,7 +18,7 @@ type SentDraft = {
 const sentDraft = (call: number): SentDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[call]?.[1]?.body;
   if (typeof body !== "string") {
-    throw new Error("Expected a synthetic command request body.");
+    throw new Error("Expected a synthetic act request body.");
   }
   return JSON.parse(body) as SentDraft;
 };

@@ -11,7 +11,7 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =
-    for command in CliCommands.acts do
+    for command in CliCommands.commands do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])

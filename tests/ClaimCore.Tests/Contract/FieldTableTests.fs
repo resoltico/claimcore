@@ -83,7 +83,7 @@ let private domain () =
         (set [ "Field"; "Scalar" ])
         "Domain does not duplicate presentation metadata"
 
-let private commandGroups () =
+let private actGroups () =
     let expected group =
         FieldTable.rows
         |> List.filter (fun row -> row.Group = group)
@@ -92,7 +92,7 @@ let private commandGroups () =
     let actual kind =
         match (OperationCatalog.forCase (CaseActKind.Business kind)).Inputs with
         | ActInputShape.Fields fields -> fields |> List.map _.FieldName
-        | _ -> failtest "Expected flat command fields"
+        | _ -> failtest "Expected flat act fields"
 
     for act, group in
         [
@@ -101,10 +101,7 @@ let private commandGroups () =
             BusinessActKind.Decide, FieldGroup.Decision
             BusinessActKind.RecordPayment, FieldGroup.Payment
         ] do
-        Expect.equal
-            (actual act)
-            (expected group)
-            "Command fields follow their source group's order"
+        Expect.equal (actual act) (expected group) "Act fields follow their source group's order"
 
     let correction =
         OperationCatalog.forCase (CaseActKind.Business BusinessActKind.Correct)
@@ -152,6 +149,6 @@ let tests =
         [
             testCase "codecs and snapshot agree" codecs
             testCase "Domain coverage and ownership agree" domain
-            testCase "command and correction groups follow field-table order" commandGroups
+            testCase "act and correction groups follow field-table order" actGroups
             testCase "locales cover field messages" locales
         ]

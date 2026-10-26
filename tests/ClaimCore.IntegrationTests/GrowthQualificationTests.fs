@@ -86,7 +86,7 @@ let private openCases (actor: IActorClaimsCore) count =
 
     }
 
-let private command revision =
+let private act revision =
     let amended =
         { registration with
             ClaimantName = "Synthetic revision " + string revision
@@ -133,7 +133,7 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
                     (200000 + index)
                     ("synthetic-growth-" + string target)
                     revision
-                    (command revision)
+                    (act revision)
 
             let watch = Stopwatch.StartNew()
             let! result = actor.Execute(OperationInput.Case authored, token)

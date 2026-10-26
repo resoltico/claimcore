@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { openCase, startCommand, reviewDraft } from "./case-workflow";
+import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { pauseJsonReply, confirmReview, ui } from "./localization-support";
 
 const loseAcceptedClose = async (page: Page) => {
   await openCase(page, `RESOLVE-${randomUUID()}`);
-  await startCommand(page, "Close the case");
+  await startAct(page, "Close the case");
   await reviewDraft(page);
   await confirmReview(page);
   const pending = await pauseJsonReply(page, "operation.execute", true);

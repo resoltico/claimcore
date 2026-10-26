@@ -21,13 +21,13 @@ let private activeEligible (fields: CaseFields) =
     | CaseAct.ClearPayment -> paid
     | _ -> false
 
-let private eligible (fields: CaseFields) command =
-    match command with
+let private eligible (fields: CaseFields) act =
+    match act with
     | CaseAct.Open _ -> false
     | CaseAct.Reopen -> fields.Status = CaseStatus.Closed
     | CaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
-    | _ -> activeEligible fields command
+    | _ -> activeEligible fields act
 
 let private registration (value: Registration) (fields: CaseFields) =
     { fields with
@@ -39,8 +39,8 @@ let private correctedRegistration fields =
     | RegistrationGroup.Replace value -> registration value fields
     | RegistrationGroup.Keep -> fields
 
-let private changed fields command =
-    match command with
+let private changed fields act =
+    match act with
     | CaseAct.AmendRegistration value -> registration value fields
     | CaseAct.Correct value -> correctedRegistration fields value.Registration
     | CaseAct.Decide value ->
@@ -67,15 +67,15 @@ let private changed fields command =
     | CaseAct.Reinstate _
     | CaseAct.Erase -> fields
 
-let private business before fields stale command =
-    let nextFields = changed fields command
+let private business before fields stale act =
+    let nextFields = changed fields act
 
     let noOpCorrection =
-        match command with
+        match act with
         | CaseAct.Correct _ -> nextFields = fields
         | _ -> false
 
-    if stale || not (eligible fields command) || noOpCorrection then
+    if stale || not (eligible fields act) || noOpCorrection then
         None
     else
         Some
@@ -103,7 +103,7 @@ let advance (before: CaseSnapshot) stale act =
             changed (CaseView.Live(fields, Disposition.Active))
         | CaseView.Live _, CaseAct.Erase -> changed CaseView.Erased
         | _, (CaseAct.Void _ | CaseAct.Reinstate _) -> None
-        | CaseView.Live(fields, Disposition.Active), command -> business before fields stale command
+        | CaseView.Live(fields, Disposition.Active), act -> business before fields stale act
         | CaseView.Live(_, Disposition.Voided), _ -> None
 
 let matches expected (actual: Result<CaseSnapshot, Refusal>) =

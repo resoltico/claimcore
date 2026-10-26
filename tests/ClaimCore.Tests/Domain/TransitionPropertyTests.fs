@@ -11,7 +11,7 @@ open ClaimCore.Tests.PropertyHarness
 
 type private Step = { Act: CaseAct; Stale: bool }
 
-let private businessCommands =
+let private businessActs =
     [
         CaseAct.Open registration
         CaseAct.AmendRegistration
@@ -38,7 +38,7 @@ let private businessCommands =
     ]
 
 let private acts =
-    businessCommands
+    businessActs
     @ [
         CaseAct.Void "Entry error"
         CaseAct.Reinstate "Entry confirmed"
@@ -47,9 +47,9 @@ let private acts =
 
 let private stepGenerator =
     gen {
-        let! command = Gen.item acts
+        let! act = Gen.item acts
         let! stale = Gen.bool
-        return { Act = command; Stale = stale }
+        return { Act = act; Stale = stale }
     }
 
 let private initial: CaseSnapshot =
@@ -116,7 +116,7 @@ let private acceptingPath =
         CaseAct.Close
         CaseAct.Reopen
     ]
-    |> List.map (fun command -> { Act = command; Stale = false })
+    |> List.map (fun act -> { Act = act; Stale = false })
     |> fun steps ->
         let tail =
             [
@@ -225,7 +225,7 @@ let private expectedBusiness =
     | Voided
     | Erased -> []
 
-let private expectedCommands state =
+let private expectedActs state =
     match state with
     | Voided -> [ "REINSTATE"; "ERASE" ]
     | Erased -> []
@@ -235,14 +235,14 @@ let private executionMatchesAdvertisement claim expected =
     let view = Case.snapshot claim
 
     acts
-    |> List.forall (fun command ->
+    |> List.forall (fun act ->
         let candidate =
-            { actRequest view.Revision command with
+            { actRequest view.Revision act with
                 CaseReference = view.Reference
             }
 
         let accepted = Case.decide today candidate (Some claim) |> Result.isOk
-        accepted = Set.contains (CaseActs.name command) expected)
+        accepted = Set.contains (CaseActs.name act) expected)
 
 let private availabilityProperty =
     property {
@@ -261,7 +261,7 @@ let private availabilityProperty =
                 ]
 
         let claim = reach state
-        let expected = expectedCommands state |> Set.ofList
+        let expected = expectedActs state |> Set.ofList
         let actual = (Case.eligibleActs claim |> List.map CaseActKinds.token) |> Set.ofList
         return actual = expected && executionMatchesAdvertisement claim expected
     }

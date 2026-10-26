@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, startCommand } from "./case-workflow";
+import { openCase, startAct } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 
 const stewardAct = async (page: Page, label: string, reason?: string) => {
-  await startCommand(page, label);
+  await startAct(page, label);
   if (reason !== undefined) {
     await page.getByLabel("Stewardship reason", { exact: true }).fill(reason);
   }

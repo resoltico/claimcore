@@ -22,12 +22,12 @@ const current: CurrentCase = {
   state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
-describe("metadata-driven descriptor rendering", () => {
-  it("renders descriptor labels and all supplied field values without client-side normalization", () => {
+describe("catalog rendering", () => {
+  it("renders catalog labels and all supplied field values without client-side normalization", () => {
     const changed = vi.fn();
     const incident = definition.catalog.fields.find((field) => field.name === "incidentDate");
     if (incident === undefined) {
-      throw new Error("Incident descriptor is required.");
+      throw new Error("Incident catalog entry is required.");
     }
     render(
       <>

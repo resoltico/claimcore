@@ -5,7 +5,7 @@ import { initialOperationValues, assembleOperation } from "../src/operation/oper
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "./contract-corpus.fixtures";
-describe("core command metadata", () => {
+describe("core act metadata", () => {
   it("prefills registration from catalog and builds scoped input from the root schema", () => {
     expect(definition.catalog.fields).toHaveLength(13);
     expect(definition.catalog.acts).toHaveLength(12);

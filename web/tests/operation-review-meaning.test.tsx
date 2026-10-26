@@ -133,7 +133,7 @@ it.each(localized)(
     }
   },
 );
-it("erasure review retains its command meaning and WAL/backups limitation", () => {
+it("erasure review retains its act meaning and WAL/backups limitation", () => {
   render(
     <OperationReview
       model={model(

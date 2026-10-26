@@ -54,15 +54,15 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
 
 it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
   "reflects reducer editability during preparation, review, submission and uncertainty for %s",
-  async (command) => {
+  async (act) => {
     const user = userEvent.setup();
     const preparing = deferredResponse();
     const submitting = deferredResponse();
     vi.mocked(globalThis.fetch)
       .mockReturnValueOnce(preparing.promise)
       .mockReturnValueOnce(submitting.promise);
-    render(editor({ current, initialAct: command }));
-    if (command === "CORRECT") {
+    render(editor({ current, initialAct: act }));
+    if (act === "CORRECT") {
       await user.selectOptions(
         document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,
         "REPLACE",

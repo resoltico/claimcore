@@ -5,7 +5,7 @@ import { createPresenter } from "../src/presentation/presenter";
 import { render, screen } from "./presentation-test-support";
 import { definition } from "./service-ui.fixtures";
 
-it("formats review values by descriptor with independent date and amount expectations [CC-DOM-001]", () => {
+it("formats review values by catalog definition with independent date and amount expectations [CC-DOM-001]", () => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({ version: 1, language: "en", displayLocale: "lv-LV" }),

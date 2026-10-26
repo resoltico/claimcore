@@ -38,7 +38,7 @@ type SentDraft = {
 
 const sentDraft = (body: unknown): SentDraft => {
   if (typeof body !== "string") {
-    throw new Error("Expected a JSON command request body.");
+    throw new Error("Expected a JSON act request body.");
   }
   return JSON.parse(body) as SentDraft;
 };

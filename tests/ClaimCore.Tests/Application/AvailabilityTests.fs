@@ -32,7 +32,7 @@ let private candidates =
     ]
 
 let private stateActions =
-    testCase "[CC-DOM-002] each state advertises and enforces the specified command set" (fun () ->
+    testCase "[CC-DOM-002] each state advertises and enforces the specified act set" (fun () ->
         let zero =
             opened ()
             |> apply (CaseAct.Decide { decision with PayableAmount = "0" })
@@ -56,12 +56,12 @@ let private stateActions =
                 "Advertised actions match the domain contract"
 
             candidates
-            |> List.iter (fun command ->
-                let result = apply command state
+            |> List.iter (fun act ->
+                let result = apply act state
 
                 Expect.equal
                     (Result.isOk result)
-                    (Set.contains (CaseActs.name command) actions)
+                    (Set.contains (CaseActs.name act) actions)
                     "No separately invented UI state machine")
 
             let closed = apply CaseAct.Close state |> accepted

@@ -77,7 +77,7 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
   await progress("open-filled");
 };
 
-export const startCommand = async (page: Page, label: string): Promise<void> => {
+export const startAct = async (page: Page, label: string): Promise<void> => {
   await page.getByRole("button", { name: new RegExp(`^${label}:`, "u") }).click();
 };
 
@@ -124,12 +124,12 @@ const submit = async (page: Page): Promise<void> => {
   await progress("returned-to-case");
 };
 
-export const completeCommand = async (
+export const completeAct = async (
   page: Page,
   label: string,
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
-  await startCommand(page, label);
+  await startAct(page, label);
   const identity = await reviewDraft(page, values);
   await submit(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
