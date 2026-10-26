@@ -235,13 +235,6 @@
   },
   {
     "arguments": {},
-    "expected": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "isolated": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "key": "cli.help.overview",
-    "language": "en"
-  },
-  {
-    "arguments": {},
     "expected": "Inspect the request and response schemas. Schema output is JSON.",
     "isolated": "Inspect the request and response schemas. Schema output is JSON.",
     "key": "cli.help.schema",
@@ -259,26 +252,10 @@
     "language": "en"
   },
   {
-    "arguments": {
-      "grammar": "\u00ABgrammar\u00BB"
-    },
-    "expected": "Available commands:\n\u00ABgrammar\u00BB",
-    "isolated": "Available commands:\n\u00ABgrammar\u00BB",
-    "key": "cli.help.verbs",
-    "language": "en"
-  },
-  {
     "arguments": {},
     "expected": "Show the client version.",
     "isolated": "Show the client version.",
     "key": "cli.help.version",
-    "language": "en"
-  },
-  {
-    "arguments": {},
-    "expected": "Outcome unresolved. Preserve this exact frame and resend it with claimcore call, or check the final outcome with claimcore operation resolve OPERATION_ID.",
-    "isolated": "Outcome unresolved. Preserve this exact frame and resend it with claimcore call, or check the final outcome with claimcore operation resolve OPERATION_ID.",
-    "key": "cli.retryInstruction",
     "language": "en"
   },
   {
@@ -321,42 +298,6 @@
     "expected": "Outcome unresolved. Keep the exact retry frame on the last stderr line; retrying the identical request is safe.",
     "isolated": "Outcome unresolved. Keep the exact retry frame on the last stderr line; retrying the identical request is safe.",
     "key": "cli.text.uncertain",
-    "language": "en"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Unsupported invocation.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Unsupported invocation.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Invocation",
-    "language": "en"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Unsupported or duplicate options.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Unsupported or duplicate options.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Options",
-    "language": "en"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Unknown discovery selector.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Unknown discovery selector.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Selector",
-    "language": "en"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Unknown help topic.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Unknown help topic.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Topic",
     "language": "en"
   },
   {
@@ -3728,13 +3669,6 @@
   },
   {
     "arguments": {},
-    "expected": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "isolated": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "key": "cli.help.overview",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
     "expected": "Apskatiet piepras\u012Bjumu un atbil\u017Eu sh\u0113mas. Sh\u0113mas izvade ir JSON.",
     "isolated": "Apskatiet piepras\u012Bjumu un atbil\u017Eu sh\u0113mas. Sh\u0113mas izvade ir JSON.",
     "key": "cli.help.schema",
@@ -3752,26 +3686,10 @@
     "language": "lv"
   },
   {
-    "arguments": {
-      "grammar": "\u00ABgrammar\u00BB"
-    },
-    "expected": "Pieejam\u0101s komandas:\n\u00ABgrammar\u00BB",
-    "isolated": "Pieejam\u0101s komandas:\n\u00ABgrammar\u00BB",
-    "key": "cli.help.verbs",
-    "language": "lv"
-  },
-  {
     "arguments": {},
     "expected": "Par\u0101d\u012Bt klienta versiju.",
     "isolated": "Par\u0101d\u012Bt klienta versiju.",
     "key": "cli.help.version",
-    "language": "lv"
-  },
-  {
-    "arguments": {},
-    "expected": "Darb\u012Bbas izn\u0101kums nav zin\u0101ms. Saglab\u0101jiet \u0161o prec\u012Bzo piepras\u012Bjumu un nos\u016Btiet to v\u0113lreiz ar claimcore call vai p\u0101rbaudiet gal\u012Bgo izn\u0101kumu ar claimcore operation resolve OPERATION_ID.",
-    "isolated": "Darb\u012Bbas izn\u0101kums nav zin\u0101ms. Saglab\u0101jiet \u0161o prec\u012Bzo piepras\u012Bjumu un nos\u016Btiet to v\u0113lreiz ar claimcore call vai p\u0101rbaudiet gal\u012Bgo izn\u0101kumu ar claimcore operation resolve OPERATION_ID.",
-    "key": "cli.retryInstruction",
     "language": "lv"
   },
   {
@@ -3814,42 +3732,6 @@
     "expected": "Oper\u0101cijas izn\u0101kums nav zin\u0101ms. Saglab\u0101jiet prec\u012Bzo atk\u0101rto\u0161anas piepras\u012Bjumu stderr p\u0113d\u0113j\u0101 rind\u0101; identisku piepras\u012Bjumu var dro\u0161i atk\u0101rtot.",
     "isolated": "Oper\u0101cijas izn\u0101kums nav zin\u0101ms. Saglab\u0101jiet prec\u012Bzo atk\u0101rto\u0161anas piepras\u012Bjumu stderr p\u0113d\u0113j\u0101 rind\u0101; identisku piepras\u012Bjumu var dro\u0161i atk\u0101rtot.",
     "key": "cli.text.uncertain",
-    "language": "lv"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Neatbalst\u012Bts izsaukums.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Neatbalst\u012Bts izsaukums.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Invocation",
-    "language": "lv"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Neatbalst\u012Btas vai atk\u0101rtotas opcijas.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Neatbalst\u012Btas vai atk\u0101rtotas opcijas.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Options",
-    "language": "lv"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Nezin\u0101ms apraksta atlas\u012Bt\u0101js.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Nezin\u0101ms apraksta atlas\u012Bt\u0101js.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Selector",
-    "language": "lv"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "Nezin\u0101ma pal\u012Bdz\u012Bbas t\u0113ma.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "Nezin\u0101ma pal\u012Bdz\u012Bbas t\u0113ma.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "key": "cli.usage.Topic",
     "language": "lv"
   },
   {
@@ -7221,13 +7103,6 @@
   },
   {
     "arguments": {},
-    "expected": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "isolated": "overview | help | version | describe | schema | call | session | configuration | delivery | examples | CLI_PROTOCOL_GUIDANCE | CLI_CONFIGURATION_ISSUE\n--help | -h | act --help | act -h",
-    "key": "cli.help.overview",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
     "expected": "\u0627\u0641\u062D\u0635 \u0645\u062E\u0637\u0637\u0627\u062A \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0648\u0627\u0644\u0631\u062F\u0648\u062F. \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0645\u062E\u0637\u0637 \u0628\u0635\u064A\u063A\u0629 JSON.",
     "isolated": "\u0627\u0641\u062D\u0635 \u0645\u062E\u0637\u0637\u0627\u062A \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0648\u0627\u0644\u0631\u062F\u0648\u062F. \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0645\u062E\u0637\u0637 \u0628\u0635\u064A\u063A\u0629 JSON.",
     "key": "cli.help.schema",
@@ -7245,26 +7120,10 @@
     "language": "ar"
   },
   {
-    "arguments": {
-      "grammar": "\u00ABgrammar\u00BB"
-    },
-    "expected": "\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0645\u062A\u0627\u062D\u0629:\n\u00ABgrammar\u00BB",
-    "isolated": "\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0645\u062A\u0627\u062D\u0629:\n\u2068\u00ABgrammar\u00BB\u2069",
-    "key": "cli.help.verbs",
-    "language": "ar"
-  },
-  {
     "arguments": {},
     "expected": "\u0627\u0639\u0631\u0636 \u0625\u0635\u062F\u0627\u0631 \u0627\u0644\u0639\u0645\u064A\u0644.",
     "isolated": "\u0627\u0639\u0631\u0636 \u0625\u0635\u062F\u0627\u0631 \u0627\u0644\u0639\u0645\u064A\u0644.",
     "key": "cli.help.version",
-    "language": "ar"
-  },
-  {
-    "arguments": {},
-    "expected": "\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0639\u0645\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u062D\u0633\u0648\u0645\u0629. \u0627\u062D\u062A\u0641\u0638 \u0628\u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628 \u0643\u0645\u0627 \u0647\u0648 \u0648\u0623\u0639\u062F \u0625\u0631\u0633\u0627\u0644\u0647 \u0628\u0627\u0633\u062A\u062E\u062F\u0627\u0645 claimcore call\u060C \u0623\u0648 \u062A\u062D\u0642\u0651\u0642 \u0645\u0646 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629 \u0628\u0627\u0633\u062A\u062E\u062F\u0627\u0645 claimcore operation resolve OPERATION_ID.",
-    "isolated": "\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0639\u0645\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u062D\u0633\u0648\u0645\u0629. \u0627\u062D\u062A\u0641\u0638 \u0628\u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628 \u0643\u0645\u0627 \u0647\u0648 \u0648\u0623\u0639\u062F \u0625\u0631\u0633\u0627\u0644\u0647 \u0628\u0627\u0633\u062A\u062E\u062F\u0627\u0645 claimcore call\u060C \u0623\u0648 \u062A\u062D\u0642\u0651\u0642 \u0645\u0646 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629 \u0628\u0627\u0633\u062A\u062E\u062F\u0627\u0645 claimcore operation resolve OPERATION_ID.",
-    "key": "cli.retryInstruction",
     "language": "ar"
   },
   {
@@ -7307,42 +7166,6 @@
     "expected": "\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0639\u0645\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641\u0629. \u0627\u062D\u062A\u0641\u0638 \u0628\u0625\u0637\u0627\u0631 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0627\u0644\u062F\u0642\u064A\u0642 \u0641\u064A \u0622\u062E\u0631 \u0633\u0637\u0631 \u0645\u0646 stderr\u061B \u064A\u0645\u0643\u0646 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0637\u0644\u0628 \u0646\u0641\u0633\u0647 \u0628\u0623\u0645\u0627\u0646.",
     "isolated": "\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0639\u0645\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641\u0629. \u0627\u062D\u062A\u0641\u0638 \u0628\u0625\u0637\u0627\u0631 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0627\u0644\u062F\u0642\u064A\u0642 \u0641\u064A \u0622\u062E\u0631 \u0633\u0637\u0631 \u0645\u0646 stderr\u061B \u064A\u0645\u0643\u0646 \u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0637\u0644\u0628 \u0646\u0641\u0633\u0647 \u0628\u0623\u0645\u0627\u0646.",
     "key": "cli.text.uncertain",
-    "language": "ar"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "\u0627\u0633\u062A\u062F\u0639\u0627\u0621 \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "\u0627\u0633\u062A\u062F\u0639\u0627\u0621 \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645.\n\u2068\u00ABprogram\u00BB\u2069 help\n\u2068\u00ABprogram\u00BB\u2069 help describe\n\u2068\u00ABprogram\u00BB\u2069 help schema\n",
-    "key": "cli.usage.Invocation",
-    "language": "ar"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "\u062E\u064A\u0627\u0631\u0627\u062A \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645\u0629 \u0623\u0648 \u0645\u0643\u0631\u0631\u0629.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "\u062E\u064A\u0627\u0631\u0627\u062A \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645\u0629 \u0623\u0648 \u0645\u0643\u0631\u0631\u0629.\n\u2068\u00ABprogram\u00BB\u2069 help\n\u2068\u00ABprogram\u00BB\u2069 help describe\n\u2068\u00ABprogram\u00BB\u2069 help schema\n",
-    "key": "cli.usage.Options",
-    "language": "ar"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "\u0645\u062D\u062F\u062F \u0627\u0633\u062A\u0643\u0634\u0627\u0641 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "\u0645\u062D\u062F\u062F \u0627\u0633\u062A\u0643\u0634\u0627\u0641 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641.\n\u2068\u00ABprogram\u00BB\u2069 help\n\u2068\u00ABprogram\u00BB\u2069 help describe\n\u2068\u00ABprogram\u00BB\u2069 help schema\n",
-    "key": "cli.usage.Selector",
-    "language": "ar"
-  },
-  {
-    "arguments": {
-      "program": "\u00ABprogram\u00BB"
-    },
-    "expected": "\u0645\u0648\u0636\u0648\u0639 \u0645\u0633\u0627\u0639\u062F\u0629 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641.\n\u00ABprogram\u00BB help\n\u00ABprogram\u00BB help describe\n\u00ABprogram\u00BB help schema\n",
-    "isolated": "\u0645\u0648\u0636\u0648\u0639 \u0645\u0633\u0627\u0639\u062F\u0629 \u063A\u064A\u0631 \u0645\u0639\u0631\u0648\u0641.\n\u2068\u00ABprogram\u00BB\u2069 help\n\u2068\u00ABprogram\u00BB\u2069 help describe\n\u2068\u00ABprogram\u00BB\u2069 help schema\n",
-    "key": "cli.usage.Topic",
     "language": "ar"
   },
   {

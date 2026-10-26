@@ -26,19 +26,16 @@ type FrameDelivery(output: Stream, errors: Stream, language: string) =
             | Some frame ->
                 errors.Write(
                     System.Text.Encoding.UTF8.GetBytes(
-                        (MessageCatalogs.render
+                        (MessageCatalogs.renderCli
                             language
-                            "cli.delivery.unresolved"
-                            (Map.ofList
-                                [
-                                    "retryCommand", CliIdentity.programName + " call"
-                                    "resolveCommand",
-                                    CliIdentity.programName
-                                    + " operation resolve "
-                                    + (Frames.operationId frame
-                                       |> Option.map string
-                                       |> Option.defaultValue "OPERATION_ID")
-                                ])
+                            (CliMessage.UnresolvedDelivery(
+                                CliIdentity.programName + " call",
+                                CliIdentity.programName
+                                + " operation resolve "
+                                + (Frames.operationId frame
+                                   |> Option.map string
+                                   |> Option.defaultValue "OPERATION_ID")
+                            ))
                          + "\n")
                     )
                 )

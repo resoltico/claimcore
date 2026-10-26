@@ -35,10 +35,7 @@ module internal TextReply =
                     |> String.concat ", "
 
                 let annotation =
-                    MessageCatalogs.render
-                        language
-                        "ui.characterWarning"
-                        (Map.ofList [ "characters", points ])
+                    MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
 
                 text + " [" + annotation + "]"
         | _ -> text
@@ -108,14 +105,14 @@ module internal TextReply =
                 language
                 (FieldTable.labelId BusinessField.CaseReference)
                 (get (FieldTable.key BusinessField.CaseReference) value)
-            line language "ui.revisionLabel" (get "revision" value)
+            line language (CliMessages.key CliMessage.RevisionLabel) (get "revision" value)
             line language "cli.text.state" status
         ]
         @ fields
         @ [
             line
                 language
-                "ui.availableActs"
+                (CliMessages.key CliMessage.AvailableActsLabel)
                 (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
         ]
 
@@ -133,7 +130,10 @@ module internal TextReply =
 
         let revision =
             if get "kind" scope = "CASE" then
-                [ label language "ui.revisionLabel"; get "revision" scope ]
+                [
+                    label language (CliMessages.key CliMessage.RevisionLabel)
+                    get "revision" scope
+                ]
             else
                 []
 
@@ -269,7 +269,7 @@ module internal TextReply =
             |> String.concat "; "
 
         [
-            "ui.enabled", get "enabled" before, get "enabled" after
+            (CliMessages.key CliMessage.EnabledLabel), get "enabled" before, get "enabled" after
             "cli.text.grants", grants before, grants after
         ]
         |> List.choose (fun (key, previous, next) ->
@@ -310,7 +310,8 @@ module internal TextReply =
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
-        line language "ui.reviewTitle" (reviewIdentity request review) :: changes
+        line language (CliMessages.key CliMessage.ReviewTitle) (reviewIdentity request review)
+        :: changes
 
     let private diagnosticTargetIdentity =
         function
@@ -354,7 +355,7 @@ module internal TextReply =
 
         let action =
             JsonValue.tryMember "action" value
-            |> Option.map (scalar >> line language "ui.action")
+            |> Option.map (scalar >> line language (CliMessages.key CliMessage.ActionLabel))
             |> Option.toList
 
         message :: line language "cli.text.code" code :: action
@@ -385,10 +386,9 @@ module internal TextReply =
 
             if JsonValue.tryMember "setting" value |> Option.isSome then
                 [
-                    MessageCatalogs.render
+                    MessageCatalogs.renderCli
                         language
-                        "cli.configurationIssue"
-                        (Map.ofList [ "setting", get "setting" value; "issue", get "issue" value ])
+                        (CliMessage.ConfigurationIssue(get "setting" value, get "issue" value))
                 ]
             else
                 [

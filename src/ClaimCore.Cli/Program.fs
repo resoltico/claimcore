@@ -23,8 +23,7 @@ let private writeText (output: System.IO.Stream) (value: string) =
 let private unsupported errors language issue =
     writeText
         errors
-        (MessageCatalogs.render language "cli.usage.host" (Map.ofList [ "issue", string issue ])
-         + "\n")
+        (MessageCatalogs.renderCli language (CliMessage.HostUsage(string issue)) + "\n")
 
     64
 

@@ -31,6 +31,7 @@
     <Compile Include="Json/SchemaJson.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Messages/CliMessages.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Api/Limits.fs" />
     <Compile Include="Model/Advice.fs" />

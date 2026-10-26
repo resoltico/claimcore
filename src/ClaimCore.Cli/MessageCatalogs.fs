@@ -49,37 +49,39 @@ module internal MessageCatalogs =
             | TemplatePart.Hole name -> "{" + name + "}")
         |> String.concat ""
 
-    let private bounds =
-        Map.ofList
-            [
-                "program", CliIdentity.programName
-                "retryCommand", CliIdentity.programName + " call"
-                "resolveCommand", CliIdentity.programName + " operation resolve OPERATION_ID"
-                "maximumInvocationBytes", string Limits.MaximumInvocationBytes
-                "maximumRequestBytes", string Limits.MaximumRequestBytes
-                "maximumResponseBytes", string Limits.MaximumResponseBytes
-                "maximumSecretBytes", string CliConfigurationLimits.MaximumSecretBytes
-                "maximumTrustRootBytes", string CliConfigurationLimits.MaximumTrustRootBytes
-            ]
+    let renderProduced language (message: ProducedMessage) =
+        render language message.Key message.Arguments
 
-    let private helpBody language key =
-        let required =
-            catalog language |> Messages.templates |> Map.find key |> Template.arguments
+    let renderCli language message =
+        renderProduced language (CliMessages.produce message)
 
-        let supplied =
-            required |> Seq.map (fun name -> name, Map.find name bounds) |> Map.ofSeq
+    let private helpBody language topic =
+        let invocation = string Limits.MaximumInvocationBytes
+        let request = string Limits.MaximumRequestBytes
+        let response = string Limits.MaximumResponseBytes
+        let secret = string CliConfigurationLimits.MaximumSecretBytes
+        let trust = string CliConfigurationLimits.MaximumTrustRootBytes
+        let retry = CliIdentity.programName + " call"
+        let resolve = CliIdentity.programName + " operation resolve OPERATION_ID"
 
-        render language key supplied
+        match topic with
+        | "call" ->
+            renderCli language (CliMessage.HelpCall(invocation, request, response, retry, resolve))
+        | "session" -> renderCli language (CliMessage.HelpSession(invocation, request, response))
+        | "CLI_PROTOCOL_GUIDANCE" ->
+            renderCli language (CliMessage.HelpProtocol(invocation, request, response))
+        | "configuration" -> renderCli language (CliMessage.HelpConfiguration(secret, trust))
+        | "CLI_CONFIGURATION_ISSUE" ->
+            renderCli language (CliMessage.HelpConfigurationIssue(secret, trust))
+        | "delivery" -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
+        | _ -> render language ("cli.help." + topic) Map.empty
 
     let help language (topic: string) =
-        if topic.StartsWith("usage.", StringComparison.Ordinal) then
-            render language ("cli." + topic) Map.empty
-        else
-            let topic =
-                if topic.StartsWith("diagnostic.", StringComparison.Ordinal) then
-                    topic.Substring "diagnostic.".Length
-                else
-                    topic
+        let topic =
+            if topic.StartsWith("diagnostic.", StringComparison.Ordinal) then
+                topic.Substring "diagnostic.".Length
+            else
+                topic
 
-            let body = helpBody language ("cli.help." + topic)
-            render language "cli.help.layout" (Map.ofList [ "body", body ])
+        let body = helpBody language topic
+        renderCli language (CliMessage.HelpLayout body)

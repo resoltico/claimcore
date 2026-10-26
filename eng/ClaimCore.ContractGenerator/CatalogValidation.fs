@@ -66,6 +66,16 @@ module CatalogValidation =
             if Template.arguments templates[key] <> expected then
                 invalidOp ("Message producer arguments differ: " + key)
 
+        for KeyValue(key, arguments) in CliMessages.contracts do
+            matches key arguments
+
+        for KeyValue(key, _) in templates do
+            if
+                key.StartsWith("cli.", System.StringComparison.Ordinal)
+                && not (Map.containsKey key CliMessages.contracts)
+            then
+                matches key Set.empty
+
         for definition in Refusals.definitions do
             matches
                 ("diagnostic." + definition.Id)
@@ -136,7 +146,12 @@ module CatalogValidation =
                 if Template.arguments template <> Template.arguments english[key] then
                     invalidOp ("Localization arguments differ: " + language + " " + key)
 
-            required |> Set.iter (validateIdentity keys)
+            for key in Set.union required tokens do
+                validateIdentity keys key
+
+                if not (Set.isEmpty (Template.arguments templates[key])) then
+                    invalidOp ("Catalog metadata must not require arguments: " + key)
+
             producers templates
 
         catalogs
