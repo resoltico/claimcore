@@ -4,7 +4,7 @@ open System
 open System.Globalization
 open ClaimCore.Contract.Protocol
 
-/// The descriptor schema and its reader/writer share one typed codec.
+/// The catalog schema and its reader/writer share one typed codec.
 module CatalogCodecs =
     open Codec
 

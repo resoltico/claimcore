@@ -3,7 +3,7 @@ import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
 import { AcceptedOperation } from "./operation/OperationDialogs";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
-import type { OperationEditorProps } from "../interaction/editorTypes";
+import type { OperationEditorProps } from "../operation/editorTypes";
 
 export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();

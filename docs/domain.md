@@ -33,7 +33,7 @@ There are no policy, coverage, reserve, banking, address, notes or attachment fi
 
 <a id="cc-dom-002"></a>
 
-### CC-DOM-002 — Core-owned command availability and revalidation
+### CC-DOM-002 — Core-owned act availability and revalidation
 
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
 needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
@@ -56,7 +56,7 @@ refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domai
 
 Current core advice filters eligible work by the actor's resource rights. Unauthorized correction groups stay
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
-revision; an offered command or preview grants no commit authority.
+revision; an offered act or preview grants no commit authority.
 
 <a id="cc-life-001"></a>
 

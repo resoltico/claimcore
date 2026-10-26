@@ -2,24 +2,24 @@ import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
 import { correctionTargets } from "@contracts/messages";
 import type { Notice } from "../api/notices";
-import type { FieldDescriptor } from "../api/service";
+import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
 import { hasMessage, renderKey, translate } from "./messages";
 import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-type MessageDescriptor = Readonly<{ labelId: string; meaningId?: string | null }>;
+type CatalogText = Readonly<{ labelId: string; meaningId?: string | null }>;
 export type PresentationDefinitions = Readonly<{
-  fields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  inputFields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  authorityFields: ReadonlyArray<MessageDescriptor & { name: string }>;
+  fields: ReadonlyArray<CatalogText & { name: string }>;
+  inputFields: ReadonlyArray<CatalogText & { name: string }>;
+  authorityFields: ReadonlyArray<CatalogText & { name: string }>;
   entries: ReadonlyArray<
-    MessageDescriptor & {
+    CatalogText & {
       scope: string;
       kind: string;
       inputs: ReadonlyArray<
-        MessageDescriptor & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
+        CatalogText & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
       >;
     }
   >;
@@ -31,27 +31,27 @@ const metadata = (
   part: "label" | "meaning",
   definitions: PresentationDefinitions,
 ): string => {
-  let descriptor: MessageDescriptor | undefined;
+  let definition: CatalogText | undefined;
   switch (owner) {
     case "field":
-      descriptor = [
+      definition = [
         ...definitions.fields,
         ...definitions.inputFields,
         ...definitions.authorityFields,
       ].find((candidate) => candidate.name === name);
       break;
     case "act":
-      descriptor = definitions.entries.find(
+      definition = definitions.entries.find(
         (candidate) => candidate.scope === "CASE" && candidate.kind === name,
       );
       break;
     case "authority":
-      descriptor = definitions.entries.find(
+      definition = definitions.entries.find(
         (candidate) => candidate.scope === "AUTHORITY" && candidate.kind === name,
       );
       break;
     case "group":
-      descriptor = definitions.entries
+      definition = definitions.entries
         .flatMap((entry) => entry.inputs)
         .find(
           (candidate) =>
@@ -59,7 +59,7 @@ const metadata = (
         );
       break;
   }
-  const identity = part === "label" ? descriptor?.labelId : descriptor?.meaningId;
+  const identity = part === "label" ? definition?.labelId : definition?.meaningId;
   if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
@@ -87,7 +87,7 @@ const token = (
 const fieldValueText = (
   preferences: Preferences,
   value: string | null,
-  field: FieldDescriptor,
+  field: FieldCatalogEntry,
 ): string => {
   if (value === null) {
     return translate(preferences, "ui.notRecorded");
@@ -100,7 +100,7 @@ const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
   return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
-const hint = (preferences: Preferences, field: FieldDescriptor): string => {
+const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
   if (field.name === "caseReference") {
     return translate(preferences, "ui.referenceHint");
   }
@@ -153,10 +153,10 @@ export const createPresenter = (
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
   actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   token: (value: string) => token(preferences, value, definitions),
-  hint: (field: FieldDescriptor) => hint(preferences, field),
+  hint: (field: FieldCatalogEntry) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
   amount: (value: string) => exactAmount(value, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
-  fieldValue: (value: string | null, field: FieldDescriptor) =>
+  fieldValue: (value: string | null, field: FieldCatalogEntry) =>
     fieldValueText(preferences, value, field),
 });

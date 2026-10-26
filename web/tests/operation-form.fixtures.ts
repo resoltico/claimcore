@@ -1,7 +1,7 @@
 import type { CurrentCase } from "../src/api/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { type FormValues } from "../src/protocol/forms";
 import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";

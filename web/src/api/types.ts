@@ -19,7 +19,7 @@ export type HistoryEntry = HistoryEntries[number];
 export type { OperationReceipt } from "@contracts/client";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
-export type FieldDescriptor =
+export type FieldCatalogEntry =
   CatalogDocument["fields"][number] | CatalogDocument["inputFields"][number];
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];

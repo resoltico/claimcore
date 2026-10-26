@@ -6,11 +6,7 @@ import { renderKey } from "../presentation/messages";
 import { usePresentation } from "../presentation/context";
 import { CatalogField } from "./CatalogField";
 import { productMetadata } from "../protocol/productMetadata";
-import {
-  bindingPath,
-  visibleOperationInputs,
-  type CatalogInput,
-} from "../interaction/operationForm";
+import { bindingPath, visibleOperationInputs, type CatalogInput } from "../operation/operationForm";
 
 type Props = {
   values: FormValues;

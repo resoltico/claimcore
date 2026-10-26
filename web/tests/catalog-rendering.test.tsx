@@ -9,7 +9,7 @@ import { productMetadata } from "../src/protocol/productMetadata";
 import { isRequest, isResponse } from "../src/protocol/client";
 import type { EndpointId, RequestByEndpoint, ResponseByEndpoint } from "@contracts/client";
 import type { CurrentCase, CaseReview } from "../src/api/service";
-import type { ActKind } from "../src/interaction/metadata";
+import type { ActKind } from "../src/operation/metadata";
 import { caseOffers } from "./case-advice.fixtures";
 import { installationOffers } from "./installation-advice.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";

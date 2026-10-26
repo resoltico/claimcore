@@ -4,12 +4,12 @@ import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
 import { TextField } from "react-aria-components/TextField";
-import type { FieldDescriptor } from "../api/service";
+import type { FieldCatalogEntry } from "../api/service";
 import type { Notice } from "../api/notices";
 import { usePresentation } from "../presentation/context";
 
 type CatalogFieldProps = {
-  field: FieldDescriptor;
+  field: FieldCatalogEntry;
   value: string;
   inputName?: string;
   error?: Notice | undefined;

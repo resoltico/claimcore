@@ -6,20 +6,20 @@ import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";
 import { CopyValue } from "./CopyValue";
 
-type FieldDescriptor = CatalogDocument["fields"][number];
+type FieldCatalogEntry = CatalogDocument["fields"][number];
 const groups = ["registration", "decision", "payment"] as const;
 
 type CaseFieldsViewProps = {
   values: CaseFields;
   revision: number;
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: ReadonlyArray<FieldCatalogEntry>;
   context: string;
 };
 const acceptedSummary = (
   p: Presentation,
   values: CaseFields,
   revision: number,
-  fields: ReadonlyArray<FieldDescriptor>,
+  fields: ReadonlyArray<FieldCatalogEntry>,
 ): string =>
   [
     `${p.text("ui.revisionLabel")}: ${revision}`,
@@ -30,7 +30,7 @@ const acceptedSummary = (
 export const CaseFieldsView = ({ values, revision, fields, context }: CaseFieldsViewProps) => {
   const p = usePresentation();
   const headingId = useId();
-  const rows = (items: ReadonlyArray<FieldDescriptor>) => (
+  const rows = (items: ReadonlyArray<FieldCatalogEntry>) => (
     <dl>
       {items.map((field) => {
         const value = caseFieldValue(values, field.name);

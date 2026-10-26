@@ -1,7 +1,7 @@
 import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "./contract-corpus.fixtures";

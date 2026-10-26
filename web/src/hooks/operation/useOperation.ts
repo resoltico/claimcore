@@ -12,7 +12,7 @@ import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
 import type { FormValues } from "../../protocol/forms";
-import { initialOperationValues, assembleOperation } from "../../interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
 import {
   operationReducer,
   operationView,
@@ -21,7 +21,7 @@ import {
   type OperationEffect,
   type OperationAction,
   type EffectIdentity,
-} from "../../interaction/operationState";
+} from "../../operation/operationState";
 import type { Notice } from "../../api/notices";
 
 type Options = {

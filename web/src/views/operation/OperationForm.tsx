@@ -5,7 +5,7 @@ import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { operationEntry } from "../../interaction/operationForm";
+import { operationEntry } from "../../operation/operationForm";
 
 export type OperationFormProps = {
   model: OperationModel;

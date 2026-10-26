@@ -32,7 +32,7 @@ establish that uncertain submitted content matched it.
 
 ## Language, display and navigation
 
-English, Latvian and Arabic use the same source catalogs and ICU checks. Latvian/Arabic text still needs native
+English, Latvian and Arabic use the same source catalogs and Template grammar checks. Latvian/Arabic text still needs native
 review. RTL layout, display-format preferences, country hints and suspicious-Unicode warnings preserve raw
 business strings. Navigation focuses destination headings; background reads leave focus in place. Read failures
 offer an explicit reload, and views default-deny before context succeeds. Human assistive-technology review

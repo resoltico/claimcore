@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import type { OperationAction, OperationState } from "../src/interaction/operationState";
-import { operationReducer, operationView } from "../src/interaction/operationState";
+import type { OperationAction, OperationState } from "../src/operation/operationState";
+import { operationReducer, operationView } from "../src/operation/operationState";
 import { initial, reviewed, effect } from "./operation-identity.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";
 const unknown = () =>

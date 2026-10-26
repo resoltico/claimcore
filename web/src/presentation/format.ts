@@ -1,5 +1,5 @@
 import { isAmountText, isGregorianDate } from "../protocol/scalars";
-import type { FieldDescriptor } from "../api/service";
+import type { FieldCatalogEntry } from "../api/service";
 import type { DisplayLocale } from "./preferences";
 
 const digitsFor = (locale: DisplayLocale) => {
@@ -52,7 +52,7 @@ export const calendarDate = (value: string, locale: DisplayLocale): string => {
 };
 export const displayField = (
   value: string,
-  field: FieldDescriptor,
+  field: FieldCatalogEntry,
   locale: DisplayLocale,
 ): string => {
   if (field.scalar.kind === "AMOUNT") {

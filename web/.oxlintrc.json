@@ -253,8 +253,8 @@
       "files": [
         "src/api/**/*.ts",
         "src/api/**/*.tsx",
-        "src/interaction/**/*.ts",
-        "src/interaction/**/*.tsx",
+        "src/operation/**/*.ts",
+        "src/operation/**/*.tsx",
         "src/hooks/**/*.ts",
         "src/hooks/**/*.tsx",
         "src/hooks/operation/operationDelivery.ts"
@@ -377,7 +377,7 @@
       }
     },
     {
-      "files": ["src/api/**", "src/hooks/**", "src/interaction/**"],
+      "files": ["src/api/**", "src/hooks/**", "src/operation/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -428,7 +428,7 @@
                   "**/components/**",
                   "**/presentation/**",
                   "**/hooks/**",
-                  "**/interaction/**",
+                  "**/operation/**",
                   "**/utils/**"
                 ],
                 "message": "Protocol modules are pure and import only protocol/contracts (type-only api/types allowed)."

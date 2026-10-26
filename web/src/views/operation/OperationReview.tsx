@@ -3,7 +3,7 @@ import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
-import { operationDocument } from "../../interaction/operationForm";
+import { operationDocument } from "../../operation/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../api/types";

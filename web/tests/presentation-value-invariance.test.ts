@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";
 import { definition, operationId } from "./service-ui.fixtures";

@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "./presentation-test-support";
 import { CatalogInputs } from "../src/components/CatalogInputs";
-import { initialOperationValues } from "../src/interaction/operationForm";
+import { initialOperationValues } from "../src/operation/operationForm";
 import { catalogs } from "@contracts/messages";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Notice } from "../src/api/notices";

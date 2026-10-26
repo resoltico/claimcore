@@ -7,7 +7,7 @@ import arField from "@locales/ar.json";
 
 import { service } from "../src/api/service";
 import { useOperation } from "../src/hooks/operation/useOperation";
-import { initialOperationValues, refusalPath } from "../src/interaction/operationForm";
+import { initialOperationValues, refusalPath } from "../src/operation/operationForm";
 import { preferenceKey } from "../src/presentation/preferences";
 import { OperationForm } from "../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "./presentation-test-support";

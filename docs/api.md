@@ -73,7 +73,7 @@ claimcore describe case open
 A new mutation mints one UUID unless `--operation-id` is explicit. Case acts after opening require
 `--expected-revision`; CLI never fetches/rebases it. `--preview` asks for advisory review. `--dry-run` prints
 the exact frame without configuration or authentication. Business strings are preserved. Unknown, duplicate
-or missing flags give exit 64, empty stdout and safe help without echoing authored tokens.
+or missing flags give exit 64, empty stdout and localized usage guidance. Diagnostics identify rejected flags and values.
 
 Human verbs default to text; `--format json` selects a reply frame. `--language en|lv|ar` selects authored
 human text. There is no prompting or TTY-based output change. Display warnings expose suspicious Unicode

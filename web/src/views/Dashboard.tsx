@@ -2,7 +2,7 @@ import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState, useCallback, useEffect, useRef, type RefObject } from "react";
 import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
-import type { ActKind } from "../interaction/metadata";
+import type { ActKind } from "../operation/metadata";
 import { service, type ServiceResponse } from "../api/service";
 import { useRead } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
