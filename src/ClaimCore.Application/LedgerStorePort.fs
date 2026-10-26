@@ -115,7 +115,7 @@ type internal AuthorityLockedView =
 
 [<RequireQualifiedAccess>]
 type internal AuthorityProjection =
-    | RegisterActor of actorId: Guid * principal: PrincipalKey
+    | Register of actorId: Guid * principal: PrincipalKey
     | ProvisionOwner of actorId: Guid * principal: PrincipalKey
     | SetEnabled of actorId: Guid * enabled: bool
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option

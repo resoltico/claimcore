@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { test } from "./redirect-response";
-import { openCase, startCommand, reviewDraft } from "./case-workflow";
+import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 import { openAuthenticated } from "./session-helpers";
@@ -13,7 +13,7 @@ for (const status of [301, 302, 303, 307, 308]) {
   }) => {
     await openAuthenticated(page);
     await openCase(page, `REDIRECT-${randomUUID()}`);
-    await startCommand(page, "Close the case");
+    await startAct(page, "Close the case");
     await reviewDraft(page);
     await redirectResponse.arm("/api/operation.execute", status);
     await page.getByText("I confirm these changes.", { exact: true }).click();

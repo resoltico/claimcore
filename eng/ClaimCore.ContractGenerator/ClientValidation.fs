@@ -18,9 +18,12 @@ export const isRepresentable = (value: string): boolean => Array.from(value).eve
   return scalar !== 0 && !(scalar >= 0xd800 && scalar <= 0xdfff) && !(scalar >= 0xfdd0 && scalar <= 0xfdef) && (scalar & 0xffff) < 0xfffe;
 });
 export const isGregorianDate = (value: string): boolean => {
-  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/u.test(value) || value.startsWith("0000")) { return false; }
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isFinite(date.valueOf()) && date.toISOString().slice(0,10) === value;
+  const match = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/u.exec(value);
+  if (match === null) { return false; }
+  const year = Number(match[1]); const month = Number(match[2]); const day = Number(match[3]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= (days[month - 1] ?? 0);
 };
 const wireLength = (value: string, minimum: number | null, maximum: number | null): boolean => {
   const { length } = Array.from(value);
@@ -174,7 +177,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             Map.fold
                 (fun state name value -> Map.add name value state)
                 OpenApi.definitions
-                DescriptorCodecs.codec.Definitions
+                CatalogCodecs.codec.Definitions
 
         let roots =
             Api.all
@@ -186,7 +189,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
                     })
 
         let reachable =
-            SchemaJson.reachable definitions (DescriptorCodecs.codec.Schema :: roots)
+            SchemaJson.reachable definitions (CatalogCodecs.codec.Schema :: roots)
 
         let functions =
             reachable
@@ -213,6 +216,6 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             "export const isRequest = <E extends EndpointId>(endpoint:E,value:unknown):value is RequestByEndpoint[E] => requestIssue(endpoint,value) === null;"
             "export const isResponse = <E extends EndpointId>(endpoint:E,value:unknown):value is ResponseByEndpoint[E] => responseChecks[endpoint](value,false,[]) === null;"
             "export const buildRequest = <E extends EndpointId>(endpoint:E,value:unknown):RequestByEndpoint[E] => { const matches = (candidate:unknown):candidate is RequestByEndpoint[E] => requestChecks[endpoint](candidate,true,[]) === null; if (!matches(value)) { throw new Error(\"Invalid endpoint draft structure.\"); } return value; };"
-            "export const isDescriptors = (value:unknown):value is Descriptors => check_Presentation_PresentationDescriptors(value,false,[]) === null;"
+            "export const isCatalogDocument = (value:unknown):value is CatalogDocument => check_Presentation_CatalogDocument(value,false,[]) === null;"
         ]
         |> String.concat "\n"

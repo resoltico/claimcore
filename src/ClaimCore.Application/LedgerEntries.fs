@@ -200,8 +200,7 @@ module internal LedgerEntries =
                 match act with
                 | AuthorityKind.ProvisionOwner ->
                     target = entry.OperationId && entry.ActorId = target && entry.Sequence = 1L
-                | AuthorityKind.RegisterActor ->
-                    target = entry.OperationId && entry.ActorId <> target
+                | AuthorityKind.Register -> target = entry.OperationId && entry.ActorId <> target
                 | _ -> true
 
             if identity then
@@ -234,10 +233,12 @@ module internal LedgerEntries =
                     Content = content
                 })
 
+    /// Comparison bytes are canonical; retained ledger payloads remain authored.
     let internal identityBytes validated =
         match validated.Content with
-        | EntryContent.Case(request, _) -> Some(RequestRecord.encode request)
-        | EntryContent.Authority request -> Some(AuthorityRecord.encode request)
+        | EntryContent.Case(request, _) -> Some(Case.canonical request |> RequestRecord.encode)
+        | EntryContent.Authority request ->
+            Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase -> None
 
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
@@ -319,13 +320,7 @@ module internal LedgerEntries =
             | StoredScope.Case(id, revision, act, _), content ->
                 caseReceipt validated.InstallationId principal actor current id revision act content
             | StoredScope.Authority(target, act), EntryContent.Authority _ ->
-                Ok(
-                    ReceiptScope.Authority
-                        {
-                            TargetActorId = target
-                            Act = AuthorityRecordKinds.fromRecord act
-                        }
-                )
+                Ok(ReceiptScope.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
 
         scope

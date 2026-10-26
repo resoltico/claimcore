@@ -10,9 +10,11 @@ RUN --mount=type=cache,target=/root/.npm \
     test "$(node --version)" = "v$(cat .node-version)" \
     && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && npm --prefix web ci
+COPY tests/fixtures/message-template-vectors.json tests/fixtures/rendered-messages.json ./tests/fixtures/
 COPY contracts ./contracts
 COPY src/ClaimCore.Contract/Localization ./src/ClaimCore.Contract/Localization
 COPY web ./web
+COPY config/oxlint.json ./config/
 COPY prettier.config.mjs LICENSE ./
 RUN npm --prefix web run build
 
@@ -31,10 +33,10 @@ WORKDIR /app
 COPY --from=build /published/database/ ./database/
 COPY --from=build /published/cli/ ./cli/
 USER $APP_UID
-ENTRYPOINT ["dotnet", "/app/database/ClaimCore.Database.dll"]
+ENTRYPOINT ["dotnet", "/app/database/claimcore-database.dll"]
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS web
 WORKDIR /app
 COPY --from=build /published/web/ ./
 USER $APP_UID
-ENTRYPOINT ["dotnet", "ClaimCore.Web.dll"]
+ENTRYPOINT ["dotnet", "claimcore-server.dll"]

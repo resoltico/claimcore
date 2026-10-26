@@ -20,69 +20,53 @@ let private description fixture language arguments =
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
-let private endpointDescription fixture language =
-    let endpoint = description fixture language [ "endpoints"; "operation.execute" ]
-
-    for item in
-        [
-            "effect: LEDGER_EXECUTION"
-            "ClaimCore.Cli schema operation.execute request"
-            "ClaimCore.Cli schema operation.execute response"
-        ] do
-        Expect.stringContains
-            endpoint
-            item
-            "Endpoint meaning and exact lookup routes survive publication"
-
 let private selectedInputs fixture =
     for language in LocalizationPolicy.languages do
-        let opening = description fixture language [ "commands"; "OPEN" ]
+        for operation in OperationCatalog.all do
+            let output = description fixture language (OperationCatalog.words operation)
 
-        for field in
-            [
-                "incidentDate"
-                "incidentNotificationDate"
-                "incidentCountry"
-                "claimantName"
-                "insurerName"
-                "claimedAmount"
-                "claimedCurrency"
-            ] do
             Expect.stringContains
-                opening
-                ("fieldName: " + field + " — ")
-                "All seven OPEN fields have meaningful labels"
+                output
+                (OperationCatalog.synopsis operation)
+                "Published grammar matches the catalog"
 
-        let correction = description fixture language [ "commands"; "CORRECT_CASE" ]
+            let inputs, _ = OperationCatalog.derive operation
 
-        for item in
-            [
-                "registration"
-                "decision"
-                "payment"
-                "KEEP"
-                "REPLACE"
-                "CLEAR"
-                "paymentDecisionDate"
-                "payableAmount"
-                "payableCurrency"
-                "paymentDate"
-                "currentField: paymentDate"
-            ] do
-            Expect.stringContains
-                correction
-                item
-                "Correction choices and replacement fields survive publication"
+            for input in inputs do
+                if input.Spec.Argument <> CatalogArgument.Implicit then
+                    Expect.stringContains
+                        output
+                        (ClaimCore.Cli.ContractDiscovery.localized language input.Binding.LabelId)
+                        "Published input labels survive"
 
-        let authority = description fixture language [ "authority"; "SET_GRANT" ]
+let private frameOracle fixture =
+    let rows =
+        System.IO.File.ReadAllLines(
+            System.IO.Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "tests/fixtures/cli-frames.tsv"
+            )
+        )
 
-        for item in [ "target"; "role"; "scope"; "active" ] do
-            Expect.stringContains
-                authority
-                ("fieldName: " + item + " — ")
-                "Common and act authority input labels survive"
+    Expect.equal rows.Length 30 "Complete captured oracle"
 
-        endpointDescription fixture language
+    for row in rows do
+        let cells = row.Split('\t', 2)
+
+        let arguments =
+            cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
+            |> List.ofArray
+
+        let result = invoke fixture (arguments @ [ "--dry-run" ]) None
+        Expect.equal result.ExitCode 0 cells[0]
+        Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
+
+        Expect.isTrue
+            (System.Text.Json.Nodes.JsonNode.DeepEquals(
+                System.Text.Json.Nodes.JsonNode.Parse cells[1],
+                System.Text.Json.Nodes.JsonNode.Parse result.StandardOutput
+            ))
+            cells[0]
 
 let private diagnosticRoute fixture =
     let result =
@@ -108,10 +92,10 @@ let private diagnosticRoute fixture =
 
         for route in
             [
-                "ClaimCore.Cli schema invocation"
-                "ClaimCore.Cli schema response"
-                "ClaimCore.Cli help call"
-                "ClaimCore.Cli help session"
+                "claimcore schema invocation"
+                "claimcore schema response"
+                "claimcore help call"
+                "claimcore help session"
                 "NDJSON"
                 "EOF"
             ] do
@@ -120,4 +104,5 @@ let private diagnosticRoute fixture =
 
 let qualify fixture =
     selectedInputs fixture
+    frameOracle fixture
     diagnosticRoute fixture

@@ -98,7 +98,7 @@ let private calendarBounds (database: PostgresFixture.Database) =
                     [| box value |]
         // The ledger business date has no chronology constraint to mask its own range check.
         let insert =
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),2,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex') FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id='80000000-0000-4000-8000-000000000001'"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,scope,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),3,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex') FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id='80000000-0000-4000-8000-000000000001'"
 
         for value in [ "0001-01-01 BC"; "10000-01-01"; "infinity"; "-infinity" ] do
             do! rejected database insert [| box value |]

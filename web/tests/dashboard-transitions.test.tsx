@@ -83,7 +83,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   expect(await screen.findByRole("heading", { name: "Cases" })).toBeVisible();
 });
 
-it("opens a metadata-derived command from Dashboard's current-case transition", async () => {
+it("opens a metadata-derived act from Dashboard's current-case transition", async () => {
   const user = userEvent.setup();
   queueDefinitionAndList();
   queueDetail();

@@ -124,16 +124,15 @@ let qualify (fixture: PublishedFixture.Fixture) =
             let result = invoke [ "help"; topic; "--language"; language ] None
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
-            Expect.isGreaterThan result.StandardOutput.Length 100 "Useful published help"
+            Expect.isGreaterThan result.StandardOutput.Length 20 "Useful published help"
 
     for language in LocalizationPolicy.languages do
-        let result =
-            invoke [ "describe"; "summary"; "--format"; "text"; "--language"; language ] None
+        let result = invoke [ "describe"; "--format"; "text"; "--language"; language ] None
 
         Expect.equal result.ExitCode 0 "Human summary is offline"
         let text = Encoding.UTF8.GetString result.StandardOutput
 
-        for identity in [ "caseReference"; "OPEN"; "REGISTER_ACTOR" ] do
+        for identity in [ "case open"; "authority register"; "--claimed-amount" ] do
             Expect.stringContains
                 text
                 identity

@@ -17,7 +17,7 @@ it("localizes generated enum tokens while preserving identical authored principa
       value={{
         operationId: "10000000-0000-4000-8000-000000000001",
         target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "HUMAN" },
-        act: { kind: "REGISTER_ACTOR" },
+        act: { kind: "REGISTER" },
       }}
     />,
   );
@@ -72,7 +72,7 @@ it("a failed history read stops loading without inventing a successful empty pag
     <CaseHistory
       token="synthetic"
       caseReference="SYNTHETIC"
-      fields={productMetadata.descriptors.fields}
+      fields={productMetadata.catalog.fields}
     />,
   );
   expect(await screen.findByRole("alert")).toBeVisible();

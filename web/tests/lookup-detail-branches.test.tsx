@@ -18,7 +18,7 @@ import {
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("does not request history or commands for a missing case", async () => {
+it("does not request history or acts for a missing case", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "REJECTED", unavailable));
   render(
@@ -26,9 +26,9 @@ it("does not request history or commands for a missing case", async () => {
       token="token"
       caseReference="MISSING"
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
@@ -56,9 +56,9 @@ it("keeps a failed history page request-local without erasing current case data"
       token="token"
       caseReference="CASE-1"
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
@@ -88,9 +88,9 @@ it("shows a typed unavailable history refusal after revalidating readable curren
       token="token"
       caseReference="CASE-1"
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   await waitFor(() => {

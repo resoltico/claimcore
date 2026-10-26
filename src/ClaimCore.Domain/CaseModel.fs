@@ -17,7 +17,6 @@ module Revision =
 [<RequireQualifiedAccess>]
 type RecordViolation =
     | InvalidScalar of InputTarget * Violation
-    | IncompleteDecision
     | InvalidProgress
     | NonCanonicalFields
     | RevisionOutOfRange

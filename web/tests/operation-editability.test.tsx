@@ -11,7 +11,7 @@ const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
 
@@ -38,7 +38,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   vi.mocked(globalThis.fetch)
     .mockImplementationOnce(() => Promise.resolve(previewReply()))
     .mockResolvedValueOnce(wireResponse("operation.execute"));
-  render(editor({ current, initialCommand: "CLOSE", onCommitted: committed }));
+  render(editor({ current, initialAct: "CLOSE", onCommitted: committed }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
@@ -52,17 +52,17 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   expect(committed).toHaveBeenCalledOnce();
 });
 
-it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
+it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
   "reflects reducer editability during preparation, review, submission and uncertainty for %s",
-  async (command) => {
+  async (act) => {
     const user = userEvent.setup();
     const preparing = deferredResponse();
     const submitting = deferredResponse();
     vi.mocked(globalThis.fetch)
       .mockReturnValueOnce(preparing.promise)
       .mockReturnValueOnce(submitting.promise);
-    render(editor({ current, initialCommand: command }));
-    if (command === "CORRECT_CASE") {
+    render(editor({ current, initialAct: act }));
+    if (act === "CORRECT") {
       await user.selectOptions(
         document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,
         "REPLACE",

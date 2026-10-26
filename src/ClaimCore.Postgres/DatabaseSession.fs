@@ -17,24 +17,24 @@ type internal RecordCorruptException(reason: string) =
     inherit Exception(reason)
 
 module internal DatabaseSession =
-    let command (connection: NpgsqlConnection) sql (parameters: objnull array) =
-        let command = new NpgsqlCommand(sql, connection)
+    let statement (connection: NpgsqlConnection) sql (parameters: objnull array) =
+        let statement = new NpgsqlCommand(sql, connection)
 
         for value in parameters do
-            command.Parameters.Add(NpgsqlParameter(Value = value)) |> ignore
+            statement.Parameters.Add(NpgsqlParameter(Value = value)) |> ignore
 
-        command
+        statement
 
     let execute connection sql parameters (token: CancellationToken) =
         task {
-            use command = command connection sql parameters
-            return! command.ExecuteNonQueryAsync(token)
+            use statement = statement connection sql parameters
+            return! statement.ExecuteNonQueryAsync(token)
         }
 
     let rows connection sql parameters (token: CancellationToken) =
         task {
-            use command = command connection sql parameters
-            use! reader = command.ExecuteReaderAsync(token)
+            use statement = statement connection sql parameters
+            use! reader = statement.ExecuteReaderAsync(token)
             let rows = ResizeArray<obj array>()
             let mutable reading = true
 

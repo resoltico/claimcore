@@ -1,4 +1,4 @@
-import type { CaseReceipt, FieldDescriptor } from "../api/service";
+import type { CaseReceipt, CatalogDocument } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { CaseFieldsView } from "./CaseFieldsView";
 
@@ -8,7 +8,7 @@ export const ReceiptFields = ({
   context,
 }: {
   scope: CaseReceipt["scope"];
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: CatalogDocument["fields"];
   context: string;
 }) => {
   const p = usePresentation();

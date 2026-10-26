@@ -2,12 +2,12 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
-import type { CurrentCase, Descriptors } from "../api/service";
+import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { isCaseAct, type CommandKind } from "../interaction/metadata";
+import { isCaseAct, type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
@@ -16,39 +16,39 @@ type CaseDetailProps = {
   token: string;
   caseReference: string;
   reloadSignal: number;
-  definition: Descriptors;
+  definition: CatalogDocument;
   onBack: () => void;
-  onCommand: (current: CurrentCase, command: CommandKind) => void;
+  onAct: (current: CurrentCase, act: ActKind) => void;
 };
 
-const AvailableCommands = ({
+const AvailableActs = ({
   current,
-  onCommand,
+  onAct,
 }: {
   current: CurrentCase;
-  definition: Descriptors;
-  onCommand: (command: CommandKind) => void;
+  definition: CatalogDocument;
+  onAct: (act: ActKind) => void;
 }) => {
   const p = usePresentation();
   return (
-    <section aria-labelledby="commands-title">
-      <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
+    <section aria-labelledby="acts-title">
+      <h2 id="acts-title">{p.text("ui.availableActs")}</h2>
       <div className="actions">
         {current.advice.acts
           .map((offer) => offer.act)
           .filter(isCaseAct)
-          .map((command) => (
+          .map((act) => (
             <Button
-              key={command}
+              key={act}
               onPress={() => {
-                onCommand(command);
+                onAct(act);
               }}
-              aria-label={p.text("ui.commandDescription", {
-                label: p.commandLabel(command),
-                meaning: p.commandMeaning(command),
+              aria-label={p.text("ui.actDescription", {
+                label: p.actLabel(act),
+                meaning: p.actMeaning(act),
               })}
             >
-              {p.commandLabel(command)}
+              {p.actLabel(act)}
             </Button>
           ))}
       </div>
@@ -73,11 +73,11 @@ const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading
 const CurrentPresentation = ({
   current,
   definition,
-  onCommand,
+  onAct,
 }: {
   current: CurrentCase;
-  definition: Descriptors;
-  onCommand: (current: CurrentCase, command: CommandKind) => void;
+  definition: CatalogDocument;
+  onAct: (current: CurrentCase, act: ActKind) => void;
 }) => {
   const p = usePresentation();
   return (
@@ -88,11 +88,11 @@ const CurrentPresentation = ({
         fields={definition.fields}
         context={p.text("ui.currentCase")}
       />
-      <AvailableCommands
+      <AvailableActs
         current={current}
         definition={definition}
-        onCommand={(command) => {
-          onCommand(current, command);
+        onAct={(act) => {
+          onAct(current, act);
         }}
       />
     </>
@@ -121,13 +121,7 @@ const CaseHeader = ({
   );
 };
 
-const CaseDisclosure = ({
-  token,
-  caseReference,
-  definition,
-  onBack,
-  onCommand,
-}: CaseDetailProps) => {
+const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(caseReference, token);
   const state = current.value;
@@ -147,7 +141,7 @@ const CaseDisclosure = ({
         </Button>
       )}
       {lookup === null ? null : (
-        <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
+        <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
       )}
       {state === null ? null : <LifecycleStatus value={state} />}
       {state?.state.tag === "ERASED" ? (

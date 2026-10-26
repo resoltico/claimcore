@@ -1,9 +1,23 @@
 namespace ClaimCore.Cli
 
 open System
+open System.Collections.Generic
 open System.Globalization
 open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
+
+[<RequireQualifiedAccess>]
+type UsageError =
+    | UnknownCommand of string * string list
+    | UnknownOption of string * string option
+    | MissingOption of string
+    | MissingOperand of string
+    | ExtraOperand of string
+    | InvalidInteger of string * string
+    | InvalidChoice of string * string * string list
+    | NotApplicable of string * string
+    | DuplicateOption of string
+    | MissingValue of string
+    | RequestTooLarge of int
 
 type PreparedVerb =
     {
@@ -13,351 +27,422 @@ type PreparedVerb =
         Language: string
     }
 
-/// Authored syntax refusals are Result values.
 module Grammar =
-    type private UsageResultBuilder() =
-        member _.Bind(value, binder) = Result.bind binder value
-        member _.Return value = Ok value
-        member _.ReturnFrom value = value
+    let private flag name =
+        "--" + OperationCatalog.kebab (OperationCatalog.inputKey name)
 
-    let private result = UsageResultBuilder()
-    let private guard condition = if condition then Ok() else Error()
+    let private operand name =
+        OperationCatalog.kebab (OperationCatalog.inputKey name) |> _.ToUpperInvariant()
 
-    let private choose =
+    let private distance (left: string) (right: string) =
+        let costs = Array2D.zeroCreate<int> (left.Length + 1) (right.Length + 1)
+
+        for i in 0 .. left.Length do
+            costs[i, 0] <- i
+
+        for j in 0 .. right.Length do
+            costs[0, j] <- j
+
+        for i in 1 .. left.Length do
+            for j in 1 .. right.Length do
+                costs[i, j] <-
+                    min
+                        (min (costs[i - 1, j] + 1) (costs[i, j - 1] + 1))
+                        (costs[i - 1, j - 1] + (if left[i - 1] = right[j - 1] then 0 else 1))
+
+        costs[left.Length, right.Length]
+
+    let private suggestions value choices =
+        choices
+        |> List.map (fun choice -> distance value choice, choice)
+        |> List.sort
+        |> List.filter (fun (cost, _) -> cost <= 3)
+        |> List.truncate 3
+        |> List.map snd
+
+    let private errorKey =
         function
-        | Some value -> Ok value
-        | None -> Error()
+        | UsageError.UnknownOption(flag, _)
+        | UsageError.MissingOption flag
+        | UsageError.InvalidInteger(flag, _)
+        | UsageError.InvalidChoice(flag, _, _)
+        | UsageError.NotApplicable(flag, _)
+        | UsageError.DuplicateOption flag
+        | UsageError.MissingValue flag -> Some flag
+        | _ -> None
 
-    let private obj = JsonValue.Object
-    let private str = JsonValue.String
+    let private priority =
+        function
+        | UsageError.DuplicateOption _ -> 5
+        | UsageError.MissingValue _ -> 4
+        | UsageError.InvalidChoice _
+        | UsageError.InvalidInteger _ -> 3
+        | UsageError.MissingOption _ -> 0
+        | _ -> 2
 
-    let private fold action initial values =
+    let private errors (values: ResizeArray<UsageError>) =
         values
-        |> List.fold
-            (fun state value -> state |> Result.bind (fun current -> action current value))
-            (Ok initial)
-
-    let private flags (arguments: string list) =
-        let rec collect operands options (remaining: string list) =
-            match remaining with
-            | [] -> Ok(List.rev operands, options)
-            | flag :: tail when flag.StartsWith("--", StringComparison.Ordinal) ->
-                if Map.containsKey flag options then
-                    Error()
-                elif List.contains flag [ "--dry-run"; "--preview"; "--full" ] then
-                    collect operands (Map.add flag "true" options) tail
-                else
-                    match tail with
-                    | value :: rest -> collect operands (Map.add flag value options) rest
-                    | [] -> Error()
-            | value :: tail -> collect (value :: operands) options tail
-
-        collect [] Map.empty arguments
-
-    let private take key (options: Map<string, string> ref) =
-        let flag = "--" + CliSyntax.kebab key
-        let value = Map.tryFind flag options.Value
-        options.Value <- Map.remove flag options.Value
-        value
-
-    let private number (value: string) =
-        match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
-        | true, parsed when parsed <= JsonValue.MaximumInteger -> Ok(JsonValue.Integer parsed)
-        | _ -> Error()
-
-    let rec private valueAt path value =
-        match path with
-        | [] -> Some value
-        | name :: rest -> JsonValue.tryMember name value |> Option.bind (valueAt rest)
-
-    let rec private assign path value target =
-        match path with
-        | [] -> value
-        | name :: rest ->
-            let members =
-                match target with
-                | JsonValue.Object members -> members
-                | _ -> []
-
-            let child =
-                members
-                |> List.tryFind (fst >> (=) name)
-                |> Option.map snd
-                |> Option.defaultValue (obj [])
-
-            obj ((members |> List.filter (fst >> (<>) name)) @ [ name, assign rest value child ])
+        |> Seq.distinct
+        |> Seq.groupBy errorKey
+        |> Seq.collect (fun (key, group) ->
+            if key.IsNone then
+                group
+            else
+                group |> Seq.sortByDescending priority |> Seq.truncate 1)
+        |> Seq.toList
 
     let private constant =
         function
-        | BindingValue.Text value -> str value
-        | BindingValue.Boolean value -> JsonValue.Boolean value
+        | BindingValue.Text value -> JsonValue.String value
         | BindingValue.Integer value -> JsonValue.Integer value
+        | BindingValue.Boolean value -> JsonValue.Boolean value
 
-    let private assignments values target =
-        values
-        |> List.fold
-            (fun state (value: BindingAssignment) -> assign value.Path (constant value.Value) state)
-            target
+    let private tokenize known switches arguments (problems: ResizeArray<UsageError>) =
+        let options = Dictionary<string, string option>()
+        let operands = ResizeArray<string>()
 
-    let private applicable target (input: CliInput) =
-        input.Binding.Branches
-        |> List.forall (fun branch -> valueAt branch.Path target = Some(str branch.Value))
+        let add name value =
+            if options.ContainsKey name then
+                problems.Add(UsageError.DuplicateOption name)
+            else
+                options.Add(name, value)
 
-    let private supplied (options: Map<string, string> ref) (input: CliInput) =
-        match input.Argument with
-        | Some(InvocationArgument.Flag name) -> Map.containsKey ("--" + name) options.Value
-        | _ -> false
+        let rec scan =
+            function
+            | [] -> ()
+            | (name: string) :: rest when name.StartsWith("--", StringComparison.Ordinal) ->
+                if not (List.contains name known) then
+                    problems.Add(
+                        UsageError.UnknownOption(name, suggestions name known |> List.tryHead)
+                    )
 
-    let private operand newId operands options target (input: CliInput) =
-        let value =
-            match input.Argument with
-            | Some(InvocationArgument.Positional index) -> List.tryItem index operands
-            | Some(InvocationArgument.Flag name) -> take name options
-            | None -> None
+                if List.contains name switches then
+                    add name (Some "true")
+                    scan rest
+                else
+                    match rest with
+                    | value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
+                        add name (Some value)
+                        scan tail
+                    | _ ->
+                        if List.contains name known then
+                            problems.Add(UsageError.MissingValue name)
 
-        match input.Binding.Source, value with
-        | InputSource.OperationIdentity, None -> Ok(str (newId ()))
-        | _, None -> valueAt input.Binding.Path target |> choose
-        | _, Some value ->
-            match input.Binding.Kind with
-            | BindingKind.Integer -> number value
-            | BindingKind.Boolean -> Error()
-            | BindingKind.Group _ -> Ok(str (value.ToUpperInvariant()))
-            | _ -> Ok(str value)
+                        add name None
+                        scan rest
+            | value :: rest ->
+                operands.Add value
+                scan rest
 
-    let private bindInputs newId operands options target inputs =
-        inputs
-        |> fold
-            (fun state input ->
-                result {
-                    let! value = operand newId operands options state input
-                    return assign input.Binding.Path value state
-                })
-            target
+        scan arguments
+        options, List.ofSeq operands
 
-    let private findInteraction (definitions: CliInteraction list) family verb =
-        let scope =
-            match family with
-            | "case" -> Some OperationScopes.Case
-            | "authority" -> Some OperationScopes.Authority
-            | _ -> None
-
-        definitions
-        |> List.collect (fun interaction ->
-            interaction.Invocations |> List.map (fun alias -> interaction, alias))
-        |> List.tryFind (fun (interaction, alias) ->
-            Some interaction.Definition.Scope = scope && alias.Verb = verb)
-        |> choose
-
-    let private positions (inputs: CliInput list) =
-        let positions =
-            inputs
-            |> List.choose (fun input ->
-                match input.Argument with
-                | Some(InvocationArgument.Positional index) -> Some index
-                | _ -> None)
-
-        if positions.IsEmpty then 0 else List.max positions + 1
-
-    let private mutation newId definitions family verb operands options =
-        result {
-            let! interaction, alias = findInteraction definitions family verb
-
-            let initial =
-                obj []
-                |> assignments interaction.Definition.Constants
-                |> assignments alias.Constants
-
-            let selected =
-                interaction.Inputs
-                |> List.fold
-                    (fun state input ->
-                        if supplied options input then
-                            assignments input.WhenPresent state
-                        else
-                            state)
-                    initial
-            // Select tagged groups before deciding which replacement fields are required.
-            let selectors =
-                interaction.Inputs
-                |> List.filter (fun input ->
-                    match input.Binding.Kind with
-                    | BindingKind.Group _ -> applicable selected input
-                    | _ -> false)
-
-            let! selected = bindInputs newId operands options selected selectors
-            let inputs = interaction.Inputs |> List.filter (applicable selected)
-            do! guard (List.length operands = positions inputs)
-            return! bindInputs newId operands options selected inputs
-        }
-
-    let private page (metadata: PresentationDescriptors) options =
-        result {
-            let cursor =
-                take "cursor" options
-                |> Option.map (fun value -> "cursor", str value)
-                |> Option.toList
-
-            let! limit =
-                match take "limit" options with
-                | Some value -> number value
-                | None -> Ok(JsonValue.Integer(int64 metadata.Limits.DefaultPageSize))
-
-            return cursor @ [ "limit", limit ]
-        }
-
-    let private read metadata command operands options =
-        let one () =
-            match operands with
-            | [ value ] -> Ok(str value)
-            | _ -> Error()
-
-        let reference = FieldTable.key BusinessField.CaseReference
-
-        result {
-            let! members =
-                match command with
-                | "case.get" -> one () |> Result.map (fun value -> [ reference, value ])
-                | "operation.resolve"
-                | "operation.observe" ->
-                    one () |> Result.map (fun value -> [ "operationId", value ])
-                | "authority.grants" ->
-                    result {
-                        let! actor = one ()
-                        let! pagination = page metadata options
-                        return ("actorId", actor) :: pagination
-                    }
-                | "case.history" ->
-                    result {
-                        let! target = one ()
-
-                        let detail =
-                            if take "full" options = Some "true" then
-                                HistoryDetail.Full
-                            else
-                                HistoryDetail.Summary
-
-                        let! pagination = page metadata options
-
-                        return
-                            [
-                                reference, target
-                                "detail", str (Vocabulary.token HistoryDetails.vocabulary detail)
-                            ]
-                            @ pagination
-                    }
-                | "case.list"
-                | "authority.list" when List.isEmpty operands -> page metadata options
-                | "context" when List.isEmpty operands -> Ok []
-                | _ -> Error()
-
-            return command, obj members
-        }
-
-    let private selection newId metadata definitions operands options =
-        match operands with
-        | "context" :: rest -> read metadata "context" rest options
-        | family :: verb :: rest ->
-            let command = family + "." + verb
-
-            match Api.tryFind command with
-            | Some _ -> read metadata command rest options
+    let private atom name kind value (problems: ResizeArray<UsageError>) =
+        match kind with
+        | CatalogAtom.Text -> JsonValue.String value
+        | CatalogAtom.Integer ->
+            match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
+            | true, number when number <= JsonValue.MaximumInteger -> JsonValue.Integer number
+            | _ ->
+                problems.Add(UsageError.InvalidInteger(name, value))
+                JsonValue.Null
+        | CatalogAtom.Choice choices ->
+            match
+                choices
+                |> List.tryFind (fun choice ->
+                    value = choice || value = OperationCatalog.kebab choice)
+            with
+            | Some choice -> JsonValue.String choice
             | None ->
-                mutation newId definitions family verb rest options
-                |> Result.map (fun input ->
-                    (if take "preview" options = Some "true" then
-                         "operation.preview"
-                     else
-                         "operation.execute"),
-                    input)
-        | _ -> Error()
-
-    let internal prepareWith newId metadata definitions arguments =
-        result {
-            let! operands, values = flags arguments
-            let options = ref values
-            let dryRun = take "dryRun" options = Some "true"
-            let format = take "format" options |> Option.defaultValue "text"
-            let language = take "language" options |> Option.defaultValue "en"
-
-            do!
-                guard (
-                    List.contains format [ "text"; "json" ]
-                    && List.contains language LocalizationPolicy.languages
+                problems.Add(
+                    UsageError.InvalidChoice(name, value, List.map OperationCatalog.kebab choices)
                 )
 
-            let! endpoint, input = selection newId metadata definitions operands options
-            do! guard options.Value.IsEmpty
-            let bytes = obj [ "endpoint", str endpoint; "input", input ] |> WireWriter.bytes
-            let! _ = Frames.admit bytes |> Result.mapError (fun _ -> ())
+                JsonValue.Null
+        | CatalogAtom.Switch(off, on) -> JsonValue.String(if value = "true" then on else off)
 
-            return
-                {
-                    Bytes = bytes
-                    DryRun = dryRun
-                    Text = format = "text"
-                    Language = language
-                }
-        }
+    let private build
+        newId
+        entry
+        (options: Dictionary<string, string option>)
+        operands
+        (problems: ResizeArray<UsageError>)
+        =
+        let derived, _ = OperationCatalog.derive entry
+        let used = HashSet<string>()
+        let selectors = Dictionary<string, string>()
+        let mutable position = 0
 
-    let prepare newId descriptors arguments =
-        result {
-            let! metadata =
-                DescriptorCodecs.codec.Read "$" descriptors |> Result.mapError (fun _ -> ())
+        let option name =
+            match options.TryGetValue name with
+            | true, value -> value
+            | _ -> None
 
-            let! definitions = CliSyntax.compile metadata
-            return! prepareWith newId metadata definitions arguments
-        }
+        let input spec =
+            let name, raw =
+                match spec.Argument with
+                | CatalogArgument.Operand ->
+                    let raw = List.tryItem position operands
+                    position <- position + 1
+                    operand spec.Name, raw
+                | _ ->
+                    let name = flag spec.Name in
+                    used.Add name |> ignore
+                    name, option name
 
-    let private argumentDescription (input: CliInput) =
-        match input.Argument with
-        | None -> None
-        | Some(InvocationArgument.Positional _) -> Some "REF"
-        | Some(InvocationArgument.Flag name) ->
-            let value =
-                match input.Binding.Kind with
-                | BindingKind.Group options ->
-                    options |> List.map _.ToLowerInvariant() |> String.concat "|"
-                | BindingKind.Integer -> "N"
-                | _ -> "VALUE"
+            match raw with
+            | Some value -> Some(atom name spec.Atom value problems)
+            | None when
+                spec.Name = CatalogInputName.Technical TechnicalInput.OperationId
+                && entry.Act.IsSome
+                ->
+                Some(JsonValue.String(newId ()))
+            | None when spec.Default.IsSome -> Some(constant spec.Default.Value)
+            | None when spec.Required ->
+                problems.Add(
+                    if spec.Argument = CatalogArgument.Operand then
+                        UsageError.MissingOperand name
+                    else
+                        UsageError.MissingOption name
+                )
 
-            let text = "--" + name + " " + value
+                Some JsonValue.Null
+            | None ->
+                match spec.Atom with
+                | CatalogAtom.Switch(off, _) -> Some(JsonValue.String off)
+                | _ -> None
 
-            let optional =
-                input.Binding.Source = InputSource.OperationIdentity
-                || not input.WhenPresent.IsEmpty
-                || not input.Binding.Branches.IsEmpty
+        let rec supplied shape =
+            match shape with
+            | CatalogShape.Input spec ->
+                spec.Argument = CatalogArgument.Named && options.ContainsKey(flag spec.Name)
+            | CatalogShape.Object fields -> fields |> List.exists (snd >> supplied)
+            | CatalogShape.Variants(_, _, cases) -> cases |> List.exists (snd >> supplied)
+            | CatalogShape.Const _ -> false
 
-            Some(if optional then "[" + text + "]" else text)
+        let rec walk path =
+            function
+            | CatalogShape.Const value -> Some(constant value)
+            | CatalogShape.Input spec -> input spec
+            | CatalogShape.Object members ->
+                members
+                |> List.choose (fun (name, shape) ->
+                    walk (path @ [ name ]) shape |> Option.map (fun value -> name, value))
+                |> JsonValue.Object
+                |> Some
+            | CatalogShape.Variants(tag, selection, cases) ->
+                let name, value =
+                    match selection with
+                    | CatalogSelection.ByChoice name ->
+                        let key = flag name
+                        used.Add key |> ignore
 
-    let description value =
-        result {
-            let! metadata =
-                DescriptorCodecs.codec.Read "$" value |> Result.mapError (fun _ -> ())
+                        let chosen =
+                            match option key with
+                            | None ->
+                                problems.Add(UsageError.MissingOption key)
+                                fst cases.Head
+                            | Some value ->
+                                match
+                                    atom key (CatalogAtom.Choice(List.map fst cases)) value problems
+                                with
+                                | JsonValue.String tag -> tag
+                                | _ -> fst cases.Head
 
-            let! definitions = CliSyntax.compile metadata
+                        name, chosen
+                    | CatalogSelection.ByPresence name ->
+                        name,
+                        (cases
+                         |> List.tryFind (snd >> supplied)
+                         |> Option.defaultValue cases.Head
+                         |> fst)
 
-            let mutations =
-                definitions
-                |> List.collect (fun interaction ->
-                    interaction.Invocations
-                    |> List.map (fun alias ->
-                        let family =
-                            if interaction.Definition.Scope = OperationScopes.Case then
-                                "case"
+                selectors[String.concat "." (path @ [ tag ])] <- value
+                let body = cases |> List.find (fst >> (=) value) |> snd |> walk path
+
+                match body with
+                | Some(JsonValue.Object fields) ->
+                    Some(JsonValue.Object((tag, JsonValue.String value) :: fields))
+                | _ ->
+                    invalidOp (
+                        "A catalog variant must be an object: " + OperationCatalog.inputKey name
+                    )
+
+        let body =
+            walk [] entry.Body
+            |> Option.defaultWith (fun () -> invalidOp "A catalog body must be an object")
+
+        for value in operands |> List.skip (min position operands.Length) do
+            problems.Add(UsageError.ExtraOperand value)
+
+        for item in derived do
+            let name = flag item.Spec.Name
+
+            if
+                item.Spec.Argument = CatalogArgument.Named
+                && options.ContainsKey name
+                && not (used.Contains name)
+            then
+                let because =
+                    item.Binding.Branches
+                    |> List.tryPick (fun branch ->
+                        match selectors.TryGetValue(String.concat "." branch.Path) with
+                        | true, value when value <> branch.Value ->
+                            derived
+                            |> List.tryFind (fun selector -> selector.Binding.Path = branch.Path)
+                            |> Option.map (fun selector ->
+                                flag selector.Spec.Name + " " + OperationCatalog.kebab value)
+                        | _ -> None)
+                    |> Option.defaultValue "the selected command"
+
+                problems.Add(UsageError.NotApplicable(name, because))
+
+        body
+
+    let prepare newId arguments =
+        let found =
+            OperationCatalog.all
+            |> List.tryPick (fun entry ->
+                let words = OperationCatalog.words entry
+
+                if List.truncate words.Length arguments = words then
+                    Some(entry, List.skip words.Length arguments)
+                else
+                    None)
+
+        match found with
+        | None ->
+            let value = String.concat " " (List.truncate 2 arguments)
+
+            Error
+                [
+                    UsageError.UnknownCommand(
+                        value,
+                        suggestions
+                            value
+                            (OperationCatalog.all
+                             |> List.map (OperationCatalog.words >> String.concat " "))
+                    )
+                ]
+        | Some(entry, arguments) ->
+            let problems = ResizeArray<UsageError>()
+            let inputs, _ = OperationCatalog.derive entry
+
+            let named =
+                inputs |> List.filter (fun input -> input.Spec.Argument = CatalogArgument.Named)
+
+            let flags = named |> List.map (fun input -> flag input.Spec.Name)
+
+            let switches =
+                named
+                |> List.choose (fun input ->
+                    match input.Spec.Atom with
+                    | CatalogAtom.Switch _ -> Some(flag input.Spec.Name)
+                    | _ -> None)
+
+            let options, operands =
+                tokenize
+                    ("--dry-run" :: "--preview" :: "--format" :: "--language" :: flags)
+                    ("--dry-run" :: "--preview" :: switches)
+                    arguments
+                    problems
+
+            let body = build newId entry options operands problems
+
+            let endpoint =
+                if options.ContainsKey "--preview" && entry.Act.IsSome then
+                    Api.operationPreview.Id
+                else
+                    entry.Endpoint
+
+            if options.ContainsKey "--preview" && entry.Act.IsNone then
+                problems.Add(
+                    UsageError.NotApplicable(
+                        "--preview",
+                        OperationCatalog.words entry |> String.concat " "
+                    )
+                )
+
+            let option name fallback =
+                match options.TryGetValue name with
+                | true, Some value -> value
+                | _ -> fallback
+
+            let format = option "--format" "text"
+            let language = option "--language" "en"
+
+            if not (List.contains format [ "text"; "json" ]) then
+                problems.Add(UsageError.InvalidChoice("--format", format, [ "text"; "json" ]))
+
+            if not (List.contains language LocalizationPolicy.languages) then
+                problems.Add(
+                    UsageError.InvalidChoice("--language", language, LocalizationPolicy.languages)
+                )
+
+            let found = errors problems
+
+            if not found.IsEmpty then
+                Error found
+            else
+                let admitted =
+                    Api.tryFind endpoint
+                    |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
+                    |> fun endpoint ->
+                        endpoint.Accept
+                            { new IEndpointVisitor<Result<JsonValue, Problem>> with
+                                member _.Visit endpoint =
+                                    endpoint.Input.Read "$" body |> Result.map endpoint.Input.Write
+                            }
+
+                match admitted with
+                | Error problem ->
+                    let path = problem.Path.TrimStart('$', '.')
+                    let input = inputs |> List.tryFind (fun input -> input.Binding.Identity = path)
+
+                    let name =
+                        input
+                        |> Option.map (fun input ->
+                            if input.Spec.Argument = CatalogArgument.Operand then
+                                operand input.Spec.Name
                             else
-                                "authority"
+                                flag input.Spec.Name)
+                        |> Option.defaultValue path
 
-                        String.concat
-                            " "
-                            ([ family; alias.Verb ]
-                             @ List.choose argumentDescription interaction.Inputs)))
+                    let raw =
+                        let rec at value =
+                            function
+                            | [] ->
+                                match value with
+                                | JsonValue.String value -> value
+                                | JsonValue.Integer value -> string value
+                                | _ -> ""
+                            | key :: rest ->
+                                JsonValue.tryMember key value
+                                |> Option.map (fun value -> at value rest)
+                                |> Option.defaultValue ""
 
-            let reads =
-                Api.all
-                |> List.filter (fun endpoint ->
-                    Api.effect endpoint <> EndpointEffect.LedgerExecution)
-                |> List.map (Api.id >> fun id -> "schema " + id + " request")
+                        at body (path.Split('.') |> List.ofArray)
 
-            return String.concat "\n" (mutations @ reads @ [ "operation resolve OPERATION_ID" ])
-        }
+                    let issue =
+                        match input with
+                        | Some input when input.Spec.Atom = CatalogAtom.Integer ->
+                            UsageError.InvalidInteger(name, raw)
+                        | _ -> UsageError.InvalidChoice(name, raw, [])
+
+                    Error [ issue ]
+                | Ok input ->
+                    let bytes =
+                        JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]
+                        |> WireWriter.bytes
+
+                    // The endpoint codec has admitted the body; frame admission also enforces byte limits.
+                    Frames.admit bytes
+                    |> Result.mapError (fun _ ->
+                        [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
+                    |> Result.map (fun _ ->
+                        {
+                            Bytes = bytes
+                            DryRun = options.ContainsKey "--dry-run"
+                            Text = format = "text"
+                            Language = language
+                        })

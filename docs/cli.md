@@ -1,0 +1,444 @@
+# CLI reference
+
+Generated from the typed Contract operation catalog. Regenerate with `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts`; generator `--check` also checks this file.
+
+A synopsis shows required inputs and brackets optional inputs. Choices use lowercase kebab spelling; exact uppercase wire tokens are also accepted. Mutation operations generate an operation ID when omitted. Keep that ID and the exact prepared frame for retries.
+
+Use `--dry-run` to print the prepared JSON frame without authentication. This checks protocol shape and byte limits; domain admission, authorization and current revision are checked by the service. Use `--preview` with a case or authority act to request a review without recording it.
+
+Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values.
+
+Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
+
+## case open
+
+Open a case
+
+Register the incident, claimant, insurer and amount claimed.
+
+```sh
+claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--incident-date` | Incident date — Date on which the incident occurred. |  |  |
+| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. |  |  |
+| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Name of the person or company making the claim. |  |  |
+| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. |  |  |
+| `--claimed-amount` | Amount claimed — Amount requested by the claimant. |  |  |
+| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. |  |  |
+
+## case amend-registration
+
+Amend registration
+
+Replace the initial facts. The handler's case reference remains unchanged.
+
+```sh
+claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--incident-date` | Incident date — Date on which the incident occurred. |  |  |
+| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. |  |  |
+| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Name of the person or company making the claim. |  |  |
+| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. |  |  |
+| `--claimed-amount` | Amount claimed — Amount requested by the claimant. |  |  |
+| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. |  |  |
+
+## case correct
+
+Correct case facts
+
+Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money.
+
+```sh
+claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|replace [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|replace|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|clear [--payment-date VALUE]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--registration` | Registration — Keep the current registration details or replace all seven details together. | keep, replace |  |
+| `--incident-date` | Incident date — Date on which the incident occurred. |  |  |
+| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. |  |  |
+| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Name of the person or company making the claim. |  |  |
+| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. |  |  |
+| `--claimed-amount` | Amount claimed — Amount requested by the claimant. |  |  |
+| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. |  |  |
+| `--decision` | Payment decision — Keep the current payment decision, replace its date, amount and currency together, or clear the decision. | keep, replace, clear |  |
+| `--payment-decision-date` | Payment decision date — Date when this claims handler decided the amount to be paid. Not recorded until a decision is made. |  |  |
+| `--payable-amount` | Amount to be paid — Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount. |  |  |
+| `--payable-currency` | Currency of amount to be paid — Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency. |  |  |
+| `--payment` | Payment record — Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money. | keep, replace, clear |  |
+| `--payment-date` | Payment date — Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer. |  |  |
+
+## case decide
+
+Record payment decision
+
+Record or replace the decided amount and currency. This does not send money.
+
+```sh
+claimcore case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--payment-decision-date` | Payment decision date — Date when this claims handler decided the amount to be paid. Not recorded until a decision is made. |  |  |
+| `--payable-amount` | Amount to be paid — Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount. |  |  |
+| `--payable-currency` | Currency of amount to be paid — Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency. |  |  |
+
+## case withdraw-decision
+
+Withdraw payment decision
+
+Clear the unpaid decision while preserving its history.
+
+```sh
+claimcore case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+
+## case record-payment
+
+Record actual payment
+
+Record the date the full decided amount was actually paid. This does not execute or verify a transfer.
+
+```sh
+claimcore case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--payment-date` | Payment date — Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer. |  |  |
+
+## case clear-payment
+
+Correct an erroneous payment record
+
+Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains.
+
+```sh
+claimcore case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+
+## case close
+
+Close the case
+
+Close the case. Closing does not mean that payment was made.
+
+```sh
+claimcore case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+
+## case reopen
+
+Reopen the case
+
+Reopen the case, preserving its details and history.
+
+```sh
+claimcore case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+
+## case void
+
+Void case record
+
+Block business acts while retaining the case and its history.
+
+```sh
+claimcore case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--reason` | Stewardship reason — Why the case record should be voided or reinstated. |  |  |
+
+## case reinstate
+
+Reinstate case record
+
+Restore ordinary case work on a voided record.
+
+```sh
+claimcore case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--reason` | Stewardship reason — Why the case record should be voided or reinstated. |  |  |
+
+## case erase
+
+Erase case payload
+
+Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased.
+
+```sh
+claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+
+## authority register
+
+Register actor
+
+Register a principal without granting case or administration capabilities.
+
+```sh
+claimcore authority register [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+
+## authority grant
+
+Grant role
+
+Grant a role at installation or case scope.
+
+```sh
+claimcore authority grant [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+| `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
+| `--case-reference` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+
+## authority revoke
+
+Revoke role
+
+Revoke a role at installation or case scope. The final enabled human owner remains protected.
+
+```sh
+claimcore authority revoke [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+| `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
+| `--case-reference` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+
+## authority enable
+
+Enable actor
+
+Enable a registered actor.
+
+```sh
+claimcore authority enable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+
+## authority disable
+
+Disable actor
+
+Disable a registered actor. The final enabled human owner remains protected.
+
+```sh
+claimcore authority disable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+
+## case get
+
+Read a case
+
+Read the current accepted case view and available acts.
+
+```sh
+claimcore case get CASE-REFERENCE
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+
+## case list
+
+List cases
+
+Read one page of cases visible to the actor.
+
+```sh
+claimcore case list [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## case history
+
+Read case history
+
+Read accepted history for one case, within current disclosure permissions.
+
+```sh
+claimcore case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. |  |  |
+| `--full` | Full history — Include accepted snapshots when full history is visible to the actor. |  |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## operation observe
+
+Observe an operation
+
+Read an accepted operation receipt when it is visible to the actor.
+
+```sh
+claimcore operation observe OPERATION-ID
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+
+## operation resolve
+
+Resolve an operation
+
+Read the author’s receipt or durably prevent the operation from being accepted.
+
+```sh
+claimcore operation resolve OPERATION-ID
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+
+## authority list
+
+List actors
+
+Read registered actors and available authority acts.
+
+```sh
+claimcore authority list [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## authority grants
+
+Read actor grants
+
+Read one page of grants for the selected actor.
+
+```sh
+claimcore authority grants ACTOR-ID [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `ACTOR-ID` | Actor ID — The registered actor whose grants are being read. |  |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## context
+
+Read context
+
+Read the authenticated actor’s capabilities and available resources.
+
+```sh
+claimcore context
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+

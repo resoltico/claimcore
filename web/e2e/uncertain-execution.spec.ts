@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
-import { openCase, startCommand, reviewDraft } from "./case-workflow";
+import { openCase, startAct, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/api/types";
 
@@ -72,7 +72,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
 }) => {
   await openAuthenticated(page);
   await openCase(page, `UNCERTAIN-${randomUUID()}`);
-  await startCommand(page, "Close the case");
+  await startAct(page, "Close the case");
   const previewed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );

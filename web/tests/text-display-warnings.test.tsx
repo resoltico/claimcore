@@ -61,7 +61,7 @@ it.each(languages)(
   "preserves exact business text and localizes supplementary scalar warnings in $language",
   ({ language, prefix, open, close }) => {
     preferences(language);
-    const field = definition.descriptors.fields.find((item) => item.name === "claimantName")!;
+    const field = definition.catalog.fields.find((item) => item.name === "claimantName")!;
     const value = "A\u0308 العربية\u180E\u200D\u{E0001}\u{E0020} <script>🙂\uE000";
     const plain = "A\u0308 🙂 \uE000\u{F0000}";
     const view = render(

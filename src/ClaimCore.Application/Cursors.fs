@@ -3,8 +3,6 @@ namespace ClaimCore.Application
 open ClaimCore.Contract
 
 open System
-open System.Text
-open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
@@ -41,24 +39,20 @@ module internal Cursors =
                     + String('=', (4 - token.Length % 4) % 4)
 
                 let bytes = Convert.FromBase64String padded
-                UTF8Encoding(false, true).GetCharCount(bytes) |> ignore
 
-                use document =
-                    JsonDocument.Parse(ReadOnlyMemory bytes, JsonDocumentOptions(MaxDepth = 32))
-
-                let value = StrictJson.ofElement document.RootElement
-
-                if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
-                    Error Refusal.InvalidCursor
-                else
-                    match read value with
-                    | Some position -> Ok position
-                    | None -> Error Refusal.InvalidCursor
+                match StrictJson.read MaximumTokenCharacters bytes with
+                | Error _ -> Error Refusal.InvalidCursor
+                | Ok value ->
+                    if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
+                        Error Refusal.InvalidCursor
+                    else
+                        match read value with
+                        | Some position -> Ok position
+                        | None -> Error Refusal.InvalidCursor
             with
             | :? ArgumentException
             | :? FormatException
-            | :? InvalidOperationException
-            | :? JsonException -> Error Refusal.InvalidCursor
+            | :? InvalidOperationException -> Error Refusal.InvalidCursor
 
     let private reference value =
         CaseReference.validate value |> Result.isOk && CaseReference.key value = value

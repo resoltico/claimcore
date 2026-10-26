@@ -56,7 +56,7 @@ it.each([
     stubReview(before, after);
     render(
       editor({
-        initialCommand: act,
+        initialAct: act,
         current: {
           ...current,
           advice: { ...current.advice, acts: [{ act, expectedRevision: current.revision }] },

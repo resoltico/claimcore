@@ -12,5 +12,12 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "scripts", "lint", "../contracts/client.ts"]
+  "include": [
+    "oxlint.config.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "scripts",
+    "lint",
+    "../contracts/client.ts"
+  ]
 }

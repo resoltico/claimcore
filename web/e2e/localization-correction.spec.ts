@@ -34,7 +34,7 @@ const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision
     caseReference: reference,
     expectedRevision: revision,
     act: {
-      kind: "CORRECT_CASE",
+      kind: "CORRECT",
       groups: {
         registration: { mode: modes.registration },
         decision: { mode: modes.decision },
@@ -106,7 +106,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
     for (const [registration, decision, payment, refusal] of outcomes) {
-      test(`submits literal CORRECT_CASE ${registration}/${decision}/${payment} in ${language} while ${status} with authoritative outcome [CC-DOM-002]`, async ({
+      test(`submits literal CORRECT ${registration}/${decision}/${payment} in ${language} while ${status} with authoritative outcome [CC-DOM-002]`, async ({
         page,
       }) => {
         const reference = `GROUP-${randomUUID()}-A`;
@@ -139,7 +139,7 @@ for (const status of ["CLOSED"] as const) {
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.tag === "FULL" && entry.receipt.scope.act === "CORRECT_CASE",
+              (entry) => entry.tag === "FULL" && entry.receipt.scope.act === "CORRECT",
             ),
           ).toBe(true);
         } else {

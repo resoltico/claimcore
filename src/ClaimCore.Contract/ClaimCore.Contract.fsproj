@@ -4,10 +4,13 @@
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="Vocabulary/Vocabulary.fs" />
     <Compile Include="Formats.fs" />
-    <Compile Include="Fields/FieldTable.fs" />
+    <Compile Include="Fields/FieldKinds.fs" />
     <Compile Include="Vocabulary/Corrections.fs" />
     <Compile Include="Vocabulary/CaseVocabulary.fs" />
     <Compile Include="Vocabulary/CaseTokens.fs" />
+    <Compile Include="Model/CaseInputs.fs" />
+    <Compile Include="Model/CaseFields.fs" />
+    <Compile Include="Fields/FieldTable.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
@@ -28,10 +31,9 @@
     <Compile Include="Json/SchemaJson.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Messages/CliMessages.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Api/Limits.fs" />
-    <Compile Include="Model/CaseInputs.fs" />
-    <Compile Include="Model/CaseFields.fs" />
     <Compile Include="Model/Advice.fs" />
     <Compile Include="Model/Receipts.fs" />
     <Compile Include="Model/History.fs" />
@@ -49,14 +51,15 @@
     <Compile Include="Codecs/ReceiptCodecs.fs" />
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="ResolutionCodecs.fs" />
-    <Compile Include="Presentation/Definitions.fs" />
-    <Compile Include="Presentation/DescriptorCodecs.fs" />
+    <Compile Include="Catalog/Metadata.fs" />
+    <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Api/Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
+    <Compile Include="Catalog/OperationCatalog.fs" />
     <Compile Include="HttpsOrigins.fs" />
   </ItemGroup>
 </Project>

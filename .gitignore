@@ -87,6 +87,3 @@ Desktop.ini
 # Private credential inputs
 *.secret
 *.password
-
-# Localization artifacts remain inside the Node toolchain.
-/web/src/presentation/generated/

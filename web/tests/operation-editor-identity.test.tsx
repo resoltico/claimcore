@@ -18,17 +18,17 @@ type SentDraft = {
 const sentDraft = (call: number): SentDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[call]?.[1]?.body;
   if (typeof body !== "string") {
-    throw new Error("Expected a synthetic command request body.");
+    throw new Error("Expected a synthetic act request body.");
   }
   return JSON.parse(body) as SentDraft;
 };
 
-const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | "CORRECT_CASE") => (
+const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "CORRECT") => (
   <OperationEditor
     token="synthetic-token"
     definition={definition}
     current={current}
-    initialCommand={initialCommand}
+    initialAct={initialAct}
     onClose={vi.fn()}
     onCommitted={vi.fn()}
     onMutationLockChange={vi.fn()}
@@ -90,9 +90,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
-  await screen.findByText(
-    "This operation ID belongs to different command content. Do not reuse it.",
-  );
+  await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
@@ -131,24 +129,20 @@ it("retries the frozen request after delivery loss despite a changed current rev
 });
 
 const paidCase: CurrentCase = {
-  caseReference: {
-    ...fields,
-    paymentDecisionDate: "2026-09-03",
-    payableAmount: "9.99",
-    payableCurrency: "EUR",
-    paymentDate: "2026-09-04",
-  }.caseReference,
+  caseReference: fields.caseReference,
   revision: 1,
-  advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
+  advice: { acts: caseOffers(["CORRECT"]), history: ["SUMMARY", "FULL"] },
 
   state: {
     tag: "LIVE",
     fields: {
       ...fields,
-      paymentDecisionDate: "2026-09-03",
-      payableAmount: "9.99",
-      payableCurrency: "EUR",
-      paymentDate: "2026-09-04",
+      decision: {
+        paymentDecisionDate: "2026-09-03",
+        payableAmount: "9.99",
+        payableCurrency: "EUR",
+      },
+      payment: { paymentDate: "2026-09-04" },
     },
     disposition: "ACTIVE",
   },
@@ -158,7 +152,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   const user = userEvent.setup();
   const current = paidCase;
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  render(editor(current, "CORRECT_CASE"));
+  render(editor(current, "CORRECT"));
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode");
   if (registration === null) {
     throw new Error("Expected a registration correction selector.");
@@ -183,7 +177,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     };
   };
   expect(draft.act).toMatchObject({
-    kind: "CORRECT_CASE",
+    kind: "CORRECT",
     groups: {
       registration: { mode: "REPLACE", values: { claimantName: "Corrected claimant" } },
       decision: { mode: "KEEP" },

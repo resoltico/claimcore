@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { CaseFields, CommandDraft, CaseReceipt } from "../src/api/types";
+import type { CaseFields, OperationDraft, CaseReceipt } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
-import { startCommand } from "./case-workflow";
+import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
@@ -14,7 +14,7 @@ export type Modes = Readonly<{
   payment: "KEEP" | "REPLACE" | "CLEAR";
 }>;
 type SeedStep = Readonly<{
-  act: CommandDraft["act"];
+  act: OperationDraft["act"];
   fields: CaseFields;
 }>;
 
@@ -36,17 +36,14 @@ const setupDecision = {
 
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
-    ...setupRegistration,
-    claimedAmount: "1200.5",
     caseReference: reference,
-    paymentDecisionDate: null,
-    payableAmount: null,
-    payableCurrency: null,
-    paymentDate: null,
     status: "OPENED",
+    registration: { ...setupRegistration, claimedAmount: "1200.5" },
+    decision: null,
+    payment: null,
   };
-  const decided: CaseFields = { ...opened, ...setupDecision };
-  const paid: CaseFields = { ...decided, paymentDate: "2026-09-05" };
+  const decided: CaseFields = { ...opened, decision: setupDecision };
+  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" } };
   const steps: SeedStep[] = [
     { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
     { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
@@ -70,7 +67,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
 const acceptSetup = async (
   page: Page,
   token: string,
-  request: CommandDraft,
+  request: OperationDraft,
   fields: CaseFields,
 ): Promise<CaseReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
@@ -143,7 +140,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   ).toBeVisible();
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
-  await startCommand(page, "Correct case facts");
+  await startAct(page, "Correct case facts");
   await selectLanguage(page, language);
   for (const [group, mode] of Object.entries(modes)) {
     await page.locator(`[name="act.groups.${group}.mode"]`).selectOption(mode);
@@ -206,21 +203,30 @@ export const expectResultFields = (
   after: Awaited<ReturnType<typeof currentCase>>,
   modes: Modes,
 ) => {
+  const decisions = {
+    KEEP: before.fields.decision,
+    REPLACE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "USD" },
+    CLEAR: null,
+  };
+  const payments = {
+    KEEP: before.fields.payment,
+    REPLACE: { paymentDate: "2026-09-06" },
+    CLEAR: null,
+  };
   expect(after).toEqual({
     revision: before.revision + 1,
     fields: {
       ...before.fields,
-      ...(modes.registration === "REPLACE"
-        ? { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1" }
-        : {}),
-      ...(modes.decision === "REPLACE"
-        ? { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "USD" }
-        : {}),
-      ...(modes.decision === "CLEAR"
-        ? { paymentDecisionDate: null, payableAmount: null, payableCurrency: null }
-        : {}),
-      ...(modes.payment === "REPLACE" ? { paymentDate: "2026-09-06" } : {}),
-      ...(modes.payment === "CLEAR" ? { paymentDate: null } : {}),
+      registration:
+        modes.registration === "REPLACE"
+          ? {
+              ...before.fields.registration,
+              claimantName: "A\u0308 العربية\u200D <tag>",
+              claimedAmount: "1",
+            }
+          : before.fields.registration,
+      decision: decisions[modes.decision],
+      payment: payments[modes.payment],
     },
   });
 };

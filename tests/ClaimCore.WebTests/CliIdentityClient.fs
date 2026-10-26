@@ -1,5 +1,7 @@
 module internal ClaimCore.WebTests.CliIdentityClient
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Contract
 
 open System

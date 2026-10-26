@@ -1,57 +1,66 @@
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import correctionTargets from "./generated/correction-targets.json";
+import { correctionTargets } from "@contracts/messages";
 import type { Notice } from "../api/notices";
-import type { FieldDescriptor } from "../api/service";
+import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
 import { hasMessage, renderKey, translate } from "./messages";
 import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-type MessageDescriptor = Readonly<{ labelId: string; meaningId?: string }>;
+type CatalogText = Readonly<{ labelId: string; meaningId?: string | null }>;
 export type PresentationDefinitions = Readonly<{
-  fields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  inputFields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  authorityFields: ReadonlyArray<MessageDescriptor & { name: string }>;
-  commands: ReadonlyArray<
-    MessageDescriptor & {
+  fields: ReadonlyArray<CatalogText & { name: string }>;
+  inputFields: ReadonlyArray<CatalogText & { name: string }>;
+  authorityFields: ReadonlyArray<CatalogText & { name: string }>;
+  entries: ReadonlyArray<
+    CatalogText & {
+      scope: string;
       kind: string;
-      inputs: { kind: string; groups?: ReadonlyArray<MessageDescriptor & { name: string }> };
+      inputs: ReadonlyArray<
+        CatalogText & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
+      >;
     }
   >;
-  authorityCommands: ReadonlyArray<MessageDescriptor & { kind: string }>;
 }>;
 const metadata = (
   preferences: Preferences,
-  owner: "field" | "command" | "group" | "authority",
+  owner: "field" | "act" | "group" | "authority",
   name: string,
   part: "label" | "meaning",
   definitions: PresentationDefinitions,
 ): string => {
-  let descriptor: MessageDescriptor | undefined;
+  let definition: CatalogText | undefined;
   switch (owner) {
     case "field":
-      descriptor = [
+      definition = [
         ...definitions.fields,
         ...definitions.inputFields,
         ...definitions.authorityFields,
       ].find((candidate) => candidate.name === name);
       break;
-    case "command":
-      descriptor = definitions.commands.find((candidate) => candidate.kind === name);
+    case "act":
+      definition = definitions.entries.find(
+        (candidate) => candidate.scope === "CASE" && candidate.kind === name,
+      );
       break;
     case "authority":
-      descriptor = definitions.authorityCommands.find((candidate) => candidate.kind === name);
+      definition = definitions.entries.find(
+        (candidate) => candidate.scope === "AUTHORITY" && candidate.kind === name,
+      );
       break;
     case "group":
-      descriptor = definitions.commands
-        .flatMap((command) => command.inputs.groups ?? [])
-        .find((candidate) => candidate.name === name);
+      definition = definitions.entries
+        .flatMap((entry) => entry.inputs)
+        .find(
+          (candidate) =>
+            candidate.kind.kind === "GROUP" && candidate.diagnosticTargets.includes(name),
+        );
       break;
   }
-  const identity = part === "label" ? descriptor?.labelId : descriptor?.meaningId;
-  if (identity === undefined) {
+  const identity = part === "label" ? definition?.labelId : definition?.meaningId;
+  if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
   return renderKey(preferences, identity);
@@ -59,7 +68,7 @@ const metadata = (
 const token = (
   preferences: Preferences,
   value: string,
-  definitions: PresentationDefinitions = productMetadata.descriptors,
+  definitions: PresentationDefinitions = productMetadata.catalog,
 ): string => {
   const key = `token.${value}`;
   if (hasMessage(key)) {
@@ -67,7 +76,9 @@ const token = (
   }
   return metadata(
     preferences,
-    definitions.authorityCommands.some((item) => item.kind === value) ? "authority" : "command",
+    definitions.entries.some((item) => item.scope === "AUTHORITY" && item.kind === value)
+      ? "authority"
+      : "act",
     value,
     "label",
     definitions,
@@ -76,7 +87,7 @@ const token = (
 const fieldValueText = (
   preferences: Preferences,
   value: string | null,
-  field: FieldDescriptor,
+  field: FieldCatalogEntry,
 ): string => {
   if (value === null) {
     return translate(preferences, "ui.notRecorded");
@@ -89,7 +100,7 @@ const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
   return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
-const hint = (preferences: Preferences, field: FieldDescriptor): string => {
+const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
   if (field.name === "caseReference") {
     return translate(preferences, "ui.referenceHint");
   }
@@ -100,7 +111,7 @@ const hint = (preferences: Preferences, field: FieldDescriptor): string => {
   switch (s.kind) {
     case "TEXT":
       return translate(preferences, "ui.textHint", {
-        maximum: exactInteger(String(s.policy?.maximumCharacters ?? ""), preferences.displayLocale),
+        maximum: exactInteger(String(s.maximumCharacters ?? ""), preferences.displayLocale),
       });
     case "CALENDAR_DATE":
       return translate(preferences, "ui.dateHint");
@@ -118,7 +129,7 @@ const hint = (preferences: Preferences, field: FieldDescriptor): string => {
 };
 export const createPresenter = (
   preferences: Preferences,
-  definitions: PresentationDefinitions = productMetadata.descriptors,
+  definitions: PresentationDefinitions = productMetadata.catalog,
 ) => ({
   ...preferences,
   direction: languageDirection(preferences.language),
@@ -137,16 +148,15 @@ export const createPresenter = (
   authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
   authorityMeaning: (name: string) =>
     metadata(preferences, "authority", name, "meaning", definitions),
-  commandLabel: (name: string) => metadata(preferences, "command", name, "label", definitions),
-  commandMeaning: (name: string) => metadata(preferences, "command", name, "meaning", definitions),
+  actMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
-  actLabel: (value: string) => token(preferences, value, definitions),
+  actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   token: (value: string) => token(preferences, value, definitions),
-  hint: (field: FieldDescriptor) => hint(preferences, field),
+  hint: (field: FieldCatalogEntry) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
   amount: (value: string) => exactAmount(value, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
-  fieldValue: (value: string | null, field: FieldDescriptor) =>
+  fieldValue: (value: string | null, field: FieldCatalogEntry) =>
     fieldValueText(preferences, value, field),
 });

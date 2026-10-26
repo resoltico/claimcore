@@ -16,9 +16,18 @@ let private unique (value: JsonElement) =
     let names = value.EnumerateObject() |> Seq.map _.Name |> Seq.toList
     require (names.Length = (Set.ofList names).Count)
 
+let assemblyName root project =
+    let path = Path.Combine(root, "src", project, project + ".fsproj")
+    let document = System.Xml.Linq.XDocument.Load path
+
+    document.Descendants(System.Xml.Linq.XName.Get "AssemblyName")
+    |> Seq.tryHead
+    |> Option.map _.Value
+    |> Option.defaultValue project
+
 let private owned root =
     Directory.EnumerateFiles(Path.Combine(root, "src"), "*.fsproj", SearchOption.AllDirectories)
-    |> Seq.map (Path.GetFileNameWithoutExtension >> nonNull)
+    |> Seq.map (Path.GetFileNameWithoutExtension >> nonNull >> assemblyName root)
     |> Set.ofSeq
 
 let private resource (entry: JsonProperty) =

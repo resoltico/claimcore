@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { operationReducer, operationView } from "../src/interaction/operationState";
+import { operationReducer, operationView } from "../src/operation/operationState";
 import {
   initial,
   begin,

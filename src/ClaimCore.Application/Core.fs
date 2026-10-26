@@ -21,68 +21,50 @@ module internal Core =
         | StoreFailure.CommitOutcomeUnknown -> ExecuteResult.OutcomeUnknown
         | failure -> ExecuteResult.Failed(Queries.fault failure)
 
-    let private caseWrite
-        (store: ILedgerStore)
-        installationId
-        calendar
-        principal
-        (request: CaseRequest)
-        (ct: CancellationToken)
-        =
-        task {
-            if ct.IsCancellationRequested then
-                return ExecuteResult.Failed CoreFault.StoreUnavailable
-            else
-                match Case.validateRequest request with
-                | Error error -> return ExecuteResult.Rejected(error)
-                | Ok() ->
-                    let decide = CaseDecisions.execute installationId calendar principal request
-
-                    let! result =
-                        store.WriteCase(
-                            principal,
-                            request.OperationId,
-                            request.CaseReference,
-                            decide,
-                            ct
-                        )
-
-                    return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
-        }
+    let private admitCase request =
+        Case.validateRequest request |> Result.map (fun () -> request)
 
     let private admitAuthority input =
         AuthorityRequests.admit input
         |> Result.bind (fun request ->
             AuthorityRequests.validate request |> Result.map (fun () -> request))
 
-    let private authorityWrite
-        (store: ILedgerStore)
-        installationId
-        principal
-        (input: ClaimCore.Contract.AuthorityRequest)
+    let private write
         (ct: CancellationToken)
+        admit
+        (persist: 'request -> Task<Result<LedgerWriteResult, StoreFailure>>)
         =
         task {
             if ct.IsCancellationRequested then
                 return ExecuteResult.Failed CoreFault.StoreUnavailable
             else
-                match admitAuthority input with
-                | Error error -> return ExecuteResult.Rejected error
+                match admit () with
+                | Error refusal -> return ExecuteResult.Rejected refusal
                 | Ok request ->
-                    let decide = AuthorityDecisions.execute installationId principal request
-
-                    let! result =
-                        store.WriteAuthority(
-                            principal,
-                            request.OperationId,
-                            request.Target,
-                            AuthorityRequests.targetCase request,
-                            decide,
-                            ct
-                        )
-
+                    let! result = persist request
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
+
+    let private caseWrite (store: ILedgerStore) installationId calendar principal request ct =
+        write ct (fun () -> admitCase request) (fun (admitted: CaseRequest) ->
+            store.WriteCase(
+                principal,
+                admitted.OperationId,
+                admitted.CaseReference,
+                CaseDecisions.execute installationId calendar principal admitted,
+                ct
+            ))
+
+    let private authorityWrite (store: ILedgerStore) installationId principal input ct =
+        write ct (fun () -> admitAuthority input) (fun (admitted: AdmittedAuthorityRequest) ->
+            store.WriteAuthority(
+                principal,
+                admitted.OperationId,
+                admitted.Target,
+                AuthorityRequests.targetCase admitted,
+                AuthorityDecisions.execute installationId principal admitted,
+                ct
+            ))
 
     let private businessFields =
         function
@@ -130,90 +112,63 @@ module internal Core =
                 }
         }
 
-    let private preview
-        (store: ILedgerStore)
-        installationId
-        calendar
-        principal
-        (request: CaseRequest)
+    let private review
         (ct: CancellationToken)
+        admit
+        (read: 'request -> Task<Result<'view, StoreFailure>>)
+        decide
+        render
         =
         task {
             if ct.IsCancellationRequested then
                 return PreviewResult.Failed CoreFault.StoreUnavailable
             else
-                match Case.validateRequest request with
-                | Error error -> return PreviewResult.Rejected(error)
-                | Ok() ->
-                    let! result =
-                        store.ReadCase(
-                            principal,
-                            Some request.OperationId,
-                            request.CaseReference,
-                            ct
-                        )
+                match admit () with
+                | Error refusal -> return PreviewResult.Rejected refusal
+                | Ok request ->
+                    let! result = read request
 
                     match result with
                     | Error StoreFailure.Cancelled ->
                         return PreviewResult.Failed CoreFault.StoreUnavailable
-                    | Error error -> return PreviewResult.Failed(Queries.fault error)
-                    | Ok view ->
-                        return
-                            match
-                                CaseDecisions.review installationId calendar principal request view
-                            with
-                            | CaseReviewDecision.Refuse error -> PreviewResult.Rejected error
-                            | CaseReviewDecision.Fail error -> PreviewResult.Failed error
-                            | CaseReviewDecision.Replay receipt ->
-                                PreviewResult.AlreadyAccepted receipt
-                            | CaseReviewDecision.Proposed(before, after) ->
-                                advisory calendar view.ObservedAt request.Act before after
-                                |> OperationReview.Case
-                                |> PreviewResult.Reviewed
-        }
-
-    let private authorityPreview
-        (store: ILedgerStore)
-        installationId
-        principal
-        input
-        (ct: CancellationToken)
-        =
-        task {
-            if ct.IsCancellationRequested then
-                return PreviewResult.Failed CoreFault.StoreUnavailable
-            else
-                match admitAuthority input with
-                | Error refusal -> return PreviewResult.Rejected refusal
-                | Ok request ->
-                    let! read =
-                        store.ReadAuthorityTarget(
-                            principal,
-                            request.OperationId,
-                            request.Target,
-                            AuthorityRequests.targetCase request,
-                            ct
-                        )
-
-                    match read with
-                    | Error StoreFailure.Cancelled ->
-                        return PreviewResult.Failed CoreFault.StoreUnavailable
                     | Error failure -> return PreviewResult.Failed(Queries.fault failure)
                     | Ok view ->
-                        return
-                            match
-                                AuthorityDecisions.review installationId principal request view
-                            with
-                            | AuthorityReviewDecision.Refuse refusal ->
-                                PreviewResult.Rejected refusal
-                            | AuthorityReviewDecision.Fail fault -> PreviewResult.Failed fault
-                            | AuthorityReviewDecision.Replay receipt ->
-                                PreviewResult.AlreadyAccepted receipt
-                            | AuthorityReviewDecision.Proposed(_, projection) ->
-                                AuthorityReviews.describe view projection
-                                |> OperationReview.Authority
-                                |> PreviewResult.Reviewed
+                        match decide request view with
+                        | LedgerReviewDecision.Refuse refusal ->
+                            return PreviewResult.Rejected refusal
+                        | LedgerReviewDecision.Fail fault -> return PreviewResult.Failed fault
+                        | LedgerReviewDecision.Replay receipt ->
+                            return PreviewResult.AlreadyAccepted receipt
+                        | LedgerReviewDecision.Proposed proposal ->
+                            return PreviewResult.Reviewed(render request view proposal)
         }
+
+    let private preview (store: ILedgerStore) installationId calendar principal request ct =
+        review
+            ct
+            (fun () -> admitCase request)
+            (fun (admitted: CaseRequest) ->
+                store.ReadCase(principal, Some admitted.OperationId, admitted.CaseReference, ct))
+            (CaseDecisions.review installationId calendar principal)
+            (fun admitted (view: CaseReadView) (before, after) ->
+                advisory calendar view.ObservedAt admitted.Act before after
+                |> OperationReview.Case)
+
+    let private authorityPreview (store: ILedgerStore) installationId principal input ct =
+        review
+            ct
+            (fun () -> admitAuthority input)
+            (fun (admitted: AdmittedAuthorityRequest) ->
+                store.ReadAuthorityTarget(
+                    principal,
+                    admitted.OperationId,
+                    admitted.Target,
+                    AuthorityRequests.targetCase admitted,
+                    ct
+                ))
+            (AuthorityDecisions.review installationId principal)
+            (fun _ (view: AuthorityReadView) (_, projection) ->
+                AuthorityReviews.describe view projection |> OperationReview.Authority)
 
     let private previewOperation store installationId calendar principal input ct =
         task {

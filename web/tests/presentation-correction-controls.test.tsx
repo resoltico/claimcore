@@ -9,17 +9,15 @@ import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
-  advice: { acts: caseOffers(["CORRECT_CASE"]), history: ["SUMMARY", "FULL"] },
+  advice: { acts: caseOffers(["CORRECT"]), history: ["SUMMARY", "FULL"] },
 
   state: {
     ...current.state,
 
     fields: {
       ...current.state.fields,
-      paymentDecisionDate: "2026-09-03",
-      payableAmount: "1",
-      payableCurrency: "EUR",
-      paymentDate: "2026-09-04",
+      decision: { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" },
+      payment: { paymentDate: "2026-09-04" },
     },
   },
 };
@@ -35,7 +33,7 @@ it.each(["en", "lv", "ar"])(
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
     render(
       editor({
-        initialCommand: "CORRECT_CASE",
+        initialAct: "CORRECT",
         current: paidCase,
       }),
     );
@@ -68,7 +66,7 @@ it.each(["en", "lv", "ar"])(
       expect(globalThis.fetch).toHaveBeenCalledOnce();
     });
     expect(draftAt(0).act).toMatchObject({
-      kind: "CORRECT_CASE",
+      kind: "CORRECT",
       groups: {
         registration: { mode: "REPLACE", values: { claimedAmount: "1.0000" } },
         decision: { mode: "CLEAR" },
@@ -94,7 +92,7 @@ it("associates payment acknowledgement with the generated mode control [CC-DOM-0
       ),
     ),
   );
-  render(editor({ initialCommand: "CORRECT_CASE", current: paidCase }));
+  render(editor({ initialAct: "CORRECT", current: paidCase }));
   const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await user.selectOptions(
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,

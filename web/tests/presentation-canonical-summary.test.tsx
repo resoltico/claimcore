@@ -22,11 +22,14 @@ it.each(["en", "lv", "ar"])(
       <CaseFieldsView
         values={{
           ...fields,
-          claimedAmount: "999999999999999999.0100",
-          claimantName: "A\u0308 العربية\u200D",
+          registration: {
+            ...fields.registration,
+            claimedAmount: "999999999999999999.0100",
+            claimantName: "A\u0308 العربية\u200D",
+          },
         }}
         revision={9007199254740991}
-        fields={definition.descriptors.fields}
+        fields={definition.catalog.fields}
         context="synthetic"
       />,
     );

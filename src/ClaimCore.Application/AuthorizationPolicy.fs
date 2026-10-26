@@ -128,7 +128,7 @@ module ActorAuthorization =
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
         function
-        | (CaseAct.CorrectCase correction) ->
+        | (CaseAct.Correct correction) ->
             [
                 match correction.Registration with
                 | RegistrationGroup.Keep -> ()
@@ -143,7 +143,7 @@ module ActorAuthorization =
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 
     let canAdvertise principal actor resource kind =
-        if kind = (CaseActKind.Business BusinessActKind.CorrectCase) then
+        if kind = (CaseActKind.Business BusinessActKind.Correct) then
             correctionCapabilities
             |> List.exists (fun capability -> can principal actor capability resource)
         else

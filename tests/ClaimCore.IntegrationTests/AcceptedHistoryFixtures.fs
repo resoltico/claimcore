@@ -21,18 +21,19 @@ let private snapshot reference claimant : CaseSnapshot =
             CaseView.Live(
                 {
                     CaseReference = reference
-                    IncidentDate = registration.IncidentDate
-                    IncidentNotificationDate = registration.IncidentNotificationDate
-                    IncidentCountry = "LV"
-                    ClaimantName = claimant
-                    InsurerName = registration.InsurerName
-                    ClaimedAmount = "1000"
-                    ClaimedCurrency = "EUR"
-                    PaymentDecisionDate = None
-                    PayableAmount = None
-                    PayableCurrency = None
-                    PaymentDate = None
                     Status = CaseStatus.Opened
+                    Registration =
+                        {
+                            IncidentDate = registration.IncidentDate
+                            IncidentNotificationDate = registration.IncidentNotificationDate
+                            IncidentCountry = "LV"
+                            ClaimantName = claimant
+                            InsurerName = registration.InsurerName
+                            ClaimedAmount = "1000"
+                            ClaimedCurrency = "EUR"
+                        }
+                    Decision = None
+                    Payment = None
                 },
                 Disposition.Active
             )
@@ -124,7 +125,10 @@ let private grandfathering (database: PostgresFixture.Database) =
         | ReadReply.Succeeded {
                                   Snapshot = { View = CaseView.Live(fields, _) }
                               } ->
-            Expect.equal fields.ClaimantName name "Retained record renders without admission"
+            Expect.equal
+                fields.Registration.ClaimantName
+                name
+                "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
 
         let values =
@@ -195,7 +199,7 @@ let private assertRetained name entries =
                                                                }
                                  } ->
             Expect.equal
-                fields.ClaimantName
+                fields.Registration.ClaimantName
                 name
                 "Accepted history is never re-admitted or truncated"
         | _ -> failtest "Expected disclosed retained fields"

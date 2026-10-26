@@ -1,5 +1,5 @@
-import type { OperationState, EffectIdentity } from "../src/interaction/operationState";
-import { operationReducer } from "../src/interaction/operationState";
+import type { OperationState, EffectIdentity } from "../src/operation/operationState";
+import { operationReducer } from "../src/operation/operationState";
 import { valuesFor, preparedFor } from "./operation-form.fixtures";
 import { review } from "./service-foundation.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";

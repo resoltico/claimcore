@@ -4,8 +4,7 @@ open ClaimCore.Contract
 
 module ContractArtifacts =
     let all () =
-        CatalogValidation.validate ()
-        BindingValidation.validate InteractionDefinitions.all
+        let catalogs = CatalogValidation.validate ()
 
         [
             {
@@ -17,7 +16,11 @@ module ContractArtifacts =
                 Bytes = TypeScript.source ContractIdentity.value
             }
             {
-                Name = "descriptors.json"
-                Bytes = ContractDocuments.descriptors ()
+                Name = "messages.ts"
+                Bytes = MessageGeneration.source catalogs
+            }
+            {
+                Name = "catalog.json"
+                Bytes = ContractDocuments.catalog ()
             }
         ]

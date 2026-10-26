@@ -14,7 +14,7 @@ for (const project of lintProjects) {
     [
       oxlint,
       "--config",
-      ".oxlintrc.json",
+      "oxlint.config.ts",
       "--type-aware",
       "--tsconfig",
       project.tsconfig,

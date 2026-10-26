@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, startCommand } from "./case-workflow";
+import { openCase, startAct } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 
 const stewardAct = async (page: Page, label: string, reason?: string) => {
-  await startCommand(page, label);
+  await startAct(page, label);
   if (reason !== undefined) {
     await page.getByLabel("Stewardship reason", { exact: true }).fill(reason);
   }
@@ -92,7 +92,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
     await page.getByRole("button", { name: "Start another operation", exact: true }).click();
   }
 };
-const selectAuthorityAct = async (page: Page, act: "SET_GRANT" | "SET_ENABLED") => {
+const selectAuthorityAct = async (page: Page, act: "GRANT" | "DISABLE") => {
   const picker = page.getByRole("combobox", { name: "Authority action", exact: true });
   const option = picker.locator(`option[value="${act}"]`);
   await expect(picker).toBeEnabled();
@@ -111,21 +111,18 @@ test("browser registers service principals, changes scoped grants and enablement
   const subject = `browser-service-${randomUUID()}`;
   await authorityTarget(page, source.issuer, subject);
   await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "SET_GRANT");
+  await selectAuthorityAct(page, "GRANT");
   await authorityTarget(page, source.issuer, subject);
   await page.locator('[name="act.role"]').selectOption("CASE_READER");
   await page.locator('[name="act.scope.kind"]').selectOption("CASE");
   await page.locator('[name="act.scope.caseReference"]').fill(reference);
-  await page.locator('[name="act.active"]').check();
   await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "SET_ENABLED");
+  await selectAuthorityAct(page, "DISABLE");
   await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.enabled"]').uncheck();
   await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "SET_GRANT");
+  await selectAuthorityAct(page, "GRANT");
   await authorityTarget(page, source.issuer, subject);
   await page.locator('[name="act.role"]').selectOption("OWNER");
-  await page.locator('[name="act.active"]').check();
   await submitAuthority(page, "REJECTED");
   await expect(page.getByRole("alert")).toBeVisible();
   await expectAccessible(page);

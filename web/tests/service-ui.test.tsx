@@ -8,7 +8,7 @@ import { defaults } from "../src/presentation/preferences";
 import { App } from "../src/App";
 import type { CurrentCase } from "../src/api/service";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
-import { DescriptorField } from "../src/components/DescriptorField";
+import { CatalogField } from "../src/components/CatalogField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { wireResponse } from "./contract-corpus.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
@@ -22,20 +22,20 @@ const current: CurrentCase = {
   state: { tag: "LIVE", fields, disposition: "ACTIVE" },
 };
 
-describe("metadata-driven descriptor rendering", () => {
-  it("renders descriptor labels and all supplied field values without client-side normalization", () => {
+describe("catalog rendering", () => {
+  it("renders catalog labels and all supplied field values without client-side normalization", () => {
     const changed = vi.fn();
-    const incident = definition.descriptors.fields.find((field) => field.name === "incidentDate");
+    const incident = definition.catalog.fields.find((field) => field.name === "incidentDate");
     if (incident === undefined) {
-      throw new Error("Incident descriptor is required.");
+      throw new Error("Incident catalog entry is required.");
     }
     render(
       <>
-        <DescriptorField field={incident} value="2026-09-01" onChange={changed} />
+        <CatalogField field={incident} value="2026-09-01" onChange={changed} />
         <CaseFieldsView
           values={fields}
           revision={1}
-          fields={definition.descriptors.fields}
+          fields={definition.catalog.fields}
           context="synthetic current case"
         />
       </>,
@@ -84,7 +84,7 @@ const acceptsOperation = async (): Promise<void> => {
       token="token"
       definition={definition}
       current={current}
-      initialCommand="CLOSE"
+      initialAct="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}

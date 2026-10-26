@@ -1,33 +1,57 @@
+import { caseFieldValue } from "../protocol/caseFields";
 import { useId } from "react";
-import type { CaseFields, FieldDescriptor } from "../api/service";
+import type { CaseFields, CatalogDocument } from "../api/service";
 import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";
 import { CopyValue } from "./CopyValue";
 
+type FieldCatalogEntry = CatalogDocument["fields"][number];
+const groups = ["registration", "decision", "payment"] as const;
+
 type CaseFieldsViewProps = {
   values: CaseFields;
   revision: number;
-  fields: ReadonlyArray<FieldDescriptor>;
+  fields: ReadonlyArray<FieldCatalogEntry>;
   context: string;
 };
-const valueFor = (fields: CaseFields, name: string): string | null =>
-  Object.entries(fields).find(([key]) => key === name)?.[1] ?? null;
 const acceptedSummary = (
   p: Presentation,
   values: CaseFields,
   revision: number,
-  fields: ReadonlyArray<FieldDescriptor>,
+  fields: ReadonlyArray<FieldCatalogEntry>,
 ): string =>
   [
     `${p.text("ui.revisionLabel")}: ${revision}`,
     ...fields.map(
-      (field) => `${p.fieldLabel(field.name)}: ${valueFor(values, field.name) ?? "null"}`,
+      (field) => `${p.fieldLabel(field.name)}: ${caseFieldValue(values, field.name) ?? "null"}`,
     ),
   ].join("\n");
 export const CaseFieldsView = ({ values, revision, fields, context }: CaseFieldsViewProps) => {
   const p = usePresentation();
   const headingId = useId();
+  const rows = (items: ReadonlyArray<FieldCatalogEntry>) => (
+    <dl>
+      {items.map((field) => {
+        const value = caseFieldValue(values, field.name);
+        return (
+          <div key={field.name} className="field-row" data-field-name={field.name}>
+            <dt>{p.fieldLabel(field.name)}</dt>
+            <dd>
+              <BusinessValue value={value} field={field} />
+              <details>
+                <summary>{p.text("ui.fieldHelp")}</summary>
+                <p>{p.fieldMeaning(field.name)}</p>
+                {value === null ? null : (
+                  <CopyValue label={p.fieldLabel(field.name)} value={value} />
+                )}
+              </details>
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
   return (
     <section aria-labelledby={headingId} className="case-fields">
       <div className="section-heading">
@@ -38,26 +62,13 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
           value={acceptedSummary(p, values, revision, fields)}
         />
       </div>
-      <dl>
-        {fields.map((field) => {
-          const value = valueFor(values, field.name);
-          return (
-            <div key={field.name} className="field-row" data-field-name={field.name}>
-              <dt>{p.fieldLabel(field.name)}</dt>
-              <dd>
-                <BusinessValue value={value} field={field} />
-                <details>
-                  <summary>{p.text("ui.fieldHelp")}</summary>
-                  <p>{p.fieldMeaning(field.name)}</p>
-                  {value === null ? null : (
-                    <CopyValue label={p.fieldLabel(field.name)} value={value} />
-                  )}
-                </details>
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
+      {rows(fields.filter((field) => field.group === "identity" || field.group === "status"))}
+      {groups.map((group) => (
+        <section key={group}>
+          <h3>{p.text(`group.${group}.label`)}</h3>
+          {rows(fields.filter((field) => field.group === group))}
+        </section>
+      ))}
     </section>
   );
 };

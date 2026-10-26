@@ -1,18 +1,18 @@
-import descriptors from "@contracts/descriptors.json" with { type: "json" };
+import catalog from "@contracts/catalog.json" with { type: "json" };
 import {
   consumerContractIdentity,
-  isDescriptors,
+  isCatalogDocument,
   type ProductMetadata,
-  type Descriptors,
+  type CatalogDocument,
 } from "@contracts/client";
-const admitDescriptors = (value: unknown): Descriptors => {
-  if (!isDescriptors(value)) {
-    throw new Error("Invalid generated presentation descriptors.");
+const admitCatalogDocument = (value: unknown): CatalogDocument => {
+  if (!isCatalogDocument(value)) {
+    throw new Error("Invalid generated presentation catalog.");
   }
   return value;
 };
 export const productMetadata: ProductMetadata = {
-  descriptors: admitDescriptors(descriptors),
-  productVersion: descriptors.productVersion,
+  catalog: admitCatalogDocument(catalog),
+  productVersion: catalog.productVersion,
   contractIdentity: consumerContractIdentity,
 };

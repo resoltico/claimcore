@@ -3,11 +3,11 @@ namespace ClaimCore.Contract
 module BusinessActKinds =
     let vocabulary =
         Vocabulary.define
-            "command"
+            "act"
             [
                 BusinessActKind.Open, "OPEN"
                 BusinessActKind.AmendRegistration, "AMEND_REGISTRATION"
-                BusinessActKind.CorrectCase, "CORRECT_CASE"
+                BusinessActKind.Correct, "CORRECT"
                 BusinessActKind.Decide, "DECIDE"
                 BusinessActKind.WithdrawDecision, "WITHDRAW_DECISION"
                 BusinessActKind.RecordPayment, "RECORD_PAYMENT"
@@ -23,7 +23,7 @@ module BusinessActKinds =
 module StewardshipActKinds =
     let vocabulary =
         Vocabulary.define
-            "command"
+            "act"
             [
                 StewardshipActKind.Void, "VOID"
                 StewardshipActKind.Reinstate, "REINSTATE"
@@ -45,7 +45,7 @@ module CaseStatuses =
 module CaseActKinds =
     let vocabulary =
         Vocabulary.define
-            "command"
+            "act"
             ((Vocabulary.entries BusinessActKinds.vocabulary
               |> List.map (fun (value, token) -> CaseActKind.Business value, token))
              @ (Vocabulary.entries StewardshipActKinds.vocabulary

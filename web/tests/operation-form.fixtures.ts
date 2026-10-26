@@ -1,7 +1,7 @@
 import type { CurrentCase } from "../src/api/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { type FormValues } from "../src/protocol/forms";
 import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";
@@ -11,10 +11,14 @@ export const current: CurrentCase = {
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"]),
+    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
-  state: { tag: "LIVE", disposition: "ACTIVE", fields: caseFields },
+  state: {
+    tag: "LIVE",
+    disposition: "ACTIVE",
+    fields: { ...caseFields, caseReference: "CASE-SERIALIZATION" },
+  },
 };
 export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current, firstId);
 export const requestFor = (values: FormValues) =>

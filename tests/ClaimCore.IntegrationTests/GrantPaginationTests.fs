@@ -83,7 +83,7 @@ let private prepare (database: PostgresFixture.Database) =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 200) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 200) target AdmittedAuthorityAct.Register
                 ),
                 token
             )
@@ -107,7 +107,7 @@ let private prepare (database: PostgresFixture.Database) =
         let! disabled =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 603) target (AdmittedAuthorityAct.SetEnabled false)
+                    authorityRequest (id 603) target (AdmittedAuthorityAct.Disable)
                 ),
                 token
             )
@@ -181,7 +181,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 620) target AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 620) target AdmittedAuthorityAct.Register
                 ),
                 token
             )
@@ -331,7 +331,7 @@ let private changeTarget (admin: IActorClaimsCore) =
         let! enabled =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 630) target (AdmittedAuthorityAct.SetEnabled true)
+                    authorityRequest (id 630) target (AdmittedAuthorityAct.Enable)
                 ),
                 token
             )

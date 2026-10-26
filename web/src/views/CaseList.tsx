@@ -96,7 +96,7 @@ const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void
   return (
     <div className="section-heading">
       <h2 id="case-list-title">{p.text("ui.cases")}</h2>
-      {mayOpen ? <Button onPress={onOpen}>{p.commandLabel("OPEN")}</Button> : null}
+      {mayOpen ? <Button onPress={onOpen}>{p.actLabel("OPEN")}</Button> : null}
     </div>
   );
 };

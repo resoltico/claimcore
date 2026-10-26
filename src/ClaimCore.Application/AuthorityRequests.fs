@@ -9,43 +9,71 @@ open ClaimCore.RecordFormat
 module AuthorityRequests =
     type private SharedAuthorityAct = ClaimCore.Contract.AuthorityAct
 
-    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
+    /// Only a case-scope reference has alternate identity spellings; principals stay exact.
+    let canonical (request: AuthorityRequestRecord) =
+        let grant (value: GrantChange) =
+            let scope =
+                match value.Scope with
+                | GrantTarget.Installation -> GrantTarget.Installation
+                | GrantTarget.CaseReference reference ->
+                    GrantTarget.CaseReference(
+                        if System.String.IsNullOrEmpty reference then
+                            reference
+                        else
+                            CaseReference.key reference
+                    )
+
+            { value with Scope = scope }
+
         let act =
             match request.Act with
-            | AdmittedAuthorityAct.RegisterActor ->
-                RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor)
-            | AdmittedAuthorityAct.SetEnabled value ->
-                RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled value)
-            | AdmittedAuthorityAct.SetGrant(role, target, active) ->
-                RecordedAuthorityAct.Operation(
-                    SharedAuthorityAct.SetGrant
-                        {
-                            Role = RoleTokens.token role
-                            Scope = target
-                            Active = active
-                        }
-                )
+            | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value) ->
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant(grant value))
+            | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
+                RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke(grant value))
+            | act -> act
+
+        { request with Act = act }
+
+    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
+        let grant role target =
+            {
+                Role = RoleTokens.token role
+                Scope = target
+            }
+
+        let act =
+            match request.Act with
+            | AdmittedAuthorityAct.Register -> SharedAuthorityAct.Register
+            | AdmittedAuthorityAct.Grant(role, target) ->
+                SharedAuthorityAct.Grant(grant role target)
+            | AdmittedAuthorityAct.Revoke(role, target) ->
+                SharedAuthorityAct.Revoke(grant role target)
+            | AdmittedAuthorityAct.Enable -> SharedAuthorityAct.Enable
+            | AdmittedAuthorityAct.Disable -> SharedAuthorityAct.Disable
 
         {
             OperationId = request.OperationId
             Target = PrincipalKey.describe request.Target
-            Act = act
+            Act = RecordedAuthorityAct.Operation act
         }
 
     let private admittedAct =
-        function
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.RegisterActor) ->
-            Ok AdmittedAuthorityAct.RegisterActor
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetEnabled value) ->
-            Ok(AdmittedAuthorityAct.SetEnabled value)
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.SetGrant {
-                                                                         Role = role
-                                                                         Scope = scope
-                                                                         Active = active
-                                                                     }) ->
-            match RoleTokens.parse role with
-            | Some role -> Ok(AdmittedAuthorityAct.SetGrant(role, scope, active))
+        let grant make (value: GrantChange) =
+            match RoleTokens.parse value.Role with
+            | Some role -> Ok(make (role, value.Scope))
             | None -> Error "AUTHORITY_ROLE_INVALID"
+
+        function
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Register ->
+            Ok AdmittedAuthorityAct.Register
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value) ->
+            grant AdmittedAuthorityAct.Grant value
+        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
+            grant AdmittedAuthorityAct.Revoke value
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> Ok AdmittedAuthorityAct.Enable
+        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable ->
+            Ok AdmittedAuthorityAct.Disable
         | RecordedAuthorityAct.ProvisionOwner -> Error "AUTHORITY_ACT_INVALID"
 
     let fromRecord (request: AuthorityRequestRecord) : Result<AdmittedAuthorityRequest, string> =
@@ -117,7 +145,8 @@ module AuthorityRequests =
 
     let internal targetCase (request: AdmittedAuthorityRequest) =
         match request.Act with
-        | AdmittedAuthorityAct.SetGrant(_, GrantTarget.CaseReference reference, _) -> Some reference
+        | AdmittedAuthorityAct.Grant(_, GrantTarget.CaseReference reference)
+        | AdmittedAuthorityAct.Revoke(_, GrantTarget.CaseReference reference) -> Some reference
         | _ -> None
 
     let internal validate (request: AdmittedAuthorityRequest) =

@@ -8,18 +8,12 @@ import {
 } from "../src/presentation/messages";
 import { renderNotice } from "../src/presentation/notice";
 import { defaults, languages } from "../src/presentation/preferences";
-import shapes from "../src/presentation/generated/arguments.json";
-import requirements from "../src/presentation/generated/diagnostic-parameters.json";
+import { messageShapes as shapes, diagnosticParameters as requirements } from "@contracts/messages";
 
 it("renders every catalog key in every language and preserves typed interpolation contracts", () => {
   for (const language of languages) {
     for (const [key, shape] of Object.entries(shapes)) {
-      const args = Object.fromEntries(
-        Object.entries(shape).map(([name, role]) => [
-          name,
-          role === "number" ? 2 : "CANONICAL-123",
-        ]),
-      );
+      const args = Object.fromEntries(Object.keys(shape).map((name) => [name, "CANONICAL-123"]));
       expect(hasMessage(key)).toBe(true);
       expect(renderKey({ ...defaults, language }, key, args)).not.toBe("");
     }

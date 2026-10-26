@@ -1,14 +1,14 @@
 import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { fields, definition } from "./service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "./contract-corpus.fixtures";
-describe("core command metadata", () => {
-  it("prefills registration from descriptors and builds scoped input from the root schema", () => {
-    expect(definition.descriptors.fields).toHaveLength(13);
-    expect(definition.descriptors.commands).toHaveLength(12);
+describe("core act metadata", () => {
+  it("prefills registration from catalog and builds scoped input from the root schema", () => {
+    expect(definition.catalog.fields).toHaveLength(13);
+    expect(definition.catalog.acts).toHaveLength(12);
     const current = {
       caseReference: fields.caseReference,
       revision: 1,
@@ -21,7 +21,7 @@ describe("core command metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(values["act.values.claimantName"]).toBe(fields.claimantName);
+    expect(values["act.values.claimantName"]).toBe(fields.registration.claimantName);
     const close = initialOperationValues(
       "CASE",
       "CLOSE",

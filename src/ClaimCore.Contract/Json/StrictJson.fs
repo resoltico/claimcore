@@ -12,7 +12,9 @@ module StrictJson =
     [<Literal>]
     let MaximumDepth = 32
 
-    let private reject reason = invalidArg "json" reason
+    exception private ProfileViolation of string
+
+    let private reject reason = raise (ProfileViolation reason)
 
     let private text (read: unit -> string) =
         let value = read ()
@@ -36,7 +38,7 @@ module StrictJson =
             JsonValue.Integer value
         | _ -> reject "number is not a safe integer lexeme"
 
-    let rec ofElement (element: JsonElement) =
+    let rec private ofElement (element: JsonElement) =
         match element.ValueKind with
         | JsonValueKind.Object ->
             let names = HashSet<string>(StringComparer.Ordinal)
@@ -78,6 +80,7 @@ module StrictJson =
 
                 Ok(ofElement document.RootElement)
             with
+            | ProfileViolation _ -> fail "document violates the integer-only I-JSON profile"
             | :? DecoderFallbackException -> fail "document is not UTF-8"
             | :? JsonException -> fail "document is not one JSON value"
             | :? ArgumentException -> fail "document violates the integer-only I-JSON profile"

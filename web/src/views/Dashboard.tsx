@@ -2,7 +2,7 @@ import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState, useCallback, useEffect, useRef, type RefObject } from "react";
 import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
-import type { CommandKind } from "../interaction/metadata";
+import type { ActKind } from "../operation/metadata";
 import { service, type ServiceResponse } from "../api/service";
 import { useRead } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
@@ -13,7 +13,7 @@ import { CaseList } from "./CaseList";
 import { OperationEditor } from "./OperationEditor";
 import { OperationLookup } from "./OperationLookup";
 
-type OperationTarget = { current: CurrentCase | null; command: CommandKind };
+type OperationTarget = { current: CurrentCase | null; act: ActKind };
 type DashboardProps = { token: string; onLogout: () => Promise<void> };
 
 const Header = ({
@@ -108,7 +108,7 @@ const CasesPane = ({
         token={token}
         onSelect={setSelectedReference}
         onOpen={() => {
-          setOperation({ current: null, command: "OPEN" });
+          setOperation({ current: null, act: "OPEN" });
         }}
       />
     );
@@ -118,12 +118,12 @@ const CasesPane = ({
       token={token}
       caseReference={selectedReference}
       reloadSignal={refresh}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={() => {
         setSelectedReference(null);
       }}
-      onCommand={(current, command) => {
-        setOperation({ current, command });
+      onAct={(current, act) => {
+        setOperation({ current, act });
       }}
     />
   );
@@ -141,7 +141,7 @@ const DashboardContent = (props: ContentProps) => {
         {...workflow}
         definition={definition}
         current={operation.current}
-        initialCommand={operation.command}
+        initialAct={operation.act}
         onClose={() => {
           props.setOperation(null);
         }}
@@ -273,7 +273,7 @@ const ContextStatus = ({
 export const Dashboard = ({ token, onLogout }: DashboardProps) => {
   const navigation = useDashboardNavigation();
   const content = useNavigationFocus(
-    `${navigation.active}:${navigation.selectedReference ?? ""}:${navigation.operation?.command ?? ""}`,
+    `${navigation.active}:${navigation.selectedReference ?? ""}:${navigation.operation?.act ?? ""}`,
   );
   const definition = productMetadata;
   const context = useWorkspaceContext(token, content);

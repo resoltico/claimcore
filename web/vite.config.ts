@@ -3,7 +3,6 @@ import { availableParallelism } from "node:os";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import type { InlineConfig } from "vitest/node";
-import ContractFirstSequencer from "./scripts/contract-first-sequencer.mjs";
 import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
@@ -26,7 +25,9 @@ export default {
     rolldownOptions: {
       output: {
         codeSplitting: {
-          groups: [{ name: "presentation-catalogs", test: /\/src\/presentation\/generated\//u }],
+          groups: [
+            { name: "presentation-catalogs", test: /\/ClaimCore.Contract\/Localization\//u },
+          ],
         },
       },
     },
@@ -37,7 +38,6 @@ export default {
     host: "127.0.0.1",
   },
   test: {
-    sequence: { sequencer: ContractFirstSequencer },
     environment: "jsdom",
     maxWorkers: testWorkers,
     pool: "vmThreads",
@@ -50,7 +50,7 @@ export default {
       provider: "v8",
       reporter: ["text", "json-summary"],
       reportsDirectory: "../artifacts/frontend/coverage",
-      include: ["src/**/*.{ts,tsx}", "src/presentation/pseudolocalization.mjs"],
+      include: ["src/**/*.{ts,tsx}"],
     },
   },
 } satisfies UserConfig & { test: InlineConfig };

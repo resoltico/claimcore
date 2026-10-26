@@ -11,51 +11,60 @@ module ResponseCodecs =
     let private principal = RequestCodecs.principal
     let private scope = RequestCodecs.scope
 
-    let caseFields =
-        (record (fun v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 ->
+    let private registration =
+        (record (fun incident notification country claimant insurer amount currency ->
             {
-                CaseFields.IncidentDate = v0
-                IncidentNotificationDate = v1
-                IncidentCountry = v2
-                ClaimantName = v3
-                InsurerName = v4
-                ClaimedAmount = v5
-                ClaimedCurrency = v6
-                CaseReference = v7
-                PaymentDecisionDate = v8
-                PayableAmount = v9
-                PayableCurrency = v10
-                PaymentDate = v11
-                Status = v12
+                Registration.IncidentDate = incident
+                IncidentNotificationDate = notification
+                IncidentCountry = country
+                ClaimantName = claimant
+                InsurerName = insurer
+                ClaimedAmount = amount
+                ClaimedCurrency = currency
+            })
+        : Fields<Registration, _>)
+        |> field "incidentDate" _.IncidentDate date
+        |> field "incidentNotificationDate" _.IncidentNotificationDate date
+        |> field "incidentCountry" _.IncidentCountry country
+        |> field "claimantName" _.ClaimantName nonempty
+        |> field "insurerName" _.InsurerName nonempty
+        |> field "claimedAmount" _.ClaimedAmount amount
+        |> field "claimedCurrency" _.ClaimedCurrency currency
+        |> build
+
+    let private decision =
+        (record (fun date amount currency ->
+            {
+                Decision.PaymentDecisionDate = date
+                PayableAmount = amount
+                PayableCurrency = currency
+            })
+        : Fields<Decision, _>)
+        |> field "paymentDecisionDate" _.PaymentDecisionDate date
+        |> field "payableAmount" _.PayableAmount amount
+        |> field "payableCurrency" _.PayableCurrency currency
+        |> build
+
+    let private payment =
+        (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
+        |> field "paymentDate" _.PaymentDate date
+        |> build
+
+    let caseFields =
+        (record (fun reference status registration decision payment ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Decision = decision
+                Payment = payment
             })
         : Fields<CaseFields, _>)
-        |> field (FieldTable.key BusinessField.IncidentDate) _.IncidentDate date
-        |> field
-            (FieldTable.key BusinessField.IncidentNotificationDate)
-            _.IncidentNotificationDate
-            date
-        |> field (FieldTable.key BusinessField.IncidentCountry) _.IncidentCountry country
-        |> field (FieldTable.key BusinessField.ClaimantName) _.ClaimantName (nonempty)
-        |> field (FieldTable.key BusinessField.InsurerName) _.InsurerName (nonempty)
-        |> field (FieldTable.key BusinessField.ClaimedAmount) _.ClaimedAmount amount
-        |> field (FieldTable.key BusinessField.ClaimedCurrency) _.ClaimedCurrency currency
-        |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference reference
-        |> field
-            (FieldTable.key BusinessField.PaymentDecisionDate)
-            _.PaymentDecisionDate
-            (nullable date)
-        |> field (FieldTable.key BusinessField.PayableAmount) _.PayableAmount (nullable amount)
-        |> field
-            (FieldTable.key BusinessField.PayableCurrency)
-            _.PayableCurrency
-            (nullable currency)
-        |> field (FieldTable.key BusinessField.PaymentDate) _.PaymentDate (nullable date)
-        |> field
-            (FieldTable.key BusinessField.Status)
-            _.Status
-            (enumeration (
-                CaseStatuses.all |> List.map (fun status -> status, CaseStatuses.token status)
-            ))
+        |> field "caseReference" _.CaseReference reference
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
+        |> field "registration" _.Registration registration
+        |> field "decision" _.Decision (nullable decision)
+        |> field "payment" _.Payment (nullable payment)
         |> build
         |> named "CaseFields"
 
@@ -64,19 +73,30 @@ module ResponseCodecs =
         |> field "disposition" snd (enumeration (Vocabulary.entries Dispositions.vocabulary))
         |> field "fields" fst caseFields
 
+    let private liveTag = "LIVE"
+
     let private liveVariant =
         variant
-            "LIVE"
+            liveTag
             CaseView.Live
             (function
             | CaseView.Live(fields, disposition) -> Some(fields, disposition)
             | _ -> None)
             liveStateFields
 
-    let liveState = tagged "LiveState" "tag" [ liveVariant ]
+    let private stateName = "CaseState"
+
+    // Current reads and the LIVE branch of retained views share the same codec definition.
+    let liveState =
+        let codec = tagged stateName "tag" [ liveVariant ]
+
+        { codec with
+            Schema = Schema.Ref(stateName + "." + liveTag)
+            Definitions = Map.remove stateName codec.Definitions
+        }
 
     let caseState =
-        tagged "CaseState" "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
+        tagged stateName "tag" [ liveVariant; unitVariant "ERASED" CaseView.Erased ]
 
     let caseSnapshot =
         (record (fun reference revision view ->
@@ -99,6 +119,12 @@ module ResponseCodecs =
         Vocabulary.entries AuthorityKinds.vocabulary
         |> List.filter (fun (value, _) -> value <> AuthorityKind.ProvisionOwner)
         |> enumeration
+
+    let private maximumInstallationOffers =
+        1
+        + (AuthorityKinds.all
+           |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+           |> List.length)
 
     let private dateValue =
         date
@@ -139,14 +165,14 @@ module ResponseCodecs =
             fst
             (enumeration (
                 CaseActKinds.all
-                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.CorrectCase))
+                |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
                 |> List.map (fun act -> act, CaseActKinds.token act)
             ))
         |> field "expectedRevision" snd revision
 
     let private correctionOfferFields =
         record (fun revision correction -> revision, correction)
-        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
+        |> fixedField "act" (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
         |> field "expectedRevision" fst revision
         |> field "correction" snd correctionAdvice
 
@@ -161,9 +187,9 @@ module ResponseCodecs =
                     | _ -> None)
                     (ordinaryOfferFields |> build |> named "OrdinaryCaseActOffer")
                 branch
-                    CaseActOffer.CorrectCase
+                    CaseActOffer.Correct
                     (function
-                    | CaseActOffer.CorrectCase(r, c) -> Some(r, c)
+                    | CaseActOffer.Correct(r, c) -> Some(r, c)
                     | _ -> None)
                     (correctionOfferFields |> build |> named "CorrectionCaseActOffer")
             ]
@@ -256,7 +282,7 @@ module ResponseCodecs =
                     Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
                 )))
         |> field "views" _.Views (list 3 (vocabulary Views.vocabulary))
-        |> field "offers" _.Offers (list 4 installationOffer)
+        |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"
 
@@ -303,7 +329,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration BusinessField.all)
+        |> field "field" _.FieldName (enumeration (Vocabulary.entries FieldTable.vocabulary))
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
@@ -511,6 +537,6 @@ module ResponseCodecs =
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
-        |> field "offers" _.Offers (list 4 installationOffer)
+        |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "CasesPage"

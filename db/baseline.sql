@@ -54,7 +54,7 @@ CREATE TABLE claimcore.installation (
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the fixed 183-byte metadata
--- preimage defined by RecordFormat (entry format 2). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat (entry format 3). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -63,7 +63,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 2),
+    entry_format smallint NOT NULL CHECK (entry_format = 3),
     scope text NOT NULL CHECK (scope IN ('CASE', 'AUTHORITY')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
@@ -89,14 +89,14 @@ CREATE TABLE claimcore.ledger (
         (scope = 'CASE'
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
-            AND act IN ('OPEN', 'AMEND_REGISTRATION', 'CORRECT_CASE', 'DECIDE',
+            AND act IN ('OPEN', 'AMEND_REGISTRATION', 'CORRECT', 'DECIDE',
                         'WITHDRAW_DECISION', 'RECORD_PAYMENT', 'CLEAR_PAYMENT', 'CLOSE',
                         'REOPEN', 'VOID', 'REINSTATE', 'ERASE'))
         OR (scope = 'AUTHORITY'
             AND case_revision IS NULL
             AND business_date IS NULL
             AND payload IS NOT NULL
-            AND act IN ('PROVISION_OWNER', 'REGISTER_ACTOR', 'SET_GRANT', 'SET_ENABLED'))
+            AND act IN ('PROVISION_OWNER', 'REGISTER', 'GRANT', 'REVOKE', 'ENABLE', 'DISABLE'))
     ),
     CONSTRAINT ledger_payload_shape CHECK (
         (payload IS NULL AND payload_nonce IS NULL)

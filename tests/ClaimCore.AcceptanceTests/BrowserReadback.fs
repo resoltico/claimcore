@@ -42,7 +42,9 @@ let qualify fixture output =
         |> require "SUCCEEDED"
 
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One browser acceptance"
-    let fields = current.GetProperty("state").GetProperty("fields")
+
+    let registration =
+        current.GetProperty("state").GetProperty("fields").GetProperty("registration")
 
     for field, expected in
         [
@@ -51,7 +53,7 @@ let qualify fixture output =
             "incidentCountry", "LT"
         ] do
         Expect.isTrue
-            (fields.GetProperty(field).GetString() = expected)
+            (registration.GetProperty(field).GetString() = expected)
             "Exact native Unicode readback"
 
     let receipt =

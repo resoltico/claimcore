@@ -27,7 +27,7 @@ export const seedPresentation = async (
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
-  ({ en, lv, ar })[language]["command.OPEN.label"];
+  ({ en, lv, ar })[language]["act.OPEN.label"];
 // Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
   const control = page

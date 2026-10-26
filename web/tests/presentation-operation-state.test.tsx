@@ -26,7 +26,7 @@ it("preserves authored content, DOM selection and operation identity across lang
     preferenceKey,
     JSON.stringify({ version: 1, language: "en-XA", displayLocale: "en-GB" }),
   );
-  render(editor({ current: null, initialCommand: "OPEN" }));
+  render(editor({ current: null, initialAct: "OPEN" }));
   fillRegistrationInputs({ claimantName: " " });
   const name = document.querySelector<HTMLInputElement>('input[data-field-name="claimantName"]')!;
   const date = document.querySelector<HTMLInputElement>('input[data-field-name="incidentDate"]')!;
@@ -99,7 +99,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   const user = userEvent.setup();
   const pending = deferredResponse();
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
-  render(editor({ current: null, initialCommand: "OPEN" }));
+  render(editor({ current: null, initialAct: "OPEN" }));
   fillRegistrationInputs({ claimantName: " " });
   const name = screen.getByLabelText<HTMLInputElement>("Claimant name", { exact: true });
   await user.click(screen.getByRole("button", { name: "Review changes" }));

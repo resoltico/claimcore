@@ -73,7 +73,7 @@ module TypeScript =
         |> JsonSerializer.Serialize
 
     let private metadataTypes () =
-        let codec = DescriptorCodecs.codec
+        let codec = CatalogCodecs.codec
 
         let definitions =
             codec.Definitions
@@ -82,10 +82,10 @@ module TypeScript =
                 "export type " + identifier name + " = " + value schema + ";")
 
         String.concat "\n" definitions
-        + "\nexport type Descriptors = "
+        + "\nexport type CatalogDocument = "
         + value codec.Schema
         + ";\n"
-        + "export type ProductMetadata = { readonly descriptors: Descriptors; readonly productVersion: string; readonly contractIdentity: string };"
+        + "export type ProductMetadata = { readonly catalog: CatalogDocument; readonly productVersion: string; readonly contractIdentity: string };"
 
     let private presentationConstants () =
         [

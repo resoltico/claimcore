@@ -38,7 +38,7 @@ type SentDraft = {
 
 const sentDraft = (body: unknown): SentDraft => {
   if (typeof body !== "string") {
-    throw new Error("Expected a JSON command request body.");
+    throw new Error("Expected a JSON act request body.");
   }
   return JSON.parse(body) as SentDraft;
 };
@@ -57,7 +57,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
       token="token"
       definition={definition}
       current={current}
-      initialCommand="CLOSE"
+      initialAct="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}

@@ -35,10 +35,7 @@ module internal TextReply =
                     |> String.concat ", "
 
                 let annotation =
-                    MessageCatalogs.render
-                        language
-                        "ui.characterWarning"
-                        (Map.ofList [ "characters", points ])
+                    MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
 
                 text + " [" + annotation + "]"
         | _ -> text
@@ -51,20 +48,35 @@ module internal TextReply =
     let private label language key =
         MessageCatalogs.render language key Map.empty
 
-    let private authorityFieldLabel name =
-        (ContractDiscovery.definitions ()).AuthorityFields
-        |> List.find (fun field -> field.Name = name)
-        |> _.LabelId
+    let private authorityFieldLabel name = ContractDiscovery.inputLabel name
 
     let private line language key value = label language key + ": " + value
 
+    let private fieldValue (row: FieldRow) value =
+        let group =
+            match row.Group with
+            | FieldGroup.Identity
+            | FieldGroup.Status -> value
+            | group -> memberValue (FieldGroup.token group) value
+
+        memberValue row.Key group
+
     let private fieldLines language value =
-        FieldTable.rows
-        |> List.map (fun row ->
-            line
-                language
-                (FieldTable.labelId row.Field)
-                (memberValue row.Key value |> displayed language))
+        let rows group =
+            FieldTable.rows
+            |> List.filter (fun row -> row.Group = group)
+            |> List.map (fun row ->
+                line
+                    language
+                    (FieldTable.labelId row.Field)
+                    (fieldValue row value |> displayed language))
+
+        rows FieldGroup.Identity
+        @ rows FieldGroup.Status
+        @ ([ FieldGroup.Registration; FieldGroup.Decision; FieldGroup.Payment ]
+           |> List.collect (fun group ->
+               (label language ("group." + FieldGroup.token group + ".label") + ":")
+               :: rows group))
 
     let private stateFields state = memberValue "fields" state
 
@@ -93,26 +105,22 @@ module internal TextReply =
                 language
                 (FieldTable.labelId BusinessField.CaseReference)
                 (get (FieldTable.key BusinessField.CaseReference) value)
-            line language "ui.revisionLabel" (get "revision" value)
+            line language (CliMessages.key CliMessage.RevisionLabel) (get "revision" value)
             line language "cli.text.state" status
         ]
         @ fields
         @ [
             line
                 language
-                "ui.availableCommands"
-                (advice |> List.map (get "act" >> CliSyntax.caseVerb) |> String.concat ", ")
+                (CliMessages.key CliMessage.AvailableActsLabel)
+                (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
         ]
 
     let private receiptLines language tag value =
         let scope = memberValue "scope" value
         let token = get "act" scope
 
-        let verb =
-            if get "kind" scope = "CASE" then
-                CliSyntax.caseVerb token
-            else
-                CliSyntax.kebab token
+        let verb = OperationCatalog.kebab token
 
         let target =
             if get "kind" scope = "CASE" then
@@ -122,7 +130,10 @@ module internal TextReply =
 
         let revision =
             if get "kind" scope = "CASE" then
-                [ label language "ui.revisionLabel"; get "revision" scope ]
+                [
+                    label language (CliMessages.key CliMessage.RevisionLabel)
+                    get "revision" scope
+                ]
             else
                 []
 
@@ -159,7 +170,7 @@ module internal TextReply =
                 let summary =
                     [
                         get "revision" scope
-                        get "act" scope |> CliSyntax.caseVerb
+                        get "act" scope |> OperationCatalog.kebab
                         get "recordedAt" change
                         get "operationId" change
                     ]
@@ -234,20 +245,7 @@ module internal TextReply =
         let act = memberValue "act" input
         let token = get "kind" act
 
-        let verb =
-            match token with
-            | "SET_ENABLED" ->
-                if memberValue "enabled" act = JsonValue.Boolean true then
-                    "enable"
-                else
-                    "disable"
-            | "SET_GRANT" ->
-                if memberValue "active" act = JsonValue.Boolean true then
-                    "grant"
-                else
-                    "revoke"
-            | "REGISTER_ACTOR" -> "register"
-            | _ -> CliSyntax.caseVerb token
+        let verb = OperationCatalog.kebab token
 
         let target =
             if get "scope" review = "AUTHORITY" then
@@ -271,7 +269,7 @@ module internal TextReply =
             |> String.concat "; "
 
         [
-            (authorityFieldLabel "enabled"), get "enabled" before, get "enabled" after
+            (CliMessages.key CliMessage.EnabledLabel), get "enabled" before, get "enabled" after
             "cli.text.grants", grants before, grants after
         ]
         |> List.choose (fun (key, previous, next) ->
@@ -298,10 +296,9 @@ module internal TextReply =
             else
                 FieldTable.rows
                 |> List.choose (fun row ->
-                    let previous =
-                        before |> memberValue "state" |> stateFields |> memberValue row.Key
+                    let previous = before |> memberValue "state" |> stateFields |> fieldValue row
 
-                    let next = after |> memberValue "state" |> stateFields |> memberValue row.Key
+                    let next = after |> memberValue "state" |> stateFields |> fieldValue row
 
                     if previous = next then
                         None
@@ -313,7 +310,8 @@ module internal TextReply =
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
-        line language "ui.reviewTitle" (reviewIdentity request review) :: changes
+        line language (CliMessages.key CliMessage.ReviewTitle) (reviewIdentity request review)
+        :: changes
 
     let private diagnosticTargetIdentity =
         function
@@ -323,11 +321,11 @@ module internal TextReply =
         | InputTarget.PaymentGroup ->
             Vocabulary.messageKey CorrectionGroup.vocabulary CorrectionGroup.Payment "label"
         | InputTarget.Reason ->
-            Vocabulary.messageKey InputTargets.vocabulary InputTarget.Reason "label"
+            OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
         | InputTarget.PrincipalIssuer -> (authorityFieldLabel "issuer")
         | InputTarget.PrincipalSubject -> (authorityFieldLabel "subject")
-        | InputTarget.Limit -> "cli.target.limit"
-        | InputTarget.Cursor -> "cli.target.cursor"
+        | InputTarget.Limit -> "input.limit.label"
+        | InputTarget.Cursor -> "input.cursor.label"
 
     let private diagnosticTarget language value =
         match JsonValue.tryMember "target" value with
@@ -357,7 +355,7 @@ module internal TextReply =
 
         let action =
             JsonValue.tryMember "action" value
-            |> Option.map (scalar >> line language "ui.action")
+            |> Option.map (scalar >> line language (CliMessages.key CliMessage.ActionLabel))
             |> Option.toList
 
         message :: line language "cli.text.code" code :: action
@@ -388,10 +386,9 @@ module internal TextReply =
 
             if JsonValue.tryMember "setting" value |> Option.isSome then
                 [
-                    MessageCatalogs.render
+                    MessageCatalogs.renderCli
                         language
-                        "cli.configurationIssue"
-                        (Map.ofList [ "setting", get "setting" value; "issue", get "issue" value ])
+                        (CliMessage.ConfigurationIssue(get "setting" value, get "issue" value))
                 ]
             else
                 [

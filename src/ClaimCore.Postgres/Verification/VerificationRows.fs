@@ -30,8 +30,8 @@ module internal VerificationRows =
         (token: System.Threading.CancellationToken)
         =
         task {
-            use command = DatabaseSession.command connection sql [||]
-            use! reader = command.ExecuteReaderAsync(token)
+            use statement = DatabaseSession.statement connection sql [||]
+            use! reader = statement.ExecuteReaderAsync(token)
             let mutable state = Ok initial
             let mutable reading = true
 

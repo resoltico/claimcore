@@ -50,7 +50,7 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
 
     let scope = receipt.GetProperty "scope"
     Expect.equal (field "kind" scope) "CASE" "Case receipt"
-    Expect.equal (field "act" scope) "OPEN" "No changed command"
+    Expect.equal (field "act" scope) "OPEN" "No changed act"
     Expect.equal (field "caseReference" scope) submitted.Reference "No changed target"
     Expect.equal (scope.GetProperty("revision").GetInt64()) 1L "No implicit rebase"
 
@@ -67,7 +67,12 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "Exactly one current revision"
 
     let amount =
-        current.GetProperty("state").GetProperty("fields").GetProperty("claimedAmount").GetString()
+        current
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("registration")
+            .GetProperty("claimedAmount")
+            .GetString()
 
     Expect.isTrue (amount = "1") "Original authored amount retains its accepted decimal value"
 

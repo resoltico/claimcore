@@ -17,6 +17,7 @@ type CaseState =
 type CaseRecord
 
 module Case =
+    val canonical: CaseRequest -> CaseRequest
     val validateRequest: CaseRequest -> Result<unit, Refusal>
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot

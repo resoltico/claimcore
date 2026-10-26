@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { current, firstId } from "./operation-form.fixtures";
 import { correctionSerializations } from "./correction-serialization.fixtures";
 for (const status of ["OPENED", "CLOSED"] as const) {
@@ -10,7 +10,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
         const values = {
           ...initialOperationValues(
             "CASE",
-            "CORRECT_CASE",
+            "CORRECT",
             {
               ...current,
               state: { ...current.state, fields: { ...current.state.fields, status } },

@@ -1,39 +1,40 @@
 import { expect, it } from "vitest";
-import {
-  TYPE,
-  parse,
-  type LiteralElement,
-  type MessageFormatElement,
-} from "@formatjs/icu-messageformat-parser";
 import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
-import { pseudolocalize } from "../src/presentation/pseudolocalization.mjs";
-import english from "../../src/ClaimCore.Contract/Localization/en.json";
+import { templateParts, pseudolocalizeLiteral } from "../src/presentation/templates";
+import vectors from "../../tests/fixtures/message-template-vectors.json";
+import rendered from "../../tests/fixtures/rendered-messages.json";
+import { catalogs } from "@contracts/messages";
 
-const literal = (value: string): LiteralElement => ({ type: TYPE.literal, value });
-
-it("derives the published pseudo label exactly from the authored source catalog [CC-WEB-001]", () => {
-  expect(
-    renderKey({ language: "en-XA", displayLocale: "en-GB" }, "field.caseReference.label"),
-  ).toBe(
-    `⟦${pseudolocalize(parse(english["field.caseReference.label"]))
-      .map((node) => (node.type === TYPE.literal ? node.value : ""))
-      .join("")}⟧`,
-  );
+it("matches independent quoting vectors and every frozen F# rendering [CC-WEB-001]", () => {
+  for (const row of vectors.accepted) {
+    const supplied: Readonly<Record<string, string>> = row.arguments;
+    expect(
+      templateParts(row.source)
+        .map((part) => (part.kind === "literal" ? part.value : supplied[part.value]))
+        .join(""),
+    ).toBe(row.expected);
+  }
+  for (const row of rendered) {
+    const language = row.language as keyof typeof catalogs;
+    const catalog: Readonly<Record<string, string>> = catalogs[language];
+    const supplied: Readonly<Record<string, string>> = row.arguments;
+    expect(
+      templateParts(catalog[row.key]!)
+        .map((part) => (part.kind === "literal" ? part.value : supplied[part.value]))
+        .join(""),
+    ).toBe(row.expected);
+    expect(renderKey({ language, displayLocale: "en-GB" }, row.key, supplied)).toBe(row.isolated);
+  }
 });
 
-it("pseudolocalizes literal nodes while preserving exact argument identities [CC-WEB-001]", () => {
-  const ast: MessageFormatElement[] = [
-    literal("aeiouAEIOU "),
-    { type: TYPE.argument, value: "label" },
-  ];
-  const before = JSON.stringify(ast);
-  const transformed = pseudolocalize(ast);
-  expect(transformed).toEqual([
-    literal("ààëëïïööüüÀÀËËÏÏÖÖÜÜ "),
-    { type: TYPE.argument, value: "label" },
-  ]);
-  expect(JSON.stringify(ast)).toBe(before);
-  expect(transformed).not.toBe(ast);
+it("pseudolocalizes only literal text while preserving authored argument values [CC-WEB-001]", () => {
+  expect(pseudolocalizeLiteral("aeiouAEIOU")).toBe("ààëëïïööüüÀÀËËÏÏÖÖÜÜ");
+  expect(
+    renderKey({ language: "en-XA", displayLocale: "en-GB" }, "ui.reference", {
+      label: "EXACT-A",
+      reference: "EXACT-B",
+    }),
+  ).toBe("⟦EXACT-A: EXACT-B⟧");
 });
 
 it("isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001]", () => {

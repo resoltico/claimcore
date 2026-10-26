@@ -69,7 +69,7 @@ let publish directory =
 
         let! code, _, _ = execute config
         Expect.equal code 0 "Publish compiled owner binary"
-        return Path.Combine(directory, "ClaimCore.Database.dll")
+        return Path.Combine(directory, "claimcore-database.dll")
     }
 
 let invoke binary connectionFile ownerFile arguments expected =

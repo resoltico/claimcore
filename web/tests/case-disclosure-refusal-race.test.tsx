@@ -62,9 +62,9 @@ it("invalidates the pending current read synchronously on a second history refus
       token="token"
       caseReference={fields.caseReference}
       reloadSignal={0}
-      definition={definition.descriptors}
+      definition={definition.catalog}
       onBack={vi.fn()}
-      onCommand={vi.fn()}
+      onAct={vi.fn()}
     />,
   );
   const picker = await screen.findByRole("combobox", { name: "History detail" });
@@ -81,12 +81,12 @@ it("invalidates the pending current read synchronously on a second history refus
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(3);
   });
-  expect(screen.queryByText(fields.claimantName)).toBeNull();
+  expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
   expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
   await act(async () => {
     latest.release(current);
     await latest.promise;
   });
-  expect(await screen.findByText(fields.claimantName)).toBeVisible();
+  expect(await screen.findByText(fields.registration.claimantName)).toBeVisible();
   expect(get).toHaveBeenCalledTimes(3);
 });

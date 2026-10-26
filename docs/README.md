@@ -6,6 +6,7 @@ Choose a guide by the work you need to do:
 | --- | --- |
 | Evaluate a fresh local installation | [Getting started](getting-started.md) |
 | Understand case facts, corrections and stewardship | [Case work](domain.md) |
+| Look up CLI verbs, flags and choices | [Generated CLI reference](cli.md) |
 | Call the service or use CLI frames | [Service and CLI](api.md), [examples](../examples/README.md) |
 | Use or host the browser | [Browser and HTTPS host](web.md) |
 | Initialize, provision or verify a database | [Database administration](database.md) |

@@ -5,13 +5,11 @@ open ClaimCore.Contract
 open System
 open ClaimCore.Domain.ResultFlow
 
-/// Admission of an unaccepted command is independent of accepted case state.
+/// Admission of an unaccepted act is independent of accepted case state.
 module internal RequestValidation =
     let controls operationId reference expectedRevision =
         result {
-            do!
-                Validation.text (InputTarget.Field BusinessField.CaseReference) reference
-                |> Result.map ignore
+            do! Validation.text TextInput.CaseReference reference |> Result.map ignore
 
             if operationId = Guid.Empty then
                 return! Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
@@ -23,24 +21,24 @@ module internal RequestValidation =
         }
 
     /// Business payload parsing checks permanent format only.
-    let business command =
-        match command with
-        | CaseAct.Open input -> Validation.registration input |> Result.map ValidatedCommand.Open
+    let business act =
+        match act with
+        | CaseAct.Open input -> Validation.registration input |> Result.map ValidatedAct.Open
         | CaseAct.AmendRegistration input ->
-            Validation.registration input |> Result.map ValidatedCommand.AmendRegistration
-        | CaseAct.CorrectCase correction ->
-            CaseCorrections.parse correction |> Result.map ValidatedCommand.CorrectCase
-        | CaseAct.Decide input -> Validation.decision input |> Result.map ValidatedCommand.Decide
+            Validation.registration input |> Result.map ValidatedAct.AmendRegistration
+        | CaseAct.Correct correction ->
+            CaseCorrections.parse correction |> Result.map ValidatedAct.Correct
+        | CaseAct.Decide input -> Validation.decision input |> Result.map ValidatedAct.Decide
         | CaseAct.RecordPayment value ->
-            Validation.date (InputTarget.Field BusinessField.PaymentDate) value.PaymentDate
-            |> Result.map ValidatedCommand.RecordPayment
-        | CaseAct.WithdrawDecision -> Ok ValidatedCommand.WithdrawDecision
-        | CaseAct.ClearPayment -> Ok ValidatedCommand.ClearPayment
-        | CaseAct.Close -> Ok ValidatedCommand.Close
-        | CaseAct.Reopen -> Ok ValidatedCommand.Reopen
+            Validation.date DateInput.PaymentDate value.PaymentDate
+            |> Result.map ValidatedAct.RecordPayment
+        | CaseAct.WithdrawDecision -> Ok ValidatedAct.WithdrawDecision
+        | CaseAct.ClearPayment -> Ok ValidatedAct.ClearPayment
+        | CaseAct.Close -> Ok ValidatedAct.Close
+        | CaseAct.Reopen -> Ok ValidatedAct.Reopen
         | CaseAct.Void _
         | CaseAct.Reinstate _
-        | CaseAct.Erase -> invalidArg (nameof command) "Expected a business act."
+        | CaseAct.Erase -> invalidArg (nameof act) "Expected a business act."
 
 
     let parse (request: CaseRequest) =
@@ -50,7 +48,7 @@ module internal RequestValidation =
             match request.Act with
             | CaseAct.Void reason
             | CaseAct.Reinstate reason ->
-                return! Validation.text InputTarget.Reason reason |> Result.map ignore
+                return! Validation.text TextInput.Reason reason |> Result.map ignore
             | CaseAct.Erase -> return ()
-            | command -> return! business command |> Result.map ignore
+            | act -> return! business act |> Result.map ignore
         }

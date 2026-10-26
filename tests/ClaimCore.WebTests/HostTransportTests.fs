@@ -12,12 +12,12 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
-open ClaimCore.WebTests.FacadeStub
-open ClaimCore.WebTests.TestServerFixture
+open ClaimCore.TestSupport.FacadeStub
+open ClaimCore.TestSupport.TestServerFixture
 
 let private authorityBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"scope":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER_ACTOR"}}}}"""
+        $"""{{"scope":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
     )
 
 let private body name =
@@ -428,7 +428,7 @@ let private principalAdmission () =
                             issuer = issuer
                             subject = subject
                         |}
-                    act = {| kind = "REGISTER_ACTOR" |}
+                    act = {| kind = "REGISTER" |}
                 |}
 
         let samples =

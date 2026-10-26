@@ -63,12 +63,12 @@ for (const retainCurrent of [false, true]) {
           token="token"
           caseReference={fields.caseReference}
           reloadSignal={0}
-          definition={definition.descriptors}
+          definition={definition.catalog}
           onBack={vi.fn()}
-          onCommand={vi.fn()}
+          onAct={vi.fn()}
         />,
       );
-      await screen.findByText(fields.claimantName);
+      await screen.findByText(fields.registration.claimantName);
       await user.selectOptions(screen.getByRole("combobox", { name: "History detail" }), "FULL");
       await waitFor(() => {
         expect(revoked()).toBe(true);
@@ -79,7 +79,7 @@ for (const retainCurrent of [false, true]) {
         expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(retainCurrent ? 5 : 4);
       });
       if (!retainCurrent) {
-        expect(screen.queryByText(fields.claimantName)).toBeNull();
+        expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
       }
     },
   );

@@ -8,15 +8,21 @@ const canary = "PRIOR_ACTOR_PREFILL_CANARY";
 const disclosed = {
   ...current,
   advice: { ...current.advice, acts: caseOffers(["AMEND_REGISTRATION"]) },
-  state: { ...current.state, fields: { ...current.state.fields, claimantName: canary } },
+  state: {
+    ...current.state,
+    fields: {
+      ...current.state.fields,
+      registration: { ...current.state.fields.registration, claimantName: canary },
+    },
+  },
 };
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("fences prior actor prefills through token change and discard until a new authorized preview", async () => {
   const user = userEvent.setup();
-  const view = render(editor({ current: disclosed, initialCommand: "AMEND_REGISTRATION" }));
+  const view = render(editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" }));
   expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
   view.rerender(
-    editor({ current: disclosed, initialCommand: "AMEND_REGISTRATION", token: "new-token" }),
+    editor({ current: disclosed, initialAct: "AMEND_REGISTRATION", token: "new-token" }),
   );
   expect(screen.queryByDisplayValue(canary)).toBeNull();
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));

@@ -3,7 +3,7 @@ import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
-import { operationDocument } from "../../interaction/operationForm";
+import { operationDocument } from "../../operation/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../api/types";
@@ -28,17 +28,13 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
             <dd>
               <BusinessValue
                 value={change.before}
-                field={productMetadata.descriptors.fields.find(
-                  (field) => field.name === change.field,
-                )!}
+                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
                 context="ui.before"
               />
               <span aria-hidden="true"> → </span>
               <BusinessValue
                 value={change.after}
-                field={productMetadata.descriptors.fields.find(
-                  (field) => field.name === change.field,
-                )!}
+                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
                 context="ui.after"
               />
             </dd>
@@ -63,7 +59,7 @@ const AuthorityValues = ({ review }: { review: Extract<Review, { scope: "AUTHORI
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
           <dl>
-            <dt>{p.fieldLabel("enabled")}</dt>
+            <dt>{p.text("ui.enabled")}</dt>
             <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
           </dl>
           <h5>{p.text("ui.actorGrants")}</h5>
@@ -82,7 +78,7 @@ const ReviewConfirmation = ({
   confirmationId,
 }: {
   model: ReviewModel;
-  confirmationId: (typeof productMetadata.descriptors.commands)[number]["confirmationId"];
+  confirmationId: string;
 }) => {
   const p = usePresentation();
   return (
@@ -117,10 +113,9 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
   const { input } = model.prepared;
   const schema = selectedSchema(operationDocument, operationDocument, "", { scope: input.scope });
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "scope"));
-  const command =
-    input.scope === "CASE"
-      ? productMetadata.descriptors.commands.find((item) => item.kind === input.act.kind)!
-      : productMetadata.descriptors.authorityCommands.find((item) => item.kind === input.act.kind)!;
+  const act = productMetadata.catalog.entries.find(
+    (item) => item.scope === input.scope && item.kind === input.act.kind,
+  )!;
   return (
     <AccessibleModal
       title={p.text("ui.reviewTitle")}
@@ -132,13 +127,11 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
     >
       <>
         <h3>
-          {input.scope === "CASE"
-            ? p.commandLabel(input.act.kind)
-            : p.authorityLabel(input.act.kind)}
+          {input.scope === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
         </h3>
         <p>
           {input.scope === "CASE"
-            ? p.commandMeaning(input.act.kind)
+            ? p.actMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
         <ProtocolSummary value={display} document={operationDocument} node={schema} />
@@ -147,7 +140,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
         ) : (
           <AuthorityValues review={model.review} />
         )}
-        <ReviewConfirmation model={model} confirmationId={command.confirmationId} />
+        <ReviewConfirmation model={model} confirmationId={act.confirmationId!} />
       </>
     </AccessibleModal>
   );

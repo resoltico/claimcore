@@ -87,7 +87,7 @@ services:
       dockerfile: deployment/Dockerfile
       target: administration
     entrypoint: [/bin/sh, -c]
-    command: ['dotnet /app/database/ClaimCore.Database.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" && dotnet /app/database/ClaimCore.Database.dll provision-owner']
+    command: ['dotnet /app/database/claimcore-database.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" && dotnet /app/database/claimcore-database.dll provision-owner']
     environment:
       CLAIMCORE_BUSINESS_ZONE: ${CLAIMCORE_BUSINESS_ZONE:?}
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
@@ -136,7 +136,7 @@ services:
       identity:
         condition: service_healthy
     healthcheck:
-      test: [CMD, dotnet, ClaimCore.Web.dll, probe, ready]
+      test: [CMD, dotnet, claimcore-server.dll, probe, ready]
       interval: 5s
       timeout: 10s
       retries: 30

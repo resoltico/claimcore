@@ -5,14 +5,13 @@
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
-    <Compile Include="AuthorityRecordKinds.fs" />
     <Compile Include="CoreModels.fs" />
-    <Compile Include="AuthorityOperationDefinitions.fs" />
     <Compile Include="ServiceLimits.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="Cursors.fs" />
     <Compile Include="LedgerEntries.fs" />
+    <Compile Include="LedgerEnvelope.fs" />
     <Compile Include="CaseDecisions.fs" />
     <Compile Include="AuthorityDecisions.fs" />
     <Compile Include="AuthorityReviews.fs" />

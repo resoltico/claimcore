@@ -75,7 +75,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onCommand">;
+type Props = Omit<OperationFormProps, "onAct">;
 type DiscardProps = { model: OperationModel; onClose?: () => void };
 type DialogProps = DiscardProps & {
   pending: string | null;
@@ -83,8 +83,8 @@ type DialogProps = DiscardProps & {
 };
 const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => {
   const p = usePresentation();
-  let description = "ui.changeCommandDescription" as
-    "ui.changeCommandDescription" | "ui.discardUnknownDescription" | "ui.leaveDraftDescription";
+  let description = "ui.changeActDescription" as
+    "ui.changeActDescription" | "ui.discardUnknownDescription" | "ui.leaveDraftDescription";
   if (model.priorUncertain) {
     description = "ui.discardUnknownDescription";
   } else if (pending === "LEAVE") {
@@ -92,7 +92,7 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
   }
   return (
     <AccessibleModal
-      title={p.text("ui.changeCommandTitle")}
+      title={p.text("ui.changeActTitle")}
       closeLabel={p.text("ui.keepEditing")}
       description={p.text(description)}
       isOpen={pending !== null}
@@ -177,7 +177,7 @@ export const OperationPanel = (props: Props) => {
       <OperationForm
         {...props}
         {...(onClose === undefined ? {} : { onClose: leave })}
-        onCommand={requestChange}
+        onAct={requestChange}
       />
       <OperationReview model={model} />
     </>

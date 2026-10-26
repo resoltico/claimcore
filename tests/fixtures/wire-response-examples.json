@@ -39,7 +39,11 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       },
@@ -100,19 +104,25 @@
               "tag": "LIVE",
               "disposition": "ACTIVE",
               "fields": {
-                "incidentDate": "2026-01-01",
-                "incidentNotificationDate": "2026-01-01",
-                "incidentCountry": "LV",
-                "claimantName": "x",
-                "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR",
                 "caseReference": "x",
-                "paymentDecisionDate": "2026-01-01",
-                "payableAmount": "0",
-                "payableCurrency": "EUR",
-                "paymentDate": "2026-01-01",
-                "status": "OPENED"
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                }
               }
             },
             "advice": {
@@ -310,19 +320,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               },
@@ -333,19 +349,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               },
@@ -388,19 +410,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -481,19 +509,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -529,19 +563,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -633,19 +673,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -968,15 +1014,23 @@
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "REGISTER_ACTOR"
+                "act": "REGISTER"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_ENABLED"
+                "act": "ENABLE"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_GRANT"
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
               }
             ],
             "capabilities": [
@@ -991,7 +1045,11 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       }
@@ -1020,12 +1078,23 @@
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT_CASE",
+                  "act": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": ["KEEP", "REPLACE"],
-                    "decision": ["KEEP", "REPLACE", "CLEAR"],
-                    "payment": ["KEEP", "REPLACE", "CLEAR"]
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
                   }
                 },
                 {
@@ -1065,7 +1134,10 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": ["SUMMARY", "FULL"]
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
             }
           }
         }
@@ -1095,12 +1167,23 @@
                   "expectedRevision": 1
                 },
                 {
-                  "act": "CORRECT_CASE",
+                  "act": "CORRECT",
                   "expectedRevision": 1,
                   "correction": {
-                    "registration": ["KEEP", "REPLACE"],
-                    "decision": ["KEEP", "REPLACE", "CLEAR"],
-                    "payment": ["KEEP", "REPLACE", "CLEAR"]
+                    "registration": [
+                      "KEEP",
+                      "REPLACE"
+                    ],
+                    "decision": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ],
+                    "payment": [
+                      "KEEP",
+                      "REPLACE",
+                      "CLEAR"
+                    ]
                   }
                 },
                 {
@@ -1140,7 +1223,10 @@
                   "expectedRevision": 1
                 }
               ],
-              "history": ["SUMMARY", "FULL"]
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ]
             }
           }
         }
@@ -1183,15 +1269,23 @@
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "REGISTER_ACTOR"
+                "act": "REGISTER"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_ENABLED"
+                "act": "ENABLE"
               },
               {
                 "kind": "AUTHORITY_ACT",
-                "act": "SET_GRANT"
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
               }
             ]
           }
@@ -1320,19 +1414,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               },
@@ -1343,19 +1443,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               },
@@ -1464,19 +1570,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -1516,19 +1628,25 @@
                         "tag": "LIVE",
                         "disposition": "ACTIVE",
                         "fields": {
-                          "incidentDate": "2026-01-01",
-                          "incidentNotificationDate": "2026-01-01",
-                          "incidentCountry": "LV",
-                          "claimantName": "x",
-                          "insurerName": "x",
-                          "claimedAmount": "0",
-                          "claimedCurrency": "EUR",
                           "caseReference": "x",
-                          "paymentDecisionDate": "2026-01-01",
-                          "payableAmount": "0",
-                          "payableCurrency": "EUR",
-                          "paymentDate": "2026-01-01",
-                          "status": "OPENED"
+                          "status": "OPENED",
+                          "registration": {
+                            "incidentDate": "2026-01-01",
+                            "incidentNotificationDate": "2026-01-01",
+                            "incidentCountry": "LV",
+                            "claimantName": "x",
+                            "insurerName": "x",
+                            "claimedAmount": "0",
+                            "claimedCurrency": "EUR"
+                          },
+                          "decision": {
+                            "paymentDecisionDate": "2026-01-01",
+                            "payableAmount": "0",
+                            "payableCurrency": "EUR"
+                          },
+                          "payment": {
+                            "paymentDate": "2026-01-01"
+                          }
                         }
                       }
                     }
@@ -2750,7 +2868,7 @@
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
-              "act": "CORRECT_CASE",
+              "act": "CORRECT",
               "snapshot": {
                 "disclosure": "WITHHELD"
               }
@@ -2802,19 +2920,25 @@
                   "tag": "LIVE",
                   "disposition": "ACTIVE",
                   "fields": {
-                    "incidentDate": "2026-01-01",
-                    "incidentNotificationDate": "2026-01-01",
-                    "incidentCountry": "LV",
-                    "claimantName": "x",
-                    "insurerName": "x",
-                    "claimedAmount": "0",
-                    "claimedCurrency": "EUR",
                     "caseReference": "x",
-                    "paymentDecisionDate": "2026-01-01",
-                    "payableAmount": "0",
-                    "payableCurrency": "EUR",
-                    "paymentDate": "2026-01-01",
-                    "status": "OPENED"
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    }
                   }
                 }
               }
@@ -2865,6 +2989,92 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case.get-live-body-with-erased-tag",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "tag": "ERASED",
+              "disposition": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                }
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": []
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.get-live-body-with-unknown-tag",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "tag": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "tag": "UNKNOWN",
+              "disposition": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                }
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": []
+            }
+          }
+        }
+      },
+      "valid": false
     }
   ]
 }

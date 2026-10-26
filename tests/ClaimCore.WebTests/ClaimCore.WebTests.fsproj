@@ -1,19 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
-    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
-    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
-    <Compile Include="PrivateTestPaths.fs" />
-    <Compile Include="ProbeHttpsFixture.fs" />
-    <Compile Include="../StoreFixtures.fs" Link="StoreFixtures.fs" />
-    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
-    <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
-    <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
-    <Compile Include="../PostgresFixture.fs" Link="PostgresFixture.fs" />
     <Compile Include="OidcCoreFixture.fs" />
-    <Compile Include="FacadeStub.fs" />
-    <Compile Include="TestServerFixture.fs" />
     <Compile Include="AuthFoundationTests.fs" />
     <Compile Include="PrincipalAdmissionTests.fs" />
     <Compile Include="AuthTrustTests.fs" />
@@ -24,11 +14,7 @@
     <Compile Include="OriginConfigurationTests.fs" />
     <Compile Include="BindingAdmissionTests.fs" />
     <Compile Include="ProbeTransportTests.fs" />
-    <Compile Include="IdentityRealm.fs" />
-    <Compile Include="../IdentityReadiness.fs" Link="SharedIdentityReadiness.fs" />
-    <Compile Include="IdentityReadiness.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
-    <Compile Include="IdentityServer.fs" />
     <Compile Include="OidcLiveKeys.fs" />
     <Compile Include="OidcLiveTokens.fs" />
     <Compile Include="OidcLiveBrowser.fs" />

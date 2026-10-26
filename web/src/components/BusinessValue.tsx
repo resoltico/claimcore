@@ -1,5 +1,5 @@
 import { renderIsolatedValue } from "../presentation/messages";
-import type { FieldDescriptor } from "../api/service";
+import type { FieldCatalogEntry } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { suspiciousCodePoints } from "../utils/text";
 
@@ -19,7 +19,7 @@ export const BusinessValue = ({
   context,
 }: {
   value: string | null;
-  field: FieldDescriptor;
+  field: FieldCatalogEntry;
   context?: "ui.before" | "ui.after";
 }) => {
   const p = usePresentation();

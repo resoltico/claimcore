@@ -41,7 +41,7 @@ let private authority (actor: IActorClaimsCore) principals =
                         authorityRequest
                             (id (100000 + index * 20))
                             principal
-                            AdmittedAuthorityAct.RegisterActor
+                            AdmittedAuthorityAct.Register
                     ),
                     token
                 )
@@ -86,7 +86,7 @@ let private openCases (actor: IActorClaimsCore) count =
 
     }
 
-let private command revision =
+let private act revision =
     let amended =
         { registration with
             ClaimantName = "Synthetic revision " + string revision
@@ -104,7 +104,7 @@ let private command revision =
     | 2L -> CaseAct.RecordPayment { PaymentDate = "2026-08-05" }
     | 3L -> CaseAct.ClearPayment
     | 4L ->
-        CaseAct.CorrectCase
+        CaseAct.Correct
             {
                 Registration = RegistrationGroup.Replace amended
                 Decision = DecisionGroup.Keep
@@ -133,7 +133,7 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
                     (200000 + index)
                     ("synthetic-growth-" + string target)
                     revision
-                    (command revision)
+                    (act revision)
 
             let watch = Stopwatch.StartNew()
             let! result = actor.Execute(OperationInput.Case authored, token)

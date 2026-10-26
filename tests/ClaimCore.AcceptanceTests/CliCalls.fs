@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Cli
 
 open System
@@ -151,10 +153,9 @@ let private grantFrame target role =
             target = target
             act =
                 {|
-                    kind = "SET_GRANT"
+                    kind = "GRANT"
                     role = role
                     scope = installation
-                    active = true
                 |}
         |}
 
@@ -168,10 +169,9 @@ let setGrant fixture target role active =
                 target = target
                 act =
                     {|
-                        kind = "SET_GRANT"
+                        kind = if active then "GRANT" else "REVOKE"
                         role = role
                         scope = installation
-                        active = active
                     |}
             |}
 
@@ -198,7 +198,7 @@ let private setupFrames fixture =
                     scope = "AUTHORITY"
                     operationId = id ()
                     target = target
-                    act = {| kind = "REGISTER_ACTOR" |}
+                    act = {| kind = "REGISTER" |}
                 |}
             :: (roles |> List.map (grantFrame target)))
 

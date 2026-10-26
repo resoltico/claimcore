@@ -9,7 +9,7 @@ Postgres loads the authoritative view and persists the result. One database owns
 
 | Project | Owns | Direct project dependencies |
 | --- | --- | --- |
-| Contract | Public models, vocabulary, formats, codecs, registry, fields and messages | None |
+| Contract | Public models, vocabulary, formats, codecs, registry, fields, operation catalog and messages | None |
 | Domain | Validated case state, admission and transitions | Contract |
 | RecordFormat | Versioned durable encodings | Domain, Contract |
 | Application | Authorization, decisions, query selection and verification folds | Domain, RecordFormat, Contract |
@@ -19,14 +19,15 @@ Postgres loads the authoritative view and persists the result. One database owns
 | CLI | HTTPS client, command grammar and frames | Contract, HostSecurity |
 | Database | Owner administration | Application, Postgres, Contract, HostSecurity |
 
-The [compiled architecture tests](../tests/ClaimCore.ArchitectureTests/) check the evaluated project graph
+The [compiled architecture tests](../tests/ClaimCore.Tests/Architecture/) check the evaluated project graph
 and forbidden dependencies, including I/O, clocks and randomness in the four pure projects. Rejecting fixture
 assemblies exercise those guards. The published CLI closure cannot contain server decision or persistence
 assemblies. Pure code receives time, authority and state explicitly.
 
-The [generator](../eng/ClaimCore.ContractGenerator/) derives three tracked artifacts from Contract, Domain
-and Application. CLI owns its syntax. Browser forms use checked interaction bindings, presentation descriptors
-and current core advice. Neither adapter owns another business policy.
+The [generator](../eng/ClaimCore.ContractGenerator/) serializes Contract's typed operation catalog and
+produces OpenAPI, TypeScript admission and [message contracts](../contracts/messages.ts). It also writes the
+[CLI reference](cli.md). CLI syntax and browser paths come from the same catalog tree; current core advice
+limits offered work. Neither adapter owns another business policy.
 
 #### Durable records
 
@@ -79,8 +80,9 @@ or authority. Each page authorizes before cursor decoding and reads a separate s
 ### CC-APP-001 — Rejection changes no accepted state
 
 A case or authority acceptance appends one entry and updates projections in one READ COMMITTED transaction.
-The writer first locks the ledger head, then reads everything influencing its decision. It invokes one pure
-decision and persists it. Rejection changes no accepted ledger or projection state.
+The writer first locks the ledger head, then reads everything influencing its decision. A shared ledger
+envelope sequences identity, replay, admission, proposal, projection and receipt construction; case and
+authority policies supply their own decisions. It persists one resulting append. Rejection changes no accepted ledger or projection state.
 
 The database instant is captured after acquiring the lock. Together with the installation zone it supplies
 the business date. Lock, statement and idle-transaction timeouts bound serialization. Reads use REPEATABLE READ.
@@ -90,9 +92,11 @@ See [Transactions](../src/ClaimCore.Postgres/Ledger/Transactions.fs) and the [st
 
 ### CC-APP-002 — Exact replay and commit uncertainty
 
-Identity combines a caller-chosen operation ID with canonical request content. Authorized exact replay of
-retained content returns original acceptance metadata with current snapshot disclosure. Changed content
-under a used ID refuses. Erased content cannot be replayed.
+Identity combines a caller-chosen operation ID with canonical request content: amounts compare by decimal
+value, references after ASCII case folding, and free text exactly. Authorized equivalent replay returns
+original acceptance metadata with current snapshot disclosure. The ledger retains authored request bytes;
+public history exposes receipts and canonical snapshots. Changed content under a used ID refuses. Erased
+content cannot be replayed.
 
 `OUTCOME_UNKNOWN` means confirmation was lost after commit could have started. Preserve the exact request,
 ID and revision. A later ordinary refusal, fault or NOT_STARTED response cannot disprove the earlier commit.
@@ -117,7 +121,9 @@ transitions; Application owns authorization. The three [source locale files](../
 are the sole message source. CLI and browser render codes/parameters locally. Language and display formats
 are separate preferences and never rewrite business strings.
 
-Presentation descriptors carry labels, order, scalar hints and correction metadata. Exact interaction bindings
-carry request paths and tagged branches. Contract's display-warning policy identifies suspicious Unicode
+The catalog carries labels, order, scalar hints and operation bodies. Its derivation walks each body to
+produce request paths and tagged branches; browser prefill paths come from the field table's groups.
+The generator admits source text with the single Contract Template grammar, validates key/argument parity
+and producer references, and emits typed message arguments. Both clients preserve authored values. Contract's display-warning policy identifies suspicious Unicode
 without changing raw values. [Development](development.md#generated-contracts-and-boundary-verification)
 explains freshness and independent contract checks.

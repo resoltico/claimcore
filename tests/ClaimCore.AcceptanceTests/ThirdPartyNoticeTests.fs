@@ -20,7 +20,7 @@ let private copy directory target =
         File.Copy(file, destination)
 
 let private changedDeps directory change =
-    let file = Path.Combine(directory, "ClaimCore.Cli.deps.json")
+    let file = Path.Combine(directory, "claimcore.deps.json")
     let root = JsonNode.Parse(File.ReadAllText file) |> nonNull
     change root
     File.WriteAllText(file, root.ToJsonString())
@@ -81,7 +81,7 @@ let private damageCases () =
         "unreviewed version", renamePackage "FSharp.Core/99.0.0"
         "unreviewed runtime asset", unreviewedAsset "runtime" "unreviewed.dll"
         "unreviewed native asset", unreviewedAsset "native" "unreviewed.so"
-        "missing apphost", fun directory -> File.Delete(Path.Combine(directory, "ClaimCore.Cli"))
+        "missing apphost", fun directory -> File.Delete(Path.Combine(directory, "claimcore"))
         "unexplained runtime",
         fun directory -> File.WriteAllBytes(Path.Combine(directory, "unexplained.so"), [| 1uy |])
         "missing resource", fun directory -> File.Delete(resource directory)

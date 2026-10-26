@@ -20,7 +20,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! registered =
             admin.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 3) principal AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 3) principal AdmittedAuthorityAct.Register
                 ),
                 CancellationToken.None
             )
@@ -65,7 +65,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (disclosedFields receipt).ClaimantName
+            (disclosedFields receipt).Registration.ClaimantName
             registration.ClaimantName
             "Disclosure uses the write's locked context"
 

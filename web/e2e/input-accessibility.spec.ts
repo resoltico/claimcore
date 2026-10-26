@@ -35,45 +35,50 @@ for (const language of ["en", "lv", "ar"] as const) {
     await issuer.fill("http://invalid.example/");
     await subject.fill(source.ownerSubject);
     await previewRefusal(page, issuer, "principal.issuer", "INPUT_PRINCIPAL_FORMAT");
-    await expect(issuer).toHaveAccessibleName(
-      inputMessage(language, "authority.field.issuer.label"),
-    );
+    await expect(issuer).toHaveAccessibleName(inputMessage(language, "input.issuer.label"));
     await expect(issuer).toHaveAccessibleDescription(
-      inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT"),
+      `${inputMessage(language, "input.issuer.meaning")} ${inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT")}`,
     );
     await issuer.fill(source.issuer);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
-    await expect(issuer).toHaveAccessibleDescription("");
+    await expect(issuer).toHaveAccessibleDescription(
+      inputMessage(language, "input.issuer.meaning"),
+    );
     await issuer.press("Tab");
     await expect(subject).toBeFocused();
     await subject.fill("");
     await previewRefusal(page, subject, "principal.subject", "INPUT_TEXT_REQUIRED");
-    await expect(subject).toHaveAccessibleName(
-      inputMessage(language, "authority.field.subject.label"),
-    );
+    await expect(subject).toHaveAccessibleName(inputMessage(language, "input.subject.label"));
     await expect(subject).toHaveAccessibleDescription(
-      inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED"),
+      `${inputMessage(language, "input.subject.meaning")} ${inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED")}`,
     );
     await subject.fill(source.ownerSubject);
     await expect(subject).not.toHaveAttribute("aria-invalid");
-    await expect(subject).toHaveAccessibleDescription("");
+    await expect(subject).toHaveAccessibleDescription(
+      inputMessage(language, "input.subject.meaning"),
+    );
   });
   test(`case-scoped grant and revoke references retain shared hints and refusal focus in ${language}`, async ({
     page,
   }) => {
     await openAuthority(page, language);
-    await page
-      .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
-      .selectOption("SET_GRANT");
     const source = await syntheticPrincipals();
-    await page.locator('[name="target.issuer"]').fill(source.issuer);
-    await page.locator('[name="target.subject"]').fill(source.ownerSubject);
-    await page.locator('[name="act.role"]').selectOption("CASE_READER");
-    await page.locator('[name="act.scope.kind"]').selectOption("CASE");
     const reference = page.locator('[name="act.scope.caseReference"]');
-    const active = page.locator('[name="act.active"]');
-    for (const grant of [true, false]) {
-      await active.setChecked(grant);
+    for (const kind of ["GRANT", "REVOKE"]) {
+      await page
+        .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
+        .selectOption(kind);
+      if (kind === "REVOKE") {
+        const dialog = page.getByRole("dialog", { name: ui(language, "ui.changeActTitle") });
+        await dialog
+          .getByRole("button", { name: ui(language, "ui.discardAndChange"), exact: true })
+          .click();
+        await expect(dialog).toHaveCount(0);
+      }
+      await page.locator('[name="target.issuer"]').fill(source.issuer);
+      await page.locator('[name="target.subject"]').fill(source.ownerSubject);
+      await page.locator('[name="act.role"]').selectOption("CASE_READER");
+      await page.locator('[name="act.scope.kind"]').selectOption("CASE");
       await reference.fill("");
       await previewRefusal(page, reference, "caseReference", "INPUT_TEXT_REQUIRED");
       await expect(reference).toHaveAccessibleName(

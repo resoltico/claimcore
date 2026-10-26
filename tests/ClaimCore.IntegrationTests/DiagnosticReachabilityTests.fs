@@ -30,7 +30,7 @@ let private keep: Correction =
         Payment = PaymentGroup.Keep
     }
 
-let private correction value = (CaseAct.CorrectCase value)
+let private correction value = (CaseAct.Correct value)
 
 let private payment = (CaseAct.RecordPayment { PaymentDate = "2026-08-20" })
 
@@ -341,10 +341,10 @@ let private authorityEvidence actor =
             (actor: IActorClaimsCore)
                 .Execute(OperationInput.Authority(authorityRequest (id n) target act), ct)
 
-        let! registered = send 30 owner AdmittedAuthorityAct.RegisterActor
-        let! unknown = send 31 service (AdmittedAuthorityAct.SetEnabled false)
-        let! last = send 32 owner (AdmittedAuthorityAct.SetEnabled false)
-        let! admitted = send 33 service AdmittedAuthorityAct.RegisterActor
+        let! registered = send 30 owner AdmittedAuthorityAct.Register
+        let! unknown = send 31 service (AdmittedAuthorityAct.Disable)
+        let! last = send 32 owner (AdmittedAuthorityAct.Disable)
+        let! admitted = send 33 service AdmittedAuthorityAct.Register
         acceptedAuthority admitted
 
         let! human =
@@ -368,7 +368,7 @@ let private identityEvidence actor =
         let! registered =
             actor.Execute(
                 OperationInput.Authority(
-                    authorityRequest (id 35) reader AdmittedAuthorityAct.RegisterActor
+                    authorityRequest (id 35) reader AdmittedAuthorityAct.Register
                 ),
                 ct
             )
@@ -403,7 +403,7 @@ let private principalEvidence (actor: IActorClaimsCore) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Contract.AuthorityAct.RegisterActor
+                    Act = ClaimCore.Contract.AuthorityAct.Register
                 }
 
             let! outcome = actor.Execute(OperationInput.Authority request, ct)

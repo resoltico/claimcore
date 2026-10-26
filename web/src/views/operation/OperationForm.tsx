@@ -1,35 +1,35 @@
 import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
-import { InteractionInputs } from "../../components/InteractionInputs";
+import { CatalogInputs } from "../../components/CatalogInputs";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { productMetadata } from "../../protocol/productMetadata";
+import { operationEntry } from "../../operation/operationForm";
 
 export type OperationFormProps = {
   model: OperationModel;
   current: CurrentCase | null;
   offered: ReadonlyArray<string>;
-  onCommand: (kind: string) => void;
+  onAct: (kind: string) => void;
   onClose?: () => void;
 };
-const CommandPicker = ({ model, offered, onCommand }: OperationFormProps) => {
+const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
   return offered.length < 2 ? null : (
     <label>
-      {p.text(model.values["scope"] === "CASE" ? "ui.command" : "ui.authorityAction")}
+      {p.text(model.values["scope"] === "CASE" ? "ui.act" : "ui.authorityAction")}
       <select
-        id="command-picker"
+        id="act-picker"
         value={String(model.values["act.kind"])}
         disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
         onChange={(event) => {
-          onCommand(event.target.value);
+          onAct(event.target.value);
         }}
       >
         {offered.map((kind) => (
           <option key={kind} value={kind}>
-            {model.values["scope"] === "CASE" ? p.commandLabel(kind) : p.authorityLabel(kind)}
+            {model.values["scope"] === "CASE" ? p.actLabel(kind) : p.authorityLabel(kind)}
           </option>
         ))}
       </select>
@@ -39,9 +39,7 @@ const CommandPicker = ({ model, offered, onCommand }: OperationFormProps) => {
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(String(model.values["act.kind"]));
-  const command = productMetadata.descriptors.commands.find(
-    (item) => model.values["scope"] === "CASE" && item.kind === model.values["act.kind"],
-  );
+  const act = operationEntry(model.values);
   return (
     <>
       {" "}
@@ -56,9 +54,17 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           />
         </p>
       )}
-      {command?.inputs.kind === "CORRECTION_GROUPS" ? <p>{p.text("ui.correctionHint")}</p> : null}
+      {act.inputs.some(
+        (input) =>
+          input.kind.kind === "GROUP" &&
+          input.diagnosticTargets.some((target) =>
+            ["registration", "decision", "payment"].includes(target),
+          ),
+      ) ? (
+        <p>{p.text("ui.correctionHint")}</p>
+      ) : null}
       {offered.length === 0 ? null : (
-        <InteractionInputs
+        <CatalogInputs
           current={current}
           values={model.values}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
@@ -117,7 +123,7 @@ export const OperationForm = (props: OperationFormProps) => {
         }
       }}
     >
-      <CommandPicker {...props} />
+      <ActPicker {...props} />
       <OperationInputs {...props} />
       <div className="actions">
         <button

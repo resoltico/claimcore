@@ -6,7 +6,7 @@ open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open Expecto
 open ClaimCore.Web
-open ClaimCore.WebTests.PrivateTestPaths
+open ClaimCore.TestSupport.PrivateTestPaths
 
 let private configured action =
     let names = WebSettings.all |> List.map WebSettings.token

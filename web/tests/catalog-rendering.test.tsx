@@ -9,7 +9,7 @@ import { productMetadata } from "../src/protocol/productMetadata";
 import { isRequest, isResponse } from "../src/protocol/client";
 import type { EndpointId, RequestByEndpoint, ResponseByEndpoint } from "@contracts/client";
 import type { CurrentCase, CaseReview } from "../src/api/service";
-import type { CommandKind } from "../src/interaction/metadata";
+import type { ActKind } from "../src/operation/metadata";
 import { caseOffers } from "./case-advice.fixtures";
 import { installationOffers } from "./installation-advice.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";
@@ -20,18 +20,18 @@ afterEach(() => vi.unstubAllGlobals());
 type CaseInput = Extract<RequestByEndpoint["operation.execute"], { scope: "CASE" }>;
 type AuthorityInput = Extract<RequestByEndpoint["operation.execute"], { scope: "AUTHORITY" }>;
 type Dispatch<T> = { path: string; bytes: string; input: T };
-const { commands, authorityCommands } = productMetadata.descriptors;
+const { acts, authorityActs } = productMetadata.catalog;
 const runtime = {
   productVersion: "0.10.0",
   businessDate: "2026-09-09",
   timeZone: "Etc/UTC",
 };
 
-const currentFor = (kind: CommandKind): CurrentCase => {
-  const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "CLEAR_PAYMENT", "CORRECT_CASE"].includes(
+const currentFor = (kind: ActKind): CurrentCase => {
+  const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "CLEAR_PAYMENT", "CORRECT"].includes(
     kind,
   );
-  const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT_CASE";
+  const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT";
   return {
     caseReference: caseFields.caseReference,
     revision: 1,
@@ -42,10 +42,10 @@ const currentFor = (kind: CommandKind): CurrentCase => {
       fields: {
         ...caseFields,
         status: kind === "REOPEN" ? "CLOSED" : "OPENED",
-        paymentDecisionDate: decided ? "2026-09-03" : null,
-        payableAmount: decided ? "5" : null,
-        payableCurrency: decided ? "EUR" : null,
-        paymentDate: paid ? "2026-09-04" : null,
+        decision: decided
+          ? { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" }
+          : null,
+        payment: paid ? { paymentDate: "2026-09-04" } : null,
       },
     },
   };
@@ -59,7 +59,7 @@ const input = (name: string, value: string) => {
   }
   fireEvent.change(control, { target: { value } });
 };
-const authorCase = (kind: CommandKind) => {
+const authorCase = (kind: ActKind) => {
   switch (kind) {
     case "OPEN":
       fillRegistrationInputs();
@@ -67,7 +67,7 @@ const authorCase = (kind: CommandKind) => {
     case "AMEND_REGISTRATION":
       input("claimantName", "Synthetic replacement");
       break;
-    case "CORRECT_CASE":
+    case "CORRECT":
       fireEvent.change(document.querySelector('[name="act.groups.registration.mode"]')!, {
         target: { value: "REPLACE" },
       });
@@ -170,7 +170,7 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
 const assertAuthoredCase = (request: CaseInput) => {
   switch (request.act.kind) {
     case "OPEN":
-      expect(request.act.values.claimantName).toBe(caseFields.claimantName);
+      expect(request.act.values.claimantName).toBe(caseFields.registration.claimantName);
       break;
     case "AMEND_REGISTRATION":
       expect(request.act.values.claimantName).toBe("Synthetic replacement");
@@ -181,7 +181,7 @@ const assertAuthoredCase = (request: CaseInput) => {
     case "RECORD_PAYMENT":
       expect(request.act.values.paymentDate).toBe("2026-09-04");
       break;
-    case "CORRECT_CASE":
+    case "CORRECT":
       expect(request.act.groups).toMatchObject({
         registration: {
           mode: "REPLACE",
@@ -199,35 +199,35 @@ const assertAuthoredCase = (request: CaseInput) => {
       break;
   }
 };
-it.each(commands)(
+it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
-  async (command) => {
-    expect(commands).toHaveLength(12);
+  async (act) => {
+    expect(acts).toHaveLength(12);
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));
     render(
       <OperationEditor
         token="token"
         definition={productMetadata}
-        current={command.kind === "OPEN" ? null : currentFor(command.kind)}
-        initialCommand={command.kind}
+        current={act.kind === "OPEN" ? null : currentFor(act.kind)}
+        initialAct={act.kind}
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
       />,
     );
     expect(
-      screen.getByRole("heading", { name: createPresenter(defaults).commandLabel(command.kind) }),
+      screen.getByRole("heading", { name: createPresenter(defaults).actLabel(act.kind) }),
     ).toBeVisible();
-    authorCase(command.kind);
+    authorCase(act.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     const dialog = await screen.findByRole("dialog");
-    if (command.kind === "DECIDE") {
+    if (act.kind === "DECIDE") {
       expect(dialog).toHaveTextContent("5.0000");
       expect([...dialog.querySelectorAll("bdi")].map((node) => node.textContent)).toContain("5");
     }
-    if (command.kind === "CORRECT_CASE") {
+    if (act.kind === "CORRECT") {
       expect(dialog).toHaveTextContent("Synthetic correction");
     }
     await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
@@ -238,8 +238,8 @@ it.each(commands)(
       "/api/operation.execute",
     ]);
     expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
-    expect(calls[1]!.input.act.kind).toBe(command.kind);
-    expect(calls[1]!.input.expectedRevision).toBe(command.kind === "OPEN" ? 0 : 1);
+    expect(calls[1]!.input.act.kind).toBe(act.kind);
+    expect(calls[1]!.input.expectedRevision).toBe(act.kind === "OPEN" ? 0 : 1);
     assertAuthoredCase(calls[1]!.input);
   },
 );
@@ -262,7 +262,7 @@ const contextReply = (): Response =>
         ...runtime,
         capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
         views: ["AUTHORITY", "OPERATIONS"],
-        offers: installationOffers(["REGISTER_ACTOR", "SET_GRANT", "SET_ENABLED"]),
+        offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
       },
     },
   });
@@ -319,7 +319,7 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   await waitFor(() => {
     expect(
       screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-    ).toHaveLength(3);
+    ).toHaveLength(5);
   });
   fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
     target: { value: kind },
@@ -329,24 +329,20 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   fireEvent.change(document.querySelector('[name="target.kind"]')!, {
     target: { value: "HUMAN" },
   });
-  if (kind === "SET_GRANT") {
+  if (kind === "GRANT" || kind === "REVOKE") {
     fireEvent.change(document.querySelector('[name="act.role"]')!, {
       target: { value: "CASE_READER" },
     });
-    fireEvent.click(document.querySelector('[name="act.active"]')!);
-  }
-  if (kind === "SET_ENABLED") {
-    fireEvent.click(document.querySelector('[name="act.enabled"]')!);
   }
 };
-it.each(authorityCommands)(
+it.each(authorityActs)(
   "renders, reviews and submits real authority act $kind through production transport",
-  async (command) => {
-    expect(authorityCommands).toHaveLength(3);
+  async (act) => {
+    expect(authorityActs).toHaveLength(5);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
-    await authorAuthority(command.kind);
+    await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     await screen.findByRole("heading", { name: "Review changes" });
@@ -359,21 +355,20 @@ it.each(authorityCommands)(
     });
     await screen.findByText(calls[0]!.input.operationId, { exact: true });
     expect(before).toContain(calls[0]!.input.operationId);
-    expect(calls[0]!.input.act.kind).toBe(command.kind);
+    expect(calls[0]!.input.act.kind).toBe(act.kind);
     expect(calls[0]!.input.target).toEqual({
       kind: "HUMAN",
       issuer: "https://issuer.example/",
       subject: "synthetic-catalogue-human",
     });
-    if (calls[0]!.input.act.kind === "SET_GRANT") {
+    if (calls[0]!.input.act.kind === "GRANT" || calls[0]!.input.act.kind === "REVOKE") {
       expect(calls[0]!.input.act).toMatchObject({
         role: "CASE_READER",
-        active: true,
         scope: { kind: "INSTALLATION" },
       });
     }
-    if (calls[0]!.input.act.kind === "SET_ENABLED") {
-      expect(calls[0]!.input.act.enabled).toBe(true);
+    if (calls[0]!.input.act.kind === "ENABLE") {
+      expect(calls[0]!.input.act).toEqual({ kind: "ENABLE" });
     }
   },
 );

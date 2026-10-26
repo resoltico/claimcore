@@ -1,5 +1,5 @@
 import type { Notice } from "../api/notices";
-import requirements from "./generated/diagnostic-parameters.json";
+import { diagnosticParameters as requirements } from "@contracts/messages";
 import { exactInteger } from "./format";
 import { renderKey, translate } from "./messages";
 import type { Preferences } from "./preferences";

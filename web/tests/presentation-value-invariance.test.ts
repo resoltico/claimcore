@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
-import { initialOperationValues, assembleOperation } from "../src/interaction/operationForm";
+import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { buildRequest } from "../src/protocol/client";
 import { prepareRequest } from "../src/protocol/preparedRequest";
 import { definition, operationId } from "./service-ui.fixtures";
@@ -29,7 +29,7 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed;
   };
-  const field = (name: string) => definition.descriptors.fields.find((item) => item.name === name)!;
+  const field = (name: string) => definition.catalog.fields.find((item) => item.name === name)!;
   for (let index = 0; index < 500; index += 1) {
     const whole =
       String(1 + (next() % 9)) +

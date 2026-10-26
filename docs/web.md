@@ -3,9 +3,15 @@
 Sign in through OIDC, then use the views offered by your current ClaimCore grants. Authentication alone grants
 no case work. The browser uses same-origin secure cookies and antiforgery; it holds no database credentials.
 
+Choose a case to read its grouped registration, decision and payment facts. Available acts come from
+current core advice. Use the authority view to manage actors and grants when your rights permit it.
+The [case guide](domain.md) explains corrections; the [CLI reference](cli.md) offers the same acts outside
+the browser.
+
 ## Review and record a change
 
-Forms take their fields and tagged branches from checked interaction bindings, labels from descriptors and
+Forms take fields, prefill paths and tagged branches from the generated catalog, localized text from the
+generated message contract, and
 permitted work from core advice. Review shows a proposal; confirmation sends a frozen request with its exact
 operation ID and expected revision. Execution rechecks current authority and state.
 
@@ -26,7 +32,7 @@ establish that uncertain submitted content matched it.
 
 ## Language, display and navigation
 
-English, Latvian and Arabic use the same source catalogs and ICU checks. Latvian/Arabic text still needs native
+English, Latvian and Arabic use the same source catalogs and Template grammar checks. Latvian/Arabic text still needs native
 review. RTL layout, display-format preferences, country hints and suspicious-Unicode warnings preserve raw
 business strings. Navigation focuses destination headings; background reads leave focus in place. Read failures
 offer an explicit reload, and views default-deny before context succeeds. Human assistive-technology review

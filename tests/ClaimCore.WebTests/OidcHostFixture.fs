@@ -1,5 +1,7 @@
 module internal ClaimCore.WebTests.OidcHostFixture
 
+open ClaimCore.TestSupport
+
 open System
 open System.IO
 open System.Net
@@ -17,7 +19,7 @@ open Microsoft.Extensions.DependencyInjection.Extensions
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Web
-open ClaimCore.WebTests.TestServerFixture
+open ClaimCore.TestSupport.TestServerFixture
 
 let private configure
     configuration

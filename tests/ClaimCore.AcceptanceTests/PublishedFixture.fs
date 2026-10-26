@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.PublishedFixture
 
+open ClaimCore.TestSupport
+
 open System
 open System.Collections.Generic
 open System.IO
@@ -167,7 +169,10 @@ type Fixture() =
     let postgres = database postgresImage (Guid.NewGuid().ToString("N"))
     let origin = "https://localhost:" + string (FixtureFiles.port ())
     let backend = "https://localhost:" + string (FixtureFiles.port ())
-    let identity = new IdentityServer.Identity(origin)
+
+    let identity =
+        new IdentityServer.Identity(origin, 300, IdentityRealm.workflowAccounts)
+
     let certificate = FixtureFiles.certificate ()
     let http = client certificate
     let mutable web: PublishedProcesses.Web option = None

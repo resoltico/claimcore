@@ -8,6 +8,11 @@ One PostgreSQL database owns acceptance. Reads show one snapshot. The IdP, servi
 backup operator are trusted. Hashes detect inconsistency against retained trusted evidence; they cannot prove
 real-world facts, independent freshness or honesty of an administrator rewriting everything.
 
+For a local evaluation, follow [getting started](getting-started.md). For an existing installation,
+review access and session custody first, preserve exact frames when delivery is uncertain, and verify a
+restore before reopening access. Owner administration uses `claimcore-database`; actor work uses
+`claimcore` or the browser.
+
 ## Erasure limits
 
 ERASE atomically clears every case ledger payload/nonce and its business projection. It retains reference,

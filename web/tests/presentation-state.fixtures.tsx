@@ -2,7 +2,7 @@ import { caseOffers } from "./case-advice.fixtures";
 import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { CommandDraft, CurrentCase } from "../src/api/service";
+import type { OperationDraft, CurrentCase } from "../src/api/service";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
@@ -21,7 +21,7 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
       token="token"
       definition={definition}
       current={current}
-      initialCommand="CLOSE"
+      initialAct="CLOSE"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}
@@ -30,12 +30,12 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
   </>
 );
 
-export const draftAt = (index: number): CommandDraft => {
+export const draftAt = (index: number): OperationDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("Expected one serialized canonical request.");
   }
-  return JSON.parse(body) as CommandDraft;
+  return JSON.parse(body) as OperationDraft;
 };
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);

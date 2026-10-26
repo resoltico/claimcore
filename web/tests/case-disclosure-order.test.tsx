@@ -20,9 +20,9 @@ const detail = (token = "token", reloadSignal = 0) => (
     token={token}
     caseReference={fields.caseReference}
     reloadSignal={reloadSignal}
-    definition={definition.descriptors}
+    definition={definition.catalog}
     onBack={vi.fn()}
-    onCommand={vi.fn()}
+    onAct={vi.fn()}
   />
 );
 const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
@@ -83,7 +83,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable([]));
   vi.stubGlobal("fetch", fetch);
   render(detail());
-  await screen.findByText(fields.claimantName);
+  await screen.findByText(fields.registration.claimantName);
   expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
 });
@@ -109,7 +109,7 @@ for (const replacement of ["session", "refresh"]) {
         replacement === "refresh" ? 1 : 0,
       ),
     );
-    expect(screen.queryByText(fields.claimantName)).toBeNull();
+    expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
     expect(oldSignal?.aborted).toBe(true);
     await act(async () => {
       nextCurrent.release(response("case.get", "REJECTED", unavailable));
@@ -118,7 +118,7 @@ for (const replacement of ["session", "refresh"]) {
     });
     await screen.findByRole("alert");
     expect(screen.queryByRole("heading", { name: "Case history" })).toBeNull();
-    expect(screen.queryByText(fields.claimantName)).toBeNull();
+    expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 }
@@ -168,7 +168,7 @@ it("appends an authorized next history page without dropping current advice", as
   await waitFor(() => {
     expect(document.querySelectorAll(".history-list li")).toHaveLength(2);
   });
-  expect(screen.getByText(fields.claimantName)).toBeVisible();
+  expect(screen.getByText(fields.registration.claimantName)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(3);
 });

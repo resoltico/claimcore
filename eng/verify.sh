@@ -5,7 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source eng/native-reports.sh
 
 # These assignments are also the inputs each native stage executes.
-unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj)
+unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj)
 postgres_projects=(tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj)
 web_projects=(tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj)
 acceptance_projects=(tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj)
@@ -17,7 +17,8 @@ for project in "${assigned_projects[@]}"; do
     exit 64
   fi
 done
-for project in tests/*/*.fsproj; do
+# Directory.Build.props defines test projects by the Tests suffix; TestSupport is a library.
+for project in tests/*/*Tests.fsproj; do
   assignments=0
   for assigned in "${assigned_projects[@]}"; do
     if [[ "${project}" == "${assigned}" ]]; then assignments=$((assignments + 1)); fi
@@ -161,6 +162,8 @@ lint() {
   dotnet tool restore
   dotnet fantomas --check src tests eng
   bash eng/Check-FSharpLint.sh
+  restore_node
+  npm --prefix web run boundaries:check
 }
 
 unit() {
@@ -168,12 +171,8 @@ unit() {
   build_native
   local project
   for project in "${unit_projects[@]}"; do
-    if [[ "${project}" == */ClaimCore.ArchitectureTests.fsproj ]]; then
-      dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
-      tests "${project}" Debug 15m
-    else
-      tests "${project}"
-    fi
+    dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
+    tests "${project}" Debug 15m
   done
 }
 

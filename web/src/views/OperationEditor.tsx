@@ -3,13 +3,13 @@ import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
 import { AcceptedOperation } from "./operation/OperationDialogs";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
-import type { OperationEditorProps } from "../interaction/editorTypes";
+import type { OperationEditorProps } from "../operation/editorTypes";
 
 export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();
   const model = useOperation({
     scope: "CASE",
-    kind: props.initialCommand,
+    kind: props.initialAct,
     current: props.current,
     token: props.token,
     onLockChange: props.onMutationLockChange,
@@ -27,11 +27,11 @@ export const OperationEditor = (props: OperationEditorProps) => {
       />
     );
   }
-  const offered = props.current?.advice.acts.map((offer) => offer.act) ?? [props.initialCommand];
+  const offered = props.current?.advice.acts.map((offer) => offer.act) ?? [props.initialAct];
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
-      <h2 id="operation-title">{p.commandLabel(String(model.values["act.kind"]))}</h2>
-      <p>{p.commandMeaning(String(model.values["act.kind"]))}</p>
+      <h2 id="operation-title">{p.actLabel(String(model.values["act.kind"]))}</h2>
+      <p>{p.actMeaning(String(model.values["act.kind"]))}</p>
       <p>{p.text("ui.unchangedUntilSubmit")}</p>
       <OperationDiscard model={model} onClose={props.onClose} />
       <OperationPanel

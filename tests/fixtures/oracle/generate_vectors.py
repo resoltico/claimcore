@@ -5,12 +5,14 @@ derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed led
 salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 6 --snapshot 4 --authority 3
+  python3 -I generate_vectors.py --request 7 --snapshot 5 --authority 4
 
 Writes JSON to standard output.
 """
 
 import argparse
+import copy
+import decimal
 import datetime
 import hashlib
 import json
@@ -20,12 +22,12 @@ import uuid
 SAFE = 9007199254740991
 SHORT = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
 ACT_CODES = {
-    "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT_CASE": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
+    "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
-    "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER_ACTOR": 33, "SET_GRANT": 34,
-    "SET_ENABLED": 35,
+    "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
+    "ENABLE": 36, "DISABLE": 37,
 }
-ENTRY_TAG = b"claimcore/ledger-entry/2\n"
+ENTRY_TAG = b"claimcore/ledger-entry/3\n"
 REFERENCE_TAG = b"claimcore/case-reference-id/2\n"
 
 
@@ -83,8 +85,49 @@ def with_format(value, number):
     return copy
 
 
+def fold_reference(reference):
+    return "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in reference)
+
+
+def canonical_identity(request):
+    result = copy.deepcopy(request)
+    def amount(values, key):
+        text = format(decimal.Decimal(values[key]), "f")
+        values[key] = text.rstrip("0").rstrip(".") if "." in text else text
+    act = result["act"]
+    if result["scope"] == "CASE":
+        result["caseReference"] = fold_reference(result["caseReference"])
+        if act["kind"] in ("OPEN", "AMEND_REGISTRATION"):
+            amount(act["values"], "claimedAmount")
+        elif act["kind"] == "DECIDE":
+            amount(act["values"], "payableAmount")
+        elif act["kind"] == "CORRECT":
+            for group, key in (("registration", "claimedAmount"), ("decision", "payableAmount")):
+                if act["groups"][group]["mode"] == "REPLACE":
+                    amount(act["groups"][group]["values"], key)
+    elif act["kind"] in ("GRANT", "REVOKE") and act["scope"]["kind"] == "CASE":
+        act["scope"]["caseReference"] = fold_reference(act["scope"]["caseReference"])
+    return result
+
+
+def identity_vectors(sources, case_format, authority_format):
+    result = []
+    for item in sources["canonicalIdentity"]:
+        version = case_format if item["left"]["scope"] == "CASE" else authority_format
+        authored_left = with_format(item["left"], version)
+        authored_right = with_format(item["right"], version)
+        left = canonical_identity(authored_left)
+        right = canonical_identity(authored_right)
+        same = canonical(left) == canonical(right)
+        assert same == item["same"], item["name"]
+        result.append({"name": item["name"], "scope": item["left"]["scope"], "same": same,
+                       "left": vector("authored left", authored_left), "right": vector("authored right", authored_right),
+                       "canonicalLeft": vector("identity left", left), "canonicalRight": vector("identity right", right)})
+    return result
+
+
 def case_id(installation, reference):
-    folded = "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in reference)
+    folded = fold_reference(reference)
     digest = hashlib.sha256(REFERENCE_TAG + uuid.UUID(installation).bytes
                             + folded.encode("ascii")).digest()
     raw = bytearray(digest[:16])
@@ -161,7 +204,7 @@ def ledger(sources, requests, snapshot, authority):
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": 2, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": 183,
+    return {"entryFormat": 3, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": 183,
             "actCodes": ACT_CODES, "vectors": vectors}
 
 
@@ -186,6 +229,7 @@ def main():
         "jcsRefusals": sources["jcsRefusals"],
         "caseRequests": [vector(item["name"], value)
                          for item, value in zip(sources["caseRequests"], requests)],
+        "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
         "caseReferenceIds": {

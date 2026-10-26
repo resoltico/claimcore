@@ -19,13 +19,33 @@ let private invocation arguments =
 let main arguments =
     let output, checking = invocation arguments
     let artifacts = ContractArtifacts.all ()
+    let documentation = CliDocumentation.source ()
+    // Normal checkout generation owns this reference; custom contract directories stay self-contained.
+    let documentationPath =
+        if output = Path.GetFullPath "contracts" then
+            Some(Path.GetFullPath "docs/cli.md")
+        else
+            None
 
     if checking then
-        if ArtifactPublication.check output artifacts then
+        let referenceMatches =
+            documentationPath
+            |> Option.forall (fun path ->
+                File.Exists path && File.ReadAllBytes path = documentation)
+
+        if ArtifactPublication.check output artifacts && referenceMatches then
             0
         else
-            eprintfn "Contract artifacts differ. Regenerate with --output contracts."
+            eprintfn
+                "Generated contracts or CLI reference differ. Regenerate with --output contracts."
+
             1
     else
         ArtifactPublication.publish output artifacts
+
+        documentationPath
+        |> Option.iter (fun path ->
+            Directory.CreateDirectory(Path.GetDirectoryName path |> nonNull) |> ignore
+            File.WriteAllBytes(path, documentation))
+
         0

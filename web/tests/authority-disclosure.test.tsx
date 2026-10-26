@@ -42,7 +42,7 @@ const success = <K extends "context" | "authority.list">(
             offers: [
               {
                 kind: "AUTHORITY_ACT",
-                act: "REGISTER_ACTOR",
+                act: "REGISTER",
               },
             ],
           },
@@ -379,8 +379,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
               operationId: prepared.input.operationId,
               scope: {
                 ...receipt.scope,
-                act:
-                  prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER_ACTOR",
+                act: prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
               },
             },
           },

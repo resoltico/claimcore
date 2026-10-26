@@ -1,0 +1,4198 @@
+{
+  "fields": [
+    {
+      "name": "incidentDate",
+      "labelId": "field.incidentDate.label",
+      "meaningId": "field.incidentDate.meaning",
+      "scalar": {
+        "kind": "CALENDAR_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "incidentNotificationDate",
+      "labelId": "field.incidentNotificationDate.label",
+      "meaningId": "field.incidentNotificationDate.meaning",
+      "scalar": {
+        "kind": "CALENDAR_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "incidentCountry",
+      "labelId": "field.incidentCountry.label",
+      "meaningId": "field.incidentCountry.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": "[A-Z]{2}"
+        },
+        "maximumCharacters": null
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "claimantName",
+      "labelId": "field.claimantName.label",
+      "meaningId": "field.claimantName.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "insurerName",
+      "labelId": "field.insurerName.label",
+      "meaningId": "field.insurerName.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "claimedAmount",
+      "labelId": "field.claimedAmount.label",
+      "meaningId": "field.claimedAmount.meaning",
+      "scalar": {
+        "kind": "AMOUNT",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
+        "maximumIntegerDigits": 18,
+        "maximumFractionalDigits": 4
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "claimedCurrency",
+      "labelId": "field.claimedCurrency.label",
+      "meaningId": "field.claimedCurrency.meaning",
+      "scalar": {
+        "kind": "CURRENCY",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "[A-Z]{3}"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "[A-Z]{3}",
+        "exactCharacters": 3
+      },
+      "allowsAbsence": false,
+      "group": "registration"
+    },
+    {
+      "name": "caseReference",
+      "labelId": "field.caseReference.label",
+      "meaningId": "field.caseReference.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": "[!-~]{1,80}"
+        },
+        "maximumCharacters": null
+      },
+      "allowsAbsence": false,
+      "group": "identity"
+    },
+    {
+      "name": "paymentDecisionDate",
+      "labelId": "field.paymentDecisionDate.label",
+      "meaningId": "field.paymentDecisionDate.meaning",
+      "scalar": {
+        "kind": "CALENDAR_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      },
+      "allowsAbsence": true,
+      "group": "decision"
+    },
+    {
+      "name": "payableAmount",
+      "labelId": "field.payableAmount.label",
+      "meaningId": "field.payableAmount.meaning",
+      "scalar": {
+        "kind": "AMOUNT",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
+        "maximumIntegerDigits": 18,
+        "maximumFractionalDigits": 4
+      },
+      "allowsAbsence": true,
+      "group": "decision"
+    },
+    {
+      "name": "payableCurrency",
+      "labelId": "field.payableCurrency.label",
+      "meaningId": "field.payableCurrency.meaning",
+      "scalar": {
+        "kind": "CURRENCY",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "[A-Z]{3}"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "[A-Z]{3}",
+        "exactCharacters": 3
+      },
+      "allowsAbsence": true,
+      "group": "decision"
+    },
+    {
+      "name": "paymentDate",
+      "labelId": "field.paymentDate.label",
+      "meaningId": "field.paymentDate.meaning",
+      "scalar": {
+        "kind": "CALENDAR_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      },
+      "allowsAbsence": true,
+      "group": "payment"
+    },
+    {
+      "name": "status",
+      "labelId": "field.status.label",
+      "meaningId": "field.status.meaning",
+      "scalar": {
+        "kind": "CASE_STATUS",
+        "allowedValues": [
+          "OPENED",
+          "CLOSED"
+        ]
+      },
+      "allowsAbsence": false,
+      "group": "status"
+    }
+  ],
+  "acts": [
+    {
+      "kind": "OPEN",
+      "labelId": "act.OPEN.label",
+      "meaningId": "act.OPEN.meaning",
+      "confirmationId": "act.OPEN.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "BLANK",
+            "fieldName": "incidentDate"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "incidentNotificationDate"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "incidentCountry"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "claimantName"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "insurerName"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "claimedAmount"
+          },
+          {
+            "prefill": "BLANK",
+            "fieldName": "claimedCurrency"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "AMEND_REGISTRATION",
+      "labelId": "act.AMEND_REGISTRATION.label",
+      "meaningId": "act.AMEND_REGISTRATION.meaning",
+      "confirmationId": "act.AMEND_REGISTRATION.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "incidentDate",
+            "currentField": "incidentDate"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "incidentNotificationDate",
+            "currentField": "incidentNotificationDate"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "incidentCountry",
+            "currentField": "incidentCountry"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "claimantName",
+            "currentField": "claimantName"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "insurerName",
+            "currentField": "insurerName"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "claimedAmount",
+            "currentField": "claimedAmount"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "claimedCurrency",
+            "currentField": "claimedCurrency"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "CORRECT",
+      "labelId": "act.CORRECT.label",
+      "meaningId": "act.CORRECT.meaning",
+      "confirmationId": "act.CORRECT.confirmation",
+      "inputs": {
+        "kind": "CORRECTION_GROUPS",
+        "groups": [
+          {
+            "name": "registration",
+            "labelId": "group.registration.label",
+            "meaningId": "group.registration.meaning",
+            "actions": [
+              "KEEP",
+              "REPLACE"
+            ],
+            "replaceFields": [
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "incidentDate",
+                "currentField": "incidentDate"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "incidentNotificationDate",
+                "currentField": "incidentNotificationDate"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "incidentCountry",
+                "currentField": "incidentCountry"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "claimantName",
+                "currentField": "claimantName"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "insurerName",
+                "currentField": "insurerName"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "claimedAmount",
+                "currentField": "claimedAmount"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "claimedCurrency",
+                "currentField": "claimedCurrency"
+              }
+            ]
+          },
+          {
+            "name": "decision",
+            "labelId": "group.decision.label",
+            "meaningId": "group.decision.meaning",
+            "actions": [
+              "KEEP",
+              "REPLACE",
+              "CLEAR"
+            ],
+            "replaceFields": [
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "paymentDecisionDate",
+                "currentField": "paymentDecisionDate"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "payableAmount",
+                "currentField": "payableAmount"
+              },
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "payableCurrency",
+                "currentField": "payableCurrency"
+              }
+            ]
+          },
+          {
+            "name": "payment",
+            "labelId": "group.payment.label",
+            "meaningId": "group.payment.meaning",
+            "actions": [
+              "KEEP",
+              "REPLACE",
+              "CLEAR"
+            ],
+            "replaceFields": [
+              {
+                "prefill": "CURRENT_FIELD",
+                "fieldName": "paymentDate",
+                "currentField": "paymentDate"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "DECIDE",
+      "labelId": "act.DECIDE.label",
+      "meaningId": "act.DECIDE.meaning",
+      "confirmationId": "act.DECIDE.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "paymentDecisionDate",
+            "currentField": "paymentDecisionDate"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "payableAmount",
+            "currentField": "payableAmount"
+          },
+          {
+            "prefill": "CURRENT_FIELD",
+            "fieldName": "payableCurrency",
+            "currentField": "payableCurrency"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "WITHDRAW_DECISION",
+      "labelId": "act.WITHDRAW_DECISION.label",
+      "meaningId": "act.WITHDRAW_DECISION.meaning",
+      "confirmationId": "act.WITHDRAW_DECISION.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    },
+    {
+      "kind": "RECORD_PAYMENT",
+      "labelId": "act.RECORD_PAYMENT.label",
+      "meaningId": "act.RECORD_PAYMENT.meaning",
+      "confirmationId": "act.RECORD_PAYMENT.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "BLANK",
+            "fieldName": "paymentDate"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "CLEAR_PAYMENT",
+      "labelId": "act.CLEAR_PAYMENT.label",
+      "meaningId": "act.CLEAR_PAYMENT.meaning",
+      "confirmationId": "act.CLEAR_PAYMENT.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    },
+    {
+      "kind": "CLOSE",
+      "labelId": "act.CLOSE.label",
+      "meaningId": "act.CLOSE.meaning",
+      "confirmationId": "act.CLOSE.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    },
+    {
+      "kind": "REOPEN",
+      "labelId": "act.REOPEN.label",
+      "meaningId": "act.REOPEN.meaning",
+      "confirmationId": "act.REOPEN.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    },
+    {
+      "kind": "VOID",
+      "labelId": "act.VOID.label",
+      "meaningId": "act.VOID.meaning",
+      "confirmationId": "act.VOID.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "BLANK",
+            "fieldName": "reason"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "REINSTATE",
+      "labelId": "act.REINSTATE.label",
+      "meaningId": "act.REINSTATE.meaning",
+      "confirmationId": "act.REINSTATE.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": [
+          {
+            "prefill": "BLANK",
+            "fieldName": "reason"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "ERASE",
+      "labelId": "act.ERASE.label",
+      "meaningId": "act.ERASE.meaning",
+      "confirmationId": "act.ERASE.confirmation",
+      "inputs": {
+        "kind": "FIELDS",
+        "fields": []
+      }
+    }
+  ],
+  "inputFields": [
+    {
+      "name": "reason",
+      "labelId": "input.reason.label",
+      "meaningId": "input.reason.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    }
+  ],
+  "authorityTarget": {
+    "fieldName": "target",
+    "labelId": "input.target.label",
+    "primitive": "PRINCIPAL"
+  },
+  "authorityActs": [
+    {
+      "kind": "REGISTER",
+      "labelId": "act.REGISTER.label",
+      "meaningId": "act.REGISTER.meaning",
+      "confirmationId": "act.REGISTER.confirmation",
+      "inputs": []
+    },
+    {
+      "kind": "GRANT",
+      "labelId": "act.GRANT.label",
+      "meaningId": "act.GRANT.meaning",
+      "confirmationId": "act.GRANT.confirmation",
+      "inputs": [
+        {
+          "fieldName": "role",
+          "labelId": "input.role.label",
+          "primitive": "ROLE"
+        },
+        {
+          "fieldName": "scope",
+          "labelId": "input.scope.label",
+          "primitive": "SCOPE"
+        }
+      ]
+    },
+    {
+      "kind": "REVOKE",
+      "labelId": "act.REVOKE.label",
+      "meaningId": "act.REVOKE.meaning",
+      "confirmationId": "act.REVOKE.confirmation",
+      "inputs": [
+        {
+          "fieldName": "role",
+          "labelId": "input.role.label",
+          "primitive": "ROLE"
+        },
+        {
+          "fieldName": "scope",
+          "labelId": "input.scope.label",
+          "primitive": "SCOPE"
+        }
+      ]
+    },
+    {
+      "kind": "ENABLE",
+      "labelId": "act.ENABLE.label",
+      "meaningId": "act.ENABLE.meaning",
+      "confirmationId": "act.ENABLE.confirmation",
+      "inputs": []
+    },
+    {
+      "kind": "DISABLE",
+      "labelId": "act.DISABLE.label",
+      "meaningId": "act.DISABLE.meaning",
+      "confirmationId": "act.DISABLE.confirmation",
+      "inputs": []
+    }
+  ],
+  "authorityFields": [
+    {
+      "name": "operationId",
+      "labelId": "input.operationId.label"
+    },
+    {
+      "name": "expectedRevision",
+      "labelId": "input.expectedRevision.label"
+    },
+    {
+      "name": "kind",
+      "labelId": "input.kind.label"
+    },
+    {
+      "name": "issuer",
+      "labelId": "input.issuer.label"
+    },
+    {
+      "name": "subject",
+      "labelId": "input.subject.label"
+    },
+    {
+      "name": "role",
+      "labelId": "input.role.label"
+    },
+    {
+      "name": "scope",
+      "labelId": "input.scope.label"
+    },
+    {
+      "name": "target",
+      "labelId": "input.target.label"
+    },
+    {
+      "name": "act",
+      "labelId": "input.act.label"
+    },
+    {
+      "name": "actorId",
+      "labelId": "input.actorId.label"
+    },
+    {
+      "name": "cursor",
+      "labelId": "input.cursor.label"
+    },
+    {
+      "name": "limit",
+      "labelId": "input.limit.label"
+    },
+    {
+      "name": "full",
+      "labelId": "input.full.label"
+    },
+    {
+      "name": "reason",
+      "labelId": "input.reason.label"
+    }
+  ],
+  "characterWarnings": {
+    "maximumCodePoints": 8,
+    "categories": [
+      "Cc",
+      "Cf",
+      "Zl",
+      "Zp"
+    ]
+  },
+  "statuses": [
+    "OPENED",
+    "CLOSED"
+  ],
+  "rejectionDiagnostics": [
+    {
+      "id": "INPUT_TEXT_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_MALFORMED_UNICODE",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_SURROUNDING_WHITESPACE",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_TEXT_TOO_LONG",
+      "parameters": [
+        {
+          "name": "maximumCharacters",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "id": "INPUT_CONTROL_CHARACTERS",
+      "parameters": []
+    },
+    {
+      "id": "TEXT_FORMATTING_CHARACTER",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_CASE_REFERENCE_FORMAT",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_COUNTRY_FORMAT",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_PRINCIPAL_FORMAT",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_CALENDAR_DATE_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_DATE_ORDER",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_FUTURE_DATE",
+      "parameters": []
+    },
+    {
+      "id": "INPUT_DECIMAL_FORMAT",
+      "parameters": [
+        {
+          "name": "maximumIntegerDigits",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "name": "maximumFractionalDigits",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "id": "INPUT_CURRENCY_FORMAT",
+      "parameters": []
+    },
+    {
+      "id": "COMMAND_OPERATION_ID_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "COMMAND_EXPECTED_REVISION_RANGE",
+      "parameters": []
+    },
+    {
+      "id": "QUERY_PAGE_LIMIT_RANGE",
+      "parameters": [
+        {
+          "name": "maximumPageSize",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      ]
+    },
+    {
+      "id": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_REVISION_CONFLICT",
+      "parameters": []
+    },
+    {
+      "id": "CASE_ALREADY_EXISTS",
+      "parameters": []
+    },
+    {
+      "id": "CASE_ERASED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "ALREADY_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "NOT_VOIDED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_CLOSED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_ALREADY_CLOSED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_ALREADY_OPENED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+      "parameters": []
+    },
+    {
+      "id": "CORRECTION_NO_CHANGES",
+      "parameters": []
+    },
+    {
+      "id": "CORRECTION_EXISTING_VALUE_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_DECISION_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_PAYMENT_ALREADY_RECORDED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_PAYMENT_NOT_RECORDED",
+      "parameters": []
+    },
+    {
+      "id": "CASE_DECISION_ALREADY_PAID",
+      "parameters": []
+    },
+    {
+      "id": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+      "parameters": []
+    },
+    {
+      "id": "REVISION_EXHAUSTED",
+      "parameters": []
+    },
+    {
+      "id": "LEDGER_SEQUENCE_EXHAUSTED",
+      "parameters": []
+    },
+    {
+      "id": "OPERATION_RESOLVED",
+      "parameters": []
+    },
+    {
+      "id": "OPERATION_CONTENT_CONFLICT",
+      "parameters": []
+    },
+    {
+      "id": "ACCESS_RESOURCE_UNAVAILABLE",
+      "parameters": []
+    },
+    {
+      "id": "ACT_NOT_PERMITTED",
+      "parameters": []
+    },
+    {
+      "id": "LAST_OWNER",
+      "parameters": []
+    },
+    {
+      "id": "ACTOR_ALREADY_REGISTERED",
+      "parameters": []
+    },
+    {
+      "id": "ACTOR_UNKNOWN",
+      "parameters": []
+    },
+    {
+      "id": "HUMAN_PRINCIPAL_REQUIRED",
+      "parameters": []
+    },
+    {
+      "id": "QUERY_CURSOR_INVALID",
+      "parameters": []
+    }
+  ],
+  "faultDiagnostics": [
+    {
+      "id": "CORE_INTERNAL_ERROR",
+      "parameters": []
+    },
+    {
+      "id": "CORE_STORE_UNAVAILABLE",
+      "parameters": []
+    },
+    {
+      "id": "CORE_STORE_INTEGRITY_ERROR",
+      "parameters": []
+    },
+    {
+      "id": "CORE_SCHEMA_MISMATCH",
+      "parameters": []
+    },
+    {
+      "id": "CORE_OPERATION_CONTENT_CONFLICT",
+      "parameters": []
+    }
+  ],
+  "roles": [
+    {
+      "role": "OWNER",
+      "capabilities": [
+        "MANAGE_AUTHORITY",
+        "READ_AUTHORITY"
+      ]
+    },
+    {
+      "role": "CASE_READER",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY"
+      ]
+    },
+    {
+      "role": "CASE_REGISTRAR",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "REGISTER"
+      ]
+    },
+    {
+      "role": "CASE_HANDLER",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "READ_HISTORY_FULL",
+        "REGISTER",
+        "DECIDE",
+        "CLOSE"
+      ]
+    },
+    {
+      "role": "PAYMENT_RECORDER",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "RECORD_PAYMENT"
+      ]
+    },
+    {
+      "role": "DATA_STEWARD",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "STEWARD"
+      ]
+    },
+    {
+      "role": "AUDITOR",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "READ_HISTORY_FULL",
+        "READ_AUTHORITY"
+      ]
+    }
+  ],
+  "limits": {
+    "defaultPageSize": 50,
+    "maximumPageSize": 50,
+    "requestByteLimit": 65536
+  },
+  "entries": [
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "OPEN",
+      "labelId": "act.OPEN.label",
+      "meaningId": "act.OPEN.meaning",
+      "confirmationId": "act.OPEN.confirmation",
+      "synopsis": "case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentDate",
+          "field": "incidentDate",
+          "path": [
+            "act",
+            "values",
+            "incidentDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentDate.label",
+          "meaningId": "field.incidentDate.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentNotificationDate",
+          "field": "incidentNotificationDate",
+          "path": [
+            "act",
+            "values",
+            "incidentNotificationDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentNotificationDate.label",
+          "meaningId": "field.incidentNotificationDate.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentNotificationDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentCountry",
+          "field": "incidentCountry",
+          "path": [
+            "act",
+            "values",
+            "incidentCountry"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentCountry.label",
+          "meaningId": "field.incidentCountry.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentCountry"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimantName",
+          "field": "claimantName",
+          "path": [
+            "act",
+            "values",
+            "claimantName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimantName.label",
+          "meaningId": "field.claimantName.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimantName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.insurerName",
+          "field": "insurerName",
+          "path": [
+            "act",
+            "values",
+            "insurerName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.insurerName.label",
+          "meaningId": "field.insurerName.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimedAmount",
+          "field": "claimedAmount",
+          "path": [
+            "act",
+            "values",
+            "claimedAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimedAmount.label",
+          "meaningId": "field.claimedAmount.meaning",
+          "order": 7,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimedCurrency",
+          "field": "claimedCurrency",
+          "path": [
+            "act",
+            "values",
+            "claimedCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimedCurrency.label",
+          "meaningId": "field.claimedCurrency.meaning",
+          "order": 8,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "expectedRevision"
+          ],
+          "value": 0,
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "OPEN",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "AMEND_REGISTRATION",
+      "labelId": "act.AMEND_REGISTRATION.label",
+      "meaningId": "act.AMEND_REGISTRATION.meaning",
+      "confirmationId": "act.AMEND_REGISTRATION.confirmation",
+      "synopsis": "case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.values.incidentDate",
+          "field": "incidentDate",
+          "path": [
+            "act",
+            "values",
+            "incidentDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentDate.label",
+          "meaningId": "field.incidentDate.meaning",
+          "order": 3,
+          "prefill": [
+            "registration",
+            "incidentDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentNotificationDate",
+          "field": "incidentNotificationDate",
+          "path": [
+            "act",
+            "values",
+            "incidentNotificationDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentNotificationDate.label",
+          "meaningId": "field.incidentNotificationDate.meaning",
+          "order": 4,
+          "prefill": [
+            "registration",
+            "incidentNotificationDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentNotificationDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentCountry",
+          "field": "incidentCountry",
+          "path": [
+            "act",
+            "values",
+            "incidentCountry"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.incidentCountry.label",
+          "meaningId": "field.incidentCountry.meaning",
+          "order": 5,
+          "prefill": [
+            "registration",
+            "incidentCountry"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentCountry"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimantName",
+          "field": "claimantName",
+          "path": [
+            "act",
+            "values",
+            "claimantName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimantName.label",
+          "meaningId": "field.claimantName.meaning",
+          "order": 6,
+          "prefill": [
+            "registration",
+            "claimantName"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimantName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.insurerName",
+          "field": "insurerName",
+          "path": [
+            "act",
+            "values",
+            "insurerName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.insurerName.label",
+          "meaningId": "field.insurerName.meaning",
+          "order": 7,
+          "prefill": [
+            "registration",
+            "insurerName"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimedAmount",
+          "field": "claimedAmount",
+          "path": [
+            "act",
+            "values",
+            "claimedAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimedAmount.label",
+          "meaningId": "field.claimedAmount.meaning",
+          "order": 8,
+          "prefill": [
+            "registration",
+            "claimedAmount"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.claimedCurrency",
+          "field": "claimedCurrency",
+          "path": [
+            "act",
+            "values",
+            "claimedCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.claimedCurrency.label",
+          "meaningId": "field.claimedCurrency.meaning",
+          "order": 9,
+          "prefill": [
+            "registration",
+            "claimedCurrency"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "AMEND_REGISTRATION",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "CORRECT",
+      "labelId": "act.CORRECT.label",
+      "meaningId": "act.CORRECT.meaning",
+      "confirmationId": "act.CORRECT.confirmation",
+      "synopsis": "case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|replace [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|replace|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|clear [--payment-date VALUE]",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.groups.registration.mode",
+          "field": null,
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "mode"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "KEEP",
+              "REPLACE"
+            ]
+          },
+          "branches": [],
+          "labelId": "group.registration.label",
+          "meaningId": "group.registration.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "registration"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.incidentDate",
+          "field": "incidentDate",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "incidentDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.incidentDate.label",
+          "meaningId": "field.incidentDate.meaning",
+          "order": 4,
+          "prefill": [
+            "registration",
+            "incidentDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.incidentNotificationDate",
+          "field": "incidentNotificationDate",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "incidentNotificationDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.incidentNotificationDate.label",
+          "meaningId": "field.incidentNotificationDate.meaning",
+          "order": 5,
+          "prefill": [
+            "registration",
+            "incidentNotificationDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentNotificationDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.incidentCountry",
+          "field": "incidentCountry",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "incidentCountry"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.incidentCountry.label",
+          "meaningId": "field.incidentCountry.meaning",
+          "order": 6,
+          "prefill": [
+            "registration",
+            "incidentCountry"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentCountry"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.claimantName",
+          "field": "claimantName",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "claimantName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.claimantName.label",
+          "meaningId": "field.claimantName.meaning",
+          "order": 7,
+          "prefill": [
+            "registration",
+            "claimantName"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimantName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.insurerName",
+          "field": "insurerName",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "insurerName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.insurerName.label",
+          "meaningId": "field.insurerName.meaning",
+          "order": 8,
+          "prefill": [
+            "registration",
+            "insurerName"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.claimedAmount",
+          "field": "claimedAmount",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "claimedAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.claimedAmount.label",
+          "meaningId": "field.claimedAmount.meaning",
+          "order": 9,
+          "prefill": [
+            "registration",
+            "claimedAmount"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.claimedCurrency",
+          "field": "claimedCurrency",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "claimedCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.claimedCurrency.label",
+          "meaningId": "field.claimedCurrency.meaning",
+          "order": 10,
+          "prefill": [
+            "registration",
+            "claimedCurrency"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.decision.mode",
+          "field": null,
+          "path": [
+            "act",
+            "groups",
+            "decision",
+            "mode"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "KEEP",
+              "REPLACE",
+              "CLEAR"
+            ]
+          },
+          "branches": [],
+          "labelId": "group.decision.label",
+          "meaningId": "group.decision.meaning",
+          "order": 11,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "decision"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.decision.values.paymentDecisionDate",
+          "field": "paymentDecisionDate",
+          "path": [
+            "act",
+            "groups",
+            "decision",
+            "values",
+            "paymentDecisionDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "decision",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.paymentDecisionDate.label",
+          "meaningId": "field.paymentDecisionDate.meaning",
+          "order": 12,
+          "prefill": [
+            "decision",
+            "paymentDecisionDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentDecisionDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.decision.values.payableAmount",
+          "field": "payableAmount",
+          "path": [
+            "act",
+            "groups",
+            "decision",
+            "values",
+            "payableAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "decision",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.payableAmount.label",
+          "meaningId": "field.payableAmount.meaning",
+          "order": 13,
+          "prefill": [
+            "decision",
+            "payableAmount"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "payableAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.decision.values.payableCurrency",
+          "field": "payableCurrency",
+          "path": [
+            "act",
+            "groups",
+            "decision",
+            "values",
+            "payableCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "decision",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.payableCurrency.label",
+          "meaningId": "field.payableCurrency.meaning",
+          "order": 14,
+          "prefill": [
+            "decision",
+            "payableCurrency"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "payableCurrency"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.payment.mode",
+          "field": null,
+          "path": [
+            "act",
+            "groups",
+            "payment",
+            "mode"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "KEEP",
+              "REPLACE",
+              "CLEAR"
+            ]
+          },
+          "branches": [],
+          "labelId": "group.payment.label",
+          "meaningId": "group.payment.meaning",
+          "order": 15,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "payment"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.payment.values.paymentDate",
+          "field": "paymentDate",
+          "path": [
+            "act",
+            "groups",
+            "payment",
+            "values",
+            "paymentDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "payment",
+                "mode"
+              ],
+              "value": "REPLACE"
+            }
+          ],
+          "labelId": "field.paymentDate.label",
+          "meaningId": "field.paymentDate.meaning",
+          "order": 16,
+          "prefill": [
+            "payment",
+            "paymentDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "CORRECT",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "DECIDE",
+      "labelId": "act.DECIDE.label",
+      "meaningId": "act.DECIDE.meaning",
+      "confirmationId": "act.DECIDE.confirmation",
+      "synopsis": "case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.values.paymentDecisionDate",
+          "field": "paymentDecisionDate",
+          "path": [
+            "act",
+            "values",
+            "paymentDecisionDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.paymentDecisionDate.label",
+          "meaningId": "field.paymentDecisionDate.meaning",
+          "order": 3,
+          "prefill": [
+            "decision",
+            "paymentDecisionDate"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentDecisionDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.payableAmount",
+          "field": "payableAmount",
+          "path": [
+            "act",
+            "values",
+            "payableAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.payableAmount.label",
+          "meaningId": "field.payableAmount.meaning",
+          "order": 4,
+          "prefill": [
+            "decision",
+            "payableAmount"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "payableAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.payableCurrency",
+          "field": "payableCurrency",
+          "path": [
+            "act",
+            "values",
+            "payableCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.payableCurrency.label",
+          "meaningId": "field.payableCurrency.meaning",
+          "order": 5,
+          "prefill": [
+            "decision",
+            "payableCurrency"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "payableCurrency"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "DECIDE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "WITHDRAW_DECISION",
+      "labelId": "act.WITHDRAW_DECISION.label",
+      "meaningId": "act.WITHDRAW_DECISION.meaning",
+      "confirmationId": "act.WITHDRAW_DECISION.confirmation",
+      "synopsis": "case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "WITHDRAW_DECISION",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "RECORD_PAYMENT",
+      "labelId": "act.RECORD_PAYMENT.label",
+      "meaningId": "act.RECORD_PAYMENT.meaning",
+      "confirmationId": "act.RECORD_PAYMENT.confirmation",
+      "synopsis": "case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.values.paymentDate",
+          "field": "paymentDate",
+          "path": [
+            "act",
+            "values",
+            "paymentDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.paymentDate.label",
+          "meaningId": "field.paymentDate.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "RECORD_PAYMENT",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "CLEAR_PAYMENT",
+      "labelId": "act.CLEAR_PAYMENT.label",
+      "meaningId": "act.CLEAR_PAYMENT.meaning",
+      "confirmationId": "act.CLEAR_PAYMENT.confirmation",
+      "synopsis": "case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "CLEAR_PAYMENT",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "CLOSE",
+      "labelId": "act.CLOSE.label",
+      "meaningId": "act.CLOSE.meaning",
+      "confirmationId": "act.CLOSE.confirmation",
+      "synopsis": "case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "CLOSE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "REOPEN",
+      "labelId": "act.REOPEN.label",
+      "meaningId": "act.REOPEN.meaning",
+      "confirmationId": "act.REOPEN.confirmation",
+      "synopsis": "case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REOPEN",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "VOID",
+      "labelId": "act.VOID.label",
+      "meaningId": "act.VOID.meaning",
+      "confirmationId": "act.VOID.confirmation",
+      "synopsis": "case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.reason",
+          "field": "reason",
+          "path": [
+            "act",
+            "reason"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.reason.label",
+          "meaningId": "input.reason.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "reason"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "VOID",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "REINSTATE",
+      "labelId": "act.REINSTATE.label",
+      "meaningId": "act.REINSTATE.meaning",
+      "confirmationId": "act.REINSTATE.confirmation",
+      "synopsis": "case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.reason",
+          "field": "reason",
+          "path": [
+            "act",
+            "reason"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.reason.label",
+          "meaningId": "input.reason.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "reason"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REINSTATE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "CASE",
+      "kind": "ERASE",
+      "labelId": "act.ERASE.label",
+      "meaningId": "act.ERASE.meaning",
+      "confirmationId": "act.ERASE.confirmation",
+      "synopsis": "case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.expectedRevision.label",
+          "meaningId": "input.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "CASE",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ERASE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "AUTHORITY",
+      "kind": "REGISTER",
+      "labelId": "act.REGISTER.label",
+      "meaningId": "act.REGISTER.meaning",
+      "confirmationId": "act.REGISTER.confirmation",
+      "synopsis": "authority register [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": "input.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": "input.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": "input.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REGISTER",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "AUTHORITY",
+      "kind": "GRANT",
+      "labelId": "act.GRANT.label",
+      "meaningId": "act.GRANT.meaning",
+      "confirmationId": "act.GRANT.confirmation",
+      "synopsis": "authority grant [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": "input.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": "input.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": "input.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.role",
+          "field": null,
+          "path": [
+            "act",
+            "role"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.role.label",
+          "meaningId": "input.role.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.kind",
+          "field": null,
+          "path": [
+            "act",
+            "scope",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "INSTALLATION",
+              "CASE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.scope.label",
+          "meaningId": "input.scope.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.caseReference",
+          "field": "caseReference",
+          "path": [
+            "act",
+            "scope",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "scope",
+                "kind"
+              ],
+              "value": "CASE"
+            }
+          ],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "GRANT",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "AUTHORITY",
+      "kind": "REVOKE",
+      "labelId": "act.REVOKE.label",
+      "meaningId": "act.REVOKE.meaning",
+      "confirmationId": "act.REVOKE.confirmation",
+      "synopsis": "authority revoke [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": "input.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": "input.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": "input.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.role",
+          "field": null,
+          "path": [
+            "act",
+            "role"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.role.label",
+          "meaningId": "input.role.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.kind",
+          "field": null,
+          "path": [
+            "act",
+            "scope",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "options": [
+              "INSTALLATION",
+              "CASE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.scope.label",
+          "meaningId": "input.scope.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.scope.caseReference",
+          "field": "caseReference",
+          "path": [
+            "act",
+            "scope",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [
+            {
+              "path": [
+                "act",
+                "scope",
+                "kind"
+              ],
+              "value": "CASE"
+            }
+          ],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REVOKE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "AUTHORITY",
+      "kind": "ENABLE",
+      "labelId": "act.ENABLE.label",
+      "meaningId": "act.ENABLE.meaning",
+      "confirmationId": "act.ENABLE.confirmation",
+      "synopsis": "authority enable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": "input.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": "input.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": "input.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ENABLE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "scope": "AUTHORITY",
+      "kind": "DISABLE",
+      "labelId": "act.DISABLE.label",
+      "meaningId": "act.DISABLE.meaning",
+      "confirmationId": "act.DISABLE.confirmation",
+      "synopsis": "authority disable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.kind.label",
+          "meaningId": "input.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.issuer.label",
+          "meaningId": "input.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.subject.label",
+          "meaningId": "input.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "scope"
+          ],
+          "value": "AUTHORITY",
+          "branches": []
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "DISABLE",
+          "branches": []
+        }
+      ]
+    },
+    {
+      "endpoint": "case.get",
+      "scope": "CASE",
+      "kind": "case.get",
+      "labelId": "cli.read.case.get.label",
+      "meaningId": "cli.read.case.get.meaning",
+      "confirmationId": null,
+      "synopsis": "case get CASE-REFERENCE",
+      "inputs": [
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "case.list",
+      "scope": "CASE",
+      "kind": "case.list",
+      "labelId": "cli.read.case.list.label",
+      "meaningId": "cli.read.case.list.meaning",
+      "confirmationId": null,
+      "synopsis": "case list [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "default": 50,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "case.history",
+      "scope": "CASE",
+      "kind": "case.history",
+      "labelId": "cli.read.case.history.label",
+      "meaningId": "cli.read.case.history.meaning",
+      "confirmationId": null,
+      "synopsis": "case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "caseReference",
+          "field": "caseReference",
+          "path": [
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "detail",
+          "field": null,
+          "path": [
+            "detail"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "options": [
+              "SUMMARY",
+              "FULL"
+            ]
+          },
+          "branches": [],
+          "labelId": "input.full.label",
+          "meaningId": "input.full.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "default": 50,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "operation.observe",
+      "scope": "OPERATION",
+      "kind": "operation.observe",
+      "labelId": "cli.read.operation.observe.label",
+      "meaningId": "cli.read.operation.observe.meaning",
+      "confirmationId": null,
+      "synopsis": "operation observe OPERATION-ID",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "operation.resolve",
+      "scope": "OPERATION",
+      "kind": "operation.resolve",
+      "labelId": "cli.read.operation.resolve.label",
+      "meaningId": "cli.read.operation.resolve.meaning",
+      "confirmationId": null,
+      "synopsis": "operation resolve OPERATION-ID",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.operationId.label",
+          "meaningId": "input.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "authority.list",
+      "scope": "AUTHORITY",
+      "kind": "authority.list",
+      "labelId": "cli.read.authority.list.label",
+      "meaningId": "cli.read.authority.list.meaning",
+      "confirmationId": null,
+      "synopsis": "authority list [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "default": 50,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "authority.grants",
+      "scope": "AUTHORITY",
+      "kind": "authority.grants",
+      "labelId": "cli.read.authority.grants.label",
+      "meaningId": "cli.read.authority.grants.meaning",
+      "confirmationId": null,
+      "synopsis": "authority grants ACTOR-ID [--cursor VALUE] [--limit N]",
+      "inputs": [
+        {
+          "identity": "actorId",
+          "field": null,
+          "path": [
+            "actorId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.actorId.label",
+          "meaningId": "input.actorId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "branches": [],
+          "labelId": "input.cursor.label",
+          "meaningId": "input.cursor.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "branches": [],
+          "labelId": "input.limit.label",
+          "meaningId": "input.limit.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "default": 50,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
+      "endpoint": "context",
+      "scope": "CONTEXT",
+      "kind": "context",
+      "labelId": "cli.read.context.label",
+      "meaningId": "cli.read.context.meaning",
+      "confirmationId": null,
+      "synopsis": "context",
+      "inputs": [],
+      "constants": []
+    }
+  ],
+  "productVersion": "0.11.0"
+}

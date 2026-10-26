@@ -108,6 +108,31 @@ module RequestCodecs =
                 unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
             ]
 
+    /// The permitted selectors are the tags of the wire union, not a parallel mode list.
+    let correctionActions =
+        let actions (codec: Codec<'T>) =
+            let schema =
+                match codec.Schema with
+                | Schema.Ref name -> Map.find name codec.Definitions
+                | schema -> schema
+
+            match schema with
+            | Schema.OneOf(_, Some("mode", cases)) ->
+                cases
+                |> List.map (fun (token, _) ->
+                    CorrectionActions.all
+                    |> List.find (fun action -> CorrectionActions.token action = token))
+            | _ -> invalidOp "A correction input must be a tagged mode union."
+
+        let registration = actions registrationGroup
+        let decision = actions decisionGroup
+        let payment = actions paymentGroup
+
+        function
+        | CorrectionGroup.Registration -> registration
+        | CorrectionGroup.Decision -> decision
+        | CorrectionGroup.Payment -> payment
+
     let correction =
         (record (fun v0 v1 v2 ->
             {
@@ -139,10 +164,10 @@ module RequestCodecs =
                 | _ -> None)
                 (record id |> field "values" id registration)
             variant
-                (CaseActKinds.token (CaseActKind.Business BusinessActKind.CorrectCase))
-                CaseAct.CorrectCase
+                (CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct))
+                CaseAct.Correct
                 (function
-                | CaseAct.CorrectCase value -> Some value
+                | CaseAct.Correct value -> Some value
                 | _ -> None)
                 (record id |> field "groups" id correction)
             variant
@@ -242,36 +267,37 @@ module RequestCodecs =
             ]
 
     let authorityActWith role =
+        let grant =
+            (record (fun role scope ->
+                {
+                    GrantChange.Role = role
+                    Scope = scope
+                })
+            : Fields<GrantChange, _>)
+            |> field "role" _.Role role
+            |> field "scope" _.Scope scope
+
         tagged
             "AuthorityAct"
             "kind"
             [
-                unitVariant
-                    (AuthorityKinds.token AuthorityKind.RegisterActor)
-                    AuthorityAct.RegisterActor
+                unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
                 variant
-                    (AuthorityKinds.token AuthorityKind.SetGrant)
-                    AuthorityAct.SetGrant
+                    (AuthorityKinds.token AuthorityKind.Grant)
+                    AuthorityAct.Grant
                     (function
-                    | AuthorityAct.SetGrant value -> Some value
+                    | AuthorityAct.Grant value -> Some value
                     | _ -> None)
-                    ((record (fun role scope active ->
-                        {
-                            GrantChange.Role = role
-                            Scope = scope
-                            Active = active
-                        })
-                     : Fields<GrantChange, _>)
-                     |> field "role" _.Role role
-                     |> field "scope" _.Scope scope
-                     |> field "active" _.Active boolean)
+                    grant
                 variant
-                    (AuthorityKinds.token AuthorityKind.SetEnabled)
-                    AuthorityAct.SetEnabled
+                    (AuthorityKinds.token AuthorityKind.Revoke)
+                    AuthorityAct.Revoke
                     (function
-                    | AuthorityAct.SetEnabled value -> Some value
+                    | AuthorityAct.Revoke value -> Some value
                     | _ -> None)
-                    (record id |> field "enabled" id boolean)
+                    grant
+                unitVariant (AuthorityKinds.token AuthorityKind.Enable) AuthorityAct.Enable
+                unitVariant (AuthorityKinds.token AuthorityKind.Disable) AuthorityAct.Disable
             ]
 
     let authorityAct =

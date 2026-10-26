@@ -1,0 +1,89 @@
+namespace ClaimCore.Cli
+
+open System
+open ClaimCore.Contract
+
+module UsageText =
+    let private message language value =
+        MessageCatalogs.renderCli language value
+
+    // Unrelated arbitrary input is not echoed as a command.
+    let private suggestedCommandText command suggestions =
+        if List.isEmpty suggestions then "" else command
+
+    let private line language =
+        function
+        | UsageError.UnknownCommand(command, suggestions) ->
+            message language (CliMessage.UnknownCommand(suggestedCommandText command suggestions))
+        | UsageError.UnknownOption(flag, suggestion) ->
+            message language (CliMessage.UnknownOption flag)
+            + (suggestion
+               |> Option.map (fun suggestion ->
+                   " " + message language (CliMessage.Suggestion suggestion))
+               |> Option.defaultValue "")
+        | UsageError.MissingOption flag -> message language (CliMessage.MissingOption flag)
+        | UsageError.MissingOperand operand -> message language (CliMessage.MissingOperand operand)
+        | UsageError.ExtraOperand operand -> message language (CliMessage.ExtraOperand operand)
+        | UsageError.InvalidInteger(flag, value) ->
+            message language (CliMessage.InvalidInteger(flag, value))
+        | UsageError.InvalidChoice(flag, value, []) ->
+            message language (CliMessage.InvalidValue(flag, value))
+        | UsageError.InvalidChoice(flag, value, allowed) ->
+            message language (CliMessage.InvalidChoice(flag, value, String.concat "|" allowed))
+        | UsageError.NotApplicable(flag, because) ->
+            message language (CliMessage.NotApplicable(flag, because))
+        | UsageError.DuplicateOption flag -> message language (CliMessage.DuplicateOption flag)
+        | UsageError.MissingValue flag -> message language (CliMessage.MissingValue flag)
+        | UsageError.RequestTooLarge maximum ->
+            message language (CliMessage.RequestTooLarge(string maximum))
+
+    let render language arguments errors =
+        let matched =
+            OperationCatalog.all
+            |> List.tryFind (fun entry ->
+                let words = OperationCatalog.words entry in
+                List.truncate words.Length arguments = words)
+
+        let hints =
+            match matched with
+            | Some entry ->
+                [
+                    message
+                        language
+                        (CliMessage.Synopsis(
+                            CliIdentity.programName + " " + OperationCatalog.synopsis entry
+                        ))
+                ]
+            | None ->
+                errors
+                |> List.collect (function
+                    | UsageError.UnknownCommand(_, suggestions) -> suggestions
+                    | _ -> [])
+                |> List.distinct
+                |> List.map (fun suggestion ->
+                    message
+                        language
+                        (CliMessage.Suggestion(CliIdentity.programName + " " + suggestion)))
+
+        String.concat "\n" ((errors |> List.map (line language)) @ hints) + "\n"
+
+    let renderHost language arguments issue =
+        let command = List.tryHead arguments |> Option.defaultValue "help"
+
+        let problem =
+            match command, issue with
+            | "help", CliUsageIssue.Topic -> CliMessage.UnknownHelpTopic
+            | "help", _ -> CliMessage.InvalidHelpOptions
+            | "describe", CliUsageIssue.Selector -> CliMessage.InvalidDescribeSelector
+            | "describe", _ -> CliMessage.InvalidDescribeOptions
+            | "schema", CliUsageIssue.Selector -> CliMessage.InvalidSchemaSelector
+            | "schema", _ -> CliMessage.InvalidSchemaOptions
+            | "version", _ -> CliMessage.InvalidVersionOptions
+            | _ -> CliMessage.InvalidInvocation command
+
+        let hints =
+            CliCommands.synopses command
+            |> List.map (fun syntax ->
+                message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
+
+        String.concat "\n" (message language problem :: hints) + "\n"

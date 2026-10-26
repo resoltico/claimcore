@@ -1,29 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
-    <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
-    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
-    <Compile Include="../OutputControls.fs" Link="OutputControls.fs" />
-    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="../PublishedClientClosure.fs" Link="PublishedClientClosure.fs" />
-    <Compile Include="../FixtureDisposal.fs" Link="FixtureDisposal.fs" />
-    <Compile Include="../PostgresBaseline.fs" Link="PostgresBaseline.fs" />
-    <Compile Include="../PostgresReadiness.fs" Link="PostgresReadiness.fs" />
-    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
-    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="FixtureFiles.fs" />
     <Compile Include="FixtureCleanup.fs" />
-    <Compile Include="IdentityRealm.fs" />
-    <Compile Include="../IdentityReadiness.fs" Link="IdentityReadiness.fs" />
-    <Compile Include="IdentityServer.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="ThirdPartyNoticeManifest.fs" />
     <Compile Include="ThirdPartyNoticeAssets.fs" />
     <Compile Include="ThirdPartyNotices.fs" />
     <Compile Include="PublishedProcesses.fs" />
+    <Compile Include="CliUsageTests.fs" />
     <Compile Include="ThirdPartyNoticeTests.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />

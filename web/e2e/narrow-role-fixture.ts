@@ -35,10 +35,9 @@ const setGrant = (
     operationId: randomUUID(),
     target: fixture.principal,
     act: {
-      kind: "SET_GRANT",
+      kind: active ? "GRANT" : "REVOKE",
       role,
       scope: scoped ? { kind: "CASE", caseReference: fixture.reference } : { kind: "INSTALLATION" },
-      active,
     },
   });
 

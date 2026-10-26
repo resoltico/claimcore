@@ -42,7 +42,7 @@ let private selectedSpecifications =
     if smoke then
         [
             "authority-uncertainty.spec.ts"
-            "command-lifecycle.spec.ts"
+            "act-lifecycle.spec.ts"
             "localization-correction.spec.ts"
             "stewardship-localization.spec.ts"
             "unicode-parity.spec.ts"

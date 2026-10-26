@@ -3,6 +3,9 @@
 ClaimCore records the handler's assertions about a claim. It records facts, decisions and payment dates;
 it does not adjudicate coverage or transfer money.
 
+Use [getting started](getting-started.md) to try the register, or the [generated CLI reference](cli.md) to
+look up an act. The sections below explain the business meaning and the limits of correction and erasure.
+
 ## Business record
 
 <a id="cc-dom-001"></a>
@@ -14,30 +17,33 @@ claimant, responsible insurer, claimed amount/currency, case reference, decision
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
 The [field table](../src/ClaimCore.Contract/Fields/FieldTable.fs) owns JSON keys and labels.
 
-Opening supplies the seven registration values and top-level reference. Decision and payment fields begin as
-null; status begins OPENED. Views contain every business key. A null means unrecorded, with no invented zero
-or date. Claimant may identify a person or organization; insurer records the handler's assertion.
+Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
+null; status begins OPENED. The view places the seven registration members in `registration`, the three
+decision members in `decision`, and the payment date in `payment`. A recorded group contains all its members;
+null means the whole group is unrecorded, with no invented zero or date. Claimant may identify a person or
+organization; insurer records the handler's assertion.
 
 The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Contract/Formats.fs).
 Resource lookup folds ASCII letter case within an installation; accepted snapshots retain the initial spelling.
-Operation identity preserves authored spelling, so recasing a request under a used operation ID conflicts.
+Operation identity compares amounts by value and references after ASCII case folding. Respelled equal values
+under the same operation ID replay the original acceptance. The ledger retains the request as authored.
 There are no policy, coverage, reserve, banking, address, notes or attachment fields.
 
-## State and commands
+## State and acts
 
 <a id="cc-dom-002"></a>
 
-### CC-DOM-002 — Core-owned command availability and revalidation
+### CC-DOM-002 — Core-owned act availability and revalidation
 
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
-needs no decision or payment. Use `claimcore describe commands` for current inputs and correction choices.
+needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
 
 - OPEN creates revision one with expected revision zero. AMEND_REGISTRATION replaces registration on an open,
   undecided case.
 - DECIDE and WITHDRAW_DECISION record or remove an unpaid decision. RECORD_PAYMENT and CLEAR_PAYMENT record
   or remove its payment date. Clearing recorded facts does not reverse a real transfer.
 - CLOSE and REOPEN change status. Ordinary editing of a closed case requires reopening.
-- CORRECT_CASE changes existing facts atomically while preserving reference and status, including on a closed case.
+- CORRECT changes existing facts atomically while preserving reference and status, including on a closed case.
 
 Before ordinary registration editing, clear payment and withdraw the decision. A correction instead supplies
 all three tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
@@ -50,7 +56,7 @@ refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domai
 
 Current core advice filters eligible work by the actor's resource rights. Unauthorized correction groups stay
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
-revision; an offered command or preview grants no commit authority.
+revision; an offered act or preview grants no commit authority.
 
 <a id="cc-life-001"></a>
 
@@ -78,8 +84,8 @@ instant and installation zone. Clearing then recording a date makes a new assert
 date remains possible after a clock change.
 
 Amounts are unsigned decimal strings, with at most eighteen integer and four fractional digits. No exponents,
-redundant leading zeroes or rounding are accepted. Views show canonical decimal value; operation identity
-still retains the authored amount spelling. Currency and country check uppercase ASCII syntax, not ISO
+redundant leading zeroes or rounding are accepted. Views show canonical decimal value; replay identity compares that value while the retained request
+keeps the authored amount spelling. Currency and country check uppercase ASCII syntax, not ISO
 membership. ZZ means unknown/international country; translated country names are display hints.
 
 Retained business text is nonempty, excludes NUL, unpaired surrogates and Unicode noncharacters, and obeys

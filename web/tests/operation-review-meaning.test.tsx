@@ -25,7 +25,7 @@ const correction: OperationInput = {
   caseReference: "CASE-1",
   expectedRevision: 1,
   act: {
-    kind: "CORRECT_CASE",
+    kind: "CORRECT",
     groups: {
       registration: {
         mode: "REPLACE",
@@ -66,7 +66,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
       scope: "AUTHORITY",
       operationId,
       target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "KEEP" },
-      act: { kind: "SET_GRANT", role: "CASE_READER", scope, active: true },
+      act: { kind: "GRANT", role: "CASE_READER", scope },
     };
     const proposed: Review = {
       scope: "AUTHORITY",
@@ -133,7 +133,7 @@ it.each(localized)(
     }
   },
 );
-it("erasure review retains its command meaning and WAL/backups limitation", () => {
+it("erasure review retains its act meaning and WAL/backups limitation", () => {
   render(
     <OperationReview
       model={model(

@@ -6,7 +6,7 @@ correct, void, reinstate and erase. Use a fresh installation and matching servic
 The CLI uses HTTPS and receives no database credential.
 
 Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
-and `CLAIMCORE_CLI_AUTH_MODE` as described by `ClaimCore.Cli help`. For automation, supply
+and `CLAIMCORE_CLI_AUTH_MODE` as described by `claimcore help`. For automation, supply
 its private client-secret file. For local HTTPS certificates outside system trust, configure
 the explicit CLI service and OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
 An installation `OWNER` grants authority; that role alone does not grant case work.
@@ -14,19 +14,19 @@ An installation `OWNER` grants authority; that role alone does not grant case wo
 From the repository root, execute the six business frames, in order:
 
 ```sh
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/01-open.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/02-decide.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/03-record-payment.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/04-close.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/05-reopen.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/06-correct-payment-record.json
+claimcore call < examples/01-open.json
+claimcore call < examples/02-decide.json
+claimcore call < examples/03-record-payment.json
+claimcore call < examples/04-close.json
+claimcore call < examples/05-reopen.json
+claimcore call < examples/06-correct-payment-record.json
 ```
 
 The human verbs use the same typed inputs. For example, after step three, this prints the
 same request frame as `04-close.json` without authentication or a network call:
 
 ```sh
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- case close DEMO-0001 --expected-revision 3 --operation-id 10000000-0000-4000-8000-000000000004 --dry-run
+claimcore case close DEMO-0001 --expected-revision 3 --operation-id 10000000-0000-4000-8000-000000000004 --dry-run
 ```
 
 Use `help verbs` for the registry-derived grammar; omit `--dry-run` to execute, or send the
@@ -43,9 +43,9 @@ The remaining three frames require a human `DATA_STEWARD` grant. They void the c
 for an entry error, reinstate it and erase it:
 
 ```sh
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/07-void.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/08-reinstate.json
-dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call < examples/09-erase.json
+claimcore call < examples/07-void.json
+claimcore call < examples/08-reinstate.json
+claimcore call < examples/09-erase.json
 ```
 
 Erasure retains the case reference and revision 9. Every historical snapshot for that

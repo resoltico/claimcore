@@ -26,7 +26,7 @@ const disclosedCurrent = {
     ...current.state,
     tag: "LIVE" as const,
     disposition: "ACTIVE" as const,
-    fields: { ...fields, claimantName: currentCanary },
+    fields: { ...fields, registration: { ...fields.registration, claimantName: currentCanary } },
   },
 };
 const preview = () =>
@@ -38,7 +38,10 @@ const preview = () =>
         revision: 2,
         state: {
           ...disclosedCurrent.state,
-          fields: { ...fields, claimantName: reviewCanary },
+          fields: {
+            ...fields,
+            registration: { ...fields.registration, claimantName: reviewCanary },
+          },
         },
       },
       changes: [{ field: "claimantName", before: currentCanary, after: reviewCanary }],
@@ -61,7 +64,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
     editor({
       onMutationLockChange,
       current: disclosedCurrent,
-      initialCommand: "AMEND_REGISTRATION",
+      initialAct: "AMEND_REGISTRATION",
     }),
   );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });

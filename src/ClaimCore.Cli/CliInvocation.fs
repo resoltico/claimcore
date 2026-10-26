@@ -3,16 +3,10 @@ namespace ClaimCore.Cli
 open ClaimCore.Contract
 open ClaimCore.Contract.Protocol
 
-open ClaimCore.Contract
-
 [<RequireQualifiedAccess>]
 type CliDescription =
     | Summary
-    | Fields of string option
-    | Commands of string option
-    | Authority of string option
-    | Endpoints of string option
-    | Diagnostics
+    | Operation of string list
 
 [<RequireQualifiedAccess>]
 type CliSchema =
@@ -63,28 +57,15 @@ module CliInvocations =
             | [ topic ], None -> help topic (defaultArg language "en")
             | _ -> Error CliUsageIssue.Options)
 
-    let private descriptions =
-        [
-            "fields", CliDescription.Fields
-            "commands", CliDescription.Commands
-            "authority", CliDescription.Authority
-        ]
-
-    let private describeSelector =
-        function
-        | []
-        | [ "summary" ] -> Ok CliDescription.Summary
-        | [ "diagnostics" ] -> Ok CliDescription.Diagnostics
-        | [ "endpoints" ] -> Ok(CliDescription.Endpoints None)
-        | [ "endpoints"; name ] ->
-            match Api.tryFind name with
-            | Some endpoint -> Ok(CliDescription.Endpoints(Some(Api.id endpoint)))
-            | None -> Error CliUsageIssue.Selector
-        | category :: tail ->
-            match List.tryFind (fst >> (=) category) descriptions, tail with
-            | Some(_, create), [] -> Ok(create None)
-            | Some(_, create), [ name ] -> Ok(create (Some name))
-            | _ -> Error CliUsageIssue.Selector
+    let private describeSelector operands =
+        match operands with
+        | [] -> Ok CliDescription.Summary
+        | words when
+            OperationCatalog.all
+            |> List.exists (fun entry -> OperationCatalog.words entry = words)
+            ->
+            Ok(CliDescription.Operation words)
+        | _ -> Error CliUsageIssue.Selector
 
     let private schemaSelector =
         function
@@ -99,14 +80,14 @@ module CliInvocations =
     let private admitDescribe tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
-            if language.IsSome && format <> Some "text" then
+            if language.IsSome && format = Some "json" then
                 Error CliUsageIssue.Options
             else
                 describeSelector operands
                 |> Result.map (fun selector ->
                     CliInvocation.Describe(
                         selector,
-                        (format = Some "text"),
+                        (format <> Some "json"),
                         defaultArg language "en"
                     )))
 
@@ -120,6 +101,16 @@ module CliInvocations =
         | [ "--json" ] -> Ok(CliInvocation.Version true)
         | _ -> Error CliUsageIssue.Invocation
 
+    let private admitSchema arguments =
+        if
+            arguments
+            |> List.exists (fun (item: string) ->
+                item.StartsWith("-", System.StringComparison.Ordinal))
+        then
+            Error CliUsageIssue.Options
+        else
+            schemaSelector arguments |> Result.map CliInvocation.Schema
+
     let admit arguments =
         match arguments with
         | [] -> help "overview" "en"
@@ -130,17 +121,11 @@ module CliInvocations =
         | "version" :: tail -> admitVersion tail
         | "help" :: tail -> admitHelp tail
         | "describe" :: tail -> admitDescribe tail
-        | "schema" :: tail when
-            not (
-                List.exists
-                    (fun (item: string) -> item.StartsWith("-", System.StringComparison.Ordinal))
-                    tail
-            )
-            ->
-            schemaSelector tail |> Result.map CliInvocation.Schema
+        | "schema" :: tail -> admitSchema tail
         | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
             Ok(CliInvocation.Verb arguments)
-        | _ -> Error CliUsageIssue.Invocation
+        | head :: _ when List.contains head CliCommands.commands -> Error CliUsageIssue.Invocation
+        | _ -> Ok(CliInvocation.Verb arguments)
 
     let usageLanguage arguments =
         arguments
