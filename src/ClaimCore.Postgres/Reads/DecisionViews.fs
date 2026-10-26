@@ -90,8 +90,8 @@ module internal DecisionViews =
                 Projections.actor connection principal (Projections.operationCases entry) token
 
             let! record =
-                match entry |> Option.map _.Scope with
-                | Some(StoredScope.Case(id, _, _, _)) -> Projections.caseById connection id token
+                match entry |> Option.map _.Subject with
+                | Some(StoredSubject.Case(id, _, _, _)) -> Projections.caseById connection id token
                 | _ -> Task.FromResult None
 
             return

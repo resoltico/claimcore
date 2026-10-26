@@ -76,7 +76,7 @@ let private scalarAdmission () =
     let id = "10000000-0000-4000-8000-000000000001"
 
     let request =
-        $"{{\"scope\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"\",\"expectedRevision\":0,\"act\":{{\"kind\":\"OPEN\",\"values\":{{\"incidentDate\":\"not-a-date\",\"incidentNotificationDate\":\"\",\"incidentCountry\":\"lowercase\",\"claimantName\":\"\",\"insurerName\":\"\",\"claimedAmount\":\"not-money\",\"claimedCurrency\":\"eur\"}}}}}}"
+        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"\",\"expectedRevision\":0,\"act\":{{\"kind\":\"OPEN\",\"values\":{{\"incidentDate\":\"not-a-date\",\"incidentNotificationDate\":\"\",\"incidentCountry\":\"lowercase\",\"claimantName\":\"\",\"insurerName\":\"\",\"claimedAmount\":\"not-money\",\"claimedCurrency\":\"eur\"}}}}}}"
 
     Expect.isOk
         (admit (endpoint "operation.execute") request)
@@ -90,7 +90,7 @@ let private scalarAdmission () =
             "Read reference format also reaches Application"
 
     let voided =
-        $"{{\"scope\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"CASE\",\"expectedRevision\":1,\"act\":{{\"kind\":\"VOID\",\"reason\":\"\"}}}}"
+        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"CASE\",\"expectedRevision\":1,\"act\":{{\"kind\":\"VOID\",\"reason\":\"\"}}}}"
 
     Expect.isOk
         (admit (endpoint "operation.preview") voided)
@@ -110,7 +110,7 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        "{\"scope\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"caseReference\":\"CASE\",\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
+        "{\"kind\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"caseReference\":\"CASE\",\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
 
     Expect.isOk
         (admit

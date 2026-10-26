@@ -99,7 +99,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         Expect.equal status 200 "Reaffirmation passes intake and response validation"
 
         Expect.equal
-            ((outcome response).GetProperty("tag").GetString())
+            ((outcome response).GetProperty("kind").GetString())
             "ACCEPTED"
             "Actual locked decision accepts unchanged retained text"
 
@@ -117,7 +117,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         Expect.equal status 200 "Admission refusal stays a typed outcome"
         let refusal = outcome response
-        Expect.equal (refusal.GetProperty("tag").GetString()) "REJECTED" "Changed assertion refused"
+
+        Expect.equal
+            (refusal.GetProperty("kind").GetString())
+            "REJECTED"
+            "Changed assertion refused"
 
         Expect.equal
             (refusal.GetProperty("data").GetProperty("code").GetString())
@@ -143,7 +147,7 @@ let private zeroRevisionReply endpoint status response =
         "Original operation identity"
 
     let outcome = document.RootElement.GetProperty("outcome")
-    Expect.equal (outcome.GetProperty("tag").GetString()) "REJECTED" "No response encoding failure"
+    Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "No response encoding failure"
     let diagnostic = outcome.GetProperty("data")
 
     Expect.equal

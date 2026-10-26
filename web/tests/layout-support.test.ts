@@ -14,7 +14,7 @@ const metrics = {
   clientWidth: 320,
   scrollWidth: 400,
   bodyWidth: 320,
-  offenders: [{ tag: "div", className: "safe!<>   name", left: 0, right: 400, width: 400 }],
+  offenders: [{ kind: "div", className: "safe!<>   name", left: 0, right: 400, width: 400 }],
   scrollable: [],
 };
 const measured = () => ({ evaluate: vi.fn<Page["evaluate"]>().mockResolvedValue(metrics) });

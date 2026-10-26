@@ -88,16 +88,16 @@ module internal CaseDecisions =
                 CaseReferenceId.encode installationId snapshot.Reference)
 
         let projection =
-            match snapshot.View, view.Case with
-            | CaseView.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
+            match snapshot.State, view.Case with
+            | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
             | _, None -> CaseProjection.Insert(id, snapshot)
             | _ -> CaseProjection.Update(id, snapshot)
 
         {
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
-            Scope =
-                StoredScope.Case(
+            Subject =
+                StoredSubject.Case(
                     id,
                     snapshot.Revision,
                     CaseActs.kind request.Act,
@@ -108,7 +108,7 @@ module internal CaseDecisions =
             Projection = projection
         }
 
-    let private scope installationId calendar principal request =
+    let private subject installationId calendar principal request =
         {
             Encode = fun () -> RequestRecord.encode request
             Canonical = fun () -> Case.canonical request |> RequestRecord.encode
@@ -125,13 +125,13 @@ module internal CaseDecisions =
         }
 
     let review installationId calendar principal request (view: CaseReadView) =
-        LedgerEnvelope.review (scope installationId calendar principal request) view
+        LedgerEnvelope.review (subject installationId calendar principal request) view
 
     let execute installationId calendar principal (request: CaseRequest) (view: CaseLockedView) =
         LedgerEnvelope.execute
             installationId
             request.OperationId
-            (scope installationId calendar principal request)
+            (subject installationId calendar principal request)
             view.Head
             view.IsFenced
             view.PayloadNonce

@@ -14,7 +14,7 @@ open Npgsql
 open AdministrationProcess
 
 let private tag (value: JsonElement) =
-    value.GetProperty("tag").GetString() |> Option.ofObj |> Option.get
+    value.GetProperty("kind").GetString() |> Option.ofObj |> Option.get
 
 let private owner operationId subject =
     JsonSerializer.Serialize

@@ -8,13 +8,24 @@ import { BusinessValue } from "../src/components/BusinessValue";
 import { CopyValue } from "../src/components/CopyValue";
 import { definition, fields, response, context, unavailable } from "./service-ui.fixtures";
 import { historyVariants } from "./contract-corpus.fixtures";
-
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
-  { value: "ABC\u202eDEF\u202d\u202c", points: "U+202E, U+202D, U+202C" },
-  { value: "ABC\u2069DEF\u2066\u2067\u2068", points: "U+2069, U+2066, U+2067, U+2068" },
-  { value: "A\u0308 العربية\u200d\u200c <script>", points: "U+200D, U+200C" },
-  { value: "A\u0308 <b>literal</b>", points: null },
+  {
+    value: "ABC\u202eDEF\u202d\u202c",
+    points: "U+202E, U+202D, U+202C",
+  },
+  {
+    value: "ABC\u2069DEF\u2066\u2067\u2068",
+    points: "U+2069, U+2066, U+2067, U+2068",
+  },
+  {
+    value: "A\u0308 العربية\u200d\u200c <script>",
+    points: "U+200D, U+200C",
+  },
+  {
+    value: "A\u0308 <b>literal</b>",
+    points: null,
+  },
 ];
 const assertSafe = (root: HTMLElement, value: string, points: string | null) => {
   expect([...root.querySelectorAll("bdi")].some((node) => node.textContent === value)).toBe(true);
@@ -28,32 +39,40 @@ const assertSafe = (root: HTMLElement, value: string, points: string | null) => 
 const preferences = (language: (typeof languages)[number]) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "lv-LV" }),
+    JSON.stringify({
+      version: 1,
+      language,
+      displayLocale: "lv-LV",
+    }),
   );
 };
-
 const historyReply = (value: string) => {
   const { full } = historyVariants();
   const entries = [
     {
-      tag: "FULL" as const,
+      kind: "FULL" as const,
       receipt: {
         ...full.receipt,
-        scope: {
-          ...full.receipt.scope,
+        subject: {
+          ...full.receipt.subject,
           snapshot: {
-            disclosure: "DISCLOSED",
+            kind: "DISCLOSED",
             view: {
-              tag: "LIVE",
-              disposition: "ACTIVE",
-              fields: { ...fields, caseReference: value },
+              kind: "ACTIVE",
+              fields: {
+                ...fields,
+                caseReference: value,
+              },
             },
           },
         },
       },
     },
   ];
-  return { nextCursor: "next", entries };
+  return {
+    nextCursor: "next",
+    entries,
+  };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
@@ -64,10 +83,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
       offers: context.offers,
       items: [
         {
-          state: "LIVE",
-          disposition: "ACTIVE",
+          state: {
+            kind: "ACTIVE",
+            status: "OPENED",
+          },
           caseReference: value,
-          status: "OPENED",
           revision: 1,
         },
       ],
@@ -89,11 +109,16 @@ const readReply = (url: string, value: string, missing: boolean) => {
       : {
           caseReference: value,
           revision: 1,
-          advice: { acts: [], history: ["SUMMARY", "FULL"] },
+          advice: {
+            acts: [],
+            history: ["SUMMARY", "FULL"],
+          },
           state: {
-            tag: "LIVE",
-            disposition: "ACTIVE",
-            fields: { ...fields, caseReference: value },
+            kind: "ACTIVE",
+            fields: {
+              ...fields,
+              caseReference: value,
+            },
           },
         },
   );
@@ -118,7 +143,11 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     await waitFor(() => {
       expect(view.container.querySelector("select")).not.toBeNull();
     });
-    fireEvent.change(view.container.querySelector("select")!, { target: { value: "FULL" } });
+    fireEvent.change(view.container.querySelector("select")!, {
+      target: {
+        value: "FULL",
+      },
+    });
   }
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
@@ -146,7 +175,12 @@ it.each(languages)(
   "protects ordinary list, detail, history and absent lookup references in %s [CC-WEB-001]",
   async (language) => {
     preferences(language);
-    for (const { value, points } of [{ value: "<script>", points: null }]) {
+    for (const { value, points } of [
+      {
+        value: "<script>",
+        points: null,
+      },
+    ]) {
       vi.stubGlobal(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),
@@ -162,14 +196,18 @@ it.each(languages)(
     }
   },
 );
-
 it.each(languages)(
   "keeps before/after words outside business direction and exact clipboard fallback in %s",
   async (language) => {
     preferences(language);
     const user = userEvent.setup();
     const writeText = vi.fn().mockRejectedValue(new Error("unavailable"));
-    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
     const { value, points } = values[0]!;
     const field = definition.catalog.fields.find((item) => item.name === "claimantName")!;
     const view = render(

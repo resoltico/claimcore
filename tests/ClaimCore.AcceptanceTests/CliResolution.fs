@@ -125,7 +125,7 @@ let private originalAcceptance fixture =
     let reply = originalReply fixture
 
     Expect.equal
-        (reply.GetProperty("outcome").GetProperty("tag").GetString())
+        (reply.GetProperty("outcome").GetProperty("kind").GetString())
         "ACCEPTED"
         "The real backend accepted before its HTTP reply was lost"
 

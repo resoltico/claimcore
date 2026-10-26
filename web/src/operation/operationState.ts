@@ -3,30 +3,78 @@ import type { Notice } from "../api/notices";
 import type { FormValues } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { refusalPath } from "./operationForm";
-
-export type EffectIdentity = { id: string; token: string; target: string };
-type LocalSource = { prepared: PreparedRequest<"operation.execute"> };
+export type EffectIdentity = {
+  id: string;
+  token: string;
+  target: string;
+};
+type LocalSource = {
+  prepared: PreparedRequest<"operation.execute">;
+};
 export type OperationPhase =
-  | { tag: "EDITING"; exposed: LocalSource | null }
-  | { tag: "PREVIEWING"; source: LocalSource; effect: EffectIdentity }
-  | { tag: "REVIEWING"; source: LocalSource; review: OperationReview; confirmed: boolean }
   | {
-      tag: "SUBMITTING";
+      kind: "EDITING";
+      exposed: LocalSource | null;
+    }
+  | {
+      kind: "PREVIEWING";
+      source: LocalSource;
+      effect: EffectIdentity;
+    }
+  | {
+      kind: "REVIEWING";
+      source: LocalSource;
+      review: OperationReview;
+      confirmed: boolean;
+    }
+  | {
+      kind: "SUBMITTING";
       source: LocalSource;
       effect: EffectIdentity;
       review: OperationReview | null;
     }
-  | { tag: "UNRESOLVED"; source: LocalSource; effect: EffectIdentity | null }
-  | { tag: "ACCEPTED"; source: LocalSource; receipt: OperationReceipt | null };
+  | {
+      kind: "UNRESOLVED";
+      source: LocalSource;
+      effect: EffectIdentity | null;
+    }
+  | {
+      kind: "ACCEPTED";
+      source: LocalSource;
+      receipt: OperationReceipt | null;
+    };
 export type OperationEffect =
-  | { kind: "PREVIEW"; identity: EffectIdentity; source: LocalSource }
-  | { kind: "EXECUTE"; identity: EffectIdentity; source: LocalSource }
-  | { kind: "RESOLVE"; identity: EffectIdentity; source: LocalSource }
-  | { kind: "RECORDED"; identity: EffectIdentity; receipt: OperationReceipt }
-  | { kind: "DISCLOSURE_REFUSED"; identity: EffectIdentity; notice: Notice };
+  | {
+      kind: "PREVIEW";
+      identity: EffectIdentity;
+      source: LocalSource;
+    }
+  | {
+      kind: "EXECUTE";
+      identity: EffectIdentity;
+      source: LocalSource;
+    }
+  | {
+      kind: "RESOLVE";
+      identity: EffectIdentity;
+      source: LocalSource;
+    }
+  | {
+      kind: "RECORDED";
+      identity: EffectIdentity;
+      receipt: OperationReceipt;
+    }
+  | {
+      kind: "DISCLOSURE_REFUSED";
+      identity: EffectIdentity;
+      notice: Notice;
+    };
 export type OperationState = {
   target: string;
-  context: { token: string; target: string };
+  context: {
+    token: string;
+    target: string;
+  };
   disclosureToken: string;
   disclosureRefused: boolean;
   values: FormValues;
@@ -39,16 +87,32 @@ export type OperationState = {
   pendingDiscard: string | null;
 };
 export type OperationAction =
-  | { type: "RESET"; state: OperationState; abandon: boolean }
-  | { type: "EDIT"; path: string; value: string | boolean; id: string }
-  | { type: "DISCARD"; kind: string | null }
+  | {
+      type: "RESET";
+      state: OperationState;
+      abandon: boolean;
+    }
+  | {
+      type: "EDIT";
+      path: string;
+      value: string | boolean;
+      id: string;
+    }
+  | {
+      type: "DISCARD";
+      kind: string | null;
+    }
   | {
       type: "PREVIEW";
       prepared: PreparedRequest<"operation.execute">;
       identity: EffectIdentity;
       generation: number;
     }
-  | { type: "REVIEW"; review: OperationReview; identity: EffectIdentity }
+  | {
+      type: "REVIEW";
+      review: OperationReview;
+      identity: EffectIdentity;
+    }
   | {
       type: "RECORD";
       receipt: OperationReceipt;
@@ -62,41 +126,73 @@ export type OperationAction =
       disclosure: boolean;
       identity?: EffectIdentity;
     }
-  | { type: "CONTEXT"; token: string; target: string }
-  | { type: "INVALIDATE"; refused: boolean }
-  | { type: "RESTORE" }
-  | { type: "RETURN" }
-  | { type: "CONFIRM"; value: boolean }
-  | { type: "EXECUTE"; identity: EffectIdentity }
-  | { type: "RESOLVE"; identity: EffectIdentity }
-  | { type: "NOT_ACCEPTED"; identity: EffectIdentity; id: string }
-  | { type: "EFFECT_STARTED"; id: string };
+  | {
+      type: "CONTEXT";
+      token: string;
+      target: string;
+    }
+  | {
+      type: "INVALIDATE";
+      refused: boolean;
+    }
+  | {
+      type: "RESTORE";
+    }
+  | {
+      type: "RETURN";
+    }
+  | {
+      type: "CONFIRM";
+      value: boolean;
+    }
+  | {
+      type: "EXECUTE";
+      identity: EffectIdentity;
+    }
+  | {
+      type: "RESOLVE";
+      identity: EffectIdentity;
+    }
+  | {
+      type: "NOT_ACCEPTED";
+      identity: EffectIdentity;
+      id: string;
+    }
+  | {
+      type: "EFFECT_STARTED";
+      id: string;
+    };
 export const operationSource = (phase: OperationPhase): LocalSource | null =>
-  phase.tag === "EDITING" ? phase.exposed : phase.source;
+  phase.kind === "EDITING" ? phase.exposed : phase.source;
 const operationBusy = (state: OperationState): boolean =>
-  state.operation.tag === "PREVIEWING" ||
-  state.operation.tag === "SUBMITTING" ||
-  (state.operation.tag === "UNRESOLVED" && state.operation.effect !== null);
+  state.operation.kind === "PREVIEWING" ||
+  state.operation.kind === "SUBMITTING" ||
+  (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null);
 const canEdit = (state: OperationState): boolean =>
-  state.operation.tag === "EDITING" || state.operation.tag === "REVIEWING";
+  state.operation.kind === "EDITING" || state.operation.kind === "REVIEWING";
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
   state.context.token === identity.token && state.context.target === identity.target;
 const completing = (state: OperationState, identity: EffectIdentity): boolean =>
   current(state, identity) &&
   operationBusy(state) &&
-  (state.operation.tag === "PREVIEWING" ||
-    state.operation.tag === "SUBMITTING" ||
-    (state.operation.tag === "UNRESOLVED" && state.operation.effect !== null)) &&
+  (state.operation.kind === "PREVIEWING" ||
+    state.operation.kind === "SUBMITTING" ||
+    (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null)) &&
   state.operation.effect?.id === identity.id;
 const append = (state: OperationState, effect: OperationEffect): OperationState => ({
   ...state,
   effects: [...state.effects, effect],
 });
 const localSource = operationSource;
-const uncertain = (phase: OperationPhase): boolean => phase.tag === "UNRESOLVED";
+const uncertain = (phase: OperationPhase): boolean => phase.kind === "UNRESOLVED";
 const edit = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "EDIT" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "EDIT";
+    }
+  >,
 ): OperationState => {
   if (!canEdit(state) || state.values[action.path] === action.value) {
     return state;
@@ -105,7 +201,10 @@ const edit = (
   return {
     ...state,
     generation: state.generation + 1,
-    operation: { tag: "EDITING", exposed: null },
+    operation: {
+      kind: "EDITING",
+      exposed: null,
+    },
     values: {
       ...state.values,
       [action.path]: action.value,
@@ -118,18 +217,38 @@ const edit = (
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
   const phase = state.operation;
   let operation: OperationPhase;
-  if (phase.tag === "SUBMITTING" || phase.tag === "UNRESOLVED") {
-    operation = { tag: "UNRESOLVED", source: phase.source, effect: null };
-  } else if (phase.tag === "ACCEPTED") {
-    operation = { ...phase, receipt: null };
+  if (phase.kind === "SUBMITTING" || phase.kind === "UNRESOLVED") {
+    operation = {
+      kind: "UNRESOLVED",
+      source: phase.source,
+      effect: null,
+    };
+  } else if (phase.kind === "ACCEPTED") {
+    operation = {
+      ...phase,
+      receipt: null,
+    };
   } else {
-    operation = { tag: "EDITING", exposed: localSource(phase) };
+    operation = {
+      kind: "EDITING",
+      exposed: localSource(phase),
+    };
   }
-  return { ...state, operation, disclosureRefused: refused, effects: [] };
+  return {
+    ...state,
+    operation,
+    disclosureRefused: refused,
+    effects: [],
+  };
 };
 const preview = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "PREVIEW" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "PREVIEW";
+    }
+  >,
 ): OperationState => {
   if (
     !canEdit(state) ||
@@ -138,15 +257,25 @@ const preview = (
   ) {
     return state;
   }
-  const source: LocalSource = { prepared: action.prepared };
+  const source: LocalSource = {
+    prepared: action.prepared,
+  };
   return append(
     {
       ...state,
-      operation: { tag: "PREVIEWING", source, effect: action.identity },
+      operation: {
+        kind: "PREVIEWING",
+        source,
+        effect: action.identity,
+      },
       notice: null,
       fieldError: null,
     },
-    { kind: "PREVIEW", identity: action.identity, source },
+    {
+      kind: "PREVIEW",
+      identity: action.identity,
+      source,
+    },
   );
 };
 const execute = (state: OperationState, identity: EffectIdentity): OperationState => {
@@ -155,11 +284,11 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     return state;
   }
   const reviewed =
-    phase.tag === "REVIEWING" &&
+    phase.kind === "REVIEWING" &&
     phase.confirmed &&
     !state.disclosureRefused &&
     state.disclosureToken === identity.token;
-  if (operationBusy(state) || (phase.tag !== "UNRESOLVED" && !reviewed)) {
+  if (operationBusy(state) || (phase.kind !== "UNRESOLVED" && !reviewed)) {
     return state;
   }
   const source = operationSource(phase);
@@ -170,22 +299,34 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     {
       ...state,
       operation:
-        phase.tag === "UNRESOLVED"
-          ? { ...phase, effect: identity }
+        phase.kind === "UNRESOLVED"
+          ? {
+              ...phase,
+              effect: identity,
+            }
           : {
-              tag: "SUBMITTING",
+              kind: "SUBMITTING",
               source,
               effect: identity,
-              review: phase.tag === "REVIEWING" ? phase.review : null,
+              review: phase.kind === "REVIEWING" ? phase.review : null,
             },
       notice: null,
     },
-    { kind: "EXECUTE", identity, source },
+    {
+      kind: "EXECUTE",
+      identity,
+      source,
+    },
   );
 };
 const refuse = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "REFUSE" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "REFUSE";
+    }
+  >,
 ): OperationState => {
   if (action.identity !== undefined && !completing(state, action.identity)) {
     return state;
@@ -195,8 +336,15 @@ const refuse = (
   const retained = source;
   const operation: OperationPhase =
     sticky && retained !== null
-      ? { tag: "UNRESOLVED", source: retained, effect: null }
-      : { tag: "EDITING", exposed: retained };
+      ? {
+          kind: "UNRESOLVED",
+          source: retained,
+          effect: null,
+        }
+      : {
+          kind: "EDITING",
+          exposed: retained,
+        };
   const next = {
     ...state,
     operation,
@@ -205,12 +353,21 @@ const refuse = (
     disclosureRefused: action.disclosure,
   };
   return action.disclosure && action.identity !== undefined
-    ? append(next, { kind: "DISCLOSURE_REFUSED", identity: action.identity, notice: action.notice })
+    ? append(next, {
+        kind: "DISCLOSURE_REFUSED",
+        identity: action.identity,
+        notice: action.notice,
+      })
     : next;
 };
 const record = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "RECORD" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "RECORD";
+    }
+  >,
 ): OperationState => {
   if (!completing(state, action.identity)) {
     return state;
@@ -223,7 +380,7 @@ const record = (
     {
       ...state,
       operation: {
-        tag: "ACCEPTED",
+        kind: "ACCEPTED",
         source,
         receipt: action.receipt,
       },
@@ -232,20 +389,29 @@ const record = (
       disclosureToken: action.identity.token,
       disclosureRefused: false,
     },
-    { kind: "RECORDED", identity: action.identity, receipt: action.receipt },
+    {
+      kind: "RECORDED",
+      identity: action.identity,
+      receipt: action.receipt,
+    },
   );
 };
 const reviewed = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "REVIEW" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "REVIEW";
+    }
+  >,
 ): OperationState => {
-  if (!completing(state, action.identity) || state.operation.tag !== "PREVIEWING") {
+  if (!completing(state, action.identity) || state.operation.kind !== "PREVIEWING") {
     return state;
   }
   return {
     ...state,
     operation: {
-      tag: "REVIEWING",
+      kind: "REVIEWING",
       source: state.operation.source,
       review: action.review,
       confirmed: false,
@@ -256,48 +422,105 @@ const reviewed = (
 };
 const contextChanged = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "CONTEXT" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "CONTEXT";
+    }
+  >,
 ): OperationState =>
   state.context.token === action.token && state.context.target === action.target
     ? state
-    : { ...invalidate(state, false), context: { token: action.token, target: action.target } };
+    : {
+        ...invalidate(state, false),
+        context: {
+          token: action.token,
+          target: action.target,
+        },
+      };
 const returned = (state: OperationState): OperationState =>
   canEdit(state)
-    ? { ...state, operation: { tag: "EDITING", exposed: localSource(state.operation) } }
+    ? {
+        ...state,
+        operation: {
+          kind: "EDITING",
+          exposed: localSource(state.operation),
+        },
+      }
     : state;
 const confirmed = (state: OperationState, value: boolean): OperationState =>
-  state.operation.tag === "REVIEWING" && !state.disclosureRefused
-    ? { ...state, operation: { ...state.operation, confirmed: value } }
+  state.operation.kind === "REVIEWING" && !state.disclosureRefused
+    ? {
+        ...state,
+        operation: {
+          ...state.operation,
+          confirmed: value,
+        },
+      }
     : state;
 const reset = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "RESET" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "RESET";
+    }
+  >,
 ): OperationState =>
   operationBusy(state) || (uncertain(state.operation) && !action.abandon)
     ? state
-    : { ...action.state, disclosureToken: state.disclosureToken };
+    : {
+        ...action.state,
+        disclosureToken: state.disclosureToken,
+      };
 const resolving = (state: OperationState, identity: EffectIdentity): OperationState =>
-  state.operation.tag === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
+  state.operation.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
     ? append(
-        { ...state, operation: { ...state.operation, effect: identity } },
-        { kind: "RESOLVE", identity, source: state.operation.source },
+        {
+          ...state,
+          operation: {
+            ...state.operation,
+            effect: identity,
+          },
+        },
+        {
+          kind: "RESOLVE",
+          identity,
+          source: state.operation.source,
+        },
       )
     : state;
 const notAccepted = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "NOT_ACCEPTED" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "NOT_ACCEPTED";
+    }
+  >,
 ): OperationState =>
   completing(state, action.identity)
     ? {
         ...state,
-        operation: { tag: "EDITING", exposed: null },
-        values: { ...state.values, operationId: action.id },
-        notice: { kind: "local", reason: "notAccepted" },
+        operation: {
+          kind: "EDITING",
+          exposed: null,
+        },
+        values: {
+          ...state.values,
+          operationId: action.id,
+        },
+        notice: {
+          kind: "local",
+          reason: "notAccepted",
+        },
       }
     : state;
 type NavigationAction = Exclude<
   OperationAction,
-  { type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW" }
+  {
+    type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW";
+  }
 >;
 const navigation = (state: OperationState, action: NavigationAction): OperationState => {
   switch (action.type) {
@@ -306,13 +529,21 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
     case "INVALIDATE":
       return invalidate(state, action.refused);
     case "RESTORE":
-      return { ...state, disclosureRefused: false };
+      return {
+        ...state,
+        disclosureRefused: false,
+      };
     case "RETURN":
       return returned(state);
     case "CONFIRM":
       return confirmed(state, action.value);
     case "DISCARD":
-      return operationBusy(state) ? state : { ...state, pendingDiscard: action.kind };
+      return operationBusy(state)
+        ? state
+        : {
+            ...state,
+            pendingDiscard: action.kind,
+          };
     case "RESET":
       return reset(state, action);
     case "RESOLVE":
@@ -353,15 +584,15 @@ export const operationView = (state: OperationState) => {
   const source = operationSource(phase);
   return {
     ...state,
-    phase: phase.tag,
+    phase: phase.kind,
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
     prepared: source?.prepared ?? null,
-    review: phase.tag === "REVIEWING" || phase.tag === "SUBMITTING" ? phase.review : null,
-    receipt: phase.tag === "ACCEPTED" ? phase.receipt : null,
+    review: phase.kind === "REVIEWING" || phase.kind === "SUBMITTING" ? phase.review : null,
+    receipt: phase.kind === "ACCEPTED" ? phase.receipt : null,
     confirmed:
-      phase.tag === "REVIEWING"
+      phase.kind === "REVIEWING"
         ? phase.confirmed
-        : phase.tag === "SUBMITTING" && phase.review !== null,
+        : phase.kind === "SUBMITTING" && phase.review !== null,
   };
 };

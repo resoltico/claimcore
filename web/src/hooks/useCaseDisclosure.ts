@@ -3,7 +3,7 @@ import { service, resultNotice, type ServiceResponse } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 import type { Notice } from "../api/notices";
 
-type CaseView = Extract<ServiceResponse<"case.get">["outcome"], { tag: "SUCCEEDED" }>["data"];
+type CaseView = Extract<ServiceResponse<"case.get">["outcome"], { kind: "SUCCEEDED" }>["data"];
 type Disclosure = {
   value: CaseView | null;
   historyModes: CaseView["advice"]["history"];
@@ -33,7 +33,7 @@ export const useCaseDisclosure = (caseReference: string, token: string) => {
         return;
       }
       const value =
-        result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
+        result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
           ? result.value.outcome.data
           : null;
       setCurrent((previous) => ({

@@ -25,12 +25,12 @@ module Correlation =
 
     let private receipt input (receipt: OperationReceipt) =
         OperationInput.operationId input = receipt.OperationId
-        && match input, receipt.Scope with
-           | OperationInput.Case request, ReceiptScope.Case accepted ->
+        && match input, receipt.Subject with
+           | OperationInput.Case request, ReceiptSubject.Case accepted ->
                reference request.CaseReference accepted.Reference
                && successor request.ExpectedRevision accepted.Revision
                && act RequestCodecs.caseAct request.Act (CaseActKinds.token accepted.Act)
-           | OperationInput.Authority request, ReceiptScope.Authority accepted ->
+           | OperationInput.Authority request, ReceiptSubject.Authority accepted ->
                act RequestCodecs.authorityAct request.Act (AuthorityKinds.token accepted.Act)
            | _ -> false
 

@@ -222,7 +222,7 @@ let private currencyGrammarTests =
         ]
 
 let private authoredUnicodeRoundTrip () =
-    for value in [ "نام\u200Cخانوادگی"; "اسم\u200D"; "e\u0301"; "A\uFE0F" ] do
+    for value in [ "نام‌خانوادگی"; "اسم‍"; "é"; "A️" ] do
         let facts =
             { registration with
                 ClaimantName = value

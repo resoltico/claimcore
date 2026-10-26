@@ -6,8 +6,11 @@ import { AccessibleModal } from "../../components/AccessibleModal";
 import { OperationForm, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-
-type Discard = { model: OperationModel; onDiscard: () => void; hidden: boolean };
+type Discard = {
+  model: OperationModel;
+  onDiscard: () => void;
+  hidden: boolean;
+};
 const DiscardButton = ({ model, onDiscard, hidden }: Discard) => {
   const p = usePresentation();
   return (
@@ -24,7 +27,7 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   return [
     ["operationId", input.operationId],
     ["act", input.act.kind],
-    ...(input.scope === "CASE"
+    ...(input.kind === "CASE"
       ? ([
           ["caseReference", input.caseReference],
           ["expectedRevision", String(input.expectedRevision)],
@@ -48,7 +51,12 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
   return (
     <section role="alert" aria-live="off" aria-busy={model.busy}>
       <h2 ref={heading} tabIndex={-1}>
-        <NoticeView value={{ kind: "local", reason: "outcomeUnknown" }} />
+        <NoticeView
+          value={{
+            kind: "local",
+            reason: "outcomeUnknown",
+          }}
+        />
       </h2>
       <dl>
         {metadata.map(([name, value]) => (
@@ -76,7 +84,10 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
   );
 };
 type Props = Omit<OperationFormProps, "onAct">;
-type DiscardProps = { model: OperationModel; onClose?: () => void };
+type DiscardProps = {
+  model: OperationModel;
+  onClose?: () => void;
+};
 type DialogProps = DiscardProps & {
   pending: string | null;
   setPending: (kind: string | null) => void;
@@ -124,7 +135,14 @@ const UnavailableDisclosure = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   return (
     <section role="alert">
-      <NoticeView value={model.notice ?? { kind: "local", reason: "incomplete" }} />
+      <NoticeView
+        value={
+          model.notice ?? {
+            kind: "local",
+            reason: "incomplete",
+          }
+        }
+      />
       {!model.disclosureRefused && !model.contextChanged ? (
         <button type="button" disabled={model.busy} onClick={() => void model.preview()}>
           {p.text("ui.previewOperation")}
@@ -176,7 +194,11 @@ export const OperationPanel = (props: Props) => {
     <>
       <OperationForm
         {...props}
-        {...(onClose === undefined ? {} : { onClose: leave })}
+        {...(onClose === undefined
+          ? {}
+          : {
+              onClose: leave,
+            })}
         onAct={requestChange}
       />
       <OperationReview model={model} />

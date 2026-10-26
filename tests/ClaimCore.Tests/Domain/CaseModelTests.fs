@@ -64,12 +64,12 @@ let private retained revision view =
         {
             Reference = "Demo-1"
             Revision = revision
-            View = view
+            State = view
         }
     |> accepted
 
 let private live status decided paid =
-    CaseView.Live(fields status decided paid, Disposition.Active)
+    CaseState.Active(fields status decided paid)
 
 let private acts =
     [
@@ -112,9 +112,9 @@ let private acts =
 let private stateExpectations =
     [
         "absent", None, [ "OPEN" ]
-        "erased", Some CaseView.Erased, []
+        "erased", Some CaseState.Erased, []
         "voided",
-        Some(CaseView.Live(fields CaseStatus.Opened false false, Disposition.Voided)),
+        Some(CaseState.Voided(fields CaseStatus.Opened false false)),
         [ "REINSTATE"; "ERASE" ]
         "open undecided",
         Some(live CaseStatus.Opened false false),
@@ -177,13 +177,13 @@ let private allKeep =
 let private allKeepStates =
     [
         "absent", None, 0L, Refusal.ResourceUnavailable
-        "erased", Some(retained 1L CaseView.Erased), 1L, Refusal.CaseErased
+        "erased", Some(retained 1L CaseState.Erased), 1L, Refusal.CaseErased
         "stale",
         Some(retained 1L (live CaseStatus.Opened true false)),
         0L,
         Refusal.RevisionConflict 1L
         "voided",
-        Some(retained 1L (CaseView.Live(fields CaseStatus.Opened true false, Disposition.Voided))),
+        Some(retained 1L (CaseState.Voided(fields CaseStatus.Opened true false))),
         1L,
         Refusal.CaseVoided
         "terminal",
@@ -227,7 +227,7 @@ let private grandfathering =
     testCase
         "retained nonconforming text renders and reaffirms while changed assertions refuse"
         (fun () ->
-            let oldName = "Synthetic\u202eParty"
+            let oldName = "Synthetic‮Party"
 
             let storedFields =
                 { fields CaseStatus.Opened false false with
@@ -237,10 +237,10 @@ let private grandfathering =
                         }
                 }
 
-            let current = retained 1L (CaseView.Live(storedFields, Disposition.Active))
+            let current = retained 1L (CaseState.Active(storedFields))
 
             Expect.isTrue
-                ((Case.snapshot current).View = CaseView.Live(storedFields, Disposition.Active))
+                ((Case.snapshot current).State = CaseState.Active(storedFields))
                 "Retained fields are exact"
 
             let reaffirm =

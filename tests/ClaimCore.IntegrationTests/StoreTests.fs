@@ -94,10 +94,7 @@ let private serviceScopeCorruption () =
             match visible with
             | ReadReply.Succeeded page ->
                 Expect.equal
-                    (page.Items
-                     |> List.map (function
-                         | CaseSummary.Live(reference, _, _, _)
-                         | CaseSummary.Erased(reference, _) -> reference))
+                    (page.Items |> List.map (fun (summary: CaseSummary) -> summary.Reference))
                     [ "SERVICE-2" ]
                     "Assigned SQL cannot disclose through a corrupt human-only row"
             | _ -> failtest "Valid independent case must remain readable"

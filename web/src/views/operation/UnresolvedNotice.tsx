@@ -20,12 +20,12 @@ export const UnresolvedNotice = ({ token }: { token: string }) => {
     setBusy(false);
     if (
       result.kind === "outcome" &&
-      (result.value.outcome.tag === "ACCEPTED" || result.value.outcome.tag === "NOT_ACCEPTED")
+      (result.value.outcome.kind === "ACCEPTED" || result.value.outcome.kind === "NOT_ACCEPTED")
     ) {
       unresolvedOperation.clear(operation.operationId);
       setOperation(null);
       setNotice(
-        result.value.outcome.tag === "ACCEPTED"
+        result.value.outcome.kind === "ACCEPTED"
           ? { kind: "accepted", operationId: operation.operationId }
           : { kind: "local", reason: "notAccepted" },
       );
@@ -43,7 +43,7 @@ export const UnresolvedNotice = ({ token }: { token: string }) => {
           <p>{p.text("notice.outcomeUnknown")}</p>
           <p>
             <bdi>{operation.operationId}</bdi>
-            {operation.scope === "CASE"
+            {operation.subject === "CASE"
               ? p.actLabel(operation.act)
               : p.authorityLabel(operation.act)}
           </p>

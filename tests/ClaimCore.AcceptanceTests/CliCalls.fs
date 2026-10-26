@@ -124,7 +124,7 @@ let human fixture username endpoint input code =
     run fixture (interactiveEnvironment fixture username "valid") (frame endpoint input) code
 
 let tag (reply: JsonElement) =
-    reply.GetProperty("result").GetProperty("outcome").GetProperty("tag").GetString()
+    reply.GetProperty("result").GetProperty("outcome").GetProperty("kind").GetString()
 
 let data (reply: JsonElement) =
     reply.GetProperty("result").GetProperty("outcome").GetProperty("data")

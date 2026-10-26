@@ -124,7 +124,7 @@ type CatalogEntry =
         MeaningId: string
         ConfirmationId: string option
         Synopsis: string
-        Scope: string
+        Subject: string
         Kind: string
         Inputs: CatalogInput list
         Constants: BindingAssignment list

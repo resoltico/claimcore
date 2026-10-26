@@ -55,8 +55,11 @@ let private sameCase database (actor: IActorClaimsCore) =
         let! snapshot = current database "synthetic-growth-0"
 
         let act =
-            match snapshot.View with
-            | CaseView.Live(fields, _) when fields.Status = CaseStatus.Closed -> CaseAct.Reopen
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) when
+                fields.Status = CaseStatus.Closed
+                ->
+                CaseAct.Reopen
             | _ -> CaseAct.Close
 
         let! replies =
@@ -108,8 +111,11 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             Core.create fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
 
         let act =
-            match snapshot.View with
-            | CaseView.Live(fields, _) when fields.Status = CaseStatus.Closed -> CaseAct.Reopen
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) when
+                fields.Status = CaseStatus.Closed
+                ->
+                CaseAct.Reopen
             | _ -> CaseAct.Close
 
         let write =
@@ -153,8 +159,9 @@ let private longCase database (actor: IActorClaimsCore) =
         let mutable revision = snapshot.Revision
 
         let mutable closed =
-            match snapshot.View with
-            | CaseView.Live(fields, _) -> fields.Status = CaseStatus.Closed
+            match snapshot.State with
+            | (CaseState.Active(fields) | CaseState.Voided(fields)) ->
+                fields.Status = CaseStatus.Closed
             | _ -> failtest "Live case expected"
 
         let watch = Stopwatch.StartNew()
@@ -213,7 +220,7 @@ let private erase (database: PostgresFixture.Database) (actor: IActorClaimsCore)
 
         accepted erased |> ignore
         let! final = current database snapshot.Reference
-        Expect.equal final.View CaseView.Erased "Erasure clears the final projection"
+        Expect.equal final.State CaseState.Erased "Erasure clears the final projection"
 
         let! revoked =
             grant

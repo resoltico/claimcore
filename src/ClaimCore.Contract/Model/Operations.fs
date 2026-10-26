@@ -1,6 +1,6 @@
 namespace ClaimCore.Contract
 
-module OperationScopes =
+module OperationSubjects =
     [<Literal>]
     let Case = "CASE"
 

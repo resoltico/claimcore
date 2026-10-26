@@ -112,7 +112,7 @@ let private revision (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             value
-            |> caseScope (fun scope -> { scope with Revision = 2L })
+            |> caseSubject (fun scope -> { scope with Revision = 2L })
             |> updateCase { request with ExpectedRevision = 1L } { snapshot with Revision = 2L }
 
         do! rewrite database 4L change
@@ -127,22 +127,19 @@ let private start (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             let view =
-                match snapshot.View with
-                | CaseView.Live(fields, disposition) ->
-                    CaseView.Live(
+                CaseState.map
+                    (fun (fields: CaseFields) ->
                         { fields with
                             Status = CaseStatus.Closed
-                        },
-                        disposition
-                    )
-                | _ -> failtest "Live fixture required"
+                        })
+                    snapshot.State
 
             value
-            |> caseScope (fun scope ->
+            |> caseSubject (fun scope ->
                 { scope with
                     Act = (CaseActKind.Business BusinessActKind.Close)
                 })
-            |> updateCase { request with Act = CaseAct.Close } { snapshot with View = view }
+            |> updateCase { request with Act = CaseAct.Close } { snapshot with State = view }
 
         do! rewrite database 4L change
         do! finding VerificationFinding.HistoryStart database
@@ -161,7 +158,7 @@ let private disposition (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             value
-            |> caseScope (fun scope ->
+            |> caseSubject (fun scope ->
                 { scope with
                     Act = (CaseActKind.Stewardship StewardshipActKind.Reinstate)
                 })
@@ -172,7 +169,7 @@ let private disposition (database: PostgresFixture.Database) =
                 snapshot
 
         do! rewrite database position change
-        do! finding VerificationFinding.DispositionSequence database
+        do! finding VerificationFinding.StateSequence database
     }
 
 let private erasure (database: PostgresFixture.Database) =
@@ -238,7 +235,7 @@ let private authority (database: PostgresFixture.Database) =
             rewrite
                 database
                 sequence
-                (authorityScope (fun scope ->
+                (authoritySubject (fun scope ->
                     { scope with
                         Act = AuthorityKind.Enable
                     })
@@ -379,7 +376,7 @@ let private findingCases =
         VerificationFinding.PayloadFormat, format
         VerificationFinding.RevisionSequence, revision
         VerificationFinding.HistoryStart, start
-        VerificationFinding.DispositionSequence, disposition
+        VerificationFinding.StateSequence, disposition
         VerificationFinding.ErasureIncomplete, erasure
         VerificationFinding.PayloadWithoutErasure, missingPayload
         VerificationFinding.AuthorityFold, authority
@@ -471,7 +468,7 @@ let private lastOwner (database: PostgresFixture.Database) =
             rewrite
                 database
                 (accepted unchanged).Position.Sequence
-                (authorityScope (fun scope ->
+                (authoritySubject (fun scope ->
                     { scope with
                         Act = AuthorityKind.Disable
                     })

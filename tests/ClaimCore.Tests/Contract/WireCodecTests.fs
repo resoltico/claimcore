@@ -101,8 +101,8 @@ let private roundTrip () =
         Expect.isError (read probe raw) "Closed typed structure"
 
 let private escaping () =
-    let input = "<>&é😀\u2028\"\\\u0001\b\t\n\f\r"
-    let expected = "\"<>&é😀\u2028\\\"\\\\\\u0001\\b\\t\\n\\f\\r\""
+    let input = "<>&é😀 \"\\\u0001\b\t\n\f\r"
+    let expected = "\"<>&é😀 \\\"\\\\\\u0001\\b\\t\\n\\f\\r\""
 
     Expect.equal
         (Codec.encode Codec.text input)
@@ -175,7 +175,7 @@ let private encoderBounds () =
 let private sharedWriters () =
     let value =
         {
-            Text = "Rīga 😀\u2028"
+            Text = "Rīga 😀 "
             Count = 7L
             Enabled = true
         }

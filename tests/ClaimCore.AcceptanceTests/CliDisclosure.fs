@@ -62,13 +62,13 @@ let private withheld expected reply =
     let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
 
     Expect.equal
-        (snapshot.GetProperty("disclosure").GetString())
+        (snapshot.GetProperty("kind").GetString())
         "WITHHELD"
         "Superseded business snapshot requires current full-history permission"
 
     Expect.equal
         (snapshot.EnumerateObject() |> Seq.map _.Name |> Seq.toList)
-        [ "disclosure" ]
+        [ "kind" ]
         "Withheld contains only its discriminator and no business payload"
 
 let private summaryHistory fixture reference =

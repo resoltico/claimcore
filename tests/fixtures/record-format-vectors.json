@@ -67,7 +67,7 @@
   "canonicalIdentity": [
     {
       "name": "equal amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -96,7 +96,7 @@
     },
     {
       "name": "equal reference",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -125,7 +125,7 @@
     },
     {
       "name": "different amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": false,
       "left": {
         "name": "authored left",
@@ -154,7 +154,7 @@
     },
     {
       "name": "different name",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": false,
       "left": {
         "name": "authored left",
@@ -183,7 +183,7 @@
     },
     {
       "name": "amend amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -212,7 +212,7 @@
     },
     {
       "name": "decision amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -241,7 +241,7 @@
     },
     {
       "name": "correction registration amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -270,7 +270,7 @@
     },
     {
       "name": "correction decision amount",
-      "scope": "CASE",
+      "subject": "CASE",
       "same": true,
       "left": {
         "name": "authored left",
@@ -299,7 +299,7 @@
     },
     {
       "name": "grant reference",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "same": true,
       "left": {
         "name": "authored left",
@@ -328,7 +328,7 @@
     },
     {
       "name": "revoke reference",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "same": true,
       "left": {
         "name": "authored left",
@@ -430,7 +430,7 @@
         "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
         "sequence": 1,
         "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
-        "scope": "CASE",
+        "subject": "CASE",
         "act": "OPEN",
         "actCode": 1,
         "operationId": "10000000-0000-4000-8000-000000000001",
@@ -452,7 +452,7 @@
         "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
         "sequence": 2,
         "previousHash": "399885cc0d2a16371130a7f2edd86032f3d3c91505b6848b860ea4e4ba3e3233",
-        "scope": "AUTHORITY",
+        "subject": "AUTHORITY",
         "act": "GRANT",
         "actCode": 34,
         "operationId": "20000000-0000-4000-8000-000000000002",

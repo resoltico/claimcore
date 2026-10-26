@@ -19,7 +19,6 @@ module ResolutionCodecs =
         let outcome =
             tagged
                 "ResolveResult"
-                "tag"
                 [
                     variant
                         "ACCEPTED"

@@ -13,7 +13,6 @@ module ReplyCodecs =
         let outcome =
             tagged
                 (name + ".Outcome")
-                "tag"
                 [
                     variant
                         "SUCCEEDED"
@@ -48,7 +47,7 @@ module ReplyCodecs =
         |> build
         |> named "AuthorityState"
 
-    let authorityReview =
+    let private authorityReviewFields =
         (record (fun target before after ->
             {
                 Target = target
@@ -59,36 +58,35 @@ module ReplyCodecs =
         |> field "target" _.Target (nullable ResponseCodecs.actorSummary)
         |> field "before" _.Before authorityState
         |> field "after" _.After authorityState
-        |> build
-        |> named "AuthorityReview"
 
     let review =
-        choice
-            "OperationReview"
-            [
-                branch
-                    OperationReview.Case
-                    (function
-                    | OperationReview.Case value -> Some value
-                    | _ -> None)
-                    (ResponseCodecs.review |> withScope OperationScopes.Case |> named "CaseReview")
-                branch
-                    OperationReview.Authority
-                    (function
-                    | OperationReview.Authority value -> Some value
-                    | _ -> None)
-                    (authorityReview
-                     |> withScope OperationScopes.Authority
-                     |> named "AuthorityOperationReview")
-            ]
-        |> discriminated "scope"
+        let subject =
+            tagged
+                "ReviewSubject"
+                [
+                    variant
+                        "CASE"
+                        OperationReview.Case
+                        (function
+                        | OperationReview.Case value -> Some value
+                        | _ -> None)
+                        ResponseCodecs.reviewFields
+                    variant
+                        "AUTHORITY"
+                        OperationReview.Authority
+                        (function
+                        | OperationReview.Authority value -> Some value
+                        | _ -> None)
+                        authorityReviewFields
+                ]
+
+        record id |> field "subject" id subject |> build |> named "OperationReview"
 
     let private reviewed = record id |> field "review" id review |> build
 
     let private previewResult =
         tagged
             "PreviewResult"
-            "tag"
             [
                 variant
                     "REVIEWED"
@@ -135,7 +133,6 @@ module ReplyCodecs =
     let private executeResult =
         tagged
             "ExecuteResult"
-            "tag"
             [
                 variant
                     "ACCEPTED"

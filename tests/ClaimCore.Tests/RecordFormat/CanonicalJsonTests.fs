@@ -104,7 +104,7 @@ let private cultureTest =
 let private values =
     gen {
         let! text =
-            Gen.item [ "Rīga مطالبة 😀"; "A<B>&'+`"; "\u0000\u0007\b\t\n\r"; "e\u0301"; "\\\"" ]
+            Gen.item [ "Rīga مطالبة 😀"; "A<B>&'+`"; "\u0000\u0007\b\t\n\r"; "é"; "\\\"" ]
 
         let! number = Gen.int64 (Range.constant -9007199254740991L 9007199254740991L)
         let! flag = Gen.bool

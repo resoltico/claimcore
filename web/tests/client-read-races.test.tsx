@@ -8,7 +8,7 @@ import { operationId, response, unavailable } from "./service-ui.fixtures";
 
 import { wireReply } from "./contract-corpus.fixtures";
 const accepted = wireReply("operation.execute");
-if (accepted.outcome.tag !== "ACCEPTED") {
+if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;

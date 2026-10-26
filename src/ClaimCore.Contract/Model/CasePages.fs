@@ -1,13 +1,11 @@
 namespace ClaimCore.Contract
 
-[<RequireQualifiedAccess>]
 type CaseSummary =
-    | Live of
-        caseReference: string *
-        revision: int64 *
-        status: CaseStatus *
-        disposition: Disposition
-    | Erased of caseReference: string * revision: int64
+    {
+        Reference: string
+        Revision: int64
+        State: CaseState<CaseStatus>
+    }
 
 type CaseSummaryPage =
     {

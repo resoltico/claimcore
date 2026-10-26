@@ -110,7 +110,7 @@ let private unicodeAndPolicy (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
 
-        for value in [ "A\u202eB"; String.replicate 201 "A"; " leading"; "A\u200dB" ] do
+        for value in [ "A‮B"; String.replicate 201 "A"; " leading"; "A‍B" ] do
             do!
                 sql
                     database

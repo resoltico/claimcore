@@ -123,7 +123,7 @@ let private replayAndRefusal fixture =
         | Ok { Case = Some record } ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
-                (SnapshotDisclosure.Disclosed record.Snapshot.View)
+                (SnapshotDisclosure.Disclosed(LiveCase.ofState record.Snapshot.State |> Option.get))
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
@@ -227,7 +227,7 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
 
         match page.Case with
         | Some {
-                   Snapshot = { View = CaseView.Erased }
+                   Snapshot = { State = CaseState.Erased }
                } -> ()
         | _ -> failtest "Missing erased projection"
 
@@ -247,7 +247,9 @@ let private erasureReadback fixture (actor: IActorClaimsCore) =
         match other with
         | Ok {
                  Case = Some {
-                                 Snapshot = { View = CaseView.Live _ }
+                                 Snapshot = {
+                                                State = (CaseState.Active _ | CaseState.Voided _)
+                                            }
                              }
              } -> ()
         | _ -> failtest "Other case changed"

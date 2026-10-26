@@ -20,7 +20,7 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.tag !== "SUCCEEDED") {
+  if (value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -139,7 +139,7 @@ const failedContext = (
     status: 200,
     value: {
       outcome: {
-        tag: "FAILED",
+        kind: "FAILED",
         data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" },
       },
     },

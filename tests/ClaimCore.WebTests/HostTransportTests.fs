@@ -18,7 +18,7 @@ open ClaimCore.TestSupport.TestServerFixture
 
 let private authorityBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"scope":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
+        $"""{{"kind":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
     )
 
 let private body name =
@@ -212,7 +212,7 @@ let private outcomes () =
                     "Every outcome, including refusal, echoes admitted request identity"
 
                 Expect.equal
-                    (payload.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
+                    (payload.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
                     tag
                     "Outcome identity"
         })
@@ -378,7 +378,7 @@ let private closedAdmission () =
                 let outcome = document.RootElement.GetProperty("outcome")
 
                 Expect.equal
-                    (outcome.GetProperty("tag").GetString())
+                    (outcome.GetProperty("kind").GetString())
                     "FAILED"
                     "Definite refusal to start"
 

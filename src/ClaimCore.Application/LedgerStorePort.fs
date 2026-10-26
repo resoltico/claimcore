@@ -27,7 +27,7 @@ type internal StoredCase =
     { CaseId: Guid; Snapshot: CaseSnapshot }
 
 [<RequireQualifiedAccess>]
-type internal StoredScope =
+type internal StoredSubject =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: Guid * act: AuthorityKind
 
@@ -38,7 +38,7 @@ type internal StoredEntry =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Scope: StoredScope
+        Subject: StoredSubject
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
@@ -74,7 +74,7 @@ type internal EntryDraft =
         OperationId: Guid
         ActorId: Guid
         RecordedAt: DateTimeOffset
-        Scope: StoredScope
+        Subject: StoredSubject
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array

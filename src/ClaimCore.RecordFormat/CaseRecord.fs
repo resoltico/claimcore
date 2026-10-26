@@ -5,17 +5,20 @@ open ClaimCore.Json
 open ClaimCore.Domain
 
 module CaseRecord =
-    let private live (snapshot: ClaimCore.Contract.CaseSnapshot) =
-        match snapshot.View with
-        | CaseView.Live(fields, disposition) -> fields, disposition
-        | CaseView.Erased -> invalidArg (nameof snapshot) "A payload requires live case fields."
+    let private live (snapshot: CaseSnapshot) =
+        LiveCase.ofState snapshot.State
+        |> Option.defaultWith (fun () ->
+            invalidArg (nameof snapshot) "A payload requires live case fields.")
 
-    let private codec: Codec<ClaimCore.Contract.CaseSnapshot> =
-        Codec.record (fun revision ((fields: CaseFields), disposition) ->
+    let private codec: Codec<CaseSnapshot> =
+        Codec.record (fun revision state ->
+            let view = LiveCase.toState state
+            let fields = CaseState.fields view |> Option.get
+
             {
                 Reference = fields.CaseReference
                 Revision = revision
-                View = CaseView.Live(fields, disposition)
+                State = view
             })
         |> Codec.field
             "revision"
@@ -39,7 +42,7 @@ module CaseRecord =
     let encodeSnapshot snapshot =
         match validate snapshot with
         | Error _ -> invalidArg (nameof snapshot) "Invalid accepted case format."
-        | Ok { View = CaseView.Erased } -> Array.empty
+        | Ok { State = CaseState.Erased } -> Array.empty
         | Ok value -> codec.Write value |> CanonicalWriter.bytes
 
     let decodeSnapshot bytes =

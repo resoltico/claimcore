@@ -244,7 +244,7 @@ module Frames =
 
     let outcome reply =
         JsonValue.tryMember "outcome" reply
-        |> Option.bind (JsonValue.tryMember "tag")
+        |> Option.bind (JsonValue.tryMember "kind")
         |> Option.bind (function
             | JsonValue.String tag -> Some tag
             | _ -> None)

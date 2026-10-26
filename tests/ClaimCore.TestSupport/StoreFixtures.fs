@@ -71,17 +71,17 @@ let internal accepted (reply: ExecuteReply) =
 
 let internal acceptedAuthority outcome =
     match accepted outcome with
-    | { Scope = ReceiptScope.Authority _ } -> ()
+    | { Subject = ReceiptSubject.Authority _ } -> ()
     | _ -> failtest "Expected accepted authority operation."
 
 let internal caseReceipt (receipt: OperationReceipt) =
-    match receipt.Scope with
-    | ReceiptScope.Case value -> value
+    match receipt.Subject with
+    | ReceiptSubject.Case value -> value
     | _ -> failtest "Expected case receipt."
 
 let internal disclosedFields receipt =
     match (caseReceipt receipt).Snapshot with
-    | SnapshotDisclosure.Disclosed(CaseView.Live(fields, _)) -> fields
+    | SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields)) -> fields
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =

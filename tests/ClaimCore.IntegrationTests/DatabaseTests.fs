@@ -236,7 +236,8 @@ let tests =
                                 token
 
                         match first with
-                        | ProvisionOwnerOutcome.Accepted { Scope = ReceiptScope.Authority _ } -> ()
+                        | ProvisionOwnerOutcome.Accepted { Subject = ReceiptSubject.Authority _ } ->
+                            ()
                         | _ -> failtest "Expected accepted owner provisioning."
 
                         let! repeated =

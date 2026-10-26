@@ -82,17 +82,10 @@ module internal TextReply =
     let private caseLines language value =
         let state = memberValue "state" value
 
-        let status =
-            if get "tag" state = "LIVE" then
-                if get "disposition" state = "VOIDED" then
-                    "VOIDED"
-                else
-                    get (FieldTable.key BusinessField.Status) (stateFields state)
-            else
-                get "tag" state
+        let status = get "kind" state
 
         let fields =
-            if get "tag" state = "LIVE" then
+            if status <> "ERASED" then
                 fieldLines language (stateFields state)
             else
                 []
@@ -112,11 +105,18 @@ module internal TextReply =
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
-                (advice |> List.map (get "act" >> OperationCatalog.kebab) |> String.concat ", ")
+                (advice
+                 |> List.map (fun offer ->
+                     (if get "kind" offer = "CORRECT" then
+                          "CORRECT"
+                      else
+                          get "act" offer)
+                     |> OperationCatalog.kebab)
+                 |> String.concat ", ")
         ]
 
     let private receiptLines language tag value =
-        let scope = memberValue "scope" value
+        let scope = memberValue "subject" value
         let token = get "act" scope
 
         let verb = OperationCatalog.kebab token
@@ -155,16 +155,16 @@ module internal TextReply =
             |> items
             |> List.collect (fun entry ->
                 let change =
-                    if get "tag" entry = "SUMMARY" then
+                    if get "kind" entry = "SUMMARY" then
                         memberValue "change" entry
                     else
                         memberValue "receipt" entry
 
                 let scope =
-                    if get "tag" entry = "SUMMARY" then
+                    if get "kind" entry = "SUMMARY" then
                         change
                     else
-                        memberValue "scope" change
+                        memberValue "subject" change
 
                 let summary =
                     [
@@ -175,10 +175,10 @@ module internal TextReply =
                     ]
                     |> String.concat "  "
 
-                let snapshot = change |> memberValue "scope" |> memberValue "snapshot"
+                let snapshot = change |> memberValue "subject" |> memberValue "snapshot"
 
                 let fields =
-                    if get "disclosure" snapshot = "DISCLOSED" then
+                    if get "kind" snapshot = "DISCLOSED" then
                         fieldLines language (memberValue "view" snapshot |> stateFields)
                         |> List.map ((+) "  ")
                     else
@@ -218,14 +218,12 @@ module internal TextReply =
                     JsonValue.tryMember (FieldTable.key BusinessField.CaseReference) item
                     |> Option.isSome
                 then
+                    let state = memberValue "state" item
+
                     let status =
-                        if get "tag" item = "LIVE" then
-                            if get "disposition" item = "VOIDED" then
-                                "VOIDED"
-                            else
-                                get (FieldTable.key BusinessField.Status) item
-                        else
-                            get "tag" item
+                        [ get "kind" state; get "status" state ]
+                        |> List.filter ((<>) "")
+                        |> String.concat "  "
 
                     String.concat
                         "  "
@@ -247,7 +245,7 @@ module internal TextReply =
         let verb = OperationCatalog.kebab token
 
         let target =
-            if get "scope" review = "AUTHORITY" then
+            if get "kind" review = "AUTHORITY" then
                 let principal =
                     match JsonValue.tryMember "target" input with
                     | Some target -> target
@@ -285,12 +283,12 @@ module internal TextReply =
                 ))
 
     let private reviewLines language request value =
-        let review = memberValue "review" value
+        let review = memberValue "review" value |> memberValue "subject"
         let after = memberValue "after" review
         let before = memberValue "before" review
 
         let changes =
-            if get "scope" review = "AUTHORITY" then
+            if get "kind" review = "AUTHORITY" then
                 authorityChanges language before after
             else
                 FieldTable.rows
@@ -397,7 +395,7 @@ module internal TextReply =
             let outcome = memberValue "outcome" reply
             let data = memberValue "data" outcome
 
-            match get "tag" outcome with
+            match get "kind" outcome with
             | "SUCCEEDED" -> successful language frame.Endpoint data
             | "ACCEPTED"
             | "ALREADY_ACCEPTED" as tag -> receiptLines language tag data

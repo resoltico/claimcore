@@ -183,7 +183,7 @@ const useDashboardNavigation = () => {
   };
   const committed = (receipt: CaseReceipt): void => {
     setOperation(null);
-    setSelectedReference(receipt.scope.caseReference);
+    setSelectedReference(receipt.subject.caseReference);
     setRefresh((value) => value + 1);
   };
   return {
@@ -201,7 +201,7 @@ const useDashboardNavigation = () => {
 };
 
 const contextData = (reply: ServiceResponse<"context">) =>
-  reply.outcome.tag === "SUCCEEDED" ? reply.outcome.data : null;
+  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
 
 const useNavigationFocus = (location: string) => {
   const content = useRef<HTMLDivElement>(null);

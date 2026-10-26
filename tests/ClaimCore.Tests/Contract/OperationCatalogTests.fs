@@ -195,7 +195,7 @@ let tests =
                     payment.Binding.Branches
                     [
                         {
-                            Path = [ "act"; "groups"; "payment"; "mode" ]
+                            Path = [ "act"; "groups"; "payment"; "kind" ]
                             Value = "REPLACE"
                         }
                     ]

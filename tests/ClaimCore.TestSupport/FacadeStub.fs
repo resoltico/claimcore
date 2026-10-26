@@ -66,13 +66,16 @@ let receipt id reference =
     {
         OperationId = id
         Position = position
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 {
                     Reference = reference
                     Revision = 1L
                     Act = (CaseActKind.Business BusinessActKind.Open)
-                    Snapshot = SnapshotDisclosure.Disclosed (view reference).View
+                    Snapshot =
+                        SnapshotDisclosure.Disclosed(
+                            LiveCase.ofState (view reference).State |> Option.get
+                        )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = operationId
@@ -80,8 +83,8 @@ let receipt id reference =
 
 let authorityReceipt (request: ClaimCore.Contract.AuthorityRequest) =
     { receipt request.OperationId "WEB-001" with
-        Scope =
-            ReceiptScope.Authority
+        Subject =
+            ReceiptSubject.Authority
                 {
                     TargetActorId = operationId
                     Act =

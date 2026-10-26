@@ -17,7 +17,7 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
         };
   }
   const { outcome } = result.value;
-  if (outcome.tag === "REJECTED" || outcome.tag === "FAILED") {
+  if (outcome.kind === "REJECTED" || outcome.kind === "FAILED") {
     return {
       kind: "diagnostic",
       diagnostic: {
@@ -26,7 +26,7 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
       },
     };
   }
-  if (outcome.tag === "OUTCOME_UNKNOWN") {
+  if (outcome.kind === "OUTCOME_UNKNOWN") {
     return localNotice("outcomeUnknown");
   }
   return localNotice("incomplete");
@@ -36,5 +36,5 @@ export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean
   (result.kind === "hostFailure" &&
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
   (result.kind === "outcome" &&
-    result.value.outcome.tag === "REJECTED" &&
+    result.value.outcome.kind === "REJECTED" &&
     result.value.outcome.data.code === "ACCESS_RESOURCE_UNAVAILABLE");

@@ -81,8 +81,8 @@ let private readReplies () =
 
     for input in
         [
-            "{\"outcome\":{\"tag\":\"CANCELLED\",\"data\":null}}"
-            "{\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":true,\"message\":\"private\"}}"
+            "{\"outcome\":{\"kind\":\"CANCELLED\",\"data\":null}}"
+            "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":true,\"message\":\"private\"}}"
         ] do
         Expect.isError
             (Codec.decode 10000 codec (bytes input))
@@ -98,8 +98,8 @@ let private receipt =
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = id
-        Scope =
-            ReceiptScope.Authority
+        Subject =
+            ReceiptSubject.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.Register
@@ -148,7 +148,7 @@ let private mutationReplies () =
     let parsed =
         Codec.encode ReceiptCodecs.receipt receipt |> StrictJson.read 10000 |> accepted
 
-    let scope = JsonValue.tryMember "scope" parsed |> Option.get
+    let scope = JsonValue.tryMember "subject" parsed |> Option.get
 
     Expect.equal
         (JsonValue.tryMember "kind" scope)

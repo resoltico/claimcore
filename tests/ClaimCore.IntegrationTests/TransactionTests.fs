@@ -101,7 +101,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            View = ClaimCore.Contract.CaseView.Live(fields, _)
+                                            State = (ClaimCore.Contract.CaseState.Active(fields) | CaseState.Voided(fields))
                                         }
                          }
          } ->

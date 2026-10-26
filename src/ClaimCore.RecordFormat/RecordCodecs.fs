@@ -58,7 +58,6 @@ module internal RecordCodecs =
     let registrationGroup =
         tagged
             "RegistrationGroup"
-            "kind"
             [
                 unitVariant
                     (CorrectionActions.token CorrectionGroupAction.Keep)
@@ -75,7 +74,6 @@ module internal RecordCodecs =
     let decisionGroup =
         tagged
             "DecisionGroup"
-            "kind"
             [
                 unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) DecisionGroup.Keep
                 variant
@@ -93,7 +91,6 @@ module internal RecordCodecs =
     let paymentGroup =
         tagged
             "PaymentGroup"
-            "kind"
             [
                 unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) PaymentGroup.Keep
                 variant
@@ -192,7 +189,7 @@ module internal RecordCodecs =
                 CaseAct.Erase
         ]
 
-    let caseAct = tagged "CaseAct" "kind" (businessActs @ stewardshipActs)
+    let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 () ->
@@ -225,7 +222,6 @@ module internal RecordCodecs =
     let scope =
         tagged
             "Scope"
-            "kind"
             [
                 unitVariant "INSTALLATION" GrantTarget.Installation
                 variant
@@ -279,7 +275,7 @@ module internal RecordCodecs =
                 (fun _ -> ())
                 (integer version version |> map (fun _ -> ()) (fun () -> version))
 
-        tagged "CaseRequestRecord.Subject" "kind" [ variant "CASE" id Some fields ]
+        tagged "CaseRequestRecord.Subject" [ variant "CASE" id Some fields ]
 
     let caseFields =
         (record (fun reference status registration decision payment ->
@@ -303,18 +299,19 @@ module internal RecordCodecs =
 
         tagged
             "SnapshotRecord.State"
-            "kind"
             [
                 variant
                     "ACTIVE"
-                    (fun fields -> fields, Disposition.Active)
-                    (fun (fields, state) ->
-                        if state = Disposition.Active then Some fields else None)
+                    LiveCase.Active
+                    (function
+                    | LiveCase.Active fields -> Some fields
+                    | _ -> None)
                     fields
                 variant
                     "VOIDED"
-                    (fun fields -> fields, Disposition.Voided)
-                    (fun (fields, state) ->
-                        if state = Disposition.Voided then Some fields else None)
+                    LiveCase.Voided
+                    (function
+                    | LiveCase.Voided fields -> Some fields
+                    | _ -> None)
                     fields
             ]

@@ -65,13 +65,13 @@ let private textFormats () =
         { viewFields original with
             Registration =
                 { (viewFields original).Registration with
-                    ClaimantName = "A\u202eB"
+                    ClaimantName = "A‮B"
                 }
         }
 
     let snapshot =
         { original with
-            View = CaseView.Live(oldFields, Disposition.Active)
+            State = CaseState.Active(oldFields)
         }
 
     Expect.equal
@@ -104,7 +104,7 @@ let private textFormats () =
             "\\udc00"
             "\\udbff\\udfff"
         ] do
-        let candidate = encoded.Replace("A\u202eB", "A" + escaped + "B")
+        let candidate = encoded.Replace("A‮B", "A" + escaped + "B")
         Expect.notEqual candidate encoded "Permanent-format negative control changes content"
 
         Expect.isError
@@ -133,10 +133,8 @@ let private envelope () =
 
     let asWire bytes =
         Encoding.UTF8.GetString(bytes: byte array)
-        |> fun value ->
-            value
-                .Replace("\"format\":1,", "")
-                .Replace("\"kind\":\"AUTHORITY\"", "\"scope\":\"AUTHORITY\"")
+        |> fun value -> value.Replace("\"format\":1,", "")
+
         |> Encoding.UTF8.GetBytes
 
     let ordinary =

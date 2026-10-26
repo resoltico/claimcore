@@ -90,7 +90,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   await expectUnknownOperation(page);
   expect(isResponse("operation.execute", accepted)).toBe(true);
   const first = (accepted as ServiceResponse<"operation.execute">).outcome;
-  expect(first.tag).toBe("ACCEPTED");
+  expect(first.kind).toBe("ACCEPTED");
   await refuseRetryBeforeDispatch(page, requests);
   const replayed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.execute"),
@@ -100,13 +100,13 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   const replay: unknown = await response.json();
   expect(isResponse("operation.execute", replay)).toBe(true);
   const second = (replay as ServiceResponse<"operation.execute">).outcome;
-  expect(second.tag).toBe("ALREADY_ACCEPTED");
-  if (first.tag !== "ACCEPTED" || second.tag !== "ALREADY_ACCEPTED") {
+  expect(second.kind).toBe("ALREADY_ACCEPTED");
+  if (first.kind !== "ACCEPTED" || second.kind !== "ALREADY_ACCEPTED") {
     throw new Error("Expected accepted replay.");
   }
   expect(second.data).toEqual(first.data);
   expect(second.data.operationId).toBe(identity.operationId);
-  expect(second.data.scope.kind === "CASE" ? second.data.scope.revision : null).toBe(2);
+  expect(second.data.subject.kind === "CASE" ? second.data.subject.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);
   await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
 });

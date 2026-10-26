@@ -134,7 +134,7 @@ let private matrix () =
         Expect.isNone (RoleTokens.parse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
-    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a\ufdd0b"; "a\uffffb" ] do
+    for value in [ String([| char 0xD800 |]); "a\u0000b"; "a﷐b"; "a￿b" ] do
         Expect.isError
             (PrincipalKey.human "https://issuer.example/" value)
             "Identity text has permanent Unicode bounds"

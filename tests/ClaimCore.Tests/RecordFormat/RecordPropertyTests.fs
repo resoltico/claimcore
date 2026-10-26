@@ -16,7 +16,7 @@ let private safeText =
     Gen.choice
         [
             Gen.string (Range.constant 1 20) Gen.alpha
-            Gen.item [ "Žąsis"; "東京"; "😀"; "e\u0301"; "quoted\"value"; "path\\value" ]
+            Gen.item [ "Žąsis"; "東京"; "😀"; "é"; "quoted\"value"; "path\\value" ]
         ]
 
 let private registrationGenerator =

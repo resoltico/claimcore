@@ -33,7 +33,7 @@ type Progress =
     | DecidedZero
     | Paid
 
-let snapshot status progress disposition : CaseSnapshot =
+let snapshot status progress state : CaseSnapshot =
     let decided =
         match progress with
         | Undecided -> None
@@ -43,24 +43,22 @@ let snapshot status progress disposition : CaseSnapshot =
     {
         Reference = "DEMO-1"
         Revision = 3L
-        View =
-            CaseView.Live(
+        State =
+            state
                 {
                     CaseReference = "DEMO-1"
                     Status = status
                     Registration = registration "Synthetic claimant"
                     Decision = decided
                     Payment = (if progress = Paid then Some payment else None)
-                },
-                disposition
-            )
+                }
     }
 
 let erased: CaseSnapshot =
     {
         Reference = "DEMO-1"
         Revision = 3L
-        View = CaseView.Erased
+        State = CaseState.Erased
     }
 
 let correction =
@@ -99,9 +97,8 @@ let classes =
     [
         for status in [ CaseStatus.Opened; CaseStatus.Closed ] do
             for progress in [ Undecided; DecidedPositive; DecidedZero; Paid ] do
-                for disposition in [ Disposition.Active; Disposition.Voided ] do
-                    sprintf "%A/%A/%A" status progress disposition,
-                    Some(snapshot status progress disposition)
+                for name, state in [ "Active", CaseState.Active; "Voided", CaseState.Voided ] do
+                    sprintf "%A/%A/%s" status progress name, Some(snapshot status progress state)
         "ERASED", Some erased
         "ABSENT", None
     ]

@@ -157,8 +157,8 @@ module internal ReadOperations =
             visible
             |> List.tryLast
             |> Option.map (fun (entry: StoredEntry) ->
-                match entry.Scope with
-                | StoredScope.Case(_, revision, _, _) -> revision
+                match entry.Subject with
+                | StoredSubject.Case(_, revision, _, _) -> revision
                 | _ -> raise (RecordCorruptException "Invalid case history."))
 
     let history source installationId principal reference select limit token =

@@ -2,11 +2,11 @@ import { useEffect, useRef } from "react";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 export type UnresolvedOperation = {
   operationId: string;
-  scope: "CASE" | "AUTHORITY";
+  subject: "CASE" | "AUTHORITY";
   act: string;
 };
 const key = "claimcore.unresolvedOperation";
-const isScope = (value: unknown): value is "CASE" | "AUTHORITY" =>
+const isSubject = (value: unknown): value is "CASE" | "AUTHORITY" =>
   value === "CASE" || value === "AUTHORITY";
 const read = (): UnresolvedOperation | null => {
   try {
@@ -18,12 +18,12 @@ const read = (): UnresolvedOperation | null => {
       Object.keys(value).length === 3 &&
       "operationId" in value &&
       typeof value.operationId === "string" &&
-      "scope" in value &&
-      isScope(value.scope) &&
+      "subject" in value &&
+      isSubject(value.subject) &&
       "act" in value &&
       typeof value.act === "string"
     ) {
-      return { operationId: value.operationId, scope: value.scope, act: value.act };
+      return { operationId: value.operationId, subject: value.subject, act: value.act };
     }
   } catch {
     /* Storage may be unavailable; the in-page operation still works. */
@@ -59,7 +59,7 @@ export const useUnresolvedOperation = ({ phase, prepared, notice }: OperationMod
       unresolvedId.current = input.operationId;
       unresolvedOperation.save({
         operationId: input.operationId,
-        scope: input.scope,
+        subject: input.kind,
         act: input.act.kind,
       });
     } else if (

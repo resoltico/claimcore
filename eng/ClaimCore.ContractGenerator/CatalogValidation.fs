@@ -43,13 +43,13 @@ module CatalogValidation =
                     | _ -> []))
 
         let erased =
-            ResponseCodecs.caseState.Write CaseView.Erased |> JsonValue.tryMember "tag"
+            ResponseCodecs.caseState.Write CaseState.Erased |> JsonValue.tryMember "kind"
 
         [
             yield! CaseStatuses.all |> List.map CaseStatuses.token
             yield! ActKinds.all |> List.map ActKinds.token
             yield! RoleTokens.all |> List.map RoleTokens.token
-            yield! Dispositions.all |> List.map Dispositions.token
+            yield! CaseState.all |> List.map CaseState.token
             yield! CorrectionActions.all |> List.map CorrectionActions.token
             yield! PrincipalKinds.all
             yield! scopes

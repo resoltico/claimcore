@@ -19,9 +19,15 @@ module internal AuthorityDecisions =
             && PrincipalKey.isHuman actor.Principal
             && List.contains Role.Owner view.Installation)
 
-    let private grantProjection role scope active (actor: AuthorityView) (view: AuthorityReadView) =
+    let private grantProjection
+        role
+        subject
+        active
+        (actor: AuthorityView)
+        (view: AuthorityReadView)
+        =
         let caseId =
-            match scope, view.TargetCase with
+            match subject, view.TargetCase with
             | GrantTarget.Installation, _ -> Ok None
             | GrantTarget.CaseReference _, Some record -> Ok(Some record.CaseId)
             | _ -> Error Refusal.ResourceUnavailable
@@ -72,10 +78,10 @@ module internal AuthorityDecisions =
             Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, true))
         | AuthorityAction.User AdmittedAuthorityAct.Disable, Some actor ->
             Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, false))
-        | AuthorityAction.User(AdmittedAuthorityAct.Grant(role, scope)), Some _ ->
-            grantProjection role scope true view.Target view
-        | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, scope)), Some _ ->
-            grantProjection role scope false view.Target view
+        | AuthorityAction.User(AdmittedAuthorityAct.Grant(role, subject)), Some _ ->
+            grantProjection role subject true view.Target view
+        | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, subject)), Some _ ->
+            grantProjection role subject false view.Target view
 
     let private targets installationId target action (view: AuthorityReadView) =
         if
@@ -160,13 +166,13 @@ module internal AuthorityDecisions =
                 match action with
                 | AuthorityAction.ProvisionOwner -> targetId
                 | AuthorityAction.User _ -> LedgerEnvelope.actorId view.Actor
-            Scope = StoredScope.Authority(targetId, RecordedAuthorityActs.kind record.Act)
+            Subject = StoredSubject.Authority(targetId, RecordedAuthorityActs.kind record.Act)
             Snapshot = Array.empty
             Current = None
             Projection = projection
         }
 
-    let private scope installationId principal target action record admit =
+    let private subject installationId principal target action record admit =
         {
             Encode = fun () -> AuthorityRecord.encode record
             Canonical = fun () -> AuthorityRequests.canonical record |> AuthorityRecord.encode
@@ -181,7 +187,7 @@ module internal AuthorityDecisions =
     let private userScope installationId principal (request: AdmittedAuthorityRequest) =
         let record = AuthorityRequests.toRecord request
 
-        scope
+        subject
             installationId
             principal
             request.Target
@@ -214,13 +220,13 @@ module internal AuthorityDecisions =
         let admit bytes _ =
             provisionIdentity installationId operationId bytes view
 
-        let scope =
-            scope installationId target target AuthorityAction.ProvisionOwner record admit
+        let subject =
+            subject installationId target target AuthorityAction.ProvisionOwner record admit
 
         LedgerEnvelope.execute
             installationId
             operationId
-            scope
+            subject
             view.Head
             view.IsFenced
             view.PayloadNonce

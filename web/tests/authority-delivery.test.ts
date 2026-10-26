@@ -12,13 +12,17 @@ const preparedHook = async () => {
   const view = renderHook(
     ({ token }) =>
       useOperation({
-        scope: "AUTHORITY",
+        subject: "AUTHORITY",
         kind: "REGISTER",
         current: null,
         token,
         onLockChange: vi.fn(),
       }),
-    { initialProps: { token: "first" } },
+    {
+      initialProps: {
+        token: "first",
+      },
+    },
   );
   act(() => {
     for (const [path, value] of Object.entries({
@@ -43,7 +47,10 @@ const pending = <T>() => {
   const promise = new Promise<T>((resolve) => {
     finish = resolve;
   });
-  return { promise, finish };
+  return {
+    promise,
+    finish,
+  };
 };
 it("coalesces authority execution before React commits busy state", async () => {
   const completion = pending<Awaited<ReturnType<typeof service.execute>>>();
@@ -71,12 +78,17 @@ it("ignores completion from a superseded session while retaining the exact froze
   act(() => {
     task = view.result.current.execute();
   });
-  view.rerender({ token: "second" });
+  view.rerender({
+    token: "second",
+  });
   expect(view.result.current.priorUncertain).toBe(true);
   await act(async () => {
     completion.finish({
       kind: "deliveryFailure",
-      notice: { kind: "local", reason: "unreachable" },
+      notice: {
+        kind: "local",
+        reason: "unreachable",
+      },
     });
     await task;
   });
@@ -107,14 +119,17 @@ const retryResult = (
 ): ApiResult<ServiceResponse<"operation.execute">> => {
   if (next === "replay") {
     const accepted = authorityAcceptance(prepared);
-    if (accepted.kind !== "outcome" || accepted.value.outcome.tag !== "ACCEPTED") {
+    if (accepted.kind !== "outcome" || accepted.value.outcome.kind !== "ACCEPTED") {
       throw new Error("Acceptance required.");
     }
     return {
       ...accepted,
       value: {
         ...accepted.value,
-        outcome: { tag: "ALREADY_ACCEPTED", data: accepted.value.outcome.data },
+        outcome: {
+          kind: "ALREADY_ACCEPTED",
+          data: accepted.value.outcome.data,
+        },
       },
     };
   }
@@ -122,20 +137,32 @@ const retryResult = (
     return {
       kind: "hostFailure",
       status: 409,
-      failure: { code: "CONTRACT_MISMATCH", phase: "NOT_STARTED" },
+      failure: {
+        code: "CONTRACT_MISMATCH",
+        phase: "NOT_STARTED",
+      },
     };
   }
   const outcome =
     next === "failed"
       ? {
-          tag: "FAILED" as const,
-          data: { code: "CORE_STORE_UNAVAILABLE" as const, action: "RETRY_SAFE" as const },
+          kind: "FAILED" as const,
+          data: {
+            code: "CORE_STORE_UNAVAILABLE" as const,
+            action: "RETRY_SAFE" as const,
+          },
         }
-      : { tag: "REJECTED" as const, data: refusalData[next] };
+      : {
+          kind: "REJECTED" as const,
+          data: refusalData[next],
+        };
   return {
     kind: "outcome",
     status: 200,
-    value: { operationId: prepared.input.operationId, outcome },
+    value: {
+      operationId: prepared.input.operationId,
+      outcome,
+    },
   };
 };
 it.each(["refusal", "conflict", "failed", "not-started", "replay"] as const)(
@@ -143,7 +170,10 @@ it.each(["refusal", "conflict", "failed", "not-started", "replay"] as const)(
   async (next) => {
     const send = vi.spyOn(service, "execute").mockResolvedValueOnce({
       kind: "deliveryFailure",
-      notice: { kind: "local", reason: "unreachable" },
+      notice: {
+        kind: "local",
+        reason: "unreachable",
+      },
     });
     const view = await preparedHook();
     await act(async () => {
@@ -162,7 +192,10 @@ it.each(["refusal", "conflict", "failed", "not-started", "replay"] as const)(
 it("observation cannot resolve pending authority content", async () => {
   vi.spyOn(service, "execute").mockResolvedValue({
     kind: "deliveryFailure",
-    notice: { kind: "local", reason: "unreachable" },
+    notice: {
+      kind: "local",
+      reason: "unreachable",
+    },
   });
   vi.spyOn(service, "observe").mockResolvedValue({
     kind: "outcome",
@@ -194,7 +227,10 @@ it("requires warned discard while unresolved and refuses discard during dispatch
   await act(async () => {
     completion.finish({
       kind: "deliveryFailure",
-      notice: { kind: "local", reason: "unreachable" },
+      notice: {
+        kind: "local",
+        reason: "unreachable",
+      },
     });
     await task;
   });

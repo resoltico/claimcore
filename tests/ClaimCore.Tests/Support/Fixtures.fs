@@ -64,13 +64,13 @@ let actRequest revision act =
     }
 
 let viewFields (snapshot: CaseSnapshot) =
-    match snapshot.View with
-    | CaseView.Live(fields, _) -> fields
-    | CaseView.Erased -> failtest "Expected retained business fields"
+    match snapshot.State with
+    | (CaseState.Active(fields) | CaseState.Voided(fields)) -> fields
+    | CaseState.Erased -> failtest "Expected retained business fields"
 
 let snapshot revision (fields: CaseFields) =
     {
         Reference = fields.CaseReference
         Revision = revision
-        View = CaseView.Live(fields, Disposition.Active)
+        State = CaseState.Active(fields)
     }

@@ -109,7 +109,7 @@ module internal Projections =
             required<string> (CaseProjectionLayout.ordinal BusinessField.CaseReference) row
 
         let view =
-            match required<string> CaseProjectionLayout.dispositionOrdinal row with
+            match required<string> CaseProjectionLayout.stateOrdinal row with
             | "ERASED" ->
                 if
                     row[CaseProjectionLayout.payloadOrdinal ..]
@@ -117,16 +117,16 @@ module internal Projections =
                 then
                     raise (RecordCorruptException "Erased projection retains business fields.")
 
-                CaseView.Erased
-            | "ACTIVE" -> CaseView.Live(fields reference row, Disposition.Active)
-            | "VOIDED" -> CaseView.Live(fields reference row, Disposition.Voided)
-            | _ -> raise (RecordCorruptException "Invalid stored disposition.")
+                CaseState.Erased
+            | "ACTIVE" -> CaseState.Active(fields reference row)
+            | "VOIDED" -> CaseState.Voided(fields reference row)
+            | _ -> raise (RecordCorruptException "Invalid stored state.")
 
         let snapshot =
             {
                 Reference = reference
                 Revision = required<int64> CaseProjectionLayout.revisionOrdinal row
-                View = view
+                State = view
             }
 
         Case.ofAccepted snapshot |> parsed |> ignore
@@ -234,8 +234,8 @@ module internal Projections =
         }
 
     let operationCases entry =
-        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Scope) with
-        | Some(StoredScope.Case(id, _, _, _)) -> [ id ]
+        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Subject) with
+        | Some(StoredSubject.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 
     let actorRow row : Actor =

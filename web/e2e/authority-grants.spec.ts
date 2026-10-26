@@ -82,7 +82,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   await selected.click();
   const value: unknown = await (await reply).json();
   expect(isResponse("authority.grants", value)).toBe(true);
-  if (!isResponse("authority.grants", value) || value.outcome.tag !== "SUCCEEDED") {
+  if (!isResponse("authority.grants", value) || value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected a bounded actor grant page.");
   }
   const view = page.locator('section[aria-labelledby="actor-grants-title"]');

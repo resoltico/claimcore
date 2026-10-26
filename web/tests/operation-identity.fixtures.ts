@@ -16,7 +16,7 @@ export const initial = (): OperationState => ({
   values: valuesFor(),
   baseline: valuesFor(),
   generation: 0,
-  operation: { tag: "EDITING", exposed: null },
+  operation: { kind: "EDITING", exposed: null },
   effects: [],
   notice: null,
   fieldError: null,

@@ -21,7 +21,7 @@ module internal StoredEntries =
         + DatabaseSession.dateExpression "business_date"
         + ",payload_commitment,payload,payload_nonce"
 
-    let private scopes row =
+    let private subjects row =
         let target = DatabaseSession.value<Guid> 9 row
         let act = DatabaseSession.value<string> 5 row
 
@@ -35,8 +35,8 @@ module internal StoredEntries =
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 
-            StoredScope.Authority(target, kind),
-            LedgerScope.Authority { TargetActorId = target; Act = kind }
+            StoredSubject.Authority(target, kind),
+            LedgerSubject.Authority { TargetActorId = target; Act = kind }
         | "CASE" ->
             let revision = DatabaseSession.value<int64> 10 row
 
@@ -46,21 +46,21 @@ module internal StoredEntries =
 
             let date = DatabaseSession.calendarDate 11 row
 
-            StoredScope.Case(target, revision, kind, date),
-            LedgerScope.Case
+            StoredSubject.Case(target, revision, kind, date),
+            LedgerSubject.Case
                 {
                     CaseId = target
                     Revision = revision
                     Act = kind
                     BusinessDate = date
                 }
-        | _ -> raise (RecordCorruptException "Invalid ledger scope.")
+        | _ -> raise (RecordCorruptException "Invalid ledger subject.")
 
     let decode installationId row =
         if DatabaseSession.value<int16> 3 row <> int16 RecordVersions.LedgerEntry then
             raise (RecordCorruptException "Unsupported ledger format.")
 
-        let scope, metadataScope = scopes row
+        let subject, metadataSubject = subjects row
 
         let entry: StoredEntry =
             {
@@ -69,7 +69,7 @@ module internal StoredEntries =
                 OperationId = DatabaseSession.value 6 row
                 ActorId = DatabaseSession.value 7 row
                 RecordedAt = DatabaseSession.recordedInstant 8 row
-                Scope = scope
+                Subject = subject
                 PayloadCommitment = DatabaseSession.value 12 row
                 Payload = DatabaseSession.optional<byte array> 13 row
                 PayloadNonce = DatabaseSession.optional<byte array> 14 row
@@ -85,7 +85,7 @@ module internal StoredEntries =
                     OperationId = entry.OperationId
                     ActorId = entry.ActorId
                     RecordedAt = entry.RecordedAt
-                    Scope = metadataScope
+                    Subject = metadataSubject
                     PayloadCommitment = entry.PayloadCommitment
                 }
         }

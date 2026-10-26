@@ -10,8 +10,3 @@ type Claim =
             Progress: PaymentProgress
             Status: CaseStatus
         }
-
-[<RequireQualifiedAccess; NoComparison>]
-type CaseState =
-    | Live of claim: Claim * disposition: Disposition
-    | Erased

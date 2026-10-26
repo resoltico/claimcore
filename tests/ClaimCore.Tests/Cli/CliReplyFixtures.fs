@@ -54,7 +54,7 @@ let snapshot =
     {
         Reference = "x"
         Revision = 1L
-        View = CaseView.Live(fields, Disposition.Active)
+        State = CaseState.Active(fields)
     }
 
 let receipt =
@@ -65,8 +65,8 @@ let receipt =
                 Sequence = 1L
                 EntryHash = String.replicate 64 "0"
             }
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 {
                     Reference = "x"
                     Revision = 1L

@@ -9,11 +9,11 @@ open ClaimCore.RecordFormat
 
 module internal Persistence =
     let entry connection (entry: EntryDraft) token =
-        let scope, subject, revision, act, date =
-            match entry.Scope with
-            | StoredScope.Authority(target, kind) ->
+        let subjectKind, subjectId, revision, act, date =
+            match entry.Subject with
+            | StoredSubject.Authority(target, kind) ->
                 "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
-            | StoredScope.Case(id, revision, kind, date) ->
+            | StoredSubject.Case(id, revision, kind, date) ->
                 "CASE", id, Some revision, CaseActKinds.token kind, Some date
 
         DatabaseSession.execute
@@ -24,12 +24,12 @@ module internal Persistence =
                 box entry.PreviousHash
                 box entry.EntryHash
                 box (int16 RecordVersions.LedgerEntry)
-                box scope
+                box subjectKind
                 box act
                 box entry.OperationId
                 box entry.ActorId
                 box entry.RecordedAt
-                box subject
+                box subjectId
                 DatabaseSession.parameter revision
                 DatabaseSession.parameter date
                 box entry.PayloadCommitment

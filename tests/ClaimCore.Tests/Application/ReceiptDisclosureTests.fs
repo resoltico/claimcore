@@ -16,10 +16,10 @@ let private disclosure () =
     let reader = actor owner (id 1) [ Role.CaseReader ] []
 
     Expect.isTrue
-        (match (receipt reader current entry).Scope with
-         | ReceiptScope.Case {
-                                 Snapshot = SnapshotDisclosure.Disclosed _
-                             } -> true
+        (match (receipt reader current entry).Subject with
+         | ReceiptSubject.Case {
+                                   Snapshot = SnapshotDisclosure.Disclosed _
+                               } -> true
          | _ -> false)
         "Current read discloses the current snapshot"
 
@@ -60,7 +60,7 @@ let private erased () =
             Snapshot =
                 { current.Snapshot with
                     Revision = 2L
-                    View = CaseView.Erased
+                    State = CaseState.Erased
                 }
         }
 
@@ -116,7 +116,7 @@ let private roles role readable full () =
     let authority = actor owner (id 1) [ role ] []
 
     Expect.equal
-        (LedgerEntries.canObserve owner authority entry.Scope)
+        (LedgerEntries.canObserve owner authority entry.Subject)
         readable
         "Current read authorization"
 

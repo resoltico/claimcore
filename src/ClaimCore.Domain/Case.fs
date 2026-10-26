@@ -11,7 +11,7 @@ type CaseRecord =
         {
             Reference: string
             Revision: int64
-            State: CaseState
+            State: CaseState<Claim>
         }
 
 module private BusinessState =
@@ -227,15 +227,11 @@ module Case =
 
     let validateRequest request = RequestValidation.parse request
 
-    let snapshot (record: CaseRecord) =
+    let snapshot (record: CaseRecord) : CaseSnapshot =
         {
             Reference = record.Reference
             Revision = record.Revision
-            View =
-                match record.State with
-                | CaseState.Erased -> CaseView.Erased
-                | CaseState.Live(claim, disposition) ->
-                    CaseView.Live(BusinessState.fields record.Reference claim, disposition)
+            State = CaseState.map (BusinessState.fields record.Reference) record.State
         }
 
     let ofAccepted (accepted: CaseSnapshot) =
@@ -247,15 +243,17 @@ module Case =
             if accepted.Revision < 1L || accepted.Revision > Revision.Maximum then
                 return! Error RecordViolation.RevisionOutOfRange
             else
+                let restore (fields: CaseFields) ctor =
+                    if fields.CaseReference <> accepted.Reference then
+                        Error RecordViolation.ReferenceMismatch
+                    else
+                        BusinessState.restore fields |> Result.map ctor
+
                 let! state =
-                    match accepted.View with
-                    | CaseView.Erased -> Ok CaseState.Erased
-                    | CaseView.Live(fields, disposition) when
-                        fields.CaseReference = accepted.Reference
-                        ->
-                        BusinessState.restore fields
-                        |> Result.map (fun claim -> CaseState.Live(claim, disposition))
-                    | _ -> Error RecordViolation.ReferenceMismatch
+                    match accepted.State with
+                    | CaseState.Erased -> Ok CaseState.Erased
+                    | CaseState.Active fields -> restore fields CaseState.Active
+                    | CaseState.Voided fields -> restore fields CaseState.Voided
 
                 return
                     {
@@ -269,16 +267,17 @@ module Case =
         match act with
         | CaseAct.Void reason ->
             Validation.admission InputTarget.Reason reason
-            |> Result.map (fun () -> CaseState.Live(claim, Disposition.Voided))
+            |> Result.map (fun () -> CaseState.Voided claim)
         | CaseAct.Reinstate reason ->
             Validation.admission InputTarget.Reason reason
-            |> Result.map (fun () -> CaseState.Live(claim, Disposition.Active))
+            |> Result.map (fun () -> CaseState.Active claim)
         | CaseAct.Erase -> Ok CaseState.Erased
         | _ -> invalidArg (nameof act) "Expected a stewardship act."
 
-    let private transition today act claim disposition =
+    let private transition today act state =
         result {
-            do! Transitions.check (CaseState.Live(claim, disposition)) (CaseActs.kind act)
+            do! Transitions.check state (CaseActs.kind act)
+            let claim = CaseState.fields state |> Option.get
 
             match act with
             | CaseAct.Void _
@@ -287,7 +286,7 @@ module Case =
             | _ ->
                 let! parsed = RequestValidation.business act
                 let! next = BusinessState.transition today parsed claim
-                return CaseState.Live(next, disposition)
+                return CaseState.Active next
         }
 
     let private create today (request: CaseRequest) =
@@ -302,7 +301,7 @@ module Case =
                     {
                         Reference = request.CaseReference
                         Revision = 1L
-                        State = CaseState.Live(claim, Disposition.Active)
+                        State = CaseState.Active claim
                     }
             }
         | _ -> Error Refusal.ResourceUnavailable
@@ -317,8 +316,8 @@ module Case =
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
             | _ when record.Revision = Revision.Maximum -> Error Refusal.RevisionExhausted
-            | CaseState.Live(claim, disposition), act ->
-                transition today act claim disposition
+            | (CaseState.Active _ | CaseState.Voided _) as state, act ->
+                transition today act state
                 |> Result.map (fun state ->
                     { record with
                         Revision = record.Revision + 1L
@@ -342,6 +341,5 @@ module Case =
 
     let correctionActions (record: CaseRecord) group =
         match record.State with
-        | CaseState.Live(claim, Disposition.Active) ->
-            CaseCorrections.availableActions claim.Progress group
+        | CaseState.Active claim -> CaseCorrections.availableActions claim.Progress group
         | _ -> [ CorrectionGroupAction.Keep ]

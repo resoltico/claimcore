@@ -113,7 +113,6 @@ module CatalogCodecs =
     let private scalar =
         tagged
             "Presentation.ScalarRule"
-            "kind"
             [
 
                 variant
@@ -161,7 +160,6 @@ module CatalogCodecs =
     let private input =
         tagged
             "Presentation.FieldInput"
-            "prefill"
             [
                 variant
                     "BLANK"
@@ -226,7 +224,6 @@ module CatalogCodecs =
     let private inputs =
         tagged
             "Presentation.ActInputs"
-            "kind"
             [
                 variant
                     "FIELDS"
@@ -468,7 +465,6 @@ module CatalogCodecs =
     let private bindingKind =
         tagged
             "Presentation.BindingKind"
-            "kind"
             [
                 unitVariant "TEXT" BindingKind.Text
                 unitVariant "INTEGER" BindingKind.Integer
@@ -550,7 +546,7 @@ module CatalogCodecs =
         record (fun endpoint scope kind label meaning confirmation synopsis inputs constants ->
             {
                 CatalogEntry.Endpoint = endpoint
-                Scope = scope
+                Subject = scope
                 Kind = kind
                 LabelId = label
                 MeaningId = meaning
@@ -560,7 +556,7 @@ module CatalogCodecs =
                 Constants = constants
             })
         |> field "endpoint" _.Endpoint text
-        |> field "scope" _.Scope text
+        |> field "subject" _.Subject text
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text

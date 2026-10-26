@@ -5,14 +5,12 @@ import type { Notice } from "../../api/notices";
 import { NoticeView } from "../../presentation/Message";
 import type { ProductMetadata, CaseReceipt } from "../../api/service";
 import { ReceiptFields } from "../../components/ReceiptFields";
-
 type AcceptedOperationProps = {
   definition: ProductMetadata;
   receipt: CaseReceipt;
   message: Notice | null;
   onCommitted: (receipt: CaseReceipt) => void;
 };
-
 export const AcceptedOperation = ({
   definition,
   receipt,
@@ -34,11 +32,17 @@ export const AcceptedOperation = ({
       <h2 ref={heading} tabIndex={-1} id="accepted-title">
         {p.text("ui.acceptedOperation")}
       </h2>
-      <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
+      <p>
+        {p.text("ui.operationAccepted", {
+          operationId: receipt.operationId,
+        })}
+      </p>
       <ReceiptFields
-        scope={receipt.scope}
+        subject={receipt.subject}
         fields={definition.catalog.fields}
-        context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
+        context={p.text("ui.acceptedContext", {
+          operationId: receipt.operationId,
+        })}
       />
       <Button
         onPress={() => {

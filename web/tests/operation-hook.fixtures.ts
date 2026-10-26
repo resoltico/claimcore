@@ -7,15 +7,31 @@ import { review } from "./service-foundation.fixtures";
 export const hook = () =>
   renderHook(
     ({ token, target }) =>
-      useOperation({ scope: "CASE", kind: "CLOSE", current: target, token, onLockChange: vi.fn() }),
-    { initialProps: { token: "token", target: current } },
+      useOperation({
+        subject: "CASE",
+        kind: "CLOSE",
+        current: target,
+        token,
+        onLockChange: vi.fn(),
+      }),
+    {
+      initialProps: {
+        token: "token",
+        target: current,
+      },
+    },
   );
 export const preview = (): ApiResult<ServiceResponse<"operation.preview">> => ({
   kind: "outcome",
   status: 200,
   value: {
     operationId: "10000000-0000-4000-8000-000000000001",
-    outcome: { tag: "REVIEWED", data: { review } },
+    outcome: {
+      kind: "REVIEWED",
+      data: {
+        review,
+      },
+    },
   },
 });
 export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operation.execute">> => ({
@@ -24,7 +40,7 @@ export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operatio
   value: {
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
-      tag: "REJECTED",
+      kind: "REJECTED",
       data: conflict
         ? {
             code: "OPERATION_CONTENT_CONFLICT",
@@ -48,5 +64,8 @@ export const pending = <T>() => {
   const promise = new Promise<T>((resolve) => {
     finish = resolve;
   });
-  return { promise, finish };
+  return {
+    promise,
+    finish,
+  };
 };

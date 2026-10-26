@@ -21,10 +21,7 @@ let private page (outcome: ReadReply<CaseSummaryPage>) =
     | ReadReply.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
-let private reference =
-    function
-    | CaseSummary.Live(value, _, _, _)
-    | CaseSummary.Erased(value, _) -> value
+let private reference (summary: CaseSummary) = summary.Reference
 
 let private setup (database: PostgresFixture.Database) =
     task {

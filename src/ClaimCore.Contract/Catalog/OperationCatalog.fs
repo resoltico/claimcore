@@ -173,13 +173,13 @@ module OperationCatalog =
     let private mutation act body =
         let scope =
             match act with
-            | ActKind.Case _ -> OperationScopes.Case
-            | ActKind.Authority _ -> OperationScopes.Authority
+            | ActKind.Case _ -> OperationSubjects.Case
+            | ActKind.Authority _ -> OperationSubjects.Authority
 
         {
             Endpoint = Api.operationExecute.Id
             Act = Some act
-            Body = obj (("scope", constant scope) :: identity :: body)
+            Body = obj (("kind", constant scope) :: identity :: body)
         }
 
     let private caseEntry kind payload =
@@ -218,7 +218,7 @@ module OperationCatalog =
 
         RecordGroup.token group,
         CatalogShape.Variants(
-            "mode",
+            "kind",
             CatalogSelection.ByChoice(CatalogInputName.Group group),
             branches
         )
@@ -278,7 +278,7 @@ module OperationCatalog =
                 CatalogSelection.ByPresence(technical TechnicalInput.Scope),
                 [
                     "INSTALLATION", obj []
-                    OperationScopes.Case,
+                    OperationSubjects.Case,
                     obj
                         [
                             named
@@ -672,7 +672,7 @@ module OperationCatalog =
 
             {
                 Endpoint = operation.Endpoint
-                Scope = words operation |> List.head |> _.ToUpperInvariant()
+                Subject = words operation |> List.head |> _.ToUpperInvariant()
                 Kind =
                     match operation.Act with
                     | Some act -> ActKinds.token act

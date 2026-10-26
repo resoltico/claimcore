@@ -11,14 +11,12 @@ import { TextField } from "react-aria-components/TextField";
 import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { ReceiptFields } from "../components/ReceiptFields";
-
 type OperationLookupProps = {
   token: string;
   definition: ProductMetadata;
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
 };
-
 const ReceiptView = ({
   receipt,
   definition,
@@ -32,35 +30,35 @@ const ReceiptView = ({
       <p>
         {p.text("ui.observedReceipt", {
           operationId: receipt.operationId,
-          act: p.token(receipt.scope.act),
+          act: p.token(receipt.subject.act),
           actor: receipt.recordedBy,
         })}
       </p>
-      {receipt.scope.kind === "AUTHORITY" ? (
+      {receipt.subject.kind === "AUTHORITY" ? (
         <p>
           {p.text("ui.authorityReceipt", {
-            act: p.token(receipt.scope.act),
-            actor: receipt.scope.targetActorId,
+            act: p.token(receipt.subject.act),
+            actor: receipt.subject.targetActorId,
           })}
         </p>
       ) : (
         <ReceiptFields
-          scope={receipt.scope}
+          subject={receipt.subject}
           fields={definition.catalog.fields}
-          context={p.text("ui.observedContext", { operationId: receipt.operationId })}
+          context={p.text("ui.observedContext", {
+            operationId: receipt.operationId,
+          })}
         />
       )}
     </>
   );
 };
-
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
   message === null ? null : (
     <p className="error" role="alert">
       <NoticeView value={message} />
     </p>
   );
-
 export const OperationLookup = ({
   token,
   definition,

@@ -1,3 +1,4 @@
+import { offerAct } from "../operation/metadata";
 import type { CurrentCase } from "../api/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../api/notices";
@@ -20,7 +21,9 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
     return [];
   }
-  const offer = props.current?.advice.acts.find((item) => item.act === props.values["act.kind"]);
+  const offer = props.current?.advice.acts.find(
+    (item) => offerAct(item) === props.values["act.kind"],
+  );
   const group =
     offer !== undefined && "correction" in offer
       ? Object.entries(offer.correction).find(([name]) =>

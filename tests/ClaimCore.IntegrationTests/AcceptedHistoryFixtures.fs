@@ -17,8 +17,8 @@ let private snapshot reference claimant : CaseSnapshot =
     {
         Reference = reference
         Revision = 1L
-        View =
-            CaseView.Live(
+        State =
+            CaseState.Active(
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
@@ -34,8 +34,7 @@ let private snapshot reference claimant : CaseSnapshot =
                         }
                     Decision = None
                     Payment = None
-                },
-                Disposition.Active
+                }
             )
     }
 
@@ -70,7 +69,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            StoredScope.Case(
+            StoredSubject.Case(
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),
@@ -123,7 +122,9 @@ let private grandfathering (database: PostgresFixture.Database) =
 
         match current with
         | ReadReply.Succeeded {
-                                  Snapshot = { View = CaseView.Live(fields, _) }
+                                  Snapshot = {
+                                                 State = (CaseState.Active(fields) | CaseState.Voided(fields))
+                                             }
                               } ->
             Expect.equal
                 fields.Registration.ClaimantName
@@ -193,10 +194,9 @@ let private assertRetained name entries =
     for entry in entries do
         match entry with
         | HistoryEntry.FullEntry {
-                                     Scope = ReceiptScope.Case {
-                                                                   Snapshot = SnapshotDisclosure.Disclosed(CaseView.Live(fields,
-                                                                                                                         _))
-                                                               }
+                                     Subject = ReceiptSubject.Case {
+                                                                       Snapshot = SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields))
+                                                                   }
                                  } ->
             Expect.equal
                 fields.Registration.ClaimantName
@@ -234,8 +234,8 @@ let private withheldReceipt (receipt: OperationReceipt) =
     let scope = caseReceipt receipt
 
     { receipt with
-        Scope =
-            ReceiptScope.Case
+        Subject =
+            ReceiptSubject.Case
                 { scope with
                     Snapshot = SnapshotDisclosure.Withheld
                 }
@@ -347,7 +347,7 @@ let private retainedPages (database: PostgresFixture.Database) =
         let revisions =
             entries
             |> List.map (function
-                | HistoryEntry.FullEntry { Scope = ReceiptScope.Case c } -> c.Revision
+                | HistoryEntry.FullEntry { Subject = ReceiptSubject.Case c } -> c.Revision
                 | _ -> failtest "Full case receipt")
 
         Expect.equal

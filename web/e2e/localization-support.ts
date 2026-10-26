@@ -66,7 +66,7 @@ export const reviewFrom = (
   value: ServiceResponse<"operation.preview">,
   bytes: Buffer,
 ): ReviewIdentity => {
-  if (value.outcome.tag !== "REVIEWED") {
+  if (value.outcome.kind !== "REVIEWED") {
     throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
   }
   const draft: unknown = JSON.parse(bytes.toString("utf8"));
@@ -95,7 +95,7 @@ const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): 
   if (isHostFailure(payload, status)) {
     return `HOST_${payload.hostFailure.code}_${payload.hostFailure.phase ?? "UNSPECIFIED"}`;
   }
-  return isResponse(endpoint, payload) ? payload.outcome.tag : "UNRECOGNIZED";
+  return isResponse(endpoint, payload) ? payload.outcome.kind : "UNRECOGNIZED";
 };
 const readReply = async (response: APIResponse): Promise<unknown> => {
   if (
@@ -213,8 +213,8 @@ export const expectBusinessFormatRefusal = async (
   try {
     await submit();
     const { outcome } = (await pending.ready).reply;
-    expect(outcome.tag).toBe("REJECTED");
-    if (outcome.tag !== "REJECTED") {
+    expect(outcome.kind).toBe("REJECTED");
+    if (outcome.kind !== "REJECTED") {
       throw new Error("Expected a typed business format refusal.");
     }
     expect(outcome.data.target).toBe(field);

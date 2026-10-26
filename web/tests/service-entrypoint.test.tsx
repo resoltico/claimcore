@@ -13,7 +13,7 @@ it("mounts the Web service browser root", async () => {
       new Response(
         JSON.stringify({
           endpoint: "session",
-          outcome: { tag: "SUCCEEDED", data: { authenticated: false, antiforgeryToken: "token" } },
+          outcome: { kind: "SUCCEEDED", data: { authenticated: false, antiforgeryToken: "token" } },
         }),
         { headers: { "content-type": "application/json" } },
       ),

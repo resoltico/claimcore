@@ -9,9 +9,14 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 1,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", fields, disposition: "ACTIVE" },
+        advice: {
+          acts: caseOffers([]),
+          history: ["SUMMARY", "FULL"],
+        },
+        state: {
+          kind: "ACTIVE",
+          fields,
+        },
       }}
     />,
   );
@@ -21,9 +26,14 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 2,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", fields, disposition: "VOIDED" },
+        advice: {
+          acts: caseOffers([]),
+          history: ["SUMMARY", "FULL"],
+        },
+        state: {
+          kind: "VOIDED",
+          fields,
+        },
       }}
     />,
   );
@@ -31,10 +41,15 @@ it("renders active voided and erased states from the accepted case view", () => 
   rerender(
     <LifecycleStatus
       value={{
-        state: { tag: "ERASED" },
+        state: {
+          kind: "ERASED",
+        },
         caseReference: "CASE-1",
         revision: 3,
-        advice: { acts: caseOffers([]), history: ["SUMMARY"] },
+        advice: {
+          acts: caseOffers([]),
+          history: ["SUMMARY"],
+        },
       }}
     />,
   );

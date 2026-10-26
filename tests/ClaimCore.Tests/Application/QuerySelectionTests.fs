@@ -126,11 +126,11 @@ let private history () =
         (LedgerEntries.canObserve
             owner
             read.Actor
-            (StoredScope.Authority(id 1, AuthorityKind.Register)))
+            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner read.Actor entry.Scope)
+        (LedgerEntries.canObserve owner read.Actor entry.Subject)
         "Case rights observe accepted case metadata"
 
 let private resources () =
@@ -149,7 +149,7 @@ let private resources () =
         { current with
             Snapshot =
                 { current.Snapshot with
-                    View = CaseView.Erased
+                    State = CaseState.Erased
                 }
         }
 
@@ -205,11 +205,14 @@ let private context () =
     let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.Auditor ] ]
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner scoped entry.Scope)
+        (LedgerEntries.canObserve owner scoped entry.Subject)
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse
-        (LedgerEntries.canObserve owner scoped (StoredScope.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve
+            owner
+            scoped
+            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
         "Scoped auditor cannot observe installation authority"
 
     Expect.equal
@@ -218,7 +221,10 @@ let private context () =
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner worker (StoredScope.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve
+            owner
+            worker
+            (StoredSubject.Authority(id 1, AuthorityKind.Register)))
         "Installation owner may observe authority"
 
 [<Tests>]

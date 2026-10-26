@@ -153,7 +153,7 @@ let private frames () =
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "ReceiptScope", "kind", 2; "CaseActOffer", "act", 12 ] do
+    for name, property, count in [ "ReceiptSubject", "kind", 2; "CaseActOffer", "kind", 2 ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 

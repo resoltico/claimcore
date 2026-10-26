@@ -64,8 +64,8 @@ const unacceptedCase = async (page: Page, reference: string) => {
   if (reply.status !== 200 || !isResponse("case.get", reply.payload)) {
     throw new Error("E2E_UNACCEPTED_CASE_READ_INVALID");
   }
-  expect(reply.payload.outcome.tag).toBe("REJECTED");
-  if (reply.payload.outcome.tag === "REJECTED") {
+  expect(reply.payload.outcome.kind).toBe("REJECTED");
+  if (reply.payload.outcome.kind === "REJECTED") {
     expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
   }
 };
@@ -101,8 +101,8 @@ const policyRefusal = async (page: Page, requests: string[]) => {
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const { outcome } = (await pending.ready).reply;
-    expect(outcome.tag).toBe("REJECTED");
-    if (outcome.tag === "REJECTED") {
+    expect(outcome.kind).toBe("REJECTED");
+    if (outcome.kind === "REJECTED") {
       expect(outcome.data.target).toBe("claimantName");
       expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
       expect(outcome.data.limits).toEqual({ maximumCharacters: 200 });

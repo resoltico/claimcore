@@ -18,15 +18,7 @@ let private accepted value =
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private source =
-    """{
-  "endpoint": "operation.execute",
-  "input": {
-    "operationId": "10000000-0000-4000-8000-000000000001",
-    "scope": "AUTHORITY",
-    "target": { "kind": "HUMAN", "issuer": "https://issuer.example/", "subject": "synthetic" },
-    "act": { "kind": "REGISTER" }
-  }
-}"""
+    """{"endpoint":"operation.execute","input":{"kind":"AUTHORITY","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"synthetic"},"act":{"kind":"REGISTER"}}}"""
 
 let private frozen () =
     let original = bytes source
@@ -61,10 +53,7 @@ let private frozen () =
 
 let private preparedEncoding () =
     let literal =
-        source.Replace("synthetic", "synthetic-e\u0301")
-        |> bytes
-        |> Frames.admit
-        |> accepted
+        source.Replace("synthetic", "synthetic-é") |> bytes |> Frames.admit |> accepted
 
     let escaped =
         source.Replace("synthetic", "synth\\u0065tic-\\u0065\\u0301")
@@ -84,7 +73,7 @@ let private preparedEncoding () =
 
     Expect.equal
         subject
-        (Some(JsonValue.String "synthetic-e\u0301"))
+        (Some(JsonValue.String "synthetic-é"))
         "Preparation preserves combining characters without Unicode normalization."
 
     let replay = Frames.encodeInvocation escaped |> Frames.admit |> accepted

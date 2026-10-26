@@ -150,7 +150,7 @@ let private textRequests () =
             }
         opening
             { registration with
-                ClaimantName = "Synthetic\u200bParty"
+                ClaimantName = "Synthetic​Party"
             }
         opening { registration with InsurerName = "" }
     ]

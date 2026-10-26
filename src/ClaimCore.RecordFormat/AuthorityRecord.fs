@@ -37,8 +37,7 @@ module RecordedAuthorityActs =
         all |> List.tryFind (token >> (=) value)
 
 module AuthorityRecord =
-    let private operationVariant make tagMember =
-        let source = make tagMember
+    let private operationVariant source =
 
         {
             Tag = source.Tag
@@ -56,7 +55,6 @@ module AuthorityRecord =
     let private act =
         Codec.tagged
             "RecordedAuthorityAct"
-            "kind"
             ((RecordCodecs.authorityVariants Codec.text |> List.map operationVariant)
              @ [ Codec.unitVariant "PROVISION_OWNER" RecordedAuthorityAct.ProvisionOwner ])
 
@@ -78,10 +76,7 @@ module AuthorityRecord =
             (Codec.integer version version |> Codec.map (fun _ -> ()) (fun () -> version))
 
     let private codec =
-        Codec.tagged
-            "AuthorityRequestRecord.Subject"
-            "kind"
-            [ Codec.variant "AUTHORITY" id Some fields ]
+        Codec.tagged "AuthorityRequestRecord.Subject" [ Codec.variant "AUTHORITY" id Some fields ]
         |> Codec.named "AuthorityRequestRecord"
 
     let private validScope =

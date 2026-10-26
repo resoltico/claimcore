@@ -27,10 +27,7 @@ let private succeeded =
     | ReadReply.Succeeded page -> page
     | _ -> failtest "Missing case page"
 
-let private reference =
-    function
-    | CaseSummary.Live(value, _, _, _)
-    | CaseSummary.Erased(value, _) -> value
+let private reference (summary: CaseSummary) = summary.Reference
 
 let private cursor =
     function
@@ -468,8 +465,8 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let revision =
             function
             | HistoryEntry.FullEntry r ->
-                match r.Scope with
-                | ReceiptScope.Case c -> c.Revision
+                match r.Subject with
+                | ReceiptSubject.Case c -> c.Revision
                 | _ -> failtest "case"
             | _ -> failtest "full"
 

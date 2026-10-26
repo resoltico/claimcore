@@ -13,22 +13,28 @@ for (const status of ["OPENED", "CLOSED"] as const) {
             "CORRECT",
             {
               ...current,
-              state: { ...current.state, fields: { ...current.state.fields, status } },
+              state: {
+                ...current.state,
+                fields: {
+                  ...current.state.fields,
+                  status,
+                },
+              },
             },
             firstId,
           ),
-          "act.groups.registration.mode": registration,
+          "act.groups.registration.kind": registration,
           "act.groups.registration.values.claimantName": "Synthetic replacement",
           "act.groups.registration.values.claimedAmount": "1.0000",
-          "act.groups.decision.mode": decision,
+          "act.groups.decision.kind": decision,
           "act.groups.decision.values.paymentDecisionDate": "2026-09-03",
           "act.groups.decision.values.payableAmount": "2.0000",
           "act.groups.decision.values.payableCurrency": "EUR",
-          "act.groups.payment.mode": payment,
+          "act.groups.payment.kind": payment,
           "act.groups.payment.values.paymentDate": "2026-09-04",
         };
         expect(assembleOperation(values)).toEqual({
-          scope: "CASE",
+          kind: "CASE",
           ...JSON.parse(expected),
         });
       },

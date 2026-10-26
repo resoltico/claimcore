@@ -13,7 +13,7 @@ const loseAcceptedClose = async (page: Page) => {
   try {
     await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
     const { reply } = await pending.ready;
-    if (reply.outcome.tag !== "ACCEPTED") {
+    if (reply.outcome.kind !== "ACCEPTED") {
       throw new Error("Expected real accepted close");
     }
     return reply.operationId;
@@ -34,7 +34,7 @@ for (const reload of [false, true]) {
       () =>
         JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
     );
-    expect(stored).toEqual({ operationId, scope: "CASE", act: "CLOSE" });
+    expect(stored).toEqual({ operationId, kind: "CASE", act: "CLOSE" });
     if (reload) {
       await page.reload();
       await expect(

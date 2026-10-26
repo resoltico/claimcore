@@ -13,16 +13,16 @@ let private codec = Api.caseHistory.Output
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private receipt =
-    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","scope":{"kind":"CASE","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"disclosure":"WITHHELD"}}}"""
+    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","subject":{"kind":"CASE","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}}"""
 
 let private summary =
-    """{"tag":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
+    """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
 
 let private full receipt =
-    "{\"tag\":\"FULL\",\"receipt\":" + receipt + "}"
+    "{\"kind\":\"FULL\",\"receipt\":" + receipt + "}"
 
 let private page entries =
-    "{\"outcome\":{\"tag\":\"SUCCEEDED\",\"data\":{\"entries\":["
+    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"entries\":["
     + String.concat "," entries
     + "],\"nextCursor\":null}}}"
 
@@ -69,16 +69,14 @@ let private pages () =
             "History round trip"
 
     let view =
-        ResponseCodecs.liveState.Write CliReplyFixtures.snapshot.View
+        ResponseCodecs.liveState.Write(
+            LiveCase.ofState CliReplyFixtures.snapshot.State |> Option.get
+        )
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
 
-    for snapshot in
-        [
-            "{\"disclosure\":\"ERASED\"}"
-            "{\"disclosure\":\"DISCLOSED\",\"view\":" + view + "}"
-        ] do
-        let changed = receipt.Replace("{\"disclosure\":\"WITHHELD\"}", snapshot)
+    for snapshot in [ "{\"kind\":\"ERASED\"}"; "{\"kind\":\"DISCLOSED\",\"view\":" + view + "}" ] do
+        let changed = receipt.Replace("{\"kind\":\"WITHHELD\"}", snapshot)
         agrees schema true (page [ full changed ]) |> ignore
 
 let private refused () =
@@ -88,11 +86,11 @@ let private refused () =
         "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-4000-8000-000000000001\",\"act\":\"REGISTER\"}"
 
     let old =
-        """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","scope":"CASE","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"tag":"WITHHELD"}}"""
+        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}"""
 
     let wrongScope =
         receipt.Replace(
-            "{\"kind\":\"CASE\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"disclosure\":\"WITHHELD\"}}",
+            "{\"kind\":\"CASE\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
             authority
         )
 

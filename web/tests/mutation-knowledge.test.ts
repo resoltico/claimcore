@@ -7,7 +7,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     status: 200,
     value: {
       operationId: "11111111-1111-4111-8111-111111111111",
-      outcome: { tag: "OUTCOME_UNKNOWN", data: null },
+      outcome: { kind: "OUTCOME_UNKNOWN", data: null },
     },
   };
   expect(isMutationUncertain(unknown)).toBe(true);
@@ -17,7 +17,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
       status: 200,
       value: {
         operationId: "11111111-1111-4111-8111-111111111111",
-        outcome: { tag: "FAILED", data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" } },
+        outcome: { kind: "FAILED", data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" } },
       },
     }),
   ).toBe(false);

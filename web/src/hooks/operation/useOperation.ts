@@ -23,9 +23,8 @@ import {
   type EffectIdentity,
 } from "../../operation/operationState";
 import type { Notice } from "../../api/notices";
-
 type Options = {
-  scope: "CASE" | "AUTHORITY";
+  subject: "CASE" | "AUTHORITY";
   kind: string;
   current: CurrentCase | null;
   token: string;
@@ -34,18 +33,24 @@ type Options = {
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
-  `${options.scope}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
+  `${options.subject}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
 const fresh = (options: Options, kind = options.kind): OperationState => {
-  const values = initialOperationValues(options.scope, kind, options.current);
+  const values = initialOperationValues(options.subject, kind, options.current);
   return {
     target: targetKey(options),
-    context: { token: options.token, target: targetKey(options) },
+    context: {
+      token: options.token,
+      target: targetKey(options),
+    },
     disclosureToken: options.token,
     disclosureRefused: false,
     values,
     baseline: values,
     generation: 0,
-    operation: { tag: "EDITING", exposed: null },
+    operation: {
+      kind: "EDITING",
+      exposed: null,
+    },
     effects: [],
     notice: null,
     fieldError: null,
@@ -62,20 +67,29 @@ const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
 const completion = (
-  effect: Extract<OperationEffect, { kind: "PREVIEW" | "EXECUTE" }>,
+  effect: Extract<
+    OperationEffect,
+    {
+      kind: "PREVIEW" | "EXECUTE";
+    }
+  >,
   result: Reply,
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (outcome.tag === "ACCEPTED" || outcome.tag === "ALREADY_ACCEPTED") {
+    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return {
         type: "RECORD",
         receipt: outcome.data,
         identity: effect.identity,
       };
     }
-    if (outcome.tag === "REVIEWED") {
-      return { type: "REVIEW", review: outcome.data.review, identity: effect.identity };
+    if (outcome.kind === "REVIEWED") {
+      return {
+        type: "REVIEW",
+        review: outcome.data.review,
+        identity: effect.identity,
+      };
     }
   }
   return {
@@ -83,7 +97,7 @@ const completion = (
     identity: effect.identity,
     notice: resultNotice(result),
     target:
-      result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
+      result.kind === "outcome" && result.value.outcome.kind === "REJECTED"
         ? result.value.outcome.data.target
         : null,
     uncertain: effect.kind === "EXECUTE" && mutationUncertain(result),
@@ -91,7 +105,12 @@ const completion = (
   };
 };
 const runNetwork = async (
-  effect: Extract<OperationEffect, { kind: "PREVIEW" | "EXECUTE" | "RESOLVE" }>,
+  effect: Extract<
+    OperationEffect,
+    {
+      kind: "PREVIEW" | "EXECUTE" | "RESOLVE";
+    }
+  >,
 ): Promise<OperationAction> => {
   if (effect.kind === "RESOLVE") {
     const result = await service.resolve(
@@ -99,11 +118,19 @@ const runNetwork = async (
       effect.identity.token,
     );
     if (result.kind === "outcome") {
-      if (result.value.outcome.tag === "ACCEPTED") {
-        return { type: "RECORD", identity: effect.identity, receipt: result.value.outcome.data };
+      if (result.value.outcome.kind === "ACCEPTED") {
+        return {
+          type: "RECORD",
+          identity: effect.identity,
+          receipt: result.value.outcome.data,
+        };
       }
-      if (result.value.outcome.tag === "NOT_ACCEPTED") {
-        return { type: "NOT_ACCEPTED", identity: effect.identity, id: crypto.randomUUID() };
+      if (result.value.outcome.kind === "NOT_ACCEPTED") {
+        return {
+          type: "NOT_ACCEPTED",
+          identity: effect.identity,
+          id: crypto.randomUUID(),
+        };
       }
     }
     return {
@@ -144,7 +171,10 @@ const useEffects = (
         continue;
       }
       started.current.add(scheduled);
-      dispatch({ type: "EFFECT_STARTED", id: effect.identity.id });
+      dispatch({
+        type: "EFFECT_STARTED",
+        id: effect.identity.id,
+      });
       if (
         effect.identity.token !== options.token ||
         effect.identity.target !== targetKey(options)
@@ -167,7 +197,7 @@ const useEffects = (
 };
 const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) => {
   const locked =
-    state.operation.tag !== "ACCEPTED" &&
+    state.operation.kind !== "ACCEPTED" &&
     (operationSource(state.operation) !== null || dirtyValues(state.values, state.baseline));
   useEffect(() => {
     onLockChange(locked);
@@ -199,7 +229,10 @@ const previewDraft = (
   } catch (error) {
     dispatch({
       type: "REFUSE",
-      notice: { kind: "local", reason: "invalidInput" },
+      notice: {
+        kind: "local",
+        reason: "invalidInput",
+      },
       target: error instanceof ProtocolInputError ? error.path.join(".") : null,
       uncertain: false,
       disclosure: false,
@@ -217,22 +250,36 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
   return {
     edit: (path: string, value: string | boolean) => {
       if (!blocked) {
-        dispatch({ type: "EDIT", path, value, id: crypto.randomUUID() });
+        dispatch({
+          type: "EDIT",
+          path,
+          value,
+          id: crypto.randomUUID(),
+        });
       }
     },
     returnToEdit: () => {
       if (!blocked) {
-        dispatch({ type: "RETURN" });
+        dispatch({
+          type: "RETURN",
+        });
       }
     },
     confirm: (value: boolean) => {
       if (!blocked) {
-        dispatch({ type: "CONFIRM", value });
+        dispatch({
+          type: "CONFIRM",
+          value,
+        });
       }
     },
     discard: (acknowledgedUncertainty = false, kind = options.kind) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
-        dispatch({ type: "RESET", state: fresh(options, kind), abandon: acknowledgedUncertainty });
+        dispatch({
+          type: "RESET",
+          state: fresh(options, kind),
+          abandon: acknowledgedUncertainty,
+        });
       }
     },
     preview: () => (blocked ? Promise.resolve() : previewDraft(state, dispatch, options)),
@@ -241,19 +288,33 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
 const actions = (state: OperationState, dispatch: Dispatch, options: Options) => ({
   ...editing(state, dispatch, options),
   requestDiscard: (kind: string | null) => {
-    dispatch({ type: "DISCARD", kind });
+    dispatch({
+      type: "DISCARD",
+      kind,
+    });
   },
   restoreDisclosure: () => {
-    dispatch({ type: "RESTORE" });
+    dispatch({
+      type: "RESTORE",
+    });
   },
   invalidateDisclosure: () => {
-    dispatch({ type: "INVALIDATE", refused: true });
+    dispatch({
+      type: "INVALIDATE",
+      refused: true,
+    });
   },
   resolve: () => {
-    dispatch({ type: "RESOLVE", identity: identity(options) });
+    dispatch({
+      type: "RESOLVE",
+      identity: identity(options),
+    });
   },
   execute: () => {
-    dispatch({ type: "EXECUTE", identity: identity(options) });
+    dispatch({
+      type: "EXECUTE",
+      identity: identity(options),
+    });
     return Promise.resolve();
   },
 });
@@ -262,7 +323,11 @@ export const useOperation = (options: Options) => {
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
-    dispatch({ type: "CONTEXT", token: options.token, target });
+    dispatch({
+      type: "CONTEXT",
+      token: options.token,
+      target,
+    });
   }, [options.token, target]);
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);

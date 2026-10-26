@@ -15,7 +15,7 @@ const unknown = () =>
 it("fences stale execute acceptance after epoch or target change while retaining uncertain identity", () => {
   const submitting = operationReducer(reviewed(), { type: "EXECUTE", identity: effect("execute") });
   const result = wireReply("operation.execute");
-  if (result.outcome.tag !== "ACCEPTED") {
+  if (result.outcome.kind !== "ACCEPTED") {
     throw new Error("Acceptance example missing");
   }
   for (const context of [
@@ -23,7 +23,7 @@ it("fences stale execute acceptance after epoch or target change while retaining
     { token: "token", target: "CASE:OTHER" },
   ]) {
     const invalidated = operationReducer(submitting, { type: "CONTEXT", ...context });
-    expect(invalidated.operation.tag).toBe("UNRESOLVED");
+    expect(invalidated.operation.kind).toBe("UNRESOLVED");
     const late = operationReducer(invalidated, {
       type: "RECORD",
       receipt: result.outcome.data,

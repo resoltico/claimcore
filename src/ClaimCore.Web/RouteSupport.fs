@@ -50,7 +50,7 @@ module internal RouteSupport =
 
         let tag =
             outcome
-            |> Option.bind (memberText "tag")
+            |> Option.bind (memberText "kind")
             |> Option.defaultWith (fun () -> invalidOp "Missing typed outcome.")
 
         RequestLog.outcome tag context

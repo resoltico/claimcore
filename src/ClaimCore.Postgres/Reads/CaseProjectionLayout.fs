@@ -21,8 +21,8 @@ module internal CaseProjectionLayout =
         FieldTable.rows |> List.partition (fun row -> row.RetainedOnErasure)
 
     let revisionOrdinal = 1 + retained.Length
-    let dispositionOrdinal = revisionOrdinal + 1
-    let payloadOrdinal = dispositionOrdinal + 1
+    let stateOrdinal = revisionOrdinal + 1
+    let payloadOrdinal = stateOrdinal + 1
 
     let private positioned =
         (retained |> List.mapi (fun index row -> row, index + 1))
@@ -92,11 +92,11 @@ module internal CaseProjectionLayout =
             | _ -> box text
 
     let parameters id (snapshot: CaseSnapshot) =
-        let fields, disposition =
-            match snapshot.View with
-            | CaseView.Live(fields, Disposition.Active) -> fields, "ACTIVE"
-            | CaseView.Live(fields, Disposition.Voided) -> fields, "VOIDED"
-            | CaseView.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
+        let fields, state =
+            match snapshot.State with
+            | CaseState.Active(fields) -> fields, "ACTIVE"
+            | CaseState.Voided(fields) -> fields, "VOIDED"
+            | CaseState.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
 
         let values = FieldTable.values fields |> Map.ofList
 
@@ -105,6 +105,6 @@ module internal CaseProjectionLayout =
 
         [ box id ]
         @ (retained |> List.map bind)
-        @ [ box snapshot.Revision; box disposition ]
+        @ [ box snapshot.Revision; box state ]
         @ (payload |> List.map bind)
         |> List.toArray

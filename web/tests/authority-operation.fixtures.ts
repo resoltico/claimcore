@@ -9,13 +9,21 @@ export const authorityPreview = () =>
       value: {
         operationId: prepared.input.operationId,
         outcome: {
-          tag: "REVIEWED",
+          kind: "REVIEWED",
           data: {
             review: {
-              scope: "AUTHORITY",
-              target: null,
-              before: { enabled: false, grants: [] },
-              after: { enabled: true, grants: [] },
+              subject: {
+                kind: "AUTHORITY",
+                target: null,
+                before: {
+                  enabled: false,
+                  grants: [],
+                },
+                after: {
+                  enabled: true,
+                  grants: [],
+                },
+              },
             },
           },
         },
@@ -27,9 +35,9 @@ export const authorityAcceptance = (
 ): ApiResult<ServiceResponse<"operation.execute">> => {
   const value = wireReply("operation.execute", "AUTHORITY");
   if (
-    value.outcome.tag !== "ACCEPTED" ||
-    value.outcome.data.scope.kind !== "AUTHORITY" ||
-    prepared.input.scope !== "AUTHORITY"
+    value.outcome.kind !== "ACCEPTED" ||
+    value.outcome.data.subject.kind !== "AUTHORITY" ||
+    prepared.input.kind !== "AUTHORITY"
   ) {
     throw new Error("Authority fixture required.");
   }
@@ -39,11 +47,14 @@ export const authorityAcceptance = (
     value: {
       operationId: prepared.input.operationId,
       outcome: {
-        tag: "ACCEPTED",
+        kind: "ACCEPTED",
         data: {
           ...value.outcome.data,
           operationId: prepared.input.operationId,
-          scope: { ...value.outcome.data.scope, act: prepared.input.act.kind },
+          subject: {
+            ...value.outcome.data.subject,
+            act: prepared.input.act.kind,
+          },
         },
       },
     },

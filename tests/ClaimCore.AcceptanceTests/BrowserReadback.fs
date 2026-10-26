@@ -21,7 +21,7 @@ let private verifyReceipt reference operationId (current: JsonElement) (receipt:
     let snapshot = scope.GetProperty("snapshot")
 
     Expect.equal
-        (snapshot.GetProperty("disclosure").GetString())
+        (snapshot.GetProperty("kind").GetString())
         "DISCLOSED"
         "Authorized browser snapshot"
 

@@ -29,9 +29,3 @@ type StewardshipActKind =
 type CaseActKind =
     | Business of BusinessActKind
     | Stewardship of StewardshipActKind
-
-/// Stewardship changes the case record without asserting business facts.
-[<RequireQualifiedAccess>]
-type Disposition =
-    | Active
-    | Voided

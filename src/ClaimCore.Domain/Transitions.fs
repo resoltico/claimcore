@@ -60,18 +60,18 @@ module internal Transitions =
 
     /// Existence and revision precedence belong to Case.decide. This total rule
     /// also serves availability, including the erased and already-existing states.
-    let check state kind =
+    let check (state: CaseState<Claim>) kind =
         match state, kind with
         | CaseState.Erased, _ -> Error Refusal.CaseErased
-        | CaseState.Live _, CaseActKind.Business BusinessActKind.Open ->
+        | (CaseState.Active _ | CaseState.Voided _), CaseActKind.Business BusinessActKind.Open ->
             Error Refusal.CaseAlreadyExists
-        | CaseState.Live(_, Disposition.Voided), CaseActKind.Stewardship StewardshipActKind.Void ->
+        | CaseState.Voided _, CaseActKind.Stewardship StewardshipActKind.Void ->
             Error Refusal.AlreadyVoided
-        | CaseState.Live(_, Disposition.Voided), CaseActKind.Business _ -> Error Refusal.CaseVoided
-        | CaseState.Live(_, Disposition.Active),
-          CaseActKind.Stewardship StewardshipActKind.Reinstate -> Error Refusal.NotVoided
-        | CaseState.Live _,
+        | CaseState.Voided _, CaseActKind.Business _ -> Error Refusal.CaseVoided
+        | CaseState.Active _, CaseActKind.Stewardship StewardshipActKind.Reinstate ->
+            Error Refusal.NotVoided
+        | (CaseState.Active _ | CaseState.Voided _),
           CaseActKind.Stewardship(StewardshipActKind.Void | StewardshipActKind.Reinstate | StewardshipActKind.Erase) ->
             Ok()
-        | CaseState.Live(claim, Disposition.Active), CaseActKind.Business kind ->
+        | CaseState.Active claim, CaseActKind.Business kind ->
             business kind claim.Status claim.Progress

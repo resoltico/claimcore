@@ -7,7 +7,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
   vi.mocked(fetch)
     .mockResolvedValueOnce(
       response("case.get", "SUCCEEDED", {
-        state: { tag: "ERASED" },
+        state: { kind: "ERASED" },
         caseReference: "ERASED-1",
         revision: 4,
         advice: { acts: [], history: ["SUMMARY"] },

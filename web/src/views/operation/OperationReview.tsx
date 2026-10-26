@@ -1,3 +1,4 @@
+import { lifecycleLabels } from "../LifecycleStatus";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
@@ -8,7 +9,6 @@ import type { OperationModel } from "../../hooks/operation/useOperation";
 import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../api/types";
 import { renderKey } from "../../presentation/messages";
-import { lifecycleMessageKey } from "../LifecycleStatus";
 type ReviewModel = Pick<
   OperationModel,
   "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
@@ -18,9 +18,9 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
   return (
     <>
       {review.before === null ? null : (
-        <p>{p.text("ui.before", { value: p.text(lifecycleMessageKey(review.before.state)) })}</p>
+        <p>{p.text("ui.before", { value: p.text(lifecycleLabels[review.before.state.kind]) })}</p>
       )}
-      <p>{p.text("ui.after", { value: p.text(lifecycleMessageKey(review.after.state)) })}</p>
+      <p>{p.text("ui.after", { value: p.text(lifecycleLabels[review.after.state.kind]) })}</p>
       <dl className="review-values">
         {review.changes.map((change) => (
           <div key={change.field}>
@@ -47,7 +47,11 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
 const authorityState = resolveSchema(operationDocument, {
   $ref: "#/components/schemas/AuthorityState",
 });
-const AuthorityValues = ({ review }: { review: Extract<Review, { scope: "AUTHORITY" }> }) => {
+const AuthorityValues = ({
+  review,
+}: {
+  review: Extract<Review["subject"], { kind: "AUTHORITY" }>;
+}) => {
   const p = usePresentation();
   const states = [
     ["ui.before", review.before],
@@ -111,10 +115,10 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
     return null;
   }
   const { input } = model.prepared;
-  const schema = selectedSchema(operationDocument, operationDocument, "", { scope: input.scope });
-  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "scope"));
+  const schema = selectedSchema(operationDocument, operationDocument, "", { kind: input.kind });
+  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
   const act = productMetadata.catalog.entries.find(
-    (item) => item.scope === input.scope && item.kind === input.act.kind,
+    (item) => item.subject === input.kind && item.kind === input.act.kind,
   )!;
   return (
     <AccessibleModal
@@ -127,18 +131,18 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
     >
       <>
         <h3>
-          {input.scope === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
+          {input.kind === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
         </h3>
         <p>
-          {input.scope === "CASE"
+          {input.kind === "CASE"
             ? p.actMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
         <ProtocolSummary value={display} document={operationDocument} node={schema} />
-        {model.review.scope === "CASE" ? (
-          <ReviewValues review={model.review} />
+        {model.review.subject.kind === "CASE" ? (
+          <ReviewValues review={model.review.subject} />
         ) : (
-          <AuthorityValues review={model.review} />
+          <AuthorityValues review={model.review.subject} />
         )}
         <ReviewConfirmation model={model} confirmationId={act.confirmationId!} />
       </>

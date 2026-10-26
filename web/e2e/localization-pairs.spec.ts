@@ -32,7 +32,7 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
       expect(reply.status()).toBe(200);
       const payload: unknown = await reply.json();
       expect(isResponse("case.list", payload)).toBe(true);
-      expect((payload as ServiceResponse<"case.list">).outcome.tag).toBe("SUCCEEDED");
+      expect((payload as ServiceResponse<"case.list">).outcome.kind).toBe("SUCCEEDED");
     });
   await Promise.all([
     initialList,

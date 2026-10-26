@@ -6,7 +6,7 @@ import { useRetryablePage } from "../hooks/useRead";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
-  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
+  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
 export const ActorSummary = ({ actor }: { actor: Actor }) => {
   const p = usePresentation();
@@ -40,7 +40,7 @@ const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: 
       if (
         !signal.aborted &&
         result.kind === "outcome" &&
-        result.value.outcome.tag === "SUCCEEDED"
+        result.value.outcome.kind === "SUCCEEDED"
       ) {
         onDisclosureRestored("listing");
       }

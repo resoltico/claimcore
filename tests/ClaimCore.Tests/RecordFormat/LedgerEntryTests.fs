@@ -19,15 +19,15 @@ let private text (element: JsonElement) (name: string) =
     |> Option.ofObj
     |> Option.defaultWith (fun () -> failtest "Missing vector text")
 
-let private scope (vector: JsonElement) =
-    if text vector "scope" = "AUTHORITY" then
-        LedgerScope.Authority
+let private subject (vector: JsonElement) =
+    if text vector "subject" = "AUTHORITY" then
+        LedgerSubject.Authority
             {
                 TargetActorId = Guid.Parse(text vector "subjectId")
                 Act = AuthorityKind.Grant
             }
     else
-        LedgerScope.Case
+        LedgerSubject.Case
             {
                 CaseId = Guid.Parse(text vector "subjectId")
                 Revision = vector.GetProperty("caseRevision").GetInt64()
@@ -44,13 +44,13 @@ let private metadata vector : LedgerMetadata =
         OperationId = Guid.Parse(text vector "operationId")
         ActorId = Guid.Parse(text vector "actorId")
         RecordedAt = DateTimeOffset.Parse(text vector "recordedAt", CultureInfo.InvariantCulture)
-        Scope = scope vector
+        Subject = subject vector
         PayloadCommitment = Convert.FromHexString(text vector "payloadCommitment")
     }
 
 let private caseMetadata (entry: LedgerMetadata) =
-    match entry.Scope with
-    | LedgerScope.Case value -> value
+    match entry.Subject with
+    | LedgerSubject.Case value -> value
     | _ -> failtest "Case seed required"
 
 // These independent encoding vectors are not provisioned authority histories.
@@ -75,7 +75,7 @@ let private expectedPayload vector =
     let payloads = document.RootElement.GetProperty "ledgerPayloads"
 
     let request, snapshot =
-        if text vector "scope" = "CASE" then
+        if text vector "subject" = "CASE" then
             text payloads "caseRequest", text payloads "caseSnapshot" |> Encoding.UTF8.GetBytes
         else
             text payloads "authorityRequest", Array.empty
@@ -160,8 +160,8 @@ let private allMetadataFields () =
                     PayloadCommitment = changedHash entry.PayloadCommitment
                 }
                 { entry with
-                    Scope =
-                        LedgerScope.Authority
+                    Subject =
+                        LedgerSubject.Authority
                             {
                                 TargetActorId = otherId
                                 Act = AuthorityKind.Grant
@@ -169,16 +169,16 @@ let private allMetadataFields () =
                 }
             ]
 
-        let scopes = changedCaseMetadata otherId case
+        let subjects = changedCaseMetadata otherId case
 
         let original = LedgerEntry.hash entry
 
         for candidate in
             changes
-            @ (scopes
+            @ (subjects
                |> List.map (fun value ->
                    { entry with
-                       Scope = LedgerScope.Case value
+                       Subject = LedgerSubject.Case value
                    })) do
             Expect.isTrue
                 (LedgerEntry.hash candidate <> original)
@@ -261,7 +261,7 @@ let tests =
                             AuthorityKind.Enable, 36uy
                             AuthorityKind.Disable, 37uy
                         ] do
-                        let scope =
+                        let subject =
                             {
                                 TargetActorId = entry.ActorId
                                 Act = kind
@@ -269,7 +269,7 @@ let tests =
 
                         let candidate =
                             { entry with
-                                Scope = LedgerScope.Authority scope
+                                Subject = LedgerSubject.Authority subject
                             }
 
                         Expect.equal
@@ -279,9 +279,9 @@ let tests =
 
                         let changed =
                             { candidate with
-                                Scope =
-                                    LedgerScope.Authority
-                                        { scope with
+                                Subject =
+                                    LedgerSubject.Authority
+                                        { subject with
                                             TargetActorId = entry.OperationId
                                         }
                             }
@@ -292,8 +292,8 @@ let tests =
 
                     let invalid =
                         { entry with
-                            Scope =
-                                LedgerScope.Authority
+                            Subject =
+                                LedgerSubject.Authority
                                     {
                                         TargetActorId = Guid.Empty
                                         Act = AuthorityKind.Grant
@@ -404,7 +404,7 @@ let tests =
                             (fun () ->
                                 LedgerEntry.hash
                                     { entry with
-                                        Scope = LedgerScope.Case invalid
+                                        Subject = LedgerSubject.Case invalid
                                     }
                                 |> ignore)
                             "Invalid case metadata refused"))
@@ -454,8 +454,8 @@ let tests =
                         let caseBytes =
                             LedgerEntry.preimage
                                 { entry with
-                                    Scope =
-                                        LedgerScope.Case
+                                    Subject =
+                                        LedgerSubject.Case
                                             { case with
                                                 BusinessDate = DateOnly.MinValue
                                             }
@@ -464,8 +464,8 @@ let tests =
                         let authorityBytes =
                             LedgerEntry.preimage
                                 { entry with
-                                    Scope =
-                                        LedgerScope.Authority
+                                    Subject =
+                                        LedgerSubject.Authority
                                             {
                                                 TargetActorId = entry.ActorId
                                                 Act = AuthorityKind.Grant

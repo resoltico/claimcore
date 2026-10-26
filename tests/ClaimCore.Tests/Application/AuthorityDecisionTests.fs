@@ -130,8 +130,8 @@ let private provision () =
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
-        entry.Scope
-        (StoredScope.Authority(id 104, AuthorityKind.ProvisionOwner))
+        entry.Subject
+        (StoredSubject.Authority(id 104, AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
     let target = actor owner (id 104) [ Role.Owner ] []

@@ -15,8 +15,8 @@ let private snapshot (reference: string) : CaseSnapshot =
     {
         Reference = reference
         Revision = 1L
-        View =
-            CaseView.Live(
+        State =
+            CaseState.Active(
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
@@ -32,8 +32,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                         }
                     Decision = None
                     Payment = None
-                },
-                Disposition.Active
+                }
             )
     }
 
@@ -48,8 +47,7 @@ let private history (snapshot: CaseSnapshot) : CaseHistory =
         Revision = snapshot.Revision
         Snapshot = Some snapshot
         Reference = Some snapshot.Reference
-        Disposition = Disposition.Active
-        Erased = false
+        State = CaseState.Active()
         MissingPayloadAt = None
         PresentPayloadAt = Some 1L
         ErasedAt = None
@@ -87,8 +85,8 @@ let private liveState () =
     let histories = Map.ofList [ a.CaseId, history a.Snapshot ]
 
     let fields =
-        match a.Snapshot.View with
-        | CaseView.Live(fields, _) -> fields
+        match a.Snapshot.State with
+        | (CaseState.Active(fields) | CaseState.Voided(fields)) -> fields
         | _ -> failtest "Live fixture"
 
     for changed in
@@ -106,27 +104,26 @@ let private liveState () =
             { a with
                 Snapshot =
                     { a.Snapshot with
-                        View = CaseView.Erased
+                        State = CaseState.Erased
                     }
             }
             { a with
                 Snapshot =
                     { a.Snapshot with
-                        View = CaseView.Live(fields, Disposition.Voided)
+                        State = CaseState.Voided(fields)
                     }
             }
             { a with
                 Snapshot =
                     { a.Snapshot with
-                        View =
-                            CaseView.Live(
+                        State =
+                            CaseState.Active(
                                 { fields with
                                     Registration =
                                         { fields.Registration with
                                             ClaimedAmount = "2000.00"
                                         }
-                                },
-                                Disposition.Active
+                                }
                             )
                     }
             }
@@ -142,7 +139,7 @@ let private erasedState () =
     let erased =
         { live with
             Revision = 2L
-            View = CaseView.Erased
+            State = CaseState.Erased
         }
 
     let row = stored erased
@@ -151,7 +148,7 @@ let private erasedState () =
         { history live with
             Revision = 2L
             Snapshot = None
-            Erased = true
+            State = CaseState.Erased
             MissingPayloadAt = Some 1L
             PresentPayloadAt = None
             ErasedAt = Some 2L
@@ -177,7 +174,9 @@ let private erasedState () =
 
     for changed in
         [
-            { accepted with Erased = false }
+            { accepted with
+                State = CaseState.Active()
+            }
             { accepted with
                 MissingPayloadAt = None
             }
@@ -238,7 +237,7 @@ let private projectionBindings () =
         {
             Reference = fields.CaseReference
             Revision = 4L
-            View = CaseView.Live(fields, Disposition.Voided)
+            State = CaseState.Voided(fields)
         }
 
     let id = CaseReferenceId.encode installation fields.CaseReference

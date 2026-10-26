@@ -67,8 +67,8 @@ let private snapshot () =
         Expect.equal observed.Reference "Demo-0001" "Independent reference"
         Expect.equal observed.Revision 1L "Independent revision"
 
-        match observed.View with
-        | CaseView.Live(fields, Disposition.Active) ->
+        match observed.State with
+        | CaseState.Active(fields) ->
             Expect.equal fields.Registration.ClaimedAmount "1000" "Canonical monetary spelling"
             Expect.equal fields.Registration.IncidentCountry "LV" "Country syntax"
 
@@ -191,7 +191,7 @@ let private identityForms () =
             let normalize (side: string) =
                 let source = bytes (vector.GetProperty side)
 
-                match text vector "scope" with
+                match text vector "subject" with
                 | "CASE" ->
                     RequestRecord.decode 65536 source
                     |> Fixtures.accepted
@@ -202,7 +202,7 @@ let private identityForms () =
                     |> Fixtures.accepted
                     |> AuthorityRequests.canonical
                     |> AuthorityRecord.encode
-                | _ -> failtest "Unexpected oracle scope"
+                | _ -> failtest "Unexpected oracle subject"
 
             let left, right = normalize "left", normalize "right"
             Expect.equal left (bytes (vector.GetProperty "canonicalLeft")) (text vector "name")

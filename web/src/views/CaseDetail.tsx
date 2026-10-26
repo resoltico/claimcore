@@ -1,3 +1,4 @@
+import { offerAct } from "../operation/metadata";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
@@ -35,7 +36,7 @@ const AvailableActs = ({
       <h2 id="acts-title">{p.text("ui.availableActs")}</h2>
       <div className="actions">
         {current.advice.acts
-          .map((offer) => offer.act)
+          .map(offerAct)
           .filter(isCaseAct)
           .map((act) => (
             <Button
@@ -144,7 +145,7 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
         <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
       )}
       {state === null ? null : <LifecycleStatus value={state} />}
-      {state?.state.tag === "ERASED" ? (
+      {state?.state.kind === "ERASED" ? (
         <p role="status">
           {state.caseReference} · {state.revision}
         </p>

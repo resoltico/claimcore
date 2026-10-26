@@ -4,7 +4,7 @@ import { valuesFor, requestFor } from "./operation-form.fixtures";
 it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
   const values = {
     ...valuesFor("CORRECT"),
-    "act.groups.registration.mode": "REPLACE",
+    "act.groups.registration.kind": "REPLACE",
     "act.groups.registration.values.claimantName": "Before",
     "act.groups.registration.values.claimedAmount": "1.0000",
   };
@@ -12,9 +12,9 @@ it("detaches replacement values and preserves decimal spelling after authoring c
   const prepared = prepareRequest("operation.execute", request);
   Object.assign(values, { "act.groups.registration.values.claimantName": "After" });
   if (
-    request.scope !== "CASE" ||
+    request.kind !== "CASE" ||
     request.act.kind !== "CORRECT" ||
-    request.act.groups.registration.mode !== "REPLACE"
+    request.act.groups.registration.kind !== "REPLACE"
   ) {
     throw new Error("Missing correction fixture.");
   }

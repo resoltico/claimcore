@@ -132,16 +132,12 @@ module internal Queries =
     let private summary installationId (record: StoredCase) =
         CaseDecisions.current installationId record
         |> Result.map (fun _ ->
-            match record.Snapshot.View with
-            | CaseView.Erased ->
-                CaseSummary.Erased(record.Snapshot.Reference, record.Snapshot.Revision)
-            | CaseView.Live(fields, disposition) ->
-                CaseSummary.Live(
-                    record.Snapshot.Reference,
-                    record.Snapshot.Revision,
-                    fields.Status,
-                    disposition
-                ))
+            {
+                CaseSummary.Reference = record.Snapshot.Reference
+                Revision = record.Snapshot.Revision
+                State =
+                    CaseState.map (fun (fields: CaseFields) -> fields.Status) record.Snapshot.State
+            })
 
     let private casePage
         installationId
@@ -297,7 +293,7 @@ module internal Queries =
                 | Error error -> return failure error
                 | Ok view ->
                     match view.Entry with
-                    | Some entry when LedgerEntries.canObserve principal view.Actor entry.Scope ->
+                    | Some entry when LedgerEntries.canObserve principal view.Actor entry.Subject ->
                         if entry.OperationId <> operationId then
                             return ReadReply.Failed CoreFault.StoreIntegrityError
                         else

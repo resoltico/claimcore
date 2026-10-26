@@ -28,7 +28,7 @@ const grants = (
   status: 200,
   value: {
     outcome: {
-      tag: "SUCCEEDED",
+      kind: "SUCCEEDED",
       data: {
         actor: actor(actorId),
         items: [{ role: "CASE_READER", scope: { kind: "CASE", caseReference: reference } }],
@@ -46,7 +46,7 @@ const pending = <T,>() => {
 };
 const reads = (offered = true) => {
   const context = wireReply("context");
-  if (context.outcome.tag !== "SUCCEEDED") {
+  if (context.outcome.kind !== "SUCCEEDED") {
     throw new Error("Context fixture absent.");
   }
   vi.spyOn(service, "context").mockResolvedValue({
@@ -55,7 +55,7 @@ const reads = (offered = true) => {
     value: {
       ...context,
       outcome: {
-        tag: "SUCCEEDED",
+        kind: "SUCCEEDED",
         data: {
           ...context.outcome.data,
           offers: installationOffers(["REGISTER"]),
@@ -69,7 +69,7 @@ const reads = (offered = true) => {
     status: 200,
     value: {
       outcome: {
-        tag: "SUCCEEDED",
+        kind: "SUCCEEDED",
         data: {
           items: [actor(first, "listed"), actor(second, "listed")],
           nextCursor: null,
@@ -176,7 +176,7 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
         status: 200,
         value: {
           outcome: {
-            tag: "REJECTED",
+            kind: "REJECTED",
             data: {
               code: "ACCESS_RESOURCE_UNAVAILABLE",
               action: "NONE_REQUIRED",
@@ -227,7 +227,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
   const request = vi.spyOn(service, "authorityGrants").mockReturnValue(old.promise);
   vi.spyOn(service, "execute").mockImplementation((prepared) => {
     const receipt = wireReply("operation.execute", "AUTHORITY");
-    if (receipt.outcome.tag !== "ACCEPTED" || receipt.outcome.data.scope.kind !== "AUTHORITY") {
+    if (receipt.outcome.kind !== "ACCEPTED" || receipt.outcome.data.subject.kind !== "AUTHORITY") {
       throw new Error("Receipt fixture absent.");
     }
     return Promise.resolve({
@@ -237,13 +237,13 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
         ...receipt,
         operationId: prepared.input.operationId,
         outcome: {
-          tag: "ACCEPTED",
+          kind: "ACCEPTED",
           data: {
             ...receipt.outcome.data,
             operationId: prepared.input.operationId,
             scope: {
-              ...receipt.outcome.data.scope,
-              act: prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
+              ...receipt.outcome.data.subject,
+              act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
             },
           },
         },
@@ -300,7 +300,7 @@ it("resets only the selected grant page on invalid continuation and reloads it w
       status: 200,
       value: {
         outcome: {
-          tag: "REJECTED",
+          kind: "REJECTED",
           data: {
             code: "QUERY_CURSOR_INVALID",
             action: "READ_CURRENT",
@@ -342,7 +342,7 @@ const actorPage = (
   status: 200,
   value: {
     outcome: {
-      tag: "SUCCEEDED",
+      kind: "SUCCEEDED",
       data: { items: ids.map((id) => actor(id, "listed")), nextCursor },
     },
   },

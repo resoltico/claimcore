@@ -25,7 +25,7 @@ const success = <K extends "context" | "authority.list">(
   endpoint: K,
 ): ApiResult<ServiceResponse<K>> => {
   const value = wireReply(endpoint);
-  if (value.outcome.tag !== "SUCCEEDED") {
+  if (value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Missing successful fixture");
   }
   if (endpoint === "context") {
@@ -80,7 +80,7 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   value: {
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
-      tag: "REJECTED",
+      kind: "REJECTED",
       data: {
         code: "ACCESS_RESOURCE_UNAVAILABLE",
         action: "NONE_REQUIRED",
@@ -110,7 +110,7 @@ const prepare = async () => {
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = () => {
   const response = wireReply("context");
-  if (response.outcome.tag !== "SUCCEEDED") {
+  if (response.outcome.kind !== "SUCCEEDED") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -337,10 +337,10 @@ it.each([
 );
 const authorityReceipt = () => {
   const accepted = wireReply("operation.execute", "AUTHORITY");
-  if (accepted.outcome.tag !== "ACCEPTED" || accepted.outcome.data.scope.kind !== "AUTHORITY") {
+  if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "AUTHORITY") {
     throw new Error("Missing authority receipt fixture");
   }
-  return { ...accepted.outcome.data, scope: accepted.outcome.data.scope };
+  return { ...accepted.outcome.data, scope: accepted.outcome.data.subject };
 };
 const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
   const receipt = authorityReceipt();
@@ -359,7 +359,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
               value: {
                 operationId: prepared.input.operationId,
                 outcome: {
-                  tag: "OUTCOME_UNKNOWN",
+                  kind: "OUTCOME_UNKNOWN",
                   data: null,
                 },
               },
@@ -373,13 +373,13 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
         value: {
           operationId: prepared.input.operationId,
           outcome: {
-            tag: "ALREADY_ACCEPTED",
+            kind: "ALREADY_ACCEPTED",
             data: {
               ...receipt,
               operationId: prepared.input.operationId,
               scope: {
-                ...receipt.scope,
-                act: prepared.input.scope === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
+                ...receipt.subject,
+                act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
               },
             },
           },

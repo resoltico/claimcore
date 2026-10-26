@@ -34,7 +34,7 @@ let private receipt scope =
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = other
-        Scope = scope
+        Subject = scope
     }
 
 let private matches value =
@@ -51,28 +51,28 @@ let private matches value =
             })
 
 let private contradictions () =
-    let original = receipt (ReceiptScope.Case caseReceipt)
+    let original = receipt (ReceiptSubject.Case caseReceipt)
     Expect.isTrue (matches original) "ASCII case identity and successor revision correlate."
 
     let invalid =
         [
             { original with OperationId = other }
             receipt (
-                ReceiptScope.Authority
+                ReceiptSubject.Authority
                     {
                         TargetActorId = other
                         Act = AuthorityKind.Enable
                     }
             )
             receipt (
-                ReceiptScope.Case
+                ReceiptSubject.Case
                     { caseReceipt with
                         Reference = "SYNTHETIC-2"
                     }
             )
-            receipt (ReceiptScope.Case { caseReceipt with Revision = 2L })
+            receipt (ReceiptSubject.Case { caseReceipt with Revision = 2L })
             receipt (
-                ReceiptScope.Case
+                ReceiptSubject.Case
                     { caseReceipt with
                         Act = CaseActKind.Business BusinessActKind.Reopen
                     }
@@ -90,7 +90,7 @@ let private observation () =
 
     for actual, expected in [ id, true; other, false ] do
         let value =
-            { receipt (ReceiptScope.Case caseReceipt) with
+            { receipt (ReceiptSubject.Case caseReceipt) with
                 OperationId = actual
             }
 

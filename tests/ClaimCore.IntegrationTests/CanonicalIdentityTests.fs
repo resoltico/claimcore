@@ -57,7 +57,7 @@ let private casePairs (database: PostgresFixture.Database) =
 
         let cases =
             document.RootElement.GetProperty("canonicalIdentity").EnumerateArray()
-            |> Seq.filter (fun value -> value.GetProperty("scope").GetString() = "CASE")
+            |> Seq.filter (fun value -> value.GetProperty("subject").GetString() = "CASE")
             |> Seq.choose (fun vector ->
                 let left = caseInput vector "left"
 
@@ -109,7 +109,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
         let cases =
             values
-            |> List.filter (fun value -> value.GetProperty("scope").GetString() = "AUTHORITY")
+            |> List.filter (fun value -> value.GetProperty("subject").GetString() = "AUTHORITY")
 
         Expect.equal cases.Length 2 "Both reference-bearing authority acts"
         let target = (authorityInput cases.Head "left").Target
@@ -144,7 +144,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
             Expect.equal
                 authored
                 (encoded vector "left")
-                "Authority history keeps authored scope spelling"
+                "Authority history keeps authored subject spelling"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =

@@ -16,7 +16,7 @@ export type PresentationDefinitions = Readonly<{
   authorityFields: ReadonlyArray<CatalogText & { name: string }>;
   entries: ReadonlyArray<
     CatalogText & {
-      scope: string;
+      subject: string;
       kind: string;
       inputs: ReadonlyArray<
         CatalogText & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
@@ -42,12 +42,12 @@ const metadata = (
       break;
     case "act":
       definition = definitions.entries.find(
-        (candidate) => candidate.scope === "CASE" && candidate.kind === name,
+        (candidate) => candidate.subject === "CASE" && candidate.kind === name,
       );
       break;
     case "authority":
       definition = definitions.entries.find(
-        (candidate) => candidate.scope === "AUTHORITY" && candidate.kind === name,
+        (candidate) => candidate.subject === "AUTHORITY" && candidate.kind === name,
       );
       break;
     case "group":
@@ -76,7 +76,7 @@ const token = (
   }
   return metadata(
     preferences,
-    definitions.entries.some((item) => item.scope === "AUTHORITY" && item.kind === value)
+    definitions.entries.some((item) => item.subject === "AUTHORITY" && item.kind === value)
       ? "authority"
       : "act",
     value,

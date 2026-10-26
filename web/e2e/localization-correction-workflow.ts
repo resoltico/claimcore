@@ -88,21 +88,21 @@ const acceptSetup = async (
     throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
   }
   const { outcome } = reply.payload;
-  if (outcome.tag !== "ACCEPTED") {
-    throw new Error(`E2E_CORRECTION_SETUP_${outcome.tag}`);
+  if (outcome.kind !== "ACCEPTED") {
+    throw new Error(`E2E_CORRECTION_SETUP_${outcome.kind}`);
   }
-  if (outcome.data.scope.kind !== "CASE") {
+  if (outcome.data.subject.kind !== "CASE") {
     throw new Error("Expected case receipt.");
   }
-  const receipt: CaseReceipt = { ...outcome.data, scope: outcome.data.scope };
+  const receipt: CaseReceipt = { ...outcome.data, subject: outcome.data.subject };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  expect(receipt.scope.caseReference).toBe(request.caseReference);
-  expect(receipt.scope.act).toBe(request.act.kind);
-  expect(receipt.scope.revision).toBe(revision);
-  expect(receipt.scope.snapshot).toEqual({
-    disclosure: "DISCLOSED",
-    view: { tag: "LIVE", disposition: "ACTIVE", fields },
+  expect(receipt.subject.caseReference).toBe(request.caseReference);
+  expect(receipt.subject.act).toBe(request.act.kind);
+  expect(receipt.subject.revision).toBe(revision);
+  expect(receipt.subject.snapshot).toEqual({
+    kind: "DISCLOSED",
+    view: { kind: "ACTIVE", fields },
   });
   return receipt;
 };
@@ -116,7 +116,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       page,
       token,
       {
-        scope: "CASE",
+        kind: "CASE",
         operationId: randomUUID(),
         caseReference: reference,
         expectedRevision: revision,
@@ -125,7 +125,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       step.fields,
     );
     const { recordedBy: acceptedActor } = receipt;
-    const acceptedRevision = receipt.scope.revision;
+    const acceptedRevision = receipt.subject.revision;
     if (recordedBy !== undefined) {
       expect(acceptedActor).toBe(recordedBy);
     }
@@ -143,7 +143,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   await startAct(page, "Correct case facts");
   await selectLanguage(page, language);
   for (const [group, mode] of Object.entries(modes)) {
-    await page.locator(`[name="act.groups.${group}.mode"]`).selectOption(mode);
+    await page.locator(`[name="act.groups.${group}.kind"]`).selectOption(mode);
   }
   const replacements = {
     registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
@@ -175,7 +175,7 @@ export const currentCase = async (page: Page, caseReference: string) => {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
   }
   const { payload } = result;
-  if (payload.outcome.tag !== "SUCCEEDED" || payload.outcome.data.state.tag !== "LIVE") {
+  if (payload.outcome.kind !== "SUCCEEDED" || payload.outcome.data.state.kind === "ERASED") {
     throw new Error("E2E_CORRECTION_CASE_MISSING");
   }
   return { revision: payload.outcome.data.revision, fields: payload.outcome.data.state.fields };
@@ -193,7 +193,7 @@ export const history = async (page: Page, caseReference: string) => {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
   const { payload } = result;
-  if (payload.outcome.tag !== "SUCCEEDED") {
+  if (payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_CORRECTION_HISTORY_MISSING");
   }
   return payload.outcome.data.entries;

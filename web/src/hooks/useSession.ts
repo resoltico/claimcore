@@ -19,7 +19,7 @@ export type SessionState =
 type SessionResponse = ServiceResponse<"session"> | ServiceResponse<"session.logout">;
 
 const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
-  result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
+  result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
     ? result.value.outcome.data
     : null;
 
@@ -83,7 +83,7 @@ export const useSession = () => {
       return;
     }
     const value =
-      result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
+      result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
         ? {
             authenticated: false,
             antiforgeryToken: null,

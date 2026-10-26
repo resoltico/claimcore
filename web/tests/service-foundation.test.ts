@@ -12,8 +12,14 @@ describe("core act metadata", () => {
     const current = {
       caseReference: fields.caseReference,
       revision: 1,
-      advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] as const },
-      state: { tag: "LIVE" as const, disposition: "ACTIVE" as const, fields },
+      advice: {
+        acts: caseOffers([]),
+        history: ["SUMMARY", "FULL"] as const,
+      },
+      state: {
+        kind: "ACTIVE" as const,
+        fields,
+      },
     };
     const values = initialOperationValues(
       "CASE",
@@ -29,11 +35,13 @@ describe("core act metadata", () => {
       "10000000-0000-4000-8000-000000000001",
     );
     expect(assembleOperation(close)).toEqual({
-      scope: "CASE",
+      kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,
       expectedRevision: 1,
-      act: { kind: "CLOSE" },
+      act: {
+        kind: "CLOSE",
+      },
     });
   });
 });
@@ -56,14 +64,26 @@ describe("catalogue-bound requests", () => {
       new Response(
         JSON.stringify({
           ...valid,
-          outcome: { tag: "SUCCEEDED", data: { items: null, nextCursor: null } },
+          outcome: {
+            kind: "SUCCEEDED",
+            data: {
+              items: null,
+              nextCursor: null,
+            },
+          },
         }),
         {
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+          },
         },
       ),
       wireResponse("case.get"),
-      new Response(JSON.stringify(valid), { headers: { "content-type": "application/jsonp" } }),
+      new Response(JSON.stringify(valid), {
+        headers: {
+          "content-type": "application/jsonp",
+        },
+      }),
     ]) {
       vi.mocked(fetch).mockResolvedValueOnce(response);
       expect((await service.list(null, 50, "csrf")).kind).toBe("deliveryFailure");

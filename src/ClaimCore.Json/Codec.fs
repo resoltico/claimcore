@@ -136,6 +136,13 @@ module Codec =
             Schema = Schema.String(None, None, Some minimum, Some maximum)
         }
 
+    /// Registers the codec's schema once under a name and refers to it from users.
+    let named name (codec: Codec<'T>) : Codec<'T> =
+        { codec with
+            Schema = Schema.Ref name
+            Definitions = Map.add name codec.Schema codec.Definitions
+        }
+
     let uuid: Codec<Guid> =
         {
             Read =
@@ -163,6 +170,7 @@ module Codec =
                 )
             Definitions = Map.empty
         }
+        |> named "Uuid"
 
     let integer minimum maximum : Codec<int64> =
         if
@@ -306,13 +314,6 @@ module Codec =
             Definitions = codec.Definitions
         }
 
-    /// Registers the codec's schema once under a name and refers to it from users.
-    let named name (codec: Codec<'T>) : Codec<'T> =
-        { codec with
-            Schema = Schema.Ref name
-            Definitions = Map.add name codec.Schema codec.Definitions
-        }
-
     let map read write (codec: Codec<'T>) : Codec<'U> =
         {
             Read = fun path element -> codec.Read path element |> Result.map read
@@ -436,8 +437,8 @@ module Codec =
         (ctor: 'P -> 'U)
         (tryGet: 'U -> 'P option)
         (fields: Fields<'P, 'P>)
-        tagMember
         : Variant<'U> =
+        let tagMember = "kind"
         let members = tagMember :: (fields.Properties |> List.map fst)
 
         {
@@ -463,20 +464,16 @@ module Codec =
         }
 
     /// A case that carries nothing but its tag.
-    let unitVariant tag (value: 'U) tagMember : Variant<'U> =
+    let unitVariant tag (value: 'U) : Variant<'U> =
         variant
             tag
             (fun () -> value)
             (fun candidate -> if candidate = value then Some() else None)
             (record ())
-            tagMember
 
-    let tagged
-        (name: string)
-        (tagMember: string)
-        (variants: (string -> Variant<'U>) list)
-        : Codec<'U> =
-        let cases = variants |> List.map (fun make -> make tagMember)
+    let tagged (name: string) (variants: Variant<'U> list) : Codec<'U> =
+        let tagMember = "kind"
+        let cases = variants
         let caseName (case: Variant<'U>) = name + "." + case.Tag
 
         let definitions =
@@ -562,47 +559,6 @@ module Codec =
                 |> Map.add name (Schema.OneOf(cases |> List.map _.VariantSchema, None))
         }
 
-    let rec private literalTokens =
-        function
-        | Schema.Const token -> [ token ]
-        | Schema.OneOf(variants, None) -> variants |> List.collect literalTokens
-        | _ -> invalidArg "codec" "A discriminator requires closed string tokens."
-
-    let private discriminatorMapping propertyName definitions =
-        function
-        | Schema.Ref name ->
-            match Map.find name definitions with
-            | Schema.Object(properties, _) ->
-                properties
-                |> List.find (fst >> (=) propertyName)
-                |> snd
-                |> literalTokens
-                |> List.map (fun token -> token, name)
-            | _ -> invalidArg "codec" "A discriminator branch must be a named object."
-        | _ -> invalidArg "codec" "A discriminator branch must be named."
-
-    /// Derives tag mappings from the same fixed or enumerated member used by each branch codec.
-    let discriminated propertyName (codec: Codec<'T>) =
-        match codec.Schema with
-        | Schema.Ref name ->
-            match Map.find name codec.Definitions with
-            | Schema.OneOf(variants, None) ->
-                let mapping =
-                    variants |> List.collect (discriminatorMapping propertyName codec.Definitions)
-
-                if (mapping |> List.map fst |> Set.ofList).Count <> mapping.Length then
-                    invalidArg "codec" "Discriminator tokens must select one branch."
-
-                { codec with
-                    Definitions =
-                        Map.add
-                            name
-                            (Schema.OneOf(variants, Some(propertyName, mapping)))
-                            codec.Definitions
-                }
-            | _ -> invalidArg "codec" "A discriminator requires a named choice."
-        | _ -> invalidArg "codec" "A discriminator requires a named choice."
-
     let rec private objectShape definitions =
         function
         | Schema.Ref name -> objectShape definitions (Map.find name definitions)
@@ -640,9 +596,6 @@ module Codec =
     let withFormat format codec =
         let number = integer format format |> map (fun _ -> ()) (fun () -> format)
         withMember "format" number codec
-
-    let withScope scope codec =
-        withMember "scope" (constant scope) codec
 
     // ----- bytes --------------------------------------------------------------------------
 

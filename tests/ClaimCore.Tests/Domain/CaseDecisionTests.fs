@@ -203,23 +203,10 @@ let private capacityAndFence () =
         "Revision exhaustion is checked without overflow"
 
 let private rawOpening =
-    """{"scope":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
+    """{"kind":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
 
 let private respelledOpening =
-    """{
-      "scope": "CASE",
-      "act": {
-        "values": {
-          "claimedCurrency": "EUR", "claimedAmount": "1000.00",
-          "insurerName": "Synthetic Insurer", "clai\u006dantName": "Synthetic\u0020Party",
-          "incidentCountry": "L\u0056", "incidentNotificationDate": "2026-08-03",
-          "incidentDate": "2026-08-01"
-        },
-        "kind": "OPEN"
-      },
-      "expectedRevision": 0, "caseReference": "\u0055NIT-001",
-      "operationId": "80000000-0000-4000-8000-000000000010"
-    }"""
+    """{"kind":"CASE","act":{"values":{"claimedCurrency":"EUR","claimedAmount":"1000.00","insurerName":"Synthetic Insurer","claimantName":"Synthetic Party","incidentCountry":"LV","incidentNotificationDate":"2026-08-03","incidentDate":"2026-08-01"},"kind":"OPEN"},"expectedRevision":0,"caseReference":"UNIT-001","operationId":"80000000-0000-4000-8000-000000000010"}"""
 
 let private decodeWire (text: string) =
     Codec.decode

@@ -215,31 +215,31 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "incidentDate"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "incidentNotificationDate"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "incidentCountry"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "claimantName"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "insurerName"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "claimedAmount"
           },
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "claimedCurrency"
           }
         ]
@@ -254,37 +254,37 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "incidentDate",
             "currentField": "incidentDate"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "incidentNotificationDate",
             "currentField": "incidentNotificationDate"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "incidentCountry",
             "currentField": "incidentCountry"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "claimantName",
             "currentField": "claimantName"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "insurerName",
             "currentField": "insurerName"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "claimedAmount",
             "currentField": "claimedAmount"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "claimedCurrency",
             "currentField": "claimedCurrency"
           }
@@ -309,37 +309,37 @@
             ],
             "replaceFields": [
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "incidentDate",
                 "currentField": "incidentDate"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "incidentNotificationDate",
                 "currentField": "incidentNotificationDate"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "incidentCountry",
                 "currentField": "incidentCountry"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "claimantName",
                 "currentField": "claimantName"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "insurerName",
                 "currentField": "insurerName"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "claimedAmount",
                 "currentField": "claimedAmount"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "claimedCurrency",
                 "currentField": "claimedCurrency"
               }
@@ -356,17 +356,17 @@
             ],
             "replaceFields": [
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "paymentDecisionDate",
                 "currentField": "paymentDecisionDate"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "payableAmount",
                 "currentField": "payableAmount"
               },
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "payableCurrency",
                 "currentField": "payableCurrency"
               }
@@ -383,7 +383,7 @@
             ],
             "replaceFields": [
               {
-                "prefill": "CURRENT_FIELD",
+                "kind": "CURRENT_FIELD",
                 "fieldName": "paymentDate",
                 "currentField": "paymentDate"
               }
@@ -401,17 +401,17 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "paymentDecisionDate",
             "currentField": "paymentDecisionDate"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "payableAmount",
             "currentField": "payableAmount"
           },
           {
-            "prefill": "CURRENT_FIELD",
+            "kind": "CURRENT_FIELD",
             "fieldName": "payableCurrency",
             "currentField": "payableCurrency"
           }
@@ -437,7 +437,7 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "paymentDate"
           }
         ]
@@ -482,7 +482,7 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "reason"
           }
         ]
@@ -497,7 +497,7 @@
         "kind": "FIELDS",
         "fields": [
           {
-            "prefill": "BLANK",
+            "kind": "BLANK",
             "fieldName": "reason"
           }
         ]
@@ -967,7 +967,7 @@
   "entries": [
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "OPEN",
       "labelId": "act.OPEN.label",
       "meaningId": "act.OPEN.meaning",
@@ -1183,7 +1183,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -1207,7 +1207,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "AMEND_REGISTRATION",
       "labelId": "act.AMEND_REGISTRATION.label",
       "meaningId": "act.AMEND_REGISTRATION.meaning",
@@ -1465,7 +1465,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -1482,7 +1482,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "CORRECT",
       "labelId": "act.CORRECT.label",
       "meaningId": "act.CORRECT.meaning",
@@ -1555,13 +1555,13 @@
           "source": "EXPECTED_REVISION"
         },
         {
-          "identity": "act.groups.registration.mode",
+          "identity": "act.groups.registration.kind",
           "field": null,
           "path": [
             "act",
             "groups",
             "registration",
-            "mode"
+            "kind"
           ],
           "kind": {
             "kind": "GROUP",
@@ -1601,7 +1601,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1639,7 +1639,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1677,7 +1677,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1715,7 +1715,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1753,7 +1753,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1791,7 +1791,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1829,7 +1829,7 @@
                 "act",
                 "groups",
                 "registration",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1849,13 +1849,13 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.decision.mode",
+          "identity": "act.groups.decision.kind",
           "field": null,
           "path": [
             "act",
             "groups",
             "decision",
-            "mode"
+            "kind"
           ],
           "kind": {
             "kind": "GROUP",
@@ -1896,7 +1896,7 @@
                 "act",
                 "groups",
                 "decision",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1934,7 +1934,7 @@
                 "act",
                 "groups",
                 "decision",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1972,7 +1972,7 @@
                 "act",
                 "groups",
                 "decision",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -1992,13 +1992,13 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.payment.mode",
+          "identity": "act.groups.payment.kind",
           "field": null,
           "path": [
             "act",
             "groups",
             "payment",
-            "mode"
+            "kind"
           ],
           "kind": {
             "kind": "GROUP",
@@ -2039,7 +2039,7 @@
                 "act",
                 "groups",
                 "payment",
-                "mode"
+                "kind"
               ],
               "value": "REPLACE"
             }
@@ -2062,7 +2062,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2079,7 +2079,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "DECIDE",
       "labelId": "act.DECIDE.label",
       "meaningId": "act.DECIDE.meaning",
@@ -2233,7 +2233,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2250,7 +2250,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "WITHDRAW_DECISION",
       "labelId": "act.WITHDRAW_DECISION.label",
       "meaningId": "act.WITHDRAW_DECISION.meaning",
@@ -2326,7 +2326,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2343,7 +2343,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "RECORD_PAYMENT",
       "labelId": "act.RECORD_PAYMENT.label",
       "meaningId": "act.RECORD_PAYMENT.meaning",
@@ -2442,7 +2442,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2459,7 +2459,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "CLEAR_PAYMENT",
       "labelId": "act.CLEAR_PAYMENT.label",
       "meaningId": "act.CLEAR_PAYMENT.meaning",
@@ -2535,7 +2535,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2552,7 +2552,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "CLOSE",
       "labelId": "act.CLOSE.label",
       "meaningId": "act.CLOSE.meaning",
@@ -2628,7 +2628,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2645,7 +2645,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "REOPEN",
       "labelId": "act.REOPEN.label",
       "meaningId": "act.REOPEN.meaning",
@@ -2721,7 +2721,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2738,7 +2738,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "VOID",
       "labelId": "act.VOID.label",
       "meaningId": "act.VOID.meaning",
@@ -2836,7 +2836,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2853,7 +2853,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "REINSTATE",
       "labelId": "act.REINSTATE.label",
       "meaningId": "act.REINSTATE.meaning",
@@ -2951,7 +2951,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -2968,7 +2968,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "ERASE",
       "labelId": "act.ERASE.label",
       "meaningId": "act.ERASE.meaning",
@@ -3044,7 +3044,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "CASE",
           "branches": []
@@ -3061,7 +3061,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "REGISTER",
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
@@ -3161,7 +3161,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "AUTHORITY",
           "branches": []
@@ -3178,7 +3178,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "GRANT",
       "labelId": "act.GRANT.label",
       "meaningId": "act.GRANT.meaning",
@@ -3364,7 +3364,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "AUTHORITY",
           "branches": []
@@ -3381,7 +3381,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "REVOKE",
       "labelId": "act.REVOKE.label",
       "meaningId": "act.REVOKE.meaning",
@@ -3567,7 +3567,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "AUTHORITY",
           "branches": []
@@ -3584,7 +3584,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "ENABLE",
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
@@ -3684,7 +3684,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "AUTHORITY",
           "branches": []
@@ -3701,7 +3701,7 @@
     },
     {
       "endpoint": "operation.execute",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "DISABLE",
       "labelId": "act.DISABLE.label",
       "meaningId": "act.DISABLE.meaning",
@@ -3801,7 +3801,7 @@
       "constants": [
         {
           "path": [
-            "scope"
+            "kind"
           ],
           "value": "AUTHORITY",
           "branches": []
@@ -3818,7 +3818,7 @@
     },
     {
       "endpoint": "case.get",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "case.get",
       "labelId": "cli.read.case.get.label",
       "meaningId": "cli.read.case.get.meaning",
@@ -3853,7 +3853,7 @@
     },
     {
       "endpoint": "case.list",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "case.list",
       "labelId": "cli.read.case.list.label",
       "meaningId": "cli.read.case.list.meaning",
@@ -3903,7 +3903,7 @@
     },
     {
       "endpoint": "case.history",
-      "scope": "CASE",
+      "subject": "CASE",
       "kind": "case.history",
       "labelId": "cli.read.case.history.label",
       "meaningId": "cli.read.case.history.meaning",
@@ -3999,7 +3999,7 @@
     },
     {
       "endpoint": "operation.observe",
-      "scope": "OPERATION",
+      "subject": "OPERATION",
       "kind": "operation.observe",
       "labelId": "cli.read.operation.observe.label",
       "meaningId": "cli.read.operation.observe.meaning",
@@ -4032,7 +4032,7 @@
     },
     {
       "endpoint": "operation.resolve",
-      "scope": "OPERATION",
+      "subject": "OPERATION",
       "kind": "operation.resolve",
       "labelId": "cli.read.operation.resolve.label",
       "meaningId": "cli.read.operation.resolve.meaning",
@@ -4065,7 +4065,7 @@
     },
     {
       "endpoint": "authority.list",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "authority.list",
       "labelId": "cli.read.authority.list.label",
       "meaningId": "cli.read.authority.list.meaning",
@@ -4115,7 +4115,7 @@
     },
     {
       "endpoint": "authority.grants",
-      "scope": "AUTHORITY",
+      "subject": "AUTHORITY",
       "kind": "authority.grants",
       "labelId": "cli.read.authority.grants.label",
       "meaningId": "cli.read.authority.grants.meaning",
@@ -4184,7 +4184,7 @@
     },
     {
       "endpoint": "context",
-      "scope": "CONTEXT",
+      "subject": "CONTEXT",
       "kind": "context",
       "labelId": "cli.read.context.label",
       "meaningId": "cli.read.context.meaning",

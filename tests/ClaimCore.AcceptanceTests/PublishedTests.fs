@@ -141,7 +141,7 @@ let private erasedHistory fixture =
 
     for entry in entries.EnumerateArray() do
         Expect.equal
-            (entry.GetProperty("tag").GetString())
+            (entry.GetProperty("kind").GetString())
             "FULL"
             "Requested receipt detail remains explicit"
 
@@ -149,7 +149,7 @@ let private erasedHistory fixture =
         let snapshot = receipt.GetProperty("scope").GetProperty("snapshot")
 
         Expect.equal
-            (snapshot.GetProperty("disclosure").GetString())
+            (snapshot.GetProperty("kind").GetString())
             "ERASED"
             "Business payload is erased"
 
@@ -167,7 +167,7 @@ let private erasedHistory fixture =
 
 let private erasedView (tombstone: JsonElement) =
     Expect.equal
-        (tombstone.GetProperty("state").GetProperty("tag").GetString())
+        (tombstone.GetProperty("state").GetProperty("kind").GetString())
         "ERASED"
         "Erased state"
 

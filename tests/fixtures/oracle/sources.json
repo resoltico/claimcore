@@ -190,20 +190,19 @@
       "name": "case OPEN at genesis",
       "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
       "sequence": 1,
-      "scope": "CASE",
       "act": "OPEN",
       "operationId": "10000000-0000-4000-8000-000000000001",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:27.123456+00:00",
       "caseRevision": 1,
       "businessDate": "2026-08-03",
-      "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "subject": "CASE"
     },
     {
       "name": "authority GRANT linked to the first",
       "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
       "sequence": 2,
-      "scope": "AUTHORITY",
       "act": "GRANT",
       "operationId": "20000000-0000-4000-8000-000000000002",
       "actorId": "a0000000-0000-4000-8000-000000000001",
@@ -211,7 +210,8 @@
       "caseRevision": null,
       "businessDate": null,
       "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
-      "subjectId": "b0000000-0000-4000-8000-000000000002"
+      "subjectId": "b0000000-0000-4000-8000-000000000002",
+      "subject": "AUTHORITY"
     }
   ],
   "canonicalIdentity": [

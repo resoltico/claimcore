@@ -120,7 +120,7 @@ def identity_vectors(sources, case_format, authority_format):
         right = canonical_identity(authored_right)
         same = canonical(left) == canonical(right)
         assert same == item["same"], item["name"]
-        result.append({"name": item["name"], "scope": item["left"]["kind"], "same": same,
+        result.append({"name": item["name"], "subject": item["left"]["kind"], "same": same,
                        "left": vector("authored left", authored_left), "right": vector("authored right", authored_right),
                        "canonicalLeft": vector("identity left", left), "canonicalRight": vector("identity right", right)})
     return result
@@ -161,16 +161,16 @@ def ledger(sources, requests, snapshot, authority):
     previous = bytes(32)
     vectors = []
     for spec in sources["ledgerEntries"]:
-        if spec["scope"] == "CASE":
+        if spec["subject"] == "CASE":
             request_bytes = canonical(requests[0]).encode("utf-8")
             snapshot_bytes = canonical(snapshot).encode("utf-8")
             subject = case_id(installation, requests[0]["caseReference"])
-            scope_byte, revision = 1, spec["caseRevision"]
+            subject_byte, revision = 1, spec["caseRevision"]
         else:
             request_bytes = canonical(authority).encode("utf-8")
             snapshot_bytes = b""
             subject = spec["subjectId"]
-            scope_byte, revision = 2, 0
+            subject_byte, revision = 2, 0
         payload = frame(request_bytes, snapshot_bytes)
         nonce = bytes.fromhex(spec["payloadNonce"])
         commitment = hashlib.sha256(nonce + payload).digest()
@@ -179,7 +179,7 @@ def ledger(sources, requests, snapshot, authority):
             uuid.UUID(spec["installationId"]).bytes,
             spec["sequence"].to_bytes(8, "big"),
             previous,
-            bytes([scope_byte, ACT_CODES[spec["act"]]]),
+            bytes([subject_byte, ACT_CODES[spec["act"]]]),
             uuid.UUID(spec["operationId"]).bytes,
             uuid.UUID(spec["actorId"]).bytes,
             micros(spec["recordedAt"]).to_bytes(8, "big", signed=True),
@@ -193,7 +193,7 @@ def ledger(sources, requests, snapshot, authority):
         vectors.append({
             "name": spec["name"], "installationId": spec["installationId"],
             "sequence": spec["sequence"], "previousHash": previous.hex(),
-            "scope": spec["scope"], "act": spec["act"], "actCode": ACT_CODES[spec["act"]],
+            "subject": spec["subject"], "act": spec["act"], "actCode": ACT_CODES[spec["act"]],
             "operationId": spec["operationId"], "actorId": spec["actorId"],
             "recordedAt": spec["recordedAt"], "recordedAtUnixMicroseconds": micros(spec["recordedAt"]),
             "subjectId": subject, "caseRevision": spec["caseRevision"],

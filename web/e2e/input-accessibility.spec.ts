@@ -11,7 +11,7 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
   const reply = await pending;
   expect(reply.status()).toBe(200);
   const value: unknown = await reply.json();
-  if (!isResponse("operation.preview", value) || value.outcome.tag !== "REJECTED") {
+  if (!isResponse("operation.preview", value) || value.outcome.kind !== "REJECTED") {
     throw new Error("Expected authoritative input refusal.");
   }
   expect(value.outcome.data).toMatchObject({ target, code, action: "CORRECT_INPUT" });

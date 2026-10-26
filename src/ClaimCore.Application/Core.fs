@@ -69,8 +69,10 @@ module internal Core =
     let private businessFields =
         function
         | None -> Map.empty
-        | Some { View = CaseView.Live(fields, _) } -> FieldTable.values fields |> Map.ofList
-        | Some { View = CaseView.Erased } -> Map.empty
+        | Some {
+                   State = (CaseState.Active(fields) | CaseState.Voided(fields))
+               } -> FieldTable.values fields |> Map.ofList
+        | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =
         match act with

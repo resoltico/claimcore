@@ -6,26 +6,33 @@ import { service, type ApiResult, type ServiceResponse } from "../src/api/servic
 import { CaseDetail } from "../src/views/CaseDetail";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { definition, fields, unavailable } from "./service-ui.fixtures";
-
 const pending = <T,>() => {
   let release!: (result: T) => void;
   const promise = new Promise<T>((resolve) => {
     release = resolve;
   });
-  return { promise, release };
+  return {
+    promise,
+    release,
+  };
 };
 const current: ApiResult<ServiceResponse<"case.get">> = {
   kind: "outcome",
   status: 200,
   value: {
     outcome: {
-      tag: "SUCCEEDED",
+      kind: "SUCCEEDED",
       data: {
         caseReference: fields.caseReference,
         revision: 1,
-        advice: { acts: caseOffers([]), history: ["SUMMARY", "FULL"] },
-
-        state: { tag: "LIVE", disposition: "ACTIVE", fields },
+        advice: {
+          acts: caseOffers([]),
+          history: ["SUMMARY", "FULL"],
+        },
+        state: {
+          kind: "ACTIVE",
+          fields,
+        },
       },
     },
   },
@@ -33,16 +40,26 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
 const refused: ApiResult<ServiceResponse<"case.history">> = {
   kind: "outcome",
   status: 200,
-  value: { outcome: { tag: "REJECTED", data: unavailable } },
+  value: {
+    outcome: {
+      kind: "REJECTED",
+      data: unavailable,
+    },
+  },
 };
 const empty: ApiResult<ServiceResponse<"case.history">> = {
   kind: "outcome",
   status: 200,
   value: {
-    outcome: { tag: "SUCCEEDED", data: { entries: [], nextCursor: null } },
+    outcome: {
+      kind: "SUCCEEDED",
+      data: {
+        entries: [],
+        nextCursor: null,
+      },
+    },
   },
 };
-
 it("invalidates the pending current read synchronously on a second history refusal", async () => {
   const earlier = pending<typeof current>();
   const latest = pending<typeof current>();
@@ -67,7 +84,9 @@ it("invalidates the pending current read synchronously on a second history refus
       onAct={vi.fn()}
     />,
   );
-  const picker = await screen.findByRole("combobox", { name: "History detail" });
+  const picker = await screen.findByRole("combobox", {
+    name: "History detail",
+  });
   await user.selectOptions(picker, "FULL");
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);

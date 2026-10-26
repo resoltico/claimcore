@@ -20,8 +20,8 @@ module Replies =
         |}
 
     let private accepted outcomeTag (receipt: OperationReceipt) =
-        match receipt.Scope with
-        | ReceiptScope.Authority target ->
+        match receipt.Subject with
+        | ReceiptSubject.Authority target ->
             encode
                 {|
                     tag = outcomeTag

@@ -61,13 +61,11 @@ module RequestCodecs =
     let private correctionVariants group variants =
         CorrectionActions.forGroup group
         |> List.map (fun action ->
-            variants
-            |> List.find (fun make -> (make "mode").Tag = CorrectionActions.token action))
+            variants |> List.find (fun make -> make.Tag = CorrectionActions.token action))
 
     let registrationGroup =
         tagged
             "RegistrationGroup"
-            "mode"
             (correctionVariants
                 RecordGroup.Registration
                 [
@@ -86,7 +84,6 @@ module RequestCodecs =
     let decisionGroup =
         tagged
             "DecisionGroup"
-            "mode"
             (correctionVariants
                 RecordGroup.Decision
                 [
@@ -108,7 +105,6 @@ module RequestCodecs =
     let paymentGroup =
         tagged
             "PaymentGroup"
-            "mode"
             (correctionVariants
                 RecordGroup.Payment
                 [
@@ -213,9 +209,9 @@ module RequestCodecs =
                 CaseAct.Erase
         ]
 
-    let caseAct = tagged "CaseAct" "kind" (businessActs @ stewardshipActs)
+    let caseAct = tagged "CaseAct" (businessActs @ stewardshipActs)
 
-    let caseRequest =
+    let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
             {
                 CaseRequest.OperationId = v0
@@ -228,8 +224,8 @@ module RequestCodecs =
         |> field (FieldTable.key BusinessField.CaseReference) _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)
         |> field "act" _.Act (caseAct)
-        |> build
-        |> named "CaseRequest"
+
+    let caseRequest = caseRequestFields |> build |> named "CaseRequest"
 
     let principal =
         (record (fun v0 v1 v2 ->
@@ -248,7 +244,6 @@ module RequestCodecs =
     let scope =
         tagged
             "Scope"
-            "kind"
             [
                 unitVariant "INSTALLATION" GrantTarget.Installation
                 variant
@@ -273,7 +268,6 @@ module RequestCodecs =
 
         tagged
             "AuthorityAct"
-            "kind"
             [
                 unitVariant (AuthorityKinds.token AuthorityKind.Register) AuthorityAct.Register
                 variant
@@ -297,7 +291,7 @@ module RequestCodecs =
     let authorityAct =
         authorityActWith (tokens (RoleTokens.all |> List.map RoleTokens.token))
 
-    let authorityRequest =
+    let authorityRequestFields =
         (record (fun v0 v1 v2 ->
             {
                 AuthorityRequest.OperationId = v0
@@ -308,35 +302,28 @@ module RequestCodecs =
         |> field "operationId" _.OperationId (uuid)
         |> field "target" _.Target (principal)
         |> field "act" _.Act (authorityAct)
-        |> build
-        |> named "AuthorityRequest"
 
-    let caseOperation =
-        caseRequest |> withScope OperationScopes.Case |> named "OperationInput.Case"
+    let authorityRequest = authorityRequestFields |> build |> named "AuthorityRequest"
 
-    let authorityOperation =
-        authorityRequest
-        |> withScope OperationScopes.Authority
-        |> named "OperationInput.Authority"
+    let private caseVariant =
+        variant
+            OperationSubjects.Case
+            OperationInput.Case
+            (function
+            | OperationInput.Case value -> Some value
+            | _ -> None)
+            caseRequestFields
 
-    let operationInput =
-        choice
-            "OperationInput"
-            [
-                branch
-                    OperationInput.Case
-                    (function
-                    | OperationInput.Case value -> Some value
-                    | _ -> None)
-                    caseOperation
-                branch
-                    OperationInput.Authority
-                    (function
-                    | OperationInput.Authority value -> Some value
-                    | _ -> None)
-                    authorityOperation
-            ]
-        |> discriminated "scope"
+    let private authorityVariant =
+        variant
+            OperationSubjects.Authority
+            OperationInput.Authority
+            (function
+            | OperationInput.Authority value -> Some value
+            | _ -> None)
+            authorityRequestFields
+
+    let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
 
     let pageRequest =
         (record (fun v0 v1 ->
