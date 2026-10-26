@@ -235,5 +235,5 @@ let tests =
             testCase "context and authority observation preserve installation boundaries" context
             testCase "absent inaccessible and erased resources share refusal" resources
             testCase "current authority precedes cursors and target review" authorityAndCursor
-            testCase "history detail and operation scope use current authority" history
+            testCase "history detail and operation subject use current authority" history
         ]

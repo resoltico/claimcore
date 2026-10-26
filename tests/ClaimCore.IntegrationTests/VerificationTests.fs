@@ -113,7 +113,7 @@ let private revision (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             value
-            |> caseSubject (fun scope -> { scope with Revision = 2L })
+            |> caseSubject (fun subject -> { subject with Revision = 2L })
             |> updateCase { request with ExpectedRevision = 1L } { snapshot with Revision = 2L }
 
         do! rewrite database 4L change
@@ -136,8 +136,8 @@ let private start (database: PostgresFixture.Database) =
                     snapshot.State
 
             value
-            |> caseSubject (fun scope ->
-                { scope with
+            |> caseSubject (fun subject ->
+                { subject with
                     Act = (CaseActKind.Business BusinessActKind.Close)
                 })
             |> updateCase { request with Act = CaseAct.Close } { snapshot with State = view }
@@ -146,7 +146,7 @@ let private start (database: PostgresFixture.Database) =
         do! finding VerificationFinding.HistoryStart database
     }
 
-let private disposition (database: PostgresFixture.Database) =
+let private stateSequence (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
 
@@ -163,8 +163,8 @@ let private disposition (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             value
-            |> caseSubject (fun scope ->
-                { scope with
+            |> caseSubject (fun subject ->
+                { subject with
                     Act = (CaseActKind.Stewardship StewardshipActKind.Reinstate)
                 })
             |> updateCase
@@ -241,8 +241,8 @@ let private authority (database: PostgresFixture.Database) =
             rewrite
                 database
                 sequence
-                (authoritySubject (fun scope ->
-                    { scope with
+                (authoritySubject (fun subject ->
+                    { subject with
                         Act = AuthorityKind.Enable
                     })
                  >> updateAuthority altered)
@@ -384,7 +384,7 @@ let private findingCases =
         VerificationFinding.PayloadFormat, format
         VerificationFinding.RevisionSequence, revision
         VerificationFinding.HistoryStart, start
-        VerificationFinding.StateSequence, disposition
+        VerificationFinding.StateSequence, stateSequence
         VerificationFinding.ErasureIncomplete, erasure
         VerificationFinding.PayloadWithoutErasure, missingPayload
         VerificationFinding.AuthorityFold, authority
@@ -479,8 +479,8 @@ let private lastOwner (database: PostgresFixture.Database) =
             rewrite
                 database
                 (accepted unchanged).Position.Sequence
-                (authoritySubject (fun scope ->
-                    { scope with
+                (authoritySubject (fun subject ->
+                    { subject with
                         Act = AuthorityKind.Disable
                     })
                  >> updateAuthority altered)

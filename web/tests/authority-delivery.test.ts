@@ -113,25 +113,30 @@ const refusalData = {
     limits: {},
   },
 } as const;
+const replayResult = (
+  prepared: Parameters<typeof service.execute>[0],
+): ApiResult<ServiceResponse<"operation.execute">> => {
+  const accepted = authorityAcceptance(prepared);
+  if (accepted.kind !== "outcome" || accepted.value.outcome.kind !== "ACCEPTED") {
+    throw new Error("Acceptance required.");
+  }
+  return {
+    ...accepted,
+    value: {
+      ...accepted.value,
+      outcome: {
+        kind: "ALREADY_ACCEPTED",
+        data: accepted.value.outcome.data,
+      },
+    },
+  };
+};
 const retryResult = (
   next: RetryKind,
   prepared: Parameters<typeof service.execute>[0],
 ): ApiResult<ServiceResponse<"operation.execute">> => {
   if (next === "replay") {
-    const accepted = authorityAcceptance(prepared);
-    if (accepted.kind !== "outcome" || accepted.value.outcome.kind !== "ACCEPTED") {
-      throw new Error("Acceptance required.");
-    }
-    return {
-      ...accepted,
-      value: {
-        ...accepted.value,
-        outcome: {
-          kind: "ALREADY_ACCEPTED",
-          data: accepted.value.outcome.data,
-        },
-      },
-    };
+    return replayResult(prepared);
   }
   if (next === "not-started") {
     return {

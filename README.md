@@ -22,7 +22,7 @@ The browser offers English, Latvian and Arabic, right-to-left layout and separat
 Business dates follow the installation's immutable IANA time zone. Case roles and scoped grants control
 work; an installation owner administers authority and needs separate grants for case work.
 
-## Use the service and CLI
+## Integrate through the service and CLI
 
 | Application | Use |
 | --- | --- |
@@ -36,18 +36,22 @@ frames share the [service contract](docs/api.md). Service, browser and CLI must 
 Every mutation checks current permissions, state and expected revision under the ledger lock. Resending the
 same retained accepted request returns its original acceptance without another entry. If delivery is
 uncertain, preserve the exact frame and operation ID. Resend it unchanged or use `claimcore operation resolve`
-for an accepted receipt or final non-acceptance. A browser reload keeps only the unresolved ID, scope and act;
+for an accepted receipt or final non-acceptance. A browser reload keeps only the unresolved ID, subject and act;
 it retains no submitted body.
 
-## Evaluate, operate and contribute
+## Evaluate
 
 [Getting started](docs/getting-started.md) creates a fresh synthetic Compose installation. Existing incompatible
 installations are refused untouched; preserve them with matching software. No conversion is supplied.
 Private configuration files support .NET-supported Unix platforms, including musl; Windows refuses them.
 
+## Operate
+
 Operators own identity, TLS, deployment, backups and retention. Ledger verification detects inconsistency
 against trusted checkpoints; it cannot establish independent freshness or defeat an administrator rewriting
 all evidence. The supplied setup is for evaluation, with no production qualification or support SLA.
+
+## Contribute
 
 [Development](docs/development.md) explains the required gate and separate growth qualification.
 [Architecture](docs/architecture.md#cc-arch-001) explains component ownership. Read

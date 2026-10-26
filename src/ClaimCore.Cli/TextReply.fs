@@ -366,6 +366,57 @@ module internal TextReply =
             "antiforgeryToken: " + Option.defaultValue "—" value.AntiforgeryToken
         ]
 
+    let private previewLines language request (reply: TypedReply) =
+        match (TypedReply.value<PreviewReply> reply).Outcome with
+        | PreviewResult.Reviewed review -> reviewLines language request review
+        | PreviewResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
+        | PreviewResult.Rejected refusal -> refusalLines language refusal
+        | PreviewResult.Failed fault -> faultLines language fault
+
+    let private executeLines language (reply: TypedReply) =
+        match (TypedReply.value<ExecuteReply> reply).Outcome with
+        | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+        | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
+        | ExecuteResult.Rejected refusal -> refusalLines language refusal
+        | ExecuteResult.Failed fault -> faultLines language fault
+        | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
+
+    let private resolveLines language (reply: TypedReply) =
+        match TypedReply.value<ResolveReply> reply with
+        | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+        | ResolveReply.NotAccepted -> [ label language "cli.text.notAccepted" ]
+        | ResolveReply.Rejected refusal -> refusalLines language refusal
+        | ResolveReply.Failed fault -> faultLines language fault
+
+    let private actorLines language request actor (reply: TypedReply) =
+        match actor with
+        | ActorEndpoint.Context ->
+            TypedReply.value<ReadReply<ActorContext>> reply
+            |> readLines language contextLines
+        | ActorEndpoint.CaseGet ->
+            TypedReply.value<ReadReply<CaseReadModel>> reply
+            |> readLines language (caseLines language)
+        | ActorEndpoint.CaseList ->
+            TypedReply.value<ReadReply<CaseSummaryPage>> reply
+            |> readLines language (casePage language)
+        | ActorEndpoint.CaseHistory ->
+            TypedReply.value<ReadReply<HistoryResultPage>> reply
+            |> readLines language (historyLines language)
+        | ActorEndpoint.Observe ->
+            TypedReply.value<ReadReply<OperationReceipt>> reply
+            |> readLines language (receiptLines language "ACCEPTED")
+        | ActorEndpoint.AuthorityList ->
+            TypedReply.value<ReadReply<ActorReviewPage>> reply
+            |> readLines language (actorPage language)
+        | ActorEndpoint.AuthorityGrants ->
+            TypedReply.value<ReadReply<AuthorityGrantPage>> reply
+            |> readLines language (grantPage language)
+        | ActorEndpoint.Preview -> previewLines language request reply
+
+        | ActorEndpoint.Execute -> executeLines language reply
+
+        | ActorEndpoint.Resolve -> resolveLines language reply
+
     let private replyLines language request (reply: TypedReply) =
         match reply.Endpoint with
         | EndpointId.Host HostEndpoint.Session ->
@@ -373,50 +424,7 @@ module internal TextReply =
         | EndpointId.Host HostEndpoint.Logout ->
             TypedReply.value<ReadReply<unit>> reply
             |> readLines language (fun () -> [ "—" ])
-        | EndpointId.Actor actor ->
-            match actor with
-            | ActorEndpoint.Context ->
-                TypedReply.value<ReadReply<ActorContext>> reply
-                |> readLines language contextLines
-            | ActorEndpoint.CaseGet ->
-                TypedReply.value<ReadReply<CaseReadModel>> reply
-                |> readLines language (caseLines language)
-            | ActorEndpoint.CaseList ->
-                TypedReply.value<ReadReply<CaseSummaryPage>> reply
-                |> readLines language (casePage language)
-            | ActorEndpoint.CaseHistory ->
-                TypedReply.value<ReadReply<HistoryResultPage>> reply
-                |> readLines language (historyLines language)
-            | ActorEndpoint.Observe ->
-                TypedReply.value<ReadReply<OperationReceipt>> reply
-                |> readLines language (receiptLines language "ACCEPTED")
-            | ActorEndpoint.AuthorityList ->
-                TypedReply.value<ReadReply<ActorReviewPage>> reply
-                |> readLines language (actorPage language)
-            | ActorEndpoint.AuthorityGrants ->
-                TypedReply.value<ReadReply<AuthorityGrantPage>> reply
-                |> readLines language (grantPage language)
-            | ActorEndpoint.Preview ->
-                match (TypedReply.value<PreviewReply> reply).Outcome with
-                | PreviewResult.Reviewed review -> reviewLines language request review
-                | PreviewResult.AlreadyAccepted receipt ->
-                    receiptLines language "ALREADY_ACCEPTED" receipt
-                | PreviewResult.Rejected refusal -> refusalLines language refusal
-                | PreviewResult.Failed fault -> faultLines language fault
-            | ActorEndpoint.Execute ->
-                match (TypedReply.value<ExecuteReply> reply).Outcome with
-                | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-                | ExecuteResult.AlreadyAccepted receipt ->
-                    receiptLines language "ALREADY_ACCEPTED" receipt
-                | ExecuteResult.Rejected refusal -> refusalLines language refusal
-                | ExecuteResult.Failed fault -> faultLines language fault
-                | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
-            | ActorEndpoint.Resolve ->
-                match TypedReply.value<ResolveReply> reply with
-                | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-                | ResolveReply.NotAccepted -> [ label language "cli.text.notAccepted" ]
-                | ResolveReply.Rejected refusal -> refusalLines language refusal
-                | ResolveReply.Failed fault -> faultLines language fault
+        | EndpointId.Actor actor -> actorLines language request actor reply
 
     let private resultLines language request =
         function

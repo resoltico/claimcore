@@ -119,6 +119,23 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
   expect(reference).toHaveAccessibleName(locale.label);
 };
 afterEach(() => vi.restoreAllMocks());
+const expectGrantReferencePath = (active: boolean) => {
+  const values = {
+    ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
+  };
+  expect(
+    refusalPath("caseReference", {
+      ...values,
+      "act.scope.kind": "INSTALLATION",
+    }),
+  ).toBeNull();
+  expect(
+    refusalPath("caseReference", {
+      ...values,
+      "act.scope.kind": "CASE",
+    }),
+  ).toBe("act.scope.caseReference");
+};
 it.each(
   locales.flatMap((locale) =>
     [true, false].map((active) => ({
@@ -140,21 +157,7 @@ it.each(
         displayLocale: "en-GB",
       }),
     );
-    const values = {
-      ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
-    };
-    expect(
-      refusalPath("caseReference", {
-        ...values,
-        "act.scope.kind": "INSTALLATION",
-      }),
-    ).toBeNull();
-    expect(
-      refusalPath("caseReference", {
-        ...values,
-        "act.scope.kind": "CASE",
-      }),
-    ).toBe("act.scope.caseReference");
+    expectGrantReferencePath(active);
     render(<AuthorityForm kind={active ? "GRANT" : "REVOKE"} />);
     expect(
       screen.queryByRole("textbox", {

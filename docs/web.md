@@ -17,7 +17,7 @@ operation ID and expected revision. Execution rechecks current authority and sta
 
 An uncertain submit offers **Send again** and **Check outcome**. Send again uses the exact frozen bytes.
 Check outcome calls operation.resolve for final acceptance or non-acceptance. Ordinary faults leave uncertainty
-visible. On reload, only Check outcome remains: sessionStorage holds `{operationId, scope, act}`, never the
+visible. On reload, only Check outcome remains: sessionStorage holds `{operationId, subject, act}`, never the
 body or business values. Storage failures leave the current-page flow working. After NOT_ACCEPTED, read current
 state before authoring a new operation.
 

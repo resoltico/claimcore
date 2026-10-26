@@ -6,13 +6,15 @@ compatibility, security and operating instructions. Current behavior is describe
 ## [Unreleased]
 
 - **Breaking installation baseline:** initialize a separate installation; earlier schema baselines are refused untouched. Preserve them with matching software. [Compatibility](docs/architecture.md#durable-records) describes the posture.
-- **Breaking wire contracts:** deploy matching service, CLI and browser. Shared operation preview/execution uses CASE or AUTHORITY scope; case views group registration, decision and payment facts while history diffs remain per field.
+- **Breaking wire contracts:** deploy matching service, CLI and browser. Shared operation preview/execution uses CASE or AUTHORITY subjects; all union discriminators use `kind`. Cases expose ACTIVE, VOIDED or ERASED state with identity outside the payload; receipts use `subject`.
+- **Breaking durable formats:** request, snapshot and authority codecs are independent of wire codecs and reset to format 1. The ledger uses `subject_kind`; case projections use `state`. The new baseline refuses prior installations without conversion.
+- Database administration uses `kind`, `entryHash` and `REJECTED` in structured replies.
 - Operation identity compares amount values and ASCII-folded references. Free text remains exact, and ledger requests retain authored values. Public snapshots keep their canonical representation.
 - Acts and CLI verbs use consistent names, including CORRECT, REGISTER, GRANT, REVOKE, ENABLE and DISABLE; grant/revoke and enable/disable have distinct request shapes.
 - Contract owns the typed operation catalog. It derives CLI syntax, browser bindings and the checked [CLI reference](docs/cli.md); generated contract and message types come from the same sources.
 - Executables are `claimcore`, `claimcore-server` and `claimcore-database`. Human verbs have localized specific usage errors, preview, and byte-bounded offline preparation.
-- One Template grammar serves CLI and browser messages. Typed arguments, frozen renderer vectors, bidi isolation and literal-only pseudolocalization replace the browser ICU runtime.
-- Case and authority decisions share ledger sequencing, while scope-specific admission, policy and projections remain explicit.
+- Core, browser and CLI locales have separate ownership; one Template grammar serves their messages. Typed arguments, frozen renderer vectors, bidi isolation and literal-only pseudolocalization replace the browser ICU runtime.
+- Case and authority decisions share ledger sequencing, while subject-specific admission, policy and projections remain explicit.
 - `operation.resolve` returns the author’s receipt or permanently fences an unaccepted ID. Exit 4 retains the exact retry frame; ordinary failure does not resolve prior uncertainty.
 - Protected sessions use PostgreSQL deadlines and shared key-ring custody. Clock, restart and deployment limits remain explicit in the [operations guide](docs/operations.md#access-review-and-sessions).
 - Managed Unix private-file admission supports secret-volume links and group read. Windows, ownership/ACL and open-race limits are documented in [private configuration](docs/operations.md#private-configuration).

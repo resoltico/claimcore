@@ -18,7 +18,7 @@ Postgres loads the authoritative view and persists the result. One database owns
 | HostSecurity | Managed private-file admission, HTTPS origins and TLS purposes | None |
 | Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, HostSecurity, Json |
 | CLI | HTTPS client, command grammar and frames | Contract, HostSecurity, Json |
-| Database | Owner administration | Application, Postgres, Contract, HostSecurity |
+| Database | Owner administration | Application, Postgres, Contract, HostSecurity, Json |
 
 The [compiled architecture tests](../tests/ClaimCore.Tests/Architecture/) check the evaluated project graph
 and forbidden dependencies, including I/O, clocks and randomness in the pure projects. Rejecting fixture
@@ -34,6 +34,7 @@ limits offered work. Neither adapter owns another business policy.
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns byte encodings and explicit format dispatch;
 [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns the supported format numbers.
+Durable request, snapshot and authority grammars are independent of wire codecs.
 [Contract Formats.fs](../src/ClaimCore.Contract/Formats.fs) owns permanent scalar syntax and byte bounds.
 The independent [Python oracle](../tests/fixtures/oracle/generate_vectors.py) pins durable bytes.
 Canonical JSON orders members by RFC 8785 UTF-16 order and preserves authored string values. Wire JSON uses
@@ -63,8 +64,8 @@ without establishing freshness or operator approval.
 
 [AuthorizationPolicy](../src/ClaimCore.Application/AuthorizationPolicy.fs) owns roles and capabilities.
 Grants default-deny at installation or case scope. IdP membership and database roles convey no case rights.
-OWNER administers authority; case work needs separate grants. OWNER and DATA_STEWARD are human-only, and at
-least one enabled human installation owner must remain.
+OWNER administers authority; case work needs separate grants. Roles granting a human-only capability require a human principal. At least one enabled human installation
+owner must remain.
 
 Authorization precedes operation replay/conflict disclosure. Absent and inaccessible resources share a
 refusal. Current snapshots require case read; superseded snapshots require full history. Receipts report
@@ -118,12 +119,15 @@ and [Core](../src/ClaimCore.Application/Core.fs) own these decisions.
 ### CC-CAT-001 — Consumer vocabulary and presentation ownership
 
 Contract owns ordered vocabulary, field identities, codecs and message keys. Domain owns admission and
-transitions; Application owns authorization. The three [source locale files](../src/ClaimCore.Contract/Localization/)
-are the sole message source. CLI and browser render codes/parameters locally. Language and display formats
+transitions; Application owns authorization. The [core locales](../src/ClaimCore.Contract/Localization/) own product messages;
+[browser locales](../web/locales/) and [CLI locales](../src/ClaimCore.Cli/Localization/) own renderer chrome.
+CLI and browser render codes/parameters locally. Language and display formats
 are separate preferences and never rewrite business strings.
 
-The catalog carries labels, order, scalar hints and operation bodies. Its derivation walks each body to
-produce request paths and tagged branches; browser prefill paths come from the field table's groups.
+The catalog derives request paths and tagged branches from endpoint input codec schemas. Typed annotations
+supply syntax and prefill details; field rows own scalar rules, grammar diagnostics and record placement.
+[Transitions](../src/ClaimCore.Domain/Transitions.fs) owns case eligibility, and
+[Handlers](../src/ClaimCore.Application/Handlers.fs) binds the closed actor endpoint vocabulary to typed calls.
 The generator admits source text with the single Contract Template grammar, validates key/argument parity
 and producer references, and emits typed message arguments. Both clients preserve authored values. Contract's display-warning policy identifies suspicious Unicode
 without changing raw values. [Development](development.md#generated-contracts-and-boundary-verification)

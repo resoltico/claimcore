@@ -287,6 +287,6 @@ let tests =
         [
             testCase "binds and decodes every field in the SQL projection" projectionBindings
             testCase "requires complete unique case membership" collection
-            testCase "preserves live identity revision disposition and snapshot checks" liveState
+            testCase "preserves live identity revision state and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState
         ]

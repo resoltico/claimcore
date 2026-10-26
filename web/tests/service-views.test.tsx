@@ -1,6 +1,6 @@
 import { stubDashboardContext } from "./dashboard-context.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
-import { render, screen } from "./presentation-test-support";
+import { findButton, getButton, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
@@ -85,40 +85,16 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
     ),
   );
   expect(select).toHaveBeenCalledWith("CASE-1");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Open a case",
-    }),
-  );
+  await user.click(getButton("Open a case"));
   expect(open).toHaveBeenCalledOnce();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Load more cases",
-    }),
-  );
-  expect(
-    await screen.findByRole("button", {
-      name: "CASE-2",
-    }),
-  ).toBeVisible();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Find case",
-    }),
-  );
+  await user.click(getButton("Load more cases"));
+  expect(await findButton("CASE-2")).toBeVisible();
+  await user.click(getButton("Find case"));
   expect(select).toHaveBeenCalledTimes(1);
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Find case",
-    }),
-  );
+  await user.click(getButton("Find case"));
   expect(select).toHaveBeenCalledWith("CASE-9");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Reload cases",
-    }),
-  );
+  await user.click(getButton("Reload cases"));
 });
 const historyWithTwoReceipts = () => {
   const { full } = historyVariants();
@@ -166,26 +142,14 @@ it("shows current fields, server act labels, full expandable history and retryab
     />,
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
-  await user.click(
-    await screen.findByRole("button", {
-      name: /Close the case/u,
-    }),
-  );
+  await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(current, "CLOSE");
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
   await user.click((await screen.findAllByText(/Open a case · revision/u))[0]!);
   expect(screen.getAllByText(/10000000-0000-4000-8000-000000000001/u)).toHaveLength(3);
   expect(document.body).toHaveTextContent("accepted");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Load more history",
-    }),
-  );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to cases",
-    }),
-  );
+  await user.click(getButton("Load more history"));
+  await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
 });
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
@@ -200,17 +164,9 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   );
   fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-  await user.click(
-    await screen.findByRole("button", {
-      name: "Operations",
-    }),
-  );
+  await user.click(await findButton("Operations"));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
-  await user.click(
-    screen.getByRole("button", {
-      name: "Look up recorded result",
-    }),
-  );
+  await user.click(getButton("Look up recorded result"));
   expect(await screen.findByText(/Accepted operation/u)).toBeVisible();
 });
 it("reports a failed list as a request-local error without manufacturing rows", async () => {
@@ -254,11 +210,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   );
   const first = render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
-  expect(
-    screen.getByRole("button", {
-      name: "Operations",
-    }),
-  ).not.toBeDisabled();
+  expect(getButton("Operations")).not.toBeDisabled();
   expect(
     screen.getByRole("heading", {
       name: "ClaimCore",
@@ -302,26 +254,14 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     }),
   );
   render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-  await user.click(
-    await screen.findByRole("button", {
-      name: "Open a case",
-    }),
-  );
+  await user.click(await findButton("Open a case"));
   expect(
     screen.getByRole("heading", {
       name: "Open a case",
     }),
   ).toBeVisible();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to cases",
-    }),
-  );
-  await user.click(
-    screen.getByRole("button", {
-      name: "CASE-1",
-    }),
-  );
+  await user.click(getButton("Back to cases"));
+  await user.click(getButton("CASE-1"));
   expect(
     await screen.findByRole("heading", {
       name: "Case detail",

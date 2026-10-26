@@ -2,7 +2,7 @@ import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
+import { getButton, fireEvent, render, screen, waitFor } from "./presentation-test-support";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { productMetadata } from "../src/protocol/productMetadata";
@@ -35,10 +35,10 @@ type Dispatch<T> = {
 };
 const acts = productMetadata.catalog.entries
   .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE")
-  .map((entry) => ({ ...entry, kind: entry.kind as ActKind }));
+  .map((entry) => entry as typeof entry & { kind: ActKind });
 const authorityActs = productMetadata.catalog.entries
   .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
-  .map((entry) => ({ ...entry, kind: entry.kind as AuthorityInput["act"]["kind"] }));
+  .map((entry) => entry as typeof entry & { kind: AuthorityInput["act"]["kind"] });
 const runtime = {
   productVersion: "0.10.0",
   businessDate: "2026-09-09",
@@ -285,11 +285,7 @@ it.each(acts)(
     ).toBeVisible();
     authorCase(act.kind);
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Review changes",
-      }),
-    );
+    await user.click(getButton("Review changes"));
     const dialog = await screen.findByRole("dialog");
     if (act.kind === "DECIDE") {
       expect(dialog).toHaveTextContent("5.0000");
@@ -303,11 +299,7 @@ it.each(acts)(
         name: "I confirm these changes.",
       }),
     );
-    await user.click(
-      screen.getByRole("button", {
-        name: "Record changes",
-      }),
-    );
+    await user.click(getButton("Record changes"));
     await screen.findByRole("heading", {
       name: "Recorded change",
     });
@@ -347,6 +339,29 @@ const contextReply = (): Response =>
       },
     },
   });
+const authorityPreview = (parsed: AuthorityInput) =>
+  response("operation.preview", {
+    operationId: parsed.operationId,
+    outcome: {
+      kind: "REVIEWED",
+      data: {
+        review: {
+          subject: {
+            kind: "AUTHORITY",
+            target: null,
+            before: {
+              enabled: false,
+              grants: [],
+            },
+            after: {
+              enabled: true,
+              grants: [],
+            },
+          },
+        },
+      },
+    },
+  });
 const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
   vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
     if (path === "/api/context") {
@@ -382,30 +397,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
       input: parsed,
     });
     if (path === "/api/operation.preview") {
-      return Promise.resolve(
-        response("operation.preview", {
-          operationId: parsed.operationId,
-          outcome: {
-            kind: "REVIEWED",
-            data: {
-              review: {
-                subject: {
-                  kind: "AUTHORITY",
-                  target: null,
-                  before: {
-                    enabled: false,
-                    grants: [],
-                  },
-                  after: {
-                    enabled: true,
-                    grants: [],
-                  },
-                },
-              },
-            },
-          },
-        }),
-      );
+      return Promise.resolve(authorityPreview(parsed));
     }
     return Promise.resolve(
       response("operation.execute", {
@@ -461,11 +453,7 @@ it.each(authorityActs)(
     render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Review changes",
-      }),
-    );
+    await user.click(getButton("Review changes"));
     await screen.findByRole("heading", {
       name: "Review changes",
     });
@@ -475,11 +463,7 @@ it.each(authorityActs)(
         name: "I confirm this exact request.",
       }),
     );
-    await user.click(
-      screen.getByRole("button", {
-        name: "Record changes",
-      }),
-    );
+    await user.click(getButton("Record changes"));
     await waitFor(() => {
       expect(calls).toHaveLength(2);
       expect(calls[1]!.bytes).toBe(calls[0]!.bytes);

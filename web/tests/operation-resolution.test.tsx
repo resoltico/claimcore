@@ -3,7 +3,7 @@ import { current } from "./operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { render, screen } from "./presentation-test-support";
+import { getButton, render, screen } from "./presentation-test-support";
 import { service } from "../src/api/service";
 import { UnresolvedNotice } from "../src/views/operation/UnresolvedNotice";
 import {
@@ -40,16 +40,24 @@ it("reload notice retains identity only and resolves without sending a mutation"
       name: /retry exact|send again/iu,
     }),
   ).toBeNull();
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: "Check outcome",
-    }),
-  );
+  await userEvent.click(getButton("Check outcome"));
   expect(resolve).toHaveBeenCalledExactlyOnceWith(identity.operationId, "token");
   expect(execute).not.toHaveBeenCalled();
   expect(unresolvedOperation.read()).toBeNull();
   expect(await screen.findByText(/will never be accepted/u)).toBeVisible();
 });
+const closeOperation = () =>
+  renderHook(() => {
+    const model = useOperation({
+      subject: "CASE",
+      kind: "CLOSE",
+      current,
+      token: "token",
+      onLockChange: vi.fn(),
+    });
+    useUnresolvedOperation(model);
+    return model;
+  });
 it("uncertain submit freezes its bytes and NOT_ACCEPTED permits a new identity", async () => {
   vi.spyOn(service, "preview").mockResolvedValue(preview());
   vi.spyOn(service, "execute").mockResolvedValue({
@@ -69,17 +77,7 @@ it("uncertain submit freezes its bytes and NOT_ACCEPTED permits a new identity",
       },
     },
   });
-  const view = renderHook(() => {
-    const model = useOperation({
-      subject: "CASE",
-      kind: "CLOSE",
-      current,
-      token: "token",
-      onLockChange: vi.fn(),
-    });
-    useUnresolvedOperation(model);
-    return model;
-  });
+  const view = closeOperation();
   await act(async () => {
     await view.result.current.preview();
   });
@@ -139,11 +137,7 @@ it("resolve acceptance returns the stored receipt", async () => {
     },
   });
   render(<UnresolvedNotice token="token" />);
-  await userEvent.click(
-    screen.getByRole("button", {
-      name: "Check outcome",
-    }),
-  );
+  await userEvent.click(getButton("Check outcome"));
   await waitFor(() => {
     expect(unresolvedOperation.read()).toBeNull();
   });

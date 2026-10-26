@@ -5,15 +5,23 @@ effect of each operation. Use the [generated CLI reference](cli.md) for verbs an
 `claimcore describe case open` describes one operation offline; `claimcore describe --format json` returns
 the catalog entries, and `claimcore schema ENDPOINT request|response` shows a wire schema without credentials.
 
+## Protocol terms
+
+An operation's **subject** is CASE or AUTHORITY. A grant's **scope** is installation or case reach.
+Every tagged union uses **kind**. A case's **state** is ACTIVE, VOIDED or ERASED; active and voided
+states carry fields, while erased states carry no payload. A **record group** is registration,
+decision or payment. Identity (`caseReference`, `revision`) sits outside the state payload.
+The [case guide](domain.md) explains the business meaning.
+
 ## HTTPS requests and replies
 
 Session bootstrap is GET; other endpoints use POST `/api/<endpoint>` with literal dots. API calls carry
 matching `ClaimCore-Contract`; cookie POSTs also carry antiforgery. A POST body is the input itself with
-`application/json`, bounded to 64 KiB. Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
+`application/json`, bounded by [Contract Limits](../src/ClaimCore.Contract/Api/Limits.fs). Frame wrappers belong to CLI stdin. Authentication and current ClaimCore grants are separate.
 
-Case/authority input uses `scope: CASE|AUTHORITY` at operation.preview and operation.execute. HTTP reply bodies
+Case/authority input uses `kind: CASE|AUTHORITY` at operation.preview and operation.execute. HTTP reply bodies
 contain `outcome`; preview and execute also echo `operationId`. They have no CLI `endpoint` or `delivery` wrapper.
-Receipts share operation and ledger metadata, with case or authority details in the tagged `scope` object.
+Receipts share operation and ledger metadata, with case or authority details in the tagged `subject` object.
 
 | Operation | Outcomes |
 | --- | --- |
@@ -31,7 +39,7 @@ operation ID; receipts identify case/revision/act or authority target/act. Obser
 grant pages check the requested actor. Case lookup permits ASCII reference-case differences while preserving
 accepted spelling.
 
-Objects/tags are closed. Strict admission rejects malformed UTF-8/Unicode, duplicate decoded members, excessive
+Objects and `kind` discriminators are closed. Strict admission rejects malformed UTF-8/Unicode, duplicate decoded members, excessive
 bytes/depth, invalid technical IDs and unsafe numbers. Malformed business strings reach Application/Domain
 and return typed REJECTED guidance with HTTP 200. Structural errors remain host refusals. Diagnostics carry
 codes, targets, actions and limits, with no server prose.

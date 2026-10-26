@@ -16,6 +16,32 @@ const current: CurrentCase = {
     fields,
   },
 };
+const closePreview = () =>
+  response("operation.preview", "REVIEWED", {
+    review: {
+      subject: {
+        kind: "CASE",
+        before: {
+          caseReference: current.caseReference,
+          revision: 1,
+          state: {
+            kind: "ACTIVE",
+            fields,
+          },
+        },
+        after: {
+          caseReference: current.caseReference,
+          revision: 2,
+          state: {
+            kind: "ACTIVE",
+            fields,
+          },
+        },
+        changes: [],
+        context: runtime,
+      },
+    },
+  });
 it("coalesces duplicate preview activation while retention is pending", async () => {
   let finish: ((value: Response) => void) | undefined;
   const pending = new Promise<Response>((resolve) => {
@@ -39,33 +65,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   });
   expect(fetch).toHaveBeenCalledOnce();
   await act(async () => {
-    finish?.(
-      response("operation.preview", "REVIEWED", {
-        review: {
-          subject: {
-            kind: "CASE",
-            before: {
-              caseReference: current.caseReference,
-              revision: 1,
-              state: {
-                kind: "ACTIVE",
-                fields,
-              },
-            },
-            after: {
-              caseReference: current.caseReference,
-              revision: 2,
-              state: {
-                kind: "ACTIVE",
-                fields,
-              },
-            },
-            changes: [],
-            context: runtime,
-          },
-        },
-      }),
-    );
+    finish?.(closePreview());
     await first;
   });
   expect(result.current.phase).toBe("REVIEWING");

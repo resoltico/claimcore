@@ -32,17 +32,17 @@ gate. Named stages execute in order, stop at failure and share restore/build wor
 
 | Stage | Checks |
 | --- | --- |
-| lint | Fantomas, FSharpLint and the 11 maintained browser boundary controls |
+| lint | Fantomas, FSharpLint and the maintained browser boundary controls |
 | unit | Build, unit/property and compiled architecture suites |
 | frontend | npm ci/audit, format/lint/types, browser unit completion, Knip/licenses/build/notices |
 | workflows | ShellCheck and pinned Docker Actionlint |
 | integration | Required postgres then web suites; growth is separate |
 | postgres / web | Required selected isolated suite with its project closure |
-| growth | Opt-in nine-profile contention and verifier qualification |
+| growth | Opt-in contention and verifier qualification |
 | browsers | Locked Playwright engine/system dependency installation |
 | acceptance | Published service/CLI and real browser qualification |
 
-The four test projects match environment requirements: `ClaimCore.Tests` contains pure and compiled
+The [stage assignments](../eng/verify.sh) match test projects to environment requirements: `ClaimCore.Tests` contains pure and compiled
 architecture checks, `ClaimCore.IntegrationTests` owns PostgreSQL scenarios, `ClaimCore.WebTests` owns host
 integration, and `ClaimCore.AcceptanceTests` owns published processes and browsers. `ClaimCore.TestSupport`
 is a library containing shared fixtures and assembly-parameterized guards. Each test assembly registers
@@ -66,7 +66,7 @@ Fresh-login tests budget one admission window plus normal OIDC work. Their share
 browser challenge and recovers only from a validated login-admission refusal.
 
 CI runs independent lint/unit/frontend/PostgreSQL/Web jobs and requires the scheduled required jobs in `Gate`.
-The native matrix is linux-x64, linux-musl-x64 and osx-arm64. Growth is available only through an explicit workflow dispatch input, outside Gate. PR, merge queue,
+The native platform matrix is declared in [CI](../.github/workflows/ci.yml). Growth is available only through an explicit workflow dispatch input, outside Gate. PR, merge queue,
 main/tag and explicit dispatch use three isolated complete engines. Every scheduled engine must succeed in the aggregate
 Gate. The frontend runs in the pinned Node container without executable .NET. PostgreSQL majors/images come from
 [postgresql-baseline.json](../db/postgresql-baseline.json); each listed major needs actual qualification.
@@ -78,9 +78,9 @@ installations or prune unrelated containers/volumes.
 
 ## Disk use and retained evidence
 
-The verifier retains the newest ten completed managed `native.*` report directories. Active runs are protected
-until completion and may temporarily exceed the limit. Old unmanaged directories are untouched; review them
-separately before owner cleanup. This policy bounds new report retention, not total artifacts or cache use.
+[Native report retention](../eng/native-reports.sh) protects active runs and bounds retained completed
+managed reports. Old unmanaged directories are untouched; review them separately before owner cleanup.
+This policy bounds new report retention, not total artifacts or cache use.
 
 NuGet/npm caches retain downloads keyed by lockfiles; locked restore/npm ci/audit still run. SDK-free frontend
 and acceptance share the same exact npm download key, without broad fallbacks. Build outputs, node_modules,
@@ -93,7 +93,8 @@ or on-disk corpora.
 
 A native run creates a unique report directory and protects it while active. If a process is killed before
 completion, review its active marker and evidence manually. The retention script does not guess whether that
-process is still alive. Managed test processes use bounded readers/timeouts and two-second teardown observation.
+process is still alive. Managed test processes use bounded readers, timeouts and teardown observation as defined in
+[test process support](../tests/ClaimCore.TestSupport/).
 Cleanup failures retain the original failure; detached/reparented descendants remain outside process-tree kill guarantees.
 Diagnostics exclude payloads, credentials and provider exception text.
 
@@ -102,13 +103,11 @@ Diagnostics exclude payloads, credentials and provider exception text.
 Find the owning contract and read its behavior tests before editing. Keep endpoints in the typed registry and fields in
 the field table, Domain admission and Contract codecs. RecordFormat owns durable encodings. Update affected consumers,
 SQL, tests, source locales and docs together. The current build admits one exact source-bound baseline. There is no
-in-place upgrade or conversion; preserve incompatible installations with matching software. FSharpLint enforces
-complexity 12 in production and tests. Only inline named rule
-exceptions with reasons are allowed. Required deterministic properties run 200 cases
-with state sequences up to 20. Shrinking stops after 100 successful descent steps, retaining the failing replay token;
-this is not a bound on candidate count or wall time. Decoder fuzzing uses at most 4,096 random bytes plus fixed hostile
-cases, including a 12,008-byte escaped-control string. There is no mutation campaign or environment switch for a
-longer/bypassed run. Negative controls must demonstrate that guards reject broken properties.
+in-place upgrade or conversion; preserve incompatible installations with matching software. Lint policy is defined in [FSharpLint settings](../config/fsharplint.json) and the browser lint configuration.
+Only inline named rule exceptions with reasons are allowed. [PropertyHarness](../tests/ClaimCore.Tests/Support/PropertyHarness.fs)
+owns deterministic case counts, sequence bounds and shrinking controls; decoder fuzz properties own byte bounds
+and hostile cases. Negative controls demonstrate that guards reject broken properties. There is no separate
+mutation campaign or environment switch for a longer or bypassed run.
 
 ## Dependency pins
 
@@ -125,39 +124,35 @@ the frontend graph; install with npm ci.
 dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts
 ```
 
-The generator publishes four files in `contracts/`: `openapi.json`, `client.ts`, `catalog.json` and
-`messages.ts`. From the checkout root, normal `--output contracts` generation also writes
-[docs/cli.md](cli.md). Default `--check` checks all five outputs without repairing them. Custom output
-directories retain the contract-file inventory only and never write a sibling documentation directory.
-Missing, stale or extra contract files fail. Review generated diffs alongside their typed producer.
+The [generator program](../eng/ClaimCore.ContractGenerator/Program.fs) owns its output inventory.
+Normal generation writes [contracts](../contracts/), [the CLI reference](cli.md) and
+[browser chrome types](../web/src/generated/chrome-messages.ts). Default `--check` checks these outputs without
+repairing them. Custom destinations contain only contract artifacts. Missing, stale or extra contract files fail.
+Review generated diffs alongside their typed producer.
 
-Contract owns operation bodies. One walk derives paths, conditional branches, flags, synopses and bindings;
-the generator adds Domain scalar rules and Application capabilities. CLI reads the typed catalog directly
-and embeds source locales. The browser consumes the generated catalog, TypeScript admission and message
-contract. Its generic assembler handles reads and mutations and follows generated grouped-view prefill paths.
-
-The generator validates the Contract Template grammar, language key/argument parity, presentation references
-and diagnostic producers once. The browser formatter preserves that grammar, isolates RTL arguments and
-pseudolocalizes literal text only. Web commands run neither generation nor .NET. Frozen F# renderings and
-independent quoting vectors check both clients; negative controls reject a missing Latvian key, an extra
-Arabic argument and unsupported ICU syntax.
+[Catalog ownership](architecture.md#cc-cat-001) explains schema derivation and locale partitioning.
+CLI reads the typed catalog and embeds core plus CLI locales; the browser imports core plus browser locales.
+The generator validates Template syntax, language parity, typed producers and renderer references, including
+unreferenced-key controls. Frozen renderings and independent quoting vectors check both clients.
+Web commands run neither generation nor .NET.
 
 OpenAPI supplies read-only protocol summaries. Consumer identity hashes canonical OpenAPI only; changing
 source prose preserves it. Independent wire examples and JSON Schema/OpenAPI parsers check admission;
 the Python oracle pins durable bytes. Never compute independent expectations with the product under test.
 Compiled architecture controls and published CLI closure checks enforce component boundaries. Maintained
-oxlint rules enforce browser imports, cycles and protocol effect restrictions; their 11 injected violations
+oxlint rules enforce browser imports, cycles and protocol effect restrictions; their injected violations
 run in the lint stage. Full type-aware application lint remains a separate frontend check.
 
 ## Synthetic growth qualification
 
-Run `bash eng/verify.sh growth` before a release and on demand. It is outside the required gate; the manual CI growth input runs the same stage. The full-path profiles run 1k/10k/100k business operations with 1/4/16 writers, 1k cases, 100 actors/1k grants
-(setup entries counted separately), 500 sessions/32 session workers. Disjoint lanes plus
-explicit same-case/revocation conflicts protect accepted-count evidence. All nine profiles are required for full growth qualification. `CLAIMCORE_GROWTH_PROFILE=writes:writers` selects one declared profile for iteration; its report explicitly marks incomplete qualification. Reports in ignored artifacts/verification/growth record exact revision/dirty state, counts, p50/p95/p99,
-throughput, session latency, verifier memory/time and DB temporary work. Unmeasured head wait/hold metrics
-remain explicit. A separate comparison fixes history at 1,000 case entries plus three authority entries while varying
-case cardinality across 1/100/1,000; its verifier time and sampled memory are recorded in cardinality.json. These
-measurements promise no production SLA or constant total-system memory.
+Run `bash eng/verify.sh growth` before a release and on demand. It is outside the required gate; the manual
+CI growth input runs the same stage. [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs)
+and its supporting modules own profiles, contention, cardinality, sessions and measurement settings.
+`CLAIMCORE_GROWTH_PROFILE=writes:writers` selects one declared profile for iteration and marks the report as
+incomplete qualification. Reports under ignored `artifacts/verification/growth` record revision, dirty state,
+counts, latency, throughput, verifier memory/time and database temporary work. Unmeasured metrics remain
+explicit. These measurements promise no production SLA or constant total-system memory.
+
 Native-language/assistive-technology review remains human.
 
 Private-file qualification exercises real objects on linux-x64, linux-musl-x64 and osx-arm64.

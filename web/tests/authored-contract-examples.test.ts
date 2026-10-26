@@ -26,11 +26,15 @@ it("all positive authored response families supply the consumed browser shape", 
     endpoints.map((endpoint) => endpoint.id).sort(ordinal),
   );
 });
-it("mutation guards require usable receipts and closed receipt grammar rather than only tags", () => {
+const acceptedReceipt = () => {
   const accepted = wireReply("operation.execute");
   if (accepted.outcome.kind !== "ACCEPTED") {
     throw new Error("Case receipt fixture absent.");
   }
+  return { ...accepted, outcome: accepted.outcome };
+};
+it("mutation guards require usable receipts and closed receipt grammar rather than only tags", () => {
+  const accepted = acceptedReceipt();
   for (const data of [
     null,
     {},
@@ -43,7 +47,7 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
     },
     {
       ...accepted.outcome.data,
-      scope: {
+      subject: {
         ...accepted.outcome.data.subject,
         snapshot: {
           kind: "DISCLOSED",
@@ -52,7 +56,7 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
     },
     {
       ...accepted.outcome.data,
-      scope: {
+      subject: {
         ...accepted.outcome.data.subject,
         revision: Number.MAX_SAFE_INTEGER + 1,
       },
@@ -73,6 +77,9 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
     ).toBe(false);
   }
   expect(isResponse("operation.execute", accepted)).toBe(true);
+});
+it("session replies reject accepted operation receipts", () => {
+  const accepted = acceptedReceipt();
   expect(
     isResponse("session", {
       outcome: {

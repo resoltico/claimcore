@@ -1,6 +1,6 @@
 import { stubDashboardContext } from "./dashboard-context.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
-import { render, screen } from "./presentation-test-support";
+import { getButton, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
@@ -58,8 +58,7 @@ describe("catalog rendering", () => {
     expect(screen.getByText("CASE-1")).toBeVisible();
   });
 });
-const acceptsOperation = async (): Promise<void> => {
-  const user = userEvent.setup();
+const queueClosePreview = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockImplementationOnce(
     previewForRequest(
@@ -90,6 +89,11 @@ const acceptsOperation = async (): Promise<void> => {
       }),
     ),
   );
+};
+const acceptsOperation = async (): Promise<void> => {
+  const user = userEvent.setup();
+  const fetch = vi.mocked(globalThis.fetch);
+  queueClosePreview();
   fetch.mockResolvedValueOnce(wireResponse("operation.execute"));
   const committed = vi.fn();
   render(
@@ -103,11 +107,7 @@ const acceptsOperation = async (): Promise<void> => {
       onMutationLockChange={vi.fn()}
     />,
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   expect(
     await screen.findByRole("dialog", {
       name: "Review changes",
@@ -118,22 +118,14 @@ const acceptsOperation = async (): Promise<void> => {
       name: "I confirm these changes.",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
+  await user.click(getButton("Record changes"));
   expect(
     await screen.findByRole("heading", {
       name: "Recorded change",
     }),
   ).toBeVisible();
   expect(screen.getByText(/Operation .* is accepted\./u)).toBeVisible();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Return to case",
-    }),
-  );
+  await user.click(getButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
 };
 describe("metadata-driven operation acceptance", () => {
@@ -143,61 +135,58 @@ describe("metadata-driven operation acceptance", () => {
     acceptsOperation,
   );
 });
+const sessionLifecycle = async () => {
+  const user = userEvent.setup();
+  const fetch = vi.mocked(globalThis.fetch);
+  fetch.mockResolvedValueOnce(
+    response("session", "SUCCEEDED", {
+      authenticated: false,
+      antiforgeryToken: "anonymous",
+    }),
+  );
+  const anonymous = render(<App />);
+  const signIn = await screen.findByRole("link", {
+    name: "Sign in",
+  });
+  expect(signIn).toHaveAttribute("href", "/auth/login");
+  expect(fetch).toHaveBeenCalledTimes(1);
+  anonymous.unmount();
+  fetch.mockResolvedValueOnce(
+    response("session", "SUCCEEDED", {
+      authenticated: true,
+      antiforgeryToken: "authenticated",
+    }),
+  );
+  fetch.mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", {
+      offers: context.offers,
+      items: [],
+      nextCursor: null,
+    }),
+  );
+  fetch.mockResolvedValueOnce(
+    response("session.logout", "SUCCEEDED", {
+      authenticated: false,
+      antiforgeryToken: "replacement",
+    }),
+  );
+  render(<App />);
+  expect(
+    await screen.findByRole("heading", {
+      name: "Cases",
+    }),
+  ).toBeVisible();
+  await user.click(getButton("Sign out"));
+  expect(
+    await screen.findByRole("heading", {
+      name: "ClaimCore",
+    }),
+  ).toBeVisible();
+};
 describe("service session lifecycle", () => {
   beforeEach(() => {
     stubDashboardContext();
   });
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-  it("offers OIDC sign-in, then hydrates an authenticated return and signs out", async () => {
-    const user = userEvent.setup();
-    const fetch = vi.mocked(globalThis.fetch);
-    fetch.mockResolvedValueOnce(
-      response("session", "SUCCEEDED", {
-        authenticated: false,
-        antiforgeryToken: "anonymous",
-      }),
-    );
-    const anonymous = render(<App />);
-    const signIn = await screen.findByRole("link", {
-      name: "Sign in",
-    });
-    expect(signIn).toHaveAttribute("href", "/auth/login");
-    expect(fetch).toHaveBeenCalledTimes(1);
-    anonymous.unmount();
-    fetch.mockResolvedValueOnce(
-      response("session", "SUCCEEDED", {
-        authenticated: true,
-        antiforgeryToken: "authenticated",
-      }),
-    );
-    fetch.mockResolvedValueOnce(
-      response("case.list", "SUCCEEDED", {
-        offers: context.offers,
-        items: [],
-        nextCursor: null,
-      }),
-    );
-    fetch.mockResolvedValueOnce(
-      response("session.logout", "SUCCEEDED", {
-        authenticated: false,
-        antiforgeryToken: "replacement",
-      }),
-    );
-    render(<App />);
-    expect(
-      await screen.findByRole("heading", {
-        name: "Cases",
-      }),
-    ).toBeVisible();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Sign out",
-      }),
-    );
-    expect(
-      await screen.findByRole("heading", {
-        name: "ClaimCore",
-      }),
-    ).toBeVisible();
-  });
+  it("offers OIDC sign-in, then hydrates an authenticated return and signs out", sessionLifecycle);
 });

@@ -336,10 +336,10 @@ module CatalogCodecs =
         |> named "Presentation.CatalogInput"
 
     let entry =
-        record (fun endpoint scope kind label meaning confirmation synopsis inputs constants ->
+        record (fun endpoint subject kind label meaning confirmation synopsis inputs constants ->
             {
                 CatalogEntry.Endpoint = endpoint
-                Subject = scope
+                Subject = subject
                 Kind = kind
                 LabelId = label
                 MeaningId = meaning

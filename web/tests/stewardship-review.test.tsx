@@ -1,6 +1,6 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { render, screen } from "./presentation-test-support";
+import { getButton, render, screen } from "./presentation-test-support";
 import { editor, current } from "./presentation-state.fixtures";
 import { fields, response, runtime } from "./service-ui.fixtures";
 const stateLabels = {
@@ -100,11 +100,7 @@ it.each([
         reason,
       );
     }
-    await user.click(
-      screen.getByRole("button", {
-        name: "Review changes",
-      }),
-    );
+    await user.click(getButton("Review changes"));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent(label);
     if (reason !== null) {
@@ -115,11 +111,7 @@ it.each([
     if (act === "ERASE") {
       expect(dialog).toHaveTextContent("WAL, backups and copies elsewhere are not erased.");
     }
-    expect(
-      screen.getByRole("button", {
-        name: "Record changes",
-      }),
-    ).toBeDisabled();
+    expect(getButton("Record changes")).toBeDisabled();
     expect(vi.mocked(fetch)).toHaveBeenCalledOnce();
   },
 );

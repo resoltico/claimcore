@@ -37,23 +37,24 @@ const reply = () => ({
     },
   },
 });
+const changedSubjects = [
+  {
+    kind: "AUTHORITY",
+  },
+  {
+    act: "ERASE",
+  },
+  {
+    caseReference: "other",
+  },
+  {
+    revision: 4,
+  },
+];
 it("binds accepted subject, operation ID, act, ASCII case identity and successor revision", () => {
   expect(correlateReply("operation.execute", request, reply())).toBe(true);
   const source = reply();
-  for (const changed of [
-    {
-      kind: "AUTHORITY",
-    },
-    {
-      act: "ERASE",
-    },
-    {
-      caseReference: "other",
-    },
-    {
-      revision: 4,
-    },
-  ]) {
+  for (const changed of changedSubjects) {
     expect(
       correlateReply("operation.execute", request, {
         ...source,

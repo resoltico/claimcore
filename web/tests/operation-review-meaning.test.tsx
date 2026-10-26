@@ -73,52 +73,55 @@ it("case review omits only its root namespace and preserves exact prepared bytes
   expect(prepared.bytes).toBe(before);
   expect(prepared.input).toEqual(correction);
 });
+const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
+  const scope =
+    kind === "CASE"
+      ? {
+          kind,
+          caseReference: "SYNTHETIC-GRANT",
+        }
+      : {
+          kind,
+        };
+  const input: OperationInput = {
+    kind: "AUTHORITY",
+    operationId,
+    target: {
+      kind: "HUMAN",
+      issuer: "https://issuer.example/",
+      subject: "KEEP",
+    },
+    act: {
+      kind: "GRANT",
+      role: "CASE_READER",
+      scope,
+    },
+  };
+  const proposed: Review = {
+    subject: {
+      kind: "AUTHORITY",
+      target: null,
+      before: {
+        enabled: true,
+        grants: [],
+      },
+      after: {
+        enabled: true,
+        grants: [
+          {
+            role: "CASE_READER",
+            scope,
+          },
+        ],
+      },
+    },
+  };
+  return model(input, proposed);
+};
 it.each(["INSTALLATION", "CASE"] as const)(
   "authority review keeps nested %s grant scope and literal token-looking subject",
   (kind) => {
-    const scope =
-      kind === "CASE"
-        ? {
-            kind,
-            caseReference: "SYNTHETIC-GRANT",
-          }
-        : {
-            kind,
-          };
-    const input: OperationInput = {
-      kind: "AUTHORITY",
-      operationId,
-      target: {
-        kind: "HUMAN",
-        issuer: "https://issuer.example/",
-        subject: "KEEP",
-      },
-      act: {
-        kind: "GRANT",
-        role: "CASE_READER",
-        scope,
-      },
-    };
-    const proposed: Review = {
-      subject: {
-        kind: "AUTHORITY",
-        target: null,
-        before: {
-          enabled: true,
-          grants: [],
-        },
-        after: {
-          enabled: true,
-          grants: [
-            {
-              role: "CASE_READER",
-              scope,
-            },
-          ],
-        },
-      },
-    };
-    render(<OperationReview model={model(input, proposed)} />);
+    render(<OperationReview model={authorityReviewModel(kind)} />);
     const dialog = screen.getByRole("dialog");
     expect(
       within(dialog).getAllByText("Grant scope", {

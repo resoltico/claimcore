@@ -1,7 +1,7 @@
 import { caseOffers } from "./case-advice.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
-import { render, screen, waitFor } from "./presentation-test-support";
+import { getButton, render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase, Diagnostic } from "../src/api/service";
@@ -88,32 +88,20 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   fillRegistrationInputs({
     claimantName: "Synthetic A",
   });
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await user.click(
     await screen.findByRole("checkbox", {
       name: "I confirm these changes.",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
+  await user.click(getButton("Record changes"));
   await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
   });
   await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).act.values["claimantName"]).toBe("Synthetic A");
@@ -137,11 +125,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
     .mockResolvedValueOnce(rejectedResponse(staleRefusal));
   const view = render(editor(current, "CLOSE"));
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
   view.rerender(
     editor(
@@ -152,11 +136,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
       "CLOSE",
     ),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await waitFor(() => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
   });
@@ -203,48 +183,28 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   });
   await user.clear(claimant);
   await user.type(claimant, "Corrected claimant");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   const body = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("Expected a grouped correction request body.");
   }
-  const draft = JSON.parse(body) as {
+  const draft: unknown = JSON.parse(body);
+  expect(draft).toMatchObject({
     act: {
-      kind: string;
+      kind: "CORRECT",
       groups: {
         registration: {
-          kind: string;
+          kind: "REPLACE",
           values: {
-            claimantName: string;
-          };
-        };
-        decision: {
-          kind: string;
-        };
-        payment: {
-          kind: string;
-        };
-      };
-    };
-  };
-  expect(draft.act).toMatchObject({
-    kind: "CORRECT",
-    groups: {
-      registration: {
-        kind: "REPLACE",
-        values: {
-          claimantName: "Corrected claimant",
+            claimantName: "Corrected claimant",
+          },
         },
-      },
-      decision: {
-        kind: "KEEP",
-      },
-      payment: {
-        kind: "KEEP",
+        decision: {
+          kind: "KEEP",
+        },
+        payment: {
+          kind: "KEEP",
+        },
       },
     },
   });

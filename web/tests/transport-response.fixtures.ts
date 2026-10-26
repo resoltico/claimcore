@@ -14,6 +14,29 @@ const snapshot = (value: unknown): unknown => {
       : state,
   };
 };
+const reviewData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
+  if (
+    kind === "REVIEWED" &&
+    isObject(data) &&
+    isObject(data["review"]) &&
+    isObject(data["review"]["subject"])
+  ) {
+    const { subject } = data["review"];
+    return {
+      ...data,
+      review: {
+        subject: {
+          ...subject,
+          kind: request["kind"],
+          ...(subject["kind"] === "CASE"
+            ? { before: snapshot(subject["before"]), after: snapshot(subject["after"]) }
+            : {}),
+        },
+      },
+    };
+  }
+  return data;
+};
 const responseData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
   if (kind === "OUTCOME_UNKNOWN") {
     return null;
@@ -39,27 +62,7 @@ const responseData = (kind: string, data: unknown, request: Record<string, unkno
       },
     };
   }
-  if (
-    kind === "REVIEWED" &&
-    isObject(data) &&
-    isObject(data["review"]) &&
-    isObject(data["review"]["subject"])
-  ) {
-    const subject = data["review"]["subject"];
-    return {
-      ...data,
-      review: {
-        subject: {
-          ...subject,
-          kind: request["kind"],
-          ...(subject["kind"] === "CASE"
-            ? { before: snapshot(subject["before"]), after: snapshot(subject["after"]) }
-            : {}),
-        },
-      },
-    };
-  }
-  return data;
+  return reviewData(kind, data, request);
 };
 const envelope = (endpoint: string, kind: string, original: unknown) => {
   const body = vi.mocked(globalThis.fetch).mock?.calls.at(-1)?.[1]?.body;

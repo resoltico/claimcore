@@ -3,16 +3,14 @@ import { it, expect } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { LifecycleStatus } from "../src/views/LifecycleStatus";
 import { fields } from "./service-ui.fixtures";
+const fullHistory = { acts: caseOffers([]), history: ["SUMMARY", "FULL"] as const };
 it("renders active voided and erased states from the accepted case view", () => {
   const { rerender } = render(
     <LifecycleStatus
       value={{
         caseReference: fields.caseReference,
         revision: 1,
-        advice: {
-          acts: caseOffers([]),
-          history: ["SUMMARY", "FULL"],
-        },
+        advice: fullHistory,
         state: {
           kind: "ACTIVE",
           fields,
@@ -26,10 +24,7 @@ it("renders active voided and erased states from the accepted case view", () => 
       value={{
         caseReference: fields.caseReference,
         revision: 2,
-        advice: {
-          acts: caseOffers([]),
-          history: ["SUMMARY", "FULL"],
-        },
+        advice: fullHistory,
         state: {
           kind: "VOIDED",
           fields,

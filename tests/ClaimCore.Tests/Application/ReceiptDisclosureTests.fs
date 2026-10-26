@@ -97,7 +97,7 @@ let private foreignScope () =
 
     match CaseDecisions.review installation calendar owner request read with
     | Decision.Refuse Refusal.IdempotencyConflict -> ()
-    | _ -> failtest "Visible existing-operation scope reveals only conflict"
+    | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
     let narrowed =
         { read with
@@ -109,7 +109,7 @@ let private foreignScope () =
 
     match CaseDecisions.review installation calendar owner request narrowed with
     | Decision.Refuse Refusal.ResourceUnavailable -> ()
-    | _ -> failtest "Missing accepted-operation scope must retain privacy"
+    | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
     let _, entry, current, _ = created 204 "ROLE-DISCLOSURE"

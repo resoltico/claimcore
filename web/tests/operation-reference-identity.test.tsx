@@ -1,5 +1,5 @@
 import { caseOffers } from "./case-advice.fixtures";
-import { render, screen } from "./presentation-test-support";
+import { findButton, getButton, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
@@ -77,26 +77,14 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     }),
   ).toBeNull();
   expect(screen.getByText(/Handler's case reference:/u)).toHaveTextContent(fields.caseReference);
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await user.click(
     await screen.findByRole("checkbox", {
       name: "I confirm these changes.",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
-  await user.click(
-    await screen.findByRole("button", {
-      name: "Return to case",
-    }),
-  );
+  await user.click(getButton("Record changes"));
+  await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   expect(draft.caseReference).toBe(fields.caseReference);

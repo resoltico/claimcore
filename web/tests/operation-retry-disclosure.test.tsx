@@ -2,7 +2,7 @@ import { caseOffers } from "./case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
-import { render, screen } from "./presentation-test-support";
+import { findButton, getButton, render, screen } from "./presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "./presentation-state.fixtures";
 import { wireReply } from "./contract-corpus.fixtures";
 import { fields, response, runtime, unavailable } from "./service-ui.fixtures";
@@ -105,11 +105,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
   expect(claimant).toHaveValue(currentCanary);
   await user.clear(claimant);
   await user.type(claimant, reviewCanary);
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await screen.findByRole("dialog", {
     name: "Review changes",
   });
@@ -120,14 +116,8 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
       name: "I confirm these changes.",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
-  await screen.findByRole("button", {
-    name: "Send again",
-  });
+  await user.click(getButton("Record changes"));
+  await findButton("Send again");
   return user;
 };
 const expectPendingOnly = (locked: (locked: boolean) => void) => {
@@ -165,38 +155,18 @@ it.each(["access", "session"] as const)(
     const user = await beginUnknown(locked);
     const original = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     expect(draftAt(1).expectedRevision).toBe(1);
-    await user.click(
-      screen.getByRole("button", {
-        name: "Send again",
-      }),
-    );
+    await user.click(getButton("Send again"));
     expectPendingOnly(locked);
-    await user.click(
-      screen.getByRole("button", {
-        name: "Send again",
-      }),
-    );
+    await user.click(getButton("Send again"));
     expectPendingOnly(locked);
-    expect(
-      screen.getByRole("button", {
-        name: "Send again",
-      }),
-    ).toBeDisabled();
+    expect(getButton("Send again")).toBeDisabled();
     await act(async () => {
       pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));
       await pending.promise;
     });
-    expect(
-      screen.getByRole("button", {
-        name: "Send again",
-      }),
-    ).not.toBeDisabled();
+    expect(getButton("Send again")).not.toBeDisabled();
     expectPendingOnly(locked);
-    await user.click(
-      screen.getByRole("button", {
-        name: "Send again",
-      }),
-    );
+    await user.click(getButton("Send again"));
     expect(
       await screen.findByRole("heading", {
         name: "Recorded change",

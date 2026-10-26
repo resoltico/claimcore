@@ -1,6 +1,6 @@
 import { stubDashboardContext } from "./dashboard-context.fixtures";
 import { caseOffers } from "./case-advice.fixtures";
-import { fireEvent, render, screen } from "./presentation-test-support";
+import { findButton, getButton, fireEvent, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
@@ -101,11 +101,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
       name: "Case detail",
     }),
   ).toBeVisible();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to cases",
-    }),
-  );
+  await user.click(getButton("Back to cases"));
   expect(
     await screen.findByRole("heading", {
       name: "Cases",
@@ -117,46 +113,24 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   queueDefinitionAndList();
   queueDetail();
   renderDashboard();
-  await user.click(
-    await screen.findByRole("button", {
-      name: "CASE-1",
-    }),
-  );
-  await user.click(
-    await screen.findByRole("button", {
-      name: /Close the case/u,
-    }),
-  );
+  await user.click(await findButton("CASE-1"));
+  await user.click(await findButton(/Close the case/u));
   expect(
     screen.getByRole("heading", {
       name: "Close the case",
     }),
   ).toBeVisible();
-  expect(
-    screen.getByRole("button", {
-      name: "Operations",
-    }),
-  ).toBeDisabled();
-  expect(
-    screen.getByRole("button", {
-      name: "Sign out",
-    }),
-  ).toBeDisabled();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  expect(getButton("Operations")).toBeDisabled();
+  expect(getButton("Sign out")).toBeDisabled();
+  await user.click(getButton("Back to case"));
   expect(
     await screen.findByRole("heading", {
       name: "Case detail",
     }),
   ).toBeVisible();
 });
-it("returns an accepted open operation to Dashboard through its committed transition", async () => {
-  const user = userEvent.setup();
+const queueOpenPreview = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  queueDefinitionAndList();
   fetch.mockImplementationOnce(
     previewForRequest(
       response("operation.preview", "REVIEWED", {
@@ -179,14 +153,16 @@ it("returns an accepted open operation to Dashboard through its committed transi
       }),
     ),
   );
+};
+it("returns an accepted open operation to Dashboard through its committed transition", async () => {
+  const user = userEvent.setup();
+  const fetch = vi.mocked(globalThis.fetch);
+  queueDefinitionAndList();
+  queueOpenPreview();
   queueAcceptedOpen();
   queueDetail();
   renderDashboard();
-  await user.click(
-    await screen.findByRole("button", {
-      name: "Open a case",
-    }),
-  );
+  await user.click(await findButton("Open a case"));
   const fill = (label: RegExp, value: string): void => {
     fireEvent.change(screen.getByLabelText(label), {
       target: {
@@ -202,26 +178,14 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fill(/Responsible insurer/u, "Synthetic insurer");
   fill(/Amount claimed/u, "12.34");
   fill(/Currency of claimed amount/u, "EUR");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Review changes",
-    }),
-  );
+  await user.click(getButton("Review changes"));
   await user.click(
     await screen.findByRole("checkbox", {
       name: "I confirm these changes.",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
-  await user.click(
-    await screen.findByRole("button", {
-      name: "Return to case",
-    }),
-  );
+  await user.click(getButton("Record changes"));
+  await user.click(await findButton("Return to case"));
   expect(
     await screen.findByRole("heading", {
       name: "Case detail",

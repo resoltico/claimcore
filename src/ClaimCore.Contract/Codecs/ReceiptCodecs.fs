@@ -72,7 +72,7 @@ module ReceiptCodecs =
                     authorityFields
             ]
 
-    let private header scopeCodec =
+    let private header subjectCodec =
         (record (fun id position at by subject ->
             {
                 OperationId = id
@@ -86,7 +86,7 @@ module ReceiptCodecs =
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
         |> field "recordedBy" _.RecordedBy Codec.uuid
-        |> field "subject" _.Subject scopeCodec
+        |> field "subject" _.Subject subjectCodec
         |> build
 
     let receipt = header subject |> named "OperationReceipt"

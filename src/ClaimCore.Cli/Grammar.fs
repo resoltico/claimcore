@@ -138,16 +138,18 @@ module Grammar =
         scan arguments
         options, List.ofSeq operands
 
+    let private booleanAtom name value (problems: ResizeArray<UsageError>) =
+        match value with
+        | "true" -> JsonValue.Boolean true
+        | "false" -> JsonValue.Boolean false
+        | _ ->
+            problems.Add(UsageError.InvalidChoice(name, value, [ "true"; "false" ]))
+            JsonValue.Null
+
     let private atom name kind value (problems: ResizeArray<UsageError>) =
         match kind with
         | CatalogAtom.Text -> JsonValue.String value
-        | CatalogAtom.Boolean ->
-            match value with
-            | "true" -> JsonValue.Boolean true
-            | "false" -> JsonValue.Boolean false
-            | _ ->
-                problems.Add(UsageError.InvalidChoice(name, value, [ "true"; "false" ]))
-                JsonValue.Null
+        | CatalogAtom.Boolean -> booleanAtom name value problems
         | CatalogAtom.Integer ->
             match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
             | true, number when number <= JsonValue.MaximumInteger -> JsonValue.Integer number
