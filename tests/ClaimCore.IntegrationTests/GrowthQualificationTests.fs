@@ -36,8 +36,7 @@ let private authority (actor: HandlerContext) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
                     (OperationInput.Authority(
                         authorityRequest
@@ -72,8 +71,7 @@ let private openCases (actor: HandlerContext) count =
     task {
         for index in 0 .. count - 1 do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
                     (OperationInput.Case(
                         request
@@ -139,8 +137,7 @@ let private writeLane (actor: HandlerContext) workload lane =
 
             let watch = Stopwatch.StartNew()
 
-            let! result =
-                (Handlers.call Api.operationExecute actor (OperationInput.Case authored) (token))
+            let! result = (Core.execute actor (OperationInput.Case authored) (token))
 
             accepted result |> ignore
 
@@ -258,8 +255,7 @@ let private report
 let private history workload (actor: HandlerContext) =
     task {
         let! history =
-            (Handlers.call
-                Api.caseHistory
+            (Core.history
                 actor
                 ({
                     CaseReference = "synthetic-growth-0"

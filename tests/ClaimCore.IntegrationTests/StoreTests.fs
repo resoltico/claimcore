@@ -14,8 +14,7 @@ open ClaimCore.TestSupport.StoreFixtures
 let private serviceCases (admin: HandlerContext) principal =
     task {
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 400) principal AdmittedAuthorityAct.Register
@@ -28,8 +27,7 @@ let private serviceCases (admin: HandlerContext) principal =
             let reference = $"SERVICE-{number}"
 
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     admin
                     (OperationInput.Case(
                         request (410 + number) reference 0L (UnvalidatedCaseAct.Open registration)
@@ -81,11 +79,7 @@ let private serviceScopeCorruption () =
                     principal
 
             let! hidden =
-                (Handlers.call
-                    Api.caseGet
-                    service
-                    ({ CaseReference = "SERVICE-1" })
-                    (CancellationToken.None))
+                (Core.get service ({ CaseReference = "SERVICE-1" }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             Expect.equal
@@ -94,11 +88,7 @@ let private serviceScopeCorruption () =
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
-                (Handlers.call
-                    Api.caseList
-                    service
-                    ({ AfterCursor = None; Limit = 50 })
-                    (CancellationToken.None))
+                (Core.list service ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             match visible with

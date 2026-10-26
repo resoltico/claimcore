@@ -8,6 +8,7 @@
     <Compile Include="Support/PropertyHarness.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
     <Compile Include="Support/Fixtures.fs" />
+    <Compile Include="Support/CliReplies.fs" />
     <Compile Include="Architecture/ProjectReferences.fs" />
     <Compile Include="Architecture/NegativeFixtures.fs" />
     <Compile Include="Architecture/ApiRules.fs" />

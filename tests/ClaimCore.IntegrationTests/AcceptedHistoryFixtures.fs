@@ -124,8 +124,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         let name = String.replicate 201 "A"
         do! seed database name
 
-        let! current =
-            (Handlers.call Api.caseGet actor ({ CaseReference = "historical-1" }) (token))
+        let! current = (Core.get actor ({ CaseReference = "historical-1" }) (token))
 
         match current with
         | ReadReply.Succeeded {
@@ -146,8 +145,7 @@ let private grandfathering (database: PostgresFixture.Database) =
             }
 
         let! reaffirm =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
@@ -157,8 +155,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         accepted reaffirm |> ignore
 
         let! changed =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request
@@ -196,8 +193,7 @@ let private appendTransitions (actor: HandlerContext) =
                     UnvalidatedCaseAct.Reopen
 
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     actor
                     (OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act))
                     (token))
@@ -232,8 +228,7 @@ let private remainingHistory (actor: HandlerContext) (query: HistoryRequest) =
         let mutable entries = []
 
         while cursor.IsSome do
-            let! current =
-                (Handlers.call Api.caseHistory actor ({ query with AfterCursor = cursor }) (token))
+            let! current = (Core.history actor ({ query with AfterCursor = cursor }) (token))
 
             let current = historyPage current
 
@@ -266,8 +261,7 @@ let private assertRemainingHistoryAccess
     =
     task {
         let! summary =
-            (Handlers.call
-                Api.caseHistory
+            (Core.history
                 actor
                 ({ query with
                     Detail = HistoryDetail.Summary
@@ -277,12 +271,7 @@ let private assertRemainingHistoryAccess
         let summary = historyPage summary
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
-        let! observed =
-            (Handlers.call
-                Api.operationObserve
-                actor
-                ({ OperationId = original.OperationId })
-                (token))
+        let! observed = (Core.observe actor ({ OperationId = original.OperationId }) (token))
 
         Expect.equal
             observed
@@ -327,7 +316,7 @@ let private revokedFullHistory
                 }
                 query
             ] do
-            let! refused = (Handlers.call Api.caseHistory actor (request) (token))
+            let! refused = (Core.history actor (request) (token))
 
             Expect.equal
                 refused
@@ -353,7 +342,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 Detail = HistoryDetail.Full
             }
 
-        let! first = (Handlers.call Api.caseHistory actor (query) (token))
+        let! first = (Core.history actor (query) (token))
 
         let first = historyPage first
 
@@ -382,8 +371,7 @@ let private retainedPages (database: PostgresFixture.Database) =
         assertRetained name entries
 
         let! summary =
-            (Handlers.call
-                Api.caseHistory
+            (Core.history
                 actor
                 ({ query with
                     Detail = HistoryDetail.Summary

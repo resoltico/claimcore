@@ -123,7 +123,7 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (Handlers.call Api.operationExecute (actor: HandlerContext) (OperationInput.Case pending) (ct))
+    (Core.execute (actor: HandlerContext) (OperationInput.Case pending) (ct))
 
 let private opening values =
     { openRequest 10 "REACH-1" with
@@ -328,16 +328,11 @@ let private stateEvidence (setup, final) =
 let private queryEvidence actor =
     task {
         let! limit =
-            (Handlers.call
-                Api.caseList
-                (actor: HandlerContext)
-                ({ AfterCursor = None; Limit = 0 })
-                (ct))
+            (Core.list (actor: HandlerContext) ({ AfterCursor = None; Limit = 0 }) (ct))
 
-        let! cursor =
-            (Handlers.call Api.caseList actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
+        let! cursor = (Core.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
 
-        let! missing = (Handlers.call Api.caseGet actor ({ CaseReference = "MISSING" }) (ct))
+        let! missing = (Core.get actor ({ CaseReference = "MISSING" }) (ct))
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 
@@ -348,8 +343,7 @@ let private authorityEvidence actor =
             |> Result.defaultWith failtest
 
         let send n target act =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 (actor: HandlerContext)
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
@@ -379,8 +373,7 @@ let private identityEvidence actor =
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 35) reader AdmittedAuthorityAct.Register
@@ -420,8 +413,7 @@ let private principalEvidence (actor: HandlerContext) =
                     Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
-            let! outcome =
-                (Handlers.call Api.operationExecute actor (OperationInput.Authority request) (ct))
+            let! outcome = (Core.execute actor (OperationInput.Authority request) (ct))
 
             evidence.Add(refused outcome)
 
@@ -447,8 +439,7 @@ let private boundaryEvidence () =
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
 
-        let! resolved =
-            (Handlers.call Api.operationResolve actor ({ OperationId = id 42 }) (ct))
+        let! resolved = (Core.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L UnvalidatedCaseAct.Close)

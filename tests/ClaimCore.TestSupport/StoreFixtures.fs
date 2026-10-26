@@ -107,8 +107,7 @@ let internal bootstrap fixture =
     }
 
 let internal grant (actor: HandlerContext) operationId target role scope active =
-    (Handlers.call
-        Api.operationExecute
+    (Core.execute
         actor
         (OperationInput.Authority(
             authorityRequest

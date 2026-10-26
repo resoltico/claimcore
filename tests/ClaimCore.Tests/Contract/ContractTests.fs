@@ -164,7 +164,10 @@ let private executeOutcomes () =
                             DeliveryState.Uncertain
                         else
                             DeliveryState.Delivered
-                    Result = FrameResult.Reply(TypedReply.ofValue Api.operationExecute reply)
+                    Result =
+                        FrameResult.Reply(
+                            ClaimCore.Tests.CliReplies.ofValue Api.operationExecute reply
+                        )
                 }
 
             Expect.equal

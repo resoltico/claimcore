@@ -163,10 +163,10 @@ type Stub() =
     member this.Handlers =
         function
         | ActorEndpoint.Context ->
-            Handlers.read Api.context (fun _ () _ ->
+            Route.read Api.context (fun _ () _ ->
                 this.Invoke "context" (ReadReply.Succeeded description))
         | ActorEndpoint.Preview ->
-            Handlers.define
+            Route.bind
                 Api.operationPreview
                 (fun input ->
                     {
@@ -190,7 +190,7 @@ type Stub() =
                             Outcome = outcome
                         })
         | ActorEndpoint.Execute ->
-            Handlers.define
+            Route.bind
                 Api.operationExecute
                 (fun input ->
                     {
@@ -217,12 +217,12 @@ type Stub() =
                                 }
                     })
         | ActorEndpoint.Resolve ->
-            Handlers.define
+            Route.bind
                 Api.operationResolve
                 (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
                 (fun _ _ _ -> this.Invoke "operation.resolve" ResolveReply.NotAccepted)
         | ActorEndpoint.CaseGet ->
-            Handlers.read Api.caseGet (fun _ request _ ->
+            Route.read Api.caseGet (fun _ request _ ->
                 this.Invoke
                     "case.get"
                     (ReadReply.Succeeded
@@ -231,7 +231,7 @@ type Stub() =
                             Advice = { Acts = []; History = [] }
                         }))
         | ActorEndpoint.CaseList ->
-            Handlers.read Api.caseList (fun _ _ _ ->
+            Route.read Api.caseList (fun _ _ _ ->
                 this.Invoke
                     "case.list"
                     (ReadReply.Succeeded
@@ -241,17 +241,17 @@ type Stub() =
                             Offers = []
                         }))
         | ActorEndpoint.CaseHistory ->
-            Handlers.read Api.caseHistory (fun _ _ _ ->
+            Route.read Api.caseHistory (fun _ _ _ ->
                 this.Invoke
                     "case.history"
                     (ReadReply.Succeeded { Entries = []; NextCursor = None }))
         | ActorEndpoint.Observe ->
-            Handlers.read Api.operationObserve (fun _ request _ ->
+            Route.read Api.operationObserve (fun _ request _ ->
                 this.Invoke
                     "operation.observe"
                     (ReadReply.Succeeded(receipt request.OperationId "WEB-001")))
         | ActorEndpoint.AuthorityGrants ->
-            Handlers.read Api.authorityGrants (fun _ request _ ->
+            Route.read Api.authorityGrants (fun _ request _ ->
                 let principal =
                     PrincipalKey.human "https://identity.example/" "synthetic-target"
                     |> Result.defaultWith failwith
@@ -270,7 +270,7 @@ type Stub() =
                             NextCursor = None
                         }))
         | ActorEndpoint.AuthorityList ->
-            Handlers.read Api.authorityList (fun _ _ _ ->
+            Route.read Api.authorityList (fun _ _ _ ->
                 this.Invoke
                     "authority.list"
                     (ReadReply.Succeeded { Items = []; NextCursor = None }))

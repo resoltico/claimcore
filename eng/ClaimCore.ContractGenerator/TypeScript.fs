@@ -39,14 +39,10 @@ module TypeScript =
         Api.all
         |> List.map (fun endpoint ->
             let schema =
-                endpoint.Accept
-                    { new IEndpointVisitor<Schema> with
-                        member _.Visit endpoint =
-                            if response then
-                                endpoint.Output.Schema
-                            else
-                                endpoint.Input.Schema
-                    }
+                (if response then
+                     endpoint.OutputSchema
+                 else
+                     endpoint.InputSchema)
 
             "  readonly " + quote (Api.id endpoint) + ": " + value schema + ";")
         |> String.concat "\n"

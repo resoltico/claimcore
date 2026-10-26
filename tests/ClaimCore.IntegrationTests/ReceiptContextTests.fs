@@ -18,8 +18,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 3) principal AdmittedAuthorityAct.Register
@@ -46,11 +45,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                             })
 
                 let! amended =
-                    (Handlers.call
-                        Api.operationExecute
-                        admin
-                        (OperationInput.Case amendment)
-                        (CancellationToken.None))
+                    (Core.execute admin (OperationInput.Case amendment) (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -70,8 +65,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 principal
 
         let! result =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(openRequest 10 "PROBE-1"))
                 (CancellationToken.None))
@@ -87,8 +81,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
 
         let! denied =
-            (Handlers.call
-                Api.caseGet
+            (Core.get
                 (core fixture principal)
                 ({ CaseReference = "PROBE-1" })
                 (CancellationToken.None))

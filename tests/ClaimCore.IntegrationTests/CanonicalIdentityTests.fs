@@ -70,14 +70,12 @@ let private casePairs (database: PostgresFixture.Database) =
         Expect.equal cases.Length 4 "Equivalent amounts/references and distinct amounts/names"
 
         for vector, left, right in cases do
-            let! first =
-                (Handlers.call Api.operationExecute actor (OperationInput.Case left) (token))
+            let! first = (Core.execute actor (OperationInput.Case left) (token))
 
             let receipt = accepted first
             let! before = verified database
 
-            let! replay =
-                (Handlers.call Api.operationExecute actor (OperationInput.Case right) (token))
+            let! replay = (Core.execute actor (OperationInput.Case right) (token))
 
             let expected =
                 if vector.GetProperty("same").GetBoolean() then
@@ -110,11 +108,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
             |> List.find (fun value -> value.GetProperty("name").GetString() = "equal reference")
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
-                actor
-                (OperationInput.Case(caseInput opening "left"))
-                (token))
+            (Core.execute actor (OperationInput.Case(caseInput opening "left")) (token))
 
         accepted opened |> ignore
 
@@ -126,8 +120,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let target = (authorityInput cases.Head "left").Target
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 901) target AdmittedAuthorityAct.Register
@@ -140,14 +133,12 @@ let private authorityPairs (database: PostgresFixture.Database) =
             let left = authorityInput vector "left" |> AuthorityRequests.toInput
             let right = authorityInput vector "right" |> AuthorityRequests.toInput
 
-            let! first =
-                (Handlers.call Api.operationExecute actor (OperationInput.Authority left) (token))
+            let! first = (Core.execute actor (OperationInput.Authority left) (token))
 
             let receipt = accepted first
             let! before = verified database
 
-            let! replay =
-                (Handlers.call Api.operationExecute actor (OperationInput.Authority right) (token))
+            let! replay = (Core.execute actor (OperationInput.Authority right) (token))
 
             Expect.equal
                 replay.Outcome
@@ -189,8 +180,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 CaseReference = left.CaseReference
             }
 
-        let! first =
-            (Handlers.call Api.operationExecute actor (OperationInput.Case left) (token))
+        let! first = (Core.execute actor (OperationInput.Case left) (token))
 
         accepted first |> ignore
 
@@ -199,8 +189,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 920) outsider AdmittedAuthorityAct.Register
@@ -210,11 +199,9 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedAuthority registered
         let other = core database.Fixture outsider
 
-        let! hiddenEqual =
-            (Handlers.call Api.operationExecute other (OperationInput.Case right) (token))
+        let! hiddenEqual = (Core.execute other (OperationInput.Case right) (token))
 
-        let! hiddenDifferent =
-            (Handlers.call Api.operationExecute other (OperationInput.Case unequal) (token))
+        let! hiddenDifferent = (Core.execute other (OperationInput.Case unequal) (token))
 
         Expect.equal
             hiddenEqual.Outcome
@@ -238,8 +225,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedAuthority stewardship
 
         let! erased =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(request 922 left.CaseReference 1L UnvalidatedCaseAct.Erase))
                 (token))
@@ -247,8 +233,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         accepted erased |> ignore
         let! before = verified database
 
-        let! retry =
-            (Handlers.call Api.operationExecute actor (OperationInput.Case right) (token))
+        let! retry = (Core.execute actor (OperationInput.Case right) (token))
 
         Expect.equal
             retry.Outcome

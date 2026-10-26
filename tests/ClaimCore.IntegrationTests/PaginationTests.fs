@@ -29,8 +29,7 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     admin
                     (OperationInput.Case(
                         request n reference 0L (UnvalidatedCaseAct.Open registration)
@@ -44,8 +43,7 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest (id 3) principal AdmittedAuthorityAct.Register
@@ -64,7 +62,7 @@ let private setup (database: PostgresFixture.Database) =
 let private revocation (database: PostgresFixture.Database) =
     task {
         let! admin, principal, actor = setup database
-        let! first = (Handlers.call Api.caseList actor (query None 1) (token))
+        let! first = (Core.list actor (query None 1) (token))
         let cursor = (page first).NextCursor
         Expect.isSome cursor "Real database issues a continuation"
 
@@ -72,7 +70,7 @@ let private revocation (database: PostgresFixture.Database) =
             grant admin (id 5) principal Role.CaseReader GrantTarget.Installation false
 
         acceptedAuthority revoked
-        let! next = (Handlers.call Api.caseList actor (query cursor 2) (token))
+        let! next = (Core.list actor (query cursor 2) (token))
 
         Expect.equal
             next
@@ -130,13 +128,13 @@ let private freshAdvice (actor: HandlerContext) cursor current =
             ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Paused rows retain the same registrar snapshot advice"
 
-        let! fresh = (Handlers.call Api.caseList actor (query None 50) (token))
+        let! fresh = (Core.list actor (query None 50) (token))
 
         Expect.isFalse
             ((page fresh).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Fresh reader page has no OPEN advice"
 
-        let! next = (Handlers.call Api.caseList actor (query cursor 50) (token))
+        let! next = (Core.list actor (query cursor 50) (token))
 
         Expect.isFalse
             ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
@@ -151,7 +149,7 @@ let private snapshot (database: PostgresFixture.Database) =
             grant admin (id 30) principal Role.CaseRegistrar GrantTarget.Installation true
 
         acceptedAuthority promoted
-        let! first = (Handlers.call Api.caseList actor (query None 1) (token))
+        let! first = (Core.list actor (query None 1) (token))
         let cursor = (page first).NextCursor
 
         let entered =
@@ -171,7 +169,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let reading =
             Task.Run<ReadReply<CaseSummaryPage>>(
                 Func<Task<ReadReply<CaseSummaryPage>>>(fun () ->
-                    (Handlers.call Api.caseList facade (query cursor 50) (token)))
+                    (Core.list facade (query cursor 50) (token)))
             )
 
         try
@@ -183,8 +181,7 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedAuthority revoked
 
             let! later =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     admin
                     (OperationInput.Case(
                         request 13 "CASE-AFTER" 0L (UnvalidatedCaseAct.Open registration)

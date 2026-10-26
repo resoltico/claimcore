@@ -64,8 +64,7 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request 10 "synthetic-a" 0L (UnvalidatedCaseAct.Open registration)

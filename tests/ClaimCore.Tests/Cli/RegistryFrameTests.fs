@@ -160,7 +160,7 @@ let private results () =
         )
 
     let output =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
 
@@ -200,7 +200,7 @@ let private exits () =
         "Protocol refusal retains its exit."
 
     let output =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
 
@@ -226,11 +226,11 @@ let private refusingFrames () =
             "Unknown, extra and duplicate frame members refuse."
 
     Expect.isError
-        (TypedReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        (ServiceReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
         "A malformed raw reply cannot construct a typed value."
 
     let typed =
-        TypedReply.ofValue
+        ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
                 ExecuteReply.OperationId = id
@@ -251,7 +251,7 @@ let private operationEcho () =
 
     for actual, expected in [ id, true; other, false ] do
         let output =
-            TypedReply.ofValue
+            ClaimCore.Tests.CliReplies.ofValue
                 Api.operationExecute
                 {
 
@@ -263,7 +263,7 @@ let private operationEcho () =
             (Correlation.matches
                 (Frames.endpoint prepared)
                 (Frames.input prepared)
-                (TypedReply.json output))
+                (ServiceReply.json output))
             expected
             "Only the frozen operation ID settles a mutation."
 

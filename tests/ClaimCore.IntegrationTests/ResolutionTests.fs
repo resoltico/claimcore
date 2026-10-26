@@ -26,7 +26,7 @@ let private run action =
     }
 
 let private resolve (actor: HandlerContext) id =
-    (Handlers.call Api.operationResolve actor ({ OperationId = id }) (token))
+    (Core.resolve actor ({ OperationId = id }) (token))
 
 let private waiters (database: PostgresFixture.Database) count =
     task {
@@ -63,7 +63,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
         let input =
             OperationInput.Case(request 101 "FENCED" 0L (UnvalidatedCaseAct.Open registration))
 
-        let executing = (Handlers.call Api.operationExecute actor (input) (token))
+        let executing = (Core.execute actor (input) (token))
         do! waiters database 2L
         do! transaction.CommitAsync()
         let! resolved = resolving
@@ -97,8 +97,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! created =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request 110 "RESOLVED" 0L (UnvalidatedCaseAct.Open registration)
@@ -137,8 +136,7 @@ let private receipts (database: PostgresFixture.Database) =
         acceptedAuthority steward
 
         let! erased =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(request 113 "RESOLVED" 1L UnvalidatedCaseAct.Erase))
                 (token))
@@ -164,8 +162,7 @@ let private foreign (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 120) principal AdmittedAuthorityAct.Register
@@ -178,11 +175,11 @@ let private foreign (database: PostgresFixture.Database) =
         let input =
             OperationInput.Case(request 121 "FOREIGN" 0L (UnvalidatedCaseAct.Open registration))
 
-        let! created = (Handlers.call Api.operationExecute actor (input) (token))
+        let! created = (Core.execute actor (input) (token))
         let receipt = accepted created
         let! hidden = resolve other (id 121)
         Expect.equal hidden ResolveReply.NotAccepted "Foreign acceptance discloses nothing"
-        let! replayed = (Handlers.call Api.operationExecute actor (input) (token))
+        let! replayed = (Core.execute actor (input) (token))
 
         Expect.equal
             replayed.Outcome
@@ -197,8 +194,7 @@ let private foreign (database: PostgresFixture.Database) =
             "Another actor's future ID is independently fenced"
 
         let! acceptedOtherId =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request 122 "OTHER-FENCE" 0L (UnvalidatedCaseAct.Open registration)
@@ -218,8 +214,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 120) principal AdmittedAuthorityAct.Register
@@ -230,8 +225,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
         let other = core database.Fixture principal
 
         let! disabled =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 123) principal (AdmittedAuthorityAct.Disable)
@@ -268,8 +262,7 @@ let private authorityFence (database: PostgresFixture.Database) =
         Expect.equal resolved ResolveReply.NotAccepted "Authority identity is fenced"
 
         let! rejected =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 130) target AdmittedAuthorityAct.Register
@@ -282,8 +275,7 @@ let private authorityFence (database: PostgresFixture.Database) =
             "Authority execution also checks the fence"
 
         let! created =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 131) target AdmittedAuthorityAct.Register

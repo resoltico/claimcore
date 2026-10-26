@@ -27,7 +27,7 @@ type CliFailure =
 
 [<RequireQualifiedAccess; NoComparison>]
 type FrameResult =
-    | Reply of TypedReply
+    | Reply of ServiceReply
     | HostFailure of HostFailure
     | LocalFailure of CliFailure
 
@@ -44,7 +44,7 @@ type FrameReply =
 type Invocation =
     private
         {
-            Target: AnyEndpoint
+            Target: ClaimCore.Contract.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -188,7 +188,7 @@ module Frames =
             |> Result.map FrameResult.LocalFailure
         | reply ->
             match target with
-            | Some endpoint -> TypedReply.read endpoint reply |> Result.map FrameResult.Reply
+            | Some endpoint -> ServiceReply.read endpoint reply |> Result.map FrameResult.Reply
             | None -> error "$.result" "a reply requires an endpoint"
 
     let private read document =
@@ -223,7 +223,7 @@ module Frames =
 
     let private resultValue =
         function
-        | FrameResult.Reply value -> TypedReply.json value
+        | FrameResult.Reply value -> ServiceReply.json value
         | FrameResult.HostFailure failure ->
             JsonValue.Object [ "hostFailure", HostFailureCodecs.failure.Write failure ]
         | FrameResult.LocalFailure failure ->
@@ -284,4 +284,4 @@ module Frames =
                 2
             | FrameResult.LocalFailure _
             | FrameResult.HostFailure _ -> 3
-            | FrameResult.Reply reply -> outcomeExitCode (TypedReply.json reply)
+            | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply)

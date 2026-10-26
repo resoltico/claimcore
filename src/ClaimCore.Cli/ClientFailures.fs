@@ -73,7 +73,7 @@ module CliReply =
 
     let result invocation reply =
         let typed =
-            TypedReply.read (Frames.endpoint invocation) reply
+            ServiceReply.read (Frames.endpoint invocation) reply
             |> Result.defaultWith (fun _ ->
                 invalidArg (nameof reply) "Reply does not match the endpoint codec.")
 

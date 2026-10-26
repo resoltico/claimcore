@@ -75,8 +75,8 @@ let private mappedExamples () =
                 | EndpointId.Actor actor -> actor
                 | _ -> failtest "Expected an actor endpoint"
 
-            let prepared = Dispatch.prepare (Handlers.forActor actorEndpoint) input |> admitted
-            let! reply = prepared.Invoke actor CancellationToken.None ignore |> Async.AwaitTask
+            let prepared = (Handlers.route actorEndpoint).Prepare input |> admitted
+            let! reply = prepared (Some actor) CancellationToken.None ignore |> Async.AwaitTask
             Api.admitOutput endpoint reply |> admitted |> ignore
 
             Expect.isTrue
@@ -100,8 +100,7 @@ let private cancellationPolicy () =
         cancellation.Cancel()
 
         let! preview =
-            (Handlers.call Api.operationPreview actor (input) (cancellation.Token))
-            |> Async.AwaitTask
+            (Core.previewReply actor (input) (cancellation.Token)) |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
@@ -109,8 +108,7 @@ let private cancellationPolicy () =
             "Preview observes caller cancellation."
 
         let! execute =
-            (Handlers.call Api.operationExecute actor (input) (CancellationToken.None))
-            |> Async.AwaitTask
+            (Core.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

@@ -34,8 +34,7 @@ let private caller (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
         let! registered =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 owner
                 (OperationInput.Authority(
                     authorityRequest (id 20) principal AdmittedAuthorityAct.Register

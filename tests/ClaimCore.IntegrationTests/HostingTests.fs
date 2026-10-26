@@ -51,8 +51,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
                     (OperationInput.Case(
                         request
@@ -72,7 +71,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = None; Limit = 1 }) (token)))
+                (Core.list actor ({ AfterCursor = None; Limit = 1 }) (token)))
 
         let cursor =
             match page with
@@ -83,7 +82,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! same =
             call first database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Core.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match same with
         | ReadReply.Succeeded page ->
@@ -97,7 +96,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
-                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Core.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match continued with
         | ReadReply.Succeeded page ->
@@ -215,8 +214,7 @@ let tests =
 
                         let! result =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Handlers.call
-                                    Api.operationExecute
+                                (Core.execute
                                     actor
                                     (OperationInput.Case(
                                         request
@@ -234,7 +232,7 @@ let tests =
                         let! after =
                             runtime.WithActor(
                                 database.Fixture.Owner,
-                                fun actor -> (Handlers.call Api.context actor () token)
+                                fun actor -> (Core.context actor () token)
                             )
 
                         Expect.isNone after "Admission closed"
@@ -334,8 +332,7 @@ let tests =
 
                         let running =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Handlers.call
-                                    Api.operationExecute
+                                (Core.execute
                                     actor
                                     (OperationInput.Case(
                                         request

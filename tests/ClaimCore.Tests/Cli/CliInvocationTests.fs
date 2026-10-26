@@ -249,7 +249,7 @@ let private localizedReplyRendering () =
                     Delivery = DeliveryState.Delivered
                     Result =
                         FrameResult.Reply(
-                            TypedReply.read
+                            ServiceReply.read
                                 (Api.tryFind (
                                     example.GetProperty("endpoint").GetString() |> nonNull
                                  )
@@ -364,7 +364,8 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             Endpoint = Some "operation.preview"
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(TypedReply.ofValue Api.operationPreview response)
+            Result =
+                FrameResult.Reply(ClaimCore.Tests.CliReplies.ofValue Api.operationPreview response)
         }
 
     frame

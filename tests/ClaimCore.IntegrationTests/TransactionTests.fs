@@ -131,8 +131,7 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    (Handlers.call
-                                        Api.operationExecute
+                                    (Core.execute
                                         actor
                                         (OperationInput.Case(
                                             request
@@ -227,8 +226,7 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ =
-                            (Handlers.call Api.caseGet actor ({ CaseReference = "absent" }) (token))
+                        let! _ = (Core.get actor ({ CaseReference = "absent" }) (token))
 
                         return ()
                     }))
@@ -326,12 +324,7 @@ let tests =
                                 0L
                                 (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
 
-                        let! failed =
-                            (Handlers.call
-                                Api.operationExecute
-                                actor
-                                (OperationInput.Case operation)
-                                (token))
+                        let! failed = (Core.execute actor (OperationInput.Case operation) (token))
 
                         Expect.equal
                             failed.Outcome
@@ -347,12 +340,7 @@ let tests =
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
-                        let! retry =
-                            (Handlers.call
-                                Api.operationExecute
-                                actor
-                                (OperationInput.Case operation)
-                                (token))
+                        let! retry = (Core.execute actor (OperationInput.Case operation) (token))
 
                         accepted retry |> ignore
                     }))
@@ -392,8 +380,7 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            (Handlers.call
-                                Api.operationExecute
+                            (Core.execute
                                 actor
                                 (OperationInput.Case(
                                     request

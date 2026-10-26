@@ -79,12 +79,10 @@ let private malformed () =
 
         for input in invalid do
             let! execute =
-                (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
-                |> Async.AwaitTask
+                (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             let! preview =
-                (Handlers.call Api.operationPreview core (input) (CancellationToken.None))
-                |> Async.AwaitTask
+                (Core.previewReply core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             Expect.isTrue
                 (match execute.Outcome with
@@ -114,9 +112,7 @@ let private failures () =
             let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
             for input in inputs () do
-                let! reply =
-                    (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
-                    |> Async.AwaitTask
+                let! reply = (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
                 Expect.equal
                     reply.OperationId
@@ -136,13 +132,10 @@ let private cancelled () =
         let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
         for input in inputs () do
-            let! execute =
-                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
-                |> Async.AwaitTask
+            let! execute = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             let! preview =
-                (Handlers.call Api.operationPreview core (input) (cancellation.Token))
-                |> Async.AwaitTask
+                (Core.previewReply core (input) (cancellation.Token)) |> Async.AwaitTask
 
             Expect.equal
                 execute.OperationId
@@ -161,15 +154,14 @@ let private cancelled () =
 
         Expect.equal probe.Calls 0 "No writes or previews dispatched"
 
-        let! context =
-            (Handlers.call Api.context core () cancellation.Token) |> Async.AwaitTask
+        let! context = (Core.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            (Handlers.call Api.caseGet core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            (Core.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
             |> Async.AwaitTask
 
         let! observed =
-            (Handlers.call Api.operationObserve core ({ OperationId = id 470 }) (cancellation.Token))
+            (Core.observe core ({ OperationId = id 470 }) (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled context"
@@ -207,9 +199,7 @@ let private committed () =
 
             let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
-            let! reply =
-                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
-                |> Async.AwaitTask
+            let! reply = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             Expect.equal
                 reply.Outcome

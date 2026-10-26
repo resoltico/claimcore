@@ -410,12 +410,7 @@ module Grammar =
                 let admitted =
                     Api.tryFind endpoint
                     |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
-                    |> fun endpoint ->
-                        endpoint.Accept
-                            { new IEndpointVisitor<Result<JsonValue, Problem>> with
-                                member _.Visit endpoint =
-                                    endpoint.Input.Read "$" body |> Result.map endpoint.Input.Write
-                            }
+                    |> fun endpoint -> endpoint.NormalizeInput body
 
                 match admitted with
                 | Error problem ->

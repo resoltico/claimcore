@@ -45,7 +45,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (handler: AnyHandler)
+        (handler: ClaimCore.Application.Route)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -57,7 +57,7 @@ module internal ApiRoutes =
                 | Error _ ->
                     return Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                 | Ok value ->
-                    match Dispatch.prepare handler value with
+                    match handler.Prepare value with
                     | Error _ ->
                         return
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
@@ -67,7 +67,7 @@ module internal ApiRoutes =
         }
 
     let handle handler configuration withActor (context: HttpContext) =
-        let endpoint = Handlers.endpoint handler
+        let endpoint = handler.Description
 
         task {
             HttpHeaders.noStore context
@@ -97,15 +97,17 @@ module internal ApiRoutes =
 
                         let! result =
                             withActor (AuthenticatedSubjects.key principal) (fun core ->
-                                prepared.Invoke core cancellation (fun () ->
+                                prepared (Some core) cancellation (fun () ->
                                     RouteSupport.markCompleted context))
 
-                        let outcome =
-                            match result with
-                            | Some reply -> reply
-                            | None ->
-                                RouteSupport.markCompleted context
-                                prepared.Unavailable()
+                        let! outcome =
+                            task {
+                                match result with
+                                | Some reply -> return reply
+                                | None ->
+                                    RouteSupport.markCompleted context
+                                    return! prepared None cancellation ignore
+                            }
 
                         return RouteSupport.reply outcome context
         }

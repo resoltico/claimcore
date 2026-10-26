@@ -37,8 +37,7 @@ let createFor issuer subject =
             let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
 
             let! registered =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
                     (OperationInput.Authority(
                         authorityRequest (id 20) service AdmittedAuthorityAct.Register
@@ -53,8 +52,7 @@ let createFor issuer subject =
             acceptedAuthority granted
 
             let! opened =
-                (Handlers.call
-                    Api.operationExecute
+                (Core.execute
                     owner
                     (OperationInput.Case(
                         request 10 "SYNTHETIC-001" 0L (UnvalidatedCaseAct.Open registration)

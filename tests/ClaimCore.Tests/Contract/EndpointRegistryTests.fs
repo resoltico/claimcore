@@ -25,12 +25,8 @@ let private roundTrip codec value =
 let private registry () =
     let rows =
         Api.all
-        |> List.map (fun endpoint ->
-            endpoint.Accept
-                { new IEndpointVisitor<_> with
-                    member _.Visit value =
-                        value.Token, value.Method.Method, value.Effect
-                })
+        |> List.map (fun endpoint -> endpoint.Token, endpoint.Method.Method, endpoint.Effect)
+
 
     let expected =
         [
@@ -241,8 +237,7 @@ let handlerBindings =
     testCase "every closed actor endpoint exports its own typed handler" (fun () ->
         for actor in ActorEndpoints.all do
             let endpoint =
-                ClaimCore.Application.Handlers.forActor actor
-                |> ClaimCore.Application.Handlers.endpoint
+                ClaimCore.Application.Handlers.route actor |> fun route -> route.Description
 
             Expect.equal
                 (Api.identity endpoint)
@@ -252,21 +247,47 @@ let handlerBindings =
 [<Tests>]
 let handlerCallTypes =
     testCase "handler calls tie nominal input and output to the registered endpoint" (fun () ->
-        let handlerType =
-            typeof<ClaimCore.Application.HandlerContext>
-                .Assembly.GetType("ClaimCore.Application.Handlers")
-            |> nonNull
+        let method =
+            typeof<ClaimCore.Application.HandlerContext>.Assembly.GetTypes()
+            |> Array.collect (fun kind ->
+                kind.GetMethods(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Static))
+            |> Array.find (fun method ->
+                let parameters = method.GetParameters()
 
-        let method = handlerType.GetMethod("call") |> nonNull
+                method.Name = "bind"
+                && parameters.Length = 3
+                && parameters[0].ParameterType.IsGenericType
+                && parameters[0].ParameterType.GetGenericTypeDefinition() =
+                    typedefof<Endpoint<_, _>>)
+
+
         let parameters = method.GetParameters()
         let endpointTypes = parameters[0].ParameterType.GetGenericArguments()
+        let unavailable = parameters[1].ParameterType.GetGenericArguments()
 
         Expect.equal
-            parameters[2].ParameterType
-            endpointTypes[0]
-            "A different nominal request cannot pass the erased bridge"
+            (unavailable[0])
+            (endpointTypes[0])
+            "The unavailable response receives this endpoint's exact input"
 
         Expect.equal
-            (method.ReturnType.GetGenericArguments()[0])
-            endpointTypes[1]
-            "The reply remains tied to that endpoint")
+            (unavailable[1])
+            (endpointTypes[1])
+            "The unavailable response has this endpoint's exact output"
+
+        let arguments (kind: Type) = kind.GetGenericArguments()
+        let invocation = parameters[2].ParameterType |> arguments
+        let input = invocation[1] |> arguments
+
+        Expect.equal
+            (input[0])
+            (endpointTypes[0])
+            "The invocation receives this endpoint's exact input"
+
+        let cancellation = input[1] |> arguments
+        let output = cancellation[1] |> arguments
+
+        Expect.equal
+            (output[0])
+            (endpointTypes[1])
+            "The invocation returns this endpoint's exact output")

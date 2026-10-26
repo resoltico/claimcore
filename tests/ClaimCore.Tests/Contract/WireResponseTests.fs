@@ -38,12 +38,7 @@ let private examples () =
         let value = StrictJson.read Limits.MaximumResponseBytes raw |> accepted
         let expected = sample.GetProperty("valid").GetBoolean()
 
-        let encoded =
-            endpoint.Accept
-                { new IEndpointVisitor<Result<ClaimCore.Json.JsonValue, Problem>> with
-                    member _.Visit endpoint =
-                        endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
-                }
+        let encoded = endpoint.NormalizeOutput value
 
         Expect.equal
             (Result.isOk encoded)
@@ -125,7 +120,10 @@ let private frames () =
             Endpoint = Some "session.logout"
             OperationId = None
             Delivery = DeliveryState.Delivered
-            Result = FrameResult.Reply(TypedReply.ofValue Api.logout (ReadReply.Succeeded()))
+            Result =
+                FrameResult.Reply(
+                    ClaimCore.Tests.CliReplies.ofValue Api.logout (ReadReply.Succeeded())
+                )
         }
 
     let roundTrip value =

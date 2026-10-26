@@ -49,8 +49,7 @@ let private populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! outcome =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request
@@ -64,8 +63,7 @@ let private populated (database: PostgresFixture.Database) =
         let receipt = accepted outcome
 
         let! second =
-            (Handlers.call
-                Api.operationExecute
+            (Core.execute
                 actor
                 (OperationInput.Case(
                     request
@@ -106,8 +104,7 @@ let private erased (actor: HandlerContext) =
         let request =
             actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.UnvalidatedCaseAct.Erase)
 
-        let! result =
-            (Handlers.call Api.operationExecute actor (OperationInput.Case request) (token))
+        let! result = (Core.execute actor (OperationInput.Case request) (token))
 
         return accepted result
     }

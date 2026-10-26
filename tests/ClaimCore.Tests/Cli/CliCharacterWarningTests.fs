@@ -136,7 +136,7 @@ let private rendered exampleName customize verify =
             Delivery = DeliveryState.Delivered
             Result =
                 FrameResult.Reply(
-                    TypedReply.read (Api.tryFind endpoint |> Option.get) value
+                    ServiceReply.read (Api.tryFind endpoint |> Option.get) value
                     |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
                 )
         }

@@ -165,7 +165,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
             assets
             (configuration certificate)
             (if forActor.IsSome then
-                 ClaimCore.Application.Handlers.forActor
+                 ClaimCore.Application.Handlers.route
              else
                  facade.Handlers)
             (fun principal action ->
