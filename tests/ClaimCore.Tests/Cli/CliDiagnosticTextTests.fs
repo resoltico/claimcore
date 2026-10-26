@@ -3,6 +3,7 @@ module ClaimCore.Tests.CliDiagnosticTextTests
 open System.Text
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Cli
 
 let private frame refusal =

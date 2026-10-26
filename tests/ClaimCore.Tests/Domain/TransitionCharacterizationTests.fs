@@ -18,7 +18,7 @@ let registration claimant : Registration =
         ClaimedCurrency = "EUR"
     }
 
-let decision amount : ClaimCore.Contract.Decision =
+let decision amount : ClaimCore.Domain.Decision =
     {
         PaymentDecisionDate = "2026-09-03"
         PayableAmount = amount
@@ -85,7 +85,7 @@ let acts =
         "ERASE", CaseAct.Erase
     ]
 
-let request act revision : CaseRequest =
+let request act revision : UnvalidatedCaseRequest =
     {
         OperationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
         CaseReference = "DEMO-1"

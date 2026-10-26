@@ -4,6 +4,7 @@
     <Compile Include="Localization/CliMessages.fs" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CliIdentity.fs" />
     <Compile Include="CliCommands.fs" />

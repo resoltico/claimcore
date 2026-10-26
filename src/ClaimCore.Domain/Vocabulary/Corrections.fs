@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type RecordGroup =
@@ -10,11 +10,11 @@ module RecordGroup =
     let vocabulary =
         Vocabulary.define
             "group"
-            [
-                RecordGroup.Registration, "registration"
-                RecordGroup.Decision, "decision"
-                RecordGroup.Payment, "payment"
-            ]
+            [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
+            (function
+             | RecordGroup.Registration -> "registration"
+             | RecordGroup.Decision -> "decision"
+             | RecordGroup.Payment -> "payment")
 
     let token = Vocabulary.token vocabulary
 
@@ -29,10 +29,14 @@ module CorrectionActions =
         Vocabulary.define
             "token"
             [
-                CorrectionGroupAction.Keep, "KEEP"
-                CorrectionGroupAction.Replace, "REPLACE"
-                CorrectionGroupAction.Clear, "CLEAR"
+                CorrectionGroupAction.Keep
+                CorrectionGroupAction.Replace
+                CorrectionGroupAction.Clear
             ]
+            (function
+             | CorrectionGroupAction.Keep -> "KEEP"
+             | CorrectionGroupAction.Replace -> "REPLACE"
+             | CorrectionGroupAction.Clear -> "CLEAR")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

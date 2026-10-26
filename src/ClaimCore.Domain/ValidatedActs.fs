@@ -1,7 +1,6 @@
 namespace ClaimCore.Domain
 
 open System
-open ClaimCore.Contract
 
 /// Parsed act inputs. The original public request retains authored text for replay identity.
 [<RequireQualifiedAccess>]

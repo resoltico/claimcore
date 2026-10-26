@@ -175,10 +175,15 @@ let private publishedClosure () =
             ClaimCore.TestSupport.PublishedClientClosure.violations directory.FullName
 
         Expect.isEmpty (check ()) "A clean synthetic deliverable is admitted"
-        let source = typeof<ClaimCore.Domain.Claim>.Assembly.Location
+        let source = typeof<ClaimCore.Application.PrincipalKey>.Assembly.Location
         let target = Path.Combine(directory.FullName, Path.GetFileName source |> nonNull)
         File.Copy(source, target)
-        Expect.equal (check ()) [ "ClaimCore.Domain" ] "A real compiled server assembly is rejected"
+
+        Expect.equal
+            (check ())
+            [ "ClaimCore.Application" ]
+            "A real compiled server assembly is rejected"
+
         File.Delete target
         File.WriteAllText(dependencies, "{\"libraries\":{\"ClaimCore.Application/0.11.0\":{}}}")
 

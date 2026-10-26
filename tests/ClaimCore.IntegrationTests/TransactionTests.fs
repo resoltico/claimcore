@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.TransactionTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -101,7 +102,7 @@ let private snapshot (result: Result<CaseReadView, StoreFailure>) name hasHandle
              Actor = ({ Actor = Some _ } as authority)
              Case = Some {
                              Snapshot = {
-                                            State = (ClaimCore.Contract.CaseState.Active(fields) | CaseState.Voided(fields))
+                                            State = (ClaimCore.Domain.CaseState.Active(fields) | CaseState.Voided(fields))
                                         }
                          }
          } ->
@@ -135,7 +136,7 @@ let tests =
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
-                                                (ClaimCore.Contract.CaseAct.Open registration)
+                                                (ClaimCore.Domain.CaseAct.Open registration)
                                         ))
                                         (token))
                             |]
@@ -319,7 +320,7 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Contract.CaseAct.Open registration)
+                                (ClaimCore.Domain.CaseAct.Open registration)
 
                         let! failed =
                             (Handlers.call
@@ -395,7 +396,7 @@ let tests =
                                         20
                                         "synthetic-snapshot"
                                         0L
-                                        (ClaimCore.Contract.CaseAct.Open registration)
+                                        (ClaimCore.Domain.CaseAct.Open registration)
                                 ))
                                 (token))
 

@@ -23,7 +23,7 @@ let internal id n =
     Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
 
 
-let internal request n reference revision act : CaseRequest =
+let internal request n reference revision act : UnvalidatedCaseRequest =
     {
         OperationId = id n
         CaseReference = reference
@@ -31,7 +31,7 @@ let internal request n reference revision act : CaseRequest =
         Act = act
     }
 
-let internal actRequest n reference revision act : CaseRequest =
+let internal actRequest n reference revision act : UnvalidatedCaseRequest =
     {
         OperationId = id n
         CaseReference = reference

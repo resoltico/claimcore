@@ -7,6 +7,7 @@ open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 
 let private oracle () =

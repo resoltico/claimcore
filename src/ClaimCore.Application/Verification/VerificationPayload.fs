@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 
 [<RequireQualifiedAccess>]
 type internal VerifiedPayload =
-    | Case of CaseRequest * CaseSnapshot option
+    | Case of UnvalidatedCaseRequest * CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | Erased
 

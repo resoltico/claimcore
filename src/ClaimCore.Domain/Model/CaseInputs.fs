@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 open System
 
@@ -61,7 +61,7 @@ type CaseAct =
     | Reinstate of string
     | Erase
 
-type CaseRequest =
+type UnvalidatedCaseRequest =
     {
         OperationId: Guid
         CaseReference: string

@@ -27,7 +27,6 @@ module ServiceRuntime =
                             member _.WithActor(principal, action) =
                                 runtime.WithActor(principal, action)
 
-
                             member _.Sessions = runtime.Sessions
 
                             member _.Ready token = runtime.Ready token

@@ -100,6 +100,7 @@
       "claimcore.contract": {
         "type": "Project",
         "dependencies": {
+          "ClaimCore.Domain": "[0.12.0, )",
           "ClaimCore.Json": "[0.12.0, )",
           "FSharp.Core": "[10.1.402, )"
         }
@@ -107,7 +108,6 @@
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Contract": "[0.12.0, )",
           "ClaimCore.Json": "[0.12.0, )",
           "FSharp.Core": "[10.1.402, )"
         }

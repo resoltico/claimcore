@@ -10,6 +10,7 @@ open System.Security.Claims
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.Web
 open Microsoft.AspNetCore.Antiforgery

@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 open Microsoft.FSharp.Reflection
 
@@ -7,7 +7,8 @@ type Vocabulary<'T when 'T: equality> =
     private
         {
             Name: string
-            Definitions: ('T * string) list
+            All: 'T list
+            Token: 'T -> string
         }
 
 module Vocabulary =
@@ -15,12 +16,11 @@ module Vocabulary =
         System.Reflection.BindingFlags.Public
         ||| System.Reflection.BindingFlags.NonPublic
 
-    let define<'T when 'T: equality> name (definitions: ('T * string) list) : Vocabulary<'T> =
-        let cases = List.map fst definitions
-        let tokens = List.map snd definitions
-
-        if List.distinct cases <> cases then
+    let define<'T when 'T: equality> name (all: 'T list) (token: 'T -> string) : Vocabulary<'T> =
+        if List.distinct all <> all then
             invalidArg name "Duplicate case."
+
+        let tokens = List.map token all
 
         if List.distinct tokens <> tokens then
             invalidArg name "Duplicate token."
@@ -32,7 +32,7 @@ module Vocabulary =
                 |> Set.ofArray
 
             let actual =
-                cases
+                all
                 |> List.map (fun value ->
                     let case, _ = FSharpValue.GetUnionFields(value, typeof<'T>, representation)
                     case.Tag)
@@ -43,18 +43,21 @@ module Vocabulary =
 
         {
             Name = name
-            Definitions = definitions
+            All = all
+            Token = token
         }
 
-    let entries vocabulary = vocabulary.Definitions
-    let all vocabulary = vocabulary.Definitions |> List.map fst
-    let tokens vocabulary = vocabulary.Definitions |> List.map snd
+    let all vocabulary = vocabulary.All
+    let token vocabulary = vocabulary.Token
 
-    let token vocabulary value =
-        vocabulary.Definitions |> List.find (fst >> (=) value) |> snd
+    let entries vocabulary =
+        vocabulary.All |> List.map (fun value -> value, vocabulary.Token value)
+
+    let tokens vocabulary =
+        vocabulary.All |> List.map vocabulary.Token
 
     let tryParse vocabulary text =
-        vocabulary.Definitions |> List.tryFind (snd >> (=) text) |> Option.map fst
+        vocabulary.All |> List.tryFind (fun value -> vocabulary.Token value = text)
 
     let messageKey vocabulary value part =
-        vocabulary.Name + "." + token vocabulary value + "." + part
+        vocabulary.Name + "." + vocabulary.Token value + "." + part

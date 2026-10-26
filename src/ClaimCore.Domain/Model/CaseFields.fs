@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 /// Accepted facts share the authored group types; a decision is complete or absent.
 type CaseFields =
@@ -33,11 +33,11 @@ module CaseState =
     let vocabulary =
         Vocabulary.define
             "token"
-            [
-                CaseState.Active(), "ACTIVE"
-                CaseState.Voided(), "VOIDED"
-                CaseState.Erased, "ERASED"
-            ]
+            [ CaseState.Active(); CaseState.Voided(); CaseState.Erased ]
+            (function
+             | CaseState.Active() -> "ACTIVE"
+             | CaseState.Voided() -> "VOIDED"
+             | CaseState.Erased -> "ERASED")
 
     let all = Vocabulary.all vocabulary
 

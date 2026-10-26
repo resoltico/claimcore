@@ -67,7 +67,6 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                 principal
                 action
 
-
         member _.Sessions = sessions
 
         member _.BusinessTimeZone = calendar.TimeZoneId

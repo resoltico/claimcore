@@ -1,6 +1,5 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain.ResultFlow
@@ -43,7 +42,7 @@ module internal RequestValidation =
         | CaseAct.Erase -> invalidArg (nameof act) "Expected a business act."
 
 
-    let parse (request: CaseRequest) =
+    let parse (request: UnvalidatedCaseRequest) =
         result {
             do! controls request.OperationId request.CaseReference request.ExpectedRevision
 

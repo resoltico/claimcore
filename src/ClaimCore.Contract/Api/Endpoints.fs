@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 
 open System.Net.Http
@@ -16,10 +18,14 @@ module EndpointEffects =
         Vocabulary.define
             "effect"
             [
-                EndpointEffect.Read, "READ_ONLY"
-                EndpointEffect.OperationalWrite, "OPERATIONAL_WRITE"
-                EndpointEffect.LedgerExecution, "LEDGER_EXECUTION"
+                EndpointEffect.Read
+                EndpointEffect.OperationalWrite
+                EndpointEffect.LedgerExecution
             ]
+            (function
+             | EndpointEffect.Read -> "READ_ONLY"
+             | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
+             | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION")
 
     let token = Vocabulary.token vocabulary
 
@@ -43,9 +49,9 @@ type ActorEndpoint =
 
 module HostEndpoints =
     let vocabulary =
-        Vocabulary.define
-            "endpoint"
-            [ HostEndpoint.Session, "session"; HostEndpoint.Logout, "session.logout" ]
+        Vocabulary.define "endpoint" [ HostEndpoint.Session; HostEndpoint.Logout ] (function
+            | HostEndpoint.Session -> "session"
+            | HostEndpoint.Logout -> "session.logout")
 
     let all = Vocabulary.all vocabulary
 
@@ -54,17 +60,28 @@ module ActorEndpoints =
         Vocabulary.define
             "endpoint"
             [
-                ActorEndpoint.Preview, "operation.preview"
-                ActorEndpoint.Execute, "operation.execute"
-                ActorEndpoint.CaseGet, "case.get"
-                ActorEndpoint.CaseList, "case.list"
-                ActorEndpoint.CaseHistory, "case.history"
-                ActorEndpoint.Observe, "operation.observe"
-                ActorEndpoint.Resolve, "operation.resolve"
-                ActorEndpoint.AuthorityList, "authority.list"
-                ActorEndpoint.AuthorityGrants, "authority.grants"
-                ActorEndpoint.Context, "context"
+                ActorEndpoint.Preview
+                ActorEndpoint.Execute
+                ActorEndpoint.CaseGet
+                ActorEndpoint.CaseList
+                ActorEndpoint.CaseHistory
+                ActorEndpoint.Observe
+                ActorEndpoint.Resolve
+                ActorEndpoint.AuthorityList
+                ActorEndpoint.AuthorityGrants
+                ActorEndpoint.Context
             ]
+            (function
+             | ActorEndpoint.Preview -> "operation.preview"
+             | ActorEndpoint.Execute -> "operation.execute"
+             | ActorEndpoint.CaseGet -> "case.get"
+             | ActorEndpoint.CaseList -> "case.list"
+             | ActorEndpoint.CaseHistory -> "case.history"
+             | ActorEndpoint.Observe -> "operation.observe"
+             | ActorEndpoint.Resolve -> "operation.resolve"
+             | ActorEndpoint.AuthorityList -> "authority.list"
+             | ActorEndpoint.AuthorityGrants -> "authority.grants"
+             | ActorEndpoint.Context -> "context")
 
     let all = Vocabulary.all vocabulary
 

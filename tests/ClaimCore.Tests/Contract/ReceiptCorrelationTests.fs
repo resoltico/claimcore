@@ -3,6 +3,7 @@ module ClaimCore.Tests.ReceiptCorrelationTests
 open System
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
 let private other = Guid.Parse "10000000-0000-4000-8000-000000000002"

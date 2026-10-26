@@ -1,6 +1,7 @@
 namespace ClaimCore.RecordFormat
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 
@@ -194,12 +195,12 @@ module internal RecordCodecs =
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 () ->
             {
-                CaseRequest.OperationId = v0
+                UnvalidatedCaseRequest.OperationId = v0
                 CaseReference = v1
                 ExpectedRevision = v2
                 Act = v3
             })
-        : Fields<CaseRequest, _>)
+        : Fields<UnvalidatedCaseRequest, _>)
         |> field "operationId" _.OperationId (uuid)
         |> field "caseReference" _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)

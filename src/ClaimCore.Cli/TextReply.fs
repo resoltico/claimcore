@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Contract.Protocol
 open ClaimCore.Json
 

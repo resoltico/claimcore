@@ -3,6 +3,7 @@ module ClaimCore.Tests.WireResponseTests
 open ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 open System

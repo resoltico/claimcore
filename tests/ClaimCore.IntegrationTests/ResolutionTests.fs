@@ -9,6 +9,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 

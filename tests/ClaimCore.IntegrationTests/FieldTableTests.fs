@@ -7,6 +7,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Postgres
 
 let private column (key: string) =

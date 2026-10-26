@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open ClaimCore.Application.VerificationChecks

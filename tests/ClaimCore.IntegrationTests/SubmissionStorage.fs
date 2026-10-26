@@ -45,7 +45,6 @@ let private interceptWrites (store: ILedgerStore) intercept =
         member _.ReadActor(principal, token) = store.ReadActor(principal, token)
     }
 
-
 /// Pauses before the writer starts its real head-locked transaction.
 type Barrier(store: ILedgerStore, operationId) =
     let staged =

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 open ClaimCore.Json
 

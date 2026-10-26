@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.HostTransportTests
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -182,7 +183,7 @@ let private outcomes () =
                 [
                     ExecuteResult.Accepted accepted, "ACCEPTED"
                     ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteResult.Rejected((ClaimCore.Contract.Refusal.CaseVoided)), "REJECTED"
+                    ExecuteResult.Rejected((ClaimCore.Domain.Refusal.CaseVoided)), "REJECTED"
                     ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]

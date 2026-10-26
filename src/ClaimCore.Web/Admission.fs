@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Net

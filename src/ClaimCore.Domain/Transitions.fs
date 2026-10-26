@@ -1,6 +1,5 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 module internal Transitions =
     let private amendment progress =

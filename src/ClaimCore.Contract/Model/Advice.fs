@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
 type RuntimeContext =
@@ -74,16 +76,13 @@ type AdvisoryReview =
 
 module HistoryDetails =
     let vocabulary =
-        Vocabulary.define
-            "historyDetail"
-            [ HistoryDetail.Summary, "SUMMARY"; HistoryDetail.Full, "FULL" ]
+        Vocabulary.define "historyDetail" [ HistoryDetail.Summary; HistoryDetail.Full ] (function
+            | HistoryDetail.Summary -> "SUMMARY"
+            | HistoryDetail.Full -> "FULL")
 
 module Views =
     let vocabulary =
-        Vocabulary.define
-            "view"
-            [
-                View.Cases, "CASES"
-                View.Authority, "AUTHORITY"
-                View.Operations, "OPERATIONS"
-            ]
+        Vocabulary.define "view" [ View.Cases; View.Authority; View.Operations ] (function
+            | View.Cases -> "CASES"
+            | View.Authority -> "AUTHORITY"
+            | View.Operations -> "OPERATIONS")

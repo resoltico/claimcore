@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
 /// Unvalidated subject facts; Application admits the canonical principal key.

@@ -106,7 +106,7 @@ let private requestsGenerator =
 
 let private limit = 65536
 
-let private correctionKindsMatch (request: CaseRequest) (encoded: byte array) =
+let private correctionKindsMatch (request: UnvalidatedCaseRequest) (encoded: byte array) =
     match request.Act with
     | (CaseAct.Correct correction) ->
         let registration =
@@ -174,7 +174,7 @@ let private fingerprint request =
     |> LedgerEntry.requestDigest
     |> Convert.ToHexStringLower
 
-let private identityChanges (request: CaseRequest) =
+let private identityChanges (request: UnvalidatedCaseRequest) =
     let replacementId = Guid.Parse("20000000-0000-4000-8000-000000000099")
 
     let distinctId =

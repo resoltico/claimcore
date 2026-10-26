@@ -9,7 +9,7 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
 type internal EntryContent =
-    | Case of request: CaseRequest * snapshot: CaseSnapshot option
+    | Case of request: UnvalidatedCaseRequest * snapshot: CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | ErasedCase
 

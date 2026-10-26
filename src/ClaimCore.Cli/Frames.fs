@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -110,11 +111,11 @@ module Frames =
     let private delivery =
         Vocabulary.define
             "delivery"
-            [
-                DeliveryState.NotSent, "NOT_SENT"
-                DeliveryState.Delivered, "DELIVERED"
-                DeliveryState.Uncertain, "UNCERTAIN"
-            ]
+            [ DeliveryState.NotSent; DeliveryState.Delivered; DeliveryState.Uncertain ]
+            (function
+             | DeliveryState.NotSent -> "NOT_SENT"
+             | DeliveryState.Delivered -> "DELIVERED"
+             | DeliveryState.Uncertain -> "UNCERTAIN")
         |> Vocabulary.entries
         |> Codec.enumeration
 

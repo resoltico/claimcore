@@ -2,6 +2,7 @@ namespace ClaimCore.Postgres
 
 open System.Threading.Tasks
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 

@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 [<NoEquality; NoComparison>]
 type FieldRow =
@@ -8,20 +8,18 @@ type FieldRow =
         Placement: FieldPlacement
         RetainedOnErasure: bool
         Scalar: ScalarRule
-        GrammarViolation: Violation option
         Optional: bool
         AcceptedValue: CaseFields -> string option
     }
 
 module FieldTable =
-    let private row field key placement scalar violation optional read =
+    let private row field key placement scalar optional read =
         {
             Field = field
             Key = key
             Placement = placement
             RetainedOnErasure = field = BusinessField.CaseReference
             Scalar = scalar
-            GrammarViolation = violation
             Optional = optional
             AcceptedValue = read
         }
@@ -33,7 +31,6 @@ module FieldTable =
                 "incidentDate"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
-                None
                 false
                 (fun fields -> Some fields.Registration.IncidentDate)
             row
@@ -41,7 +38,6 @@ module FieldTable =
                 "incidentNotificationDate"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
-                None
                 false
                 (fun fields -> Some fields.Registration.IncidentNotificationDate)
             row
@@ -49,7 +45,6 @@ module FieldTable =
                 "incidentCountry"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text(FieldRules.token Formats.country))
-                (Some Violation.CountryFormat)
                 false
                 (fun fields -> Some fields.Registration.IncidentCountry)
             row
@@ -57,7 +52,6 @@ module FieldTable =
                 "claimantName"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text FieldRules.freeText)
-                None
                 false
                 (fun fields -> Some fields.Registration.ClaimantName)
             row
@@ -65,7 +59,6 @@ module FieldTable =
                 "insurerName"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Text FieldRules.freeText)
-                None
                 false
                 (fun fields -> Some fields.Registration.InsurerName)
             row
@@ -73,7 +66,6 @@ module FieldTable =
                 "claimedAmount"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Amount FieldRules.amount)
-                None
                 false
                 (fun fields -> Some fields.Registration.ClaimedAmount)
             row
@@ -81,7 +73,6 @@ module FieldTable =
                 "claimedCurrency"
                 (FieldPlacement.Grouped RecordGroup.Registration)
                 (ScalarRule.Currency FieldRules.currency)
-                None
                 false
                 (fun fields -> Some fields.Registration.ClaimedCurrency)
             row
@@ -89,7 +80,6 @@ module FieldTable =
                 "caseReference"
                 FieldPlacement.TopLevel
                 (ScalarRule.Text(FieldRules.token Formats.reference))
-                (Some Violation.ReferenceFormat)
                 false
                 (fun fields -> Some fields.CaseReference)
             row
@@ -97,7 +87,6 @@ module FieldTable =
                 "paymentDecisionDate"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
-                None
                 true
                 (fun fields -> fields.Decision |> Option.map _.PaymentDecisionDate)
             row
@@ -105,7 +94,6 @@ module FieldTable =
                 "payableAmount"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.Amount FieldRules.amount)
-                None
                 true
                 (fun fields -> fields.Decision |> Option.map _.PayableAmount)
             row
@@ -113,7 +101,6 @@ module FieldTable =
                 "payableCurrency"
                 (FieldPlacement.Grouped RecordGroup.Decision)
                 (ScalarRule.Currency FieldRules.currency)
-                None
                 true
                 (fun fields -> fields.Decision |> Option.map _.PayableCurrency)
             row
@@ -121,7 +108,6 @@ module FieldTable =
                 "paymentDate"
                 (FieldPlacement.Grouped RecordGroup.Payment)
                 (ScalarRule.CalendarDate FieldRules.calendarDate)
-                None
                 true
                 (fun fields -> fields.Payment |> Option.map _.PaymentDate)
             row
@@ -129,13 +115,27 @@ module FieldTable =
                 "status"
                 FieldPlacement.TopLevel
                 (ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all })
-                None
                 false
                 (fun fields -> Some(CaseStatuses.token fields.Status))
         ]
 
+    // Flat exhaustive declaration: compiler coverage and artifact parity protect this mapping.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
-        rows |> List.map (fun row -> row.Field, row.Key) |> Vocabulary.define "field"
+        Vocabulary.define "field" (rows |> List.map _.Field) (function
+            | BusinessField.IncidentDate -> "incidentDate"
+            | BusinessField.IncidentNotificationDate -> "incidentNotificationDate"
+            | BusinessField.IncidentCountry -> "incidentCountry"
+            | BusinessField.ClaimantName -> "claimantName"
+            | BusinessField.InsurerName -> "insurerName"
+            | BusinessField.ClaimedAmount -> "claimedAmount"
+            | BusinessField.ClaimedCurrency -> "claimedCurrency"
+            | BusinessField.CaseReference -> "caseReference"
+            | BusinessField.PaymentDecisionDate -> "paymentDecisionDate"
+            | BusinessField.PayableAmount -> "payableAmount"
+            | BusinessField.PayableCurrency -> "payableCurrency"
+            | BusinessField.PaymentDate -> "paymentDate"
+            | BusinessField.Status -> "status")
 
     let key = Vocabulary.token vocabulary
 

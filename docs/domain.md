@@ -15,7 +15,7 @@ look up an act. The sections below explain the business meaning and the limits o
 A case has thirteen business fields: incident date, this handler's first notification date, incident country,
 claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
-The [field table](../src/ClaimCore.Contract/Fields/FieldTable.fs) owns JSON keys and labels.
+The [field table](../src/ClaimCore.Domain/Fields/FieldTable.fs) owns JSON keys and labels.
 
 Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
 null; status begins OPENED. The view places the seven registration members in `registration`, the three
@@ -23,7 +23,7 @@ decision members in `decision`, and the payment date in `payment`. A recorded gr
 null means the whole group is unrecorded, with no invented zero or date. Claimant may identify a person or
 organization; insurer records the handler's assertion.
 
-The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Contract/Formats.fs).
+The immutable reference uses printable non-space ASCII, within the [reference format](../src/ClaimCore.Domain/Values.fs).
 Resource lookup folds ASCII letter case within an installation; accepted snapshots retain the initial spelling.
 Operation identity compares amounts by value and references after ASCII case folding. Respelled equal values
 under the same operation ID replay the original acceptance. The ledger retains the request as authored.
@@ -76,8 +76,7 @@ cannot replay. [Operations](operations.md#erasure-limits) explains the physical 
 
 ## Scalars
 
-Permanent syntax lives in [Contract Formats](../src/ClaimCore.Contract/Formats.fs); current admission is composed
-in [Contract field rows](../src/ClaimCore.Contract/Fields/FieldTable.fs) and [validation](../src/ClaimCore.Domain/Validation.fs).
+Permanent syntax and current admission live in [Domain value modules](../src/ClaimCore.Domain/Values.fs). The [request validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns their diagnostics to input targets.
 Retained reads and verification enforce permanent format/state invariants, without applying today's admission
 to old assertions. Unchanged retained names and dates may be reaffirmed.
 

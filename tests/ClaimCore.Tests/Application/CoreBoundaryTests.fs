@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures

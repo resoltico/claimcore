@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.DatabaseTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Security.Cryptography
@@ -52,7 +53,7 @@ let private populated (database: PostgresFixture.Database) =
                 Api.operationExecute
                 actor
                 (OperationInput.Case(
-                    request 10 "synthetic-a" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    request 10 "synthetic-a" 0L (ClaimCore.Domain.CaseAct.Open registration)
                 ))
                 (token))
 
@@ -63,7 +64,7 @@ let private populated (database: PostgresFixture.Database) =
                 Api.operationExecute
                 actor
                 (OperationInput.Case(
-                    request 11 "synthetic-b" 0L (ClaimCore.Contract.CaseAct.Open registration)
+                    request 11 "synthetic-b" 0L (ClaimCore.Domain.CaseAct.Open registration)
                 ))
                 (token))
 
@@ -94,7 +95,7 @@ let private erasureFixture (database: PostgresFixture.Database) =
 
 let private erased (actor: HandlerContext) =
     task {
-        let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Contract.CaseAct.Erase)
+        let request = actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.CaseAct.Erase)
 
         let! result =
             (Handlers.call Api.operationExecute actor (OperationInput.Case request) (token))

@@ -112,7 +112,7 @@ type Stub() =
     member val AdmissionOpen = true with get, set
     member val Error: exn option = None with get, set
 
-    member val Execute: CaseRequest * CancellationToken -> Task<ExecuteResult> =
+    member val Execute: UnvalidatedCaseRequest * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) ->
             Task.FromResult(
                 ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)

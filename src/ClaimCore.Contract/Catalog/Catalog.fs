@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 module Catalog =
     let document: CatalogDocument =
         {

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open System
 
 type LedgerPosition = { Sequence: int64; EntryHash: string }

@@ -10,15 +10,15 @@ Postgres loads the authoritative view and persists the result. One database owns
 | Project | Owns | Direct project dependencies |
 | --- | --- | --- |
 | Json | Domain-free JSON values, strict admission, writers, codecs and schemas | None |
-| Contract | Public models, vocabulary, formats, codecs, registry, fields, operation catalog and messages | Json |
-| Domain | Validated case state, admission and transitions | Contract, Json |
+| Contract | Wire models, codecs, registry, operation catalog and messages | Domain, Json |
+| Domain | Value types, scalar rules, vocabulary, requests, case state, admission and transitions | Json |
 | RecordFormat | Versioned durable encodings | Domain, Contract, Json |
 | Application | Authorization, decisions, query selection and verification folds | Domain, RecordFormat, Contract, Json |
 | Postgres | Transactions, reads, projections and schema administration | Application, Domain, RecordFormat, Contract, Json |
 | HostSecurity | Managed private-file admission, HTTPS origins and TLS purposes | None |
-| Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, HostSecurity, Json |
-| CLI | HTTPS client, command grammar and frames | Contract, HostSecurity, Json |
-| Database | Owner administration | Application, Postgres, Contract, HostSecurity, Json |
+| Web | Authentication, HTTP admission, dispatch and composition | Application, Postgres, Contract, Domain, HostSecurity, Json |
+| CLI | HTTPS client, command grammar and frames | Contract, Domain, HostSecurity, Json |
+| Database | Owner administration | Application, Postgres, Contract, Domain, HostSecurity, Json |
 
 The [compiled architecture tests](../tests/ClaimCore.Tests/Architecture/) check the evaluated project graph
 and forbidden dependencies, including I/O, clocks and randomness in the pure projects. Rejecting fixture
@@ -35,7 +35,8 @@ limits offered work. Neither adapter owns another business policy.
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns byte encodings and explicit format dispatch;
 [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns the supported format numbers.
 Durable request, snapshot and authority grammars are independent of wire codecs.
-[Contract Formats.fs](../src/ClaimCore.Contract/Formats.fs) owns permanent scalar syntax and byte bounds.
+[Domain value modules](../src/ClaimCore.Domain/Values.fs) own permanent scalar syntax and admission.
+[Formats.fs](../src/ClaimCore.Domain/Formats.fs) derives scalar descriptors and owns the retained payload byte bound.
 The independent [Python oracle](../tests/fixtures/oracle/generate_vectors.py) pins durable bytes.
 Canonical JSON orders members by RFC 8785 UTF-16 order and preserves authored string values. Wire JSON uses
 declaration order with the same string rules.
@@ -118,8 +119,8 @@ and [Core](../src/ClaimCore.Application/Core.fs) own these decisions.
 
 ### CC-CAT-001 — Consumer vocabulary and presentation ownership
 
-Contract owns ordered vocabulary, field identities, codecs and message keys. Domain owns admission and
-transitions; Application owns authorization. The [core locales](../src/ClaimCore.Contract/Localization/) own product messages;
+Domain owns vocabulary, field identities, scalar admission and transitions. Contract owns wire codecs
+and message keys; Application owns authorization. The [core locales](../src/ClaimCore.Contract/Localization/) own product messages;
 [browser locales](../web/locales/) and [CLI locales](../src/ClaimCore.Cli/Localization/) own renderer chrome.
 CLI and browser render codes/parameters locally. Language and display formats
 are separate preferences and never rewrite business strings.

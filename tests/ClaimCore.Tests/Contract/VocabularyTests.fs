@@ -3,6 +3,7 @@ module ClaimCore.Tests.VocabularyTests
 open System
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type private Member =
@@ -10,10 +11,15 @@ type private Member =
     | Reader
     | Auditor
 
-let private definitions =
-    [ Member.Owner, "OWNER"; Member.Reader, "READER"; Member.Auditor, "AUDITOR" ]
+let private all = [ Member.Owner; Member.Reader; Member.Auditor ]
 
-let private vocabulary = Vocabulary.define "role" definitions
+let private token =
+    function
+    | Member.Owner -> "OWNER"
+    | Member.Reader -> "READER"
+    | Member.Auditor -> "AUDITOR"
+
+let private vocabulary = Vocabulary.define "role" all token
 
 [<Tests>]
 let tests =
@@ -41,27 +47,20 @@ let tests =
                     "Derived key")
             testCase "construction refuses missing union variants" (fun () ->
                 Expect.throwsT<ArgumentException>
-                    (fun () -> Vocabulary.define "role" [ Member.Owner, "OWNER" ] |> ignore)
+                    (fun () -> Vocabulary.define "role" [ Member.Owner ] token |> ignore)
                     "A missing union variant cannot ship")
             testCase
                 "construction refuses duplicate tokens with complete variant coverage"
                 (fun () ->
                     Expect.throwsT<ArgumentException>
-                        (fun () ->
-                            Vocabulary.define
-                                "role"
-                                [ Member.Owner, "X"; Member.Reader, "X"; Member.Auditor, "A" ]
-                            |> ignore)
+                        (fun () -> Vocabulary.define "role" all (fun _ -> "X") |> ignore)
                         "Ambiguous token")
             testCase
                 "construction refuses duplicate cases with complete variant coverage"
                 (fun () ->
                     Expect.throwsT<ArgumentException>
                         (fun () ->
-                            Vocabulary.define
-                                "role"
-                                (definitions @ [ Member.Reader, "ANOTHER_READER" ])
-                            |> ignore)
+                            Vocabulary.define "role" (all @ [ Member.Reader ]) token |> ignore)
                         "Ambiguous case")
             testCase
                 "payload variants are checked without treating payload values as variants"
@@ -75,7 +74,8 @@ let tests =
                         (fun () ->
                             Vocabulary.define
                                 "act"
-                                [ CaseActKind.Business BusinessActKind.Open, "OPEN" ]
+                                [ CaseActKind.Business BusinessActKind.Open ]
+                                CaseActKinds.token
                             |> ignore)
                         "Missing stewardship variant")
             testCase "one act vocabulary covers disjoint case and authority tokens" (fun () ->

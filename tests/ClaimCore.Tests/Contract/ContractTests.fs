@@ -66,12 +66,12 @@ let private admitted codec value =
     use document = JsonDocument.Parse(encoded.AsMemory())
     document.RootElement.Clone()
 
-let private caseRequest values : ClaimCore.Contract.CaseRequest =
+let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
     {
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Contract.CaseAct.Open values
+        Act = ClaimCore.Domain.CaseAct.Open values
     }
 
 let private contextCodec () =
@@ -99,7 +99,7 @@ let private queryCodecs () =
         [
             snapshot
             { snapshot with
-                State = ClaimCore.Contract.CaseState.Erased
+                State = ClaimCore.Domain.CaseState.Erased
             }
         ] do
         admitted
@@ -223,7 +223,7 @@ let private previewCodecs () =
         [
             PreviewResult.Reviewed(OperationReview.Case review)
             PreviewResult.AlreadyAccepted receipt
-            PreviewResult.Rejected ClaimCore.Contract.Refusal.ActNotPermitted
+            PreviewResult.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
             PreviewResult.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
@@ -235,11 +235,11 @@ let private diagnostics () =
 
     for value in
         [
-            ClaimCore.Contract.Refusal.LedgerExhausted
-            ClaimCore.Contract.Refusal.InvalidCursor
-            ClaimCore.Contract.Refusal.LastOwner
-            ClaimCore.Contract.Refusal.ActNotPermitted
-            ClaimCore.Contract.Refusal.ResourceUnavailable
+            ClaimCore.Domain.Refusal.LedgerExhausted
+            ClaimCore.Domain.Refusal.InvalidCursor
+            ClaimCore.Domain.Refusal.LastOwner
+            ClaimCore.Domain.Refusal.ActNotPermitted
+            ClaimCore.Domain.Refusal.ResourceUnavailable
         ] do
         let result = admitted Api.caseGet.Output (ReadReply.Rejected value)
 
@@ -260,7 +260,7 @@ let private actionExpectations =
         "CORRECT_INPUT",
         Some "limit",
         None
-        ClaimCore.Contract.Refusal.InvalidCursor,
+        ClaimCore.Domain.Refusal.InvalidCursor,
         RecommendedAction.ReadCurrent,
         "READ_CURRENT",
         Some "cursor",
@@ -410,7 +410,7 @@ let private retainedText () =
 
         let snapshot =
             { original with
-                State = ClaimCore.Contract.CaseState.Active(fields)
+                State = ClaimCore.Domain.CaseState.Active(fields)
             }
 
         let prior = Case.ofAccepted snapshot |> accepted
@@ -436,7 +436,7 @@ let private retainedText () =
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Contract.CaseAct.AmendRegistration values
+                Act = ClaimCore.Domain.CaseAct.AmendRegistration values
             }
 
         Codec.decode

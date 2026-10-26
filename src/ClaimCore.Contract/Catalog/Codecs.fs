@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
@@ -282,10 +284,14 @@ module CatalogCodecs =
         Vocabulary.define
             "inputSource"
             [
-                InputSource.Authored, "AUTHORED"
-                InputSource.OperationIdentity, "OPERATION_IDENTITY"
-                InputSource.ExpectedRevision, "EXPECTED_REVISION"
+                InputSource.Authored
+                InputSource.OperationIdentity
+                InputSource.ExpectedRevision
             ]
+            (function
+             | InputSource.Authored -> "AUTHORED"
+             | InputSource.OperationIdentity -> "OPERATION_IDENTITY"
+             | InputSource.ExpectedRevision -> "EXPECTED_REVISION")
         |> VocabularyCodec.create
 
     let private binding =

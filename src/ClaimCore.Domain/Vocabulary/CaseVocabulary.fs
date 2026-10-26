@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 /// The two case statuses requested by the operator. Payment never changes this implicitly.
 [<RequireQualifiedAccess>]

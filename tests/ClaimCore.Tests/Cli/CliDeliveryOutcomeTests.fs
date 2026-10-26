@@ -2,6 +2,7 @@ module ClaimCore.Tests.CliDeliveryOutcomeTests
 
 open Expecto
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Cli
 open CliTransportFixture
 

@@ -1,6 +1,5 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain.ResultFlow
@@ -179,13 +178,13 @@ module private BusinessState =
 
 module Case =
     /// Identity normalization never rewrites authored payloads or free text.
-    let canonical (request: CaseRequest) =
+    let canonical (request: UnvalidatedCaseRequest) =
         let registration (value: Registration) =
             { value with
                 ClaimedAmount = Validation.canonicalAmount value.ClaimedAmount
             }
 
-        let decision (value: ClaimCore.Contract.Decision) =
+        let decision (value: ClaimCore.Domain.Decision) =
             { value with
                 PayableAmount = Validation.canonicalAmount value.PayableAmount
             }
@@ -289,7 +288,7 @@ module Case =
                 return CaseState.Active next
         }
 
-    let private create today (request: CaseRequest) =
+    let private create today (request: UnvalidatedCaseRequest) =
         match request.Act with
         | (CaseAct.Open _) when request.ExpectedRevision <> 0L -> Error(Refusal.RevisionConflict 0L)
         | (CaseAct.Open values) ->
@@ -306,7 +305,7 @@ module Case =
             }
         | _ -> Error Refusal.ResourceUnavailable
 
-    let private existing today (request: CaseRequest) (record: CaseRecord) =
+    let private existing today (request: UnvalidatedCaseRequest) (record: CaseRecord) =
         if CaseReference.key record.Reference <> CaseReference.key request.CaseReference then
             invalidArg "record" "The authoritative case does not match the request target."
         else

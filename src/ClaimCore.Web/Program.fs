@@ -1,6 +1,7 @@
 module ClaimCore.Web.Program
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open ClaimCore.Contract.Protocol
 

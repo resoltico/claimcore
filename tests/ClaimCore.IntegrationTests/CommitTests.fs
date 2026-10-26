@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.CommitTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -191,7 +192,12 @@ let private repeatedInitialization (database: PostgresFixture.Database) =
         Expect.equal repeated id "Repetition preserves the landed or freshly installed identity"
     }
 
-let private commitEvidence drop (operation: CaseRequest) (proxy: CommitProxy.Proxy) result =
+let private commitEvidence
+    drop
+    (operation: UnvalidatedCaseRequest)
+    (proxy: CommitProxy.Proxy)
+    result
+    =
     task {
         if drop = CommitProxy.Drop.Never then
             accepted result |> ignore
@@ -264,7 +270,7 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Contract.CaseAct.Open registration)
+                                    (ClaimCore.Domain.CaseAct.Open registration)
 
                             let! result =
                                 (Handlers.call

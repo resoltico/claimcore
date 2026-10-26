@@ -4,6 +4,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 
 open System
 open System.Threading
@@ -54,7 +55,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
                     Api.operationExecute
                     owner
                     (OperationInput.Case(
-                        request n reference 0L (ClaimCore.Contract.CaseAct.Open registration)
+                        request n reference 0L (ClaimCore.Domain.CaseAct.Open registration)
                     ))
                     (token))
 
@@ -218,7 +219,7 @@ let tests =
                                             30
                                             "synthetic-hosting"
                                             0L
-                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                            (ClaimCore.Domain.CaseAct.Open registration)
                                     ))
                                     (token)))
 
@@ -337,7 +338,7 @@ let tests =
                                             40
                                             "synthetic-drain"
                                             0L
-                                            (ClaimCore.Contract.CaseAct.Open registration)
+                                            (ClaimCore.Domain.CaseAct.Open registration)
                                     ))
                                     (token)))
 

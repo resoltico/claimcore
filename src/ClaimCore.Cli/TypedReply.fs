@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Contract
+open ClaimCore.Domain
 open ClaimCore.Json
 
 /// The endpoint witness and decoded value are constructed together by its output codec.

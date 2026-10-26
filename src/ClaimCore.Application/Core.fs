@@ -46,7 +46,7 @@ module internal Core =
         }
 
     let private caseWrite (store: ILedgerStore) installationId calendar principal request ct =
-        write ct (fun () -> admitCase request) (fun (admitted: CaseRequest) ->
+        write ct (fun () -> admitCase request) (fun (admitted: UnvalidatedCaseRequest) ->
             store.WriteCase(
                 principal,
                 admitted.OperationId,
@@ -147,7 +147,7 @@ module internal Core =
         review
             ct
             (fun () -> admitCase request)
-            (fun (admitted: CaseRequest) ->
+            (fun (admitted: UnvalidatedCaseRequest) ->
                 store.ReadCase(principal, Some admitted.OperationId, admitted.CaseReference, ct))
             (CaseDecisions.review installationId calendar principal)
             (fun admitted (view: CaseReadView) (before, after) ->

@@ -20,7 +20,7 @@ module internal CaseDecisions =
             else
                 Error CoreFault.StoreIntegrityError)
 
-    let permission principal actor (request: CaseRequest) (record: StoredCase option) =
+    let permission principal actor (request: UnvalidatedCaseRequest) (record: StoredCase option) =
         if CaseActs.kind request.Act = (CaseActKind.Business BusinessActKind.Open) then
             if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
@@ -76,7 +76,7 @@ module internal CaseDecisions =
     let private project
         installationId
         (calendar: IBusinessCalendar)
-        (request: CaseRequest)
+        (request: UnvalidatedCaseRequest)
         (view: CaseReadView)
         after
         =
@@ -128,7 +128,13 @@ module internal CaseDecisions =
     let review installationId calendar principal request (view: CaseReadView) =
         LedgerEnvelope.review (subject installationId calendar principal request) view
 
-    let execute installationId calendar principal (request: CaseRequest) (view: CaseLockedView) =
+    let execute
+        installationId
+        calendar
+        principal
+        (request: UnvalidatedCaseRequest)
+        (view: CaseLockedView)
+        =
         LedgerEnvelope.execute
             installationId
             request.OperationId

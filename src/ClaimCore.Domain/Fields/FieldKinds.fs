@@ -1,4 +1,4 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type BusinessField =
@@ -20,3 +20,15 @@ type BusinessField =
 type FieldPlacement =
     | TopLevel
     | Grouped of RecordGroup
+
+[<RequireQualifiedAccess>]
+type InputTarget =
+    | Field of BusinessField
+    | OperationId
+    | ExpectedRevision
+    | Group of RecordGroup
+    | Reason
+    | PrincipalIssuer
+    | PrincipalSubject
+    | Limit
+    | Cursor

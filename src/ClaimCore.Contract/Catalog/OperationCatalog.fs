@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 
 open System
@@ -23,25 +25,42 @@ type TechnicalInput =
     | Reason
 
 module TechnicalInputs =
+    // Flat exhaustive declaration: compiler coverage and artifact parity protect this mapping.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
         Vocabulary.define
             "input"
             [
-                TechnicalInput.OperationId, "operationId"
-                TechnicalInput.ExpectedRevision, "expectedRevision"
-                TechnicalInput.PrincipalKind, "kind"
-                TechnicalInput.Issuer, "issuer"
-                TechnicalInput.Subject, "subject"
-                TechnicalInput.Role, "role"
-                TechnicalInput.Scope, "scope"
-                TechnicalInput.Target, "target"
-                TechnicalInput.Act, "act"
-                TechnicalInput.ActorId, "actorId"
-                TechnicalInput.Cursor, "cursor"
-                TechnicalInput.Limit, "limit"
-                TechnicalInput.Full, "full"
-                TechnicalInput.Reason, "reason"
+                TechnicalInput.OperationId
+                TechnicalInput.ExpectedRevision
+                TechnicalInput.PrincipalKind
+                TechnicalInput.Issuer
+                TechnicalInput.Subject
+                TechnicalInput.Role
+                TechnicalInput.Scope
+                TechnicalInput.Target
+                TechnicalInput.Act
+                TechnicalInput.ActorId
+                TechnicalInput.Cursor
+                TechnicalInput.Limit
+                TechnicalInput.Full
+                TechnicalInput.Reason
             ]
+            (function
+             | TechnicalInput.OperationId -> "operationId"
+             | TechnicalInput.ExpectedRevision -> "expectedRevision"
+             | TechnicalInput.PrincipalKind -> "kind"
+             | TechnicalInput.Issuer -> "issuer"
+             | TechnicalInput.Subject -> "subject"
+             | TechnicalInput.Role -> "role"
+             | TechnicalInput.Scope -> "scope"
+             | TechnicalInput.Target -> "target"
+             | TechnicalInput.Act -> "act"
+             | TechnicalInput.ActorId -> "actorId"
+             | TechnicalInput.Cursor -> "cursor"
+             | TechnicalInput.Limit -> "limit"
+             | TechnicalInput.Full -> "full"
+             | TechnicalInput.Reason -> "reason")
 
     let token = Vocabulary.token vocabulary
 

@@ -1,5 +1,7 @@
 namespace ClaimCore.Contract.Protocol
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 open ClaimCore.Json
 
@@ -53,9 +55,9 @@ module DiagnosticCodecs =
 
     let private targetKind =
         function
-        | Refusal.InvalidInput _ -> 1
-        | Refusal.InvalidCursor -> 2
-        | Refusal.OperationResolved -> 3
+        | RefusalCode.InvalidInput _ -> 1
+        | RefusalCode.InvalidCursor -> 2
+        | RefusalCode.OperationResolved -> 3
         | _ -> 0
 
     let private target kind =
@@ -99,14 +101,14 @@ module DiagnosticCodecs =
                 Refusals.parameters reason |> Map.ofList)
 
     let diagnostic =
-        Refusals.all
-        |> List.groupBy (fun (reason, row) ->
-            Refusals.parameters reason |> List.map fst |> List.sort,
-            row.Action,
-            Refusals.actualRevision reason |> Option.isSome,
-            targetKind reason)
+        RefusalCodes.all
+        |> List.groupBy (fun code ->
+            RefusalCodes.parameters code |> List.map DiagnosticArguments.token |> List.sort,
+            RefusalCodes.action code,
+            code = RefusalCode.RevisionConflict,
+            targetKind code)
         |> List.map (fun (key, rows) ->
-            let codes = rows |> List.map (fun (_, row) -> row.Code)
+            let codes = rows |> List.map RefusalCodes.token
 
             branch
                 (fun value -> value)

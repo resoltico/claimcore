@@ -1,6 +1,5 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Contract
 
 open ClaimCore.Domain.ResultFlow
 

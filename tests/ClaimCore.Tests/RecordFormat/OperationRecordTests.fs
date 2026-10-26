@@ -12,7 +12,7 @@ open ClaimCore.RecordFormat
 
 let private operationId = Guid.Parse "20000000-0000-4000-8000-000000000001"
 
-let private steward action : CaseRequest =
+let private steward action : UnvalidatedCaseRequest =
     {
         OperationId = operationId
         CaseReference = "UNIT-001"

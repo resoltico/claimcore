@@ -1,16 +1,4 @@
-namespace ClaimCore.Contract
-
-[<RequireQualifiedAccess>]
-type InputTarget =
-    | Field of BusinessField
-    | OperationId
-    | ExpectedRevision
-    | Group of RecordGroup
-    | Reason
-    | PrincipalIssuer
-    | PrincipalSubject
-    | Limit
-    | Cursor
+namespace ClaimCore.Domain
 
 module InputTargets =
     let private definitions =
@@ -29,6 +17,17 @@ module InputTargets =
             InputTarget.Cursor, "cursor"
         ]
 
-    let vocabulary = Vocabulary.define "field" definitions
+    let vocabulary =
+        Vocabulary.define "field" (List.map fst definitions) (function
+            | InputTarget.Field field -> FieldTable.key field
+            | InputTarget.OperationId -> "operationId"
+            | InputTarget.ExpectedRevision -> "expectedRevision"
+            | InputTarget.Group group -> RecordGroup.token group
+            | InputTarget.Reason -> "reason"
+            | InputTarget.PrincipalIssuer -> "principal.issuer"
+            | InputTarget.PrincipalSubject -> "principal.subject"
+            | InputTarget.Limit -> "limit"
+            | InputTarget.Cursor -> "cursor")
+
     let all = Vocabulary.entries vocabulary
     let token = Vocabulary.token vocabulary

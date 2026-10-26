@@ -108,41 +108,42 @@ let tests =
 
 [<Tests>]
 let grammarDiagnostics =
-    testCase
-        "field grammar diagnostics use their row, with swapped-row negative controls"
-        (fun () ->
-            for field, invalid, valid, expected, wrong in
-                [
-                    BusinessField.CaseReference,
-                    "has space",
-                    "UNIT-1",
-                    Violation.ReferenceFormat,
-                    Violation.CountryFormat
-                    BusinessField.IncidentCountry,
-                    "Latvia",
-                    "LV",
-                    Violation.CountryFormat,
-                    Violation.ReferenceFormat
-                ] do
-                let row = FieldTable.forField field
+    testCase "value modules own grammar diagnostics, with wrong-parser negative controls" (fun () ->
+        let reference value =
+            CaseReference.parse value |> Result.map CaseReference.format
 
-                let check row =
-                    Expect.equal
-                        (Validation.textField row invalid)
-                        (Error(Refusal.InvalidInput(InputTarget.Field field, expected)))
-                        "Grammar failures retain field-specific diagnostics"
+        let country value =
+            CountryCode.parse value |> Result.map CountryCode.format
 
-                check row
+        for field, parse, wrongParser, invalid, valid, expected in
+            [
+                BusinessField.CaseReference,
+                reference,
+                country,
+                "has space",
+                "UNIT-1",
+                Violation.ReferenceFormat
+                BusinessField.IncidentCountry,
+                country,
+                reference,
+                "Latvia",
+                "LV",
+                Violation.CountryFormat
+            ] do
+            let target = InputTarget.Field field
 
+            let check parser =
                 Expect.equal
-                    (Validation.text (InputTarget.Field field) valid)
-                    (Ok valid)
-                    "Valid control is admitted"
+                    (parser invalid)
+                    (Error expected)
+                    "The owning parser supplies its diagnostic"
 
-                Expect.throws
-                    (fun () ->
-                        check
-                            { row with
-                                GrammarViolation = Some wrong
-                            })
-                    "A swapped diagnostic is detected")
+            check parse
+
+            Expect.equal
+                (Validation.text target invalid)
+                (Error(Refusal.InvalidInput(target, expected)))
+                "The request adapter retains the target and value-module diagnostic"
+
+            Expect.equal (Validation.text target valid) (Ok valid) "Valid control is admitted"
+            Expect.throws (fun () -> check wrongParser) "Using the other value parser is detected")

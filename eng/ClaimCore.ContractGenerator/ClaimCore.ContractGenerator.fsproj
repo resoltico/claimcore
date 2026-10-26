@@ -4,6 +4,7 @@
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
     <Compile Include="CatalogRendering.fs" />
     <Compile Include="ClientValidation.fs" />
