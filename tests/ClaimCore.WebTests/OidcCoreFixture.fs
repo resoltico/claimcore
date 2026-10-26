@@ -37,12 +37,13 @@ let createFor issuer subject =
             let service = PrincipalKey.service issuer "service" |> Result.defaultWith invalidOp
 
             let! registered =
-                owner.Execute(
-                    OperationInput.Authority(
+                (Handlers.call
+                    Api.operationExecute
+                    owner
+                    (OperationInput.Authority(
                         authorityRequest (id 20) service AdmittedAuthorityAct.Register
-                    ),
-                    CancellationToken.None
-                )
+                    ))
+                    (CancellationToken.None))
 
             acceptedAuthority registered
 
@@ -52,10 +53,11 @@ let createFor issuer subject =
             acceptedAuthority granted
 
             let! opened =
-                owner.Execute(
-                    OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)),
-                    CancellationToken.None
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    owner
+                    (OperationInput.Case(request 10 "SYNTHETIC-001" 0L (CaseAct.Open registration)))
+                    (CancellationToken.None))
 
             accepted opened |> ignore
             return new Fixture(database)

@@ -372,7 +372,7 @@ module Grammar =
 
             let endpoint =
                 if options.ContainsKey "--preview" && entry.Act.IsSome then
-                    Api.operationPreview.Id
+                    Api.operationPreview.Token
                 else
                     entry.Endpoint
 

@@ -24,7 +24,7 @@
     <Compile Include="IdentityServer.fs" />
     <Compile Include="PrivateTestPaths.fs" />
     <Compile Include="ProbeHttpsFixture.fs" />
-    <Compile Include="FacadeStub.fs" />
+    <Compile Include="HandlerStub.fs" />
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="TestGuards.fs" />
   </ItemGroup>

@@ -32,19 +32,20 @@ let private subjects count =
             |> Result.defaultWith failtest
     ]
 
-let private authority (actor: IActorClaimsCore) principals =
+let private authority (actor: HandlerContext) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                actor.Execute(
-                    OperationInput.Authority(
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Authority(
                         authorityRequest
                             (id (100000 + index * 20))
                             principal
                             AdmittedAuthorityAct.Register
-                    ),
-                    token
-                )
+                    ))
+                    (token))
 
             acceptedAuthority registered
 
@@ -67,20 +68,21 @@ let private authority (actor: IActorClaimsCore) principals =
 
     }
 
-let private openCases (actor: IActorClaimsCore) count =
+let private openCases (actor: HandlerContext) count =
     task {
         for index in 0 .. count - 1 do
             let! result =
-                actor.Execute(
-                    OperationInput.Case(
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(
                         request
                             (1000 + index)
                             ("synthetic-growth-" + string index)
                             0L
                             (CaseAct.Open registration)
-                    ),
-                    token
-                )
+                    ))
+                    (token))
 
             accepted result |> ignore
 
@@ -114,7 +116,7 @@ let private act revision =
     | 6L -> CaseAct.Close
     | _ -> CaseAct.Reopen
 
-let private writeLane (actor: IActorClaimsCore) workload lane =
+let private writeLane (actor: HandlerContext) workload lane =
     task {
         let durations = ResizeArray<float>()
         let revisions = Array.create workload.Cases 1L
@@ -136,7 +138,10 @@ let private writeLane (actor: IActorClaimsCore) workload lane =
                     (act revision)
 
             let watch = Stopwatch.StartNew()
-            let! result = actor.Execute(OperationInput.Case authored, token)
+
+            let! result =
+                (Handlers.call Api.operationExecute actor (OperationInput.Case authored) (token))
+
             accepted result |> ignore
 
             durations.Add watch.Elapsed.TotalMilliseconds
@@ -250,18 +255,19 @@ let private report
         unexpectedErrors = 0
     |}
 
-let private history workload (actor: IActorClaimsCore) =
+let private history workload (actor: HandlerContext) =
     task {
         let! history =
-            actor.History(
-                {
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({
                     CaseReference = "synthetic-growth-0"
                     AfterCursor = None
                     Limit = 50
                     Detail = HistoryDetail.Full
-                },
-                token
-            )
+                })
+                (token))
 
         match history with
         | ReadReply.Succeeded page ->

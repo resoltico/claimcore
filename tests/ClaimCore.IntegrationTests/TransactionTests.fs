@@ -127,16 +127,17 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    actor.Execute(
-                                        OperationInput.Case(
+                                    (Handlers.call
+                                        Api.operationExecute
+                                        actor
+                                        (OperationInput.Case(
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
                                                 (ClaimCore.Contract.CaseAct.Open registration)
-                                        ),
-                                        token
-                                    )
+                                        ))
+                                        (token))
                             |]
 
                         let! results = Task.WhenAll tasks
@@ -221,7 +222,9 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ = actor.Get({ CaseReference = "absent" }, token)
+                        let! _ =
+                            (Handlers.call Api.caseGet actor ({ CaseReference = "absent" }) (token))
+
                         return ()
                     }))
             testCaseAsync
@@ -318,7 +321,12 @@ let tests =
                                 0L
                                 (ClaimCore.Contract.CaseAct.Open registration)
 
-                        let! failed = actor.Execute(OperationInput.Case operation, token)
+                        let! failed =
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case operation)
+                                (token))
 
                         Expect.equal
                             failed.Outcome
@@ -333,7 +341,14 @@ let tests =
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
-                        let! retry = actor.Execute(OperationInput.Case operation, token)
+
+                        let! retry =
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case operation)
+                                (token))
+
                         accepted retry |> ignore
                     }))
             testCaseAsync
@@ -372,16 +387,17 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            actor.Execute(
-                                OperationInput.Case(
+                            (Handlers.call
+                                Api.operationExecute
+                                actor
+                                (OperationInput.Case(
                                     request
                                         20
                                         "synthetic-snapshot"
                                         0L
                                         (ClaimCore.Contract.CaseAct.Open registration)
-                                ),
-                                token
-                            )
+                                ))
+                                (token))
 
                         accepted opened |> ignore
                         use! holder = database.OwnerSource.OpenConnectionAsync()

@@ -28,7 +28,7 @@ let private registry () =
             endpoint.Accept
                 { new IEndpointVisitor<_> with
                     member _.Visit value =
-                        value.Id, value.Method.Method, value.Effect
+                        value.Token, value.Method.Method, value.Effect
                 })
 
     let expected =
@@ -234,3 +234,38 @@ let tests =
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity
             testCase "host failures contain only code and phase" hostFailures
         ]
+
+[<Tests>]
+let handlerBindings =
+    testCase "every closed actor endpoint exports its own typed handler" (fun () ->
+        for actor in ActorEndpoints.all do
+            let endpoint =
+                ClaimCore.Application.Handlers.forActor actor
+                |> ClaimCore.Application.Handlers.endpoint
+
+            Expect.equal
+                (Api.identity endpoint)
+                (EndpointId.Actor actor)
+                "The handler's endpoint identity agrees with its exhaustive case")
+
+[<Tests>]
+let handlerCallTypes =
+    testCase "handler calls tie nominal input and output to the registered endpoint" (fun () ->
+        let handlerType =
+            typeof<ClaimCore.Application.HandlerContext>
+                .Assembly.GetType("ClaimCore.Application.Handlers")
+            |> nonNull
+
+        let method = handlerType.GetMethod("call") |> nonNull
+        let parameters = method.GetParameters()
+        let endpointTypes = parameters[0].ParameterType.GetGenericArguments()
+
+        Expect.equal
+            parameters[2].ParameterType
+            endpointTypes[0]
+            "A different nominal request cannot pass the erased bridge"
+
+        Expect.equal
+            (method.ReturnType.GetGenericArguments()[0])
+            endpointTypes[1]
+            "The reply remains tied to that endpoint")

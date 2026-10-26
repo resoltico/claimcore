@@ -101,7 +101,7 @@ let private actGroups () =
 
     let entry kind =
         Catalog.document.Entries
-        |> List.find (fun entry -> entry.Endpoint = Api.operationExecute.Id && entry.Kind = kind)
+        |> List.find (fun entry -> entry.Endpoint = Api.operationExecute.Token && entry.Kind = kind)
 
     let fields inputs =
         inputs

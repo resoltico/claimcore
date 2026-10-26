@@ -137,22 +137,13 @@ module OperationCatalog =
         (actorActs
          |> List.map (fun act ->
              {
-                 Endpoint = Api.operationExecute.Id
+                 Endpoint = Api.operationExecute.Token
                  Act = Some act
              }))
-        @ (Api.all
-           |> List.map Api.id
+        @ (ActorEndpoints.all
+           |> List.map (Api.forActor >> Api.id)
            |> List.filter (fun id ->
-               not (
-                   List.contains
-                       id
-                       [
-                           Api.session.Id
-                           Api.logout.Id
-                           Api.operationExecute.Id
-                           Api.operationPreview.Id
-                       ]
-               ))
+               not (List.contains id [ Api.operationExecute.Token; Api.operationPreview.Token ]))
            |> List.map (fun endpoint -> { Endpoint = endpoint; Act = None }))
 
     let mutations = all |> List.filter (fun operation -> operation.Act.IsSome)
@@ -213,16 +204,16 @@ module OperationCatalog =
         let caseScoped =
             match operation.Act with
             | Some(ActKind.Case _) -> true
-            | _ -> List.contains operation.Endpoint [ Api.caseGet.Id; Api.caseHistory.Id ]
+            | _ -> List.contains operation.Endpoint [ Api.caseGet.Token; Api.caseHistory.Token ]
 
         let paged =
             List.contains
                 operation.Endpoint
                 [
-                    Api.caseList.Id
-                    Api.caseHistory.Id
-                    Api.authorityList.Id
-                    Api.authorityGrants.Id
+                    Api.caseList.Token
+                    Api.caseHistory.Token
+                    Api.authorityList.Token
+                    Api.authorityGrants.Token
                 ]
 
         {
@@ -233,10 +224,10 @@ module OperationCatalog =
                     if
                         List.contains
                             operation.Endpoint
-                            [ Api.operationObserve.Id; Api.operationResolve.Id ]
+                            [ Api.operationObserve.Token; Api.operationResolve.Token ]
                     then
                         [ "operationId" ]
-                    if operation.Endpoint = Api.authorityGrants.Id then
+                    if operation.Endpoint = Api.authorityGrants.Token then
                         [ "actorId" ]
                 ]
             Prefill =
@@ -262,7 +253,7 @@ module OperationCatalog =
                     [ [ "act"; "scope"; "kind" ] ]
                 | _ -> []
             Switches =
-                if operation.Endpoint = Api.caseHistory.Id then
+                if operation.Endpoint = Api.caseHistory.Token then
                     [
                         [ "detail" ],
                         (Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Summary,
@@ -276,7 +267,7 @@ module OperationCatalog =
                 else
                     []
             Minted =
-                if operation.Endpoint = Api.operationExecute.Id then
+                if operation.Endpoint = Api.operationExecute.Token then
                     [ [ "operationId" ] ]
                 else
                     []
@@ -598,7 +589,7 @@ module OperationCatalog =
         {
             Endpoint = entry.Endpoint
             Act =
-                if entry.Endpoint = Api.operationExecute.Id then
+                if entry.Endpoint = Api.operationExecute.Token then
                     Some(
                         Vocabulary.tryParse ActKinds.vocabulary entry.Kind
                         |> Option.defaultWith (fun () ->

@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.HostingTests
 
+open ClaimCore.Application
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
@@ -49,12 +50,13 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
-                owner.Execute(
-                    OperationInput.Case(
+                (Handlers.call
+                    Api.operationExecute
+                    owner
+                    (OperationInput.Case(
                         request n reference 0L (ClaimCore.Contract.CaseAct.Open registration)
-                    ),
-                    token
-                )
+                    ))
+                    (token))
 
             accepted result |> ignore
 
@@ -65,7 +67,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
-                actor.List({ AfterCursor = None; Limit = 1 }, token))
+                (Handlers.call Api.caseList actor ({ AfterCursor = None; Limit = 1 }) (token)))
 
         let cursor =
             match page with
@@ -76,7 +78,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! same =
             call first database.Fixture.Owner (fun actor ->
-                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
+                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match same with
         | ReadReply.Succeeded page ->
@@ -90,7 +92,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
-                actor.List({ AfterCursor = cursor; Limit = 2 }, token))
+                (Handlers.call Api.caseList actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match continued with
         | ReadReply.Succeeded page ->
@@ -208,16 +210,17 @@ let tests =
 
                         let! result =
                             call runtime database.Fixture.Owner (fun actor ->
-                                actor.Execute(
-                                    OperationInput.Case(
+                                (Handlers.call
+                                    Api.operationExecute
+                                    actor
+                                    (OperationInput.Case(
                                         request
                                             30
                                             "synthetic-hosting"
                                             0L
                                             (ClaimCore.Contract.CaseAct.Open registration)
-                                    ),
-                                    token
-                                ))
+                                    ))
+                                    (token)))
 
                         accepted result |> ignore
                         let! closed = runtime.Shutdown(TimeSpan.FromSeconds 1.)
@@ -226,7 +229,7 @@ let tests =
                         let! after =
                             runtime.WithActor(
                                 database.Fixture.Owner,
-                                fun actor -> actor.Context token
+                                fun actor -> (Handlers.call Api.context actor () token)
                             )
 
                         Expect.isNone after "Admission closed"
@@ -326,16 +329,17 @@ let tests =
 
                         let running =
                             call runtime database.Fixture.Owner (fun actor ->
-                                actor.Execute(
-                                    OperationInput.Case(
+                                (Handlers.call
+                                    Api.operationExecute
+                                    actor
+                                    (OperationInput.Case(
                                         request
                                             40
                                             "synthetic-drain"
                                             0L
                                             (ClaimCore.Contract.CaseAct.Open registration)
-                                    ),
-                                    token
-                                ))
+                                    ))
+                                    (token)))
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.
                         let mutable waiting = false

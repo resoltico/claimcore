@@ -205,6 +205,7 @@ let private configureRoutes
     HostRoutes.map
         assets
         configuration
+        ClaimCore.Application.Handlers.forActor
         (fun principal action -> runtime.WithActor(principal, action))
         application
 

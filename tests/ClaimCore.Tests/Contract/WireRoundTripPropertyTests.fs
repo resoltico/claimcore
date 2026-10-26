@@ -114,11 +114,11 @@ let private load () =
         endpoint.Accept
             { new IEndpointVisitor<bool> with
                 member _.Visit(endpoint: Endpoint<'Input, 'Output>) =
-                    for value in source.Requests[endpoint.Id] do
+                    for value in source.Requests[endpoint.Token] do
                         let typed = endpoint.Input.Read "$" value |> admitted
                         collect source "request" typeof<'Input> (box typed)
 
-                    for value in source.Replies[endpoint.Id] do
+                    for value in source.Replies[endpoint.Token] do
                         let typed = endpoint.Output.Read "$" value |> admitted
                         collect source "reply" typeof<'Output> (box typed)
 
@@ -476,14 +476,14 @@ let private requestProperty (endpoint: AnyEndpoint) =
     endpoint.Accept
         { new IEndpointVisitor<Property<bool>> with
             member _.Visit endpoint =
-                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Id]
+                codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Token]
         }
 
 let private replyProperty (endpoint: AnyEndpoint) =
     endpoint.Accept
         { new IEndpointVisitor<Property<bool>> with
             member _.Visit endpoint =
-                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Id]
+                codecProperty true endpoint.Output seeds.Value.Replies[endpoint.Token]
         }
 
 let private closedUnionCoverage (source: Seeds) =
@@ -522,7 +522,7 @@ let private seedCases () =
         endpoint.Accept
             { new IEndpointVisitor<bool> with
                 member _.Visit endpoint =
-                    for value in source.Requests[endpoint.Id] do
+                    for value in source.Requests[endpoint.Token] do
                         endpoint.Input.Read "$" value
                         |> admitted
                         |> endpoint.Input.Write
@@ -533,7 +533,7 @@ let private seedCases () =
                                 (CanonicalWriter.bytes value)
                                 "Every request seed round trips."
 
-                    for value in source.Replies[endpoint.Id] do
+                    for value in source.Replies[endpoint.Token] do
                         endpoint.Output.Read "$" value
                         |> admitted
                         |> endpoint.Output.Write

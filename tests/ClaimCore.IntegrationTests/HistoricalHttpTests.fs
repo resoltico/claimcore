@@ -34,12 +34,13 @@ let private caller (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
         let! registered =
-            owner.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                owner
+                (OperationInput.Authority(
                     authorityRequest (id 20) principal AdmittedAuthorityAct.Register
-                ),
-                token
-            )
+                ))
+                (token))
 
         acceptedAuthority registered
 
@@ -183,7 +184,7 @@ let private absentRevision (database: PostgresFixture.Database) =
         let pending = request 31 "ABSENT-REVISION" 1L (CaseAct.Open registration)
         let responses = ResizeArray<_>()
 
-        for name in [ Api.operationPreview.Id; Api.operationExecute.Id ] do
+        for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do
             let! status, response = host.Call(name, httpRequest pending, csrf)
 
             responses.Add(

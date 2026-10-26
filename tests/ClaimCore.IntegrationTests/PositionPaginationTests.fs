@@ -13,11 +13,15 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
-let private cases (actor: IActorClaimsCore) =
+let private cases (actor: HandlerContext) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
             let! result =
-                actor.Execute(OperationInput.Case(openRequest n reference), CancellationToken.None)
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(openRequest n reference))
+                    (CancellationToken.None))
 
             accepted result |> ignore
     }
@@ -34,19 +38,20 @@ let private cursor =
     | Some value -> value
     | None -> failtest "Missing continuation"
 
-let private reader fixture (admin: IActorClaimsCore) =
+let private reader fixture (admin: HandlerContext) =
     task {
         let target =
             PrincipalKey.human "https://issuer.example/" "reader"
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                admin
+                (OperationInput.Authority(
                     authorityRequest (id 20) target AdmittedAuthorityAct.Register
-                ),
-                CancellationToken.None
-            )
+                ))
+                (CancellationToken.None))
 
         acceptedAuthority registered
 
@@ -61,7 +66,14 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         do! cases actor
-        let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+
+        let! first =
+            (Handlers.call
+                Api.caseList
+                actor
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
+
         let first = succeeded first
 
         Expect.equal
@@ -70,13 +82,14 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
             "Folded order retains authored spelling"
 
         let! rest =
-            actor.List(
-                {
+            (Handlers.call
+                Api.caseList
+                actor
+                ({
                     AfterCursor = first.NextCursor
                     Limit = 2
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         let rest = succeeded rest
 
@@ -92,12 +105,23 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
         do! cases admin
-        let! first = admin.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+
+        let! first =
+            (Handlers.call
+                Api.caseList
+                admin
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
+
         let token = (succeeded first).NextCursor
         let! _, another = reader fixture admin
 
         let! crossed =
-            another.List({ AfterCursor = token; Limit = 1 }, CancellationToken.None)
+            (Handlers.call
+                Api.caseList
+                another
+                ({ AfterCursor = token; Limit = 1 })
+                (CancellationToken.None))
 
         Expect.equal
             (succeeded crossed).Items.Length
@@ -108,7 +132,13 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
             grant admin (id 22) owner Role.CaseReader (GrantTarget.CaseReference "CASE-C") true
 
         acceptedAuthority extra
-        let! changed = admin.List({ AfterCursor = token; Limit = 1 }, CancellationToken.None)
+
+        let! changed =
+            (Handlers.call
+                Api.caseList
+                admin
+                ({ AfterCursor = token; Limit = 1 })
+                (CancellationToken.None))
 
         Expect.equal
             (succeeded changed).Items.Length
@@ -116,10 +146,14 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
             "Irrelevant grant changes do not invalidate a position"
     }
 
-let private createHistory (actor: IActorClaimsCore) =
+let private createHistory (actor: HandlerContext) =
     task {
         let! opened =
-            actor.Execute(OperationInput.Case(openRequest 10 "HISTORY-1"), CancellationToken.None)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(openRequest 10 "HISTORY-1"))
+                (CancellationToken.None))
 
         accepted opened |> ignore
 
@@ -130,17 +164,18 @@ let private createHistory (actor: IActorClaimsCore) =
                 }
 
             let! amended =
-                actor.Execute(
-                    OperationInput.Case(
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(
                         request n "HISTORY-1" revision (CaseAct.AmendRegistration values)
-                    ),
-                    CancellationToken.None
-                )
+                    ))
+                    (CancellationToken.None))
 
             accepted amended |> ignore
     }
 
-let private registerActors (actor: IActorClaimsCore) =
+let private registerActors (actor: HandlerContext) =
     task {
         for n in 10..12 do
             let target =
@@ -148,31 +183,37 @@ let private registerActors (actor: IActorClaimsCore) =
                 |> Result.defaultWith failtest
 
             let! registered =
-                actor.Execute(
-                    OperationInput.Authority(
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Authority(
                         authorityRequest (id n) target AdmittedAuthorityAct.Register
-                    ),
-                    CancellationToken.None
-                )
+                    ))
+                    (CancellationToken.None))
 
             acceptedAuthority registered
     }
 
-let private differentHistoryResource (actor: IActorClaimsCore) (query: HistoryRequest) cursor =
+let private differentHistoryResource (actor: HandlerContext) (query: HistoryRequest) cursor =
     task {
         let! other =
-            actor.Execute(OperationInput.Case(openRequest 13 "OTHER"), CancellationToken.None)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(openRequest 13 "OTHER"))
+                (CancellationToken.None))
 
         accepted other |> ignore
 
         let! resource =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     CaseReference = "OTHER"
                     AfterCursor = cursor
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal resource (ReadReply.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
@@ -190,19 +231,20 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
                 Detail = HistoryDetail.Full
             }
 
-        let! first = actor.History(query, CancellationToken.None)
+        let! first = (Handlers.call Api.caseHistory actor (query) (CancellationToken.None))
 
         let first = succeeded first
 
         let! rest =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     CaseReference = "history-1"
                     AfterCursor = first.NextCursor
                     Limit = 2
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         match rest with
         | ReadReply.Succeeded page ->
@@ -213,13 +255,14 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
         | _ -> failtest "History continuation failed"
 
         let! summary =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     AfterCursor = first.NextCursor
                     Detail = HistoryDetail.Summary
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal
             (succeeded summary).Entries.Length
@@ -236,33 +279,39 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         do! registerActors actor
 
         let! first =
-            actor.ListActors({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+            (Handlers.call
+                Api.authorityList
+                actor
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
 
         let first = succeeded first
 
         Expect.equal (first.Items |> List.map _.ActorId) [ id 1 ] "Stable actor-ID order"
 
         let! second =
-            actor.ListActors(
-                {
+            (Handlers.call
+                Api.authorityList
+                actor
+                ({
                     AfterCursor = first.NextCursor
                     Limit = 2
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         let second = succeeded second
 
         Expect.equal (second.Items |> List.map _.ActorId) [ id 10; id 11 ] "Changed page size"
 
         let! third =
-            actor.ListActors(
-                {
+            (Handlers.call
+                Api.authorityList
+                actor
+                ({
                     AfterCursor = second.NextCursor
                     Limit = 1
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         match third with
         | ReadReply.Succeeded page ->
@@ -271,13 +320,14 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         | _ -> failtest "Missing final review page"
 
         let! wrongEndpoint =
-            actor.List(
-                {
+            (Handlers.call
+                Api.caseList
+                actor
+                ({
                     AfterCursor = first.NextCursor
                     Limit = 1
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal
             wrongEndpoint
@@ -289,18 +339,26 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
     task {
         let! actor = caseWorker fixture
         do! cases actor
-        let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+
+        let! first =
+            (Handlers.call
+                Api.caseList
+                actor
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
+
         let original = (succeeded first).NextCursor |> cursor
 
         for malformed in [ original + "="; ""; "!"; String.replicate 513 "A" ] do
             let! outcome =
-                actor.List(
-                    {
+                (Handlers.call
+                    Api.caseList
+                    actor
+                    ({
                         AfterCursor = Some malformed
                         Limit = 1
-                    },
-                    CancellationToken.None
-                )
+                    })
+                    (CancellationToken.None))
 
             Expect.equal
                 outcome
@@ -308,16 +366,17 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
                 "No malformed position is trusted"
 
         let restarted =
-            Core.create fixture.InstallationId fixture.Store fixture.Calendar owner
+            Handlers.context fixture.InstallationId fixture.Store fixture.Calendar owner
 
         let! old =
-            restarted.List(
-                {
+            (Handlers.call
+                Api.caseList
+                restarted
+                ({
                     AfterCursor = Some original
                     Limit = 1
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal (succeeded old).Items.Length 1 "Plain continuation survives facade restart"
     }
@@ -329,22 +388,29 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
-            Core.create fixture.InstallationId (proxy :> ILedgerStore) fixture.Calendar owner
+            Handlers.context fixture.InstallationId (proxy :> ILedgerStore) fixture.Calendar owner
 
-        let! first = actor.List({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+        let! first =
+            (Handlers.call
+                Api.caseList
+                actor
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
+
         succeeded first |> ignore
         Expect.equal proxy.ReadCalls 1 "List authorizes and fetches in one read"
 
         let! history =
-            actor.History(
-                {
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({
                     CaseReference = "CASE-A"
                     AfterCursor = None
                     Limit = 1
                     Detail = HistoryDetail.Summary
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         match history with
         | ReadReply.Succeeded _ -> ()
@@ -353,7 +419,11 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
 
         let! authority =
-            actor.ListActors({ AfterCursor = None; Limit = 1 }, CancellationToken.None)
+            (Handlers.call
+                Api.authorityList
+                actor
+                ({ AfterCursor = None; Limit = 1 })
+                (CancellationToken.None))
 
         match authority with
         | ReadReply.Succeeded _ -> ()
@@ -362,14 +432,15 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
 
         let! grants =
-            actor.ListGrants(
-                {
+            (Handlers.call
+                Api.authorityGrants
+                actor
+                ({
                     ActorId = id 1
                     AfterCursor = None
                     Limit = 1
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         succeeded grants |> ignore
         Expect.equal proxy.ReadCalls 4 "Target grant review performs no separate actor read"
@@ -391,13 +462,25 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
                 true
 
         acceptedAuthority scoped
-        let! readers = actor.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+
+        let! readers =
+            (Handlers.call
+                Api.caseList
+                actor
+                ({ AfterCursor = None; Limit = 50 })
+                (CancellationToken.None))
 
         Expect.isFalse
             ((succeeded readers).Offers |> List.contains InstallationOffer.Open)
             "Case-scoped registrar has no installation registration advice"
 
-        let! owners = admin.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+        let! owners =
+            (Handlers.call
+                Api.caseList
+                admin
+                ({ AfterCursor = None; Limit = 50 })
+                (CancellationToken.None))
+
         let offers = (succeeded owners).Offers
 
         Expect.contains
@@ -411,16 +494,17 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
             "Authority act advice is owned by core"
     }
 
-let private appendHistory (actor: IActorClaimsCore) =
+let private appendHistory (actor: HandlerContext) =
     task {
         for revision in 1L .. 52L do
             let act = if revision % 2L = 1L then CaseAct.Close else CaseAct.Reopen
 
             let! result =
-                actor.Execute(
-                    OperationInput.Case(request (20 + int revision) "LONG-HISTORY" revision act),
-                    CancellationToken.None
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    actor
+                    (OperationInput.Case(request (20 + int revision) "LONG-HISTORY" revision act))
+                    (CancellationToken.None))
 
             accepted result |> ignore
 
@@ -431,10 +515,11 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let! actor = caseWorker fixture
 
         let! opened =
-            actor.Execute(
-                OperationInput.Case(openRequest 10 "LONG-HISTORY"),
-                CancellationToken.None
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(openRequest 10 "LONG-HISTORY"))
+                (CancellationToken.None))
 
         accepted opened |> ignore
 
@@ -448,17 +533,18 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
                 Detail = HistoryDetail.Full
             }
 
-        let! first = actor.History(query, CancellationToken.None)
+        let! first = (Handlers.call Api.caseHistory actor (query) (CancellationToken.None))
         let first = succeeded first
         Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
 
         let! rest =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     AfterCursor = first.NextCursor
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         let rest = succeeded rest
 
@@ -476,12 +562,13 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
             "Continuation follows last included row"
 
         let! summary =
-            actor.History(
-                { query with
+            (Handlers.call
+                Api.caseHistory
+                actor
+                ({ query with
                     Detail = HistoryDetail.Summary
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
     }
@@ -514,14 +601,15 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
                     .Replace('/', '_')
 
             let! refused =
-                admin.ListGrants(
-                    {
+                (Handlers.call
+                    Api.authorityGrants
+                    admin
+                    ({
                         ActorId = authority.ActorId
                         AfterCursor = Some cursor
                         Limit = 50
-                    },
-                    CancellationToken.None
-                )
+                    })
+                    (CancellationToken.None))
 
             Expect.equal
                 refused
@@ -529,14 +617,15 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
                 "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
-            admin.ListGrants(
-                {
+            (Handlers.call
+                Api.authorityGrants
+                admin
+                ({
                     ActorId = authority.ActorId
                     AfterCursor = None
                     Limit = 51
-                },
-                CancellationToken.None
-            )
+                })
+                (CancellationToken.None))
 
         Expect.equal
             invalidLimit

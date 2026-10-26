@@ -38,11 +38,11 @@ let tests =
                 let expected =
                     Api.all
                     |> List.map Api.id
-                    |> List.filter (fun id -> id <> Api.session.Id && id <> Api.logout.Id)
+                    |> List.filter (fun id -> id <> Api.session.Token && id <> Api.logout.Token)
                     |> Set.ofList
 
                 let actual =
-                    Api.operationPreview.Id :: (OperationCatalog.all |> List.map _.Endpoint)
+                    Api.operationPreview.Token :: (OperationCatalog.all |> List.map _.Endpoint)
                     |> Set.ofList
 
                 Expect.equal actual expected "Session bootstrap and logout belong to the host")

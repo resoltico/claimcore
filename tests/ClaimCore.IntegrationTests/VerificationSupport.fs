@@ -64,10 +64,11 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            actor.Execute(
-                OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)))
+                (token))
 
         accepted opened |> ignore
         let! _ = verified database

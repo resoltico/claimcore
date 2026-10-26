@@ -29,10 +29,11 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                admin.Execute(
-                    OperationInput.Case(request n reference 0L (CaseAct.Open registration)),
-                    token
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    admin
+                    (OperationInput.Case(request n reference 0L (CaseAct.Open registration)))
+                    (token))
 
             accepted result |> ignore
 
@@ -41,12 +42,13 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith failtest
 
         let! registered =
-            admin.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                admin
+                (OperationInput.Authority(
                     authorityRequest (id 3) principal AdmittedAuthorityAct.Register
-                ),
-                token
-            )
+                ))
+                (token))
 
         acceptedAuthority registered
 
@@ -60,7 +62,7 @@ let private setup (database: PostgresFixture.Database) =
 let private revocation (database: PostgresFixture.Database) =
     task {
         let! admin, principal, actor = setup database
-        let! first = actor.List(query None 1, token)
+        let! first = (Handlers.call Api.caseList actor (query None 1) (token))
         let cursor = (page first).NextCursor
         Expect.isSome cursor "Real database issues a continuation"
 
@@ -68,7 +70,7 @@ let private revocation (database: PostgresFixture.Database) =
             grant admin (id 5) principal Role.CaseReader GrantTarget.Installation false
 
         acceptedAuthority revoked
-        let! next = actor.List(query cursor 2, token)
+        let! next = (Handlers.call Api.caseList actor (query cursor 2) (token))
 
         Expect.equal
             next
@@ -120,19 +122,19 @@ type internal PausedPageStore
         member _.ListCases(principal, readRoles, select, limit, ct) =
             inner.ListCases(principal, readRoles, paused select, limit, ct)
 
-let private freshAdvice (actor: IActorClaimsCore) cursor current =
+let private freshAdvice (actor: HandlerContext) cursor current =
     task {
         Expect.isTrue
             ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Paused rows retain the same registrar snapshot advice"
 
-        let! fresh = actor.List(query None 50, token)
+        let! fresh = (Handlers.call Api.caseList actor (query None 50) (token))
 
         Expect.isFalse
             ((page fresh).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Fresh reader page has no OPEN advice"
 
-        let! next = actor.List(query cursor 50, token)
+        let! next = (Handlers.call Api.caseList actor (query cursor 50) (token))
 
         Expect.isFalse
             ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
@@ -147,7 +149,7 @@ let private snapshot (database: PostgresFixture.Database) =
             grant admin (id 30) principal Role.CaseRegistrar GrantTarget.Installation true
 
         acceptedAuthority promoted
-        let! first = actor.List(query None 1, token)
+        let! first = (Handlers.call Api.caseList actor (query None 1) (token))
         let cursor = (page first).NextCursor
 
         let entered =
@@ -157,7 +159,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let store = PausedPageStore(database.Fixture.Store, entered, release)
 
         let facade =
-            Core.create
+            Handlers.context
                 database.Fixture.InstallationId
                 (store :> ILedgerStore)
                 database.Fixture.Calendar
@@ -167,7 +169,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let reading =
             Task.Run<ReadReply<CaseSummaryPage>>(
                 Func<Task<ReadReply<CaseSummaryPage>>>(fun () ->
-                    facade.List(query cursor 50, token))
+                    (Handlers.call Api.caseList facade (query cursor 50) (token)))
             )
 
         try
@@ -179,10 +181,11 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedAuthority revoked
 
             let! later =
-                admin.Execute(
-                    OperationInput.Case(request 13 "CASE-AFTER" 0L (CaseAct.Open registration)),
-                    token
-                )
+                (Handlers.call
+                    Api.operationExecute
+                    admin
+                    (OperationInput.Case(request 13 "CASE-AFTER" 0L (CaseAct.Open registration)))
+                    (token))
 
             accepted later |> ignore
         finally

@@ -189,19 +189,9 @@ let private nonLedgerCoverageControls () =
     let mapped = nonLedgerVerbExamples |> List.map snd
     assertNonLedgerVerbCoverage Api.all mapped
 
-    let additional =
-        { Api.context with
-            Id = "synthetic.read"
-        }
-
-    let boxed =
-        { new AnyEndpoint with
-            member _.Accept visitor = visitor.Visit additional
-        }
-
     Expect.throws
-        (fun () -> assertNonLedgerVerbCoverage (boxed :: Api.all) mapped)
-        "An added eligible registry endpoint requires a verb"
+        (fun () -> assertNonLedgerVerbCoverage Api.all ("synthetic.read" :: mapped))
+        "A mapping outside the closed endpoint registry is rejected"
 
     Expect.throws
         (fun () -> assertNonLedgerVerbCoverage Api.all (List.tail mapped))
@@ -221,7 +211,7 @@ let private resolveVerb () =
 
     Expect.equal
         (Api.id (Frames.endpoint admitted))
-        Api.operationResolve.Id
+        Api.operationResolve.Token
         "Registry-selected resolve"
 
     Expect.equal

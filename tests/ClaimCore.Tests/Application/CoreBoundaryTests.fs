@@ -55,7 +55,7 @@ let private inputs () =
 let private malformed () =
     async {
         let probe = PortProbe(fun _ -> failtest "Invalid work reached storage")
-        let core = Core.create installation (probe :> ILedgerStore) calendar owner
+        let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
         let invalid =
             [
@@ -72,8 +72,13 @@ let private malformed () =
             ]
 
         for input in invalid do
-            let! execute = core.Execute(input, CancellationToken.None) |> Async.AwaitTask
-            let! preview = core.Preview(input, CancellationToken.None) |> Async.AwaitTask
+            let! execute =
+                (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
+                |> Async.AwaitTask
+
+            let! preview =
+                (Handlers.call Api.operationPreview core (input) (CancellationToken.None))
+                |> Async.AwaitTask
 
             Expect.isTrue
                 (match execute.Outcome with
@@ -100,10 +105,12 @@ let private failures () =
                 StoreFailure.CommitOutcomeUnknown, ExecuteResult.OutcomeUnknown
             ] do
             let probe = PortProbe(fun _ -> Task.FromResult(Error failure))
-            let core = Core.create installation (probe :> ILedgerStore) calendar owner
+            let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
             for input in inputs () do
-                let! reply = core.Execute(input, CancellationToken.None) |> Async.AwaitTask
+                let! reply =
+                    (Handlers.call Api.operationExecute core (input) (CancellationToken.None))
+                    |> Async.AwaitTask
 
                 Expect.equal
                     reply.OperationId
@@ -120,11 +127,16 @@ let private cancelled () =
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
         let probe = PortProbe(fun _ -> failtest "Predispatch cancellation reached write")
-        let core = Core.create installation (probe :> ILedgerStore) calendar owner
+        let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
 
         for input in inputs () do
-            let! execute = core.Execute(input, cancellation.Token) |> Async.AwaitTask
-            let! preview = core.Preview(input, cancellation.Token) |> Async.AwaitTask
+            let! execute =
+                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
+                |> Async.AwaitTask
+
+            let! preview =
+                (Handlers.call Api.operationPreview core (input) (cancellation.Token))
+                |> Async.AwaitTask
 
             Expect.equal
                 execute.OperationId
@@ -142,13 +154,17 @@ let private cancelled () =
                 "Cancelled preview"
 
         Expect.equal probe.Calls 0 "No writes or previews dispatched"
-        let! context = core.Context cancellation.Token |> Async.AwaitTask
+
+        let! context =
+            (Handlers.call Api.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            core.Get({ CaseReference = "BOUNDARY" }, cancellation.Token) |> Async.AwaitTask
+            (Handlers.call Api.caseGet core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            |> Async.AwaitTask
 
         let! observed =
-            core.Observe({ OperationId = id 470 }, cancellation.Token) |> Async.AwaitTask
+            (Handlers.call Api.operationObserve core ({ OperationId = id 470 }) (cancellation.Token))
+            |> Async.AwaitTask
 
         Expect.equal context (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled context"
         Expect.equal current (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled case"
@@ -183,8 +199,11 @@ let private committed () =
                     cancellation.Cancel()
                     Task.FromResult(Ok(LedgerWriteResult.Appended receipt)))
 
-            let core = Core.create installation (probe :> ILedgerStore) calendar owner
-            let! reply = core.Execute(input, cancellation.Token) |> Async.AwaitTask
+            let core = Handlers.context installation (probe :> ILedgerStore) calendar owner
+
+            let! reply =
+                (Handlers.call Api.operationExecute core (input) (cancellation.Token))
+                |> Async.AwaitTask
 
             Expect.equal
                 reply.Outcome

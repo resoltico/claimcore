@@ -7,7 +7,7 @@ open ClaimCore.Cli
 
 let private frame refusal =
     {
-        Endpoint = Some Api.caseGet.Id
+        Endpoint = Some Api.caseGet.Token
         OperationId = None
         Delivery = DeliveryState.Delivered
         Result = FrameResult.Reply(Api.caseGet.Output.Write(ReadReply.Rejected refusal))

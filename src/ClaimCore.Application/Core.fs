@@ -196,50 +196,58 @@ module internal Core =
         | OperationInput.Authority request ->
             authorityWrite store installationId principal request ct
 
-    type private ActorCore
-        (installationId, store: ILedgerStore, calendar: IBusinessCalendar, principal) =
-        interface IActorClaimsCore with
-            member _.Context ct =
-                Queries.context store calendar principal ct
+    let context (services: HandlerContext) () ct =
+        Queries.context services.Store services.Calendar services.Principal ct
 
-            member _.Preview(input, ct) =
-                previewOperation store installationId calendar principal input ct
+    let previewReply services input ct =
+        previewOperation
+            services.Store
+            services.InstallationId
+            services.Calendar
+            services.Principal
+            input
+            ct
 
-            member _.Execute(input, ct) =
-                task {
-                    let! outcome = acceptOperation store installationId calendar principal input ct
+    let execute services input ct =
+        task {
+            let! outcome =
+                acceptOperation
+                    services.Store
+                    services.InstallationId
+                    services.Calendar
+                    services.Principal
+                    input
+                    ct
 
-                    return
-                        {
-                            OperationId = OperationInput.operationId input
-                            Outcome = outcome
-                        }
+            return
+                {
+                    ExecuteReply.OperationId = OperationInput.operationId input
+                    Outcome = outcome
                 }
+        }
 
-            member _.Resolve(request, ct) =
-                Resolution.run store installationId principal request ct
+    let resolve services input ct =
+        Resolution.run services.Store services.InstallationId services.Principal input ct
 
-            member _.Get(request, ct) =
-                Queries.get store installationId principal request.CaseReference ct
+    let get services (input: CaseGetRequest) ct =
+        Queries.get services.Store services.InstallationId services.Principal input.CaseReference ct
 
-            member _.List(request, ct) =
-                Queries.list store installationId principal request ct
+    let list services input ct =
+        Queries.list services.Store services.InstallationId services.Principal input ct
 
-            member _.History(request, ct) =
-                Queries.history store installationId principal request ct
+    let history services input ct =
+        Queries.history services.Store services.InstallationId services.Principal input ct
 
-            member _.Observe(request, ct) =
-                Queries.observe store installationId principal request.OperationId ct
+    let observe services (input: ObserveRequest) ct =
+        Queries.observe
+            services.Store
+            services.InstallationId
+            services.Principal
+            input.OperationId
+            ct
 
-            member _.ListGrants(request, ct) =
-                Queries.grants store principal request ct
+    let grants services input ct =
+        Queries.grants services.Store services.Principal input ct
 
-            member _.ListActors(request, ct) =
-                Queries.actors store principal request ct
-
-    /// Every facade authorizes each read against current authoritative state.
-    let create installationId store calendar principal : IActorClaimsCore =
-        if installationId = Guid.Empty then
-            invalidArg (nameof installationId) "Use an admitted installation."
-
-        ActorCore(installationId, store, calendar, principal) :> IActorClaimsCore
+    let actors services input ct =
+        Queries.actors services.Store services.Principal input ct

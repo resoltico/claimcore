@@ -10,7 +10,7 @@ open ClaimCore.Application
 /// A case-work host receives actor-bound operations and a bounded shutdown operation.
 type internal IRuntime =
     inherit IDisposable
-    abstract WithActor: PrincipalKey * (IActorClaimsCore -> Task<'Value>) -> Task<'Value option>
+    abstract WithActor: PrincipalKey * (HandlerContext -> Task<'Value>) -> Task<'Value option>
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
@@ -59,7 +59,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
             ActorAccess.run
                 gate
                 (fun actor ->
-                    ClaimCore.Application.Core.create
+                    ClaimCore.Application.Handlers.context
                         storage.Installation.InstallationId
                         (ClaimCore.Postgres.Runtime.store storage)
                         calendar

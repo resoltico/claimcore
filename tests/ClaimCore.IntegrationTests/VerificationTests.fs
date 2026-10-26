@@ -45,15 +45,16 @@ let private target subject =
     PrincipalKey.human "https://issuer.example/" subject
     |> Result.defaultWith failtest
 
-let private register (actor: IActorClaimsCore) n principal =
+let private register (actor: HandlerContext) n principal =
     task {
         let! outcome =
-            actor.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Authority(
                     authorityRequest (id n) principal AdmittedAuthorityAct.Register
-                ),
-                token
-            )
+                ))
+                (token))
 
         acceptedAuthority outcome
     }
@@ -150,7 +151,11 @@ let private disposition (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! closed =
-            actor.Execute(OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close), token)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close))
+                (token))
 
         let position = (accepted closed).Position.Sequence
 
@@ -183,10 +188,11 @@ let private erasure (database: PostgresFixture.Database) =
         acceptedAuthority granted
 
         let! erased =
-            actor.Execute(
-                OperationInput.Case(actRequest 11 "synthetic-a" 1L (CaseAct.Erase)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(actRequest 11 "synthetic-a" 1L (CaseAct.Erase)))
+                (token))
 
         accepted erased |> ignore
         let! _ = verified database
@@ -273,12 +279,13 @@ let private human (database: PostgresFixture.Database) =
         acceptedAuthority added
 
         let! voided =
-            actor.Execute(
-                OperationInput.Case(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(
                     actRequest 11 "synthetic-a" 1L ((CaseAct.Void "Entered in error"))
-                ),
-                token
-            )
+                ))
+                (token))
 
         do!
             rewrite database (accepted voided).Position.Sequence (fun value ->
@@ -296,12 +303,13 @@ let private owner (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! changed =
-            actor.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Authority(
                     authorityRequest (id 4) reader (AdmittedAuthorityAct.Enable)
-                ),
-                token
-            )
+                ))
+                (token))
 
         do!
             rewrite database (accepted changed).Position.Sequence (fun value ->
@@ -396,20 +404,22 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! disabled =
-            actor.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Authority(
                     authorityRequest (id 4) reader (AdmittedAuthorityAct.Disable)
-                ),
-                token
-            )
+                ))
+                (token))
 
         acceptedAuthority disabled
 
         let! opened =
-            actor.Execute(
-                OperationInput.Case(request 11 "another" 0L (CaseAct.Open registration)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 11 "another" 0L (CaseAct.Open registration)))
+                (token))
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -451,12 +461,13 @@ let private lastOwner (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! unchanged =
-            actor.Execute(
-                OperationInput.Authority(
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Authority(
                     authorityRequest (id 20) database.Fixture.Owner (AdmittedAuthorityAct.Enable)
-                ),
-                token
-            )
+                ))
+                (token))
 
         let altered =
             authorityRequest (id 20) database.Fixture.Owner (AdmittedAuthorityAct.Disable)
@@ -484,10 +495,11 @@ let private permanentPolicyOnly (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! opened =
-            actor.Execute(
-                OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 10 "synthetic-a" 0L (CaseAct.Open registration)))
+                (token))
 
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
@@ -584,10 +596,11 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
             }
 
         let! decided =
-            actor.Execute(
-                OperationInput.Case(request 11 "synthetic-a" 1L (CaseAct.Decide decision)),
-                token
-            )
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 11 "synthetic-a" 1L (CaseAct.Decide decision)))
+                (token))
 
         accepted decided |> ignore
         let! _ = verified database
@@ -636,12 +649,20 @@ let private duplicateIdentity earlierFailure occurrences (database: PostgresFixt
         let! actor = populated database
 
         let! closed =
-            actor.Execute(OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close), token)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 11 "synthetic-a" 1L CaseAct.Close))
+                (token))
 
         accepted closed |> ignore
 
         let! reopened =
-            actor.Execute(OperationInput.Case(request 12 "synthetic-a" 2L CaseAct.Reopen), token)
+            (Handlers.call
+                Api.operationExecute
+                actor
+                (OperationInput.Case(request 12 "synthetic-a" 2L CaseAct.Reopen))
+                (token))
 
         accepted reopened |> ignore
         do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
