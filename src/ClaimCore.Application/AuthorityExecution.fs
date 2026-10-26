@@ -11,7 +11,7 @@ type internal AuthorityAction =
     | User of AdmittedAuthorityAct
     | ProvisionOwner
 
-module internal AuthorityDecisions =
+module internal AuthorityExecution =
     let private owner (view: AuthorityView) =
         view.Actor
         |> Option.exists (fun actor ->
@@ -19,13 +19,7 @@ module internal AuthorityDecisions =
             && PrincipalKey.isHuman actor.Principal
             && List.contains Role.Owner view.Installation)
 
-    let private grantProjection
-        role
-        subject
-        active
-        (actor: AuthorityView)
-        (view: AuthorityReadView)
-        =
+    let private grantProjection role subject active (actor: AuthorityView) (view: AuthorityFacts) =
         let caseId =
             match subject, view.TargetCase with
             | GrantTarget.Installation, _ -> Ok None
@@ -58,7 +52,7 @@ module internal AuthorityDecisions =
                     AuthorityProjection.RemoveGrant(actor.Actor.Value.ActorId, role, id)
                 ))
 
-    let private projection operationId target action (view: AuthorityReadView) =
+    let private projection operationId target action (view: AuthorityFacts) =
         match action, view.Target.Actor with
         | AuthorityAction.ProvisionOwner, _ when not (PrincipalKey.isHuman target) ->
             Error Refusal.HumanPrincipalRequired
@@ -83,7 +77,7 @@ module internal AuthorityDecisions =
         | AuthorityAction.User(AdmittedAuthorityAct.Revoke(role, subject)), Some _ ->
             grantProjection role subject false view.Target view
 
-    let private targets installationId target action (view: AuthorityReadView) =
+    let private targets installationId target action (view: AuthorityFacts) =
         if
             view.Target.Actor
             |> Option.exists (fun actor -> actor.ActorId = Guid.Empty || actor.Principal <> target)
@@ -96,7 +90,7 @@ module internal AuthorityDecisions =
             | AuthorityAction.User(AdmittedAuthorityAct.Revoke(_,
                                                                GrantTarget.CaseReference reference)),
               Some record ->
-                CaseDecisions.current installationId record
+                CaseExecution.current installationId record
                 |> Result.bind (fun _ ->
                     if
                         CaseReference.identity record.Snapshot.Reference =
@@ -107,7 +101,7 @@ module internal AuthorityDecisions =
                         Error CoreFault.StoreIntegrityError)
             | _ -> Ok()
 
-    let private admission installationId principal operationId bytes (view: AuthorityReadView) =
+    let private admission installationId principal operationId bytes (view: AuthorityFacts) =
         if
             not (
                 ActorAuthorization.can
@@ -117,7 +111,7 @@ module internal AuthorityDecisions =
                     ResourceScope.Installation
             )
         then
-            Decision.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse Refusal.ResourceUnavailable
         else
             OperationIdentity.decide
                 installationId
@@ -131,44 +125,45 @@ module internal AuthorityDecisions =
 
     let private propose installationId operationId target action view =
         match targets installationId target action view with
-        | Error fault -> Decision.Fail fault
+        | Error fault -> Verdict.Fail fault
         | Ok() ->
             match projection operationId target action view with
-            | Error refusal -> Decision.Refuse refusal
-            | Ok(targetId, projection) -> Decision.Proceed(targetId, projection)
+            | Error refusal -> Verdict.Refuse refusal
+            | Ok(targetId, projection) -> Verdict.Proceed(targetId, projection)
 
     let private provisionIdentity
         installationId
         operationId
         principal
         bytes
-        (view: AuthorityLockedView)
+        (head: LedgerHead)
+        (view: AuthorityFacts)
         =
-        if view.Read.ActorCount = 0 then
-            if view.Head.Sequence = 0L && view.Read.ExistingOperation.IsNone then
-                Decision.Proceed()
+        if view.ActorCount = 0 then
+            if head.Sequence = 0L && view.ExistingOperation.IsNone then
+                Verdict.Proceed()
             else
-                Decision.Fail CoreFault.StoreIntegrityError
+                Verdict.Fail CoreFault.StoreIntegrityError
         else
-            match view.Read.ExistingOperation with
-            | None -> Decision.Refuse Refusal.ActorAlreadyRegistered
+            match view.ExistingOperation with
+            | None -> Verdict.Refuse Refusal.ActorAlreadyRegistered
             | Some entry when entry.OperationId <> operationId ->
-                Decision.Fail CoreFault.StoreIntegrityError
+                Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry ->
                 match LedgerEntries.validate installationId entry with
-                | Error fault -> Decision.Fail fault
+                | Error fault -> Verdict.Fail fault
                 | Ok validated ->
                     match LedgerEntries.identityBytes validated with
                     | Some accepted when accepted = bytes ->
-                        LedgerEntries.receipt principal view.Read.Actor None validated
-                        |> Result.map Decision.Replay
-                        |> Result.defaultWith Decision.Fail
-                    | _ -> Decision.Refuse Refusal.IdempotencyConflict
+                        LedgerEntries.receipt principal view.Actor None validated
+                        |> Result.map Verdict.Replay
+                        |> Result.defaultWith Verdict.Fail
+                    | _ -> Verdict.Refuse Refusal.IdempotencyConflict
 
     let private project
         action
         (record: AuthorityRequestRecord)
-        (view: AuthorityReadView)
+        (view: AuthorityFacts)
         (targetId, projection)
         =
         {
@@ -183,62 +178,120 @@ module internal AuthorityDecisions =
             Projection = projection
         }
 
-    let private subject installationId principal target action record admit =
-        {
-            Encode = fun () -> AuthorityRecord.encode record
-            Canonical = fun () -> AuthorityRequests.canonical record |> AuthorityRecord.encode
-            Admit = admit
-            Propose = propose installationId record.OperationId target action
-            Project = project action record
-            Receipt =
-                fun (view: AuthorityReadView) _ entry ->
-                    LedgerEntries.receipt principal view.Actor None entry
-        }
-
-    let private userSubject installationId principal (request: AdmittedAuthorityRequest) =
+    let review installationId principal (request: AdmittedAuthorityRequest) (view: AuthorityFacts) =
         let record = AuthorityRequests.toRecord request
+        let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
-        subject
-            installationId
-            principal
-            request.Target
-            (AuthorityAction.User request.Act)
-            record
-            (admission installationId principal request.OperationId)
+        admission installationId principal request.OperationId bytes view
+        |> Verdict.bind (fun () ->
+            propose
+                installationId
+                request.OperationId
+                request.Target
+                (AuthorityAction.User request.Act)
+                view)
 
-    let review installationId principal request (view: AuthorityReadView) =
-        LedgerEnvelope.review (userSubject installationId principal request) view
+    let private executeRecord
+        installationId
+        principal
+        operationId
+        target
+        action
+        record
+        admit
+        head
+        fenced
+        nonce
+        (view: AuthorityFacts)
+        =
+        let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
+
+        admit bytes
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard head fenced)
+        |> Verdict.bind (fun () -> propose installationId operationId target action view)
+        |> Verdict.bind (fun proposed ->
+            let plan = project action record view proposed
+
+            LedgerEnvelope.accept
+                installationId
+                principal
+                view.Actor
+                operationId
+                head
+                nonce
+                plan
+                (AuthorityRecord.encode record))
 
     let execute
         installationId
         principal
         (request: AdmittedAuthorityRequest)
-        (view: AuthorityLockedView)
+        head
+        fenced
+        nonce
+        (view: AuthorityFacts)
         =
-        LedgerEnvelope.execute
+        executeRecord
             installationId
+            principal
             request.OperationId
-            (userSubject installationId principal request)
-            view.Head
-            view.IsFenced
-            view.PayloadNonce
-            view.Read
+            request.Target
+            (AuthorityAction.User request.Act)
+            (AuthorityRequests.toRecord request)
+            (fun bytes -> admission installationId principal request.OperationId bytes view)
+            head
+            fenced
+            nonce
+            view
 
-    /// Owner provisioning shares sequencing while keeping its genesis/identity rule.
-    let provision installationId operationId target (view: AuthorityLockedView) =
-        let record = AuthorityRequests.provisionRecord operationId target
-
-        let admit bytes _ =
-            provisionIdentity installationId operationId target bytes view
-
-        let subject =
-            subject installationId target target AuthorityAction.ProvisionOwner record admit
-
-        LedgerEnvelope.execute
+    let provision installationId operationId target head fenced nonce (view: AuthorityFacts) =
+        executeRecord
             installationId
+            target
             operationId
-            subject
-            view.Head
-            view.IsFenced
-            view.PayloadNonce
-            view.Read
+            target
+            AuthorityAction.ProvisionOwner
+            (AuthorityRequests.provisionRecord operationId target)
+            (fun bytes -> provisionIdentity installationId operationId target bytes head view)
+            head
+            fenced
+            nonce
+            view
+
+    let run (store: IStore) installationId principal (request: AdmittedAuthorityRequest) token =
+        store.Write(
+            (fun tx ->
+                task {
+                    let! view =
+                        ExecutionFacts.target
+                            tx
+                            installationId
+                            principal
+                            request.OperationId
+                            request.Target
+                            (AuthorityRequests.targetCase request)
+
+                    let! fenced = ExecutionFacts.fenced tx view.Actor request.OperationId
+
+                    return!
+                        execute installationId principal request tx.Head fenced tx.Nonce view
+                        |> ExecutionFacts.persist tx tx.ProjectAuthority
+                }),
+            token
+        )
+
+    let provisionStore (store: IStore) installationId operationId target token =
+        store.Write(
+            (fun tx ->
+                task {
+                    let! view =
+                        ExecutionFacts.target tx installationId target operationId target None
+
+                    let! fenced = ExecutionFacts.fenced tx view.Actor operationId
+
+                    return!
+                        provision installationId operationId target tx.Head fenced tx.Nonce view
+                        |> ExecutionFacts.persist tx tx.ProjectAuthority
+                }),
+            token
+        )

@@ -197,12 +197,12 @@ let private absentRevision (database: PostgresFixture.Database) =
         Expect.equal after before "Neither rejected operation records a ledger entry"
 
         let! view =
-            database.Fixture.Store.ReadCase(
-                database.Fixture.Owner,
-                Some pending.OperationId,
-                pending.CaseReference,
-                token
-            )
+            inspectCase
+                database.Fixture
+                (database.Fixture.Owner)
+                (Some pending.OperationId)
+                (pending.CaseReference)
+                (token)
 
         match view with
         | Ok view ->

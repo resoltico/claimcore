@@ -130,7 +130,7 @@ let private indexCompatible (database: PostgresFixture.Database) targetId =
         let! rows =
             DatabaseSession.rows
                 connection
-                ("EXPLAIN " + ReadOperations.grantPageSql)
+                ("EXPLAIN " + TransactionPages.grantPageSql)
                 [| box targetId; box "CASE_READER"; box (id 1); box 51 |]
                 token
 
@@ -364,7 +364,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
         let actor =
             Handlers.context
                 database.Fixture.InstallationId
-                (store :> ILedgerStore)
+                (store :> IStore)
                 database.Fixture.Calendar
 
                 database.Fixture.Owner

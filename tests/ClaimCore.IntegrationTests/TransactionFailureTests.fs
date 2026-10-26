@@ -4,6 +4,7 @@ open ClaimCore.TestSupport
 
 open System
 open System.IO
+open System.Threading.Tasks
 open System.Threading
 open Expecto
 open Npgsql
@@ -50,11 +51,13 @@ let private programmerFailure () =
                 |> Async.AwaitTask
 
             let! outcome =
-                database.Fixture.Store.WriteCase(
-                    database.Fixture.Owner,
-                    id 80,
-                    "SYNTHETIC-INTERNAL",
-                    (fun _ -> invalidArg "synthetic" "synthetic programming failure"),
+                database.Fixture.Store.Write(
+                    (fun _ ->
+                        task {
+                            return
+                                (invalidArg "synthetic" "synthetic programming failure"
+                                : Verdict<unit>)
+                        }),
                     CancellationToken.None
                 )
                 |> Async.AwaitTask

@@ -132,23 +132,11 @@ type Stub() =
         | None -> Task.FromResult result
 
     member _.InvocationContext principal =
-        let unused () =
-            invalidOp "A transport handler stub must not access storage."
-
         let store =
-            { new ILedgerStore with
-                member _.ResolveOperation(_, _, _, _) = unused ()
-                member _.WriteCase(_, _, _, _, _) = unused ()
-                member _.WriteAuthority(_, _, _, _, _, _) = unused ()
-                member _.ReadAuthorityTarget(_, _, _, _, _) = unused ()
-                member _.ReadCase(_, _, _, _) = unused ()
-                member _.ListCases(_, _, _, _, _) = unused ()
-                member _.ReadHistory(_, _, _, _, _) = unused ()
-                member _.ListActors(_, _, _, _) = unused ()
-                member _.ListGrants(_, _, _, _, _) = unused ()
-                member _.ReadOperation(_, _, _) = unused ()
-                member _.ReadActor(_, _) = unused ()
-            }
+            new MemoryStore.Store(DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
+
+        store.ReadFailure <- Some StoreFailure.Unavailable
+        store.WriteFailure <- Some StoreFailure.Unavailable
 
         let calendar =
             { new IBusinessCalendar with
@@ -158,7 +146,7 @@ type Stub() =
                     DateOnly.FromDateTime instant.UtcDateTime
             }
 
-        Handlers.context operationId store calendar principal
+        Handlers.context operationId (store :> IStore) calendar principal
 
     member this.Handlers =
         function

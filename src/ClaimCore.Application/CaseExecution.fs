@@ -5,7 +5,7 @@ open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-module internal CaseDecisions =
+module internal CaseExecution =
     let authorize principal actor capability (record: StoredCase option) =
         record
         |> Option.exists (fun value ->
@@ -53,9 +53,9 @@ module internal CaseDecisions =
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private admission installationId principal request bytes (view: CaseReadView) =
+    let private admission installationId principal request bytes (view: CaseFacts) =
         match permission principal view.Actor request view.Case with
-        | Error refusal -> Decision.Refuse refusal
+        | Error refusal -> Verdict.Refuse refusal
         | Ok() ->
             OperationIdentity.decide
                 installationId
@@ -66,24 +66,24 @@ module internal CaseDecisions =
                 view.ExistingOperation
                 (LedgerEntries.receipt principal view.Actor view.Case)
 
-    let private propose installationId (calendar: IBusinessCalendar) request (view: CaseReadView) =
+    let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
         let before =
             match view.Case with
             | None -> Ok None
             | Some record -> current installationId record |> Result.map Some
 
         match before with
-        | Error fault -> Decision.Fail fault
+        | Error fault -> Verdict.Fail fault
         | Ok before ->
             match Case.decide (calendar.DateAt view.ObservedAt) request before with
-            | Error refusal -> Decision.Refuse(refusal)
-            | Ok after -> Decision.Proceed(before, after)
+            | Error refusal -> Verdict.Refuse(refusal)
+            | Ok after -> Verdict.Proceed(before, after)
 
     let private project
         installationId
         (calendar: IBusinessCalendar)
         (request: CaseCommand)
-        (view: CaseReadView)
+        (view: CaseFacts)
         after
         =
         let snapshot = Case.snapshot after
@@ -115,31 +115,65 @@ module internal CaseDecisions =
             Projection = projection
         }
 
-    let private subject installationId calendar principal request =
-        {
-            Encode = fun () -> RequestRecord.encode request
-            Canonical = fun () -> Case.canonical request |> RequestRecord.encode
-            Admit = admission installationId principal request
-            Propose = propose installationId calendar request
-            Project = fun view (_, after) -> project installationId calendar request view after
-            Receipt =
-                fun (view: CaseReadView) current entry ->
-                    LedgerEntries.receipt
-                        principal
-                        view.Actor
-                        (current |> Option.orElse view.Case)
-                        entry
-        }
+    let review installationId calendar principal (command: CaseCommand) (view: CaseFacts) =
+        let identity = Case.canonical command |> RequestRecord.encode
 
-    let review installationId calendar principal request (view: CaseReadView) =
-        LedgerEnvelope.review (subject installationId calendar principal request) view
+        admission installationId principal command identity view
+        |> Verdict.bind (fun () -> propose installationId calendar command view)
 
-    let execute installationId calendar principal (request: CaseCommand) (view: CaseLockedView) =
-        LedgerEnvelope.execute
-            installationId
-            request.OperationId
-            (subject installationId calendar principal request)
-            view.Head
-            view.IsFenced
-            view.PayloadNonce
-            view.Read
+    let execute
+        installationId
+        calendar
+        principal
+        (command: CaseCommand)
+        head
+        fenced
+        nonce
+        (view: CaseFacts)
+        =
+        let identity = Case.canonical command |> RequestRecord.encode
+
+        admission installationId principal command identity view
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard head fenced)
+        |> Verdict.bind (fun () -> propose installationId calendar command view)
+        |> Verdict.bind (fun (_, after) ->
+            let plan = project installationId calendar command view after
+
+            LedgerEnvelope.accept
+                installationId
+                principal
+                view.Actor
+                command.OperationId
+                head
+                nonce
+                plan
+                (RequestRecord.encode command))
+
+    let run (store: IStore) installationId calendar principal (command: CaseCommand) token =
+        store.Write(
+            (fun tx ->
+                task {
+                    let! view =
+                        ExecutionFacts.case
+                            tx
+                            installationId
+                            principal
+                            (Some command.OperationId)
+                            (CaseReference.format command.Reference)
+
+                    let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
+
+                    return!
+                        execute
+                            installationId
+                            calendar
+                            principal
+                            command
+                            tx.Head
+                            fenced
+                            tx.Nonce
+                            view
+                        |> ExecutionFacts.persist tx tx.ProjectCase
+                }),
+            token
+        )

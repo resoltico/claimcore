@@ -48,9 +48,9 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match
-        CaseDecisions.review installation calendar owner (CaseFixtures.command request) view.Read
+        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
     with
-    | Decision.Replay value ->
+    | Verdict.Replay value ->
         Expect.equal
             (caseReceipt value).Snapshot
             SnapshotDisclosure.Withheld
@@ -100,8 +100,8 @@ let private foreignScope () =
 
     let read = (locked both (Some caseA) (Some entry)).Read
 
-    match CaseDecisions.review installation calendar owner (CaseFixtures.command request) read with
-    | Decision.Refuse Refusal.IdempotencyConflict -> ()
+    match CaseExecution.review installation calendar owner (CaseFixtures.command request) read with
+    | Verdict.Refuse Refusal.IdempotencyConflict -> ()
     | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
     let narrowed =
@@ -113,9 +113,9 @@ let private foreignScope () =
         }
 
     match
-        CaseDecisions.review installation calendar owner (CaseFixtures.command request) narrowed
+        CaseExecution.review installation calendar owner (CaseFixtures.command request) narrowed
     with
-    | Decision.Refuse Refusal.ResourceUnavailable -> ()
+    | Verdict.Refuse Refusal.ResourceUnavailable -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
@@ -148,12 +148,7 @@ let private roles role readable full () =
             full
             "Superseded disclosure requires full history"
 
-        let read: HistoryReadView =
-            {
-                Actor = authority
-                Case = Some later
-                ObservedAt = instant
-            }
+
 
         let query: HistoryRequest =
             {
@@ -164,7 +159,7 @@ let private roles role readable full () =
             }
 
         Expect.equal
-            (Queries.selectHistory owner query read |> Result.isOk)
+            (Queries.selectHistory owner query authority (Some later) |> Result.isOk)
             full
             "Full-history selection shares policy"
 
@@ -203,7 +198,7 @@ let private stewardship () =
         | _ -> failtest "Update"
 
     match decide request (locked steward (Some restored) (Some(LedgerEntries.stored draft))) with
-    | Decision.Replay replay ->
+    | Verdict.Replay replay ->
         Expect.equal replay.RecordedBy first.RecordedBy "Original executor"
         Expect.equal replay.Position first.Position "Original position"
 

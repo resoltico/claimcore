@@ -48,7 +48,7 @@ module internal Advice =
         | _ -> Some(CaseActOffer.Act(kind, revision))
 
     let caseRecord installationId principal actor (record: StoredCase) =
-        CaseDecisions.current installationId record
+        CaseExecution.current installationId record
         |> Result.map (fun accepted ->
             let resource = ResourceScope.Case record.CaseId
 

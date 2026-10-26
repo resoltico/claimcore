@@ -1,14 +1,11 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
-
 open System
-open System.Globalization
-open System.Threading
-open System.Threading.Tasks
+open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
+/// Every read authorizes and decodes its continuation inside one store snapshot.
 module internal Queries =
     let fault =
         function
@@ -22,25 +19,21 @@ module internal Queries =
         | StoreFailure.Cancelled -> ReadReply.Failed CoreFault.StoreUnavailable
         | value -> ReadReply.Failed(fault value)
 
-    let private rejected reason = ReadReply.Rejected reason
+    let private unavailable<'Value> : ReadReply<'Value> =
+        ReadReply.Rejected Refusal.ResourceUnavailable
 
-    let private unavailable<'value> : ReadReply<'value> =
-        rejected Refusal.ResourceUnavailable
-
-    let private maximum = Limits.MaximumPageSize
-    let private validLimit limit = limit >= 1 && limit <= maximum
+    let private validLimit limit =
+        limit >= 1 && limit <= Limits.MaximumPageSize
 
     let private invalidLimit () =
-        rejected (Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange maximum))
+        ReadReply.Rejected(
+            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Limits.MaximumPageSize)
+        )
 
-    let private collect results =
-        results
-        |> List.fold
-            (fun state item ->
-                state
-                |> Result.bind (fun values -> item |> Result.map (fun value -> value :: values)))
-            (Ok [])
-        |> Result.map List.rev
+    let private parseReference value =
+        CaseReference.parse value
+        |> Result.mapError (fun violation ->
+            Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation))
 
     let private currentActor principal actor =
         if ActorAuthorization.validActor principal actor then
@@ -48,43 +41,56 @@ module internal Queries =
         else
             Error Refusal.ResourceUnavailable
 
-    let caseRecord installationId principal actor record =
-        Advice.caseRecord installationId principal actor record
+    let private readResult result = result |> Result.defaultWith failure
 
-    let caseResult installationId principal (view: CaseReadView) =
-        if not (CaseDecisions.authorize principal view.Actor Capability.ReadCase view.Case) then
+    let private succeeded result =
+        result |> Result.map ReadReply.Succeeded |> Result.defaultWith ReadReply.Failed
+
+    let private collect results =
+        List.foldBack
+            (fun item rest ->
+                Result.bind (fun value -> Result.map (fun rest -> value :: rest) rest) item)
+            results
+            (Ok [])
+
+    let private cursor decode =
+        function
+        | None -> Ok None
+        | Some value -> decode value |> Result.map Some
+
+    let caseRecord installation principal actor record =
+        Advice.caseRecord installation principal actor record
+
+    let caseResult installation principal (view: CaseFacts) =
+        if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
             unavailable
         else
-            caseRecord installationId principal view.Actor (Option.get view.Case)
-            |> Result.map ReadReply.Succeeded
-            |> Result.defaultWith ReadReply.Failed
+            match view.Case with
+            | Some record -> caseRecord installation principal view.Actor record |> succeeded
+            | None -> ReadReply.Failed CoreFault.StoreIntegrityError
 
-    let get
-        (store: ILedgerStore)
-        installationId
-        principal
-        reference
-        ct
-        : Task<ReadReply<CaseReadModel>> =
+    let get (store: IStore) installation principal reference token =
         task {
-            match
-                (CaseReference.parse
-                 >> Result.map ignore
-                 >> Result.mapError (fun violation ->
-                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
-                    reference
-            with
-            | Error error -> return rejected (error)
-            | Ok() ->
-                let! read = store.ReadCase(principal, None, reference, ct)
+            match parseReference reference with
+            | Error refusal -> return ReadReply.Rejected refusal
+            | Ok _ ->
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let! view =
+                                    ExecutionFacts.case tx installation principal None reference
 
-                match read with
-                | Error error -> return failure error
-                | Ok view -> return caseResult installationId principal view
+                                return caseResult installation principal view
+                            }),
+                        token
+                    )
+
+                return readResult result
         }
 
-    let contextResult (calendar: IBusinessCalendar) principal (view: ActorReadView) =
-        match currentActor principal view.Actor with
+    let contextResult (calendar: IBusinessCalendar) principal observedAt actor =
+        match currentActor principal actor with
         | Error _ -> unavailable
         | Ok _ ->
             ReadReply.Succeeded
@@ -92,38 +98,38 @@ module internal Queries =
                     Runtime =
                         {
                             ProductVersion = BuildIdentity.current.Version
-                            EffectiveBusinessDate = calendar.DateAt view.ObservedAt
+                            EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
-                    Views = Advice.views principal view.Actor
-                    Offers = Advice.installationOffers principal view.Actor
+                    Views = Advice.views principal actor
+                    Offers = Advice.installationOffers principal actor
                     Capabilities =
                         Capabilities.all
                         |> List.filter (fun capability ->
                             ActorAuthorization.can
                                 principal
-                                view.Actor
+                                actor
                                 capability
                                 ResourceScope.Installation)
                 }
 
-    let context (store: ILedgerStore) calendar principal ct : Task<ReadReply<ActorContext>> =
+    let context (store: IStore) calendar principal token =
         task {
-            let! read = store.ReadActor(principal, ct)
+            let! result =
+                store.Read(
+                    (fun tx ->
+                        task {
+                            let! actor = tx.Authority(principal, None)
+                            return contextResult calendar principal tx.ObservedAt actor
+                        }),
+                    token
+                )
 
-            return
-                match read with
-                | Error error -> failure error
-                | Ok view -> contextResult calendar principal view
+            return readResult result
         }
 
-    let private cursor decode token =
-        match token with
-        | None -> Ok None
-        | Some token -> decode token |> Result.map Some
-
-    let selectCases principal (request: PageRequest) (view: ActorReadView) =
-        currentActor principal view.Actor
+    let selectCases principal (request: PageRequest) actor =
+        currentActor principal actor
         |> Result.bind (fun actor ->
             match ActorAuthorization.visibility principal actor with
             | None -> Error Refusal.ResourceUnavailable
@@ -135,8 +141,8 @@ module internal Queries =
                         AfterReference = after
                     }))
 
-    let private summary installationId (record: StoredCase) =
-        CaseDecisions.current installationId record
+    let private summary installation record =
+        CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
                 CaseSummary.Reference = record.Snapshot.Reference
@@ -145,296 +151,285 @@ module internal Queries =
                     CaseState.map (fun (fields: CaseFields) -> fields.Status) record.Snapshot.State
             })
 
-    let private casePage
-        installationId
-        principal
-        (page: StoredCasePage)
-        : Result<CaseSummaryPage, CoreFault> =
-        match currentActor principal page.Actor with
-        | Error _ -> Error CoreFault.StoreIntegrityError
-        | Ok _ when page.Items.Length > Limits.MaximumPageSize ->
-            Error CoreFault.StoreIntegrityError
-        | Ok _ ->
-            page.Items
-            |> List.map (summary installationId)
-            |> collect
-            |> Result.map (fun items ->
-                {
-                    Items = items
-                    Offers = Advice.installationOffers principal page.Actor
-                    NextCursor =
-                        page.NextAfterReference
-                        |> Option.map (fun reference -> Cursors.encodeCases reference)
-                })
-
-    let list
-        (store: ILedgerStore)
-        installationId
-        principal
-        (request: PageRequest)
-        ct
-        : Task<ReadReply<CaseSummaryPage>> =
+    let list (store: IStore) installation principal (request: PageRequest) token =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
             else
-                let! read =
-                    store.ListCases(
-                        principal,
-                        ActorAuthorization.readRoles principal,
-                        selectCases principal request,
-                        request.Limit,
-                        ct
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let! actor = tx.Authority(principal, None)
+
+                                match selectCases principal request actor with
+                                | Error refusal -> return ReadReply.Rejected refusal
+                                | Ok selection ->
+                                    let actorId =
+                                        actor.Actor
+                                        |> Option.map _.ActorId
+                                        |> Option.defaultValue Guid.Empty
+
+                                    let! page =
+                                        tx.CasePage(
+                                            selection.Visibility,
+                                            actorId,
+                                            ActorAuthorization.readRoles principal,
+                                            ActorAuthorization.invalidRoles principal,
+                                            selection.AfterReference,
+                                            request.Limit
+                                        )
+
+                                    if page.Items.Length > Limits.MaximumPageSize then
+                                        return ReadReply.Failed CoreFault.StoreIntegrityError
+                                    else
+                                        return
+                                            page.Items
+                                            |> List.map (summary installation)
+                                            |> collect
+                                            |> Result.map (fun items ->
+                                                {
+                                                    CaseSummaryPage.Items = items
+                                                    Offers =
+                                                        Advice.installationOffers principal actor
+                                                    NextCursor =
+                                                        page.Next
+                                                        |> Option.map Cursors.encodeCases
+                                                })
+                                            |> succeeded
+                            }),
+                        token
                     )
 
-                return
-                    match read with
-                    | Error error -> failure error
-                    | Ok(Error reason) -> rejected reason
-                    | Ok(Ok page) ->
-                        casePage installationId principal page
-                        |> Result.map ReadReply.Succeeded
-                        |> Result.defaultWith ReadReply.Failed
+                return readResult result
         }
 
-    let selectHistory principal (request: HistoryRequest) (view: HistoryReadView) =
+    let selectHistory principal (request: HistoryRequest) actor record =
         let capability =
             if request.Detail = HistoryDetail.Full then
                 Capability.ReadHistoryFull
             else
                 Capability.ReadHistory
 
-        if not (CaseDecisions.authorize principal view.Actor capability view.Case) then
+        if not (CaseExecution.authorize principal actor capability record) then
             Error Refusal.ResourceUnavailable
         else
-            currentActor principal view.Actor
+            currentActor principal actor
             |> Result.bind (fun _ ->
                 cursor (Cursors.decodeHistory request.CaseReference) request.AfterCursor
                 |> Result.map (Option.defaultValue 0L))
 
-    let private historyEntry installationId principal actor current detail entry =
+    let private historyEntry installation principal actor current detail entry =
         if detail = HistoryDetail.Summary then
             LedgerEntries.summary current entry |> Result.map HistoryEntry.SummaryEntry
         else
-            LedgerEntries.validate installationId entry
+            LedgerEntries.validate installation entry
             |> Result.bind (LedgerEntries.receipt principal actor (Some current))
             |> Result.map HistoryEntry.FullEntry
 
-    let private historyPage
-        installationId
-        principal
-        (request: HistoryRequest)
-        (page: StoredHistoryPage)
-        =
-        match currentActor principal page.Actor, page.Case with
-        | Ok _, Some current ->
-            CaseDecisions.current installationId current
-            |> Result.bind (fun _ ->
-                page.Entries
-                |> List.map (
-                    historyEntry installationId principal page.Actor current request.Detail
-                )
-                |> collect
-                |> Result.map (fun entries ->
-                    {
-                        Entries = entries
-                        NextCursor =
-                            page.NextAfterRevision
-                            |> Option.map (fun revision ->
-                                Cursors.encodeHistory request.CaseReference revision)
-                    }))
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let history
-        (store: ILedgerStore)
-        installationId
-        principal
-        (request: HistoryRequest)
-        ct
-        : Task<ReadReply<HistoryResultPage>> =
+    let history (store: IStore) installation principal (request: HistoryRequest) token =
         task {
-            match
-                (CaseReference.parse
-                 >> Result.map ignore
-                 >> Result.mapError (fun violation ->
-                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
-                    request.CaseReference
-            with
-            | Error error -> return rejected (error)
-            | Ok() when not (validLimit request.Limit) -> return invalidLimit ()
-            | Ok() ->
-                let! read =
-                    store.ReadHistory(
-                        principal,
-                        request.CaseReference,
-                        selectHistory principal request,
-                        request.Limit,
-                        ct
+            match parseReference request.CaseReference with
+            | Error refusal -> return ReadReply.Rejected refusal
+            | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
+            | Ok _ ->
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let id = CaseReferenceId.encode installation request.CaseReference
+                                let! actor = tx.Authority(principal, Some id)
+                                let! record = tx.FindCase id
+
+                                match selectHistory principal request actor record with
+                                | Error refusal -> return ReadReply.Rejected refusal
+                                | Ok after ->
+                                    match record with
+                                    | None -> return ReadReply.Failed CoreFault.StoreIntegrityError
+                                    | Some current ->
+                                        let! page = tx.HistoryPage(id, after, request.Limit)
+
+                                        return
+                                            CaseExecution.current installation current
+                                            |> Result.bind (fun _ ->
+                                                page.Items
+                                                |> List.map (
+                                                    historyEntry
+                                                        installation
+                                                        principal
+                                                        actor
+                                                        current
+                                                        request.Detail
+                                                )
+                                                |> collect)
+                                            |> Result.map (fun entries ->
+                                                {
+                                                    HistoryResultPage.Entries = entries
+                                                    NextCursor =
+                                                        page.Next
+                                                        |> Option.map (
+                                                            Cursors.encodeHistory
+                                                                request.CaseReference
+                                                        )
+                                                })
+                                            |> succeeded
+                            }),
+                        token
                     )
 
-                return
-                    match read with
-                    | Error error -> failure error
-                    | Ok(Error reason) -> rejected reason
-                    | Ok(Ok page) ->
-                        historyPage installationId principal request page
-                        |> Result.map ReadReply.Succeeded
-                        |> Result.defaultWith ReadReply.Failed
+                return readResult result
         }
 
-    let observe
-        (store: ILedgerStore)
-        installationId
-        principal
-        operationId
-        ct
-        : Task<ReadReply<OperationReceipt>> =
+    let observe (store: IStore) installation principal operation token =
         task {
-            if operationId = Guid.Empty then
+            if operation = Guid.Empty then
                 return
-                    rejected (
-                        (Refusal.InvalidInput(
-                            InputTarget.OperationId,
-                            Violation.OperationIdRequired
-                        ))
+                    ReadReply.Rejected(
+                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
                     )
             else
-                let! read = store.ReadOperation(principal, operationId, ct)
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let! actor, entry, current =
+                                    ExecutionFacts.operation tx principal operation
 
-                match read with
-                | Error error -> return failure error
-                | Ok view ->
-                    match view.Entry with
-                    | Some entry when LedgerEntries.canObserve principal view.Actor entry.Subject ->
-                        if entry.OperationId <> operationId then
-                            return ReadReply.Failed CoreFault.StoreIntegrityError
-                        else
-                            return
-                                LedgerEntries.validate installationId entry
-                                |> Result.bind (
-                                    LedgerEntries.receipt principal view.Actor view.Case
-                                )
-                                |> Result.map ReadReply.Succeeded
-                                |> Result.defaultWith ReadReply.Failed
-                    | _ -> return unavailable
+                                match entry with
+                                | Some entry when
+                                    LedgerEntries.canObserve principal actor entry.Subject
+                                    ->
+                                    if entry.OperationId <> operation then
+                                        return ReadReply.Failed CoreFault.StoreIntegrityError
+                                    else
+                                        return
+                                            LedgerEntries.validate installation entry
+                                            |> Result.bind (
+                                                LedgerEntries.receipt principal actor current
+                                            )
+                                            |> succeeded
+                                | _ -> return unavailable
+                            }),
+                        token
+                    )
+
+                return readResult result
         }
 
-    let selectActors principal (request: PageRequest) (view: ActorReadView) =
+    let selectActors principal (request: PageRequest) actor =
         if
             not (
                 ActorAuthorization.can
                     principal
-                    view.Actor
+                    actor
                     Capability.ReadAuthority
                     ResourceScope.Installation
             )
         then
             Error Refusal.ResourceUnavailable
         else
-            currentActor principal view.Actor
+            currentActor principal actor
             |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
 
-    let private actorPage principal (page: StoredActorPage) : Result<ActorReviewPage, CoreFault> =
-        currentActor principal page.Actor
-        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-        |> Result.bind (fun _ ->
-            if page.Items.Length > Limits.MaximumPageSize then
-                Error CoreFault.StoreIntegrityError
-            else
-                Ok
-                    {
-                        Items = List.map Actor.describe page.Items
-                        NextCursor =
-                            page.NextAfterActorId |> Option.map (fun id -> Cursors.encodeActors id)
-                    })
-
-    let actors
-        (store: ILedgerStore)
-        principal
-        (request: PageRequest)
-        ct
-        : Task<ReadReply<ActorReviewPage>> =
+    let actors (store: IStore) principal (request: PageRequest) token =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
             else
-                let! read =
-                    store.ListActors(principal, selectActors principal request, request.Limit, ct)
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let! actor = tx.Authority(principal, None)
 
-                return
-                    match read with
-                    | Error error -> failure error
-                    | Ok(Error reason) -> rejected reason
-                    | Ok(Ok page) ->
-                        actorPage principal page
-                        |> Result.map ReadReply.Succeeded
-                        |> Result.defaultWith ReadReply.Failed
+                                match selectActors principal request actor with
+                                | Error refusal -> return ReadReply.Rejected refusal
+                                | Ok after ->
+                                    let! page = tx.ActorPage(after, request.Limit)
+
+                                    if page.Items.Length > Limits.MaximumPageSize then
+                                        return ReadReply.Failed CoreFault.StoreIntegrityError
+                                    else
+                                        return
+                                            ReadReply.Succeeded
+                                                {
+                                                    ActorReviewPage.Items =
+                                                        page.Items |> List.map Actor.describe
+                                                    NextCursor =
+                                                        page.Next
+                                                        |> Option.map Cursors.encodeActors
+                                                }
+                            }),
+                        token
+                    )
+
+                return readResult result
         }
 
-    let selectGrants principal (request: GrantsRequest) (view: GrantReadView) =
+    let selectGrants
+        principal
+        (request: GrantsRequest)
+        (actor: AuthorityView)
+        (target: Actor option)
+        =
         if
             not (
                 ActorAuthorization.can
                     principal
-                    view.Actor
+                    actor
                     Capability.ReadAuthority
                     ResourceScope.Installation
             )
         then
             Error Refusal.ResourceUnavailable
         else
-            match currentActor principal view.Actor, view.Target with
+            match currentActor principal actor, target with
             | Ok _, Some target when target.ActorId = request.ActorId ->
                 cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private grantPage principal (request: GrantsRequest) (page: StoredGrantPage) =
-        currentActor principal page.Actor
-        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-        |> Result.bind (fun _ ->
-            if
-                page.Target.ActorId <> request.ActorId
-                || page.Items.Length > Limits.MaximumPageSize
-            then
-                Error CoreFault.StoreIntegrityError
-            else
-                Ok
-                    {
-                        Actor = Actor.describe page.Target
-                        Items = page.Items
-                        NextCursor =
-                            page.NextAfterGrant
-                            |> Option.map (fun position ->
-                                Cursors.encodeGrants request.ActorId position)
-                    })
-
-    let grants
-        (store: ILedgerStore)
-        principal
-        (request: GrantsRequest)
-        ct
-        : Task<ReadReply<AuthorityGrantPage>> =
+    let grants (store: IStore) principal (request: GrantsRequest) token =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
             elif request.ActorId = Guid.Empty then
                 return unavailable
             else
-                let! read =
-                    store.ListGrants(
-                        principal,
-                        request.ActorId,
-                        selectGrants principal request,
-                        request.Limit,
-                        ct
+                let! result =
+                    store.Read(
+                        (fun tx ->
+                            task {
+                                let! actor = tx.Authority(principal, None)
+                                let! target = tx.FindActor request.ActorId
+
+                                match selectGrants principal request actor target with
+                                | Error refusal -> return ReadReply.Rejected refusal
+                                | Ok after ->
+                                    match target with
+                                    | None -> return ReadReply.Failed CoreFault.StoreIntegrityError
+                                    | Some target ->
+                                        let! page =
+                                            tx.GrantPage(request.ActorId, after, request.Limit)
+
+                                        if page.Items.Length > Limits.MaximumPageSize then
+                                            return ReadReply.Failed CoreFault.StoreIntegrityError
+                                        else
+                                            return
+                                                ReadReply.Succeeded
+                                                    {
+                                                        AuthorityGrantPage.Actor =
+                                                            Actor.describe target
+                                                        Items = page.Items
+                                                        NextCursor =
+                                                            page.Next
+                                                            |> Option.map (
+                                                                Cursors.encodeGrants
+                                                                    request.ActorId
+                                                            )
+                                                    }
+                            }),
+                        token
                     )
 
-                return
-                    match read with
-                    | Error error -> failure error
-                    | Ok(Error reason) -> rejected reason
-                    | Ok(Ok page) ->
-                        grantPage principal request page
-                        |> Result.map ReadReply.Succeeded
-                        |> Result.defaultWith ReadReply.Failed
+                return readResult result
         }

@@ -362,19 +362,19 @@ module internal OperationIdentity =
         receipt
         =
         match existing with
-        | None -> Decision.Proceed()
+        | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
-            Decision.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse Refusal.ResourceUnavailable
         | Some entry when entry.OperationId <> operationId ->
-            Decision.Fail CoreFault.StoreIntegrityError
+            Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
             match LedgerEntries.validate installationId entry with
-            | Error fault -> Decision.Fail fault
+            | Error fault -> Verdict.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> Decision.Refuse Refusal.ResourceUnavailable
+                | None -> Verdict.Refuse Refusal.ResourceUnavailable
                 | Some accepted when accepted = bytes ->
                     receipt validated
-                    |> Result.map Decision.Replay
-                    |> Result.defaultWith Decision.Fail
-                | Some _ -> Decision.Refuse Refusal.IdempotencyConflict
+                    |> Result.map Verdict.Replay
+                    |> Result.defaultWith Verdict.Fail
+                | Some _ -> Verdict.Refuse Refusal.IdempotencyConflict

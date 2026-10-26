@@ -18,7 +18,7 @@ type IRuntime =
 type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
 
     member _.Store =
-        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> ILedgerStore
+        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> IStore
 
     interface IRuntime with
         member _.Sessions = SessionStore(source) :> ISessionStore
@@ -109,10 +109,10 @@ module internal LedgerAdministration =
 
     let private provisionResult operationId result =
         match result with
-        | Ok(Decision.Proceed receipt) -> ProvisionOwnerOutcome.Accepted receipt
-        | Ok(Decision.Replay receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
-        | Ok(Decision.Refuse reason) -> ProvisionOwnerOutcome.Rejected reason
-        | Ok(Decision.Fail fault) -> ProvisionOwnerOutcome.Failed fault
+        | Ok(Verdict.Proceed receipt) -> ProvisionOwnerOutcome.Accepted receipt
+        | Ok(Verdict.Replay receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
+        | Ok(Verdict.Refuse reason) -> ProvisionOwnerOutcome.Rejected reason
+        | Ok(Verdict.Fail fault) -> ProvisionOwnerOutcome.Failed fault
         | Error StoreFailure.Cancelled -> ProvisionOwnerOutcome.Cancelled
         | Error StoreFailure.CommitOutcomeUnknown ->
             ProvisionOwnerOutcome.OutcomeUnknown operationId
@@ -131,18 +131,15 @@ module internal LedgerAdministration =
                         return! Baseline.require connection cancellationToken
                     })
 
-            let store =
-                LedgerStore(source, installationId, Transactions.timeouts) :> ILedgerStore
+            let store = LedgerStore(source, installationId, Transactions.timeouts) :> IStore
 
             let! result =
-                store.WriteAuthority(
-                    principal,
-                    operationId,
-                    principal,
-                    None,
-                    AuthorityDecisions.provision installationId operationId principal,
+                AuthorityExecution.provisionStore
+                    store
+                    installationId
+                    operationId
+                    principal
                     cancellationToken
-                )
 
             return provisionResult operationId result
         }

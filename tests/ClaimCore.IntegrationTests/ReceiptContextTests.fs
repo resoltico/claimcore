@@ -58,11 +58,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
         let actor =
-            Handlers.context
-                fixture.InstallationId
-                (store :> ILedgerStore)
-                fixture.Calendar
-                principal
+            Handlers.context fixture.InstallationId (store :> IStore) fixture.Calendar principal
 
         let! result =
             (Core.execute

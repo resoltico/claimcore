@@ -12,12 +12,45 @@ open ClaimCore.Application
 [<NoEquality; NoComparison>]
 type internal Fixture =
     {
-        Store: ILedgerStore
+        Store: IStore
         InstallationId: Guid
         Owner: PrincipalKey
         Calendar: IBusinessCalendar
         Dispose: unit -> unit
     }
+
+let internal inspectCase fixture principal operation reference token =
+    fixture.Store.Read(
+        (fun tx -> ExecutionFacts.case tx fixture.InstallationId principal operation reference),
+        token
+    )
+
+let internal inspectTarget fixture principal operation target reference token =
+    fixture.Store.Read(
+        (fun tx ->
+            ExecutionFacts.target tx fixture.InstallationId principal operation target reference),
+        token
+    )
+
+let internal inspectOperation fixture principal operation token =
+    fixture.Store.Read(
+        (fun tx ->
+            task {
+                let! actor, entry, current = ExecutionFacts.operation tx principal operation
+
+                return
+                    {
+                        CaseFacts.ObservedAt = tx.ObservedAt
+                        Actor = actor
+                        ExistingOperation = entry
+                        Case = current
+                    }
+            }),
+        token
+    )
+
+let internal inspectAuthority fixture principal token =
+    fixture.Store.Read((fun tx -> tx.Authority(principal, None)), token)
 
 let internal id n =
     Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
@@ -90,17 +123,15 @@ let internal core fixture principal =
 let internal bootstrap fixture =
     task {
         let! result =
-            fixture.Store.WriteAuthority(
-                fixture.Owner,
-                id 1,
-                fixture.Owner,
-                None,
-                AuthorityDecisions.provision fixture.InstallationId (id 1) fixture.Owner,
+            AuthorityExecution.provisionStore
+                fixture.Store
+                fixture.InstallationId
+                (id 1)
+                fixture.Owner
                 CancellationToken.None
-            )
 
         match result with
-        | Ok(Decision.Proceed _) -> ()
+        | Ok(Verdict.Proceed _) -> ()
         | _ -> failtest "Initial owner must be accepted."
 
         return core fixture fixture.Owner

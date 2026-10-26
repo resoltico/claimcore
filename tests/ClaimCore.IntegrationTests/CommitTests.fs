@@ -48,7 +48,7 @@ let private replay (database: PostgresFixture.Database) (actor: HandlerContext) 
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> ILedgerStore
+        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> IStore
 
     let actor =
         Handlers.context

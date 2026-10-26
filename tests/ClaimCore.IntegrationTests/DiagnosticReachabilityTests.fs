@@ -443,62 +443,59 @@ let private boundaryEvidence () =
 
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L UnvalidatedCaseAct.Close)
-        let! loaded = fixture.Store.ReadCase(fixture.Owner, None, "REACH-1", ct)
+        let! loaded = inspectCase fixture (fixture.Owner) (None) ("REACH-1") (ct)
 
         let read =
             loaded |> Result.defaultWith (fun _ -> failtest "Read locked-view fixture")
 
         let current = read.Case |> Option.get
 
-        let revisionView: CaseLockedView =
+        let head =
             {
-                Head =
-                    {
-                        Sequence = 10L
-                        EntryHash = Array.zeroCreate 32
-                    }
-                PayloadNonce = Array.create 32 1uy
-                IsFenced = false
-                Read =
-                    { read with
-                        Case =
-                            Some
-                                { current with
-                                    Snapshot =
-                                        { current.Snapshot with
-                                            Revision = Revision.Maximum
-                                        }
-                                }
-                    }
+                LedgerHead.Sequence = 10L
+                EntryHash = Array.zeroCreate 32
             }
 
-        let decisionEvidence request view =
+        let revisionFacts =
+            { read with
+                Case =
+                    Some
+                        { current with
+                            Snapshot =
+                                { current.Snapshot with
+                                    Revision = Revision.Maximum
+                                }
+                        }
+            }
+
+        let decisionEvidence request head facts =
             match
-                CaseDecisions.execute
+                CaseExecution.execute
                     fixture.InstallationId
                     fixture.Calendar
                     fixture.Owner
                     (CaseFixtures.command request)
-                    view
+                    head
+                    false
+                    (Array.create 32 1uy)
+                    facts
             with
-            | Decision.Refuse reason -> reason
+            | Verdict.Refuse reason -> reason
             | _ -> failtest "Expected boundary refusal"
 
         let revision =
             decisionEvidence
                 (request 40 "REACH-1" Revision.Maximum UnvalidatedCaseAct.Close)
-                revisionView
+                head
+                revisionFacts
 
         let ledger =
             decisionEvidence
                 (request 41 "REACH-1" 1L UnvalidatedCaseAct.Close)
-                { revisionView with
-                    Read = read
-                    Head =
-                        { revisionView.Head with
-                            Sequence = Revision.Maximum
-                        }
+                { head with
+                    Sequence = Revision.Maximum
                 }
+                read
 
         return
             identity

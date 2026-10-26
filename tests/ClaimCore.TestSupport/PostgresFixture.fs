@@ -90,7 +90,7 @@ let private admittedDatabase
 
     let fixture =
         {
-            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> ILedgerStore
+            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
             InstallationId = installationId
             Owner = owner
             Calendar = calendar

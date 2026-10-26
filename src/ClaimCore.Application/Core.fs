@@ -10,10 +10,10 @@ open ClaimCore.Domain
 module internal Core =
     let private mutationResult =
         function
-        | Decision.Refuse error -> ExecuteResult.Rejected error
-        | Decision.Fail fault -> ExecuteResult.Failed fault
-        | Decision.Proceed receipt -> ExecuteResult.Accepted receipt
-        | Decision.Replay receipt -> ExecuteResult.AlreadyAccepted receipt
+        | Verdict.Refuse error -> ExecuteResult.Rejected error
+        | Verdict.Fail fault -> ExecuteResult.Failed fault
+        | Verdict.Proceed receipt -> ExecuteResult.Accepted receipt
+        | Verdict.Replay receipt -> ExecuteResult.AlreadyAccepted receipt
 
     let private mutationFailure =
         function
@@ -31,7 +31,7 @@ module internal Core =
     let private write
         (ct: CancellationToken)
         admit
-        (persist: 'request -> Task<Result<Decision<OperationReceipt>, StoreFailure>>)
+        (persist: 'request -> Task<Result<Verdict<OperationReceipt>, StoreFailure>>)
         =
         task {
             if ct.IsCancellationRequested then
@@ -44,26 +44,13 @@ module internal Core =
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
-    let private caseWrite (store: ILedgerStore) installationId calendar principal request ct =
-        write ct (fun () -> admitCase request) (fun (admitted: CaseCommand) ->
-            store.WriteCase(
-                principal,
-                admitted.OperationId,
-                (CaseReference.format admitted.Reference),
-                CaseDecisions.execute installationId calendar principal admitted,
-                ct
-            ))
+    let private caseWrite store installationId calendar principal request ct =
+        write ct (fun () -> admitCase request) (fun command ->
+            CaseExecution.run store installationId calendar principal command ct)
 
-    let private authorityWrite (store: ILedgerStore) installationId principal input ct =
-        write ct (fun () -> admitAuthority input) (fun (admitted: AdmittedAuthorityRequest) ->
-            store.WriteAuthority(
-                principal,
-                admitted.OperationId,
-                admitted.Target,
-                AuthorityRequests.targetCase admitted,
-                AuthorityDecisions.execute installationId principal admitted,
-                ct
-            ))
+    let private authorityWrite store installationId principal input ct =
+        write ct (fun () -> admitAuthority input) (fun request ->
+            AuthorityExecution.run store installationId principal request ct)
 
     let private businessFields =
         function
@@ -135,43 +122,51 @@ module internal Core =
                     | Error failure -> return PreviewResult.Failed(Queries.fault failure)
                     | Ok view ->
                         match decide request view with
-                        | Decision.Refuse refusal -> return PreviewResult.Rejected refusal
-                        | Decision.Fail fault -> return PreviewResult.Failed fault
-                        | Decision.Replay receipt -> return PreviewResult.AlreadyAccepted receipt
-                        | Decision.Proceed proposal ->
+                        | Verdict.Refuse refusal -> return PreviewResult.Rejected refusal
+                        | Verdict.Fail fault -> return PreviewResult.Failed fault
+                        | Verdict.Replay receipt -> return PreviewResult.AlreadyAccepted receipt
+                        | Verdict.Proceed proposal ->
                             return PreviewResult.Reviewed(render request view proposal)
         }
 
-    let private preview (store: ILedgerStore) installationId calendar principal request ct =
+    let private preview (store: IStore) installationId calendar principal request ct =
         review
             ct
             (fun () -> admitCase request)
             (fun (admitted: CaseCommand) ->
-                store.ReadCase(
-                    principal,
-                    Some admitted.OperationId,
-                    (CaseReference.format admitted.Reference),
+                store.Read(
+                    (fun tx ->
+                        ExecutionFacts.case
+                            tx
+                            installationId
+                            principal
+                            (Some admitted.OperationId)
+                            (CaseReference.format admitted.Reference)),
                     ct
                 ))
-            (CaseDecisions.review installationId calendar principal)
-            (fun admitted (view: CaseReadView) (before, after) ->
+            (CaseExecution.review installationId calendar principal)
+            (fun admitted (view: CaseFacts) (before, after) ->
                 advisory calendar view.ObservedAt admitted.Act before after
                 |> OperationReview.Case)
 
-    let private authorityPreview (store: ILedgerStore) installationId principal input ct =
+    let private authorityPreview (store: IStore) installationId principal input ct =
         review
             ct
             (fun () -> admitAuthority input)
             (fun (admitted: AdmittedAuthorityRequest) ->
-                store.ReadAuthorityTarget(
-                    principal,
-                    admitted.OperationId,
-                    admitted.Target,
-                    AuthorityRequests.targetCase admitted,
+                store.Read(
+                    (fun tx ->
+                        ExecutionFacts.target
+                            tx
+                            installationId
+                            principal
+                            admitted.OperationId
+                            admitted.Target
+                            (AuthorityRequests.targetCase admitted)),
                     ct
                 ))
-            (AuthorityDecisions.review installationId principal)
-            (fun _ (view: AuthorityReadView) (_, projection) ->
+            (AuthorityExecution.review installationId principal)
+            (fun _ (view: AuthorityFacts) (_, projection) ->
                 AuthorityReviews.describe view projection |> OperationReview.Authority)
 
     let private previewOperation store installationId calendar principal input ct =

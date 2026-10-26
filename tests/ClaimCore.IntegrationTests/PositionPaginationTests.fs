@@ -349,7 +349,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
-            Handlers.context fixture.InstallationId (proxy :> ILedgerStore) fixture.Calendar owner
+            Handlers.context fixture.InstallationId (proxy :> IStore) fixture.Calendar owner
 
         let! first =
             (Core.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
@@ -528,9 +528,9 @@ let private invalidGrantPositions =
 let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        let! view = fixture.Store.ReadActor(owner, CancellationToken.None)
+        let! view = inspectAuthority fixture (owner) (CancellationToken.None)
         let view = view |> Result.defaultWith (fun _ -> failtest "Caller authority")
-        let authority = view.Actor.Actor |> Option.get
+        let authority = view.Actor |> Option.get
 
         for position in invalidGrantPositions do
             let cursor =

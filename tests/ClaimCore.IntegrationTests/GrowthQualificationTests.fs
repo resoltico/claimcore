@@ -187,16 +187,14 @@ let private timeout (database: PostgresFixture.Database) =
                     LockMilliseconds = 100
                 }
             )
-            :> ILedgerStore
+            :> IStore
 
         let watch = Stopwatch.StartNew()
 
         let! result =
-            store.WriteCase(
-                database.Fixture.Owner,
-                id 999999,
-                "synthetic-growth-timeout",
-                (fun _ -> Decision.Refuse Refusal.ResourceUnavailable),
+            store.Write(
+                (fun _ ->
+                    Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>)),
                 token
             )
 

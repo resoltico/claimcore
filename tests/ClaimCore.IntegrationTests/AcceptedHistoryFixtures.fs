@@ -62,15 +62,15 @@ let internal seed (database: PostgresFixture.Database) claimant =
     |> Result.defaultWith (fun _ -> failtest "Historical fixture must obey permanent format")
     |> ignore
 
-    let decide (view: CaseLockedView) =
-        Expect.isNone view.Read.Case "Fixture reference is fresh"
-        Expect.isNone view.Read.ExistingOperation "Fixture operation is fresh"
+    let decide (tx: IWriteTx) (view: CaseFacts) =
+        Expect.isNone view.Case "Fixture reference is fresh"
+        Expect.isNone view.ExistingOperation "Fixture operation is fresh"
 
         let id =
             CaseReferenceId.encode fixture.InstallationId (CaseReference.format snapshot.Reference)
 
         let actor =
-            view.Read.Actor.Actor
+            view.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
@@ -78,15 +78,15 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 id,
                 1L,
                 (CaseActKind.Business BusinessActKind.Open),
-                fixture.Calendar.DateAt view.Read.ObservedAt
+                fixture.Calendar.DateAt view.ObservedAt
             )
 
         let entry =
             LedgerEntries.create
                 fixture.InstallationId
-                view.Head
-                view.Read.ObservedAt
-                view.PayloadNonce
+                tx.Head
+                view.ObservedAt
+                tx.Nonce
                 actor.ActorId
                 request.OperationId
                 scope
@@ -97,24 +97,32 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
-            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Read.Actor (Some current))
+            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Actor (Some current))
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
-        Decision.Proceed(entry, CaseProjection.Insert(id, snapshot), receipt)
+        Verdict.Proceed(entry, CaseProjection.Insert(id, snapshot), receipt)
 
     task {
         let! result =
-            fixture.Store.WriteCase(
-                fixture.Owner,
-                request.OperationId,
-                request.CaseReference,
-                decide,
+            fixture.Store.Write(
+                (fun tx ->
+                    task {
+                        let! view =
+                            ExecutionFacts.case
+                                tx
+                                fixture.InstallationId
+                                fixture.Owner
+                                (Some request.OperationId)
+                                request.CaseReference
+
+                        return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
+                    }),
                 token
             )
 
         match result with
-        | Ok(Decision.Proceed _) -> ()
+        | Ok(Verdict.Proceed _) -> ()
         | _ -> failtest "Historical fixture append failed"
     }
 

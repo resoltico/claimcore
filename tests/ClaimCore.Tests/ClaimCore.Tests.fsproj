@@ -45,6 +45,8 @@
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
     <Compile Include="Domain/CaseReferenceIdTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
+    <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/CoreBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />

@@ -44,22 +44,6 @@ type internal StoredEntry =
         Payload: byte array option
     }
 
-type internal CaseReadView =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        ExistingOperation: StoredEntry option
-        Case: StoredCase option
-    }
-
-type internal CaseLockedView =
-    {
-        Head: LedgerHead
-        IsFenced: bool
-        PayloadNonce: byte array
-        Read: CaseReadView
-    }
-
 [<RequireQualifiedAccess>]
 type internal CaseProjection =
     | Insert of caseId: Guid * snapshot: CaseSnapshot
@@ -80,25 +64,6 @@ type internal EntryDraft =
         Payload: byte array
     }
 
-type internal AuthorityReadView =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        ExistingOperation: StoredEntry option
-        Target: AuthorityView
-        TargetCase: StoredCase option
-        EnabledHumanOwners: int
-        ActorCount: int
-    }
-
-type internal AuthorityLockedView =
-    {
-        Head: LedgerHead
-        IsFenced: bool
-        PayloadNonce: byte array
-        Read: AuthorityReadView
-    }
-
 [<RequireQualifiedAccess>]
 type internal AuthorityProjection =
     | Register of actorId: Guid * principal: PrincipalKey
@@ -107,11 +72,7 @@ type internal AuthorityProjection =
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option
     | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
 
-type internal ActorReadView =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-    }
+type internal GrantPosition = { Role: Role; CaseId: Guid option }
 
 type internal CasePageSelection =
     {
@@ -119,142 +80,49 @@ type internal CasePageSelection =
         AfterReference: string option
     }
 
-type internal HistoryReadView =
+/// A page carries only rows and a continuation position from the same transaction snapshot.
+type internal Page<'Item, 'Position> =
     {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Case: StoredCase option
+        Items: 'Item list
+        Next: 'Position option
     }
 
-type internal StoredCasePage =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Items: StoredCase list
-        NextAfterReference: string option
-    }
+type internal IReadTx =
+    abstract ObservedAt: DateTimeOffset
+    abstract Authority: PrincipalKey * Guid option -> Task<AuthorityView>
+    abstract FindCase: Guid -> Task<StoredCase option>
+    abstract FindEntry: Guid -> Task<StoredEntry option>
 
-type internal StoredHistoryPage =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Case: StoredCase option
-        Entries: StoredEntry list
-        NextAfterRevision: int64 option
-    }
+    abstract CasePage:
+        CaseVisibility * Guid * Role list * Role list * string option * int ->
+            Task<Page<StoredCase, string>>
 
-type internal StoredActorPage =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Items: Actor list
-        NextAfterActorId: Guid option
-    }
+    abstract HistoryPage: Guid * int64 * int -> Task<Page<StoredEntry, int64>>
+    abstract ActorPage: Guid option * int -> Task<Page<Actor, Guid>>
 
-type internal GrantPosition = { Role: Role; CaseId: Guid option }
+    abstract GrantPage:
+        Guid * GrantPosition option * int -> Task<Page<AuthorityGrant, GrantPosition>>
 
-type internal GrantReadView =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Target: Actor option
-    }
+    abstract FindActor: Guid -> Task<Actor option>
+    abstract EnabledHumanOwners: unit -> Task<int>
+    abstract ActorCount: unit -> Task<int>
 
-type internal StoredGrantPage =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Target: Actor
-        Items: AuthorityGrant list
-        NextAfterGrant: GrantPosition option
-    }
+type internal IWriteTx =
+    inherit IReadTx
+    abstract Head: LedgerHead
+    abstract Nonce: byte array
+    abstract IsFenced: Guid * Guid -> Task<bool>
+    abstract Append: EntryDraft -> Task<unit>
+    abstract ProjectCase: CaseProjection -> Task<unit>
+    abstract ProjectAuthority: AuthorityProjection -> Task<unit>
+    abstract Fence: Guid * Guid -> Task<unit>
 
-type internal OperationReadView =
-    {
-        ObservedAt: DateTimeOffset
-        Actor: AuthorityView
-        Entry: StoredEntry option
-        Case: StoredCase option
-    }
+type internal IStore =
+    abstract Read: (IReadTx -> Task<'T>) * CancellationToken -> Task<Result<'T, StoreFailure>>
 
-/// Selection callbacks authorize and validate cursors within the snapshot that fetches the page.
-/// Storage executes those selections and persists decisions; it invents no authority or transition rules.
-type internal ILedgerStore =
-    abstract ResolveOperation:
-        PrincipalKey * Guid * (OperationReadView -> ResolveReply) * CancellationToken ->
-            Task<Result<ResolveReply, StoreFailure>>
-
-    abstract WriteCase:
-        principal: PrincipalKey *
-        operationId: Guid *
-        caseReference: string *
-        decide: (CaseLockedView -> Decision<EntryDraft * CaseProjection * OperationReceipt>) *
-        cancellationToken: CancellationToken ->
-            Task<Result<Decision<OperationReceipt>, StoreFailure>>
-
-    abstract WriteAuthority:
-        principal: PrincipalKey *
-        operationId: Guid *
-        target: PrincipalKey *
-        targetCaseReference: string option *
-        decide:
-            (AuthorityLockedView -> Decision<EntryDraft * AuthorityProjection * OperationReceipt>) *
-        cancellationToken: CancellationToken ->
-            Task<Result<Decision<OperationReceipt>, StoreFailure>>
-
-    abstract ReadAuthorityTarget:
-        principal: PrincipalKey *
-        operationId: Guid *
-        target: PrincipalKey *
-        targetCaseReference: string option *
-        cancellationToken: CancellationToken ->
-            Task<Result<AuthorityReadView, StoreFailure>>
-
-    abstract ReadCase:
-        principal: PrincipalKey *
-        operationId: Guid option *
-        caseReference: string *
-        cancellationToken: CancellationToken ->
-            Task<Result<CaseReadView, StoreFailure>>
-
-    abstract ListCases:
-        principal: PrincipalKey *
-        readRoles: Role list *
-        select: (ActorReadView -> Result<CasePageSelection, Refusal>) *
-        limit: int *
-        cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredCasePage, Refusal>, StoreFailure>>
-
-    abstract ReadHistory:
-        principal: PrincipalKey *
-        caseReference: string *
-        select: (HistoryReadView -> Result<int64, Refusal>) *
-        limit: int *
-        cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredHistoryPage, Refusal>, StoreFailure>>
-
-    abstract ListActors:
-        principal: PrincipalKey *
-        select: (ActorReadView -> Result<Guid option, Refusal>) *
-        limit: int *
-        cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredActorPage, Refusal>, StoreFailure>>
-
-    abstract ListGrants:
-        principal: PrincipalKey *
-        targetActorId: Guid *
-        select: (GrantReadView -> Result<GrantPosition option, Refusal>) *
-        limit: int *
-        cancellationToken: CancellationToken ->
-            Task<Result<Result<StoredGrantPage, Refusal>, StoreFailure>>
-
-    abstract ReadOperation:
-        principal: PrincipalKey * operationId: Guid * cancellationToken: CancellationToken ->
-            Task<Result<OperationReadView, StoreFailure>>
-
-    abstract ReadActor:
-        principal: PrincipalKey * cancellationToken: CancellationToken ->
-            Task<Result<ActorReadView, StoreFailure>>
+    abstract Write:
+        (IWriteTx -> Task<Verdict<'T>>) * CancellationToken ->
+            Task<Result<Verdict<'T>, StoreFailure>>
 
 type IBusinessCalendar =
     abstract TimeZoneId: string

@@ -18,7 +18,7 @@ let private token = CancellationToken.None
 let private current (database: PostgresFixture.Database) reference =
     task {
         let! read =
-            database.Fixture.Store.ReadCase(database.Fixture.Owner, None, reference, token)
+            inspectCase database.Fixture (database.Fixture.Owner) (None) (reference) (token)
 
         match read with
         | Ok { Case = Some record } -> return record.Snapshot
@@ -104,8 +104,8 @@ let private sameCase database (actor: HandlerContext) =
 let private revocation (database: PostgresFixture.Database) owner principal =
     task {
         let! snapshot = current database "synthetic-growth-0"
-        let writerGate = SubmissionStorage.Barrier(database.Fixture.Store, id 710010)
-        let revokeGate = SubmissionStorage.Barrier(database.Fixture.Store, id 710011)
+        let writerGate = SubmissionStorage.Barrier(database.Fixture.Store)
+        let revokeGate = SubmissionStorage.Barrier(database.Fixture.Store)
         let fixture = database.Fixture
 
         let writer =

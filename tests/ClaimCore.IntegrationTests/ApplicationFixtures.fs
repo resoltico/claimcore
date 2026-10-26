@@ -43,52 +43,18 @@ let openRequest n reference =
     request n reference 0L (UnvalidatedCaseAct.Open registration)
 
 /// A write can finish before another accepted change is observed by its caller.
-type AfterCaseWriteStore(inner: ILedgerStore, afterWrite: unit -> Task<unit>) =
+type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =
     let mutable reads = 0
     member _.ReadCalls = reads
 
-    interface ILedgerStore with
-        member _.ResolveOperation(principal, id, decide, ct) =
-            inner.ResolveOperation(principal, id, decide, ct)
+    interface IStore with
+        member _.Read(work, ct) =
+            reads <- reads + 1
+            inner.Read(work, ct)
 
-        member _.WriteCase(principal, operationId, reference, decide, ct) =
+        member _.Write(work, ct) =
             task {
-                let! result = inner.WriteCase(principal, operationId, reference, decide, ct)
+                let! result = inner.Write(work, ct)
                 do! afterWrite ()
                 return result
             }
-
-        member _.WriteAuthority(principal, operationId, target, reference, decide, ct) =
-            inner.WriteAuthority(principal, operationId, target, reference, decide, ct)
-
-        member _.ReadAuthorityTarget(principal, operationId, target, reference, ct) =
-            reads <- reads + 1
-            inner.ReadAuthorityTarget(principal, operationId, target, reference, ct)
-
-        member _.ReadCase(principal, operationId, reference, ct) =
-            reads <- reads + 1
-            inner.ReadCase(principal, operationId, reference, ct)
-
-        member _.ReadActor(principal, ct) =
-            reads <- reads + 1
-            inner.ReadActor(principal, ct)
-
-        member _.ReadOperation(principal, operationId, ct) =
-            reads <- reads + 1
-            inner.ReadOperation(principal, operationId, ct)
-
-        member _.ListCases(principal, readRoles, select, limit, ct) =
-            reads <- reads + 1
-            inner.ListCases(principal, readRoles, select, limit, ct)
-
-        member _.ReadHistory(principal, reference, select, limit, ct) =
-            reads <- reads + 1
-            inner.ReadHistory(principal, reference, select, limit, ct)
-
-        member _.ListGrants(principal, target, select, limit, ct) =
-            reads <- reads + 1
-            inner.ListGrants(principal, target, select, limit, ct)
-
-        member _.ListActors(principal, select, limit, ct) =
-            reads <- reads + 1
-            inner.ListActors(principal, select, limit, ct)

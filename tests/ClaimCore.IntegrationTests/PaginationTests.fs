@@ -79,48 +79,47 @@ let private revocation (database: PostgresFixture.Database) =
     }
 
 type internal PausedPageStore
-    (inner: ILedgerStore, entered: TaskCompletionSource, release: ManualResetEventSlim) =
-    let paused select view =
-        let selected = select view
+    (inner: IStore, entered: TaskCompletionSource, release: ManualResetEventSlim) =
+    let pause () =
         entered.TrySetResult() |> ignore
 
         if not (release.Wait(TimeSpan.FromSeconds 3.0)) then
             failtest "Page release was not signalled"
 
-        selected
+    interface IStore with
+        member _.Write(work, ct) = inner.Write(work, ct)
 
-    interface ILedgerStore with
-        member _.ResolveOperation(principal, id, decide, ct) =
-            inner.ResolveOperation(principal, id, decide, ct)
+        member _.Read(work, ct) =
+            inner.Read(
+                (fun tx ->
+                    work
+                        { new IReadTx with
+                            member _.ObservedAt = tx.ObservedAt
 
-        member _.WriteCase(principal, operationId, reference, decide, ct) =
-            inner.WriteCase(principal, operationId, reference, decide, ct)
+                            member _.Authority(principal, scope) =
+                                task {
+                                    let! actor = tx.Authority(principal, scope)
+                                    pause ()
+                                    return actor
+                                }
 
-        member _.WriteAuthority(principal, operationId, target, reference, decide, ct) =
-            inner.WriteAuthority(principal, operationId, target, reference, decide, ct)
+                            member _.FindCase id = tx.FindCase id
+                            member _.FindEntry id = tx.FindEntry id
 
-        member _.ReadAuthorityTarget(principal, operationId, target, reference, ct) =
-            inner.ReadAuthorityTarget(principal, operationId, target, reference, ct)
+                            member _.CasePage(visibility, actor, roles, invalid, after, limit) =
+                                tx.CasePage(visibility, actor, roles, invalid, after, limit)
 
-        member _.ReadCase(principal, operationId, reference, ct) =
-            inner.ReadCase(principal, operationId, reference, ct)
+                            member _.HistoryPage(id, after, limit) =
+                                tx.HistoryPage(id, after, limit)
 
-        member _.ReadActor(principal, ct) = inner.ReadActor(principal, ct)
-
-        member _.ReadOperation(principal, operationId, ct) =
-            inner.ReadOperation(principal, operationId, ct)
-
-        member _.ReadHistory(principal, reference, select, limit, ct) =
-            inner.ReadHistory(principal, reference, select, limit, ct)
-
-        member _.ListGrants(principal, target, select, limit, ct) =
-            inner.ListGrants(principal, target, paused select, limit, ct)
-
-        member _.ListActors(principal, select, limit, ct) =
-            inner.ListActors(principal, select, limit, ct)
-
-        member _.ListCases(principal, readRoles, select, limit, ct) =
-            inner.ListCases(principal, readRoles, paused select, limit, ct)
+                            member _.ActorPage(after, limit) = tx.ActorPage(after, limit)
+                            member _.GrantPage(id, after, limit) = tx.GrantPage(id, after, limit)
+                            member _.FindActor id = tx.FindActor id
+                            member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
+                            member _.ActorCount() = tx.ActorCount()
+                        }),
+                ct
+            )
 
 let private freshAdvice (actor: HandlerContext) cursor current =
     task {
@@ -161,7 +160,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let facade =
             Handlers.context
                 database.Fixture.InstallationId
-                (store :> ILedgerStore)
+                (store :> IStore)
                 database.Fixture.Calendar
 
                 principal
