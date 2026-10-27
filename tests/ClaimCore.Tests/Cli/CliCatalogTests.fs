@@ -141,24 +141,6 @@ let private replacement () =
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"
 
-let private retiredBooleanInput () =
-    Expect.isError
-        (prepare
-            [
-                "authority"
-                "enable"
-                "--principal-kind"
-                "human"
-                "--issuer"
-                "https://issuer.example/"
-                "--subject"
-                "synthetic"
-                "--enabled"
-                "true"
-            ])
-        "Retired boolean inputs cannot be sent"
-
-
 [<Tests>]
 let tests =
     testList
@@ -167,7 +149,6 @@ let tests =
             testCase "typed CLI produces all thirty independently captured frames" oracle
             testCase "prepared frames enforce exact and multibyte request size bounds" byteLimits
             testCase "correction replacement retains authored values" replacement
-            testCase "distinct authority acts refuse retired boolean input" retiredBooleanInput
             testCase "a dotted unknown verb cannot alias a known verb" (fun () ->
                 Expect.isError
                     (prepare ([ "case"; "open.extra"; "SYNTHETIC"; "--dry-run" ] @ registration))

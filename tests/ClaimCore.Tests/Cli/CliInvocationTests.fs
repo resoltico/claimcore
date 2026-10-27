@@ -45,11 +45,6 @@ let private aliases () =
 
 let private options () =
     Expect.equal
-        (CliInvocations.admit [ "call"; "--retry" ])
-        (Error CliUsageIssue.Invocation)
-        "The retired retry flag is a usage error."
-
-    Expect.equal
         (CliInvocations.admit [ "call" ])
         (Ok(CliInvocation.Call))
         "An ordinary call starts a fresh attempt."

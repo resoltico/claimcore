@@ -174,10 +174,6 @@ let tests =
                     "--case-reference VALUE"
                     "Flag derives from the input name"
 
-                Expect.isFalse
-                    (grant.Contains("--case VALUE", StringComparison.Ordinal))
-                    "No retired flag alias"
-
                 for entry in OperationCatalog.all do
                     Expect.stringStarts
                         (CommandGrammar.synopsis entry)

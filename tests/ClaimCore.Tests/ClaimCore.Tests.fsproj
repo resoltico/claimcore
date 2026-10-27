@@ -63,6 +63,7 @@
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
     <Compile Include="Contract/EndpointRegistryTests.fs" />
+    <Compile Include="Contract/BoundaryStrictnessTests.fs" />
     <Compile Include="Contract/HttpContractBehaviorTests.fs" />
     <Compile Include="Cli/RegistryFrameTests.fs" />
     <Compile Include="Cli/FrameSchemaTests.fs" />

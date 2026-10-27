@@ -1,5 +1,5 @@
 {
-  "source": "Hand-authored synthetic boundary examples; retired cancellation outcomes are explicit rejecting controls.",
+  "source": "Hand-authored synthetic boundary examples for the current closed wire grammar.",
   "cases": [
     {
       "name": "role-admission-refusal",
@@ -15,23 +15,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "diagnostic-legacy-extra-container-refused",
-      "endpoint": "context",
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "TOO_LONG",
-            "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "maximumCharacters": 4000,
-            "limits": {}
-          }
-        }
-      },
-      "valid": false
     },
     {
       "name": "diagnostic-inapplicable-revision-refused",
@@ -101,7 +84,11 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       },
@@ -135,17 +122,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "context-response-3",
-      "endpoint": "context",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "case.get-response-0",
@@ -219,17 +195,6 @@
       "valid": true
     },
     {
-      "name": "case.get-response-3",
-      "endpoint": "case.get",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
-    },
-    {
       "name": "case.list-response-0",
       "endpoint": "case.list",
       "value": {
@@ -272,17 +237,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "case.list-response-3",
-      "endpoint": "case.list",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "case.history-response-0",
@@ -341,17 +295,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "case.history-response-3",
-      "endpoint": "case.history",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "operation.preview.case-response-0",
@@ -518,18 +461,6 @@
       "valid": true
     },
     {
-      "name": "operation.preview.case-response-4",
-      "endpoint": "operation.preview",
-      "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
-    },
-    {
       "name": "operation.execute.case-response-0",
       "endpoint": "operation.execute",
       "value": {
@@ -679,18 +610,6 @@
       "valid": true
     },
     {
-      "name": "operation.execute.case-response-5",
-      "endpoint": "operation.execute",
-      "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
-    },
-    {
       "name": "operation.observe-response-0",
       "endpoint": "operation.observe",
       "value": {
@@ -770,17 +689,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "operation.observe-response-3",
-      "endpoint": "operation.observe",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "operation.execute.authority-response-0",
@@ -876,18 +784,6 @@
       "valid": true
     },
     {
-      "name": "operation.execute.authority-response-5",
-      "endpoint": "operation.execute",
-      "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
-    },
-    {
       "name": "authority.list-response-0",
       "endpoint": "authority.list",
       "value": {
@@ -929,17 +825,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "authority.list-response-3",
-      "endpoint": "authority.list",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "authority.grants-response-0",
@@ -992,17 +877,6 @@
         }
       },
       "valid": true
-    },
-    {
-      "name": "authority.grants-response-3",
-      "endpoint": "authority.grants",
-      "value": {
-        "outcome": {
-          "kind": "CANCELLED",
-          "data": null
-        }
-      },
-      "valid": false
     },
     {
       "name": "operation.preview.authority-reviewed",
@@ -1079,7 +953,11 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
           }
         }
       }
@@ -1112,11 +990,25 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": ["SUMMARY", "FULL"],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
               "correction": {
-                "registration": ["KEEP", "REPLACE"],
-                "decision": ["KEEP", "REPLACE", "CLEAR"],
-                "payment": ["KEEP", "REPLACE", "CLEAR"]
+                "registration": [
+                  "KEEP",
+                  "REPLACE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "REPLACE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "REPLACE",
+                  "CLEAR"
+                ]
               }
             }
           }
@@ -1151,11 +1043,25 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": ["SUMMARY", "FULL"],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
               "correction": {
-                "registration": ["KEEP", "REPLACE"],
-                "decision": ["KEEP", "REPLACE", "CLEAR"],
-                "payment": ["KEEP", "REPLACE", "CLEAR"]
+                "registration": [
+                  "KEEP",
+                  "REPLACE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "REPLACE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "REPLACE",
+                  "CLEAR"
+                ]
               }
             }
           }

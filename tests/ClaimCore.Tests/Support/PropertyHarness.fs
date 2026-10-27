@@ -26,6 +26,8 @@ let private wirePropertyNames =
 let private propertyNames =
     set
         [
+            "CLI undeclared flag admission"
+            "endpoint member and kind strictness"
             "canonical JSON round trip"
             "canonical JSON spelling"
             "stewardship revision"

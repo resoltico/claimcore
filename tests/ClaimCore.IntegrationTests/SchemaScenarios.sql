@@ -163,8 +163,8 @@ UPDATE claimcore.cases SET revision = 3, state = 'ERASED', incident_date = NULL,
 INSERT INTO claimcore.actors VALUES (:owner, 'HUMAN', 'https://issuer.example/', 'owner', true);
 INSERT INTO claimcore.grants VALUES (:owner, 'OWNER', NULL);
 INSERT INTO claimcore.grants VALUES (:owner, 'PAYMENT_RECORDER', :case1);
-SELECT pg_temp.expect('retired role token refused',
-    format($s$INSERT INTO claimcore.grants VALUES (%L, 'CASE_EDITOR', NULL)$s$, :owner), '23514');
+SELECT pg_temp.expect('undeclared role token refused',
+    format($s$INSERT INTO claimcore.grants VALUES (%L, 'SYNTHETIC_UNDECLARED_ROLE', NULL)$s$, :owner), '23514');
 SELECT pg_temp.expect('duplicate installation grant refused',
     format($s$INSERT INTO claimcore.grants VALUES (%L, 'OWNER', NULL)$s$, :owner), '23505');
 \echo PASS runtime scenarios complete

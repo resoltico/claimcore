@@ -40,7 +40,7 @@ export default {
     maxWorkers: testWorkers,
     pool: "vmThreads",
     include: ["tests/**/*.test.{ts,tsx}"],
-    setupFiles: "./tests/setup.ts",
+    setupFiles: "./tests/support/setup.ts",
     allowOnly: false,
     retry: 0,
     reporters: ["default", new RequiredTestReporter()],

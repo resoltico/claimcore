@@ -190,11 +190,6 @@ let private structuralIdentity () =
         (nonNull parsed.Diagnostic).Errors
         "The independent OpenAPI parser admits the registry document."
 
-    for omitted in [ "\"message\""; "\"CANCELLED\""; "\"case.execute\""; "\"authority.execute\"" ] do
-        Expect.isFalse
-            (text.Contains(omitted, StringComparison.Ordinal))
-            "The structural registry document excludes retired protocol surface."
-
 let private hostFailures () =
     for reason in ClaimCore.Protocol.HostFailureReason.all do
         let expected = HostFailureCodecs.ofReason reason
