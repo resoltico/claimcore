@@ -25,7 +25,7 @@ let private run action =
             database.Fixture.Dispose()
     }
 
-let private resolve (actor: HandlerContext) id =
+let private resolve (actor: ServiceContext) id =
     (Core.resolve actor ({ OperationId = id }) (token))
 
 let private waiters (database: PostgresFixture.Database) count =
@@ -85,7 +85,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
             "Only bootstrap and grants exist"
     }
 
-let private revokeReadRoles (actor: HandlerContext) principal =
+let private revokeReadRoles (actor: ServiceContext) principal =
     task {
         for operation, role in [ id 111, Role.CaseHandler; id 114, Role.PaymentRecorder ] do
             let! reply = grant actor operation principal role GrantTarget.Installation false
@@ -165,7 +165,7 @@ let private foreign (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 120) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 120) principal AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -217,7 +217,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 120) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 120) principal AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -228,7 +228,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 123) principal (AdmittedAuthorityAct.Disable)
+                    authorityRequest (id 123) principal (AuthorityCommandAct.Disable)
                 ))
                 (token))
 
@@ -265,7 +265,7 @@ let private authorityFence (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 130) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 130) target AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -278,7 +278,7 @@ let private authorityFence (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 131) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 131) target AuthorityCommandAct.Register
                 ))
                 (token))
 

@@ -46,7 +46,7 @@ let private retainedRequest database (receipt: OperationReceipt) =
             |> Option.defaultWith (fun () -> failtest "Expected retained payload")
 
         return
-            LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes
+            LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes
             |> Result.defaultWith (fun _ -> failtest "Expected a framed payload")
             |> _.Request
     }
@@ -123,15 +123,22 @@ let private authorityPairs (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 901) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 901) target AuthorityCommandAct.Register
                 ))
                 (token))
 
         acceptedAuthority registered
 
         for vector in cases do
-            let left = authorityInput vector "left" |> AuthorityRequests.toInput
-            let right = authorityInput vector "right" |> AuthorityRequests.toInput
+            let left =
+                authorityInput vector "left"
+                |> AuthorityRequests.toInput
+                |> Result.defaultWith (string >> failtest)
+
+            let right =
+                authorityInput vector "right"
+                |> AuthorityRequests.toInput
+                |> Result.defaultWith (string >> failtest)
 
             let! first = (Core.execute actor (OperationInput.Authority left) (token))
 
@@ -192,7 +199,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 920) outsider AdmittedAuthorityAct.Register
+                    authorityRequest (id 920) outsider AuthorityCommandAct.Register
                 ))
                 (token))
 

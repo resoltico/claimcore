@@ -20,23 +20,8 @@ type RuntimeOpenFault =
     | Unavailable
     | Cancelled
 
-[<RequireQualifiedAccess>]
-type AdmittedAuthorityAct =
-    | Register
-    | Grant of role: Role * scope: GrantTarget
-    | Revoke of role: Role * scope: GrantTarget
-    | Enable
-    | Disable
-
-type AdmittedAuthorityRequest =
-    {
-        OperationId: Guid
-        Target: PrincipalKey
-        Act: AdmittedAuthorityAct
-    }
-
 [<RequireQualifiedAccess; NoComparison>]
-type internal Verdict<'proceed> =
+type Verdict<'proceed> =
     | Proceed of 'proceed
     | Replay of OperationReceipt
     | Refuse of Refusal

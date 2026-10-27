@@ -12,22 +12,23 @@ Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the 
 access. The local CLI build uses the pinned .NET SDK. For isolated browser trust, also install the NSS
 certificate utility `certutil` before starting.
 
-Choose a new absolute checkout location, then prepare the CLI and locked browser tools. Compose builds the Web
-and administration images. The example uses `$HOME/claimcore-first-run`; use the same chosen path in both
-terminals if you select another location:
+Choose a new absolute checkout location, then publish the CLI and install the locked browser tools. Compose
+builds the Web and administration images. The example uses `$HOME/claimcore-first-run`; use the same chosen
+path in both terminals if you select another location:
 
 ```sh
 claimcore_source="$HOME/claimcore-first-run"
 git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
-dotnet restore ClaimCore.slnx --locked-mode
-dotnet build ClaimCore.slnx --configuration Release --no-restore
-npm install --global --ignore-scripts "npm@$(node -p "require('./web/package.json').engines.npm")"
+dotnet restore src/ClaimCore.Cli/ClaimCore.Cli.fsproj --locked-mode
+dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore \
+  --output "$claimcore_source/artifacts/local-cli"
+export PATH="$claimcore_source/artifacts/local-cli:$PATH"
 npm --prefix web ci
 ```
 
-The build output lists the directory containing `claimcore.dll`. Run the `claimcore` apphost beside it,
-or add that directory to `PATH`. The commands below assume it is on `PATH`.
+Keep the complete `artifacts/local-cli` publish directory together. The commands below use its `claimcore`
+apphost through the terminal-local `PATH` setting.
 
 Before signing in, explore offline `help configuration`, `help call` and `help delivery`.
 `describe case open` shows inputs, and `case open ... --dry-run` prints a request without credentials.
@@ -99,6 +100,7 @@ generated public CA, never its private key or a client secret:
 ```sh
 claimcore_source="$HOME/claimcore-first-run"
 cd "$claimcore_source"
+export PATH="$claimcore_source/artifacts/local-cli:$PATH"
 claimcore_config="$HOME/claimcore-first-run-config"
 export CLAIMCORE_SERVICE_URL="https://localhost:7443/"
 export CLAIMCORE_OIDC_ISSUER="https://identity.localhost:7444/realms/claimcore"
@@ -120,7 +122,7 @@ List the fresh installation's sole owner and use its human issuer/subject to gra
 ```sh
 claimcore authority list
 claimcore authority grant \
-  --kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
+  --principal-kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
   --role CASE_HANDLER --preview
 ```
 
@@ -138,7 +140,8 @@ In the trusted Firefox window, return to `https://localhost:7443`.
 Reload Cases to obtain current capability advice. Choose Open a case and use synthetic values: reference
 `START-0001`, incident `2026-09-01`, notification `2026-09-02`, country `LV`, claimant `Synthetic claimant`,
 insurer `Synthetic insurer`, amount `100.00`, currency `EUR`. Review, confirm and record the change. Expect an
-accepted receipt at revision 1 and the case fields on return to the case. You now have an explicitly granted human actor and one accepted synthetic case.
+accepted receipt at revision 1 and the case fields on return to the case. The installation has an explicitly
+granted human actor and one accepted synthetic case.
 
 ## Stop and retain data
 

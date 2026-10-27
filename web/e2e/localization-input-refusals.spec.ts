@@ -43,7 +43,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
   const { outcome } = reply.payload;
   expect(outcome.kind).toBe("REJECTED");
   if (outcome.kind === "REJECTED") {
-    expect(outcome.data.code).toBe("CORRECTION_EXISTING_VALUE_REQUIRED");
+    expect(outcome.data.code).toBe("CORRECTION_REQUIRES_EXISTING_VALUE");
   }
 };
 const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
@@ -71,11 +71,11 @@ for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     const requests = trackRequests(page);
     for (const [name, value, diagnostic] of [
-      ["claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"],
-      ["claimedAmount", "125,50", "INPUT_DECIMAL_FORMAT"],
-      ["claimedAmount", "00.10", "INPUT_DECIMAL_FORMAT"],
-      ["incidentDate", "٢٠٢٦-٠٩-٠١", "INPUT_CALENDAR_DATE_REQUIRED"],
-      ["claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"],
+      ["claimedAmount", "١٢٫٥٠", "DECIMAL_FORMAT"],
+      ["claimedAmount", "125,50", "DECIMAL_FORMAT"],
+      ["claimedAmount", "00.10", "DECIMAL_FORMAT"],
+      ["incidentDate", "٢٠٢٦-٠٩-٠١", "CALENDAR_DATE_REQUIRED"],
+      ["claimedCurrency", "ĀBC", "CURRENCY_FORMAT"],
     ] as const) {
       await page.locator(`input[data-field-name="${name}"]`).fill(value);
       const before = requests.length;

@@ -135,7 +135,7 @@ module internal Projections =
         match rows with
         | [] -> AuthorityView.empty
         | first :: _ ->
-            let grants =
+            let grants: ActorGrant list =
                 rows
                 |> List.choose (fun row ->
                     optional<string> 2 row
@@ -188,9 +188,7 @@ module internal Projections =
             | None -> return view
             | Some actor ->
                 let forbidden =
-                    ActorAuthorization.invalidRoles principal
-                    |> List.map RoleTokens.token
-                    |> List.toArray
+                    Authority.invalidRoles principal |> List.map RoleTokens.token |> List.toArray
 
                 let! rows =
                     DatabaseSession.rows

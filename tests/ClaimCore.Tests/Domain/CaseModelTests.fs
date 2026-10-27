@@ -11,14 +11,8 @@ open ClaimCore.Domain
 let private today = DateOnly(2026, 9, 7)
 
 let private registration =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic Party"
-        InsurerName = "Synthetic Insurer"
+    { Inputs.registration with
         ClaimedAmount = "1000"
-        ClaimedCurrency = "EUR"
     }
 
 let private request revision act =
@@ -79,13 +73,13 @@ let private live status decided paid =
 
 let private acts =
     [
-        (CaseActKind.Business BusinessActKind.Open), (UnvalidatedCaseAct.Open registration)
-        (CaseActKind.Business BusinessActKind.AmendRegistration),
+        CaseActKind.Open, (UnvalidatedCaseAct.Open registration)
+        CaseActKind.AmendRegistration,
         (UnvalidatedCaseAct.AmendRegistration
             { registration with
                 ClaimantName = "Changed Party"
             })
-        (CaseActKind.Business BusinessActKind.Correct),
+        CaseActKind.Correct,
         (UnvalidatedCaseAct.Correct
             {
                 Registration =
@@ -96,23 +90,21 @@ let private acts =
                 Decision = DecisionGroup.Keep
                 Payment = PaymentGroup.Keep
             })
-        (CaseActKind.Business BusinessActKind.Decide),
+        CaseActKind.Decide,
         (UnvalidatedCaseAct.Decide
             {
                 PaymentDecisionDate = "2026-08-15"
                 PayableAmount = "750"
                 PayableCurrency = "EUR"
             })
-        (CaseActKind.Business BusinessActKind.WithdrawDecision), UnvalidatedCaseAct.WithdrawDecision
-        (CaseActKind.Business BusinessActKind.RecordPayment),
-        (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
-        (CaseActKind.Business BusinessActKind.ClearPayment), UnvalidatedCaseAct.ClearPayment
-        (CaseActKind.Business BusinessActKind.Close), UnvalidatedCaseAct.Close
-        (CaseActKind.Business BusinessActKind.Reopen), UnvalidatedCaseAct.Reopen
-        (CaseActKind.Stewardship StewardshipActKind.Void), (UnvalidatedCaseAct.Void "Entry error")
-        (CaseActKind.Stewardship StewardshipActKind.Reinstate),
-        (UnvalidatedCaseAct.Reinstate "Entry confirmed")
-        (CaseActKind.Stewardship StewardshipActKind.Erase), UnvalidatedCaseAct.Erase
+        CaseActKind.WithdrawDecision, UnvalidatedCaseAct.WithdrawDecision
+        CaseActKind.RecordPayment, (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+        CaseActKind.ClearPayment, UnvalidatedCaseAct.ClearPayment
+        CaseActKind.Close, UnvalidatedCaseAct.Close
+        CaseActKind.Reopen, UnvalidatedCaseAct.Reopen
+        CaseActKind.Void, (UnvalidatedCaseAct.Void "Entry error")
+        CaseActKind.Reinstate, (UnvalidatedCaseAct.Reinstate "Entry confirmed")
+        CaseActKind.Erase, UnvalidatedCaseAct.Erase
     ]
 
 let private stateExpectations =
@@ -172,13 +164,7 @@ let private matrix =
                     (actual = Set.ofList expected)
                     "Independent advertisement expectation")
 
-let private allKeep =
-    (UnvalidatedCaseAct.Correct
-        {
-            Registration = RegistrationGroup.Keep
-            Decision = DecisionGroup.Keep
-            Payment = PaymentGroup.Keep
-        })
+let private allKeep = UnvalidatedCaseAct.Correct Inputs.correction
 
 let private allKeepStates =
     [

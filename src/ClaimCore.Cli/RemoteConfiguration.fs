@@ -76,7 +76,7 @@ module RemoteConfiguration =
         | _ -> Error ClientFailure.Configuration
 
     let private read setting =
-        let name = InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd
+        let name = InputDiagnostics.settingName setting
         Environment.GetEnvironmentVariable name |> Option.ofObj
 
     let private invalid setting =

@@ -9,12 +9,7 @@ type ExecutionPhase =
 
 module DeliveryTokens =
     let vocabulary =
-        Vocabulary.define
-            "phase"
-            [ ExecutionPhase.NotStarted; ExecutionPhase.StartedUnconfirmed ]
-            (function
-             | ExecutionPhase.NotStarted -> "NOT_STARTED"
-             | ExecutionPhase.StartedUnconfirmed -> "STARTED_UNCONFIRMED")
+        Vocabulary.ofUnion<ExecutionPhase> "phase" TokenCasing.ScreamingSnake None
 
     let phases = Vocabulary.entries vocabulary
     let phase = Vocabulary.token vocabulary

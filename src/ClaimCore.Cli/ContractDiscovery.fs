@@ -27,58 +27,13 @@ module ContractDiscovery =
         |> _.LabelId
 
     let helpTopic language topic =
-        if topic = "verbs" then
-            Catalog.document.Entries
-            |> List.map (fun entry -> CliIdentity.programName + " " + entry.Synopsis)
-            |> String.concat "\n"
-            |> fun value -> value + "\n"
-        elif topic = "overview" then
-            let families =
-                [
-                    "case", "cli.family.case"
-                    "authority", "cli.family.authority"
-                    "operation", "cli.family.operation"
-                    "context", "cli.family.context"
-                    "call", "cli.family.call"
-                    "session", "cli.family.session"
-                    "describe", "cli.family.describe"
-                    "schema", "cli.family.schema"
-                    "help", "cli.family.help"
-                ]
-
-            CliIdentity.programName
-            + "\n"
-            + (families
-               |> List.map (fun (family, key) ->
-                   family + " — " + MessageCatalogs.render language key Map.empty)
-               |> String.concat "\n")
-            + "\n"
-        else
-            let syntax =
-                match topic with
-                | "describe"
-                | "schema"
-                | "version"
-                | "help" -> CliCommands.synopses topic
-                | "call"
-                | "session"
-                | "CLI_PROTOCOL_GUIDANCE" ->
-                    (if topic = "CLI_PROTOCOL_GUIDANCE" then
-                         []
-                     else
-                         CliCommands.synopses topic)
-                    @ [ "schema invocation"; "schema response"; "help call"; "help session" ]
-                | "examples" ->
-                    [ "describe case open"; "case get REF"; "schema operation.execute request" ]
-                | _ -> []
-
-            MessageCatalogs.help language topic
-            + (syntax
-               |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
-               |> String.concat "")
+        MessageCatalogs.help language topic
+        + (CliCommands.topicSynopses topic
+           |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
+           |> String.concat "")
 
     let private openapi () =
-        WireWriter.indentedBytes ClaimCore.Contract.OpenApi.document
+        WireWriter.indentedBytes ClaimCore.Contract.Protocol.OpenApi.document
 
     let catalogue () =
         let endpoints =
@@ -97,9 +52,11 @@ module ContractDiscovery =
         let keys =
             [
                 yield!
-                    Refusals.definitions
+                    DiagnosticCodecs.definitions
                     |> List.map (fun definition -> "diagnostic." + definition.Id)
-                yield! CoreFaults.all |> List.map (fun (_, code) -> "fault." + code)
+                yield!
+                    DiagnosticCodecs.faultDefinitions
+                    |> List.map (fun definition -> "fault." + definition.Id)
                 yield!
                     HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
             ]

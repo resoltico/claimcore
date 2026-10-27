@@ -3,6 +3,7 @@
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="Versions.fs" />
     <Compile Include="DecodeProblem.fs" />
+    <Compile Include="LedgerPayload.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />

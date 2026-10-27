@@ -1,9 +1,10 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 open System
 open System.Globalization
@@ -25,12 +26,8 @@ module CatalogCodecs =
         ResponseScalars.date
         |> map
             (fun value ->
-                DateOnly.ParseExact(
-                    value,
-                    Formats.CalendarDateFormat,
-                    CultureInfo.InvariantCulture
-                ))
-            (fun value -> value.ToString(Formats.CalendarDateFormat, CultureInfo.InvariantCulture))
+                DateOnly.ParseExact(value, CalendarDate.ExactFormat, CultureInfo.InvariantCulture))
+            (fun value -> value.ToString(CalendarDate.ExactFormat, CultureInfo.InvariantCulture))
 
     let private textFormat =
         (record (fun v0 v1 ->
@@ -281,17 +278,7 @@ module CatalogCodecs =
             ]
 
     let private inputSource =
-        Vocabulary.define
-            "inputSource"
-            [
-                InputSource.Authored
-                InputSource.OperationIdentity
-                InputSource.ExpectedRevision
-            ]
-            (function
-             | InputSource.Authored -> "AUTHORED"
-             | InputSource.OperationIdentity -> "OPERATION_IDENTITY"
-             | InputSource.ExpectedRevision -> "EXPECTED_REVISION")
+        Vocabulary.ofUnion<InputSource> "inputSource" TokenCasing.ScreamingSnake None
         |> VocabularyCodec.create
 
     let private binding =

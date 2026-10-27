@@ -74,17 +74,14 @@ module CliReply =
     let result invocation reply =
         ServiceReply.read (Frames.endpoint invocation) reply
         |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
-        |> Result.bind (fun typed ->
-            if not (ServiceReply.correlates (Frames.input invocation) typed) then
-                Error CliFailure.InvalidResponse
-            else
-                let delivery =
-                    if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then
-                        DeliveryState.Uncertain
-                    else
-                        DeliveryState.Delivered
+        |> Result.map (fun typed ->
+            let delivery =
+                if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then
+                    DeliveryState.Uncertain
+                else
+                    DeliveryState.Delivered
 
-                frame invocation delivery (FrameResult.Reply typed) |> encoded |> Ok)
+            frame invocation delivery (FrameResult.Reply typed) |> encoded)
 
     let serviceFailure invocation (failure: HostFailure) =
         let delivery =

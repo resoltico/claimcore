@@ -1,159 +1,154 @@
 namespace ClaimCore.Contract.Protocol
 
+open System
+open Microsoft.FSharp.Reflection
 open ClaimCore.Domain
-
 open ClaimCore.Contract
 open ClaimCore.Json
 
+/// Tagged cases own decoding, encoding, diagnostic arguments and catalog definitions together.
 module DiagnosticCodecs =
     open Codec
 
-    let private limit name =
-        let minimum =
-            if name = "maximumIntegerDigits" || name = "maximumPageSize" then
-                1L
-            else
-                0L
+    let private codeName = Vocabulary.formatToken TokenCasing.ScreamingSnake None
 
-        integer minimum (int64 System.Int32.MaxValue) |> map int int64
+    let private nullaryVariants<'T when 'T: equality> (fields: 'T -> Fields<unit, unit>) =
+        FSharpType.GetUnionCases typeof<'T>
+        |> Array.filter (fun case -> case.GetFields().Length = 0)
+        |> Array.map (fun case ->
+            let value = (FSharpValue.MakeUnion(case, [||]) |> nonNull) :?> 'T
 
-    let private limits names =
-        let codec =
-            (record (fun characters page integer fraction ->
-                [
-                    "maximumCharacters", characters
-                    "maximumPageSize", page
-                    "maximumIntegerDigits", integer
-                    "maximumFractionalDigits", fraction
-                ]
-                |> List.choose (fun (name, value) ->
-                    value |> Option.map (fun value -> name, value))
-                |> Map.ofList)
-            : Fields<Map<string, int>, _>)
-            |> optionalField
-                "maximumCharacters"
-                (Map.tryFind "maximumCharacters")
-                (limit "maximumCharacters")
-            |> optionalField
-                "maximumPageSize"
-                (Map.tryFind "maximumPageSize")
-                (limit "maximumPageSize")
-            |> optionalField
-                "maximumIntegerDigits"
-                (Map.tryFind "maximumIntegerDigits")
-                (limit "maximumIntegerDigits")
-            |> optionalField
-                "maximumFractionalDigits"
-                (Map.tryFind "maximumFractionalDigits")
-                (limit "maximumFractionalDigits")
-            |> build
+            variant
+                (codeName case.Name)
+                (fun () -> value)
+                (fun candidate -> if candidate = value then Some() else None)
+                (fields value))
+        |> Array.toList
 
-        codec
-        |> constrained
-            (Schema.Object(names |> List.map (fun name -> name, (limit name).Schema), []))
-            (fun values -> (values |> Map.keys |> Set.ofSeq) = Set.ofList names)
+    let private count minimum =
+        integer minimum (int64 Int32.MaxValue) |> map int int64
 
-    let private targetKind =
-        function
-        | RefusalCode.InvalidInput _ -> 1
-        | RefusalCode.InvalidCursor -> 2
-        | RefusalCode.OperationResolved -> 3
-        | _ -> 0
+    let private violationVariants =
+        nullaryVariants<Violation>(fun _ -> record ())
+        @ [
+            variant
+                (codeName (nameof Violation.TooLong))
+                Violation.TooLong
+                (function
+                | Violation.TooLong value -> Some value
+                | _ -> None)
+                (record id |> field "maximumCharacters" id (count 0L))
+            variant
+                (codeName (nameof Violation.DecimalFormat))
+                Violation.DecimalFormat
+                (function
+                | Violation.DecimalFormat(integer, fraction) -> Some(integer, fraction)
+                | _ -> None)
+                (record (fun integer fraction -> integer, fraction)
+                 |> field "maximumIntegerDigits" fst (count 1L)
+                 |> field "maximumFractionalDigits" snd (count 0L))
+            variant
+                (codeName (nameof Violation.PageLimitRange))
+                Violation.PageLimitRange
+                (function
+                | Violation.PageLimitRange value -> Some value
+                | _ -> None)
+                (record id |> field "maximumPageSize" id (count 1L))
+        ]
 
-    let private target kind =
-        match kind with
-        | 1 -> enumeration InputTargets.all |> map Some Option.get
-        | 2 -> constant "cursor" |> map (fun () -> Some InputTarget.Cursor) (fun _ -> ())
-        | 3 ->
-            constant "operationId"
-            |> map (fun () -> Some InputTarget.OperationId) (fun _ -> ())
-        | _ -> nullValue |> map (fun () -> None) (fun _ -> ())
+    let violation = taggedOn "code" "Violation" violationVariants
 
-    let private revision present =
-        if present then
-            ResponseScalars.revision |> map Some Option.get
-        else
-            nullValue |> map (fun () -> None) (fun _ -> ())
+    let private actionField action =
+        ResponseScalars.fixedField "action" (RecommendedActions.token action)
 
-    let private group (names, action, hasRevision, location) codes =
-        let wire =
-            (record (fun code target actual limits -> code, target, actual, limits)
-            : Fields<string * InputTarget option * int64 option * Map<string, int>, _>)
-            |> field "code" (fun (code, _, _, _) -> code) (RequestCodecs.tokens codes)
-            |> ResponseScalars.fixedField "action" (RecommendedActions.token action)
-            |> field "target" (fun (_, target, _, _) -> target) (target location)
-            |> field "actualRevision" (fun (_, _, actual, _) -> actual) (revision hasRevision)
-            |> field "limits" (fun (_, _, _, limits) -> limits) (limits names)
-            |> build
+    let private nullaryRefusalFields refusal =
+        let fields = record () |> actionField (Refusals.action refusal)
 
-        wire
-        |> map
-            (fun (code, target, actual, limits) ->
-                Refusals.fromDiagnostic code target actual limits)
-            (fun reason ->
-                (Refusals.row reason).Code,
-                (match reason with
-                 | Refusal.InvalidInput(target, _) -> Some target
-                 | Refusal.InvalidCursor -> Some InputTarget.Cursor
-                 | Refusal.OperationResolved -> Some InputTarget.OperationId
-                 | _ -> None),
-                Refusals.actualRevision reason,
-                Refusals.parameters reason |> Map.ofList)
+        match Refusals.target refusal with
+        | None -> fields
+        | Some target -> fields |> ResponseScalars.fixedField "target" (InputTargets.token target)
 
-    // Published shape order must survive removal of a shape's first diagnostic code.
-    let private shapeOrder ((names, action, hasRevision, location), _) =
-        let priority =
-            match action with
-            | RecommendedAction.CorrectInput -> 0
-            | RecommendedAction.ReadCurrent ->
-                if hasRevision then 1
-                elif location = 3 then 4
-                else 5
-            | RecommendedAction.NoneRequired -> 2
-            | RecommendedAction.StopAndInvestigate -> 3
-            | RecommendedAction.RetrySafe -> 6
-            | RecommendedAction.ReplayExact -> 7
-            | RecommendedAction.Reauthenticate -> 8
+    let private diagnosticVariants =
+        let inputFields =
+            record id
+            |> actionField RecommendedAction.CorrectInput
+            |> field "target" id (enumeration InputTargets.all |> named "InputTarget")
 
-        priority, names
+        (violationVariants
+         |> List.map (
+             extendVariant
+                 (fun target violation -> Refusal.InvalidInput(target, violation))
+                 (function
+                 | Refusal.InvalidInput(target, violation) -> Some(target, violation)
+                 | _ -> None)
+                 inputFields
+         ))
+        @ [
+            variant
+                (codeName (nameof Refusal.RevisionConflict))
+                Refusal.RevisionConflict
+                (function
+                | Refusal.RevisionConflict revision -> Some revision
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.ReadCurrent
+                 |> field "actualRevision" id ResponseScalars.revision)
+        ]
+        @ nullaryVariants<Refusal> nullaryRefusalFields
 
-    let diagnostic =
-        RefusalCodes.all
-        |> List.groupBy (fun code ->
-            RefusalCodes.parameters code |> List.map DiagnosticArguments.token |> List.sort,
-            RefusalCodes.action code,
-            code = RefusalCode.RevisionConflict,
-            targetKind code)
-        |> List.sortBy shapeOrder
-        |> List.map (fun (key, rows) ->
-            let codes = rows |> List.map RefusalCodes.token
+    let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants
 
-            branch
-                (fun value -> value)
-                (fun reason ->
-                    if List.contains (Refusals.row reason).Code codes then
-                        Some reason
-                    else
-                        None)
-                (group key codes))
-        |> choice "Diagnostic"
+    let private definitionsOf (variants: Variant<'T> list) : DiagnosticDefinition list =
+        variants
+        |> List.map (fun variant ->
+            let parameters =
+                match variant.VariantSchema with
+                | Schema.Object(properties, _) ->
+                    properties
+                    |> List.choose (function
+                        | name, Schema.Integer(minimum, maximum) when name <> "actualRevision" ->
+                            Some
+                                {
+                                    Name = name
+                                    Minimum = int minimum
+                                    Maximum = int maximum
+                                }
+                        | _ -> None)
+                | _ -> invalidOp "Diagnostic alternatives require object fields."
 
-    let private faultGroup action faults =
-        record (fun fault -> fault)
-        |> field
-            "code"
-            (fun value -> value)
-            (enumeration (faults |> List.map (fun fault -> fault, CoreFaults.token fault)))
-        |> ResponseScalars.fixedField "action" (RecommendedActions.token action)
-        |> build
+            {
+                Id = variant.Tag
+                Parameters = parameters
+            })
 
-    let fault =
+    let definitions = definitionsOf diagnosticVariants
+    let codes = definitions |> List.map _.Id
+
+    /// Presentation consumes the codec's fields; no parallel code or parameter table is maintained.
+    let describe refusal =
+        match diagnostic.Write refusal with
+        | JsonValue.Object(("code", JsonValue.String code) :: fields) ->
+            let parameters =
+                fields
+                |> List.choose (function
+                    | name, JsonValue.Integer value when name <> "actualRevision" ->
+                        Some(name, int value)
+                    | _ -> None)
+
+            code, parameters
+        | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
+
+    let code refusal = describe refusal |> fst
+    let parameters refusal = describe refusal |> snd
+
+    let private faultVariants =
         CoreFaults.all
-        |> List.map fst
-        |> List.groupBy CoreFaults.action
-        |> List.map (fun (action, faults) ->
-            branch
-                (fun value -> value)
-                (fun value -> if List.contains value faults then Some value else None)
-                (faultGroup action faults))
-        |> choice "Fault"
+        |> List.map (fun (value, code) ->
+            variant
+                code
+                (fun () -> value)
+                (fun candidate -> if candidate = value then Some() else None)
+                (record () |> actionField value.Action))
+
+    let fault = groupedTaggedOn "code" "Fault" faultVariants
+    let faultDefinitions = definitionsOf faultVariants

@@ -7,13 +7,13 @@
     <Compile Include="Values.fs" />
     <Compile Include="Record.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
-    <Compile Include="Formats.fs" />
     <Compile Include="Vocabulary/InputTargets.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
     <Compile Include="Vocabulary/Capabilities.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
     <Compile Include="Vocabulary/PrincipalKinds.fs" />
+    <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="PaymentProgress.fs" />
@@ -25,5 +25,6 @@
     <Compile Include="RequestValidation.fs" />
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
+    <Compile Include="Authority.fs" />
   </ItemGroup>
 </Project>

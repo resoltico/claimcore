@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open ClaimCore.TestSupport
@@ -37,7 +39,7 @@ let private caller (database: PostgresFixture.Database) =
             (Core.execute
                 owner
                 (OperationInput.Authority(
-                    authorityRequest (id 20) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 20) principal AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -126,7 +128,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         Expect.equal
             (refusal.GetProperty("data").GetProperty("code").GetString())
-            "INPUT_TEXT_TOO_LONG"
+            "TOO_LONG"
             "Current policy owns the refusal"
 
         let! _ = verified database
@@ -151,14 +153,15 @@ let private zeroRevisionReply endpoint status response =
     Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "No response encoding failure"
     let diagnostic = outcome.GetProperty("data")
 
-    Expect.equal
-        (diagnostic.GetProperty("target").ValueKind)
-        JsonValueKind.Null
-        "Original target guidance is unchanged"
+    let mutable target = Unchecked.defaultof<JsonElement>
+
+    Expect.isFalse
+        (diagnostic.TryGetProperty("target", &target))
+        "A revision conflict has no input target"
 
     Expect.equal
         (diagnostic.GetProperty("code").GetString())
-        "CASE_REVISION_CONFLICT"
+        "REVISION_CONFLICT"
         "Domain refusal preserved"
 
     Expect.equal

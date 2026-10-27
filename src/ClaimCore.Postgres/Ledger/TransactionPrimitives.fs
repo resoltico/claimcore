@@ -118,7 +118,7 @@ type private ReadTx
                         Projections.assigned
                             connection
                             principal
-                            (ActorAuthorization.readRoles principal)
+                            (Authority.readRoles principal)
                             actor
                             token
             }

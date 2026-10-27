@@ -10,20 +10,14 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
       ? localNotice("definitionMismatch")
       : {
           kind: "diagnostic",
-          diagnostic: {
-            code: result.failure.code,
-            limits: {},
-          },
+          diagnostic: result.failure,
         };
   }
   const { outcome } = result.value;
   if (outcome.kind === "REJECTED" || outcome.kind === "FAILED") {
     return {
       kind: "diagnostic",
-      diagnostic: {
-        code: outcome.data.code,
-        limits: "limits" in outcome.data ? outcome.data.limits : {},
-      },
+      diagnostic: outcome.data,
     };
   }
   if (outcome.kind === "OUTCOME_UNKNOWN") {
@@ -37,4 +31,4 @@ export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
   (result.kind === "outcome" &&
     result.value.outcome.kind === "REJECTED" &&
-    result.value.outcome.data.code === "ACCESS_RESOURCE_UNAVAILABLE");
+    result.value.outcome.data.code === "RESOURCE_UNAVAILABLE");

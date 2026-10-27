@@ -174,10 +174,10 @@ let private checkDiscriminators (root: JsonElement) =
                 "Each branch is named"
 
 let private openApi () =
-    let first = (ClaimCore.Contract.OpenApi.document |> WireWriter.bytes)
+    let first = (ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes)
 
     Expect.equal
-        ((ClaimCore.Contract.OpenApi.document |> WireWriter.bytes))
+        ((ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes))
         first
         "OpenAPI bytes are deterministic"
 

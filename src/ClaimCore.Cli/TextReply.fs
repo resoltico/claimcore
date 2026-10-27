@@ -65,8 +65,7 @@ module internal TextReply =
     let private offerAct =
         function
         | CaseActOffer.Act(act, _) -> CaseActKinds.token act
-        | CaseActOffer.Correct _ ->
-            CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct)
+        | CaseActOffer.Correct _ -> CaseActKinds.token CaseActKind.Correct
 
     let private caseLines language (value: CaseReadModel) =
         [
@@ -302,32 +301,30 @@ module internal TextReply =
         | InputTarget.PrincipalSubject -> ContractDiscovery.inputLabel "subject"
         | InputTarget.Limit -> "input.limit.label"
         | InputTarget.Cursor -> "input.cursor.label"
+        | InputTarget.Role -> "input.role.label"
 
     let private refusalLines language refusal =
-        let row = Refusals.row refusal
+        let code, parameters = DiagnosticCodecs.describe refusal
 
         let arguments =
-            Refusals.parameters refusal
+            parameters
             |> List.map (fun (name, value) -> name, number (int64 value))
             |> Map.ofList
 
-        let message = MessageCatalogs.render language ("diagnostic." + row.Code) arguments
+        let message = MessageCatalogs.render language ("diagnostic." + code) arguments
 
         let message =
-            match
-                Refusals.field refusal
-                |> Option.bind (Vocabulary.tryParse InputTargets.vocabulary)
-            with
+            match Refusals.target refusal with
             | None -> message
             | Some target -> label language (diagnosticTargetIdentity target) + ": " + message
 
         [
             message
-            line language "cli.text.code" row.Code
+            line language "cli.text.code" code
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedActions.token row.Action)
+                (RecommendedActions.token refusal.Action)
         ]
 
     let private faultLines language fault =
@@ -353,7 +350,7 @@ module internal TextReply =
             "productVersion: " + value.Runtime.ProductVersion
             "businessDate: "
             + value.Runtime.EffectiveBusinessDate.ToString(
-                Formats.CalendarDateFormat,
+                CalendarDate.ExactFormat,
                 CultureInfo.InvariantCulture
             )
             "timeZone: " + value.Runtime.TimeZoneId
@@ -421,10 +418,9 @@ module internal TextReply =
                 line language "cli.text.code" failure.Code
             ]
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
-            let setting = InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd
+            let setting = InputDiagnostics.settingName setting
 
-            let issue =
-                InputDiagnostics.configurationIssues |> List.find (fst >> (=) issue) |> snd
+            let issue = InputDiagnostics.issueToken issue
 
             [
                 MessageCatalogs.renderCli language (CliMessage.ConfigurationIssue(setting, issue))

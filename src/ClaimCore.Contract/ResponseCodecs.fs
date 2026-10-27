@@ -163,11 +163,7 @@ module ResponseCodecs =
         date
         |> map
             (fun value ->
-                DateOnly.ParseExact(
-                    value,
-                    Formats.CalendarDateFormat,
-                    CultureInfo.InvariantCulture
-                ))
+                DateOnly.ParseExact(value, CalendarDate.ExactFormat, CultureInfo.InvariantCulture))
             (fun value -> value.ToString("O", CultureInfo.InvariantCulture))
 
     let correctionAdvice =
@@ -199,7 +195,7 @@ module ResponseCodecs =
                 fst
                 (enumeration (
                     CaseActKinds.all
-                    |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
+                    |> List.filter ((<>) CaseActKind.Correct)
                     |> List.map (fun kind -> kind, CaseActKinds.token kind)
                 ))
             |> field "expectedRevision" snd revision

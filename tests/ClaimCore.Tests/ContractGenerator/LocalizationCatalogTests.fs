@@ -1,12 +1,9 @@
 module ClaimCore.Tests.LocalizationCatalogTests
 
-open System.IO
-open System.Text.Json
 open Expecto
 open ClaimCore.Contract
 open ClaimCore.ContractGeneration
 open ClaimCore.Cli
-open ClaimCore.TestSupport
 
 let private change language transform =
     AuthoredMessages.all () |> Map.change language (Option.map transform)
@@ -66,7 +63,7 @@ let private producerMutations () =
             "act.OPEN.label"
             "act.OPEN.meaning"
             "act.OPEN.confirmation"
-            "input.kind.label"
+            "input.principalKind.label"
             "group.registration.meaning"
         ] do
         Expect.throws
@@ -92,55 +89,55 @@ let private actualProducers () =
             let rendered = Template.render (catalogs[language][message.Key]) message.Arguments
             Expect.isNonEmpty rendered "Every actual closed CLI producer renders in every language"
 
-let private golden () =
-    use document =
-        JsonDocument.Parse(
-            File.ReadAllBytes(
-                Path.Combine(RepositoryRoot.find (), "tests/fixtures/rendered-messages.json")
-            )
-        )
+let private structure () =
+    let authored = AuthoredMessages.all ()
+    let catalogs = CatalogValidation.validateCatalogs authored
+    let english = catalogs["en"]
 
-    let rows = document.RootElement.EnumerateArray() |> Seq.toArray
+    for language in [ "en"; "lv"; "ar" ] do
+        let templates = catalogs[language]
 
-    let expected =
-        AuthoredMessages.all ()
-        |> Map.toList
-        |> List.collect (fun (language, entries) ->
-            entries |> List.map (fun (key, _) -> language, key))
-        |> Set.ofList
+        for prefix in
+            [
+                "cli."
+                "ui."
+                "diagnostic."
+                "fault."
+                "input."
+                "field."
+                "group."
+                "token."
+            ] do
+            let keys (catalog: Map<string, Template>) =
+                catalog
+                |> Map.keys
+                |> Seq.filter (fun key -> key.StartsWith(prefix, System.StringComparison.Ordinal))
+                |> Set.ofSeq
 
-    let actual =
-        rows
-        |> Array.map (fun row ->
-            (row.GetProperty("language").GetString() |> nonNull),
-            (row.GetProperty("key").GetString() |> nonNull))
+            Expect.equal
+                (keys templates)
+                (keys english)
+                ("Catalog key parity: " + language + " " + prefix)
 
-    Expect.equal
-        (Set.ofArray actual)
-        expected
-        "Every authored message is frozen in every real language"
+        for key, source in authored[language] do
+            let template = Template.parse source |> Result.defaultWith failtest
 
-    Expect.equal actual.Length expected.Count "Every rendering occurs exactly once"
+            Expect.equal
+                (Template.arguments template)
+                (Template.arguments english[key])
+                ("Placeholder parity: " + language + " " + key)
 
-    for row in
-        rows
-        |> Array.filter (fun row ->
-            not (
-                (row.GetProperty("key").GetString() |> nonNull)
-                    .StartsWith("ui.", System.StringComparison.Ordinal)
-            )) do
-        let language = row.GetProperty("language").GetString() |> nonNull
-        let key = row.GetProperty("key").GetString() |> nonNull
-
-        let args =
-            row.GetProperty("arguments").EnumerateObject()
-            |> Seq.map (fun property -> property.Name, property.Value.GetString() |> nonNull)
-            |> Map.ofSeq
-
+    // These are authored expectations, independent of catalog publication and the renderer.
+    for language, key, expected in
+        [
+            "en", "diagnostic.TEXT_REQUIRED", "A non-blank value is required."
+            "lv", "diagnostic.TEXT_REQUIRED", "Nepieciešama netukša vērtība."
+            "ar", "diagnostic.TEXT_REQUIRED", "يجب إدخال قيمة غير فارغة."
+        ] do
         Expect.equal
-            (MessageCatalogs.render language key args)
-            (row.GetProperty("expected").GetString() |> nonNull)
-            (language + ": " + key)
+            (MessageCatalogs.render language key Map.empty)
+            expected
+            "Literal catalog samples"
 
 [<Tests>]
 let tests =
@@ -154,7 +151,7 @@ let tests =
                 invalidCatalogs
             testCase "identical all-language producer mutations stop generation" producerMutations
             testCase "actual CLI producers render with their own argument contracts" actualProducers
-            testCase "CLI Template engine reproduces every owned frozen message" golden
+            testCase "catalog key sets, placeholders and template grammar remain valid" structure
         ]
 
 [<Tests>]

@@ -11,22 +11,12 @@ open ClaimCore.Domain
 let today = DateOnly(2026, 9, 7)
 
 let registration =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
+    { Inputs.registration with
         ClaimantName = "Example Claimant Ltd"
         InsurerName = "Example Alleged Insurer"
-        ClaimedAmount = "1000.00"
-        ClaimedCurrency = "EUR"
     }
 
-let decision =
-    {
-        PaymentDecisionDate = "2026-08-15"
-        PayableAmount = "750.00"
-        PayableCurrency = "EUR"
-    }
+let decision = Inputs.decision
 
 let request revision act =
     {
@@ -53,7 +43,7 @@ let decided () =
 
 let paid () =
     decided ()
-    |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+    |> apply (UnvalidatedCaseAct.RecordPayment Inputs.payment)
     |> accepted
 
 let isInvalid result =

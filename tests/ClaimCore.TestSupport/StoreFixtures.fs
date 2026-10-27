@@ -72,24 +72,9 @@ let internal actRequest n reference revision act : UnvalidatedCaseRequest =
         Act = act
     }
 
-let internal authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
-    {
-        OperationId = operationId
-        Target = target
-        Act = act
-    }
-    |> AuthorityRequests.toInput
+let internal authorityRequest = Inputs.authorityRequest
 
-let internal registration: RegistrationInput =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic Party"
-        InsurerName = "Synthetic Insurer"
-        ClaimedAmount = "1000.00"
-        ClaimedCurrency = "EUR"
-    }
+let internal registration: RegistrationInput = Inputs.registration
 
 let internal accepted (reply: ExecuteReply) =
     match reply.Outcome with
@@ -118,7 +103,7 @@ let internal disclosedFields receipt =
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Handlers.context fixture.InstallationId fixture.Store fixture.Calendar principal
+    Service.create fixture.InstallationId fixture.Store fixture.Calendar principal
 
 let internal bootstrap fixture =
     task {
@@ -137,7 +122,7 @@ let internal bootstrap fixture =
         return core fixture fixture.Owner
     }
 
-let internal grant (actor: HandlerContext) operationId target role scope active =
+let internal grant (actor: ServiceContext) operationId target role scope active =
     (Core.execute
         actor
         (OperationInput.Authority(
@@ -145,9 +130,9 @@ let internal grant (actor: HandlerContext) operationId target role scope active 
                 operationId
                 target
                 ((if active then
-                      AdmittedAuthorityAct.Grant
+                      AuthorityCommandAct.Grant
                   else
-                      AdmittedAuthorityAct.Revoke) (
+                      AuthorityCommandAct.Revoke) (
                     role,
                     scope
                 ))

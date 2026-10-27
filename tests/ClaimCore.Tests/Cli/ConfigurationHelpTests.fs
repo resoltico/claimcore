@@ -90,10 +90,10 @@ let private helpAlias () =
         let rendered topic =
             ContractDiscovery.helpTopic language topic
 
-        let content = rendered "configuration"
+        let content = rendered (CliTopic.Help HelpTopic.Configuration)
 
         Expect.equal
-            (rendered InputDiagnostics.configurationId)
+            (rendered (CliTopic.Diagnostic CliGuidance.ConfigurationIssue))
             content
             "Returned configuration ID maps to the existing topic"
 
@@ -115,7 +115,7 @@ let private helpAlias () =
                 "Exact documented forms and distinctions survive localization"
 
         Expect.stringContains
-            (rendered InputDiagnostics.protocolId)
+            (rendered (CliTopic.Diagnostic CliGuidance.ProtocolGuidance))
             "NDJSON"
             "Configuration does not replace framing guidance"
 
@@ -146,7 +146,7 @@ let private operatorPhrases =
 
 let private localizedExplanations () =
     let render language =
-        ContractDiscovery.helpTopic language "configuration"
+        ContractDiscovery.helpTopic language (CliTopic.Help HelpTopic.Configuration)
 
     for language, accepted, refused, syntax, missingSlash, notRoot, trim in operatorPhrases do
         let content = render language
@@ -188,7 +188,9 @@ let private localizedExplanations () =
                     "Non-English help cannot retain untranslated example explanations"
 
         Expect.equal
-            (ContractDiscovery.helpTopic language InputDiagnostics.configurationId)
+            (ContractDiscovery.helpTopic
+                language
+                (CliTopic.Diagnostic CliGuidance.ConfigurationIssue))
             content
             "Diagnostic alias retains identical localized rules"
 

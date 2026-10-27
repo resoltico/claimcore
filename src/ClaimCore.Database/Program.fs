@@ -13,8 +13,8 @@ let main arguments =
             BuildIdentity.requireCompatibleAssembly typeof<Administration>.Assembly
 
             match Inputs.command (Array.toList arguments) with
-            | None -> let bytes, code = Replies.outcome "REJECTED" 2 in bytes, code, false
-            | Some command ->
+            | Error usage -> let bytes, code = Replies.usage usage in bytes, code, false
+            | Ok command ->
                 let bytes, code = Execution.run command |> _.GetAwaiter().GetResult()
 
                 let mutates =
@@ -23,12 +23,20 @@ let main arguments =
                     | ProvisionOwner -> true
                     | _ -> false
 
-                bytes, code, (code = 4 || (mutates && code = 0))
+                bytes,
+                code,
+                (code = ExitCodes.value ExitCode.OutcomeUnknown
+                 || (mutates && code = ExitCodes.value ExitCode.Success))
         with _ ->
-            let bytes, code = Replies.outcome "FAILED" 3
+            let bytes, code = Replies.failed CoreFault.InternalError
             bytes, code, false
 
     try
         Replies.write (Console.OpenStandardOutput()) (bytes, code, deliveryUnknown)
     with _ ->
-        if deliveryUnknown then 4 else 3
+        ExitCodes.value (
+            if deliveryUnknown then
+                ExitCode.OutcomeUnknown
+            else
+                ExitCode.Failed
+        )

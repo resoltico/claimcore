@@ -97,7 +97,9 @@ const completion = (
     identity: effect.identity,
     notice: resultNotice(result),
     target:
-      result.kind === "outcome" && result.value.outcome.kind === "REJECTED"
+      result.kind === "outcome" &&
+      result.value.outcome.kind === "REJECTED" &&
+      "target" in result.value.outcome.data
         ? result.value.outcome.data.target
         : null,
     uncertain: effect.kind === "EXECUTE" && mutationUncertain(result),

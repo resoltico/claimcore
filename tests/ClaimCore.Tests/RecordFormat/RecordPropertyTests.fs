@@ -29,14 +29,11 @@ let private registrationGenerator =
         let! amount = Gen.uint32 (Range.constant 0u 1_000_000u)
 
         return
-            {
-                RegistrationInput.IncidentDate = "2026-08-01"
-                IncidentNotificationDate = "2026-08-03"
+            { Inputs.registration with
                 IncidentCountry = country
                 ClaimantName = claimant
                 InsurerName = insurer
                 ClaimedAmount = amount.ToString(CultureInfo.InvariantCulture)
-                ClaimedCurrency = "EUR"
             }
     }
 

@@ -62,11 +62,9 @@ const rejectedPreview = () =>
         outcome: {
           kind: "REJECTED",
           data: {
-            code: "INPUT_CASE_REFERENCE_FORMAT",
+            code: "REFERENCE_FORMAT",
             action: "CORRECT_INPUT",
             target: "caseReference",
-            actualRevision: null,
-            limits: {},
           },
         },
       },
@@ -113,7 +111,7 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
   expect(description.join(" ")).toContain(meaning);
   expect(description.join(" ")).toContain(hint);
   const expected = invalid
-    ? `${meaning}${hint} ${locale.diagnostic["diagnostic.INPUT_CASE_REFERENCE_FORMAT"]}`
+    ? `${meaning}${hint} ${locale.diagnostic["diagnostic.REFERENCE_FORMAT"]}`
     : `${meaning}${hint}`;
   expect(reference).toHaveAccessibleDescription(expected);
   expect(reference).toHaveAccessibleName(locale.label);

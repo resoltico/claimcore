@@ -1,11 +1,12 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 open ClaimCore.Json
 
 open System.Net.Http
-open ClaimCore.Contract.Protocol
 
 [<RequireQualifiedAccess>]
 type EndpointEffect =
@@ -15,17 +16,7 @@ type EndpointEffect =
 
 module EndpointEffects =
     let vocabulary =
-        Vocabulary.define
-            "effect"
-            [
-                EndpointEffect.Read
-                EndpointEffect.OperationalWrite
-                EndpointEffect.LedgerExecution
-            ]
-            (function
-             | EndpointEffect.Read -> "READ_ONLY"
-             | EndpointEffect.OperationalWrite -> "OPERATIONAL_WRITE"
-             | EndpointEffect.LedgerExecution -> "LEDGER_EXECUTION")
+        Vocabulary.ofUnion<EndpointEffect> "effect" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
 

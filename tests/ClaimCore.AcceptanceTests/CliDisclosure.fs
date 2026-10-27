@@ -49,7 +49,7 @@ let private staleReview fixture input reference =
 
     Expect.equal
         (refused.GetProperty("code").GetString())
-        "CASE_REVISION_CONFLICT"
+        "REVISION_CONFLICT"
         "Preview cannot authorize a stale write"
 
     Expect.equal

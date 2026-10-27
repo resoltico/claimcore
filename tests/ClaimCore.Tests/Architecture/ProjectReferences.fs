@@ -38,6 +38,57 @@ let read path =
         |> nonNull)
     |> Set.ofSeq
 
+/// Exact direct edges permitted by the product boundaries; docs link here.
+let allowed =
+    [
+        "ClaimCore.Json", []
+        "ClaimCore.Domain", [ "ClaimCore.Json" ]
+        "ClaimCore.Contract", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
+        "ClaimCore.RecordFormat", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
+        "ClaimCore.Application",
+        [
+            "ClaimCore.Domain"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Contract"
+            "ClaimCore.Json"
+        ]
+        "ClaimCore.Postgres",
+        [
+            "ClaimCore.Application"
+            "ClaimCore.Domain"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Contract"
+            "ClaimCore.Json"
+        ]
+        "ClaimCore.HostSecurity", []
+        "ClaimCore.Web",
+        [
+            "ClaimCore.Application"
+            "ClaimCore.Postgres"
+            "ClaimCore.Contract"
+            "ClaimCore.Domain"
+            "ClaimCore.HostSecurity"
+            "ClaimCore.Json"
+        ]
+        "ClaimCore.Cli",
+        [
+            "ClaimCore.Contract"
+            "ClaimCore.Domain"
+            "ClaimCore.HostSecurity"
+            "ClaimCore.Json"
+        ]
+        "ClaimCore.Database",
+        [
+            "ClaimCore.Application"
+            "ClaimCore.Postgres"
+            "ClaimCore.Contract"
+            "ClaimCore.Domain"
+            "ClaimCore.HostSecurity"
+            "ClaimCore.Json"
+        ]
+    ]
+    |> List.map (fun (name, edges) -> name, Set.ofList edges)
+    |> Map.ofList
+
 let permitted project references =
-    not (Set.contains "ClaimCore.Postgres" references)
-    || List.contains project [ "ClaimCore.Web"; "ClaimCore.Database" ]
+    Map.tryFind project allowed = Some references

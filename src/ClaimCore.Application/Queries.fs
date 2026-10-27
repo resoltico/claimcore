@@ -36,7 +36,7 @@ module internal Queries =
             Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation))
 
     let private currentActor principal actor =
-        if ActorAuthorization.validActor principal actor then
+        if Authority.validActor principal actor then
             Ok actor
         else
             Error Refusal.ResourceUnavailable
@@ -106,11 +106,7 @@ module internal Queries =
                     Capabilities =
                         Capabilities.all
                         |> List.filter (fun capability ->
-                            ActorAuthorization.can
-                                principal
-                                actor
-                                capability
-                                ResourceScope.Installation)
+                            Authority.can principal actor capability ResourceScope.Installation)
                 }
 
     let context (store: IStore) calendar principal token =
@@ -131,7 +127,7 @@ module internal Queries =
     let selectCases principal (request: PageRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
-            match ActorAuthorization.visibility principal actor with
+            match Authority.visibility principal actor with
             | None -> Error Refusal.ResourceUnavailable
             | Some visibility ->
                 cursor Cursors.decodeCases request.AfterCursor
@@ -174,8 +170,8 @@ module internal Queries =
                                         tx.CasePage(
                                             selection.Visibility,
                                             actorId,
-                                            ActorAuthorization.readRoles principal,
-                                            ActorAuthorization.invalidRoles principal,
+                                            Authority.readRoles principal,
+                                            Authority.invalidRoles principal,
                                             selection.AfterReference,
                                             request.Limit
                                         )
@@ -318,13 +314,7 @@ module internal Queries =
 
     let selectActors principal (request: PageRequest) actor =
         if
-            not (
-                ActorAuthorization.can
-                    principal
-                    actor
-                    Capability.ReadAuthority
-                    ResourceScope.Installation
-            )
+            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
         then
             Error Refusal.ResourceUnavailable
         else
@@ -373,13 +363,7 @@ module internal Queries =
         (target: Actor option)
         =
         if
-            not (
-                ActorAuthorization.can
-                    principal
-                    actor
-                    Capability.ReadAuthority
-                    ResourceScope.Installation
-            )
+            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
         then
             Error Refusal.ResourceUnavailable
         else

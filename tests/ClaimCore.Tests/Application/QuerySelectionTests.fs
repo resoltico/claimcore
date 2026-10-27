@@ -72,12 +72,10 @@ let private authorityAndCursor () =
     Expect.isEmpty (Advice.installationOffers owner ungranted) "Context carries no implied offers"
 
     Expect.isTrue
-        (ActorAuthorization.validActor owner ungranted)
+        (Authority.validActor owner ungranted)
         "Context remains available to an enabled ungranted actor"
 
-    Expect.isFalse
-        (ActorAuthorization.validActor owner AuthorityView.empty)
-        "Absent actor has no context"
+    Expect.isFalse (Authority.validActor owner AuthorityView.empty) "Absent actor has no context"
 
 let private history () =
     let _, entry, current, _ = created 460 "QUERY-HISTORY"

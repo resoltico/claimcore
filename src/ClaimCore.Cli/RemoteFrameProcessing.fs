@@ -127,7 +127,7 @@ type RemoteFrameProcessor
             delivery.BeginFrame()
 
             match interpret (FrameReader.readDocument input) stopped with
-            | None -> 0
+            | None -> ExitCodes.value ExitCode.Success
             | Some reply ->
                 delivery.Write reply
 
@@ -138,7 +138,7 @@ type RemoteFrameProcessor
     member _.Session(stopped: CancellationToken) =
         try
             let mutable running = true
-            let mutable exitCode = 0
+            let mutable exitCode = ExitCodes.value ExitCode.Success
 
             while running && not stopped.IsCancellationRequested do
                 delivery.BeginFrame()
@@ -151,13 +151,19 @@ type RemoteFrameProcessor
 
                     exitCode <- reply.ExitCode
 
-                    if reply.ExitCode = 4 || reply.ExitCode = 130 then
+                    if
+                        reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown
+                        || reply.ExitCode = ExitCodes.value ExitCode.Cancelled
+                    then
                         running <- false
 
                 if incoming = InputFrame.TooLarge then
                     running <- false
 
-            if stopped.IsCancellationRequested then 130 else exitCode
+            if stopped.IsCancellationRequested then
+                ExitCodes.value ExitCode.Cancelled
+            else
+                exitCode
         with error ->
             delivery.Failure error
 

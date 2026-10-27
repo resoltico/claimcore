@@ -51,7 +51,7 @@ let private formatBoundaries () =
 let private admissionInsideFormat () =
     Expect.isLessThanOrEqual
         (4 * PartyName.MaximumCharacters)
-        Formats.MaximumFreeTextBytes
+        PartyName.MaximumBytes
         "Every admitted scalar sequence fits the permanent byte bound"
 
     let name = String.replicate 200 "😀"

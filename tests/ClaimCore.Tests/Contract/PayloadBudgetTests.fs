@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract
@@ -22,14 +24,10 @@ let private fields length : CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration
-                {
-                    IncidentDate = "2026-08-01"
-                    IncidentNotificationDate = "2026-08-03"
-                    IncidentCountry = "LV"
+                { Inputs.registration with
                     ClaimantName = String(char 1, length)
                     InsurerName = String(char 1, length)
                     ClaimedAmount = "999999999999999999.9999"
-                    ClaimedCurrency = "EUR"
                 }
         Decision = None
         Payment = None
@@ -57,7 +55,7 @@ let private receipt disclosure : OperationReceipt =
                 {
                     Reference = CaseFixtures.reference reference
                     Revision = maximum
-                    Act = (CaseActKind.Business BusinessActKind.AmendRegistration)
+                    Act = CaseActKind.AmendRegistration
                     Snapshot = disclosure
                 }
     }
@@ -72,14 +70,14 @@ let private encodedHistory count disclosure =
             })
 
 let private fullHistoryBudget () =
-    let accepted = snapshot Formats.MaximumFreeTextBytes
+    let accepted = snapshot PartyName.MaximumBytes
 
     let bytes =
         encodedHistory
             50
             (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
 
-    let perEntry = 2 * 6 * Formats.MaximumFreeTextBytes + 6 * 80 + 2048
+    let perEntry = 2 * 6 * PartyName.MaximumBytes + 6 * 80 + 2048
     let bound = 50 * perEntry + 1024
 
     Expect.isOk
@@ -98,7 +96,7 @@ let private fullHistoryBudget () =
 
     Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
-    Expect.equal Formats.MaximumPayloadBytes 32768 "Permanent framed payload bound"
+    Expect.equal LedgerPayload.MaximumBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
         (fun () ->
@@ -113,7 +111,7 @@ let private authorityFixture () =
 
     let principal =
         PrincipalKey.human (prefix + String('+', 2048 - prefix.Length)) (String(char 1, 512))
-        |> Result.defaultWith (AuthorityInputFailures.token >> failwith)
+        |> Result.defaultWith (string >> failwith)
 
     let actor: ActorSummary =
         {

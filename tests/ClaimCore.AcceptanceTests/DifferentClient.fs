@@ -90,8 +90,14 @@ let private changeStructuralVocabulary directory =
 
     let original = File.ReadAllText path
 
-    let changed =
-        original.Replace("\"OPENED\"", "\"SYNTHETIC_OPENED\"", StringComparison.Ordinal)
+    // A vocabulary prefix changes the copied client's wire schema while keeping the host fixed.
+    let declaration =
+        "Vocabulary.ofUnion<CaseStatus> \"token\" TokenCasing.ScreamingSnake None"
+
+    let altered =
+        "Vocabulary.ofUnion<CaseStatus> \"token\" TokenCasing.ScreamingSnake (Some \"SYNTHETIC_\")"
+
+    let changed = original.Replace(declaration, altered, StringComparison.Ordinal)
 
     Expect.notEqual changed original "The mismatch fixture changes an actual wire enum"
     File.WriteAllText(path, changed)

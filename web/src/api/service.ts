@@ -11,7 +11,7 @@ import {
   consumerContractIdentity,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
-import { correlateReply, isHostFailure, isResponse } from "../protocol/client";
+import { isHostFailure, isResponse } from "../protocol/client";
 export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
@@ -34,10 +34,9 @@ const result = async <K extends EndpointId>(
   id: K,
   response: Response,
   signal: AbortSignal,
-  requestInput: unknown,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   const value = await readJson(response, signal);
-  if (response.status === 200 && isResponse(id, value) && correlateReply(id, requestInput, value)) {
+  if (response.status === 200 && isResponse(id, value)) {
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
@@ -54,9 +53,10 @@ const send = async <K extends EndpointId>(
   if (signal.aborted) {
     return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
   }
-  let requestInput: unknown;
   try {
-    requestInput = body === undefined ? {} : admitBytes(new TextEncoder().encode(body));
+    if (body !== undefined) {
+      admitBytes(new TextEncoder().encode(body));
+    }
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("incomplete"), dispatched: false };
   }
@@ -73,7 +73,7 @@ const send = async <K extends EndpointId>(
   }
   try {
     const response = await sendHttp(endpoint, headers, body, signal);
-    return await result(id, response, signal, requestInput);
+    return await result(id, response, signal);
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }

@@ -82,11 +82,8 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
     outcome: {
       kind: "REJECTED",
       data: {
-        code: "ACCESS_RESOURCE_UNAVAILABLE",
+        code: "RESOURCE_UNAVAILABLE",
         action: "NONE_REQUIRED",
-        target: null,
-        actualRevision: null,
-        limits: {},
       },
     },
   },

@@ -24,17 +24,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration =
-                        CaseFixtures.registration
-                            {
-                                IncidentDate = "2026-08-01"
-                                IncidentNotificationDate = "2026-08-03"
-                                IncidentCountry = "LV"
-                                ClaimantName = "Synthetic Party"
-                                InsurerName = "Synthetic Insurer"
-                                ClaimedAmount = "1000.00"
-                                ClaimedCurrency = "EUR"
-                            }
+                    Registration = CaseFixtures.registration Inputs.registration
                     Decision = None
                     Payment = None
                 }
@@ -197,14 +187,10 @@ let private projectionFields: CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration
-                {
-                    IncidentDate = "2026-08-01"
-                    IncidentNotificationDate = "2026-08-03"
-                    IncidentCountry = "LV"
+                { Inputs.registration with
                     ClaimantName = "Synthetic claimant"
                     InsurerName = "Synthetic insurer"
                     ClaimedAmount = "1234.5678"
-                    ClaimedCurrency = "EUR"
                 }
         Decision =
             Some

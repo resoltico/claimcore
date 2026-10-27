@@ -6,7 +6,7 @@ open System
 open ClaimCore.Domain
 open ClaimCore.Application.VerificationChecks
 
-type internal CaseHistory =
+type CaseHistory =
     {
         Revision: int64
         Snapshot: CaseSnapshot option
@@ -27,13 +27,11 @@ module internal CaseFold =
 
         match act, state with
         | _, CaseState.Erased -> refuse ()
-        | CaseActKind.Stewardship StewardshipActKind.Void, CaseState.Active() ->
-            Ok(CaseState.Voided())
-        | CaseActKind.Stewardship StewardshipActKind.Reinstate, CaseState.Voided() ->
-            Ok(CaseState.Active())
-        | CaseActKind.Stewardship StewardshipActKind.Void, CaseState.Voided()
-        | CaseActKind.Stewardship StewardshipActKind.Reinstate, CaseState.Active() -> refuse ()
-        | CaseActKind.Stewardship StewardshipActKind.Erase, _ -> Ok CaseState.Erased
+        | CaseActKind.Void, CaseState.Active() -> Ok(CaseState.Voided())
+        | CaseActKind.Reinstate, CaseState.Voided() -> Ok(CaseState.Active())
+        | CaseActKind.Void, CaseState.Voided()
+        | CaseActKind.Reinstate, CaseState.Active() -> refuse ()
+        | CaseActKind.Erase, _ -> Ok CaseState.Erased
         | _, CaseState.Voided() -> refuse ()
         | _, CaseState.Active() -> Ok(CaseState.Active())
 
@@ -65,7 +63,7 @@ module internal CaseFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HistoryStart
-                    ((previous.IsNone) = (act = (CaseActKind.Business BusinessActKind.Open)))
+                    ((previous.IsNone) = (act = CaseActKind.Open))
 
             let! state = nextState entry.Sequence previous act
             let reference = previous |> Option.bind _.Reference
@@ -95,7 +93,7 @@ module internal CaseFold =
                         MissingPayloadAt = missing
                         PresentPayloadAt = present
                         ErasedAt =
-                            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
+                            if act = CaseActKind.Erase then
                                 Some entry.Sequence
                             else
                                 None

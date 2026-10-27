@@ -7,7 +7,6 @@ import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
 import { wireReply } from "./contract-corpus.fixtures";
-import { response } from "./service-ui.fixtures";
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
 const actor = (actorId: string, prefix = "header") => ({
@@ -143,18 +142,6 @@ it("keeps only the same actor's page on a transient error and follows server con
   await screen.findByText("All grants returned for this review are shown.");
   expect(request.mock.calls.map((call) => call[1])).toEqual([null, "next", "next"]);
 });
-it("rejects a schema-valid wrong-target page at the real generated service boundary as a read failure", async () => {
-  const reply = grants(second);
-  if (reply.kind !== "outcome") {
-    throw new Error("Synthetic page absent.");
-  }
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(response("authority.grants", "SUCCEEDED", reply.value.outcome.data)),
-  );
-  const result = await service.authorityGrants(first, null, "token");
-  expect(result.kind).toBe("deliveryFailure");
-});
 
 const prepare = async () => {
   await waitFor(() => {
@@ -178,11 +165,8 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
           outcome: {
             kind: "REJECTED",
             data: {
-              code: "ACCESS_RESOURCE_UNAVAILABLE",
+              code: "RESOURCE_UNAVAILABLE",
               action: "NONE_REQUIRED",
-              target: null,
-              actualRevision: null,
-              limits: {},
             },
           },
         },
@@ -302,11 +286,9 @@ it("resets only the selected grant page on invalid continuation and reloads it w
         outcome: {
           kind: "REJECTED",
           data: {
-            code: "QUERY_CURSOR_INVALID",
+            code: "INVALID_CURSOR",
             action: "READ_CURRENT",
             target: "cursor",
-            actualRevision: null,
-            limits: {},
           },
         },
       },

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PropertyHarness
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.Buffers.Binary
 open System.Security.Cryptography
@@ -10,11 +12,11 @@ open Hedgehog.FSharp
 
 let wireName endpoint response =
     let direction = if response then "reply" else "request"
-    ClaimCore.Contract.Api.id endpoint + " " + direction + " round trip"
+    ClaimCore.Contract.Protocol.Api.id endpoint + " " + direction + " round trip"
 
 let private wirePropertyNames =
     [
-        for endpoint in ClaimCore.Contract.Api.all do
+        for endpoint in ClaimCore.Contract.Protocol.Api.all do
             yield wireName endpoint false
             yield wireName endpoint true
     ]

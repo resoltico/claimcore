@@ -8,7 +8,6 @@ export {
   isObject,
   isHostFailure,
 } from "@contracts/client";
-export { correlateReply } from "./correlation";
 
 export const decodeResponse = <K extends EndpointId>(
   endpoint: K,

@@ -1,10 +1,11 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 open ClaimCore.Json
 
-open ClaimCore.Contract.Protocol
 
 module ReceiptCodecs =
     open Codec

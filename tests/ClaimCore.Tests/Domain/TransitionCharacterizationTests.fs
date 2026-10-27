@@ -10,14 +10,10 @@ open ClaimCore.Domain
 let today = DateOnly(2026, 10, 26)
 
 let registration claimant : RegistrationInput =
-    {
-        IncidentDate = "2026-09-01"
-        IncidentNotificationDate = "2026-09-02"
-        IncidentCountry = "LV"
+    { (Inputs.registrationOn "2026-09-01" "2026-09-02") with
         ClaimantName = claimant
         InsurerName = "Synthetic insurer"
         ClaimedAmount = "100"
-        ClaimedCurrency = "EUR"
     }
 
 let decision amount : ClaimCore.Domain.DecisionInput =

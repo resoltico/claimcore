@@ -14,6 +14,44 @@ open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Web.Composition
 
 module internal ApiRoutes =
+    let route =
+        function
+        | ActorEndpoint.Context -> Route.read Api.context (fun _ -> None) Service.context
+        | ActorEndpoint.CaseGet -> Route.read Api.caseGet (fun _ -> None) Service.get
+        | ActorEndpoint.CaseList -> Route.read Api.caseList (fun _ -> None) Service.list
+        | ActorEndpoint.CaseHistory -> Route.read Api.caseHistory (fun _ -> None) Service.history
+        | ActorEndpoint.Observe ->
+            Route.read Api.operationObserve (fun input -> Some input.OperationId) Service.observe
+        | ActorEndpoint.AuthorityList -> Route.read Api.authorityList (fun _ -> None) Service.actors
+        | ActorEndpoint.AuthorityGrants ->
+            Route.read Api.authorityGrants (fun _ -> None) Service.grants
+        | ActorEndpoint.Preview ->
+            Route.bind
+                Api.operationPreview
+                (fun input -> Some(OperationInput.operationId input))
+                (fun input ->
+                    {
+                        PreviewReply.OperationId = OperationInput.operationId input
+                        Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
+                    })
+                Service.preview
+        | ActorEndpoint.Execute ->
+            Route.bind
+                Api.operationExecute
+                (fun input -> Some(OperationInput.operationId input))
+                (fun input ->
+                    {
+                        ExecuteReply.OperationId = OperationInput.operationId input
+                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                    })
+                Service.execute
+        | ActorEndpoint.Resolve ->
+            Route.bind
+                Api.operationResolve
+                (fun input -> Some input.OperationId)
+                (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
+                Service.resolve
+
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
         | true, values when values.Count = 1 -> string values[0] = ContractIdentity.value
@@ -45,7 +83,7 @@ module internal ApiRoutes =
                 context
 
     let private input
-        (handler: ClaimCore.Application.Route)
+        (handler: ClaimCore.Web.Route)
         (configuration: WebConfiguration)
         (context: HttpContext)
         =
@@ -63,7 +101,7 @@ module internal ApiRoutes =
                             Error(RouteSupport.hostFailure context HostFailureReason.InputInvalid)
                     | Ok _ when context.RequestAborted.IsCancellationRequested ->
                         return Error(RouteSupport.inputFailure context BodyProblem.BodyCancelled)
-                    | Ok prepared -> return Ok(value, prepared)
+                    | Ok prepared -> return Ok prepared
         }
 
     let handle handler configuration withActor (context: HttpContext) =
@@ -80,12 +118,9 @@ module internal ApiRoutes =
                 | Ok principal ->
                     match! input handler configuration context with
                     | Error result -> return result
-                    | Ok(input, prepared) ->
-                        JsonValue.tryMember "operationId" input
-                        |> Option.iter (function
-                            | JsonValue.String text ->
-                                RequestLog.operation (System.Guid.Parse text) context
-                            | _ -> ())
+                    | Ok prepared ->
+                        prepared.OperationId
+                        |> Option.iter (fun id -> RequestLog.operation id context)
 
                         RouteSupport.markDispatched context
 
@@ -97,7 +132,7 @@ module internal ApiRoutes =
 
                         let! result =
                             withActor (AuthenticatedPrincipals.key principal) (fun core ->
-                                prepared (Some core) cancellation (fun () ->
+                                prepared.Invoke (Some core) cancellation (fun () ->
                                     RouteSupport.markCompleted context))
 
                         let! outcome =
@@ -106,7 +141,7 @@ module internal ApiRoutes =
                                 | Some reply -> return reply
                                 | None ->
                                     RouteSupport.markCompleted context
-                                    return! prepared None cancellation ignore
+                                    return! prepared.Invoke None cancellation ignore
                             }
 
                         return RouteSupport.reply outcome context

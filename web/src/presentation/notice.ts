@@ -10,6 +10,7 @@ const limits: Readonly<
     Readonly<Record<string, { minimum?: number; maximum?: number; enum?: ReadonlyArray<string> }>>
   >
 > = requirements;
+const contextFields = new Set(["code", "action", "target", "actualRevision", "phase"]);
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
@@ -19,10 +20,9 @@ const diagnosticText = (
     .filter((key) => Object.hasOwn(limits, key));
   const messageKey = keys.length === 1 ? keys[0] : undefined;
   const expected = messageKey === undefined ? undefined : limits[messageKey];
-  const supplied: Readonly<Record<string, number | string>> = diagnostic.limits;
-  if (typeof supplied !== "object" || supplied === null || Array.isArray(supplied)) {
-    return translate(preferences, "notice.unknownDiagnostic");
-  }
+  const supplied: Readonly<Record<string, unknown>> = Object.fromEntries(
+    Object.entries(diagnostic).filter(([key]) => !contextFields.has(key)),
+  );
   const suppliedKeys = Object.keys(supplied).sort().join(",");
   if (
     messageKey === undefined ||
@@ -34,7 +34,8 @@ const diagnosticText = (
   const valid = Object.entries(supplied).every(([key, value]) =>
     typeof value === "string"
       ? expected[key]?.enum?.includes(value) === true
-      : Number.isSafeInteger(value) &&
+      : typeof value === "number" &&
+        Number.isSafeInteger(value) &&
         value >= (expected[key]?.minimum ?? 0) &&
         value <= (expected[key]?.maximum ?? 2147483647),
   );

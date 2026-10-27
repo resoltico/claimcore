@@ -38,27 +38,7 @@ type CliFailureCode =
 
 module CliFailureCodes =
     let vocabulary =
-        Vocabulary.define
-            "cli-failure"
-            [
-                CliFailureCode.ConfigurationInvalid
-                CliFailureCode.AuthenticationFailed
-                CliFailureCode.ServiceUnavailable
-                CliFailureCode.Cancelled
-                CliFailureCode.Internal
-                CliFailureCode.InvalidFrame
-                CliFailureCode.InvalidResponse
-                CliFailureCode.ContractMismatch
-            ]
-            (function
-             | CliFailureCode.ConfigurationInvalid -> "CLI_CONFIGURATION_INVALID"
-             | CliFailureCode.AuthenticationFailed -> "CLI_AUTHENTICATION_FAILED"
-             | CliFailureCode.ServiceUnavailable -> "CLI_SERVICE_UNAVAILABLE"
-             | CliFailureCode.Cancelled -> "CLI_CANCELLED"
-             | CliFailureCode.Internal -> "CLI_INTERNAL"
-             | CliFailureCode.InvalidFrame -> "INVALID_FRAME"
-             | CliFailureCode.InvalidResponse -> "INVALID_RESPONSE"
-             | CliFailureCode.ContractMismatch -> "CONTRACT_MISMATCH")
+        Vocabulary.ofUnion<CliFailureCode> "cli-failure" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
     let codes = Vocabulary.tokens vocabulary
@@ -105,7 +85,7 @@ type FrameReply =
 type Invocation =
     private
         {
-            Target: ClaimCore.Contract.Route
+            Target: ClaimCore.Contract.Protocol.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -170,13 +150,7 @@ module Frames =
         |> WireWriter.bytes
 
     let private delivery =
-        Vocabulary.define
-            "delivery"
-            [ DeliveryState.NotSent; DeliveryState.Delivered; DeliveryState.Uncertain ]
-            (function
-             | DeliveryState.NotSent -> "NOT_SENT"
-             | DeliveryState.Delivered -> "DELIVERED"
-             | DeliveryState.Uncertain -> "UNCERTAIN")
+        Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
         |> Vocabulary.entries
         |> Codec.enumeration
 
@@ -323,20 +297,21 @@ module Frames =
     let private outcomeExitCode reply =
         match outcome reply with
         | Some "REJECTED"
-        | Some "NOT_ACCEPTED" -> 2
-        | Some "FAILED" -> 3
-        | Some "OUTCOME_UNKNOWN" -> 4
-        | _ -> 0
+        | Some "NOT_ACCEPTED" -> ExitCode.Rejected
+        | Some "FAILED" -> ExitCode.Failed
+        | Some "OUTCOME_UNKNOWN" -> ExitCode.OutcomeUnknown
+        | _ -> ExitCode.Success
 
     let exitCode frame =
-        if frame.Delivery = DeliveryState.Uncertain && mutation frame then
-            4
-        else
-            match frame.Result with
-            | FrameResult.LocalFailure CliFailure.Cancelled -> 130
-            | FrameResult.LocalFailure CliFailure.Internal -> 70
-            | FrameResult.LocalFailure(CliFailure.InvalidFrame | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
-                2
-            | FrameResult.LocalFailure _
-            | FrameResult.HostFailure _ -> 3
-            | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply)
+        (if frame.Delivery = DeliveryState.Uncertain && mutation frame then
+             ExitCode.OutcomeUnknown
+         else
+             match frame.Result with
+             | FrameResult.LocalFailure CliFailure.Cancelled -> ExitCode.Cancelled
+             | FrameResult.LocalFailure CliFailure.Internal -> ExitCode.InternalError
+             | FrameResult.LocalFailure(CliFailure.InvalidFrame | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
+                 ExitCode.Rejected
+             | FrameResult.LocalFailure _
+             | FrameResult.HostFailure _ -> ExitCode.Failed
+             | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply))
+        |> ExitCodes.value

@@ -234,7 +234,7 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
         Expect.equal
             (reply.GetProperty("operationId").GetString())
             (receipt.GetProperty("operationId").GetString())
-            "Setup receipt correlation"
+            "Setup receipt identity"
 
 let setup fixture =
     let frames = setupFrames fixture

@@ -2,6 +2,68 @@
   "source": "Hand-authored synthetic boundary examples; retired cancellation outcomes are explicit rejecting controls.",
   "cases": [
     {
+      "name": "role-admission-refusal",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ROLE_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "role"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "diagnostic-legacy-extra-container-refused",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "TOO_LONG",
+            "action": "CORRECT_INPUT",
+            "target": "claimantName",
+            "maximumCharacters": 4000,
+            "limits": {}
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "diagnostic-inapplicable-revision-refused",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED",
+            "actualRevision": 0
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "diagnostic-foreign-discriminator-refused",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED",
+            "kind": "RESOURCE_UNAVAILABLE"
+          }
+        }
+      },
+      "valid": false
+    },
+    {
       "name": "session-response-0",
       "endpoint": "session",
       "value": {
@@ -56,11 +118,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -140,11 +200,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -197,11 +255,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -268,11 +324,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -444,11 +498,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -607,11 +659,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -703,11 +753,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -808,11 +856,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -866,11 +912,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -931,11 +975,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       },
@@ -1888,11 +1930,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ACCESS_RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1906,10 +1945,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ACTOR_ALREADY_REGISTERED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1923,10 +1959,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ACTOR_UNKNOWN",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1940,10 +1973,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ACT_NOT_PERMITTED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1957,10 +1987,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ALREADY_VOIDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1973,11 +2000,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_ALREADY_CLOSED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "ALREADY_CLOSED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -1991,10 +2015,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_ALREADY_EXISTS",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2007,11 +2028,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_ALREADY_OPENED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "ALREADY_OPENED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2024,11 +2042,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "AMENDMENT_REQUIRES_UNDECIDED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2042,10 +2057,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_CLOSED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2058,11 +2070,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_DECISION_ALREADY_PAID",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "DECISION_ALREADY_PAID",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2075,11 +2084,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_DECISION_REQUIRED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "DECISION_REQUIRED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2093,10 +2099,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_ERASED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2109,11 +2112,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_PAYMENT_ALREADY_RECORDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "PAYMENT_ALREADY_RECORDED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2126,11 +2126,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_PAYMENT_NOT_RECORDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "PAYMENT_NOT_RECORDED",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2143,11 +2140,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_REVISION_CONFLICT",
+            "code": "REVISION_CONFLICT",
             "action": "READ_CURRENT",
-            "target": null,
-            "actualRevision": 0,
-            "limits": {}
+            "actualRevision": 0
           }
         }
       }
@@ -2161,10 +2156,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_VOIDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2177,11 +2169,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "ZERO_DECISION_CANNOT_BE_PAID",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2194,11 +2183,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "COMMAND_EXPECTED_REVISION_RANGE",
+            "code": "EXPECTED_REVISION_RANGE",
             "action": "CORRECT_INPUT",
-            "target": "expectedRevision",
-            "actualRevision": null,
-            "limits": {}
+            "target": "expectedRevision"
           }
         }
       }
@@ -2211,11 +2198,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "COMMAND_OPERATION_ID_REQUIRED",
+            "code": "OPERATION_ID_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "operationId",
-            "actualRevision": null,
-            "limits": {}
+            "target": "operationId"
           }
         }
       }
@@ -2228,11 +2213,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CORRECTION_EXISTING_VALUE_REQUIRED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2246,10 +2228,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_NO_CHANGES",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2262,11 +2241,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+            "code": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "payment",
-            "actualRevision": null,
-            "limits": {}
+            "target": "payment"
           }
         }
       }
@@ -2279,11 +2256,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+            "code": "PAYMENT_CLEAR_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "payment",
-            "actualRevision": null,
-            "limits": {}
+            "target": "payment"
           }
         }
       }
@@ -2297,10 +2272,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "HUMAN_PRINCIPAL_REQUIRED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2313,11 +2285,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "code": "CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       }
@@ -2330,11 +2300,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "code": "CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "incidentNotificationDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentNotificationDate"
           }
         }
       }
@@ -2347,11 +2315,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "code": "CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "paymentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "paymentDate"
           }
         }
       }
@@ -2364,11 +2330,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CALENDAR_DATE_REQUIRED",
+            "code": "CALENDAR_DATE_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "paymentDecisionDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "paymentDecisionDate"
           }
         }
       }
@@ -2381,11 +2345,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CASE_REFERENCE_FORMAT",
+            "code": "REFERENCE_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "caseReference",
-            "actualRevision": null,
-            "limits": {}
+            "target": "caseReference"
           }
         }
       }
@@ -2398,11 +2360,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CONTROL_CHARACTERS",
+            "code": "CONTROL_CHARACTERS",
             "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimantName"
           }
         }
       }
@@ -2415,11 +2375,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_COUNTRY_FORMAT",
+            "code": "COUNTRY_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "incidentCountry",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentCountry"
           }
         }
       }
@@ -2432,11 +2390,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CURRENCY_FORMAT",
+            "code": "CURRENCY_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "claimedCurrency",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimedCurrency"
           }
         }
       }
@@ -2449,11 +2405,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_CURRENCY_FORMAT",
+            "code": "CURRENCY_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "payableCurrency",
-            "actualRevision": null,
-            "limits": {}
+            "target": "payableCurrency"
           }
         }
       }
@@ -2466,11 +2420,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_DATE_ORDER",
+            "code": "CHRONOLOGICAL_ORDER",
             "action": "CORRECT_INPUT",
-            "target": "incidentNotificationDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentNotificationDate"
           }
         }
       }
@@ -2483,14 +2435,11 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_DECIMAL_FORMAT",
+            "code": "DECIMAL_FORMAT",
             "action": "CORRECT_INPUT",
             "target": "claimedAmount",
-            "actualRevision": null,
-            "limits": {
-              "maximumIntegerDigits": 18,
-              "maximumFractionalDigits": 4
-            }
+            "maximumIntegerDigits": 18,
+            "maximumFractionalDigits": 4
           }
         }
       }
@@ -2503,14 +2452,11 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_DECIMAL_FORMAT",
+            "code": "DECIMAL_FORMAT",
             "action": "CORRECT_INPUT",
             "target": "payableAmount",
-            "actualRevision": null,
-            "limits": {
-              "maximumIntegerDigits": 18,
-              "maximumFractionalDigits": 4
-            }
+            "maximumIntegerDigits": 18,
+            "maximumFractionalDigits": 4
           }
         }
       }
@@ -2523,11 +2469,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_FUTURE_DATE",
+            "code": "FUTURE_DATE",
             "action": "CORRECT_INPUT",
-            "target": "incidentDate",
-            "actualRevision": null,
-            "limits": {}
+            "target": "incidentDate"
           }
         }
       }
@@ -2540,11 +2484,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_MALFORMED_UNICODE",
+            "code": "MALFORMED_UNICODE",
             "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimantName"
           }
         }
       }
@@ -2557,11 +2499,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_SURROUNDING_WHITESPACE",
+            "code": "SURROUNDING_WHITESPACE",
             "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimantName"
           }
         }
       }
@@ -2574,11 +2514,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimantName"
           }
         }
       }
@@ -2591,11 +2529,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "insurerName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "insurerName"
           }
         }
       }
@@ -2608,11 +2544,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "reason",
-            "actualRevision": null,
-            "limits": {}
+            "target": "reason"
           }
         }
       }
@@ -2625,13 +2559,10 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_TOO_LONG",
+            "code": "TOO_LONG",
             "action": "CORRECT_INPUT",
             "target": "claimantName",
-            "actualRevision": null,
-            "limits": {
-              "maximumCharacters": 4000
-            }
+            "maximumCharacters": 4000
           }
         }
       }
@@ -2645,10 +2576,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "LAST_OWNER",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2662,10 +2590,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "NOT_VOIDED",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2678,11 +2603,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "OPERATION_CONTENT_CONFLICT",
-            "action": "STOP_AND_INVESTIGATE",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "IDEMPOTENCY_CONFLICT",
+            "action": "STOP_AND_INVESTIGATE"
           }
         }
       }
@@ -2695,11 +2617,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "QUERY_CURSOR_INVALID",
+            "code": "INVALID_CURSOR",
             "action": "READ_CURRENT",
-            "target": "cursor",
-            "actualRevision": null,
-            "limits": {}
+            "target": "cursor"
           }
         }
       }
@@ -2712,13 +2632,10 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "QUERY_PAGE_LIMIT_RANGE",
+            "code": "PAGE_LIMIT_RANGE",
             "action": "CORRECT_INPUT",
             "target": "limit",
-            "actualRevision": null,
-            "limits": {
-              "maximumPageSize": 50
-            }
+            "maximumPageSize": 50
           }
         }
       }
@@ -2731,11 +2648,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "TEXT_FORMATTING_CHARACTER",
+            "code": "FORMATTING_CHARACTER",
             "action": "CORRECT_INPUT",
-            "target": "claimantName",
-            "actualRevision": null,
-            "limits": {}
+            "target": "claimantName"
           }
         }
       }
@@ -2748,11 +2663,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_PRINCIPAL_FORMAT",
+            "code": "PRINCIPAL_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "principal.issuer",
-            "actualRevision": null,
-            "limits": {}
+            "target": "principal.issuer"
           }
         }
       }
@@ -2765,11 +2678,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_PRINCIPAL_FORMAT",
+            "code": "PRINCIPAL_FORMAT",
             "action": "CORRECT_INPUT",
-            "target": "principal.subject",
-            "actualRevision": null,
-            "limits": {}
+            "target": "principal.subject"
           }
         }
       }
@@ -2782,11 +2693,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ACCESS_RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2813,11 +2721,8 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ACCESS_RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED",
-            "target": null,
-            "actualRevision": null,
-            "limits": {}
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
           }
         }
       }
@@ -2873,11 +2778,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "INPUT_TEXT_REQUIRED",
+            "code": "TEXT_REQUIRED",
             "action": "CORRECT_INPUT",
-            "target": "cursor",
-            "actualRevision": null,
-            "limits": {}
+            "target": "cursor"
           }
         }
       }
@@ -2954,9 +2857,7 @@
           "data": {
             "code": "OPERATION_RESOLVED",
             "action": "READ_CURRENT",
-            "target": "operationId",
-            "actualRevision": null,
-            "limits": {}
+            "target": "operationId"
           }
         }
       },

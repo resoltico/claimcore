@@ -1,16 +1,9 @@
+import { registration } from "./support/inputs";
 import type { OperationReview, CaseFields } from "../src/api/service";
 export const caseFields: CaseFields = {
   caseReference: "CASE-1",
   status: "OPENED",
-  registration: {
-    incidentDate: "2026-09-01",
-    incidentNotificationDate: "2026-09-02",
-    incidentCountry: "LV",
-    claimantName: "Synthetic claimant",
-    insurerName: "Synthetic insurer",
-    claimedAmount: "12.34",
-    claimedCurrency: "EUR",
-  },
+  registration: registration(),
   decision: null,
   payment: null,
 };

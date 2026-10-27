@@ -11,13 +11,13 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 
-let private serviceCases (admin: HandlerContext) principal =
+let private serviceCases (admin: ServiceContext) principal =
     task {
         let! registered =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 400) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 400) principal AuthorityCommandAct.Register
                 ))
                 (CancellationToken.None))
 
@@ -72,7 +72,7 @@ let private serviceScopeCorruption () =
                 |> Async.AwaitTask
 
             let service =
-                Handlers.context
+                Service.create
                     database.Fixture.InstallationId
                     database.Fixture.Store
                     database.Fixture.Calendar

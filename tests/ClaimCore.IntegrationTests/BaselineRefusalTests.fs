@@ -33,7 +33,7 @@ let private dump (database: Testcontainers.PostgreSql.PostgreSqlContainer) =
         return result.Stdout |> Encoding.UTF8.GetBytes |> SHA256.HashData
     }
 
-let private install (bytes: byte array) current (source: NpgsqlDataSource) =
+let private install (bytes: byte array) (source: NpgsqlDataSource) =
     task {
         use! connection = source.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -51,10 +51,7 @@ let private install (bytes: byte array) current (source: NpgsqlDataSource) =
         let! _ =
             DatabaseSession.execute
                 connection
-                (if current then
-                     "INSERT INTO claimcore.baseline_identity(identifier,script_sha256) VALUES ('claimcore-foundation',$1)"
-                 else
-                     "INSERT INTO claimcore.schema_migrations(version,name,script_sha256) VALUES (1,'baseline',$1)")
+                "INSERT INTO claimcore.baseline_identity(identifier,script_sha256) VALUES ('claimcore-foundation',$1)"
                 [| box (SHA256.HashData bytes) |]
                 token
 
@@ -77,17 +74,17 @@ let private refuses action =
         with :? InvalidOperationException ->
             refused <- true
 
-        Expect.isTrue refused "Published baseline bytes are refused by the baseline admission"
+        Expect.isTrue refused "Altered baseline bytes are refused by the baseline admission"
     }
 
-let private refusedInstallation load current =
+let private refusedInstallation load =
     async {
         let database = PostgresFixture.empty ()
 
         try
             do! database.StartAsync() |> Async.AwaitTask
             use source = NpgsqlDataSource.Create(database.GetConnectionString())
-            do! install (load ()) current source |> Async.AwaitTask
+            do! install (load ()) source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
             do!
@@ -104,10 +101,10 @@ let private refusedInstallation load current =
 
             match admission with
             | Error RuntimeOpenFault.SchemaMismatch -> ()
-            | Error _ -> failtest "The old checksum must cause a schema refusal."
+            | Error _ -> failtest "The altered checksum must cause a schema refusal."
             | Ok runtime ->
                 runtime.Dispose()
-                failtest "The published baseline was admitted."
+                failtest "The altered baseline was admitted."
 
             let! after = dump database |> Async.AwaitTask
 
@@ -119,10 +116,8 @@ let private refusedInstallation load current =
             database.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
 
-let private previousRelease () =
-    File.ReadAllBytes(
-        Path.Combine(AppContext.BaseDirectory, "previous-release-baseline.v0.11.0.sql")
-    )
+let private alteredBaseline () =
+    File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "altered-baseline.sql"))
 
 let private differentChecksum () =
     let baseline =
@@ -136,9 +131,9 @@ let tests =
         "baseline admission preserves incompatible installations"
         [
             testCaseAsync
-                "a previous release installation is refused untouched"
-                (refusedInstallation previousRelease false)
+                "a synthetic baseline differing by one SQL statement is refused untouched"
+                (refusedInstallation alteredBaseline)
             testCaseAsync
                 "a schema with a different checksum is refused untouched"
-                (refusedInstallation differentChecksum true)
+                (refusedInstallation differentChecksum)
         ]

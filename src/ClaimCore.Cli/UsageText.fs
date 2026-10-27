@@ -68,21 +68,22 @@ module UsageText =
         String.concat "\n" ((errors |> List.map (line language)) @ hints) + "\n"
 
     let renderHost language arguments issue =
-        let command = List.tryHead arguments |> Option.defaultValue "help"
+        let commandText = List.tryHead arguments |> Option.defaultValue "help"
+        let command = CliCommands.parseCommand commandText
 
         let problem =
             match command, issue with
-            | "help", CliUsageIssue.Topic -> CliMessage.UnknownHelpTopic
-            | "help", _ -> CliMessage.InvalidHelpOptions
-            | "describe", CliUsageIssue.Selector -> CliMessage.InvalidDescribeSelector
-            | "describe", _ -> CliMessage.InvalidDescribeOptions
-            | "schema", CliUsageIssue.Selector -> CliMessage.InvalidSchemaSelector
-            | "schema", _ -> CliMessage.InvalidSchemaOptions
-            | "version", _ -> CliMessage.InvalidVersionOptions
-            | _ -> CliMessage.InvalidInvocation command
+            | Some CliCommand.Help, CliUsageIssue.Topic -> CliMessage.UnknownHelpTopic
+            | Some CliCommand.Help, _ -> CliMessage.InvalidHelpOptions
+            | Some CliCommand.Describe, CliUsageIssue.Selector -> CliMessage.InvalidDescribeSelector
+            | Some CliCommand.Describe, _ -> CliMessage.InvalidDescribeOptions
+            | Some CliCommand.Schema, CliUsageIssue.Selector -> CliMessage.InvalidSchemaSelector
+            | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
+            | Some CliCommand.Version, _ -> CliMessage.InvalidVersionOptions
+            | _ -> CliMessage.InvalidInvocation commandText
 
         let hints =
-            CliCommands.synopses command
+            CliCommands.synopses (Option.defaultValue CliCommand.Help command)
             |> List.map (fun syntax ->
                 message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
 

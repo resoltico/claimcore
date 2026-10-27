@@ -4,9 +4,9 @@
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
+    <Compile Include="ExitCodes.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="RecordFields.fs" />
-    <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
     <Compile Include="Refusals/Faults.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
@@ -34,7 +34,6 @@
     <Compile Include="Catalog/Metadata.fs" />
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
-    <Compile Include="Api/Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />

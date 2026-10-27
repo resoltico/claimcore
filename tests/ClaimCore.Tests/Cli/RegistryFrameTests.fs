@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RegistryFrameTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Cli
 
 open System
@@ -246,70 +248,6 @@ let private refusingFrames () =
         (fun () -> Frames.encode invalid |> ignore)
         "A frame cannot retag a typed value for another endpoint."
 
-let private operationEcho () =
-    let prepared = Frames.admit (bytes source) |> accepted
-
-    for actual, expected in [ id, true; other, false ] do
-        let output =
-            ClaimCore.Tests.CliReplies.ofValue
-                Api.operationExecute
-                {
-
-                    ExecuteReply.OperationId = actual
-                    Outcome = ExecuteResult.Rejected Refusal.LastOwner
-                }
-
-        Expect.equal
-            (ClaimCore.Tests.CliReplies.correlates
-                (Frames.endpoint prepared)
-                (Frames.input prepared)
-                (ServiceReply.json output))
-            expected
-            "Only the frozen operation ID settles a mutation."
-
-let private grantEcho () =
-    let input =
-        Protocol.RequestCodecs.grantsRequest.Write
-            {
-                ActorId = id
-                AfterCursor = None
-                Limit = 50
-            }
-
-    let endpoint = Api.tryFind "authority.grants" |> Option.get
-
-    for actual, expected in [ id, true; other, false ] do
-        let page: AuthorityGrantPage =
-            {
-                Actor =
-                    {
-                        ActorId = actual
-                        Principal =
-                            {
-                                Kind = PrincipalKinds.Human
-                                Issuer = "https://issuer.example/"
-                                Subject = "synthetic"
-                            }
-                        Enabled = true
-                    }
-                Items = []
-                NextCursor = None
-            }
-
-        let output = Api.authorityGrants.Output.Write(ReadReply.Succeeded page)
-
-        Expect.equal
-            (ClaimCore.Tests.CliReplies.correlates endpoint input output)
-            expected
-            "A grants page echoes its target actor."
-
-    let refused =
-        Api.authorityGrants.Output.Write(ReadReply.Rejected Refusal.ResourceUnavailable)
-
-    Expect.isTrue
-        (ClaimCore.Tests.CliReplies.correlates endpoint input refused)
-        "A refusal carries no disclosed actor."
-
 [<Tests>]
 let tests =
     testList
@@ -323,6 +261,4 @@ let tests =
             testCase "result frames carry only delivery and validated results" results
             testCase "uncertainty and local failures retain exit semantics" exits
             testCase "invalid frame boundaries reject" refusingFrames
-            testCase "operation replies echo the frozen ID" operationEcho
-            testCase "grants replies echo their actor" grantEcho
         ]

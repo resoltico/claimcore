@@ -19,7 +19,7 @@ let private page =
     | ReadReply.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
-let private seedCases (admin: HandlerContext) target =
+let private seedCases (admin: ServiceContext) target =
     task {
         for n in 1..52 do
             let reference = "GRANT-" + string n
@@ -49,7 +49,7 @@ let private seedCases (admin: HandlerContext) target =
 
     }
 
-let private eraseCase (database: PostgresFixture.Database) (admin: HandlerContext) =
+let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContext) =
     task {
         let! steward =
             grant
@@ -87,7 +87,7 @@ let private prepare (database: PostgresFixture.Database) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 200) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 200) target AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -111,7 +111,7 @@ let private prepare (database: PostgresFixture.Database) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 603) target (AdmittedAuthorityAct.Disable)
+                    authorityRequest (id 603) target (AuthorityCommandAct.Disable)
                 ))
                 (token))
 
@@ -145,7 +145,7 @@ let private indexCompatible (database: PostgresFixture.Database) targetId =
         do! transaction.RollbackAsync()
     }
 
-let private changedTarget (admin: HandlerContext) targetId cursor =
+let private changedTarget (admin: ServiceContext) targetId cursor =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
@@ -185,7 +185,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 620) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 620) target AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -220,7 +220,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
             "Current caller authority precedes token acceptance"
     }
 
-let private cursorIsolation (admin: HandlerContext) (query: GrantsRequest) cursor =
+let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) cursor =
     task {
         let! crossTarget =
             (Core.grants
@@ -327,7 +327,7 @@ let private boundaries (database: PostgresFixture.Database) =
         Expect.equal (Set.ofList all).Count 55 "No duplicate across nullable position boundaries"
     }
 
-let private changeTarget (admin: HandlerContext) =
+let private changeTarget (admin: ServiceContext) =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
@@ -337,7 +337,7 @@ let private changeTarget (admin: HandlerContext) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 630) target (AdmittedAuthorityAct.Enable)
+                    authorityRequest (id 630) target (AuthorityCommandAct.Enable)
                 ))
                 (token))
 
@@ -362,7 +362,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             PaginationTests.PausedPageStore(database.Fixture.Store, entered, release)
 
         let actor =
-            Handlers.context
+            Service.create
                 database.Fixture.InstallationId
                 (store :> IStore)
                 database.Fixture.Calendar

@@ -1,5 +1,4 @@
 import { productMetadata } from "../protocol/productMetadata";
-import { wireSchemas } from "../protocol/documents";
 import { buildRequest } from "../protocol/client";
 import type { FormValues } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
@@ -13,8 +12,6 @@ import {
 } from "../protocol/catalogAssembly";
 export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 
-// Read-only protocol summaries retain their structural document.
-export const operationDocument = wireSchemas["operation.execute"].request;
 export const operationEntry = (values: FormValues): CatalogDocument["entries"][number] => {
   const definition = productMetadata.catalog.entries.find(
     (item) => item.subject === values["kind"] && item.kind === values["act.kind"],

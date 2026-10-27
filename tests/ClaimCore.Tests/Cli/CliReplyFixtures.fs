@@ -42,14 +42,10 @@ let snapshot =
             Status = CaseStatus.Opened
             Registration =
                 CaseFixtures.registration
-                    {
-                        IncidentDate = "2026-01-01"
-                        IncidentNotificationDate = "2026-01-01"
-                        IncidentCountry = "LV"
+                    { (Inputs.registrationOn "2026-01-01" "2026-01-01") with
                         ClaimantName = "x"
                         InsurerName = "x"
                         ClaimedAmount = "0"
-                        ClaimedCurrency = "EUR"
                     }
             Decision = None
             Payment = None
@@ -74,7 +70,7 @@ let receipt =
                 {
                     Reference = CaseFixtures.reference "x"
                     Revision = 1L
-                    Act = CaseActKind.Business BusinessActKind.Open
+                    Act = CaseActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

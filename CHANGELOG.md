@@ -1,18 +1,21 @@
 # Changelog
 
-`Unreleased` summarizes implemented changes intended for the next release, including relevant uncommitted work, cumulatively against the preceding published non-prerelease version; the first release describes implemented scope. Verify actual publication rather than inferring it from headings, tags or workflow status; public prereleases do not reset this baseline. Check claims and material omissions against implementation, contracts, tests and documentation; commits and plans are leads. Describe consequences for users, operators, integrators or contributors, preserving material compatibility effects, limitations and required action, including for prerelease users. Exclude development chronology, superseded changes and verification logs.
-
-Use concise bullets without category labels or subheadings, grouping related changes and putting breaking changes and required actions first. Each bullet occupies one physical line, at most 200 characters including Markdown but excluding its `- ` marker: a ceiling, not a target. Shorten or split without losing material consequences. Use technical names when helpful; link to existing relevant documentation, without assuming paths or creating documents merely to satisfy this rule. Keep `## [Unreleased]` above dated `## [version] - YYYY-MM-DD` headings, newest first; retain existing release-note links. This file is authoritative for release summaries and their writing rules; derive published summaries from it and leave unrelated history unchanged. Review accuracy, completeness, duplication, compatibility and format; report unresolved evidence gaps outside this file and run applicable existing checks. Versioning, dating and publication require release authorization.
+Implemented release summaries are recorded here, with changes awaiting release under Unreleased.
 
 ## [Unreleased]
 
-- Deploy matching service, CLI and browser: remove `REVISION_EXHAUSTED` and `LEDGER_SEQUENCE_EXHAUSTED`; the diagnostic enum changes contract identity.
-- Catalog message keys change from `label.read.<endpoint>.*` to `endpoint.<endpoint>.*`; update integrations that reference them.
-- Typed Domain values and one record declaration now drive wire inputs, catalog metadata and projection names; internal APIs have breaking type and naming changes.
-- Closure-bound routes, typed CLI replies and transaction primitives replace erased dispatch and use-case store callbacks; authorization and delivery behavior remain unchanged.
-- Durable bytes, record format numbers and the SQL baseline remain unchanged; this redesign supplies no migration or compatibility reader.
-- A strict protocol compiler project and one browser lint policy replace local lint plugins; task guides and the glossary replace documentation owner tokens.
-- Keep one released previous-baseline fixture and a checksum refusal control; PostgreSQL fixture readiness now verifies an authenticated query through the mapped host port.
+- Initialize a fresh installation; the SQL baseline checksum changes. Earlier installations are refused untouched; preserve them with matching software. No migration or reader is supplied.
+- Deploy matching service, CLI and browser builds; wire tokens and locale keys change. Regenerate integrations from the checked contracts.
+- Refusals, violations and faults use flat code-tagged diagnostics with typed parameters; replace limits containers and expect actualRevision only for revision conflicts.
+- Authority admission belongs to Domain; invalid roles return ROLE_FORMAT at role. Public Application Service and ports replace Application routes and handlers.
+- CLI authority input uses --principal-kind instead of --kind. Generated command synopses, help topics and both executables' exits are in the [CLI reference](docs/cli.md).
+- Client reply correlation checks are removed; clients trust schema-admitted HTTPS replies. Keep the exact frame and use resubmission or final resolution for uncertain delivery.
+- Database help/version replies use HELP/VERSION kind tags; help exitCodes is a list of code/number entries. Update scripts consuming these machine replies.
+- Database replies retain diagnostic and fault details; invalid command grammar returns USAGE_ERROR with applicable syntax. Both executables share one exit-code table.
+- Remove REVISION_EXHAUSTED and LEDGER_SEQUENCE_EXHAUSTED; catalog message keys change from label.read.<endpoint>.* to endpoint.<endpoint>.*.
+- Twelve flat case acts and one typed record declaration drive inputs, catalog metadata and projections; internal APIs change. Durable byte codes remain unchanged; record format numbers stay 1.
+- Browser production builds compile app sources and omit OpenAPI from the bundle. Structural catalog tests and handwritten vectors replace the rendered-message corpus.
+- ArchUnitNET 0.13.5 uses assembly-scoped F# architecture controls, codec namespace boundaries and evaluated project edges; product assemblies no longer expose internals to siblings.
 
 ## [0.12.0] - 2026-10-26
 

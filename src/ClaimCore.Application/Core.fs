@@ -23,10 +23,7 @@ module internal Core =
 
     let private admitCase request = Case.parse request
 
-    let private admitAuthority input =
-        AuthorityRequests.admit input
-        |> Result.bind (fun request ->
-            AuthorityRequests.validate request |> Result.map (fun () -> request))
+    let private admitAuthority = Authority.parse
 
     let private write
         (ct: CancellationToken)
@@ -153,7 +150,7 @@ module internal Core =
         review
             ct
             (fun () -> admitAuthority input)
-            (fun (admitted: AdmittedAuthorityRequest) ->
+            (fun (admitted: AuthorityCommand) ->
                 store.Read(
                     (fun tx ->
                         ExecutionFacts.target
@@ -166,7 +163,7 @@ module internal Core =
                     ct
                 ))
             (AuthorityExecution.review installationId principal)
-            (fun _ (view: AuthorityFacts) (_, projection) ->
+            (fun _ (view: AuthorityExecutionFacts) (_, projection) ->
                 AuthorityReviews.describe view projection |> OperationReview.Authority)
 
     let private previewOperation store installationId calendar principal input ct =
@@ -193,7 +190,7 @@ module internal Core =
         | OperationInput.Authority request ->
             authorityWrite store installationId principal request ct
 
-    let context (services: HandlerContext) () ct =
+    let context (services: ServiceContext) () ct =
         Queries.context services.Store services.Calendar services.Principal ct
 
     let previewReply services input ct =

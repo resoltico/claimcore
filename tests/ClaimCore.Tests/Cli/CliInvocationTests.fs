@@ -13,11 +13,19 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =
-    for command in CliCommands.commands do
+    for command, topic in
+        [
+            "help", CliTopic.Help HelpTopic.Help
+            "version", CliTopic.Help HelpTopic.Version
+            "describe", CliTopic.Help HelpTopic.Describe
+            "schema", CliTopic.Help HelpTopic.Schema
+            "call", CliTopic.Help HelpTopic.Call
+            "session", CliTopic.Help HelpTopic.Session
+        ] do
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])
-                (Ok(CliInvocation.Help(command, "en")))
+                (Ok(CliInvocation.Help(topic, "en")))
                 "Offline exact aliases"
 
             Expect.isError
@@ -27,7 +35,8 @@ let private aliases () =
     for language in LocalizationPolicy.languages do
         for topic in CliCommands.topics do
             Expect.equal
-                (CliInvocations.admit [ "help"; topic; "--language"; language ])
+                (CliInvocations.admit
+                    [ "help"; CliCommands.topicToken topic; "--language"; language ])
                 (Ok(CliInvocation.Help(topic, language)))
                 "Canonical localized help"
 
@@ -316,7 +325,7 @@ let private authorityPreviewInvocation verb =
             [
                 "authority"
                 verb
-                "--kind"
+                "--principal-kind"
                 "HUMAN"
                 "--issuer"
                 "synthetic"

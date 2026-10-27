@@ -44,7 +44,7 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
-    <None Include="../fixtures/previous-release-baseline.v0.11.0.sql" Link="previous-release-baseline.v0.11.0.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../fixtures/altered-baseline.sql" Link="altered-baseline.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

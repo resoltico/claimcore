@@ -26,10 +26,12 @@ module internal Transitions =
         | PaymentProgress.Paid _ -> Error Refusal.AmendmentRequiresUndecided
 
     let private correct claim =
-        match claim.Progress with
-        | PaymentProgress.Undecided -> Error Refusal.CorrectionRequiresExistingValue
-        | PaymentProgress.Decided _
-        | PaymentProgress.Paid _ -> Ok(Applicable.Correcting claim)
+        match claim.Status, claim.Progress with
+        | CaseStatus.Closed, _ -> Ok(Applicable.Correcting claim)
+        | CaseStatus.Opened, PaymentProgress.Undecided ->
+            Error Refusal.CorrectionRequiresExistingValue
+        | CaseStatus.Opened, (PaymentProgress.Decided _ | PaymentProgress.Paid _) ->
+            Ok(Applicable.Correcting claim)
 
     let private decide claim =
         match claim.Progress with
@@ -57,44 +59,49 @@ module internal Transitions =
         | PaymentProgress.Undecided
         | PaymentProgress.Decided _ -> Error Refusal.PaymentNotRecorded
 
-    let private opened claim =
-        function
-        | BusinessActKind.Open -> Error Refusal.CaseAlreadyExists
-        | BusinessActKind.Reopen -> Error Refusal.AlreadyOpened
-        | BusinessActKind.Close -> Ok(Applicable.Closing claim)
-        | BusinessActKind.AmendRegistration -> amend claim
-        | BusinessActKind.Correct -> correct claim
-        | BusinessActKind.Decide -> decide claim
-        | BusinessActKind.WithdrawDecision -> withdraw claim
-        | BusinessActKind.RecordPayment -> pay claim
-        | BusinessActKind.ClearPayment -> unpay claim
+    let private whenOpened decide claim =
+        match claim.Status with
+        | CaseStatus.Closed -> Error Refusal.CaseClosed
+        | CaseStatus.Opened -> decide claim
 
-    let private business claim kind =
-        match claim.Status, kind with
-        | CaseStatus.Closed, BusinessActKind.Open -> Error Refusal.CaseAlreadyExists
-        | CaseStatus.Closed, BusinessActKind.Reopen -> Ok(Applicable.Reopening claim)
-        | CaseStatus.Closed, BusinessActKind.Close -> Error Refusal.AlreadyClosed
-        | CaseStatus.Closed, BusinessActKind.Correct -> Ok(Applicable.Correcting claim)
-        | CaseStatus.Closed, _ -> Error Refusal.CaseClosed
-        | CaseStatus.Opened, _ -> opened claim kind
+    let private close claim =
+        match claim.Status with
+        | CaseStatus.Closed -> Error Refusal.AlreadyClosed
+        | CaseStatus.Opened -> Ok(Applicable.Closing claim)
+
+    let private reopen claim =
+        match claim.Status with
+        | CaseStatus.Closed -> Ok(Applicable.Reopening claim)
+        | CaseStatus.Opened -> Error Refusal.AlreadyOpened
+
+    let private active claim =
+        function
+        | CaseActKind.Open -> Error Refusal.CaseAlreadyExists
+        | CaseActKind.AmendRegistration -> whenOpened amend claim
+        | CaseActKind.Correct -> correct claim
+        | CaseActKind.Decide -> whenOpened decide claim
+        | CaseActKind.WithdrawDecision -> whenOpened withdraw claim
+        | CaseActKind.RecordPayment -> whenOpened pay claim
+        | CaseActKind.ClearPayment -> whenOpened unpay claim
+        | CaseActKind.Close -> close claim
+        | CaseActKind.Reopen -> reopen claim
+        | CaseActKind.Void -> Ok(Applicable.Voiding claim)
+        | CaseActKind.Reinstate -> Error Refusal.NotVoided
+        | CaseActKind.Erase -> Ok Applicable.Erasing
+
+    let private voided claim =
+        function
+        | CaseActKind.Open -> Error Refusal.CaseAlreadyExists
+        | CaseActKind.Void -> Error Refusal.AlreadyVoided
+        | CaseActKind.Reinstate -> Ok(Applicable.Reinstating claim)
+        | CaseActKind.Erase -> Ok Applicable.Erasing
+        | _ -> Error Refusal.CaseVoided
 
     let applicable state kind =
-        match state, kind with
-        | CaseState.Erased, _ -> Error Refusal.CaseErased
-        | (CaseState.Active _ | CaseState.Voided _), CaseActKind.Business BusinessActKind.Open ->
-            Error Refusal.CaseAlreadyExists
-        | CaseState.Voided _, CaseActKind.Stewardship StewardshipActKind.Void ->
-            Error Refusal.AlreadyVoided
-        | CaseState.Voided _, CaseActKind.Business _ -> Error Refusal.CaseVoided
-        | CaseState.Active _, CaseActKind.Stewardship StewardshipActKind.Reinstate ->
-            Error Refusal.NotVoided
-        | CaseState.Active claim, CaseActKind.Stewardship StewardshipActKind.Void ->
-            Ok(Applicable.Voiding claim)
-        | CaseState.Voided claim, CaseActKind.Stewardship StewardshipActKind.Reinstate ->
-            Ok(Applicable.Reinstating claim)
-        | (CaseState.Active _ | CaseState.Voided _),
-          CaseActKind.Stewardship StewardshipActKind.Erase -> Ok Applicable.Erasing
-        | CaseState.Active claim, CaseActKind.Business kind -> business claim kind
+        match state with
+        | CaseState.Erased -> Error Refusal.CaseErased
+        | CaseState.Voided claim -> voided claim kind
+        | CaseState.Active claim -> active claim kind
 
     let private businessChange before after =
         Some before, after |> Result.map CaseState.Active
@@ -102,9 +109,9 @@ module internal Transitions =
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
     let private change evidence payload =
         match evidence, payload with
-        | Applicable.Amending claim, CaseAct.Business(BusinessAct.AmendRegistration facts) ->
+        | Applicable.Amending claim, CaseAct.AmendRegistration facts ->
             businessChange claim (Ok { claim with Facts = facts })
-        | Applicable.Correcting claim, CaseAct.Business(BusinessAct.Correct correction) ->
+        | Applicable.Correcting claim, CaseAct.Correct correction ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
                 { claim with
@@ -112,42 +119,42 @@ module internal Transitions =
                     Progress = progress
                 })
             |> businessChange claim
-        | Applicable.Deciding claim, CaseAct.Business(BusinessAct.Decide decision) ->
+        | Applicable.Deciding claim, CaseAct.Decide decision ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Decided decision
                     })
-        | Applicable.Withdrawing claim, CaseAct.Business BusinessAct.WithdrawDecision ->
+        | Applicable.Withdrawing claim, CaseAct.WithdrawDecision ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Undecided
                     })
-        | Applicable.Paying(claim, decision), CaseAct.Business(BusinessAct.RecordPayment date) ->
+        | Applicable.Paying(claim, decision), CaseAct.RecordPayment date ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Paid(decision, date)
                     })
-        | Applicable.Unpaying(claim, decision), CaseAct.Business BusinessAct.ClearPayment ->
+        | Applicable.Unpaying(claim, decision), CaseAct.ClearPayment ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Decided decision
                     })
-        | Applicable.Closing claim, CaseAct.Business BusinessAct.Close ->
+        | Applicable.Closing claim, CaseAct.Close ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Status = CaseStatus.Closed
                     })
-        | Applicable.Reopening claim, CaseAct.Business BusinessAct.Reopen ->
+        | Applicable.Reopening claim, CaseAct.Reopen ->
             businessChange
                 claim
                 (Ok
@@ -177,7 +184,9 @@ module internal Transitions =
         changed
         |> Result.bind (fun next ->
             match before, payload, next with
-            | Some before, CaseAct.Business _, CaseState.Active after ->
+            | Some before, act, CaseState.Active after when
+                not (CaseActKind.isStewardship (CaseActs.kind act))
+                ->
                 result {
                     do! StateValidation.progress after.Facts after.Progress
 

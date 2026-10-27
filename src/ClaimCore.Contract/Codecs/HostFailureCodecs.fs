@@ -1,8 +1,9 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Json
 
-open ClaimCore.Contract.Protocol
 
 module HostFailureCodecs =
     let ofReason reason =

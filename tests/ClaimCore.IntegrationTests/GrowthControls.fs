@@ -50,7 +50,7 @@ let private waiters (database: PostgresFixture.Database) expected =
             "The intended acceptance transactions are waiting for the head"
     }
 
-let private sameCase database (actor: HandlerContext) =
+let private sameCase database (actor: ServiceContext) =
     task {
         let! snapshot = current database "synthetic-growth-0"
 
@@ -109,10 +109,10 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         let fixture = database.Fixture
 
         let writer =
-            Handlers.context fixture.InstallationId writerGate.Store fixture.Calendar principal
+            Service.create fixture.InstallationId writerGate.Store fixture.Calendar principal
 
         let revoker =
-            Handlers.context fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
+            Service.create fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
 
         let act =
             match snapshot.State with
@@ -159,7 +159,7 @@ let private revocation (database: PostgresFixture.Database) owner principal =
 
     }
 
-let private longCase database (actor: HandlerContext) =
+let private longCase database (actor: ServiceContext) =
     task {
         let! snapshot = current database "synthetic-growth-998"
         let mutable revision = snapshot.Revision
@@ -211,7 +211,7 @@ let private longCase database (actor: HandlerContext) =
             |}
     }
 
-let private erase (database: PostgresFixture.Database) (actor: HandlerContext) =
+let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
     task {
         let! granted =
             grant

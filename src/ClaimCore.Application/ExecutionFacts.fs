@@ -11,7 +11,7 @@ type internal CaseFacts =
         Case: StoredCase option
     }
 
-type internal AuthorityFacts =
+type internal AuthorityExecutionFacts =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
@@ -93,7 +93,7 @@ module internal ExecutionFacts =
 
             return
                 {
-                    AuthorityFacts.ObservedAt = tx.ObservedAt
+                    AuthorityExecutionFacts.ObservedAt = tx.ObservedAt
                     Actor = actor
                     ExistingOperation = existing
                     Target = target

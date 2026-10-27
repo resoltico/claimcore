@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliDeliveryOutcomeTests
 
+open ClaimCore.Contract.Protocol
+
 open Expecto
 open ClaimCore.Contract
 open ClaimCore.Domain
@@ -30,21 +32,13 @@ let tests =
                             .ExitCode
                         expected
                         "Resolution outcome controls exit")
-            testCase "reply shape and identity failures are ordinary results" (fun () ->
+            testCase "reply shape failures are ordinary results" (fun () ->
                 let invocation = frame "operation.execute"
 
-                let contradictory =
-                    Api.operationExecute.Output.Write
-                        {
-                            OperationId = System.Guid.Parse "10000000-0000-4000-8000-000000000099"
-                            Outcome = ExecuteResult.Rejected Refusal.ResourceUnavailable
-                        }
-
-                for value in [ JsonValue.Null; contradictory ] do
-                    Expect.equal
-                        (CliReply.result invocation value)
-                        (Error CliFailure.InvalidResponse)
-                        "Untrusted validation failure must not throw or deliver a reply")
+                Expect.equal
+                    (CliReply.result invocation JsonValue.Null)
+                    (Error CliFailure.InvalidResponse)
+                    "Untrusted validation failure must not throw or deliver a reply")
             testCase "fresh attempts retain definite refusals" (fun () ->
                 let request = frame "operation.execute"
 

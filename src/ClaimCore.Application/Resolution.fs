@@ -15,7 +15,7 @@ module internal Resolution =
         (current: StoredCase option)
         =
         match actor.Actor with
-        | _ when not (ActorAuthorization.validActor principal actor) ->
+        | _ when not (Authority.validActor principal actor) ->
             Verdict.Refuse Refusal.ResourceUnavailable
         | Some owner ->
             match entry with

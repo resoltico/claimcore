@@ -24,7 +24,7 @@ export const refusedRead = async (
   if (outcome.kind !== "REJECTED") {
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
-  expect(outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+  expect(outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
 };
 
 const directCaseRefusal = async (page: Page, reference: string) => {
@@ -42,7 +42,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
   if (!isResponse("case.get", reply.payload) || reply.payload.outcome.kind !== "REJECTED") {
     throw new Error("A case without read authority must return a typed public refusal.");
   }
-  expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+  expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
   return reply.payload.outcome;
 };
 

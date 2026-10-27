@@ -35,124 +35,75 @@ module AuthorityRequests =
 
         { request with Act = act }
 
-    let private recordAct =
-        let grant role target =
+    let private authoredAct =
+        let grant role scope =
             {
                 Role = RoleTokens.token role
-                Scope = target
+                Scope = scope
             }
 
         function
-        | AdmittedAuthorityAct.Register -> SharedAuthorityAct.Register
-        | AdmittedAuthorityAct.Grant(role, target) -> SharedAuthorityAct.Grant(grant role target)
-        | AdmittedAuthorityAct.Revoke(role, target) -> SharedAuthorityAct.Revoke(grant role target)
-        | AdmittedAuthorityAct.Enable -> SharedAuthorityAct.Enable
-        | AdmittedAuthorityAct.Disable -> SharedAuthorityAct.Disable
+        | AuthorityCommandAct.Register -> Some SharedAuthorityAct.Register
+        | AuthorityCommandAct.Grant(role, scope) -> Some(SharedAuthorityAct.Grant(grant role scope))
+        | AuthorityCommandAct.Revoke(role, scope) ->
+            Some(SharedAuthorityAct.Revoke(grant role scope))
+        | AuthorityCommandAct.Enable -> Some SharedAuthorityAct.Enable
+        | AuthorityCommandAct.Disable -> Some SharedAuthorityAct.Disable
+        | AuthorityCommandAct.ProvisionOwner -> None
 
-    let toRecord (request: AdmittedAuthorityRequest) : AuthorityRequestRecord =
+    let toRecord (command: AuthorityCommand) : AuthorityRequestRecord =
         {
-            OperationId = request.OperationId
-            Target = PrincipalKey.describe request.Target
-            Act = RecordedAuthorityAct.Operation(recordAct request.Act)
+            OperationId = command.OperationId
+            Target = PrincipalKey.describe command.Target
+            Act =
+                authoredAct command.Act
+                |> Option.map RecordedAuthorityAct.Operation
+                |> Option.defaultValue RecordedAuthorityAct.ProvisionOwner
         }
 
-    let private admittedAct =
-        let grant make (value: GrantChange) =
-            match RoleTokens.parse value.Role with
-            | Some role -> Ok(make (role, value.Scope))
-            | None -> Error AuthorityInputFailure.RoleInvalid
+    /// Builds an authored input without admitting it; owner provisioning has no wire request.
+    let input operationId target act : Result<ClaimCore.Domain.AuthorityRequest, Refusal> =
+        authoredAct act
+        |> Option.map (fun act ->
+            ({
+                OperationId = operationId
+                Target = PrincipalKey.describe target
+                Act = act
+            }
+            : ClaimCore.Domain.AuthorityRequest))
+        |> function
+            | Some request -> Ok request
+            | None -> Error Refusal.ActNotPermitted
 
-        function
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Register ->
-            Ok AdmittedAuthorityAct.Register
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value) ->
-            grant AdmittedAuthorityAct.Grant value
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
-            grant AdmittedAuthorityAct.Revoke value
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> Ok AdmittedAuthorityAct.Enable
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable ->
-            Ok AdmittedAuthorityAct.Disable
-        | RecordedAuthorityAct.ProvisionOwner -> Error AuthorityInputFailure.ActInvalid
+    let toInput (command: AuthorityCommand) =
+        input command.OperationId command.Target command.Act
 
-    let fromRecord
-        (request: AuthorityRequestRecord)
-        : Result<AdmittedAuthorityRequest, AuthorityInputFailure> =
-        match
-            PrincipalKey.fromStorage
-                request.Target.Kind
-                request.Target.Issuer
-                request.Target.Subject,
-            admittedAct request.Act
-        with
-        | Ok target, Ok act ->
-            Ok
+    /// Permanent interpretation performs structural parsing, never current grant/capability decisions.
+    let fromRecord (request: AuthorityRequestRecord) =
+        match request.Act with
+        | RecordedAuthorityAct.Operation act ->
+            Authority.parse
                 {
                     OperationId = request.OperationId
-                    Target = target
+                    Target = request.Target
                     Act = act
                 }
-        | Error _, _ -> Error AuthorityInputFailure.PrincipalInvalid
-        | _, Error error -> Error error
-
-    let internal provisionRecord operationId target : AuthorityRequestRecord =
-        {
-            OperationId = operationId
-            Target = PrincipalKey.describe target
-            Act = RecordedAuthorityAct.ProvisionOwner
-        }
-
-    let toInput (request: AdmittedAuthorityRequest) : ClaimCore.Domain.AuthorityRequest =
-        {
-            OperationId = request.OperationId
-            Target = PrincipalKey.describe request.Target
-            Act = recordAct request.Act
-        }
-
-    let admit
-        (request: ClaimCore.Domain.AuthorityRequest)
-        : Result<AdmittedAuthorityRequest, Refusal> =
-        match
-            PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject,
-            admittedAct (RecordedAuthorityAct.Operation request.Act)
-        with
-        | Error reason, _ -> Error reason
-        | _, Error _ -> Error Refusal.ActNotPermitted
-        | Ok target, Ok act ->
-            Ok
-                {
-                    OperationId = request.OperationId
-                    Target = target
-                    Act = act
-                }
-
-    /// Permanent record interpretation does not replay today's grants or capability policy.
-    let internal validRecord (request: AuthorityRequestRecord) =
-        let principal =
+        | RecordedAuthorityAct.ProvisionOwner ->
             PrincipalKey.fromStorage
                 request.Target.Kind
                 request.Target.Issuer
                 request.Target.Subject
+            |> Result.bind (Authority.provision request.OperationId)
 
+    let internal validRecord (request: AuthorityRequestRecord) =
         match request.Act with
-        | RecordedAuthorityAct.ProvisionOwner -> principal |> Result.exists PrincipalKey.isHuman
-        | _ -> fromRecord request |> Result.isOk
+        | RecordedAuthorityAct.ProvisionOwner ->
+            fromRecord request
+            |> Result.exists (fun command -> PrincipalKey.isHuman command.Target)
+        | RecordedAuthorityAct.Operation _ -> fromRecord request |> Result.isOk
 
-    let internal targetCase (request: AdmittedAuthorityRequest) =
-        match request.Act with
-        | AdmittedAuthorityAct.Grant(_, GrantTarget.CaseReference reference)
-        | AdmittedAuthorityAct.Revoke(_, GrantTarget.CaseReference reference) -> Some reference
+    let internal targetCase (command: AuthorityCommand) =
+        match command.Act with
+        | AuthorityCommandAct.Grant(_, GrantTarget.CaseReference reference)
+        | AuthorityCommandAct.Revoke(_, GrantTarget.CaseReference reference) -> Some reference
         | _ -> None
-
-    let internal validate (request: AdmittedAuthorityRequest) =
-        if request.OperationId = System.Guid.Empty then
-            Error((Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)))
-        else
-            targetCase request
-            |> Option.map (
-                (CaseReference.parse
-                 >> Result.map ignore
-                 >> Result.mapError (fun violation ->
-                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
-                >> Result.mapError (fun value -> value)
-            )
-            |> Option.defaultValue (Ok())

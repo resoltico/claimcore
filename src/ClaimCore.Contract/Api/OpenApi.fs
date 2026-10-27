@@ -1,9 +1,10 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Json
 
 open System.Net.Http
-open ClaimCore.Contract.Protocol
 
 /// The registry and its codecs determine the complete structural contract.
 module OpenApi =

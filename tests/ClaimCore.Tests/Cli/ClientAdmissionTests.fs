@@ -61,7 +61,7 @@ let private authoritativeIdentityAdmission () =
                  |> Result.mapError _.Reason
                  |> Result.bind (function
                      | OperationInput.Authority request ->
-                         ClaimCore.Application.AuthorityRequests.admit request
+                         ClaimCore.Domain.Authority.parse request
                          |> Result.mapError (fun _ -> "invalid principal")
                      | _ -> Error "Expected authority request")
                  |> Result.isOk)

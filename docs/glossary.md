@@ -4,6 +4,8 @@
 
 A principal is an exact issuer and immutable human subject or service client identity. An actor is its
 registered identifier and enabled state. Current grants authorize actions on an installation or case.
+Domain Authority parses principal/role/scope inputs and decides changes from current authority facts;
+Application loads those facts under the transaction and persists the typed change.
 
 ## Admission and permanent format
 
@@ -13,7 +15,8 @@ value can represent. Reading retained values uses permanent format.
 ## Value module
 
 A Domain module owns one value type and its `parse`, `admit`, `format` and `descriptor` functions.
-CalendarDate, Money, CountryCode, PartyName, Reason and CaseReference are value modules.
+`CalendarDate`, `Money`, `CountryCode`, `PartyName`, `Reason` and `CaseReference` are value modules.
+`Money` owns amount and currency together.
 
 ## Declaration
 
@@ -22,8 +25,8 @@ Boundary codecs, catalog inputs and projection names derive from it.
 
 ## Case act
 
-A requested business or stewardship change to one case. Domain parses its authored inputs into a
-`CaseCommand`; transitions apply the typed act to accepted state.
+One of twelve flat requested changes to a case, including business work and stewardship. Domain parses
+its authored inputs into a `CaseCommand`; transitions apply the typed act to accepted state.
 
 ## Decision and verdict
 
@@ -43,7 +46,7 @@ the durable metadata grammar calls it `RecordedTarget`. The wire member `subject
 
 ## Route
 
-An endpoint description with input and output closures. Binding captures the handler with matching
+A Web-owned endpoint binding with input and output closures. Binding captures the handler with matching
 request and response types, so dispatch can invoke the bound route without recovering erased values.
 
 ## Read and write transactions

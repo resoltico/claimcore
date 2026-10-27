@@ -22,7 +22,7 @@ type internal ValidatedEntry =
             Content: EntryContent
         }
 
-module internal LedgerEntries =
+module LedgerEntries =
     let private width expected (bytes: byte array) =
         not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
 
@@ -32,7 +32,7 @@ module internal LedgerEntries =
             EntryHash = Convert.ToHexStringLower hash
         }
 
-    let stored (entry: EntryDraft) : StoredEntry =
+    let internal stored (entry: EntryDraft) : StoredEntry =
         {
             Sequence = entry.Sequence
             EntryHash = entry.EntryHash
@@ -58,7 +58,7 @@ module internal LedgerEntries =
                     BusinessDate = date
                 }
 
-    let create
+    let internal create
         installationId
         (head: LedgerHead)
         instant
@@ -79,7 +79,7 @@ module internal LedgerEntries =
                     Snapshot = snapshot
                 }
 
-        if payload.Length > Formats.MaximumPayloadBytes then
+        if payload.Length > LedgerPayload.MaximumBytes then
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
@@ -111,10 +111,10 @@ module internal LedgerEntries =
         }
 
     /// The existing salted commitment protects ordinary reads and replay before content is interpreted.
-    let payload (entry: StoredEntry) =
+    let internal payload (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce with
         | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
-            match LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes with
+            match LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes with
             | Error _ -> Error CoreFault.StoreIntegrityError
             | Ok value ->
                 if
@@ -128,16 +128,12 @@ module internal LedgerEntries =
                     Error CoreFault.OperationContentConflict
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let canObserve principal actor =
+    let internal canObserve principal actor =
         function
         | EntryTarget.Case(id, _, _, _) ->
-            ActorAuthorization.can principal actor Capability.ReadHistory (ResourceScope.Case id)
+            Authority.can principal actor Capability.ReadHistory (ResourceScope.Case id)
         | EntryTarget.Authority _ ->
-            ActorAuthorization.can
-                principal
-                actor
-                Capability.ReadAuthority
-                ResourceScope.Installation
+            Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation
 
     let private validMetadata (entry: StoredEntry) =
         let subject =
@@ -146,7 +142,7 @@ module internal LedgerEntries =
                 id <> Guid.Empty
                 && revision >= 1L
                 && revision <= Revision.Maximum
-                && ((revision = 1L) = (act = (CaseActKind.Business BusinessActKind.Open)))
+                && ((revision = 1L) = (act = CaseActKind.Open))
             | EntryTarget.Authority(id, _) -> id <> Guid.Empty
 
         entry.Sequence >= 1L
@@ -173,7 +169,7 @@ module internal LedgerEntries =
             && CaseActs.kind request.Act = act
             && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
-            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
+            if act = CaseActKind.Erase then
                 if Array.isEmpty data.Snapshot then
                     Ok(EntryContent.Case(request, None))
                 else
@@ -210,7 +206,7 @@ module internal LedgerEntries =
                 Error CoreFault.StoreIntegrityError
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let validate installationId (entry: StoredEntry) =
+    let internal validate installationId (entry: StoredEntry) =
         if installationId = Guid.Empty || not (validMetadata entry) then
             Error CoreFault.StoreIntegrityError
         else
@@ -245,17 +241,9 @@ module internal LedgerEntries =
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
     let private disclosure principal actor id currentRevision revision snapshot =
         if
-            ActorAuthorization.can
-                principal
-                actor
-                Capability.ReadHistoryFull
-                (ResourceScope.Case id)
+            Authority.can principal actor Capability.ReadHistoryFull (ResourceScope.Case id)
             || (currentRevision = revision
-                && ActorAuthorization.can
-                    principal
-                    actor
-                    Capability.ReadCase
-                    (ResourceScope.Case id))
+                && Authority.can principal actor Capability.ReadCase (ResourceScope.Case id))
         then
             SnapshotDisclosure.Disclosed snapshot
         else
@@ -288,9 +276,7 @@ module internal LedgerEntries =
             let shown =
                 match record.Snapshot.State, content with
                 | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
-                | CaseState.Erased, EntryContent.Case(_, None) when
-                    act = (CaseActKind.Stewardship StewardshipActKind.Erase)
-                    ->
+                | CaseState.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
                     Ok SnapshotDisclosure.Erased
                 | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some snapshot) when
                     snapshot.Reference = record.Snapshot.Reference
@@ -311,7 +297,7 @@ module internal LedgerEntries =
                         Snapshot = snapshot
                     })
 
-    let receipt principal actor current (validated: ValidatedEntry) =
+    let internal receipt principal actor current (validated: ValidatedEntry) =
         let entry = validated.Entry
 
         let subject =
@@ -332,7 +318,7 @@ module internal LedgerEntries =
                 RecordedBy = entry.ActorId
             })
 
-    let summary (current: StoredCase) (entry: StoredEntry) =
+    let internal summary (current: StoredCase) (entry: StoredEntry) =
         match entry.Subject with
         | EntryTarget.Case(id, revision, act, _) when
             validMetadata entry
@@ -352,7 +338,7 @@ module internal LedgerEntries =
 
 
 module internal OperationIdentity =
-    let decide
+    let internal decide
         installationId
         principal
         actor

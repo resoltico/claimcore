@@ -13,7 +13,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
-let private cases (actor: HandlerContext) =
+let private cases (actor: ServiceContext) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
             let! result =
@@ -37,7 +37,7 @@ let private cursor =
     | Some value -> value
     | None -> failtest "Missing continuation"
 
-let private reader fixture (admin: HandlerContext) =
+let private reader fixture (admin: ServiceContext) =
     task {
         let target =
             PrincipalKey.human "https://issuer.example/" "reader"
@@ -47,7 +47,7 @@ let private reader fixture (admin: HandlerContext) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 20) target AdmittedAuthorityAct.Register
+                    authorityRequest (id 20) target AuthorityCommandAct.Register
                 ))
                 (CancellationToken.None))
 
@@ -127,7 +127,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
             "Irrelevant grant changes do not invalidate a position"
     }
 
-let private createHistory (actor: HandlerContext) =
+let private createHistory (actor: ServiceContext) =
     task {
         let! opened =
             (Core.execute
@@ -154,7 +154,7 @@ let private createHistory (actor: HandlerContext) =
             accepted amended |> ignore
     }
 
-let private registerActors (actor: HandlerContext) =
+let private registerActors (actor: ServiceContext) =
     task {
         for n in 10..12 do
             let target =
@@ -165,14 +165,14 @@ let private registerActors (actor: HandlerContext) =
                 (Core.execute
                     actor
                     (OperationInput.Authority(
-                        authorityRequest (id n) target AdmittedAuthorityAct.Register
+                        authorityRequest (id n) target AuthorityCommandAct.Register
                     ))
                     (CancellationToken.None))
 
             acceptedAuthority registered
     }
 
-let private differentHistoryResource (actor: HandlerContext) (query: HistoryRequest) cursor =
+let private differentHistoryResource (actor: ServiceContext) (query: HistoryRequest) cursor =
     task {
         let! other =
             (Core.execute
@@ -328,7 +328,7 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
                 "No malformed position is trusted"
 
         let restarted =
-            Handlers.context fixture.InstallationId fixture.Store fixture.Calendar owner
+            Service.create fixture.InstallationId fixture.Store fixture.Calendar owner
 
         let! old =
             (Core.list
@@ -349,7 +349,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
-            Handlers.context fixture.InstallationId (proxy :> IStore) fixture.Calendar owner
+            Service.create fixture.InstallationId (proxy :> IStore) fixture.Calendar owner
 
         let! first =
             (Core.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
@@ -437,7 +437,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
             "Authority act advice is owned by core"
     }
 
-let private appendHistory (actor: HandlerContext) =
+let private appendHistory (actor: ServiceContext) =
     task {
         for revision in 1L .. 52L do
             let act =

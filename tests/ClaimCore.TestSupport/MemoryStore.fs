@@ -86,15 +86,13 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                     |> Seq.exists (fun (id, role, scope) ->
                         id = actor.ActorId
                         && scope.IsSome
-                        && List.contains role (ActorAuthorization.readRoles principal)
+                        && List.contains role (Authority.readRoles principal)
                         && not (
                             state.Grants
                             |> Seq.exists (fun (badId, badRole, badScope) ->
                                 badId = id
                                 && badScope = scope
-                                && List.contains
-                                    badRole
-                                    (ActorAuthorization.invalidRoles principal))
+                                && List.contains badRole (Authority.invalidRoles principal))
                         )))
 
             Task.FromResult

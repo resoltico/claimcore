@@ -17,7 +17,7 @@ type CliSchema =
 
 [<RequireQualifiedAccess>]
 type CliInvocation =
-    | Help of topic: string * language: string
+    | Help of topic: CliTopic * language: string
     | Version of json: bool
     | Describe of selector: CliDescription * text: bool * language: string
     | Schema of selection: CliSchema
@@ -45,10 +45,10 @@ module CliInvocations =
         collect [] None None arguments
 
     let private help topic language =
-        if List.contains topic CliCommands.topics then
-            Ok(CliInvocation.Help(topic, language))
-        else
-            Error CliUsageIssue.Topic
+        CliCommands.parseTopic topic
+        |> Option.map (fun topic -> CliInvocation.Help(topic, language))
+        |> Option.map Ok
+        |> Option.defaultValue (Error CliUsageIssue.Topic)
 
     let private admitHelp tail =
         options tail
@@ -92,10 +92,6 @@ module CliInvocations =
                         defaultArg language "en"
                     )))
 
-    let private alias command flag =
-        List.contains command CliCommands.commands
-        && List.contains flag CliCommands.aliases
-
     let private admitVersion =
         function
         | [] -> Ok(CliInvocation.Version false)
@@ -112,21 +108,36 @@ module CliInvocations =
         else
             schemaSelector arguments |> Result.map CliInvocation.Schema
 
+    let private admitCommand command tail =
+        match tail with
+        | [ flag ] when List.contains flag CliCommands.aliases ->
+            Ok(CliInvocation.Help(CliCommands.commandTopic command, "en"))
+        | _ ->
+            match command with
+            | CliCommand.Help -> admitHelp tail
+            | CliCommand.Version -> admitVersion tail
+            | CliCommand.Describe -> admitDescribe tail
+            | CliCommand.Schema -> admitSchema tail
+            | CliCommand.Call ->
+                if List.isEmpty tail then
+                    Ok CliInvocation.Call
+                else
+                    Error CliUsageIssue.Invocation
+            | CliCommand.Session ->
+                if List.isEmpty tail then
+                    Ok CliInvocation.Session
+                else
+                    Error CliUsageIssue.Invocation
+
     let admit arguments =
         match arguments with
-        | [] -> help "overview" "en"
-        | [ flag ] when List.contains flag CliCommands.aliases -> help "overview" "en"
-        | [ command; flag ] when alias command flag -> help command "en"
-        | [ "call" ] -> Ok CliInvocation.Call
-        | [ "session" ] -> Ok CliInvocation.Session
-        | "version" :: tail -> admitVersion tail
-        | "help" :: tail -> admitHelp tail
-        | "describe" :: tail -> admitDescribe tail
-        | "schema" :: tail -> admitSchema tail
-        | family :: _ when List.contains family [ "case"; "authority"; "operation"; "context" ] ->
-            Ok(CliInvocation.Verb arguments)
-        | head :: _ when List.contains head CliCommands.commands -> Error CliUsageIssue.Invocation
-        | _ -> Ok(CliInvocation.Verb arguments)
+        | [] -> Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
+        | [ flag ] when List.contains flag CliCommands.aliases ->
+            Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
+        | head :: tail ->
+            match CliCommands.parseCommand head with
+            | Some command -> admitCommand command tail
+            | None -> Ok(CliInvocation.Verb arguments)
 
     let usageLanguage arguments =
         arguments

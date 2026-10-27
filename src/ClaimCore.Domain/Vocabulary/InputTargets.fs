@@ -13,6 +13,7 @@ module InputTargets =
             InputTarget.Reason, "reason"
             InputTarget.PrincipalIssuer, "principal.issuer"
             InputTarget.PrincipalSubject, "principal.subject"
+            InputTarget.Role, "role"
             InputTarget.Limit, "limit"
             InputTarget.Cursor, "cursor"
         ]
@@ -26,6 +27,7 @@ module InputTargets =
             | InputTarget.Reason -> "reason"
             | InputTarget.PrincipalIssuer -> "principal.issuer"
             | InputTarget.PrincipalSubject -> "principal.subject"
+            | InputTarget.Role -> "role"
             | InputTarget.Limit -> "limit"
             | InputTarget.Cursor -> "cursor")
 

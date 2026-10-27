@@ -70,8 +70,4 @@ type AdvisoryReview =
     }
 
 module Views =
-    let vocabulary =
-        Vocabulary.define "view" [ View.Cases; View.Authority; View.Operations ] (function
-            | View.Cases -> "CASES"
-            | View.Authority -> "AUTHORITY"
-            | View.Operations -> "OPERATIONS")
+    let vocabulary = Vocabulary.ofUnion<View> "view" TokenCasing.ScreamingSnake None

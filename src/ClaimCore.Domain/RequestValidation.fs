@@ -16,24 +16,19 @@ module internal RequestValidation =
 
     let private act =
         function
-        | UnvalidatedCaseAct.Open input ->
-            Validation.registration input
-            |> Result.map (BusinessAct.Open >> CaseAct.Business)
+        | UnvalidatedCaseAct.Open input -> Validation.registration input |> Result.map CaseAct.Open
         | UnvalidatedCaseAct.AmendRegistration input ->
-            Validation.registration input
-            |> Result.map (BusinessAct.AmendRegistration >> CaseAct.Business)
+            Validation.registration input |> Result.map CaseAct.AmendRegistration
         | UnvalidatedCaseAct.Correct input ->
-            CaseCorrections.parse input
-            |> Result.map (BusinessAct.Correct >> CaseAct.Business)
-        | UnvalidatedCaseAct.Decide input ->
-            Validation.decision input |> Result.map (BusinessAct.Decide >> CaseAct.Business)
+            CaseCorrections.parse input |> Result.map CaseAct.Correct
+        | UnvalidatedCaseAct.Decide input -> Validation.decision input |> Result.map CaseAct.Decide
         | UnvalidatedCaseAct.RecordPayment input ->
             Validation.date BusinessField.PaymentDate input.PaymentDate
-            |> Result.map (BusinessAct.RecordPayment >> CaseAct.Business)
-        | UnvalidatedCaseAct.WithdrawDecision -> Ok(CaseAct.Business BusinessAct.WithdrawDecision)
-        | UnvalidatedCaseAct.ClearPayment -> Ok(CaseAct.Business BusinessAct.ClearPayment)
-        | UnvalidatedCaseAct.Close -> Ok(CaseAct.Business BusinessAct.Close)
-        | UnvalidatedCaseAct.Reopen -> Ok(CaseAct.Business BusinessAct.Reopen)
+            |> Result.map CaseAct.RecordPayment
+        | UnvalidatedCaseAct.WithdrawDecision -> Ok(CaseAct.WithdrawDecision)
+        | UnvalidatedCaseAct.ClearPayment -> Ok(CaseAct.ClearPayment)
+        | UnvalidatedCaseAct.Close -> Ok(CaseAct.Close)
+        | UnvalidatedCaseAct.Reopen -> Ok(CaseAct.Reopen)
         | UnvalidatedCaseAct.Void input -> reason input |> Result.map CaseAct.Void
         | UnvalidatedCaseAct.Reinstate input -> reason input |> Result.map CaseAct.Reinstate
         | UnvalidatedCaseAct.Erase -> Ok CaseAct.Erase

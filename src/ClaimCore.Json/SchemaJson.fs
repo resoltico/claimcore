@@ -86,6 +86,7 @@ module SchemaJson =
         | Schema.Boolean -> JsonValue.Object [ "type", text "boolean" ]
         | Schema.Null -> JsonValue.Object [ "type", text "null" ]
         | Schema.Const token -> JsonValue.Object [ "const", text token ]
+        | Schema.OneOf([ single ], None) -> value prefix single
         | Schema.OneOf(variants, tag) ->
             JsonValue.Object(
                 [ "oneOf", JsonValue.Array(variants |> List.map (value prefix)) ]

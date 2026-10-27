@@ -1,5 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Contract
 open ClaimCore.Json
 

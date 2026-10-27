@@ -10,7 +10,7 @@ open ClaimCore.Json
 open ClaimCore.Contract.Protocol
 
 let private document () =
-    ClaimCore.Contract.OpenApi.document
+    ClaimCore.Contract.Protocol.OpenApi.document
     |> WireWriter.bytes
     |> Encoding.UTF8.GetString
     |> JsonNode.Parse
@@ -138,7 +138,7 @@ let private fixedDescriptions () =
                     "Description is the referenced HTTP status"
 
 let private responseLabels () =
-    let descriptions = prose [] ClaimCore.Contract.OpenApi.document
+    let descriptions = prose [] ClaimCore.Contract.Protocol.OpenApi.document
     Expect.isNonEmpty descriptions "Required response labels are present."
 
     for path, value in descriptions do
@@ -190,7 +190,7 @@ let private reachable () =
         "Discriminator targets must resolve too."
 
     Expect.isFalse
-        (Map.containsKey "CaseRequest" ClaimCore.Contract.OpenApi.definitions)
+        (Map.containsKey "CaseRequest" ClaimCore.Contract.Protocol.OpenApi.definitions)
         "Unscoped request definitions are not published."
 
 let private diagnosticRevisions () =
@@ -206,7 +206,7 @@ let private diagnosticRevisions () =
     let schema = validator document selected
 
     let value =
-        """{"code":"CASE_REVISION_CONFLICT","action":"READ_CURRENT","target":null,"actualRevision":0,"limits":{}}"""
+        """{"code":"REVISION_CONFLICT","action":"READ_CURRENT","actualRevision":0}"""
 
     for revision, expected in [ "0", true; "1", true; "-1", false ] do
         let changed =

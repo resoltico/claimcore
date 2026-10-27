@@ -136,8 +136,8 @@ let private ledgerChecks =
 
 let private caseChecks =
     let entry, _ = row [| 1uy |]
-    let opened = CaseActKind.Business BusinessActKind.Open
-    let closed = CaseActKind.Business BusinessActKind.Close
+    let opened = CaseActKind.Open
+    let closed = CaseActKind.Close
 
     [
         VerificationFinding.RevisionSequence,

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npm run notices:generate",
+    "build": "tsc -b tsconfig.app.json && vite build && npm run notices:generate",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "lint": "node scripts/lint.mjs",

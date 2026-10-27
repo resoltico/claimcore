@@ -39,7 +39,7 @@ module internal VerificationPayload =
                          =
                          id)
 
-            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
+            if act = CaseActKind.Erase then
                 do!
                     require
                         (Some entry.Sequence)
@@ -96,7 +96,7 @@ module internal VerificationPayload =
                         (commitment = entry.PayloadCommitment)
 
                 let! payload =
-                    LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes |> decoded entry
+                    LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes |> decoded entry
 
                 return!
                     match entry.Subject with

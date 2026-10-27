@@ -27,27 +27,34 @@ Self-contained, trimmed and single-file publication need separate qualification.
 
 ## Project boundaries
 
-| Project | Responsibility | Direct dependencies |
-| --- | --- | --- |
-| Json | Strict JSON values, writers, codecs and schemas | None |
-| Domain | Value modules, declaration, accepted state, acts, refusals and transitions | Json |
-| Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages | Domain, Json |
-| RecordFormat | Durable byte grammars | Domain, Json |
-| Application | Authorization, use cases, bound routes and verification | Domain, RecordFormat, Contract, Json |
-| Postgres | Transaction primitives, projections and installation administration | Application, Domain, RecordFormat, Contract, Json |
-| HostSecurity | Private files, HTTPS origins and TLS purposes | None |
-| Web | Authentication, request gates, runtime leases and route serving | Application, Postgres, Contract, Domain, HostSecurity, Json |
-| CLI | HTTPS, command grammar, typed replies and frames | Contract, Domain, HostSecurity, Json |
-| Database | Owner administration | Application, Postgres, Contract, Domain, HostSecurity, Json |
+| Project | Responsibility |
+| --- | --- |
+| Json | Strict JSON values, writers, codecs and schemas |
+| Domain | Value modules, declaration, accepted state, case and authority policy/decisions, refusals |
+| Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages |
+| RecordFormat | Durable byte grammars |
+| Application | Public Service/ports, use cases, replay, fencing, projections and verification |
+| Postgres | Transaction primitives, projections and installation administration |
+| HostSecurity | Private files, HTTPS origins and TLS purposes |
+| Web | Authentication, request gates, runtime leases and route serving |
+| CLI | HTTPS, command grammar, typed replies and frames |
+| Database | Owner administration |
 
-Postgres retains its Contract edge because owner-administration outcomes contain `CoreFault`. Its transaction
+Postgres references Contract because owner-administration outcomes contain `CoreFault`. Its transaction
 modules contain SQL and primitives; Application composes case/authority work, reads and fencing.
 RecordFormat has no Contract dependency. The published CLI may contain pure Domain and excludes Application
 and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) verify these boundaries.
+[ProjectReferences.fs](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the allowed direct project edges.
+[ArchUnitNET](../Directory.Packages.props) runs in the Debug unit stage. Subjects cover whole assemblies
+because F# task/async bodies and closures can live in StartupCode types. Forbidden targets use namespace boundaries with
+non-empty controls; direct and generated F# shapes prove detection. Product internals may be exposed to tests only.
+All wire codecs and endpoint descriptions live in ClaimCore.Contract.Protocol; Application and RecordFormat
+cannot depend on that namespace.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
 [typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.
-Routes bind matching input/output handlers through [Route.bind](../src/ClaimCore.Application/Routes.fs).
+Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
+[Route.bind](../src/ClaimCore.Web/Routes.fs).
 Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/Vocabulary.fs) mechanism.
 
 ## Transactions and durable formats
@@ -60,10 +67,9 @@ through actual provider cleanup.
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
 [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent decoding does not
-reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source. Its comment
-naming the former Contract/Formats.fs is a historical pointer; scalar ownership now lives in Domain value
-modules. Preserve baseline bytes rather than editing that comment. Unsupported installation identities are
-refused; this build provides no conversion or compatibility reader.
+reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source; its
+SHA-256 installation identity derives from the exact embedded bytes. Baseline edits require a rebuild and
+a fresh installation. The runtime refuses unsupported installation identities without modifying them.
 
 ## Generated contracts
 
@@ -79,9 +85,10 @@ The [generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns its exact in
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
 producer. Custom output directories contain only contract artifacts.
 
-Core, CLI and browser catalogs have separate owners and share one Template grammar. Producer keys and arguments
-are checked before publication. The rendered-message corpus, wire examples, correction/transition matrices,
-CLI frames and [Python oracle](../tests/fixtures/oracle/generate_vectors.py) provide independent expectations.
+Core, CLI and browser catalogs have separate owners and share one Template grammar. Structural catalog tests
+check language key parity, producer arguments and every template before publication. Handwritten
+[template vectors](../tests/fixtures/message-template-vectors.json), wire examples, correction/transition
+matrices, CLI frames and the [Python oracle](../tests/fixtures/oracle/generate_vectors.py) provide independent expectations.
 Do not generate an independent oracle with the implementation being checked.
 
 ## Browser boundaries and lint
@@ -89,10 +96,12 @@ Do not generate an independent oracle with the implementation being checked.
 [oxlint.config.ts](../web/oxlint.config.ts) is the single browser policy. Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
-manifest. Its explicit JSON inputs are the existing contract-owned locale data; portable encoding/clone
+manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
 declarations support the byte boundary without enabling DOM or Node types. Pure DTOs live under protocol.
 React, DOM, Node and outside source imports must fail that project. Browser and test projects still check
-actual platform declarations. F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
+actual platform declarations. The app-only build references the strict protocol project, whose declarations
+are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
+F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
 
 ## Verification

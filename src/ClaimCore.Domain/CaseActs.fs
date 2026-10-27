@@ -28,7 +28,7 @@ type CaseCorrection =
     }
 
 [<RequireQualifiedAccess>]
-type BusinessAct =
+type CaseAct =
     | Open of Registration
     | AmendRegistration of Registration
     | Correct of CaseCorrection
@@ -38,24 +38,6 @@ type BusinessAct =
     | ClearPayment
     | Close
     | Reopen
-
-module BusinessActs =
-    let kind =
-        function
-        | BusinessAct.Open _ -> BusinessActKind.Open
-        | BusinessAct.AmendRegistration _ -> BusinessActKind.AmendRegistration
-        | BusinessAct.Correct _ -> BusinessActKind.Correct
-        | BusinessAct.Decide _ -> BusinessActKind.Decide
-        | BusinessAct.WithdrawDecision -> BusinessActKind.WithdrawDecision
-        | BusinessAct.RecordPayment _ -> BusinessActKind.RecordPayment
-        | BusinessAct.ClearPayment -> BusinessActKind.ClearPayment
-        | BusinessAct.Close -> BusinessActKind.Close
-        | BusinessAct.Reopen -> BusinessActKind.Reopen
-
-/// Business work and stewardship carry different parsed payloads.
-[<RequireQualifiedAccess>]
-type CaseAct =
-    | Business of BusinessAct
     | Void of Reason
     | Reinstate of Reason
     | Erase
@@ -63,9 +45,17 @@ type CaseAct =
 module CaseActs =
     let kind =
         function
-        | CaseAct.Business act -> CaseActKind.Business(BusinessActs.kind act)
-        | CaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
-        | CaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
-        | CaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
+        | CaseAct.Open _ -> CaseActKind.Open
+        | CaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
+        | CaseAct.Correct _ -> CaseActKind.Correct
+        | CaseAct.Decide _ -> CaseActKind.Decide
+        | CaseAct.WithdrawDecision -> CaseActKind.WithdrawDecision
+        | CaseAct.RecordPayment _ -> CaseActKind.RecordPayment
+        | CaseAct.ClearPayment -> CaseActKind.ClearPayment
+        | CaseAct.Close -> CaseActKind.Close
+        | CaseAct.Reopen -> CaseActKind.Reopen
+        | CaseAct.Void _ -> CaseActKind.Void
+        | CaseAct.Reinstate _ -> CaseActKind.Reinstate
+        | CaseAct.Erase -> CaseActKind.Erase
 
     let name act = kind act |> CaseActKinds.token

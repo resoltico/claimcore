@@ -40,7 +40,7 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
         member _.Dispose() = source.Dispose()
 
 module Runtime =
-    let internal store (runtime: IRuntime) = (runtime :?> RuntimeResource).Store
+    let store (runtime: IRuntime) = (runtime :?> RuntimeResource).Store
 
     let openConnection (connectionString: string) cancellationToken =
         task {
@@ -134,12 +134,7 @@ module internal LedgerAdministration =
             let store = LedgerStore(source, installationId, Transactions.timeouts) :> IStore
 
             let! result =
-                AuthorityExecution.provisionStore
-                    store
-                    installationId
-                    operationId
-                    principal
-                    cancellationToken
+                Service.provisionOwner store installationId operationId principal cancellationToken
 
             return provisionResult operationId result
         }

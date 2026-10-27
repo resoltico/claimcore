@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
@@ -266,23 +268,9 @@ let private absentJsonMedia () =
 
             Expect.equal (send handler invocation).ExitCode expected "JSON media is required"
 
-let private mixedMediaCorrelation () =
+let private mixedCaseJsonMedia () =
     let invocation = frame "operation.execute"
-
-    let node =
-        successfulBody "operation.execute" invocation
-        |> System.Text.Json.Nodes.JsonNode.Parse
-        |> nonNull
-
-    let receipt =
-        node["outcome"]
-        |> nonNull
-        |> fun value -> value["data"] |> nonNull |> fun value -> value["subject"] |> nonNull
-
-    receipt["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create("another")
-    let body = node.ToJsonString() |> bytes
-
-    Expect.isError (result invocation body) "Changed receipt identity is uncorrelated"
+    let body = successfulBody "operation.execute" invocation
 
     use handler =
         new Handler(fun _ ->
@@ -293,7 +281,10 @@ let private mixedMediaCorrelation () =
 
             Task.FromResult message)
 
-    Expect.equal (send handler invocation).ExitCode 4 "Mixed media cannot settle wrong correlation"
+    Expect.equal
+        (send handler invocation).ExitCode
+        0
+        "JSON media type admission is case-insensitive"
 
 let private localExits () =
     for failure, expected in
@@ -553,7 +544,7 @@ let tests =
                 mediaVariants ()
                 mixedMediaRefusals ()
                 absentJsonMedia ()
-                mixedMediaCorrelation ())
+                mixedCaseJsonMedia ())
             testCase
                 "malformed business strings reach typed server rejection unchanged"
                 malformedBusinessInput

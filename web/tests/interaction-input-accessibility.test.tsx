@@ -9,7 +9,7 @@ import type { Notice } from "../src/protocol/notices";
 
 const error: Notice = {
   kind: "diagnostic",
-  diagnostic: { code: "INPUT_PRINCIPAL_FORMAT", limits: {} },
+  diagnostic: { code: "PRINCIPAL_FORMAT", action: "CORRECT_INPUT", target: "principal.issuer" },
 };
 const preferences = (language: "en" | "lv" | "ar") => {
   localStorage.setItem(
@@ -33,7 +33,7 @@ it.each(["en", "lv", "ar"] as const)(
       view.rerender(<CatalogInputs {...props} errorPath={`target.${field}`} errorNotice={error} />);
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(
-        `${meaning} ${catalogs[language]["diagnostic.INPUT_PRINCIPAL_FORMAT"]}`,
+        `${meaning} ${catalogs[language]["diagnostic.PRINCIPAL_FORMAT"]}`,
       );
       expect(input).toHaveAttribute("aria-invalid", "true");
       await user.click(screen.getByText(name, { exact: true, selector: "label" }));

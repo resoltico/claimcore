@@ -24,11 +24,11 @@ let private input (fixture: PublishedFixture.Fixture) (field: string) value =
 let private businessRefusals fixture =
     for field, value, diagnostic in
         [
-            "incidentDate", "2026-02-30", "INPUT_CALENDAR_DATE_REQUIRED"
-            "claimedAmount", "١٢٫٥٠", "INPUT_DECIMAL_FORMAT"
-            "claimedAmount", "00.10", "INPUT_DECIMAL_FORMAT"
-            "claimedCurrency", "ĀBC", "INPUT_CURRENCY_FORMAT"
-            "claimantName", "", "INPUT_TEXT_REQUIRED"
+            "incidentDate", "2026-02-30", "CALENDAR_DATE_REQUIRED"
+            "claimedAmount", "١٢٫٥٠", "DECIMAL_FORMAT"
+            "claimedAmount", "00.10", "DECIMAL_FORMAT"
+            "claimedCurrency", "ĀBC", "CURRENCY_FORMAT"
+            "claimantName", "", "TEXT_REQUIRED"
         ] do
         let input = input fixture field value
 
@@ -52,8 +52,7 @@ let private businessRefusals fixture =
                 diagnostic
                 "Application owns format refusal"
 
-    for value, diagnostic in
-        [ " ", "INPUT_TEXT_REQUIRED"; String.replicate 201 "x", "INPUT_TEXT_TOO_LONG" ] do
+    for value, diagnostic in [ " ", "TEXT_REQUIRED"; String.replicate 201 "x", "TOO_LONG" ] do
         let input = input fixture "claimantName" value
 
         for endpoint in [ "operation.preview"; "operation.execute" ] do
@@ -75,9 +74,9 @@ let private businessRefusals fixture =
 let private principalRefusals fixture =
     for issuer, subject, target, issue in
         [
-            "", "", "principal.issuer", "INPUT_TEXT_REQUIRED"
-            "https://issuer.example/", "", "principal.subject", "INPUT_TEXT_REQUIRED"
-            "secret-canary", "synthetic", "principal.issuer", "INPUT_PRINCIPAL_FORMAT"
+            "", "", "principal.issuer", "TEXT_REQUIRED"
+            "https://issuer.example/", "", "principal.subject", "TEXT_REQUIRED"
+            "secret-canary", "synthetic", "principal.issuer", "PRINCIPAL_FORMAT"
         ] do
         let reply =
             automation

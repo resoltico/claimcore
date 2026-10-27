@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OperationCatalogTests
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.IO
 open System.Text.Json
@@ -75,9 +77,7 @@ let tests =
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
                 let original =
-                    Record.caseActs
-                    |> List.find (fun item ->
-                        item.Kind = CaseActKind.Business BusinessActKind.Decide)
+                    Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Decide)
 
                 let operation = find [ "case"; "decide" ]
 
@@ -109,9 +109,7 @@ let tests =
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
                     let original =
-                        Record.caseActs
-                        |> List.find (fun item ->
-                            item.Kind = CaseActKind.Business BusinessActKind.Open)
+                        Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Open)
 
                     let operation = find [ "case"; "open" ]
 
@@ -172,7 +170,7 @@ let tests =
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->
                 let grant = OperationCatalog.synopsis (find [ "authority"; "grant" ])
-                Expect.stringContains grant "--kind human|service" "Vocabulary choices"
+                Expect.stringContains grant "--principal-kind human|service" "Vocabulary choices"
 
                 Expect.stringContains
                     grant

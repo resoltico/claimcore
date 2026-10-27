@@ -99,7 +99,7 @@ let private erasureFixture (database: PostgresFixture.Database) =
         return actor
     }
 
-let private erased (actor: HandlerContext) =
+let private erased (actor: ServiceContext) =
     task {
         let request =
             actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.UnvalidatedCaseAct.Erase)
