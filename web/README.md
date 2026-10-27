@@ -12,6 +12,10 @@ no database access. [Browser and host](../docs/operating.md#identity-and-hosting
 - [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available acts and outcome meaning.
 - [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Protocol/Localization/) and browser-owned [chrome catalogs](locales/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. The [integration guide](../docs/integrating.md#delivery-recovery) owns interrupted-delivery behavior.
 
+Unit tests mirror source modules under `tests/unit`, integrated scenarios are under `tests/flows`, and
+fixtures/setup live under `tests/support`. Lint rejects orphan unit paths. Typed `p.term` calls select the
+core vocabulary explicitly; generated scalar guidance and catalog country metadata supply rule meaning.
+
 ## Build locally
 
 Use the Node/npm versions in [.node-version](../.node-version) and [package.json](package.json), with [package-lock.json](package-lock.json) for dependencies. From the repository root:

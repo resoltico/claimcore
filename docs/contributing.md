@@ -30,26 +30,33 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | Value modules, declaration, accepted state, case and authority policy/decisions, refusals |
-| Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages |
-| RecordFormat | Durable byte grammars |
-| Application | Public Service/ports, use cases, replay, fencing, projections and verification |
+| Domain | JSON-free value types, structural declarations, service requests/replies, policy and decisions |
+| Protocol | Wire codecs, endpoints, semantic catalog, OpenAPI, core messages and host build identity |
+| RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
+| Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Web | Authentication, request gates, runtime leases and route serving |
 | CLI | HTTPS, command grammar, typed replies and frames |
 | Database | Owner administration |
 
-Postgres references Contract because owner-administration outcomes contain `CoreFault`. Its transaction
-modules contain SQL and primitives; Application composes case/authority work, reads and fencing.
-RecordFormat has no Contract dependency. The published CLI may contain pure Domain and excludes Application
-and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) verify these boundaries.
-[ProjectReferences.fs](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the allowed direct project edges.
-[ArchUnitNET](../Directory.Packages.props) runs in the Debug unit stage. Subjects cover whole assemblies
-because F# task/async bodies and closures can live in StartupCode types. Forbidden targets use namespace boundaries with
-non-empty controls; direct and generated F# shapes prove detection. Product internals may be exposed to tests only.
-All wire codecs and endpoint descriptions live in ClaimCore.Protocol; Application and RecordFormat
-cannot depend on that namespace.
+Domain has no project dependencies. Protocol and RecordFormat build codecs over Domain structure using
+Json; Application uses Domain and RecordFormat. Postgres implements Application ports using Domain,
+RecordFormat and Json. Application and Postgres have no Protocol reference. Web and Database use the
+Application Service and port surface; the published CLI contains Domain, Protocol, Json and HostSecurity,
+with Application and Postgres excluded. The
+[project-edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the exact direct edges.
+
+[Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) run ArchUnitNET in Debug. Subjects
+cover whole assemblies because F# task/async bodies and closures can live in StartupCode types. Nonempty
+forbidden sets and compiled direct/task controls cover Domain isolation, durable vocabulary isolation,
+service-model independence, host usage and vocabulary naming. Product internals may be exposed to tests only.
+
+A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
+on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
+wire-facing names. [Domain service models](../src/ClaimCore.Domain/Service/) own typed outcomes;
+[ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
+from host composition. Multi-argument transaction and store members take named records.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
 [typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.
@@ -59,8 +66,12 @@ Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/
 
 ## Transactions and durable formats
 
-Permanent scalar grammars used to decode format-1 history may only be relaxed under the same record format number. Tightening a grammar requires a separately authorized format change. Independent permanent-limit vectors in `tests/fixtures/record-format-vectors.json` protect historical decoding. RecordFormat owns literal names and the 65,536-byte request-record ceiling; wire spelling and transport limits do not govern retained records.
-
+Permanent scalar grammars used to decode format-1 history may only be relaxed under the same format
+number. Tightening requires a separately authorized format change. Independent permanent-limit vectors in
+[record-format-vectors.json](../tests/fixtures/record-format-vectors.json) protect historical decoding.
+[DurableNames.fs](../src/ClaimCore.RecordFormat/DurableNames.fs) owns exhaustive literal spellings;
+[RecordLimits.fs](../src/ClaimCore.RecordFormat/RecordLimits.fs) owns the 65,536-byte request-record ceiling.
+Wire spelling and transport limits do not govern retained records. Oversized encoding is an internal fault.
 
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) exposes read/write callbacks over primitives.
 The PostgreSQL adapter creates a write transaction capability after taking the head lock. Reads use one
@@ -88,8 +99,15 @@ The [generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns its exact in
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
 producer. Custom output directories contain only contract artifacts.
 
-Core, CLI and browser catalogs have separate owners and share one Template grammar. Structural catalog tests
-check language key parity, producer arguments and every template before publication. Handwritten
+Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
+synopses. The generator renders the command reference through CLI grammar. The public catalog has no
+`synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
+Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
+`p.term(vocabulary, value)`. Registry checks allow equal tokens in different vocabularies and reserve one
+composite `act` vocabulary. Identical renderer/core wording is refused in every locale.
+
+Catalogs share one Template grammar. Structural checks cover language parity, producer arguments and every
+template before publication. Handwritten
 [template vectors](../tests/fixtures/message-template-vectors.json), wire examples, correction/transition
 matrices, CLI frames and the [Python oracle](../tests/fixtures/oracle/generate_vectors.py) provide independent expectations.
 Do not generate an independent oracle with the implementation being checked.
@@ -104,6 +122,11 @@ declarations support the byte boundary without enabling DOM or Node types. Pure 
 React, DOM, Node and outside source imports must fail that project. Browser and test projects still check
 actual platform declarations. The app-only build references the strict protocol project, whose declarations
 are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
+Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenarios live under
+`web/tests/flows`, with fixtures and setup under `web/tests/support`. `npm run lint` rejects unit paths
+without a matching source module. The lint configuration omits root category defaults while preserving
+explicit override policy; review the complete `oxlint --print-config` output when changing it.
+
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
 

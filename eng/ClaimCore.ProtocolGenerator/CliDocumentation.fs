@@ -108,7 +108,7 @@ module CliDocumentation =
         [
             "# CLI reference"
             ""
-            "Generated from the typed Contract operation catalog. Regenerate with `dotnet run --project eng/ClaimCore.ProtocolGenerator -- --output contracts`; generator `--check` also checks this file."
+            "Generated from the semantic Protocol catalog and CLI command grammar. Regenerate with `dotnet run --project eng/ClaimCore.ProtocolGenerator -- --output contracts`; generator `--check` also checks this file."
             ""
             "A synopsis shows required inputs and brackets optional inputs. Choices use lowercase kebab spelling; exact uppercase wire tokens are also accepted. Mutation operations generate an operation ID when omitted. Keep that ID and the exact prepared frame for retries."
             ""
@@ -134,7 +134,7 @@ module CliDocumentation =
             ""
             "## Exit codes"
             ""
-            "Both executables use the shared Contract exit-code table. `claimcore-database help` reports its owner-command grammar without opening credentials or the database. Database refusals include a diagnostic; failures include a fault. Usage errors include the applicable synopsis."
+            "Both executables use the shared Protocol exit-code table. `claimcore-database help` reports its owner-command grammar without opening credentials or the database. Database refusals include a diagnostic; failures include a fault. Usage errors include the applicable synopsis."
             ""
             "| Exit | Meaning | claimcore | claimcore-database |"
             "| --- | --- | --- | --- |"

@@ -8,11 +8,21 @@ defines terms.
 ## Discover inputs
 
 `claimcore describe case open` describes one operation offline. `describe --format json` exposes catalog
-entries; `schema ENDPOINT request|response` exposes a wire schema. Browser forms and CLI grammar consume
-the same typed declaration through the generated [catalog](../contracts/catalog.json).
+entries; `schema ENDPOINT request|response` exposes a wire schema. The generated
+[catalog](../contracts/catalog.json) describes operation meaning and input bindings without CLI synopsis
+text. CLI grammar derives command words, flags and usage separately.
 
 Dates and amounts travel as strings. Keep authored names, reasons, amount spelling and references intact;
 use the supplied input descriptors and current server guidance when preparing changes. A preview is advisory.
+
+Case advice contains act kinds, optional `correction` choices exactly when `CORRECT` is offered, and
+history modes. Offers contain no `expectedRevision`; use the accompanying snapshot revision, or revision
+zero when opening. Treat advice as presentation: execution checks current state and authority again.
+
+Core vocabulary labels use qualified keys such as `status.OPENED.label`; generated browser terms require
+the vocabulary name. Scalar guidance comes from core messages and Domain-owned bounds. Country format
+metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
+CLI human output uses translated labels; machine frames retain exact wire tokens.
 
 ## HTTPS contract
 
@@ -33,7 +43,7 @@ An invalid role yields `ROLE_FORMAT` with target `role`. Use identifiers from th
 HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
-[HostFailures](../src/ClaimCore.Protocol/HostFailures.fs).
+[host failure policy](../src/ClaimCore.Protocol/HostFailures.fs).
 
 Contract identity hashes canonical OpenAPI. Locale/help-only edits preserve it. Tracked
 [client validators](../contracts/client.ts) and [message contracts](../contracts/messages.ts) accompany the
