@@ -4,9 +4,7 @@ import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
-import { operationDocument } from "../../operation/operationForm";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { resolveSchema, selectedSchema } from "../../protocol/forms";
 import type { OperationReview as Review, CaseReview } from "../../protocol/types";
 import { renderKey } from "../../presentation/messages";
 type ReviewModel = Pick<
@@ -44,14 +42,30 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
     </>
   );
 };
-const authorityState = resolveSchema(operationDocument, {
-  $ref: "#/components/schemas/AuthorityState",
-});
-const AuthorityValues = ({
-  review,
-}: {
-  review: Extract<Review["subject"], { kind: "AUTHORITY" }>;
-}) => {
+type AuthorityReview = Extract<Review["subject"], { kind: "AUTHORITY" }>;
+const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }) => {
+  const p = usePresentation();
+  return (
+    <ul>
+      {grants.map((grant) => (
+        <li key={JSON.stringify(grant)}>
+          <dl>
+            <dt>{p.text("input.role.label")}</dt>
+            <dd>
+              <span>{p.token(grant.role)}</span>
+            </dd>
+            <dt>{p.text("input.scope.label")}</dt>
+            <dd>
+              <span>{p.token(grant.scope.kind)}</span>{" "}
+              {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
+            </dd>
+          </dl>
+        </li>
+      ))}
+    </ul>
+  );
+};
+const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
   const p = usePresentation();
   const states = [
     ["ui.before", review.before],
@@ -67,11 +81,7 @@ const AuthorityValues = ({
             <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
           </dl>
           <h5>{p.text("ui.actorGrants")}</h5>
-          <ProtocolSummary
-            value={state.grants}
-            document={operationDocument}
-            node={authorityState.properties!["grants"]!}
-          />
+          <ReviewGrants grants={state.grants} />
         </section>
       ))}
     </>
@@ -115,7 +125,6 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
     return null;
   }
   const { input } = model.prepared;
-  const schema = selectedSchema(operationDocument, operationDocument, "", { kind: input.kind });
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
   const act = productMetadata.catalog.entries.find(
     (item) => item.subject === input.kind && item.kind === input.act.kind,
@@ -138,7 +147,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
             ? p.actMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
-        <ProtocolSummary value={display} document={operationDocument} node={schema} />
+        <ProtocolSummary value={display} entry={act} />
         {model.review.subject.kind === "CASE" ? (
           <ReviewValues review={model.review.subject} />
         ) : (
