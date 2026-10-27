@@ -1,6 +1,5 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Contract
 
 open System
 open ClaimCore.Application
@@ -12,9 +11,9 @@ module internal Persistence =
         let subjectKind, subjectId, revision, act, date =
             match entry.Subject with
             | EntryTarget.Authority(target, kind) ->
-                "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
+                "AUTHORITY", target, None, AuthorityKind.token kind, None
             | EntryTarget.Case(id, revision, kind, date) ->
-                "CASE", id, Some revision, CaseActKinds.token kind, Some date
+                "CASE", id, Some revision, CaseActKind.token kind, Some date
 
         DatabaseSession.execute
             connection
@@ -101,7 +100,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box id; box (RoleTokens.token Role.Owner) |]
+                        [| box id; box (Role.token Role.Owner) |]
                         token
 
                 return ()
@@ -120,7 +119,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
-                        [| box id; box (RoleTokens.token role); DatabaseSession.parameter caseId |]
+                        [| box id; box (Role.token role); DatabaseSession.parameter caseId |]
                         token
 
                 return ()
@@ -129,7 +128,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
-                        [| box id; box (RoleTokens.token role); DatabaseSession.parameter caseId |]
+                        [| box id; box (Role.token role); DatabaseSession.parameter caseId |]
                         token
 
                 return ()

@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.BaselineRefusalTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System
@@ -117,7 +118,13 @@ let private refusedInstallation load =
     }
 
 let private alteredBaseline () =
-    File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "altered-baseline.sql"))
+    let baseline =
+        File.ReadAllBytes(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
+
+    Array.append
+        baseline
+        (Encoding.UTF8.GetBytes
+            "\nCOMMENT ON SCHEMA claimcore IS 'Synthetic altered baseline refusal control';\n")
 
 let private differentChecksum () =
     let baseline =

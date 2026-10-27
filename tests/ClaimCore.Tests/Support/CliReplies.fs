@@ -1,9 +1,9 @@
 module internal ClaimCore.Tests.CliReplies
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open ClaimCore.Cli
-open ClaimCore.Contract
 open Expecto
 
 let ofValue (endpoint: Endpoint<'Input, 'Output>) (value: 'Output) =

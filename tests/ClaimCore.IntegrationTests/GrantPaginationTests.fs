@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.GrantPaginationTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -25,10 +25,10 @@ let private seedCases (admin: ServiceContext) target =
             let reference = "GRANT-" + string n
 
             let! opened =
-                (Core.execute
+                (Service.execute
                     admin
                     (OperationInput.Case(
-                        request (300 + n) reference 0L (UnvalidatedCaseAct.Open registration)
+                        request (300 + n) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -67,10 +67,10 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = (UnvalidatedCaseAct.Erase)
+                Act = (AuthoredCaseAct.Erase)
             }
 
-        let! erased = (Core.execute admin (OperationInput.Case erase) (token))
+        let! erased = (Service.execute admin (OperationInput.Case erase) (token))
 
         accepted erased |> ignore
     }
@@ -84,11 +84,9 @@ let private prepare (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 200) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 200) target AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -100,7 +98,7 @@ let private prepare (database: PostgresFixture.Database) =
             acceptedAuthority added
 
 
-        let! actors = (Core.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
+        let! actors = (Service.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
 
         let actorId =
             (page actors).Items
@@ -108,11 +106,9 @@ let private prepare (database: PostgresFixture.Database) =
             |> _.ActorId
 
         let! disabled =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 603) target (AuthorityCommandAct.Disable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 603) target (AuthorityAct.Disable)))
                 (token))
 
         acceptedAuthority disabled
@@ -157,7 +153,7 @@ let private changedTarget (admin: ServiceContext) targetId cursor =
         acceptedAuthority removed
 
         let! current =
-            (Core.grants
+            (Service.grants
                 admin
                 ({
                     ActorId = targetId
@@ -182,11 +178,9 @@ let private callerRevocation (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 620) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 620) target AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -204,7 +198,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
                 Limit = 1
             }
 
-        let! first = (Core.grants actor (query) (token))
+        let! first = (Service.grants actor (query) (token))
         let cursor = (page first).NextCursor
 
         let! revoked =
@@ -212,7 +206,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         acceptedAuthority revoked
 
-        let! denied = (Core.grants actor ({ query with AfterCursor = cursor }) (token))
+        let! denied = (Service.grants actor ({ query with AfterCursor = cursor }) (token))
 
         Expect.equal
             denied
@@ -223,7 +217,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) cursor =
     task {
         let! crossTarget =
-            (Core.grants
+            (Service.grants
                 admin
                 ({ query with
                     ActorId = id 1
@@ -234,11 +228,11 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
         Expect.equal crossTarget (ReadReply.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint =
-            (Core.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
+            (Service.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
 
         Expect.equal crossEndpoint (ReadReply.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
-        let! missing = (Core.grants admin ({ query with ActorId = id 999 }) (token))
+        let! missing = (Service.grants admin ({ query with ActorId = id 999 }) (token))
 
         Expect.equal
             missing
@@ -259,13 +253,13 @@ let private traversal (database: PostgresFixture.Database) =
             }
 
         do! indexCompatible database targetId
-        let! first = (Core.grants admin (query) (token))
+        let! first = (Service.grants admin (query) (token))
         let first = page first
         Expect.equal first.Items.Length 50 "Target grants do not expand actor rows"
         Expect.isFalse first.Actor.Enabled "Disabled target header is reviewable"
 
         let! last =
-            (Core.grants
+            (Service.grants
                 admin
                 ({ query with
                     AfterCursor = first.NextCursor
@@ -302,7 +296,7 @@ let private boundaries (database: PostgresFixture.Database) =
 
         while not complete do
             let! result =
-                (Core.grants
+                (Service.grants
                     admin
                     ({
                         ActorId = targetId
@@ -334,11 +328,9 @@ let private changeTarget (admin: ServiceContext) =
             |> Result.defaultWith (string >> failtest)
 
         let! enabled =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 630) target (AuthorityCommandAct.Enable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 630) target (AuthorityAct.Enable)))
                 (token))
 
         acceptedAuthority enabled
@@ -363,6 +355,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
 
         let actor =
             Service.create
+                BuildIdentity.current.Version
                 database.Fixture.InstallationId
                 (store :> IStore)
                 database.Fixture.Calendar
@@ -379,7 +372,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
         let reading =
             Task.Run<ReadReply<AuthorityGrantPage>>(
                 Func<Task<ReadReply<AuthorityGrantPage>>>(fun () ->
-                    (Core.grants actor (query) (token)))
+                    (Service.grants actor (query) (token)))
             )
 
         try
@@ -401,7 +394,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
             "Rows share the target-header snapshot"
 
-        let! fresh = (Core.grants admin (query) (token))
+        let! fresh = (Service.grants admin (query) (token))
         let fresh = page fresh
         Expect.isTrue fresh.Actor.Enabled "Fresh page observes enabled target"
 

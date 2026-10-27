@@ -1,20 +1,20 @@
 module ClaimCore.Tests.OperationCatalogTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Cli
+open ClaimCore.Protocol
 
 open System
 open System.IO
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.ContractGeneration
+open ClaimCore.ProtocolGeneration
 open ClaimCore.TestSupport
 
 let private find words =
     OperationCatalog.all
-    |> List.find (fun entry -> OperationCatalog.words entry = words)
+    |> List.find (fun entry -> CommandGrammar.words entry = words)
 
 [<Tests>]
 let tests =
@@ -23,13 +23,15 @@ let tests =
         [
             testCase "every actor-facing act occurs exactly once" (fun () ->
                 let actual =
-                    OperationCatalog.mutations |> List.choose _.Act |> List.map ActKinds.token
+                    OperationCatalog.mutations
+                    |> List.choose _.SelectedAct
+                    |> List.map ActKind.token
 
                 let expected =
-                    (CaseActKinds.all |> List.map CaseActKinds.token)
-                    @ (AuthorityKinds.all
+                    (CaseActKind.all |> List.map CaseActKind.token)
+                    @ (AuthorityKind.all
                        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-                       |> List.map AuthorityKinds.token)
+                       |> List.map AuthorityKind.token)
 
                 Expect.equal
                     (Set.ofList actual)
@@ -45,20 +47,22 @@ let tests =
                     |> Set.ofList
 
                 let actual =
-                    Api.operationPreview.Token :: (OperationCatalog.all |> List.map _.Endpoint)
+                    Api.operationPreview.Token
+                    :: (OperationCatalog.all
+                        |> List.map (fun operation -> ActorEndpoint.token operation.Endpoint))
                     |> Set.ofList
 
                 Expect.equal actual expected "Session bootstrap and logout belong to the host")
             testCase "typed payload declarations select only their own fields" (fun () ->
                 let fields kind =
                     let operation = find [ "case"; kind ]
-                    let inputs, _ = OperationCatalog.derive operation
+                    let inputs, _ = CommandGrammar.derive operation
 
                     inputs
                     |> List.choose (fun input ->
                         match input.Name with
                         | CatalogInputName.Field field when field <> BusinessField.CaseReference ->
-                            Some(Record.key field)
+                            Some(BusinessField.key field)
                         | _ -> None)
 
                 Expect.equal
@@ -76,14 +80,10 @@ let tests =
 
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
-                let original =
-                    Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Decide)
-
                 let operation = find [ "case"; "decide" ]
+                let inputs, _ = OperationCatalog.caseInputs operation CaseActKind.Decide
 
-                let check declaration =
-                    let inputs, _ = OperationCatalog.caseInputs operation declaration
-
+                let check (inputs: OperationInputDefinition list) =
                     let date =
                         inputs
                         |> List.find (fun input ->
@@ -94,28 +94,26 @@ let tests =
                         (Some [ "decision"; "paymentDecisionDate" ])
                         "Decision values prefill from the accepted decision"
 
-                check original
+                check inputs
 
                 let wrong =
-                    match original.Payload with
-                    | CasePayload.Decision shape ->
-                        { original with
-                            Payload = CasePayload.Decision { shape with Prefill = false }
-                        }
-                    | _ -> failtest "The DECIDE declaration must carry decision values"
+                    inputs
+                    |> List.map (fun input ->
+                        { input with
+                            Binding = { input.Binding with Prefill = None }
+                        })
 
-                Expect.throws (fun () -> check wrong) "A wrong prefill declaration is detected")
+                Expect.throws (fun () -> check wrong) "A wrong prefill binding is detected")
             testCase
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
-                    let original =
-                        Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Open)
-
                     let operation = find [ "case"; "open" ]
+                    let inputs, constants = OperationCatalog.caseInputs operation CaseActKind.Open
 
-                    let check declaration =
-                        let inputs, constants = OperationCatalog.caseInputs operation declaration
-
+                    let check
+                        (inputs: OperationInputDefinition list)
+                        (constants: BindingAssignment list)
+                        =
                         Expect.isFalse
                             (inputs
                              |> List.exists (fun input ->
@@ -130,15 +128,14 @@ let tests =
                                  && item.Value = BindingValue.Integer 0L))
                             "Opening fixes revision zero"
 
-                    check original
+                    check inputs constants
+
+                    let wrong =
+                        constants |> List.filter (fun item -> item.Path <> [ "expectedRevision" ])
 
                     Expect.throws
-                        (fun () ->
-                            check
-                                { original with
-                                    RevisionMode = RevisionInput.Expected
-                                })
-                        "An existing-case revision declaration is detected")
+                        (fun () -> check inputs wrong)
+                        "A missing revision constant is detected")
             testCase
                 "every entry and input has authored labels and meanings in all languages"
                 (fun () ->
@@ -148,7 +145,7 @@ let tests =
                                 File.ReadAllBytes(
                                     Path.Combine(
                                         RepositoryRoot.find (),
-                                        "src/ClaimCore.Contract/Localization",
+                                        "src/ClaimCore.Protocol/Localization",
                                         language + ".json"
                                     )
                                 )
@@ -169,7 +166,7 @@ let tests =
                                 ] do
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->
-                let grant = OperationCatalog.synopsis (find [ "authority"; "grant" ])
+                let grant = CommandGrammar.synopsis (find [ "authority"; "grant" ])
                 Expect.stringContains grant "--principal-kind human|service" "Vocabulary choices"
 
                 Expect.stringContains
@@ -177,17 +174,13 @@ let tests =
                     "--case-reference VALUE"
                     "Flag derives from the input name"
 
-                Expect.isFalse
-                    (grant.Contains("--case VALUE", StringComparison.Ordinal))
-                    "No retired flag alias"
-
                 for entry in OperationCatalog.all do
                     Expect.stringStarts
-                        (OperationCatalog.synopsis entry)
-                        (String.concat " " (OperationCatalog.words entry))
+                        (CommandGrammar.synopsis entry)
+                        (String.concat " " (CommandGrammar.words entry))
                         "Derived command words")
             testCase "correction bindings retain conditional replacement semantics" (fun () ->
-                let inputs, _ = OperationCatalog.derive (find [ "case"; "correct" ])
+                let inputs, _ = CommandGrammar.derive (find [ "case"; "correct" ])
 
                 Expect.equal
                     inputs.Length

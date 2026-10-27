@@ -10,8 +10,9 @@ type Role =
     | DataSteward
     | Auditor
 
-module RoleTokens =
-    let vocabulary = Vocabulary.ofUnion<Role> "token" TokenCasing.ScreamingSnake None
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Role =
+    let vocabulary = Vocabulary.ofUnion<Role> "role" TokenCasing.ScreamingSnake None
 
     let definitions = Vocabulary.entries vocabulary
     let all = Vocabulary.all vocabulary

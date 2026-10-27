@@ -1,11 +1,10 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Application
 
-open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
@@ -16,16 +15,21 @@ open ClaimCore.Web.Composition
 module internal ApiRoutes =
     let route =
         function
-        | ActorEndpoint.Context -> Route.read Api.context (fun _ -> None) Service.context
-        | ActorEndpoint.CaseGet -> Route.read Api.caseGet (fun _ -> None) Service.get
-        | ActorEndpoint.CaseList -> Route.read Api.caseList (fun _ -> None) Service.list
-        | ActorEndpoint.CaseHistory -> Route.read Api.caseHistory (fun _ -> None) Service.history
-        | ActorEndpoint.Observe ->
+        | (ActorEndpoint.Query QueryEndpoint.Context) ->
+            Route.read Api.context (fun _ -> None) Service.context
+        | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
+            Route.read Api.caseGet (fun _ -> None) Service.get
+        | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
+            Route.read Api.caseList (fun _ -> None) Service.list
+        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
+            Route.read Api.caseHistory (fun _ -> None) Service.history
+        | (ActorEndpoint.Query QueryEndpoint.Observe) ->
             Route.read Api.operationObserve (fun input -> Some input.OperationId) Service.observe
-        | ActorEndpoint.AuthorityList -> Route.read Api.authorityList (fun _ -> None) Service.actors
-        | ActorEndpoint.AuthorityGrants ->
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
+            Route.read Api.authorityList (fun _ -> None) Service.actors
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
             Route.read Api.authorityGrants (fun _ -> None) Service.grants
-        | ActorEndpoint.Preview ->
+        | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             Route.bind
                 Api.operationPreview
                 (fun input -> Some(OperationInput.operationId input))
@@ -35,7 +39,7 @@ module internal ApiRoutes =
                         Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
                     })
                 Service.preview
-        | ActorEndpoint.Execute ->
+        | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             Route.bind
                 Api.operationExecute
                 (fun input -> Some(OperationInput.operationId input))
@@ -45,7 +49,7 @@ module internal ApiRoutes =
                         Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
                     })
                 Service.execute
-        | ActorEndpoint.Resolve ->
+        | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
             Route.bind
                 Api.operationResolve
                 (fun input -> Some input.OperationId)

@@ -1,13 +1,13 @@
 module ClaimCore.Tests.CaseCorrectionTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private correct registration decision payment =
-    UnvalidatedCaseAct.Correct
+    AuthoredCaseAct.Correct
         {
             Registration = registration
             Decision = decision
@@ -28,12 +28,12 @@ let private paidCorrectionTests =
 
                 let act =
                     correct
-                        (RegistrationGroup.Replace changedRegistration)
-                        (DecisionGroup.Replace
+                        (Change.Replace changedRegistration)
+                        (Change.Replace
                             { decision with
                                 PayableAmount = "650.00"
                             })
-                        (PaymentGroup.Replace { PaymentDate = "2026-08-21" })
+                        (Change.Replace { PaymentDate = "2026-08-21" })
 
                 let after = before |> apply act |> accepted |> Case.snapshot
 
@@ -66,15 +66,15 @@ let private paidCorrectionTests =
 
                 let act =
                     correct
-                        RegistrationGroup.Keep
-                        (DecisionGroup.Replace { decision with PayableAmount = "650" })
-                        PaymentGroup.Keep
+                        Change.Keep
+                        (Change.Replace { decision with PayableAmount = "650" })
+                        Change.Keep
 
                 Expect.isError (before |> apply act) "Paid decision is not silently reused")
             testCase "clearing a paid decision requires clearing its payment record" (fun () ->
                 let before = paid ()
 
-                let act = correct RegistrationGroup.Keep DecisionGroup.Clear PaymentGroup.Keep
+                let act = correct Change.Keep Change.Clear Change.Keep
 
                 Expect.isError (before |> apply act) "Payment cannot outlive a cleared decision")
         ]
@@ -84,16 +84,11 @@ let private closedCorrectionTests =
         "closed correction"
         [
             testCase "closed cases may correct facts while retaining CLOSED status" (fun () ->
-                let closed = paid () |> apply UnvalidatedCaseAct.Close |> accepted
+                let closed = paid () |> apply AuthoredCaseAct.Close |> accepted
 
                 let after =
                     closed
-                    |> apply (
-                        correct
-                            (RegistrationGroup.Replace changedRegistration)
-                            DecisionGroup.Keep
-                            PaymentGroup.Keep
-                    )
+                    |> apply (correct (Change.Replace changedRegistration) Change.Keep Change.Keep)
                     |> accepted
                     |> Case.snapshot
 
@@ -109,9 +104,7 @@ let private closedCorrectionTests =
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->
                 let before = paid ()
 
-                let result =
-                    before
-                    |> apply (correct RegistrationGroup.Keep DecisionGroup.Keep PaymentGroup.Keep)
+                let result = before |> apply (correct Change.Keep Change.Keep Change.Keep)
 
                 Expect.equal result (Error Refusal.CorrectionNoChanges) "No-op is refused"
                 Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
@@ -124,9 +117,9 @@ let private closedCorrectionTests =
                         before
                         |> apply (
                             correct
-                                RegistrationGroup.Keep
-                                (DecisionGroup.Replace decision)
-                                (PaymentGroup.Replace { PaymentDate = "2026-08-20" })
+                                Change.Keep
+                                (Change.Replace decision)
+                                (Change.Replace { PaymentDate = "2026-08-20" })
                         )
 
                     Expect.equal
@@ -142,9 +135,9 @@ let private validationTests =
             testCase "correction cannot add a decision to an undecided case" (fun () ->
                 let act =
                     correct
-                        (RegistrationGroup.Replace changedRegistration)
-                        (DecisionGroup.Replace decision)
-                        PaymentGroup.Keep
+                        (Change.Replace changedRegistration)
+                        (Change.Replace decision)
+                        Change.Keep
 
                 Expect.equal
                     (opened () |> apply act)
@@ -153,13 +146,13 @@ let private validationTests =
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =
                     correct
-                        (RegistrationGroup.Replace
+                        (Change.Replace
                             { changedRegistration with
                                 IncidentDate = "2026-09-08"
                                 IncidentNotificationDate = "2026-09-08"
                             })
-                        DecisionGroup.Keep
-                        PaymentGroup.Keep
+                        Change.Keep
+                        Change.Keep
 
                 Expect.isTrue
                     (paid () |> apply act |> isInvalid)

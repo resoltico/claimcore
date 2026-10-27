@@ -1,6 +1,6 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -15,7 +15,6 @@ open Microsoft.FSharp.Reflection
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
@@ -59,6 +58,21 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
 
         for entry in (nonNull value) :?> IEnumerable do
             collect seeds context item entry
+    elif kind = typeof<CaseAdvice> then
+        let advice = unbox<CaseAdvice> value
+        collect seeds (context + ".CaseAdvice.Acts") typeof<CaseActKind list> (box advice.Acts)
+
+        collect
+            seeds
+            (context + ".CaseAdvice.Correction")
+            typeof<CorrectionChoices option>
+            (box advice.Correction)
+
+        collect
+            seeds
+            (context + ".CaseAdvice.History")
+            typeof<HistoryDetail list>
+            (box advice.History)
     elif FSharpType.IsRecord kind then
         Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
         |> Array.iter (fun (field, item) ->
@@ -235,8 +249,8 @@ let private tokens =
             "Field"
             "RecommendedAction"
             "History"
-            "Capabilities"
-            "Views"
+            "Capability"
+            "View"
             "Registration"
             "Decision"
             "Payment"
@@ -339,8 +353,8 @@ let private listBounds (path: string) =
                 "CaseAdvice.Acts", 12
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2
-                "ActorContext.Capabilities", 10
-                "ActorContext.Views", 3
+                "ActorContext.Capability", 10
+                "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
                 "CorrectionChoices.Payment", 3
                 "ActorContext.Offers", 4
@@ -429,6 +443,44 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         Gen.constant (box ())
     elif isList kind then
         freshList response source context kind
+    elif kind = typeof<CaseAdvice> then
+        let advice = unbox<CaseAdvice> value
+
+        gen {
+            let! acts =
+                fresh
+                    response
+                    source
+                    (context + ".CaseAdvice.Acts")
+                    typeof<CaseActKind list>
+                    (box advice.Acts)
+                |> Gen.map unbox<CaseActKind list>
+
+            let! history =
+                fresh
+                    response
+                    source
+                    (context + ".CaseAdvice.History")
+                    typeof<HistoryDetail list>
+                    (box advice.History)
+                |> Gen.map unbox<HistoryDetail list>
+
+            let! correction =
+                if List.contains CaseActKind.Correct acts then
+                    choose source (context + ".CaseAdvice.Correction") typeof<CorrectionChoices>
+                    |> Gen.bind (
+                        fresh
+                            response
+                            source
+                            (context + ".CaseAdvice.Correction")
+                            typeof<CorrectionChoices>
+                    )
+                    |> Gen.map (unbox<CorrectionChoices> >> Some)
+                else
+                    Gen.constant None
+
+            return CaseAdvice.create acts correction history |> Result.defaultWith invalidOp |> box
+        }
     elif FSharpType.IsRecord kind then
         freshRecord response source context kind value
     elif FSharpType.IsUnion kind then
@@ -510,18 +562,22 @@ let private endpointProperty response (endpoint: Endpoint<'Input, 'Output>) =
 
 let private actorProperty response actor =
     match actor with
-    | ActorEndpoint.Preview -> endpointProperty response Api.operationPreview
-    | ActorEndpoint.Execute -> endpointProperty response Api.operationExecute
-    | ActorEndpoint.CaseGet -> endpointProperty response Api.caseGet
-    | ActorEndpoint.CaseList -> endpointProperty response Api.caseList
-    | ActorEndpoint.CaseHistory -> endpointProperty response Api.caseHistory
-    | ActorEndpoint.Observe -> endpointProperty response Api.operationObserve
-    | ActorEndpoint.Resolve -> endpointProperty response Api.operationResolve
-    | ActorEndpoint.AuthorityList -> endpointProperty response Api.authorityList
-    | ActorEndpoint.AuthorityGrants -> endpointProperty response Api.authorityGrants
-    | ActorEndpoint.Context -> endpointProperty response Api.context
+    | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
+        endpointProperty response Api.operationPreview
+    | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
+        endpointProperty response Api.operationExecute
+    | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> endpointProperty response Api.caseGet
+    | (ActorEndpoint.Query QueryEndpoint.CaseList) -> endpointProperty response Api.caseList
+    | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> endpointProperty response Api.caseHistory
+    | (ActorEndpoint.Query QueryEndpoint.Observe) -> endpointProperty response Api.operationObserve
+    | (ActorEndpoint.Query QueryEndpoint.Resolve) -> endpointProperty response Api.operationResolve
+    | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
+        endpointProperty response Api.authorityList
+    | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
+        endpointProperty response Api.authorityGrants
+    | (ActorEndpoint.Query QueryEndpoint.Context) -> endpointProperty response Api.context
 
-let private propertyFor response (route: ClaimCore.Contract.Protocol.Route) =
+let private propertyFor response (route: ClaimCore.Protocol.Route) =
     match route.Id with
     | EndpointId.Host HostEndpoint.Session -> endpointProperty response Api.session
     | EndpointId.Host HostEndpoint.Logout -> endpointProperty response Api.logout
@@ -542,11 +598,15 @@ let private closedUnionCoverage (source: Seeds) =
                         |> Set.ofSeq
 
                     // RecordGroup is shared with corrections; diagnostic targets admit
-                    // only Payment. Its other cases are not values of this wire codec.
+                    // only Payment. Registration cannot clear, and owner provisioning
+                    // has a dedicated host boundary. These cases are not wire alternatives.
                     let cases =
                         FSharpType.GetUnionCases kind
                         |> Array.filter (fun case ->
-                            kind <> typeof<RecordGroup> || case.Name = "Payment")
+                            (kind <> typeof<RecordGroup> || case.Name = "Payment")
+                            && (kind <> typeof<Change<RegistrationInput>> || case.Name <> "Clear")
+                            && (kind <> typeof<AuthoredAuthorityAct>
+                                || case.Name <> "ProvisionOwner"))
 
                     for case in cases do
                         if not (Set.contains case.Tag actual) then

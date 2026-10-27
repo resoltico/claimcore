@@ -17,7 +17,8 @@ type AccessFailure =
     | TlsTrustRootScopeInvalid
     | TlsTrustRootUnavailable
 
-module AccessFailures =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module AccessFailure =
     let vocabulary =
         Vocabulary.ofUnion<AccessFailure> "AccessFailure" TokenCasing.ScreamingSnake None
 

@@ -81,7 +81,7 @@ let private ambientEffects () =
     for name in
         [
             "ClaimCore.Json"
-            "ClaimCore.Contract"
+            "ClaimCore.Protocol"
             "ClaimCore.Domain"
             "ClaimCore.RecordFormat"
             "ClaimCore.Application"
@@ -122,7 +122,7 @@ let private importedReference () =
             "Unused imported project edge is evaluated"
 
         Expect.isFalse
-            (ProjectReferences.permitted "ClaimCore.Contract" references)
+            (ProjectReferences.permitted "ClaimCore.Protocol" references)
             "Only Web and Database may declare this edge"
     finally
         directory.Delete true
@@ -163,7 +163,7 @@ let private postgres () =
     rejects ArchitectureRule.Postgres typeof<PostgresReference>
 
 let private serializer () =
-    for name in [ "ClaimCore.Json"; "ClaimCore.Contract"; "ClaimCore.RecordFormat" ] do
+    for name in [ "ClaimCore.Json"; "ClaimCore.Protocol"; "ClaimCore.RecordFormat" ] do
         check ArchitectureRule.Serializer (Assembly.Load name)
 
     rejects ArchitectureRule.Serializer typeof<JsonSerializerCall>
@@ -176,8 +176,8 @@ let private serializer () =
          |> fun selected -> selected.And().HaveFullName(typeof<JsonWriterCall>.FullName |> nonNull))
 
 let private durableCodecs () =
-    check ArchitectureRule.Durable (Assembly.Load "ClaimCore.RecordFormat")
-    rejects ArchitectureRule.Durable typeof<WireCodecCall>
+    check ArchitectureRule.DurableNames (Assembly.Load "ClaimCore.RecordFormat")
+    rejects ArchitectureRule.DurableNames typeof<WireCodecCall>
 
 let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
@@ -226,6 +226,14 @@ let private shapeSubjects (fixture: System.Type) memberName =
 let private shapeControls () =
     let cases =
         [
+            ArchitectureRule.ServiceSurface,
+            typeof<ApplicationInternalsFromWeb>,
+            [ "InternalsDirect" ]
+            ArchitectureRule.ServiceSurface,
+            typeof<ApplicationInternalsFromWebTask>,
+            [ "InternalsTask" ]
+            ArchitectureRule.DomainJsonFree, typeof<JsonFromDomain>, [ "JsonDirect" ]
+            ArchitectureRule.DomainJsonFree, typeof<JsonFromDomainTask>, [ "JsonTask" ]
             ArchitectureRule.Pure, typeof<AmbientShapes>, [ "AmbientDirect" ]
             ArchitectureRule.Pure, typeof<AmbientTaskShape>, [ "AmbientTask" ]
             ArchitectureRule.Pure, typeof<AmbientAsyncShape>, [ "AmbientAsync" ]
@@ -233,25 +241,130 @@ let private shapeControls () =
             ArchitectureRule.Pure, typeof<AmbientTaskClosureShape>, [ "AmbientTaskClosure" ]
             ArchitectureRule.Postgres, typeof<PostgresShapes>, [ "PostgresDirect" ]
             ArchitectureRule.Postgres, typeof<PostgresTaskShape>, [ "PostgresTask" ]
-            ArchitectureRule.Durable, typeof<DurableShapes>, [ "DurableDirect" ]
-            ArchitectureRule.Durable, typeof<DurableTaskShape>, [ "DurableTask" ]
+            ArchitectureRule.DurableNames,
+            typeof<VocabularyFromRecordFormat>,
+            [ "VocabularyDirect" ]
+            ArchitectureRule.DurableNames,
+            typeof<VocabularyFromRecordFormatTask>,
+            [ "VocabularyTask" ]
+            ArchitectureRule.DurableNames, typeof<DurableShapes>, [ "DurableDirect" ]
+            ArchitectureRule.DurableNames, typeof<DurableTaskShape>, [ "DurableTask" ]
             ArchitectureRule.Serializer, typeof<SerializerShapes>, [ "SerializerDirect" ]
             ArchitectureRule.Serializer, typeof<SerializerTaskShape>, [ "SerializerTask" ]
-            ArchitectureRule.ApplicationProtocol, typeof<ApplicationShapes>, [ "ApplicationDirect" ]
-            ArchitectureRule.ApplicationProtocol,
-            typeof<ApplicationTaskShape>,
-            [ "ApplicationTask" ]
-            ArchitectureRule.DomainBoundary, typeof<DomainShapes>, [ "DomainDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<DomainTaskShape>, [ "DomainTask" ]
+            ArchitectureRule.ServiceModelWithoutProtocol,
+            typeof<ProtocolFromDomain>,
+            [ "ProtocolDirect" ]
+            ArchitectureRule.ServiceModelWithoutProtocol,
+            typeof<ProtocolFromDomainTask>,
+            [ "ProtocolTask" ]
+            ArchitectureRule.VocabularyModuleNaming,
+            nonNull (
+                typeof<VocabularySample>
+                    .Assembly
+                    .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedVocabulary")
+            ),
+            [ "Direct" ]
+            ArchitectureRule.VocabularyModuleNaming,
+            nonNull (
+                typeof<VocabularySample>
+                    .Assembly
+                    .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedTaskVocabulary")
+            ),
+            [ "TaskShape" ]
         ]
 
     for rule, fixture, members in cases do
         for memberName in members do
             let selected = shapeSubjects fixture memberName
 
+            Expect.isNonEmpty
+                (selected.GetObjects model.Value)
+                ("Compiled negative shape is present: " + memberName)
+
             Expect.isFalse
                 ((ApiRules.rule model.Value rule selected).HasNoViolations model.Value)
                 (string rule + " detects " + memberName)
+
+    // A label alone cannot prove coverage: each pair must violate its claimed target in isolation.
+    let domainTargets =
+        [
+            "ClaimCore.Json",
+            typeof<JsonFromDomain>,
+            "JsonDirect",
+            typeof<JsonFromDomainTask>,
+            "JsonTask"
+            "ClaimCore.Protocol",
+            typeof<ProtocolFromDomain>,
+            "ProtocolDirect",
+            typeof<ProtocolFromDomainTask>,
+            "ProtocolTask"
+            "ClaimCore.Application",
+            typeof<ApplicationFromDomain>,
+            "ApplicationDirect",
+            typeof<ApplicationFromDomainTask>,
+            "ApplicationTask"
+            "ClaimCore.RecordFormat",
+            typeof<RecordFormatFromDomain>,
+            "RecordDirect",
+            typeof<RecordFormatFromDomainTask>,
+            "RecordTask"
+            "ClaimCore.Postgres",
+            typeof<PostgresShapes>,
+            "PostgresDirect",
+            typeof<PostgresTaskShape>,
+            "PostgresTask"
+        ]
+
+    Expect.equal
+        (domainTargets |> List.map (fun (target, _, _, _, _) -> target) |> List.sort)
+        ([
+            "ClaimCore.Json"
+            "ClaimCore.Protocol"
+            "ClaimCore.Application"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Postgres"
+         ]
+         |> List.sort)
+        "A6 covers each forbidden assembly exactly once"
+
+    let detectsTarget (target: string) fixture memberName =
+        let selected = shapeSubjects fixture memberName
+
+        Expect.isNonEmpty
+            (selected.GetObjects model.Value)
+            ("Compiled target control: " + memberName)
+
+        let forbidden =
+            Types().That().ResideInAssembly(Assembly.Load target)
+            |> ApiRules.nonEmptyTargets model.Value target
+
+        not (
+            Types().That().Are(selected).Should().NotDependOnAny(forbidden).HasNoViolations
+                model.Value
+        )
+
+    for target, direct, directMember, task, taskMember in domainTargets do
+        for fixture, memberName in [ direct, directMember; task, taskMember ] do
+            Expect.isTrue
+                (detectsTarget target fixture memberName)
+                (target + " is the actual compiled dependency")
+
+            Expect.isFalse
+                ((ApiRules.rule
+                    model.Value
+                    ArchitectureRule.DomainBoundary
+                    (shapeSubjects fixture memberName))
+                    .HasNoViolations
+                    model.Value)
+                ("A6 detects " + target + " through " + memberName)
+
+    Expect.isFalse
+        (detectsTarget "ClaimCore.Application" typeof<RecordFormatFromDomain> "RecordDirect")
+        "A duplicate RecordFormat fixture cannot qualify Application coverage"
+
+let private vocabularyModuleNaming () =
+    for assembly in products.Value do
+        check ArchitectureRule.VocabularyModuleNaming assembly
 
 let private emptyTargets () =
     let missing = Types().That().HaveFullName("No.Such.ForbiddenTarget")
@@ -302,8 +415,9 @@ let private productFriends () =
 
     Expect.isEmpty grants "No product assembly grants friendship to another product"
 
-let private applicationProtocol () =
-    check ArchitectureRule.ApplicationProtocol (Assembly.Load "ClaimCore.Application")
+let private serviceModelWithoutProtocol () =
+    check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Application")
+    check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Postgres")
 
 let private domainBoundary () =
     check ArchitectureRule.DomainBoundary (Assembly.Load "ClaimCore.Domain")
@@ -316,16 +430,24 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
-            testCase "durable codecs reject wire codec dependencies" durableCodecs
+            testCase
+                "durable formats reject Protocol and Domain vocabulary dependencies"
+                durableCodecs
             testCase "JSON has no project dependencies" jsonDependencies
             testCase "F# compiled shapes reject every rule family" shapeControls
             testCase "empty subjects fail through ArchUnitNET" emptySubjects
             testCase "empty forbidden target sets fail explicitly" emptyTargets
             testCase "product friendship is limited to test assemblies" productFriends
             testCase "Domain excludes outer layers" domainBoundary
+            testCase "hosts use only the service surface and ports" (fun () ->
+                check ArchitectureRule.ServiceSurface (Assembly.Load "claimcore-server")
+                check ArchitectureRule.ServiceSurface (Assembly.Load "claimcore-database"))
+            testCase "Domain is independent of JSON" (fun () ->
+                check ArchitectureRule.DomainJsonFree (Assembly.Load "ClaimCore.Domain"))
+            testCase "vocabularies belong to their value type modules" vocabularyModuleNaming
             testCase
-                "Application uses models without wire codecs or endpoint descriptions"
-                applicationProtocol
+                "Application and Postgres use the service model without Protocol"
+                serviceModelWithoutProtocol
             testCase "evaluated product edges and Postgres boundary" postgres
             testCase
                 "published client closure rejects compiled server dependencies"

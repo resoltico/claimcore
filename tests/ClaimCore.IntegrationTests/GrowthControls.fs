@@ -8,7 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
@@ -59,14 +59,14 @@ let private sameCase database (actor: ServiceContext) =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                UnvalidatedCaseAct.Reopen
-            | _ -> UnvalidatedCaseAct.Close
+                AuthoredCaseAct.Reopen
+            | _ -> AuthoredCaseAct.Close
 
         let! replies =
             Task.WhenAll
                 [|
                     for index in 0..1 ->
-                        (Core.execute
+                        (Service.execute
                             actor
                             (OperationInput.Case(
                                 request
@@ -109,21 +109,31 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         let fixture = database.Fixture
 
         let writer =
-            Service.create fixture.InstallationId writerGate.Store fixture.Calendar principal
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                writerGate.Store
+                fixture.Calendar
+                principal
 
         let revoker =
-            Service.create fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                revokeGate.Store
+                fixture.Calendar
+                fixture.Owner
 
         let act =
             match snapshot.State with
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                UnvalidatedCaseAct.Reopen
-            | _ -> UnvalidatedCaseAct.Close
+                AuthoredCaseAct.Reopen
+            | _ -> AuthoredCaseAct.Close
 
         let write =
-            (Core.execute
+            (Service.execute
                 writer
                 (OperationInput.Case(
                     request 710010 (CaseReference.format snapshot.Reference) snapshot.Revision act
@@ -175,12 +185,12 @@ let private longCase database (actor: ServiceContext) =
         for index in 0..999 do
             let act =
                 if closed then
-                    UnvalidatedCaseAct.Reopen
+                    AuthoredCaseAct.Reopen
                 else
-                    UnvalidatedCaseAct.Close
+                    AuthoredCaseAct.Close
 
             let! reply =
-                (Core.execute
+                (Service.execute
                     actor
                     (OperationInput.Case(
                         request
@@ -227,14 +237,14 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
         let! snapshot = current database "synthetic-growth-999"
 
         let! erased =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
                     request
                         730001
                         (CaseReference.format snapshot.Reference)
                         snapshot.Revision
-                        UnvalidatedCaseAct.Erase
+                        AuthoredCaseAct.Erase
                 ))
                 (token))
 

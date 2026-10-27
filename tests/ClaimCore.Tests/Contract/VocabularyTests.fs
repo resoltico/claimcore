@@ -2,7 +2,7 @@ module ClaimCore.Tests.VocabularyTests
 
 open System
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
@@ -125,16 +125,16 @@ let tests =
                         "Ambiguous case")
             testCase "explicit vocabularies still reject missing act cases" (fun () ->
                 Expect.equal
-                    (Vocabulary.all CaseActKinds.vocabulary |> List.length)
+                    (Vocabulary.all CaseActKind.vocabulary |> List.length)
                     12
                     "All twelve nullary acts are declared"
 
                 Expect.throwsT<ArgumentException>
                     (fun () ->
-                        Vocabulary.define "act" [ CaseActKind.Open ] CaseActKinds.token |> ignore)
+                        Vocabulary.define "act" [ CaseActKind.Open ] CaseActKind.token |> ignore)
                     "Missing act cases")
             testCase "one act vocabulary covers disjoint case and authority tokens" (fun () ->
-                let tokens = Vocabulary.tokens ActKinds.vocabulary
+                let tokens = Vocabulary.tokens ActKind.vocabulary
 
                 Expect.equal
                     (List.length tokens)
@@ -145,7 +145,7 @@ let tests =
 
                 Expect.equal
                     (Vocabulary.messageKey
-                        ActKinds.vocabulary
+                        ActKind.vocabulary
                         (ActKind.Authority AuthorityKind.Revoke)
                         "label")
                     "act.REVOKE.label"

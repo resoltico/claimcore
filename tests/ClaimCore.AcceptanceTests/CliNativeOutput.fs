@@ -10,9 +10,9 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open CliCalls
 
 let private run

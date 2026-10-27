@@ -59,7 +59,7 @@ const DashboardNav = ({
   const labels = {
     cases: "ui.cases",
     operations: "ui.operations",
-    authority: "ui.authority",
+    authority: "subject.AUTHORITY.label",
   } as const;
   return (
     <nav aria-label={p.text("ui.primary")}>

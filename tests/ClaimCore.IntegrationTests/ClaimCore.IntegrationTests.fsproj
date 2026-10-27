@@ -3,7 +3,7 @@
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="TestRegistration.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
@@ -44,7 +44,6 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
-    <None Include="../fixtures/altered-baseline.sql" Link="altered-baseline.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="OwnerSchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

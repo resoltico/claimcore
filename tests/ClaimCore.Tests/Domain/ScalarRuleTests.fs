@@ -4,13 +4,13 @@ open ClaimCore.TestSupport
 
 
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto
 open ClaimCore.Domain
 
-let private scalar name = RecordFields.descriptor name
+let private scalar name = FieldPresentation.descriptor name
 
 let private expectText name maximum =
     match scalar name with
@@ -19,7 +19,7 @@ let private expectText name maximum =
         Expect.isNone constraints.Format.Grammar "Business text has no admission grammar"
 
         Expect.equal constraints.MaximumCharacters (Some maximum) "Text character bound"
-    | _ -> failtest (Record.key name + " must be a text scalar.")
+    | _ -> failtest (BusinessField.key name + " must be a text scalar.")
 
 let private textAndDateRuleTests =
     testList
@@ -57,7 +57,7 @@ let private textAndDateRuleTests =
                         Expect.equal rule.ExactFormat "yyyy-MM-dd" "Exact format"
                         Expect.equal rule.Minimum DateOnly.MinValue "Lower bound"
                         Expect.equal rule.Maximum DateOnly.MaxValue "Upper bound"
-                    | _ -> failtest (Record.key name + " must be a calendar-date scalar."))
+                    | _ -> failtest (BusinessField.key name + " must be a calendar-date scalar."))
         ]
 
 let private numericAndStatusRuleTests =
@@ -77,7 +77,7 @@ let private numericAndStatusRuleTests =
                         Expect.equal rule.Grammar "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?" "Grammar"
                         Expect.equal rule.MaximumIntegerDigits 18 "Whole-digit bound"
                         Expect.equal rule.MaximumFractionalDigits 4 "Fractional-digit bound"
-                    | _ -> failtest (Record.key name + " must be an amount scalar.")
+                    | _ -> failtest (BusinessField.key name + " must be an amount scalar.")
 
                 for name in [ BusinessField.ClaimedCurrency; BusinessField.PayableCurrency ] do
                     match scalar name with
@@ -93,7 +93,7 @@ let private numericAndStatusRuleTests =
 
                         Expect.equal rule.Grammar "[A-Z]{3}" "Grammar"
                         Expect.equal rule.ExactCharacters 3 "Exact length"
-                    | _ -> failtest (Record.key name + " must be a currency scalar."))
+                    | _ -> failtest (BusinessField.key name + " must be a currency scalar."))
             testCase "case status admits only opened and closed" (fun () ->
                 match scalar BusinessField.Status with
                 | ScalarRule.CaseStatus rule ->
@@ -102,6 +102,65 @@ let private numericAndStatusRuleTests =
                         [ CaseStatus.Opened; CaseStatus.Closed ]
                         "No renderer-owned status"
                 | _ -> failtest "status must be a case-status scalar.")
+        ]
+
+[<Tests>]
+let countryUnknown =
+    testCase "Domain owns the permanent unknown country code" (fun () ->
+        Expect.equal (CountryCode.format CountryCode.unknown) "ZZ" "Permanent unknown code"
+
+        Expect.equal
+            (CountryCode.parse "ZZ")
+            (Ok CountryCode.unknown)
+            "The declared code satisfies permanent parsing"
+
+        Expect.equal
+            CountryCode.descriptor.Format.UnknownCode
+            (Some "ZZ")
+            "The descriptor publishes the same code"
+
+        Expect.isNone
+            PartyName.descriptor.Format.UnknownCode
+            "Business text has no country meaning")
+
+[<Tests>]
+let permanentBoundaries =
+    testList
+        "typed service boundaries"
+        [
+            testCase "Domain revisions agree with the exact JSON integer bound" (fun () ->
+                Expect.equal
+                    Revision.Maximum
+                    ClaimCore.Json.JsonValue.MaximumInteger
+                    "Independent owners must agree on representable revisions")
+            testCase "owner provisioning cannot enter ordinary authored admission" (fun () ->
+                let request =
+                    {
+                        AuthorityRequest.OperationId =
+                            Guid.Parse "90000000-0000-4000-8000-000000000001"
+                        Target = Inputs.principal
+                        Act = AuthorityAct.ProvisionOwner
+                    }
+
+                Expect.equal
+                    (Authority.parse request)
+                    (Error Refusal.ActNotPermitted)
+                    "Provisioning is admitted exclusively through its dedicated boundary")
+            testCase "registration clearing cannot enter permanent act parsing" (fun () ->
+                let request =
+                    Fixtures.request
+                        1L
+                        (AuthoredCaseAct.Correct
+                            {
+                                Registration = Change.Clear
+                                Decision = Change.Keep
+                                Payment = Change.Keep
+                            })
+
+                Expect.equal
+                    (Case.parse request)
+                    (Error Refusal.ActNotPermitted)
+                    "Registration remains mandatory even for directly authored typed requests")
         ]
 
 [<Tests>]
@@ -143,14 +202,14 @@ let grammarDiagnostics =
             check parse
 
             let candidate value =
-                let request = Fixtures.request 0L (UnvalidatedCaseAct.Open Fixtures.registration)
+                let request = Fixtures.request 0L (AuthoredCaseAct.Open Fixtures.registration)
 
                 if field = BusinessField.CaseReference then
                     { request with CaseReference = value }
                 else
                     { request with
                         Act =
-                            UnvalidatedCaseAct.Open
+                            AuthoredCaseAct.Open
                                 { Fixtures.registration with
                                     IncidentCountry = value
                                 }

@@ -1,7 +1,7 @@
 module ClaimCore.Tests.VerificationFoldTests
 
 open ClaimCore.TestSupport
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto
@@ -210,7 +210,7 @@ let private authorityChecks =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act = RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
+                    Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
             AuthorityFold.apply
@@ -239,7 +239,7 @@ let private duplicatePrecedence () =
                         {
                             OperationId = id
                             Target = PrincipalKey.describe human
-                            Act = RecordedAuthorityAct.ProvisionOwner
+                            Act = AuthorityAct.ProvisionOwner
                         }
                 Snapshot = Array.empty
             }
@@ -331,10 +331,10 @@ let tests =
             testCase "every finding has a pure rejection case" (fun () ->
                 Expect.equal
                     (cases |> List.map fst |> Set.ofList)
-                    (VerificationFindings.all |> List.map fst |> Set.ofList)
+                    (VerificationFinding.all |> List.map fst |> Set.ofList)
                     "Complete vocabulary")
             for expected, run in cases do
-                testCase (VerificationFindings.token expected) (fun () -> finding expected run)
+                testCase (VerificationFinding.token expected) (fun () -> finding expected run)
         ]
 
 [<Tests>]

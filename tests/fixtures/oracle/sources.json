@@ -659,5 +659,1125 @@
         }
       }
     }
+  ],
+  "permanentLimits": [
+    {
+      "name": "reference minimum",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "A",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reference maximum 80",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reference empty",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reference above 80",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "calendar boundary 0001-01-01",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "0001-01-01",
+            "incidentNotificationDate": "0001-01-01",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "calendar boundary 9999-12-31",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "9999-12-31",
+            "incidentNotificationDate": "9999-12-31",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "calendar year zero",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "0000-01-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "calendar above year 9999",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "10000-01-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "country exact two",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "ZZ",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "country below two",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "A",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "country above two",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "AAA",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "money minimum zero",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "money maximum 18 integer and 4 fraction digits",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "999999999999999999.9999",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "money above 18 integer digits",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000000000000000000",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "money above 4 fraction digits",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1.00001",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "currency exact three",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "AAA",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "currency below three",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "AA",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "currency above three",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "AAAA",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "party name minimum",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "A",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "B"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "party name maximum 1024 bytes beyond current admission",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "party name above 1024 bytes",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reason minimum",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "VOID",
+          "reason": "A"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reason maximum 1024 bytes beyond current admission",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "VOID",
+          "reason": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "reason above 1024 bytes",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "VOID",
+          "reason": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "revision minimum zero",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 0,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "revision maximum exact integer",
+      "subject": "CASE",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 9007199254740991,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "revision below zero",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": -1,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "revision above exact integer",
+      "subject": "CASE",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "claimantName": "Rīgas Tulkojumu Birojs SIA",
+            "claimedAmount": "1000.00",
+            "claimedCurrency": "EUR",
+            "incidentCountry": "LV",
+            "incidentDate": "2026-08-01",
+            "incidentNotificationDate": "2026-08-03",
+            "insurerName": "شركة التأمين المثال"
+          }
+        },
+        "caseReference": "Demo-0001",
+        "expectedRevision": 9007199254740992,
+        "format": 1,
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "kind": "CASE"
+      }
+    },
+    {
+      "name": "principal issuer maximum 2048",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "principal issuer above 2048",
+      "subject": "AUTHORITY",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "human subject maximum 512",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "human subject above 512",
+      "subject": "AUTHORITY",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "service subject maximum 256",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "SERVICE",
+          "issuer": "https://issuer.example/",
+          "subject": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "service subject above 256",
+      "subject": "AUTHORITY",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "REGISTER"
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "SERVICE",
+          "issuer": "https://issuer.example/",
+          "subject": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role OWNER",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role CASE_READER",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role CASE_REGISTRAR",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_REGISTRAR",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role CASE_HANDLER",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_HANDLER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role PAYMENT_RECORDER",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "PAYMENT_RECORDER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role DATA_STEWARD",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "DATA_STEWARD",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "permanent role AUDITOR",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "AUDITOR",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "case scope reference maximum",
+      "subject": "AUTHORITY",
+      "accepted": true,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "case scope reference above maximum",
+      "subject": "AUTHORITY",
+      "accepted": false,
+      "value": {
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          }
+        },
+        "format": 1,
+        "operationId": "20000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "boundary"
+        },
+        "kind": "AUTHORITY"
+      }
+    },
+    {
+      "name": "snapshot revision 1",
+      "subject": "SNAPSHOT",
+      "accepted": true,
+      "value": {
+        "format": 1,
+        "revision": 1,
+        "state": {
+          "kind": "ACTIVE",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "OPENED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    },
+    {
+      "name": "snapshot revision 9007199254740991",
+      "subject": "SNAPSHOT",
+      "accepted": true,
+      "value": {
+        "format": 1,
+        "revision": 9007199254740991,
+        "state": {
+          "kind": "ACTIVE",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "OPENED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    },
+    {
+      "name": "snapshot revision 0",
+      "subject": "SNAPSHOT",
+      "accepted": false,
+      "value": {
+        "format": 1,
+        "revision": 0,
+        "state": {
+          "kind": "ACTIVE",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "OPENED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    },
+    {
+      "name": "permanent status OPENED",
+      "subject": "SNAPSHOT",
+      "accepted": true,
+      "value": {
+        "format": 1,
+        "revision": 1,
+        "state": {
+          "kind": "ACTIVE",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "OPENED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    },
+    {
+      "name": "permanent status CLOSED",
+      "subject": "SNAPSHOT",
+      "accepted": true,
+      "value": {
+        "format": 1,
+        "revision": 1,
+        "state": {
+          "kind": "ACTIVE",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "CLOSED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    },
+    {
+      "name": "permanent voided lifecycle",
+      "subject": "SNAPSHOT",
+      "accepted": true,
+      "value": {
+        "format": 1,
+        "revision": 1,
+        "state": {
+          "kind": "VOIDED",
+          "fields": {
+            "caseReference": "Demo-0001",
+            "status": "OPENED",
+            "registration": {
+              "incidentDate": "2026-08-01",
+              "incidentNotificationDate": "2026-08-03",
+              "incidentCountry": "LV",
+              "claimantName": "Rīgas Tulkojumu Birojs SIA",
+              "insurerName": "شركة التأمين المثال",
+              "claimedAmount": "1000",
+              "claimedCurrency": "EUR"
+            },
+            "decision": null,
+            "payment": null
+          }
+        }
+      }
+    }
   ]
 }

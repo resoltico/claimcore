@@ -31,11 +31,11 @@ let decision: DecisionInput =
 
 let payment: PaymentInput = { PaymentDate = "2026-08-20" }
 
-let correction: CorrectionInput =
+let correction: AuthoredCorrection =
     {
-        Registration = RegistrationGroup.Keep
-        Decision = DecisionGroup.Keep
-        Payment = PaymentGroup.Keep
+        Registration = Change.Keep
+        Decision = Change.Keep
+        Payment = Change.Keep
     }
 
 let principal: Principal =

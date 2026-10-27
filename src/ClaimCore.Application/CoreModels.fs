@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open System
 open System.Threading

@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.CommitTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System
@@ -27,7 +27,7 @@ let private token = CancellationToken.None
 
 let private replay (database: PostgresFixture.Database) (actor: ServiceContext) operation landed =
     task {
-        let! replay = (Core.execute actor (OperationInput.Case operation) (token))
+        let! replay = (Service.execute actor (OperationInput.Case operation) (token))
 
         if landed then
             Expect.isTrue
@@ -52,6 +52,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
 
     let actor =
         Service.create
+            BuildIdentity.current.Version
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
@@ -99,14 +100,14 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
 
-        let! unknown = (Core.resolve throughProxy ({ OperationId = id 140 }) (token))
+        let! unknown = (Service.resolve throughProxy ({ OperationId = id 140 }) (token))
 
         Expect.equal
             unknown
             (ResolveReply.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
-        let! repeated = (Core.resolve actor ({ OperationId = id 140 }) (token))
+        let! repeated = (Service.resolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated
@@ -114,10 +115,10 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             "Resolve repeats safely whether the first fence landed or aborted"
 
         let! delayed =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
-                    request 140 "LOST-RESOLUTION" 0L (UnvalidatedCaseAct.Open registration)
+                    request 140 "LOST-RESOLUTION" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -156,14 +157,14 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request = authorityRequest (id 145) target AuthorityCommandAct.Register
+        let request = authorityRequest (id 145) target AuthorityAct.Register
 
         let! unknown =
-            (Core.execute (proxyCore database source) (OperationInput.Authority request) (token))
+            (Service.execute (proxyCore database source) (OperationInput.Authority request) (token))
 
         Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "Authority commit loss is unknown"
 
-        let! repeated = (Core.execute actor (OperationInput.Authority request) (token))
+        let! repeated = (Service.execute actor (OperationInput.Authority request) (token))
 
         Expect.isTrue
             (match repeated.Outcome, landed with
@@ -263,10 +264,13 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                    (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
                             let! result =
-                                (Core.execute throughProxy (OperationInput.Case operation) (token))
+                                (Service.execute
+                                    throughProxy
+                                    (OperationInput.Case operation)
+                                    (token))
 
                             do! commitEvidence drop operation proxy result
 
@@ -319,7 +323,13 @@ let tests =
                             settings.SslMode <- SslMode.Disable
                             settings.GssEncryptionMode <- GssEncryptionMode.Disable
                             settings.Pooling <- false
-                            use administration = new Administration(settings.ConnectionString)
+
+                            use administration =
+                                new Administration(
+                                    settings.ConnectionString,
+                                    BuildIdentity.current.Version
+                                )
+
                             let mutable unknown = false
 
                             try

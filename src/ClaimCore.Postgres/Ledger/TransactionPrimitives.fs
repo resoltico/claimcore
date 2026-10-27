@@ -1,9 +1,9 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.RecordFormat
 open System
 open System.Threading
 open ClaimCore.Application
-open ClaimCore.Contract
 open ClaimCore.Domain
 open Npgsql
 
@@ -33,8 +33,8 @@ module internal TransactionPages =
                         DatabaseSession.parameter after
                         box (visibility = CaseVisibility.Every)
                         box actor
-                        box (roles |> List.map RoleTokens.token |> List.toArray)
-                        box (forbidden |> List.map RoleTokens.token |> List.toArray)
+                        box (roles |> List.map Role.token |> List.toArray)
+                        box (forbidden |> List.map Role.token |> List.toArray)
                         box (limit + 1)
                     |]
                     token
@@ -85,7 +85,7 @@ module internal TransactionPages =
                     [|
                         box target
                         DatabaseSession.parameter (
-                            after |> Option.map (fun value -> RoleTokens.token value.Role)
+                            after |> Option.map (fun value -> Role.token value.Role)
                         )
                         DatabaseSession.parameter (after |> Option.bind _.CaseId)
                         box (limit + 1)
@@ -107,7 +107,12 @@ type private ReadTx
     interface IReadTx with
         member _.ObservedAt = observedAt
 
-        member _.Authority(principal, caseId) =
+        member _.Authority
+            ({
+                 AuthorityQuery.Principal = principal
+                 CaseId = caseId
+             })
+            =
             task {
                 let! actor = Projections.actor connection principal (Option.toList caseId) token
 
@@ -129,16 +134,42 @@ type private ReadTx
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
-        member _.CasePage(visibility, actor, roles, forbidden, after, limit) =
+        member _.CasePage
+            ({
+                 CasePageQuery.Visibility = visibility
+                 ActorId = actor
+                 ReadRoles = roles
+                 ForbiddenRoles = forbidden
+                 AfterReference = after
+                 Limit = limit
+             })
+            =
             TransactionPages.cases connection visibility actor roles forbidden after limit token
 
-        member _.HistoryPage(id, after, limit) =
+        member _.HistoryPage
+            ({
+                 HistoryPageQuery.CaseId = id
+                 AfterRevision = after
+                 Limit = limit
+             })
+            =
             TransactionPages.history connection installation id after limit token
 
-        member _.ActorPage(after, limit) =
+        member _.ActorPage
+            ({
+                 ActorPageQuery.AfterActorId = after
+                 Limit = limit
+             })
+            =
             TransactionPages.actors connection after limit token
 
-        member _.GrantPage(id, after, limit) =
+        member _.GrantPage
+            ({
+                 GrantPageQuery.ActorId = id
+                 AfterGrant = after
+                 Limit = limit
+             })
+            =
             TransactionPages.grants connection id after limit token
 
         member _.FindActor id =
@@ -159,7 +190,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-                        [| box (RoleTokens.token Role.Owner) |]
+                        [| box (Role.token Role.Owner) |]
                         token
 
                 return DatabaseSession.value<int> 0 rows.Head
@@ -185,7 +216,12 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
         member _.Head = head
         member _.Nonce = nonce
 
-        member _.IsFenced(actor, operation) =
+        member _.IsFenced
+            ({
+                 FenceKey.ActorId = actor
+                 OperationId = operation
+             })
+            =
             task {
                 let! rows =
                     DatabaseSession.rows
@@ -206,7 +242,12 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
         member _.ProjectAuthority projection =
             Persistence.authority connection projection token
 
-        member _.Fence(actor, operation) =
+        member _.Fence
+            ({
+                 FenceKey.ActorId = actor
+                 OperationId = operation
+             })
+            =
             task {
                 let! _ =
                     DatabaseSession.execute
@@ -220,7 +261,12 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     interface IStore with
-        member _.Read(work, token) =
+        member _.Read
+            ({
+                 ReadOperation.Work = work
+                 CancellationToken = token
+             })
+            =
             Transactions.read source token (fun connection ->
                 task {
                     let! rows =
@@ -230,7 +276,12 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
                     return! work (ReadTx(connection, installationId, observedAt, token) :> IReadTx)
                 })
 
-        member _.Write(work, token) =
+        member _.Write
+            ({
+                 WriteOperation.Work = work
+                 CancellationToken = token
+             })
+            =
             Transactions.write source settings token (fun connection ->
                 task {
                     let! head, observedAt, nonce = Transactions.head connection token

@@ -2,7 +2,7 @@ module ClaimCore.Tests.CaseModelTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto
@@ -73,38 +73,38 @@ let private live status decided paid =
 
 let private acts =
     [
-        CaseActKind.Open, (UnvalidatedCaseAct.Open registration)
+        CaseActKind.Open, (AuthoredCaseAct.Open registration)
         CaseActKind.AmendRegistration,
-        (UnvalidatedCaseAct.AmendRegistration
+        (AuthoredCaseAct.AmendRegistration
             { registration with
                 ClaimantName = "Changed Party"
             })
         CaseActKind.Correct,
-        (UnvalidatedCaseAct.Correct
+        (AuthoredCaseAct.Correct
             {
                 Registration =
-                    RegistrationGroup.Replace
+                    Change.Replace
                         { registration with
                             ClaimantName = "Changed Party"
                         }
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
+                Decision = Change.Keep
+                Payment = Change.Keep
             })
         CaseActKind.Decide,
-        (UnvalidatedCaseAct.Decide
+        (AuthoredCaseAct.Decide
             {
                 PaymentDecisionDate = "2026-08-15"
                 PayableAmount = "750"
                 PayableCurrency = "EUR"
             })
-        CaseActKind.WithdrawDecision, UnvalidatedCaseAct.WithdrawDecision
-        CaseActKind.RecordPayment, (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
-        CaseActKind.ClearPayment, UnvalidatedCaseAct.ClearPayment
-        CaseActKind.Close, UnvalidatedCaseAct.Close
-        CaseActKind.Reopen, UnvalidatedCaseAct.Reopen
-        CaseActKind.Void, (UnvalidatedCaseAct.Void "Entry error")
-        CaseActKind.Reinstate, (UnvalidatedCaseAct.Reinstate "Entry confirmed")
-        CaseActKind.Erase, UnvalidatedCaseAct.Erase
+        CaseActKind.WithdrawDecision, AuthoredCaseAct.WithdrawDecision
+        CaseActKind.RecordPayment, (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+        CaseActKind.ClearPayment, AuthoredCaseAct.ClearPayment
+        CaseActKind.Close, AuthoredCaseAct.Close
+        CaseActKind.Reopen, AuthoredCaseAct.Reopen
+        CaseActKind.Void, (AuthoredCaseAct.Void "Entry error")
+        CaseActKind.Reinstate, (AuthoredCaseAct.Reinstate "Entry confirmed")
+        CaseActKind.Erase, AuthoredCaseAct.Erase
     ]
 
 let private stateExpectations =
@@ -151,20 +151,20 @@ let private matrix =
             let revision = if view.IsSome then 1L else 0L
 
             for kind, act in acts do
-                let allowed = List.contains (CaseActKinds.token kind) expected
+                let allowed = List.contains (CaseActKind.token kind) expected
                 let result = CaseFixtures.decide today (request revision act) current
                 Expect.equal (Result.isOk result) allowed "Independent transition expectation"
 
             match current with
             | None -> ()
             | Some value ->
-                let actual = Case.eligibleActs value |> List.map CaseActKinds.token |> Set.ofList
+                let actual = Case.eligibleActs value |> List.map CaseActKind.token |> Set.ofList
 
                 Expect.isTrue
                     (actual = Set.ofList expected)
                     "Independent advertisement expectation")
 
-let private allKeep = UnvalidatedCaseAct.Correct Inputs.correction
+let private allKeep = AuthoredCaseAct.Correct Inputs.correction
 
 let private allKeepStates =
     [
@@ -235,7 +235,7 @@ let private grandfathering =
                 "Retained fields are exact"
 
             let reaffirm =
-                (UnvalidatedCaseAct.AmendRegistration
+                (AuthoredCaseAct.AmendRegistration
                     { registration with
                         ClaimantName = oldName
                     })
@@ -245,7 +245,7 @@ let private grandfathering =
                 "Unchanged policy violation is grandfathered"
 
             let changed =
-                (UnvalidatedCaseAct.AmendRegistration
+                (AuthoredCaseAct.AmendRegistration
                     { registration with
                         ClaimantName = oldName + "x"
                     })
@@ -262,11 +262,11 @@ let private revisionBounds =
     testCase "expected revisions retain their permanent exact-integer format bound" (fun () ->
         for value in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError
-                (CaseFixtures.validate (request value (UnvalidatedCaseAct.Erase)))
+                (CaseFixtures.validate (request value (AuthoredCaseAct.Erase)))
                 "Expected revision bounds"
 
         Expect.isOk
-            (CaseFixtures.validate (request Revision.Maximum (UnvalidatedCaseAct.Erase)))
+            (CaseFixtures.validate (request Revision.Maximum (AuthoredCaseAct.Erase)))
             "Expected M is valid syntax")
 
 let private identifiers =
@@ -301,7 +301,7 @@ let private identifiers =
             let current = retained 1L (live CaseStatus.Opened false false)
 
             let recased =
-                { request 1L (UnvalidatedCaseAct.Close) with
+                { request 1L (AuthoredCaseAct.Close) with
                     CaseReference = "DEMO-1"
                 }
 
@@ -315,7 +315,7 @@ let private identifiers =
 
             for country in [ "LV"; "ZZ"; "QQ" ] do
                 let act =
-                    (UnvalidatedCaseAct.Open
+                    (AuthoredCaseAct.Open
                         { registration with
                             IncidentCountry = country
                         })
@@ -326,7 +326,7 @@ let private identifiers =
 
             for country in [ "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 let act =
-                    (UnvalidatedCaseAct.Open
+                    (AuthoredCaseAct.Open
                         { registration with
                             IncidentCountry = country
                         })
@@ -359,11 +359,11 @@ let private refusedScalars =
 
 let private textActs value =
     [
-        (UnvalidatedCaseAct.Open
+        (AuthoredCaseAct.Open
             { registration with
                 ClaimantName = value
             })
-        (UnvalidatedCaseAct.Open
+        (AuthoredCaseAct.Open
             { registration with
                 InsurerName = value
             })
@@ -379,7 +379,7 @@ let private checkText expected scalar =
             "Business text scalar policy"
 
     let current = retained 1L (live CaseStatus.Opened false false)
-    let act = (UnvalidatedCaseAct.Void value)
+    let act = (AuthoredCaseAct.Void value)
 
     Expect.equal
         (CaseFixtures.decide today (request 1L act) (Some current) |> Result.isOk)

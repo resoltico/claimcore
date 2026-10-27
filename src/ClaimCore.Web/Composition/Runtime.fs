@@ -2,7 +2,7 @@ namespace ClaimCore.Web.Composition
 
 open ClaimCore.Domain
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading.Tasks
@@ -62,6 +62,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                 gate
                 (fun actor ->
                     Service.create
+                        BuildIdentity.current.Version
                         storage.Installation.InstallationId
                         (ClaimCore.Postgres.Runtime.store storage)
                         calendar

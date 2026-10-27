@@ -155,8 +155,8 @@ module LedgerEntry =
 
     /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
     let preimage (metadata: LedgerMetadata) =
-        requireHash "previousHash" metadata.PreviousHash
-        requireHash "payloadCommitment" metadata.PayloadCommitment
+        requireHash DurableNames.PreviousHash metadata.PreviousHash
+        requireHash DurableNames.PayloadCommitment metadata.PayloadCommitment
 
         if
             metadata.InstallationId = Guid.Empty

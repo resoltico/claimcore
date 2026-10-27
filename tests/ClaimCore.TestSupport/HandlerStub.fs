@@ -2,9 +2,8 @@ module ClaimCore.TestSupport.HandlerStub
 
 open ClaimCore.Web
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
-open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -50,7 +49,7 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (UnvalidatedCaseAct.Open
+                (AuthoredCaseAct.Open
                     { Inputs.registration with
                         ClaimantName = "Synthetic claimant"
                         InsurerName = "Synthetic insurer"
@@ -87,9 +86,7 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
             ReceiptSubject.Authority
                 {
                     TargetActorId = operationId
-                    Act =
-                        ClaimCore.RecordFormat.RecordedAuthorityAct.Operation request.Act
-                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value
+                    Act = request.Act |> fun value -> AuthorityAct.kind value
                 }
     }
 
@@ -101,8 +98,8 @@ let description =
                 EffectiveBusinessDate = DateOnly(2026, 10, 13)
                 TimeZoneId = "Etc/UTC"
             }
-        Views = [ View.Cases; View.Authority; View.Operations ]
-        Capabilities = Capabilities.all
+        View = [ View.Cases; View.Authority; View.Operations ]
+        Capability = Capability.all
         Offers = []
     }
 
@@ -146,14 +143,19 @@ type Stub() =
                     DateOnly.FromDateTime instant.UtcDateTime
             }
 
-        Service.create operationId (store :> IStore) calendar principal
+        Service.create
+            BuildIdentity.current.Version
+            operationId
+            (store :> IStore)
+            calendar
+            principal
 
     member this.Handlers =
         function
-        | ActorEndpoint.Context ->
+        | (ActorEndpoint.Query QueryEndpoint.Context) ->
             Route.read Api.context (fun _ -> None) (fun _ () _ ->
                 this.Invoke "context" (ReadReply.Succeeded description))
-        | ActorEndpoint.Preview ->
+        | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             Route.bind
                 Api.operationPreview
                 (fun input -> Some(OperationInput.operationId input))
@@ -178,7 +180,7 @@ type Stub() =
                             PreviewReply.OperationId = OperationInput.operationId input
                             Outcome = outcome
                         })
-        | ActorEndpoint.Execute ->
+        | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             Route.bind
                 Api.operationExecute
                 (fun input -> Some(OperationInput.operationId input))
@@ -206,22 +208,22 @@ type Stub() =
                                     Outcome = outcome
                                 }
                     })
-        | ActorEndpoint.Resolve ->
+        | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
             Route.bind
                 Api.operationResolve
                 (fun input -> Some input.OperationId)
                 (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
                 (fun _ _ _ -> this.Invoke "operation.resolve" ResolveReply.NotAccepted)
-        | ActorEndpoint.CaseGet ->
+        | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
             Route.read Api.caseGet (fun _ -> None) (fun _ request _ ->
                 this.Invoke
                     "case.get"
                     (ReadReply.Succeeded
                         {
                             Snapshot = view request.CaseReference
-                            Advice = { Acts = []; History = [] }
+                            Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                         }))
-        | ActorEndpoint.CaseList ->
+        | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
             Route.read Api.caseList (fun _ -> None) (fun _ _ _ ->
                 this.Invoke
                     "case.list"
@@ -231,12 +233,12 @@ type Stub() =
                             NextCursor = None
                             Offers = []
                         }))
-        | ActorEndpoint.CaseHistory ->
+        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
             Route.read Api.caseHistory (fun _ -> None) (fun _ _ _ ->
                 this.Invoke
                     "case.history"
                     (ReadReply.Succeeded { Entries = []; NextCursor = None }))
-        | ActorEndpoint.Observe ->
+        | (ActorEndpoint.Query QueryEndpoint.Observe) ->
             Route.read
                 Api.operationObserve
                 (fun input -> Some input.OperationId)
@@ -244,7 +246,7 @@ type Stub() =
                     this.Invoke
                         "operation.observe"
                         (ReadReply.Succeeded(receipt request.OperationId "WEB-001")))
-        | ActorEndpoint.AuthorityGrants ->
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
             Route.read Api.authorityGrants (fun _ -> None) (fun _ request _ ->
                 let principal =
                     PrincipalKey.human "https://identity.example/" "synthetic-target"
@@ -263,7 +265,7 @@ type Stub() =
                             Items = []
                             NextCursor = None
                         }))
-        | ActorEndpoint.AuthorityList ->
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             Route.read Api.authorityList (fun _ -> None) (fun _ _ _ ->
                 this.Invoke
                     "authority.list"

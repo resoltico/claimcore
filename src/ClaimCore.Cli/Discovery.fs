@@ -1,10 +1,10 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System.Text
 open System.Text.Json
-open ClaimCore.Contract
 open ClaimCore.Json
 
 module Discovery =
@@ -25,7 +25,7 @@ module Discovery =
         | CliDescription.Operation words ->
             Catalog.document.Entries
             |> List.tryFind (fun entry ->
-                OperationCatalog.words (OperationCatalog.operation entry) = words)
+                CommandGrammar.words (OperationCatalog.operation entry) = words)
             |> Option.map List.singleton
 
     let describe selector =
@@ -45,7 +45,7 @@ module Discovery =
             operations
             |> List.map (fun entry ->
                 let operation = OperationCatalog.operation entry
-                let inputs, _ = OperationCatalog.derive operation
+                let inputs, _ = CommandGrammar.derive operation
 
                 let message key =
                     MessageCatalogs.render language key Map.empty
@@ -53,7 +53,7 @@ module Discovery =
                 [
                     message (OperationCatalog.labelId operation)
                     message (OperationCatalog.meaningId operation)
-                    CliIdentity.programName + " " + OperationCatalog.synopsis operation
+                    CliIdentity.programName + " " + CommandGrammar.synopsis operation
                 ]
                 @ (inputs
                    |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
@@ -62,14 +62,39 @@ module Discovery =
                            match input.Atom with
                            | CatalogAtom.Choice values ->
                                " ["
-                               + (values |> List.map OperationCatalog.kebab |> String.concat "|")
+                               + (values |> List.map CommandGrammar.kebab |> String.concat "|")
                                + "]"
                            | _ -> ""
+
+                       let guidance =
+                           match input.Name with
+                           | CatalogInputName.Field field -> ScalarGuidance.forField field
+                           | CatalogInputName.Technical TechnicalInput.Reason ->
+                               Some ScalarGuidance.forReason
+                           | _ -> None
+
+                       let hint =
+                           guidance
+                           |> Option.map (fun guidance ->
+                               let args =
+                                   guidance.Arguments
+                                   |> Map.map (fun _ value ->
+                                       match value with
+                                       | GuidanceArgument.Count count ->
+                                           count.ToString(
+                                               System.Globalization.CultureInfo
+                                                   .InvariantCulture
+                                           )
+                                       | GuidanceArgument.Code code -> code)
+
+                               " " + MessageCatalogs.render language guidance.Key args)
+                           |> Option.defaultValue ""
 
                        message input.Binding.LabelId
                        + ": "
                        + (input.Binding.MeaningId |> Option.map message |> Option.defaultValue "")
-                       + allowed))
+                       + allowed
+                       + hint))
                 |> String.concat "\n")
             |> String.concat "\n\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))

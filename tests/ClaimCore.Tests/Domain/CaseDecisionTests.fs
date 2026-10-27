@@ -1,12 +1,11 @@
 module ClaimCore.Tests.CaseDecisionTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 open ClaimCore.Application
@@ -30,7 +29,7 @@ let private replay () =
             }
             { request with
                 Act =
-                    UnvalidatedCaseAct.Open
+                    AuthoredCaseAct.Open
                         { registration with
                             ClaimedAmount = "1000"
                         }
@@ -55,9 +54,7 @@ let private replay () =
 
     match
         CaseExecution.review
-            installation
-            calendar
-            owner
+            (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             laterView.Read
     with
@@ -95,7 +92,10 @@ let private reviewAndTime () =
     let view = locked worker None None
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            view.Read
     with
     | Verdict.Proceed(None, after) ->
         Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"
@@ -129,7 +129,7 @@ let private reviewAndTime () =
         "An earlier preview cannot authorize opening after another acceptance"
 
     let stale =
-        actRequest 15 (CaseReference.format current.Snapshot.Reference) 0L UnvalidatedCaseAct.Close
+        actRequest 15 (CaseReference.format current.Snapshot.Reference) 0L AuthoredCaseAct.Close
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
@@ -156,7 +156,7 @@ let private integrityAndPrivacy () =
         { original with
             CaseReference = (CaseReference.format readable.Snapshot.Reference)
             ExpectedRevision = 1L
-            Act = UnvalidatedCaseAct.Close
+            Act = AuthoredCaseAct.Close
         }
 
     Expect.equal
@@ -204,7 +204,7 @@ let private boundsAndFence () =
                 21
                 (CaseReference.format current.Snapshot.Reference)
                 Revision.Maximum
-                UnvalidatedCaseAct.Close)
+                AuthoredCaseAct.Close)
             (locked worker (Some maxRevision) None))
         (Verdict.Fail CoreFault.InternalError)
         "A format-valid record at the bound yields CORE_INTERNAL_ERROR"

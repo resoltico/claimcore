@@ -3,10 +3,9 @@ module ClaimCore.Tests.WireCodecTests
 open System
 open System.Text
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 [<NoComparison>]
 type private Probe =

@@ -1,10 +1,12 @@
+import { isTerm, termLabel } from "./terms";
+import type { Terms } from "@contracts/messages";
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { correctionTargets } from "@contracts/messages";
+import { correctionTargets, fieldGuidance } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
-import { hasMessage, renderKey, translate } from "./messages";
+import { renderKey, translate } from "./messages";
 import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
@@ -62,25 +64,6 @@ const metadata = (
   }
   return renderKey(preferences, identity);
 };
-const token = (
-  preferences: Preferences,
-  value: string,
-  definitions: PresentationDefinitions = productMetadata.catalog,
-): string => {
-  const key = `token.${value}`;
-  if (hasMessage(key)) {
-    return renderKey(preferences, key);
-  }
-  return metadata(
-    preferences,
-    definitions.entries.some((item) => item.subject === "AUTHORITY" && item.kind === value)
-      ? "authority"
-      : "act",
-    value,
-    "label",
-    definitions,
-  );
-};
 const fieldValueText = (
   preferences: Preferences,
   value: string | null,
@@ -89,40 +72,30 @@ const fieldValueText = (
   if (value === null) {
     return translate(preferences, "ui.notRecorded");
   }
-  return field.scalar.kind === "CASE_STATUS"
-    ? token(preferences, value)
+  return field.scalar.kind === "CASE_STATUS" && isTerm("status", value)
+    ? termLabel(preferences, "status", value)
     : displayField(value, field, preferences.displayLocale);
 };
 const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
   return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
+const isGuidanceField = (name: string): name is keyof typeof fieldGuidance =>
+  Object.hasOwn(fieldGuidance, name);
 const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
-  if (field.name === "caseReference") {
-    return translate(preferences, "ui.referenceHint");
+  if (isGuidanceField(field.name)) {
+    const guidance = fieldGuidance[field.name];
+    const values = Object.fromEntries(
+      Object.entries(guidance.arguments).map(([name, value]: [string, string | number]) => [
+        name,
+        typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
+      ]),
+    );
+    return renderKey(preferences, guidance.key, values);
   }
-  if (field.name === "incidentCountry") {
-    return translate(preferences, "ui.countryHint");
-  }
-  const s = field.scalar;
-  switch (s.kind) {
-    case "TEXT":
-      return translate(preferences, "ui.textHint", {
-        maximum: exactInteger(String(s.maximumCharacters ?? ""), preferences.displayLocale),
-      });
-    case "CALENDAR_DATE":
-      return translate(preferences, "ui.dateHint");
-    case "AMOUNT":
-      return translate(preferences, "ui.amountHint", {
-        maximum: exactInteger(String(s.maximumFractionalDigits), preferences.displayLocale),
-      });
-    case "CURRENCY":
-      return translate(preferences, "ui.currencyHint", {
-        length: exactInteger(String(s.exactCharacters), preferences.displayLocale),
-      });
-    case "CASE_STATUS":
-      return s.allowedValues.map((v) => token(preferences, v)).join(", ");
-  }
+  return field.scalar.kind === "CASE_STATUS"
+    ? field.scalar.allowedValues.map((value) => termLabel(preferences, "status", value)).join(", ")
+    : "";
 };
 export const createPresenter = (
   preferences: Preferences,
@@ -149,7 +122,8 @@ export const createPresenter = (
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
   groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
   actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
-  token: (value: string) => token(preferences, value, definitions),
+  term: <V extends keyof Terms>(vocabulary: V, value: Terms[V]) =>
+    termLabel(preferences, vocabulary, value),
   hint: (field: FieldCatalogEntry) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
   amount: (value: string) => exactAmount(value, preferences.displayLocale),

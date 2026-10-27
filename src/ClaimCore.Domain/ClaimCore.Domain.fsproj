@@ -1,24 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Vocabulary/Vocabulary.fs" />
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="Record.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
-    <Compile Include="Vocabulary/InputTargets.fs" />
+    <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
-    <Compile Include="Vocabulary/Capabilities.fs" />
+    <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
-    <Compile Include="Vocabulary/PrincipalKinds.fs" />
+    <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="PaymentProgress.fs" />
     <Compile Include="CaseState.fs" />
-    <Compile Include="CaseActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="Transitions.fs" />
@@ -26,5 +24,16 @@
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
     <Compile Include="Authority.fs" />
+    <Compile Include="Service/Paging.fs" />
+    <Compile Include="Service/Faults.fs" />
+    <Compile Include="Service/Advice.fs" />
+    <Compile Include="Service/Receipts.fs" />
+    <Compile Include="Service/Verification.fs" />
+    <Compile Include="Service/History.fs" />
+    <Compile Include="Service/CasePages.fs" />
+    <Compile Include="Service/AuthorityPages.fs" />
+    <Compile Include="Service/Replies.fs" />
+    <Compile Include="Service/Operations.fs" />
+    <Compile Include="Service/Resolution.fs" />
   </ItemGroup>
 </Project>

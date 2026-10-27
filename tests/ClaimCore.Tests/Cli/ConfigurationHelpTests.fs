@@ -3,10 +3,10 @@ module ClaimCore.Tests.ConfigurationHelpTests
 open System
 open System.IO
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Cli
 open ClaimCore.HostSecurity
-open ClaimCore.Contract.Protocol
 
 let private create service issuer clientId =
     RemoteConfiguration.create service issuer clientId RemoteClientMode.Interactive None

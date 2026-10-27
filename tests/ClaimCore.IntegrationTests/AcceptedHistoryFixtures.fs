@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto
@@ -49,7 +49,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (UnvalidatedCaseAct.Open
+            (AuthoredCaseAct.Open
                 { registration with
                     ClaimantName = claimant
                 })
@@ -99,19 +99,21 @@ let internal seed (database: PostgresFixture.Database) claimant =
     task {
         let! result =
             fixture.Store.Write(
-                (fun tx ->
-                    task {
-                        let! view =
-                            ExecutionFacts.case
-                                tx
-                                fixture.InstallationId
-                                fixture.Owner
-                                (Some request.OperationId)
-                                request.CaseReference
+                {
+                    WriteOperation.Work =
+                        (fun tx ->
+                            task {
+                                let! view =
+                                    ExecutionFacts.case
+                                        (core fixture fixture.Owner)
+                                        tx
+                                        (Some request.OperationId)
+                                        request.CaseReference
 
-                        return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
-                    }),
-                token
+                                return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
+                            })
+                    CancellationToken = token
+                }
             )
 
         match result with
@@ -125,7 +127,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         let name = String.replicate 201 "A"
         do! seed database name
 
-        let! current = (Core.get actor ({ CaseReference = "historical-1" }) (token))
+        let! current = (Service.get actor ({ CaseReference = "historical-1" }) (token))
 
         match current with
         | ReadReply.Succeeded {
@@ -146,24 +148,24 @@ let private grandfathering (database: PostgresFixture.Database) =
             }
 
         let! reaffirm =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
-                    request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
+                    request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
                 ))
                 (token))
 
         accepted reaffirm |> ignore
 
         let! changed =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
                     request
                         12
                         "HISTORICAL-1"
                         2L
-                        (UnvalidatedCaseAct.AmendRegistration
+                        (AuthoredCaseAct.AmendRegistration
                             { values with
                                 ClaimantName = name + "B"
                             })
@@ -189,12 +191,12 @@ let private appendTransitions (actor: ServiceContext) =
         for revision in 1L .. 59L do
             let act =
                 if revision % 2L = 1L then
-                    UnvalidatedCaseAct.Close
+                    AuthoredCaseAct.Close
                 else
-                    UnvalidatedCaseAct.Reopen
+                    AuthoredCaseAct.Reopen
 
             let! result =
-                (Core.execute
+                (Service.execute
                     actor
                     (OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act))
                     (token))
@@ -229,7 +231,7 @@ let private remainingHistory (actor: ServiceContext) (query: HistoryRequest) =
         let mutable entries = []
 
         while cursor.IsSome do
-            let! current = (Core.history actor ({ query with AfterCursor = cursor }) (token))
+            let! current = (Service.history actor ({ query with AfterCursor = cursor }) (token))
 
             let current = historyPage current
 
@@ -262,7 +264,7 @@ let private assertRemainingHistoryAccess
     =
     task {
         let! summary =
-            (Core.history
+            (Service.history
                 actor
                 ({ query with
                     Detail = HistoryDetail.Summary
@@ -272,7 +274,8 @@ let private assertRemainingHistoryAccess
         let summary = historyPage summary
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
-        let! observed = (Core.observe actor ({ OperationId = original.OperationId }) (token))
+        let! observed =
+            (Service.observe actor ({ OperationId = original.OperationId }) (token))
 
         Expect.equal
             observed
@@ -317,7 +320,7 @@ let private revokedFullHistory
                 }
                 query
             ] do
-            let! refused = (Core.history actor (request) (token))
+            let! refused = (Service.history actor (request) (token))
 
             Expect.equal
                 refused
@@ -343,7 +346,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 Detail = HistoryDetail.Full
             }
 
-        let! first = (Core.history actor (query) (token))
+        let! first = (Service.history actor (query) (token))
 
         let first = historyPage first
 
@@ -372,7 +375,7 @@ let private retainedPages (database: PostgresFixture.Database) =
         assertRetained name entries
 
         let! summary =
-            (Core.history
+            (Service.history
                 actor
                 ({ query with
                     Detail = HistoryDetail.Summary

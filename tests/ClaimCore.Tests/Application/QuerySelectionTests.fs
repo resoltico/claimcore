@@ -2,7 +2,7 @@ module ClaimCore.Tests.QuerySelectionTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
@@ -125,10 +125,16 @@ let private resources () =
     let revoked = actor owner (id 1) [ Role.Owner ] []
     let read = (locked revoked (Some current) None).Read
     let expected = ReadReply.Rejected Refusal.ResourceUnavailable
-    Expect.equal (Queries.caseResult installation owner read) expected "Inaccessible live case"
 
     Expect.equal
-        (Queries.caseResult installation owner { read with Case = None })
+        (Queries.caseResult (DecisionFixtures.services installation calendar owner) read)
+        expected
+        "Inaccessible live case"
+
+    Expect.equal
+        (Queries.caseResult
+            (DecisionFixtures.services installation calendar owner)
+            { read with Case = None })
         expected
         "Absent case is indistinguishable"
 
@@ -141,7 +147,9 @@ let private resources () =
         }
 
     Expect.equal
-        (Queries.caseResult installation owner { read with Case = Some erased })
+        (Queries.caseResult
+            (DecisionFixtures.services installation calendar owner)
+            { read with Case = Some erased })
         expected
         "Erased beyond view is indistinguishable"
 
@@ -150,10 +158,12 @@ let private context () =
 
     let view = ungranted
 
-    match Queries.contextResult calendar owner instant view with
+    match
+        Queries.contextResult (DecisionFixtures.services installation calendar owner) instant view
+    with
     | ReadReply.Succeeded value ->
-        Expect.isEmpty value.Capabilities "Enabled actor has context without implied capabilities"
-        Expect.isEmpty value.Views "No views before grants"
+        Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
+        Expect.isEmpty value.View "No views before grants"
         Expect.isEmpty value.Offers "No offers before grants"
 
         Expect.equal
@@ -165,7 +175,10 @@ let private context () =
     | _ -> failtest "Enabled ungranted actor needs context"
 
     Expect.equal
-        (Queries.contextResult calendar owner instant AuthorityView.empty)
+        (Queries.contextResult
+            (DecisionFixtures.services installation calendar owner)
+            instant
+            AuthorityView.empty)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Unregistered actor has no context"
 
@@ -175,7 +188,10 @@ let private context () =
         }
 
     Expect.equal
-        (Queries.contextResult calendar owner instant disabled)
+        (Queries.contextResult
+            (DecisionFixtures.services installation calendar owner)
+            instant
+            disabled)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Disabled actor has no context"
 

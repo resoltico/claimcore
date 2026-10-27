@@ -27,7 +27,7 @@ const HistoryReceipt = ({
     <details>
       <summary>
         {p.text("ui.historySummary", {
-          act: p.token(receipt.subject.act),
+          act: p.term("act", receipt.subject.act),
           revision: p.integer(receipt.subject.revision),
           timestamp: receipt.recordedAt,
         })}
@@ -59,7 +59,7 @@ const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument
     <>
       <p>
         {p.text("ui.historySummary", {
-          act: p.token(change.act),
+          act: p.term("act", change.act),
           revision: p.integer(change.revision),
           timestamp: change.recordedAt,
         })}
@@ -112,7 +112,7 @@ const HistoryModePicker = ({
       >
         {modes.map((mode) => (
           <option key={mode} value={mode}>
-            {p.text(mode === "FULL" ? "ui.fullHistory" : "ui.summaryHistory")}
+            {p.text(mode === "FULL" ? "historyDetail.FULL.label" : "historyDetail.SUMMARY.label")}
           </option>
         ))}
       </select>

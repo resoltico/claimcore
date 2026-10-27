@@ -9,10 +9,9 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.Web.Composition
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
@@ -80,8 +79,8 @@ let private assertServerIdentity endpoint input reply =
             "Receipt retains the requested operation id"
 
     match Api.identity endpoint with
-    | EndpointId.Actor ActorEndpoint.Preview
-    | EndpointId.Actor ActorEndpoint.Execute ->
+    | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
+    | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
         let expected = guid "operationId" input
 
         Expect.equal
@@ -91,11 +90,17 @@ let private assertServerIdentity endpoint input reply =
 
         if kind = JsonValue.String "ACCEPTED" || kind = JsonValue.String "ALREADY_ACCEPTED" then
             receiptIdentity expected
-    | EndpointId.Actor ActorEndpoint.Observe when kind = JsonValue.String "SUCCEEDED" ->
+    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe) when
+        kind = JsonValue.String "SUCCEEDED"
+        ->
         receiptIdentity (guid "operationId" input)
-    | EndpointId.Actor ActorEndpoint.Resolve when kind = JsonValue.String "ACCEPTED" ->
+    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve) when
+        kind = JsonValue.String "ACCEPTED"
+        ->
         receiptIdentity (guid "operationId" input)
-    | EndpointId.Actor ActorEndpoint.AuthorityGrants when kind = JsonValue.String "SUCCEEDED" ->
+    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) when
+        kind = JsonValue.String "SUCCEEDED"
+        ->
         let actor = memberValue "data" outcome |> memberValue "actor"
 
         Expect.equal
@@ -148,7 +153,7 @@ let private cancellationPolicy () =
         cancellation.Cancel()
 
         let! preview =
-            (Core.previewReply actor (input) (cancellation.Token)) |> Async.AwaitTask
+            (Service.preview actor (input) (cancellation.Token)) |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
@@ -156,7 +161,7 @@ let private cancellationPolicy () =
             "Preview observes caller cancellation."
 
         let! execute =
-            (Core.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
+            (Service.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

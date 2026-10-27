@@ -50,3 +50,38 @@ export const assembleCatalogInput = (
   }
   return root;
 };
+
+/** Bind a protocol member's semantic role to its core vocabulary. */
+export const termVocabulary = (
+  path: ReadonlyArray<string>,
+):
+  | "subject"
+  | "act"
+  | "correction"
+  | "scope"
+  | "principalKind"
+  | "role"
+  | "historyDetail"
+  | "status"
+  | null => {
+  const key = path.join(".");
+  switch (key) {
+    case "kind":
+      return "subject";
+    case "act.kind":
+      return "act";
+    case "target.kind":
+      return "principalKind";
+    case "act.scope.kind":
+      return "scope";
+    case "act.role":
+      return "role";
+    case "detail":
+      return "historyDetail";
+    case "status":
+      return "status";
+    default:
+      break;
+  }
+  return key.startsWith("act.groups.") && key.endsWith(".kind") ? "correction" : null;
+};

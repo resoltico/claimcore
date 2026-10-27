@@ -1,6 +1,6 @@
 module internal ClaimCore.AcceptanceTests.RejectedDrafts
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 

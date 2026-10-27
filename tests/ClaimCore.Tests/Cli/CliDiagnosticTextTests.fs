@@ -1,16 +1,15 @@
 module ClaimCore.Tests.CliDiagnosticTextTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open System.Text
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Cli
 
 let private frame refusal =
     {
-        Endpoint = Some(EndpointId.Actor ActorEndpoint.CaseGet)
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
         OperationId = None
         Delivery = DeliveryState.Delivered
         Result =

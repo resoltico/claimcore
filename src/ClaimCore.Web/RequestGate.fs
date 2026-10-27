@@ -1,6 +1,6 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System

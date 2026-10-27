@@ -6,16 +6,23 @@ Implemented release summaries are recorded here, with changes awaiting release u
 
 - Initialize a fresh installation; the SQL baseline checksum changes. Earlier installations are refused untouched; preserve them with matching software. No migration or reader is supplied.
 - Deploy matching service, CLI and browser builds; wire tokens and locale keys change. Regenerate integrations from the checked contracts.
+- Case advice lists act kinds with conditional correction choices; offers omit expectedRevision. Use the snapshot revision, or zero when opening.
+- Catalogs omit synopsis; CLI owns command grammar and usage. Country format metadata publishes unknownCode for consumers.
+- Replace token.* locale keys with vocabulary-qualified labels and typed browser terms. Renderer catalogs cannot duplicate core wording.
+- Update source integrations for Domain-owned service models, JSON-free Domain, ClaimCore.Protocol wire APIs and ServiceContext with named port records.
 - Refusals, violations and faults use flat code-tagged diagnostics with typed parameters; replace limits containers and expect actualRevision only for revision conflicts.
-- Authority admission belongs to Domain; invalid roles return ROLE_FORMAT at role. Public Application Service and ports replace Application routes and handlers.
-- CLI authority input uses --principal-kind instead of --kind. Generated command synopses, help topics and both executables' exits are in the [CLI reference](docs/cli.md).
+- Authority admission belongs to Domain; invalid roles return ROLE_FORMAT at role. Service and ports replace Application routes and handlers.
+- CLI authority input uses --principal-kind instead of --kind. Human output uses core labels and scalar guidance; JSON frames keep wire tokens.
+- Command syntax, localized guidance, help topics and both executables’ exits are in the [CLI reference](docs/cli.md).
 - Client reply correlation checks are removed; clients trust schema-admitted HTTPS replies. Keep the exact frame and use resubmission or final resolution for uncertain delivery.
 - Database help/version replies use HELP/VERSION kind tags; help exitCodes is a list of code/number entries. Update scripts consuming these machine replies.
 - Database replies retain diagnostic and fault details; invalid command grammar returns USAGE_ERROR with applicable syntax. Both executables share one exit-code table.
 - Remove REVISION_EXHAUSTED and LEDGER_SEQUENCE_EXHAUSTED; catalog message keys change from label.read.<endpoint>.* to endpoint.<endpoint>.*.
-- Twelve flat case acts and one typed record declaration drive inputs, catalog metadata and projections; internal APIs change. Durable byte codes remain unchanged; record format numbers stay 1.
-- Browser production builds compile app sources and omit OpenAPI from the bundle. Structural catalog tests and handwritten vectors replace the rendered-message corpus.
-- ArchUnitNET 0.13.5 uses assembly-scoped F# architecture controls, codec namespace boundaries and evaluated project edges; product assemblies no longer expose internals to siblings.
+- Generic act stages and structural declarations drive boundary codecs and catalog inputs. Internal APIs change; durable encodings remain unchanged and format numbers stay 1.
+- RecordFormat owns literal durable names and record-byte limits independently of wire policy; permanent scalar grammars only relax within a format.
+- Browser production builds compile app sources and omit OpenAPI from the bundle. Structural catalog checks and handwritten vectors supply independent expectations.
+- Compiled assembly boundaries cover Domain, durable names, service models, hosts and vocabulary naming. Product internals remain test-only.
+- Generic CLI/wire strictness properties replace feature-specific rejection checks. Browser unit paths mirror source; lint retains its resolved policy while removing root defaults.
 
 ## [0.12.0] - 2026-10-26
 

@@ -1,4 +1,5 @@
-import { offerAct } from "../operation/metadata";
+import { isTerm } from "../presentation/terms";
+import { termVocabulary } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
@@ -21,14 +22,10 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
     return [];
   }
-  const offer = props.current?.advice.acts.find(
-    (item) => offerAct(item) === props.values["act.kind"],
-  );
+  const correction = props.current?.advice.correction;
   const group =
-    offer !== undefined && "correction" in offer
-      ? Object.entries(offer.correction).find(([name]) =>
-          input.diagnosticTargets.includes(name),
-        )?.[1]
+    props.values["act.kind"] === "CORRECT" && correction !== undefined
+      ? Object.entries(correction).find(([name]) => input.diagnosticTargets.includes(name))?.[1]
       : undefined;
   return group === undefined
     ? input.kind.options
@@ -85,7 +82,12 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         >
           {permittedOptions(input, props).map((value) => (
             <option key={value} value={value}>
-              {p.token(value)}
+              {(() => {
+                const vocabulary = termVocabulary(input.path);
+                return vocabulary !== null && isTerm(vocabulary, value)
+                  ? p.term(vocabulary, value)
+                  : value;
+              })()}
             </option>
           ))}
         </select>

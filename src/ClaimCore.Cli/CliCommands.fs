@@ -1,7 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 [<RequireQualifiedAccess>]
 type CliUsageIssue =
@@ -38,22 +38,23 @@ type CliTopic =
     | Help of HelpTopic
     | Diagnostic of CliGuidance
 
-/// Ordinary help topics and diagnostic-code topics have distinct token conventions.
-module CliCommands =
-    let commandVocabulary =
-        Vocabulary.ofUnion<CliCommand> "command" TokenCasing.CamelCase None
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CliCommand =
+    let vocabulary = Vocabulary.ofUnion<CliCommand> "command" TokenCasing.CamelCase None
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
 
-    let commands = Vocabulary.all commandVocabulary
-    let commandToken = Vocabulary.token commandVocabulary
-    let parseCommand = Vocabulary.tryParse commandVocabulary
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module HelpTopic =
+    let vocabulary = Vocabulary.ofUnion<HelpTopic> "topic" TokenCasing.CamelCase None
 
-    let private helpVocabulary =
-        Vocabulary.ofUnion<HelpTopic> "topic" TokenCasing.CamelCase None
-
-    let topicVocabulary =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CliTopic =
+    let vocabulary =
         [
             yield!
-                Vocabulary.entries helpVocabulary
+                Vocabulary.entries HelpTopic.vocabulary
                 |> List.map (fun (topic, token) -> CliTopic.Help topic, token)
             yield!
                 Vocabulary.entries CliGuidance.vocabulary
@@ -61,9 +62,11 @@ module CliCommands =
         ]
         |> Vocabulary.ofEntries "topic"
 
-    let topics = Vocabulary.all topicVocabulary
-    let topicToken = Vocabulary.token topicVocabulary
-    let parseTopic = Vocabulary.tryParse topicVocabulary
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+module CliCommands =
     let aliases = [ "--help"; "-h" ]
 
     let commandTopic =

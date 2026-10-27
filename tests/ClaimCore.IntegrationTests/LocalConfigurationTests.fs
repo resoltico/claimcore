@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.LocalConfigurationTests
 
 open ClaimCore.Domain
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.IO

@@ -2,7 +2,7 @@ namespace ClaimCore.Database
 
 open ClaimCore.Domain
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Globalization
@@ -30,7 +30,26 @@ type CommandName =
     | Help
     | Version
 
-module Commands =
+module Command =
+    [<Literal>]
+    let ProgramName = "claimcore-database"
+
+    let name =
+        function
+        | Initialize _ -> CommandName.Initialize
+        | ProvisionOwner -> CommandName.ProvisionOwner
+        | Verify _ -> CommandName.Verify
+        | Head -> CommandName.Head
+        | Help -> CommandName.Help
+        | Version -> CommandName.Version
+
+[<RequireQualifiedAccess>]
+type CommandArgument =
+    | Operand of string
+    | Optional of flag: string * value: string
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CommandName =
     let vocabulary =
         Vocabulary.ofUnion<CommandName> "command" TokenCasing.ScreamingSnake None
 
@@ -44,14 +63,24 @@ module Commands =
     let parse value =
         all |> List.tryFind (fun name -> token name = value)
 
-    let synopsis =
+    let arguments =
         function
-        | CommandName.Initialize -> "claimcore-database initialize TIME_ZONE"
-        | CommandName.ProvisionOwner -> "claimcore-database provision-owner"
-        | CommandName.Verify -> "claimcore-database verify [--expect SEQUENCE:HASH]"
-        | CommandName.Head -> "claimcore-database head"
-        | CommandName.Help -> "claimcore-database help"
-        | CommandName.Version -> "claimcore-database version"
+        | CommandName.Initialize -> [ CommandArgument.Operand "TIME_ZONE" ]
+        | CommandName.Verify -> [ CommandArgument.Optional("--expect", "SEQUENCE:HASH") ]
+        | CommandName.ProvisionOwner
+        | CommandName.Head
+        | CommandName.Help
+        | CommandName.Version -> []
+
+    let synopsis name =
+        let argument =
+            function
+            | CommandArgument.Operand value -> value
+            | CommandArgument.Optional(flag, value) -> "[" + flag + " " + value + "]"
+
+        String.concat
+            " "
+            (Command.ProgramName :: token name :: (arguments name |> List.map argument))
 
 [<RequireQualifiedAccess>]
 type UsageIssue =
@@ -125,7 +154,7 @@ module Inputs =
         match arguments with
         | [] -> Ok Help
         | first :: rest ->
-            match Commands.parse first with
+            match CommandName.parse first with
             | None ->
                 Error
                     {
@@ -177,3 +206,8 @@ module Inputs =
             decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module UsageIssue =
+    let vocabulary =
+        Vocabulary.ofUnion<UsageIssue> "usage" TokenCasing.ScreamingSnake None

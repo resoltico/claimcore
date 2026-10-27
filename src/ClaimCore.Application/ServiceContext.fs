@@ -12,5 +12,6 @@ type ServiceContext =
             InstallationId: Guid
             Store: IStore
             Calendar: IBusinessCalendar
+            ProductVersion: string
             Principal: PrincipalKey
         }

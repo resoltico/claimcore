@@ -1,8 +1,8 @@
 module internal ClaimCore.AcceptanceTests.HttpsProxy
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
-open ClaimCore.Contract.Protocol
 
 open System
 open System.Net
@@ -72,7 +72,7 @@ let private relay
             control.Original None
 
             context.Response.StatusCode <-
-                HostFailures.status HostFailureReason.BeforeDispatchFailed
+                HostFailureReason.status HostFailureReason.BeforeDispatchFailed
 
             context.Response.ContentType <- "application/json"
 

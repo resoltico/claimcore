@@ -3,7 +3,7 @@
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="TestRegistration.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Contract/ClaimCore.Contract.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
     <Compile Include="Support/PostgresBaselineTests.fs" />
     <Compile Include="Support/PropertyHarness.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
@@ -43,6 +43,7 @@
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
     <Compile Include="RecordFormat/RecordBoundaryTests.fs" />
     <Compile Include="RecordFormat/RecordPropertyTests.fs" />
+    <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="RecordFormat/OperationRecordTests.fs" />
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
@@ -51,7 +52,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
     <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
-    <Compile Include="Application/CoreBoundaryTests.fs" />
+    <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
@@ -63,6 +64,7 @@
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
     <Compile Include="Contract/EndpointRegistryTests.fs" />
+    <Compile Include="Contract/BoundaryStrictnessTests.fs" />
     <Compile Include="Contract/HttpContractBehaviorTests.fs" />
     <Compile Include="Cli/RegistryFrameTests.fs" />
     <Compile Include="Cli/FrameSchemaTests.fs" />
@@ -95,7 +97,7 @@
     <Compile Include="Support/DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
+    <ProjectReference Include="../../eng/ClaimCore.ProtocolGenerator/ClaimCore.ProtocolGenerator.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

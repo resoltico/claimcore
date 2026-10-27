@@ -1,19 +1,20 @@
 namespace ClaimCore.Application
 
 open System
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 /// Authorship permits receipt metadata; current authority still controls snapshot disclosure.
 module internal Resolution =
     let resolve
-        installation
-        principal
+        (services: ServiceContext)
         operation
         (actor: AuthorityView)
         (entry: StoredEntry option)
         (current: StoredCase option)
         =
+        let installation = services.InstallationId
+        let principal = services.Principal
+
         match actor.Actor with
         | _ when not (Authority.validActor principal actor) ->
             Verdict.Refuse Refusal.ResourceUnavailable
@@ -29,7 +30,10 @@ module internal Resolution =
             | _ -> Verdict.Proceed owner.ActorId
         | None -> Verdict.Refuse Refusal.ResourceUnavailable
 
-    let run (store: IStore) installation principal (request: ResolveRequest) token =
+    let run (services: ServiceContext) (request: ResolveRequest) token =
+        let store = services.Store
+        let principal = services.Principal
+
         task {
             if request.OperationId = Guid.Empty then
                 return
@@ -39,26 +43,38 @@ module internal Resolution =
             else
                 let! result =
                     store.Write(
-                        (fun tx ->
-                            task {
-                                let! actor, entry, current =
-                                    ExecutionFacts.operation tx principal request.OperationId
+                        {
+                            WriteOperation.Work =
+                                (fun tx ->
+                                    task {
+                                        let! actor, entry, current =
+                                            ExecutionFacts.operation
+                                                tx
+                                                principal
+                                                request.OperationId
 
-                                match
-                                    resolve
-                                        installation
-                                        principal
-                                        request.OperationId
-                                        actor
-                                        entry
-                                        current
-                                with
-                                | Verdict.Proceed actor ->
-                                    do! tx.Fence(actor, request.OperationId)
-                                    return Verdict.Proceed()
-                                | other -> return Verdict.map ignore other
-                            }),
-                        token
+                                        match
+                                            resolve
+                                                services
+                                                request.OperationId
+                                                actor
+                                                entry
+                                                current
+                                        with
+                                        | Verdict.Proceed actor ->
+                                            do!
+                                                tx.Fence(
+                                                    {
+                                                        FenceKey.ActorId = actor
+                                                        OperationId = request.OperationId
+                                                    }
+                                                )
+
+                                            return Verdict.Proceed()
+                                        | other -> return Verdict.map ignore other
+                                    })
+                            CancellationToken = token
+                        }
                     )
 
                 return

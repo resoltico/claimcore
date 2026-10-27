@@ -1,12 +1,11 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
 open ClaimCore.Json
 
 open System.Text
@@ -36,11 +35,9 @@ let private caller (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id 20) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 20) principal AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -95,7 +92,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
             }
 
         let reaffirm =
-            request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
+            request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
 
         let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
 
@@ -111,7 +108,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 12
                 "HISTORICAL-1"
                 2L
-                (UnvalidatedCaseAct.AmendRegistration
+                (AuthoredCaseAct.AmendRegistration
                     { values with
                         ClaimantName = name + "B"
                     })
@@ -184,7 +181,7 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! _ = host.Login()
         let! csrf = host.Token()
         let! before = verified database
-        let pending = request 31 "ABSENT-REVISION" 1L (UnvalidatedCaseAct.Open registration)
+        let pending = request 31 "ABSENT-REVISION" 1L (AuthoredCaseAct.Open registration)
         let responses = ResizeArray<_>()
 
         for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do

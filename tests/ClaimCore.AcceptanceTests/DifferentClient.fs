@@ -7,7 +7,7 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -92,10 +92,10 @@ let private changeStructuralVocabulary directory =
 
     // A vocabulary prefix changes the copied client's wire schema while keeping the host fixed.
     let declaration =
-        "Vocabulary.ofUnion<CaseStatus> \"token\" TokenCasing.ScreamingSnake None"
+        "Vocabulary.ofUnion<CaseStatus> \"status\" TokenCasing.ScreamingSnake None"
 
     let altered =
-        "Vocabulary.ofUnion<CaseStatus> \"token\" TokenCasing.ScreamingSnake (Some \"SYNTHETIC_\")"
+        "Vocabulary.ofUnion<CaseStatus> \"status\" TokenCasing.ScreamingSnake (Some \"SYNTHETIC_\")"
 
     let changed = original.Replace(declaration, altered, StringComparison.Ordinal)
 

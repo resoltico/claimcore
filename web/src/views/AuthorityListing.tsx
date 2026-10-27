@@ -18,7 +18,7 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
       </dd>
       <dt>{p.text("ui.principal")}</dt>
       <dd>
-        {p.token(actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
+        {p.term("principalKind", actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
         <bdi>{actor.principal.subject}</bdi>
       </dd>
       <dt>{p.text("label.enabled")}</dt>

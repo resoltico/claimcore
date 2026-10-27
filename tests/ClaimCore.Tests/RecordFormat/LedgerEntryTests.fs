@@ -1,6 +1,6 @@
 module ClaimCore.Tests.LedgerEntryTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Globalization
@@ -123,7 +123,7 @@ let private changedHash (value: byte array) =
     copy[0] <- copy[0] ^^^ 1uy
     copy
 
-let private changedCaseMetadata otherId case =
+let private changedCaseMetadata otherId (case: CaseEntryMetadata) =
     [
         { case with CaseId = otherId }
         { case with Revision = 2L }

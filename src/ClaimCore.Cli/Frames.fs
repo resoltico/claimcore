@@ -1,9 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 open System
 
@@ -12,6 +11,11 @@ type DeliveryState =
     | NotSent
     | Delivered
     | Uncertain
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module DeliveryState =
+    let vocabulary =
+        Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
 
 [<RequireQualifiedAccess>]
 type CliFailure =
@@ -36,7 +40,8 @@ type CliFailureCode =
     | InvalidResponse
     | ContractMismatch
 
-module CliFailureCodes =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CliFailureCode =
     let vocabulary =
         Vocabulary.ofUnion<CliFailureCode> "cli-failure" TokenCasing.ScreamingSnake None
 
@@ -85,7 +90,7 @@ type FrameReply =
 type Invocation =
     private
         {
-            Target: ClaimCore.Contract.Protocol.Route
+            Target: ClaimCore.Protocol.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -150,30 +155,28 @@ module Frames =
         |> WireWriter.bytes
 
     let private delivery =
-        Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
-        |> Vocabulary.entries
-        |> Codec.enumeration
+        DeliveryState.vocabulary |> Vocabulary.entries |> Codec.enumeration
 
-    let failureCodes = CliFailureCodes.codes
+    let failureCodes = CliFailureCode.codes
 
     let failureCode failure =
-        failure |> CliFailureCodes.ofFailure |> CliFailureCodes.token
+        failure |> CliFailureCode.ofFailure |> CliFailureCode.token
 
     let private simpleFailure =
-        Codec.record CliFailureCodes.toFailure
+        Codec.record CliFailureCode.toFailure
         |> Codec.field
             "code"
-            CliFailureCodes.ofFailure
-            (Codec.enumeration (Vocabulary.entries CliFailureCodes.vocabulary))
+            CliFailureCode.ofFailure
+            (Codec.enumeration (Vocabulary.entries CliFailureCode.vocabulary))
         |> Codec.build
 
     let private configurationFailure =
         Codec.record (fun setting issue -> setting, issue)
-        |> Protocol.ResponseScalars.fixedField
+        |> ResponseScalars.fixedField
             "code"
-            (CliFailureCodes.token CliFailureCode.ConfigurationInvalid)
+            (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)
-        |> Codec.field "issue" snd (Codec.enumeration InputDiagnostics.configurationIssues)
+        |> Codec.field "issue" snd (Codec.enumeration ConfigurationIssue.all)
         |> Codec.build
 
     let failureCodec =
@@ -314,4 +317,4 @@ module Frames =
              | FrameResult.LocalFailure _
              | FrameResult.HostFailure _ -> ExitCode.Failed
              | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply))
-        |> ExitCodes.value
+        |> ExitCode.value

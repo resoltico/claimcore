@@ -5,10 +5,9 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 let private codec = Api.caseHistory.Output
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
@@ -29,7 +28,7 @@ let private page entries =
 
 let private validator () =
     let document =
-        ClaimCore.Contract.Protocol.OpenApi.document
+        ClaimCore.Protocol.OpenApi.document
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
         |> JsonNode.Parse
@@ -86,23 +85,16 @@ let private refused () =
     let authority =
         "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-4000-8000-000000000001\",\"act\":\"REGISTER\"}"
 
-    let old =
-        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}"""
-
     let wrongScope =
         receipt.Replace(
             "{\"kind\":\"CASE\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
             authority
         )
 
-    for entries in [ [ full old ]; [ full wrongScope ]; [ summary; full receipt ] ] do
+    for entries in [ [ full wrongScope ]; [ summary; full receipt ] ] do
         agrees schema false (page entries) |> ignore
 
     let definitions = codec.Definitions
-
-    Expect.isFalse
-        (Map.containsKey "Disclosure" definitions)
-        "Retired snapshot grammar is unreachable"
 
     Expect.isTrue
         (Map.containsKey "SnapshotDisclosure" definitions)

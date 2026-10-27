@@ -5,10 +5,9 @@ open System.Reflection
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 /// Offline discovery consumes the same tracked resources published for HTTPS clients.
 module ContractDiscovery =
@@ -33,7 +32,7 @@ module ContractDiscovery =
            |> String.concat "")
 
     let private openapi () =
-        WireWriter.indentedBytes ClaimCore.Contract.Protocol.OpenApi.document
+        WireWriter.indentedBytes ClaimCore.Protocol.OpenApi.document
 
     let catalogue () =
         let endpoints =
@@ -43,7 +42,7 @@ module ContractDiscovery =
                     id = Api.id endpoint
                     method = (Api.method endpoint).Method
                     path = Api.path endpoint
-                    effect = EndpointEffects.token (Api.effect endpoint)
+                    effect = EndpointEffect.token (Api.effect endpoint)
                 |})
 
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}
@@ -58,7 +57,8 @@ module ContractDiscovery =
                     DiagnosticCodecs.faultDefinitions
                     |> List.map (fun definition -> "fault." + definition.Id)
                 yield!
-                    HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
+                    HostFailureReason.all
+                    |> List.map (fun reason -> "host." + HostFailureReason.code reason)
             ]
             |> Set.ofList
 

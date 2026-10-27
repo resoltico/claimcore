@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Security.Claims
@@ -49,9 +50,9 @@ module AuthMiddleware =
         | Some principal ->
             match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
             | Error _ ->
-                context.Fail(AuthenticationFailures.token AuthenticationFailure.SubjectInvalid)
+                context.Fail(AuthenticationFailure.token AuthenticationFailure.SubjectInvalid)
             | Ok _ -> ()
-        | None -> context.Fail(AuthenticationFailures.token AuthenticationFailure.SubjectInvalid)
+        | None -> context.Fail(AuthenticationFailure.token AuthenticationFailure.SubjectInvalid)
 
         Task.CompletedTask
 

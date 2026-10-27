@@ -3,15 +3,22 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open System.Text
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
-open ClaimCore.Contract.Protocol
 open ClaimCore.Json
 
 /// Human output consumes decoded DTOs and the authoritative field readers.
 module internal TextReply =
     let private label language key =
         MessageCatalogs.render language key Map.empty
+
+    let private term language vocabulary value =
+        label language (Vocabulary.messageKey vocabulary value "label")
+
+    let private principalKind language value =
+        Vocabulary.tryParse PrincipalKind.vocabulary value
+        |> Option.map (term language PrincipalKind.vocabulary)
+        |> Option.defaultValue value
 
     let private line language key value = label language key + ": " + value
 
@@ -52,8 +59,13 @@ module internal TextReply =
             |> List.map (fun row ->
                 line
                     language
-                    (RecordFields.labelId row.Field)
-                    (displayed language (RecordFields.value fields row.Field)))
+                    (FieldPresentation.labelId row.Field)
+                    (displayed
+                        language
+                        (if row.Field = BusinessField.Status then
+                             Some(term language CaseStatus.vocabulary fields.Status)
+                         else
+                             BusinessField.value fields row.Field)))
 
         rows None
         @ (Vocabulary.all RecordGroup.vocabulary
@@ -62,22 +74,23 @@ module internal TextReply =
                 + ":")
                :: rows (Some group)))
 
-    let private offerAct =
-        function
-        | CaseActOffer.Act(act, _) -> CaseActKinds.token act
-        | CaseActOffer.Correct _ -> CaseActKinds.token CaseActKind.Correct
+    let private offerAct language act =
+        term language CaseActKind.vocabulary act
 
     let private caseLines language (value: CaseReadModel) =
         [
             line
                 language
-                (RecordFields.labelId BusinessField.CaseReference)
+                (FieldPresentation.labelId BusinessField.CaseReference)
                 (CaseReference.format value.Snapshot.Reference)
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)
                 (number value.Snapshot.Revision)
-            line language "cli.text.state" (CaseState.token value.Snapshot.State)
+            line
+                language
+                "cli.text.state"
+                (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
         ]
         @ (CaseState.fields value.Snapshot.State
            |> Option.map (fieldLines language)
@@ -86,28 +99,26 @@ module internal TextReply =
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
-                (value.Advice.Acts
-                 |> List.map (offerAct >> OperationCatalog.kebab)
-                 |> String.concat ", ")
+                (value.Advice.Acts |> List.map (offerAct language) |> String.concat ", ")
         ]
 
     let private receiptLines language outcome (receipt: OperationReceipt) =
         let act, target, revision =
             match receipt.Subject with
             | ReceiptSubject.Case value ->
-                CaseActKinds.token value.Act,
+                term language CaseActKind.vocabulary value.Act,
                 CaseReference.format value.Reference,
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     number value.Revision
                 ]
             | ReceiptSubject.Authority value ->
-                AuthorityKinds.token value.Act, id value.TargetActorId, []
+                term language AuthorityKind.vocabulary value.Act, id value.TargetActorId, []
 
         [
             String.concat
                 " "
-                ([ outcome; OperationCatalog.kebab act; target ]
+                ([ outcome; act; target ]
                  @ revision
                  @ [
                      label language (ContractDiscovery.inputLabel "operationId")
@@ -129,7 +140,7 @@ module internal TextReply =
                          "  "
                          [
                              number change.Revision
-                             OperationCatalog.kebab (CaseActKinds.token change.Act)
+                             term language CaseActKind.vocabulary change.Act
                              instant change.RecordedAt
                              id change.OperationId
                          ]
@@ -148,34 +159,34 @@ module internal TextReply =
                              | SnapshotDisclosure.Withheld
                              | SnapshotDisclosure.Erased -> []
 
-                         number value.Revision, CaseActKinds.token value.Act, fields
-                     | ReceiptSubject.Authority value -> "—", AuthorityKinds.token value.Act, []
+                         number value.Revision,
+                         term language CaseActKind.vocabulary value.Act,
+                         fields
+                     | ReceiptSubject.Authority value ->
+                         "—", term language AuthorityKind.vocabulary value.Act, []
 
                  String.concat
                      "  "
-                     [
-                         revision
-                         OperationCatalog.kebab act
-                         instant receipt.RecordedAt
-                         id receipt.OperationId
-                     ]
+                     [ revision; act; instant receipt.RecordedAt; id receipt.OperationId ]
                  :: (fields |> List.map ((+) "  "))))
         @ nextLines language page.NextCursor
 
-    let private grantRow (grant: AuthorityGrant) =
+    let private grantRow language (grant: AuthorityGrant) =
         let scope, reference =
             match grant.Scope with
-            | GrantTarget.Installation -> "INSTALLATION", "—"
-            | GrantTarget.CaseReference reference -> "CASE", reference
+            | GrantTarget.Installation ->
+                term language ScopeKind.vocabulary ScopeKind.Installation, "—"
+            | GrantTarget.CaseReference reference ->
+                term language ScopeKind.vocabulary ScopeKind.Case, reference
 
-        String.concat "  " [ RoleTokens.token grant.Role; scope; reference ]
+        String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 
-    let private actorRow (actor: ActorSummary) =
+    let private actorRow language (actor: ActorSummary) =
         String.concat
             "  "
             [
                 id actor.ActorId
-                actor.Principal.Kind
+                principalKind language actor.Principal.Kind
                 actor.Principal.Issuer
                 actor.Principal.Subject
                 boolean actor.Enabled
@@ -187,7 +198,7 @@ module internal TextReply =
              let status =
                  match item.State with
                  | CaseState.Active status
-                 | CaseState.Voided status -> CaseStatuses.token status
+                 | CaseState.Voided status -> term language CaseStatus.vocabulary status
                  | CaseState.Erased -> "—"
 
              String.concat
@@ -195,15 +206,19 @@ module internal TextReply =
                  [
                      CaseReference.format item.Reference
                      number item.Revision
-                     CaseState.token item.State + "  " + status
+                     term language Lifecycle.vocabulary (CaseState.lifecycle item.State)
+                     + "  "
+                     + status
                  ]))
         @ nextLines language page.NextCursor
 
     let private actorPage language (page: ActorReviewPage) =
-        (page.Items |> List.map actorRow) @ nextLines language page.NextCursor
+        (page.Items |> List.map (actorRow language))
+        @ nextLines language page.NextCursor
 
     let private grantPage language (page: AuthorityGrantPage) =
-        (page.Items |> List.map grantRow) @ nextLines language page.NextCursor
+        (page.Items |> List.map (grantRow language))
+        @ nextLines language page.NextCursor
 
     let private requestInput request =
         request
@@ -211,16 +226,16 @@ module internal TextReply =
             RequestCodecs.operationInput.Read "$" (Frames.input invocation)
             |> Result.toOption)
 
-    let private reviewIdentity request review =
+    let private reviewIdentity language request review =
         let input = requestInput request
 
         let act =
             input
             |> Option.map (function
                 | OperationInput.Case value ->
-                    CaseActKinds.token (UnvalidatedCaseActs.kind value.Act)
+                    term language CaseActKind.vocabulary (CaseAct.kind value.Act)
                 | OperationInput.Authority value ->
-                    AuthorityKinds.token (AuthorityActs.kind value.Act))
+                    term language AuthorityKind.vocabulary (AuthorityAct.kind value.Act))
             |> Option.defaultValue "—"
 
         let target =
@@ -233,17 +248,20 @@ module internal TextReply =
                     | _ -> value.Target |> Option.map _.Principal
 
                 match principal with
-                | Some value -> String.concat " " [ value.Kind; value.Issuer; value.Subject ]
+                | Some value ->
+                    String.concat
+                        " "
+                        [ principalKind language value.Kind; value.Issuer; value.Subject ]
                 | None -> "— — —"
 
-        OperationCatalog.kebab act + " " + target
+        act + " " + target
 
     let private authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
             "cli.text.grants",
-            (before.Grants |> List.map grantRow |> String.concat "; "),
-            (after.Grants |> List.map grantRow |> String.concat "; ")
+            (before.Grants |> List.map (grantRow language) |> String.concat "; "),
+            (after.Grants |> List.map (grantRow language) |> String.concat "; ")
         ]
         |> List.choose (fun (key, previous, next) ->
             if previous = next then
@@ -271,10 +289,10 @@ module internal TextReply =
                 Record.fields
                 |> List.choose (fun row ->
                     let previous =
-                        before |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+                        before |> Option.bind (fun fields -> BusinessField.value fields row.Field)
 
                     let next =
-                        after |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+                        after |> Option.bind (fun fields -> BusinessField.value fields row.Field)
 
                     if previous = next then
                         None
@@ -282,16 +300,19 @@ module internal TextReply =
                         Some(
                             line
                                 language
-                                (RecordFields.labelId row.Field)
+                                (FieldPresentation.labelId row.Field)
                                 (displayed language previous + " → " + displayed language next)
                         ))
 
-        line language (CliMessages.key CliMessage.ReviewTitle) (reviewIdentity request review)
+        line
+            language
+            (CliMessages.key CliMessage.ReviewTitle)
+            (reviewIdentity language request review)
         :: changes
 
     let private diagnosticTargetIdentity =
         function
-        | InputTarget.Field field -> RecordFields.labelId field
+        | InputTarget.Field field -> FieldPresentation.labelId field
         | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
         | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
         | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
@@ -324,11 +345,11 @@ module internal TextReply =
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedActions.token refusal.Action)
+                (RecommendedAction.token refusal.Action)
         ]
 
     let private faultLines language fault =
-        let code = CoreFaults.token fault
+        let code = CoreFault.token fault
 
         [
             label language ("fault." + code)
@@ -336,7 +357,7 @@ module internal TextReply =
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedActions.token fault.Action)
+                (RecommendedAction.token fault.Action)
         ]
 
     let private readLines language success =
@@ -358,10 +379,10 @@ module internal TextReply =
             + json (Codec.list Int32.MaxValue ResponseCodecs.installationOffer) value.Offers
             "capabilities: "
             + json
-                (Codec.list Int32.MaxValue (VocabularyCodec.create Capabilities.vocabulary))
-                value.Capabilities
+                (Codec.list Int32.MaxValue (VocabularyCodec.create Capability.vocabulary))
+                value.Capability
             "views: "
-            + json (Codec.list Int32.MaxValue (VocabularyCodec.create Views.vocabulary)) value.Views
+            + json (Codec.list Int32.MaxValue (VocabularyCodec.create View.vocabulary)) value.View
         ]
 
     let private sessionLines (value: Session) =
@@ -389,7 +410,7 @@ module internal TextReply =
     let private resolveLines language (reply: ResolveReply) =
         match reply with
         | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-        | ResolveReply.NotAccepted -> [ label language "cli.text.notAccepted" ]
+        | ResolveReply.NotAccepted -> [ label language "notice.notAccepted" ]
         | ResolveReply.Rejected refusal -> refusalLines language refusal
         | ResolveReply.Failed fault -> faultLines language fault
 
@@ -420,7 +441,7 @@ module internal TextReply =
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
             let setting = InputDiagnostics.settingName setting
 
-            let issue = InputDiagnostics.issueToken issue
+            let issue = ConfigurationIssue.token issue
 
             [
                 MessageCatalogs.renderCli language (CliMessage.ConfigurationIssue(setting, issue))

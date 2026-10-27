@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open System
 open System.Security.Cryptography
@@ -162,11 +161,11 @@ module LedgerEntries =
         act
         (data: LedgerPayload)
         =
-        match RequestRecord.decode Limits.MaximumRequestBytes data.Request with
+        match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
-            && CaseActs.kind request.Act = act
+            && CaseAct.kind request.Act = act
             && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
             if act = CaseActKind.Erase then
@@ -186,10 +185,10 @@ module LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
     let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
-        match AuthorityRecord.decode Limits.MaximumRequestBytes data.Request with
+        match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
-            && RecordedAuthorityActs.kind request.Act = act
+            && AuthorityAct.kind request.Act = act
             && AuthorityRequests.validRecord request
             && Array.isEmpty data.Snapshot
             ->
@@ -339,14 +338,16 @@ module LedgerEntries =
 
 module internal OperationIdentity =
     let internal decide
-        installationId
-        principal
+        (services: ServiceContext)
         actor
         operationId
         bytes
         (existing: StoredEntry option)
         receipt
         =
+        let installationId = services.InstallationId
+        let principal = services.Principal
+
         match existing with
         | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->

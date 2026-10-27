@@ -2,7 +2,7 @@ module ClaimCore.Tests.DomainValidationTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open Expecto
@@ -10,7 +10,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private availableActs record =
-    Case.eligibleActs record |> List.map CaseActKinds.token
+    Case.eligibleActs record |> List.map CaseActKind.token
 
 let private chronologyTests =
     testList
@@ -20,7 +20,7 @@ let private chronologyTests =
                 Expect.isTrue
                     (opened ()
                      |> apply (
-                         UnvalidatedCaseAct.Decide
+                         AuthoredCaseAct.Decide
                              { decision with
                                  PaymentDecisionDate = "2026-08-02"
                              }
@@ -30,13 +30,13 @@ let private chronologyTests =
             testCase "payment before decision is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-14" })
+                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-14" })
                      |> isInvalid)
                     "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-09-08" })
+                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-09-08" })
                      |> isInvalid)
                     "No future payment recorded as done")
         ]
@@ -96,12 +96,12 @@ let private restorationTests =
                         ]
 
                 Expect.isOk
-                    (Protocol.ResponseCodecs.caseFields.Read "$" (candidate 7))
+                    (ResponseCodecs.caseFields.Read "$" (candidate 7))
                     "The complete independent control admits"
 
                 for mask in 1..6 do
                     Expect.isError
-                        (Protocol.ResponseCodecs.caseFields.Read "$" (candidate mask))
+                        (ResponseCodecs.caseFields.Read "$" (candidate mask))
                         "A decision object requires all three members")
             testCase "retained snapshots keep the exact-integer format bound" (fun () ->
                 let original = Case.snapshot (opened ())
@@ -134,7 +134,7 @@ let private precisionAndRoundTripTests =
                     }
 
                 let claim =
-                    CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+                    CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                     |> accepted
 
                 Expect.isTrue
@@ -147,7 +147,7 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply UnvalidatedCaseAct.Close |> accepted
+                        opened () |> apply AuthoredCaseAct.Close |> accepted
                     ] do
                     let view = Case.snapshot state
 
@@ -183,10 +183,7 @@ let private decimalGrammarTests =
                         }
 
                     Expect.isTrue
-                        (CaseFixtures.decide
-                            today
-                            (request 0L (UnvalidatedCaseAct.Open facts))
-                            None
+                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                          |> isInvalid)
                         "Exact decimal grammar")
         ]
@@ -204,10 +201,7 @@ let private dateGrammarTests =
                         }
 
                     Expect.isTrue
-                        (CaseFixtures.decide
-                            today
-                            (request 0L (UnvalidatedCaseAct.Open facts))
-                            None
+                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                          |> isInvalid)
                         "Calendar grammar")
         ]
@@ -224,10 +218,7 @@ let private currencyGrammarTests =
                         }
 
                     Expect.isTrue
-                        (CaseFixtures.decide
-                            today
-                            (request 0L (UnvalidatedCaseAct.Open facts))
-                            None
+                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                          |> isInvalid)
                         "Currency grammar")
         ]
@@ -240,7 +231,7 @@ let private authoredUnicodeRoundTrip () =
             }
 
         let claim =
-            CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+            CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
             |> accepted
 
         let snapshot = Case.snapshot claim

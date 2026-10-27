@@ -2,25 +2,25 @@ module ClaimCore.Tests.CorrectionMatrixTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private decisionWith amount =
-    UnvalidatedCaseAct.Decide { decision with PayableAmount = amount }
+    AuthoredCaseAct.Decide { decision with PayableAmount = amount }
 
 let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
 
     [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim -> [ claim; claim |> apply UnvalidatedCaseAct.Close |> accepted ])
+    |> List.collect (fun claim -> [ claim; claim |> apply AuthoredCaseAct.Close |> accepted ])
 
 let private registrationChoices =
     [
-        RegistrationGroup.Keep, false
-        RegistrationGroup.Replace
+        Change.Keep, false
+        Change.Replace
             { registration with
                 ClaimantName = "Synthetic matrix party"
             },
@@ -29,21 +29,25 @@ let private registrationChoices =
 
 let private decisionChoices =
     [
-        DecisionGroup.Keep, "KEEP"
-        DecisionGroup.Replace
+        Change.Keep, "KEEP"
+        Change.Replace
             { decision with
                 PayableAmount = "650.0000"
                 PayableCurrency = "USD"
             },
         "REPLACE"
-        DecisionGroup.Clear, "CLEAR"
+        Change.Clear, "CLEAR"
     ]
 
 let private paymentChoices =
     [
-        PaymentGroup.Keep, "KEEP"
-        PaymentGroup.Replace { PaymentDate = "2026-08-21" }, "REPLACE"
-        PaymentGroup.Clear, "CLEAR"
+        Change.Keep, "KEEP"
+        Change.Replace
+            {
+                PaymentInput.PaymentDate = "2026-08-21"
+            },
+        "REPLACE"
+        Change.Clear, "CLEAR"
     ]
 
 let private permitted (fields: CaseFields) registrationChanged decisionMode paymentMode =
@@ -102,7 +106,7 @@ let private checkChoice
     let snapshot = Case.snapshot before
 
     let act =
-        UnvalidatedCaseAct.Correct
+        AuthoredCaseAct.Correct
             {
                 Registration = registration
                 Decision = decision
@@ -143,11 +147,11 @@ let private matrix =
 let private zeroPaid =
     testCase "explicit paid reaffirmation cannot retain a zero replacement decision" (fun () ->
         let act =
-            UnvalidatedCaseAct.Correct
+            AuthoredCaseAct.Correct
                 {
-                    Registration = RegistrationGroup.Keep
-                    Decision = DecisionGroup.Replace { decision with PayableAmount = "0" }
-                    Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                    Registration = Change.Keep
+                    Decision = Change.Replace { decision with PayableAmount = "0" }
+                    Payment = Change.Replace { PaymentDate = "2026-08-20" }
                 }
 
         Expect.equal
@@ -157,11 +161,8 @@ let private zeroPaid =
 
         let cleared =
             match act with
-            | UnvalidatedCaseAct.Correct value ->
-                UnvalidatedCaseAct.Correct
-                    { value with
-                        Payment = PaymentGroup.Clear
-                    }
+            | AuthoredCaseAct.Correct value ->
+                AuthoredCaseAct.Correct { value with Payment = Change.Clear }
             | _ -> failtest "Synthetic correction shape"
 
         let after = paid () |> apply cleared |> accepted |> Case.snapshot

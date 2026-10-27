@@ -2,7 +2,7 @@ module ClaimCore.Tests.ContractTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System
@@ -14,7 +14,6 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
@@ -23,21 +22,21 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 
-let private position: ClaimCore.Contract.LedgerPosition =
+let private position: ClaimCore.Domain.LedgerPosition =
     { Sequence = 1L; EntryHash = digest }
 
-let private receipt: ClaimCore.Contract.OperationReceipt =
+let private receipt: ClaimCore.Domain.OperationReceipt =
     {
         OperationId = id
         Position = position
         Subject =
-            ClaimCore.Contract.ReceiptSubject.Case
+            ClaimCore.Domain.ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = 1L
                     Act = CaseActKind.Open
                     Snapshot =
-                        ClaimCore.Contract.SnapshotDisclosure.Disclosed(
+                        ClaimCore.Domain.SnapshotDisclosure.Disclosed(
                             LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
                         )
                 }
@@ -48,7 +47,7 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
 let private authority =
     { receipt with
         Subject =
-            ClaimCore.Contract.ReceiptSubject.Authority
+            ClaimCore.Domain.ReceiptSubject.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.Register
@@ -71,7 +70,7 @@ let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Domain.UnvalidatedCaseAct.Open values
+        Act = ClaimCore.Domain.AuthoredCaseAct.Open values
     }
 
 let private contextCodec () =
@@ -85,8 +84,8 @@ let private contextCodec () =
                         EffectiveBusinessDate = today
                         TimeZoneId = "Etc/UTC"
                     }
-                Capabilities = []
-                Views = []
+                Capability = []
+                View = []
                 Offers = []
             })
 
@@ -107,7 +106,7 @@ let private queryCodecs () =
             (ReadReply.Succeeded
                 {
                     Snapshot = view
-                    Advice = { Acts = []; History = [] }
+                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 
         |> ignore
@@ -157,7 +156,8 @@ let private executeOutcomes () =
 
             let frame: ClaimCore.Cli.FrameReply =
                 {
-                    Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
+                    Endpoint =
+                        Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
                     OperationId = Some id
                     Delivery =
                         if exit = 4 then
@@ -186,7 +186,7 @@ let private disclosures () =
         let value =
             { receipt with
                 Subject =
-                    ClaimCore.Contract.ReceiptSubject.Case
+                    ClaimCore.Domain.ReceiptSubject.Case
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = 1L
@@ -233,7 +233,7 @@ let private previewCodecs () =
         |> ignore
 
 let private diagnostics () =
-    for fault, _ in CoreFaults.all do
+    for fault, _ in CoreFault.all do
         admitted Api.caseGet.Output (ReadReply.Failed fault) |> ignore
 
     for value, expectedCode in
@@ -430,7 +430,7 @@ let private retainedText () =
             (ReadReply.Succeeded
                 {
                     Snapshot = snapshot
-                    Advice = { Acts = []; History = [] }
+                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 
         |> ignore
@@ -441,12 +441,12 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (UnvalidatedCaseAct.AmendRegistration values)
+        let reaffirm = request 1L (AuthoredCaseAct.AmendRegistration values)
 
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Domain.UnvalidatedCaseAct.AmendRegistration values
+                Act = ClaimCore.Domain.AuthoredCaseAct.AmendRegistration values
             }
 
         Codec.decode
@@ -461,7 +461,7 @@ let private retainedText () =
         let changed =
             { reaffirm with
                 Act =
-                    (UnvalidatedCaseAct.AmendRegistration
+                    (AuthoredCaseAct.AmendRegistration
                         { values with
                             ClaimantName = name + "B"
                         })
@@ -567,7 +567,7 @@ let private authorityFieldPresentation () =
 
     Expect.equal
         (Set.ofList names)
-        (Vocabulary.tokens TechnicalInputs.vocabulary |> Set.ofList)
+        (Vocabulary.tokens TechnicalInput.vocabulary |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do

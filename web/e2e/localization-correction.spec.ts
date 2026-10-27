@@ -49,7 +49,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     await selectLanguage(page, language);
     await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
+      page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();
     for (const group of ["registration", "decision", "payment"] as const) {
       const control = page.locator(`[name="act.groups.${group}.kind"]`);
@@ -118,7 +118,7 @@ for (const status of ["CLOSED"] as const) {
         await selectLanguage(page, language);
         const pending = await pauseJsonReply(page, "operation.preview");
         await page
-          .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
+          .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
           .click();
         const captured = await pending.ready;
         expectAuthored(captured.bytes, reference, modes, before.revision);

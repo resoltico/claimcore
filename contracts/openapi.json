@@ -2316,101 +2316,6 @@
           "kind"
         ]
       },
-      "CaseActOffer": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseActOffer.ACT"
-          },
-          {
-            "$ref": "#/components/schemas/CaseActOffer.CORRECT"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "ACT": "#/components/schemas/CaseActOffer.ACT",
-            "CORRECT": "#/components/schemas/CaseActOffer.CORRECT"
-          }
-        }
-      },
-      "CaseActOffer.ACT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "ACT"
-          },
-          "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
-            ]
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "act",
-          "expectedRevision"
-        ]
-      },
-      "CaseActOffer.CORRECT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CORRECT"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "correction": {
-            "$ref": "#/components/schemas/CorrectionAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "expectedRevision",
-          "correction"
-        ]
-      },
       "CaseAdvice": {
         "type": "object",
         "additionalProperties": false,
@@ -2418,10 +2323,50 @@
           "acts": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CaseActOffer"
+              "oneOf": [
+                {
+                  "const": "OPEN"
+                },
+                {
+                  "const": "AMEND_REGISTRATION"
+                },
+                {
+                  "const": "CORRECT"
+                },
+                {
+                  "const": "DECIDE"
+                },
+                {
+                  "const": "WITHDRAW_DECISION"
+                },
+                {
+                  "const": "RECORD_PAYMENT"
+                },
+                {
+                  "const": "CLEAR_PAYMENT"
+                },
+                {
+                  "const": "CLOSE"
+                },
+                {
+                  "const": "REOPEN"
+                },
+                {
+                  "const": "VOID"
+                },
+                {
+                  "const": "REINSTATE"
+                },
+                {
+                  "const": "ERASE"
+                }
+              ]
             },
             "minItems": 0,
             "maxItems": 12
+          },
+          "correction": {
+            "$ref": "#/components/schemas/CorrectionAdvice"
           },
           "history": {
             "type": "array",
@@ -4844,16 +4789,10 @@
         "properties": {
           "kind": {
             "const": "OPEN"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 0
           }
         },
         "required": [
-          "kind",
-          "expectedRevision"
+          "kind"
         ]
       },
       "LiveCase": {

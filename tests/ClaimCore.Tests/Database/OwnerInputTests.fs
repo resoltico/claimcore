@@ -8,7 +8,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Database
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 open ClaimCore.Postgres
 
@@ -139,7 +139,7 @@ let private usageAndExits () =
             ExitCode.InternalError, 70
             ExitCode.Cancelled, 130
         ] do
-        Expect.equal (ExitCodes.value code) expected "Independent literal exit number"
+        Expect.equal (ExitCode.value code) expected "Independent literal exit number"
 
 [<Tests>]
 let tests =

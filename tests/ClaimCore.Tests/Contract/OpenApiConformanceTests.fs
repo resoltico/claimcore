@@ -8,13 +8,13 @@ open System.Text.Json.Nodes
 open Expecto
 open Microsoft.OpenApi
 open global.Json.Schema
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private emitted () =
-    ClaimCore.Contract.Protocol.OpenApi.document
+    ClaimCore.Protocol.OpenApi.document
     |> WireWriter.bytes
     |> Encoding.UTF8.GetString
 
@@ -140,7 +140,9 @@ let private sharedResponse (document: JsonNode) (reference: JsonNode) =
 
 let private responseStatuses () =
     let document = JsonNode.Parse(emitted ()) |> nonNull
-    let statuses = HostFailures.all |> List.map HostFailures.status |> List.distinct
+
+    let statuses =
+        HostFailureReason.all |> List.map HostFailureReason.status |> List.distinct
 
     let responses =
         document
@@ -165,12 +167,12 @@ let private responseStatuses () =
         let validator =
             JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
 
-        for reason in HostFailures.all do
+        for reason in HostFailureReason.all do
             use body = JsonDocument.Parse(HostFailureCodecs.encode reason)
 
             Expect.equal
                 (evaluate validator body.RootElement)
-                (HostFailures.status reason = status)
+                (HostFailureReason.status reason = status)
                 "HTTP response status permits exactly its fixed typed failure policies."
 
 let private securityRequirements () =
@@ -219,7 +221,9 @@ let private sharedFailures () =
     let document = JsonNode.Parse(emitted ()) |> nonNull
 
     let expected =
-        HostFailures.all |> List.map (HostFailures.status >> string) |> Set.ofList
+        HostFailureReason.all
+        |> List.map (HostFailureReason.status >> string)
+        |> Set.ofList
 
     for path in (document |> child "paths").AsObject() do
         for operation in (nonNull path.Value).AsObject() do

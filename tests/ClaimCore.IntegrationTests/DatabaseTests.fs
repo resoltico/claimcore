@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.DatabaseTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System
@@ -49,28 +49,20 @@ let private populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! outcome =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
-                    request
-                        10
-                        "synthetic-a"
-                        0L
-                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                    request 10 "synthetic-a" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
         let receipt = accepted outcome
 
         let! second =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
-                    request
-                        11
-                        "synthetic-b"
-                        0L
-                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                    request 11 "synthetic-b" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -102,9 +94,9 @@ let private erasureFixture (database: PostgresFixture.Database) =
 let private erased (actor: ServiceContext) =
     task {
         let request =
-            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.UnvalidatedCaseAct.Erase)
+            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.AuthoredCaseAct.Erase)
 
-        let! result = (Core.execute actor (OperationInput.Case request) (token))
+        let! result = (Service.execute actor (OperationInput.Case request) (token))
 
         return accepted result
     }
@@ -242,6 +234,7 @@ let tests =
                         let! first =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
+                                BuildIdentity.current.Version
                                 (id 1)
                                 database.Fixture.Owner
                                 token
@@ -254,6 +247,7 @@ let tests =
                         let! repeated =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
+                                BuildIdentity.current.Version
                                 (id 1)
                                 database.Fixture.Owner
                                 token
@@ -271,6 +265,7 @@ let tests =
                         let! otherResult =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
+                                BuildIdentity.current.Version
                                 (id 2)
                                 other
                                 token
@@ -283,6 +278,7 @@ let tests =
                         let! changed =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
+                                BuildIdentity.current.Version
                                 (id 1)
                                 other
                                 token
@@ -453,7 +449,10 @@ let tests =
                 (run (fun database ->
                     task {
                         use administration =
-                            new Administration(database.Container.GetConnectionString())
+                            new Administration(
+                                database.Container.GetConnectionString(),
+                                BuildIdentity.current.Version
+                            )
 
                         let! same = administration.Initialize("Etc/UTC", token)
 

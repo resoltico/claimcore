@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.IO
@@ -127,7 +128,7 @@ type RemoteFrameProcessor
             delivery.BeginFrame()
 
             match interpret (FrameReader.readDocument input) stopped with
-            | None -> ExitCodes.value ExitCode.Success
+            | None -> ExitCode.value ExitCode.Success
             | Some reply ->
                 delivery.Write reply
 
@@ -138,7 +139,7 @@ type RemoteFrameProcessor
     member _.Session(stopped: CancellationToken) =
         try
             let mutable running = true
-            let mutable exitCode = ExitCodes.value ExitCode.Success
+            let mutable exitCode = ExitCode.value ExitCode.Success
 
             while running && not stopped.IsCancellationRequested do
                 delivery.BeginFrame()
@@ -152,8 +153,8 @@ type RemoteFrameProcessor
                     exitCode <- reply.ExitCode
 
                     if
-                        reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown
-                        || reply.ExitCode = ExitCodes.value ExitCode.Cancelled
+                        reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown
+                        || reply.ExitCode = ExitCode.value ExitCode.Cancelled
                     then
                         running <- false
 
@@ -161,7 +162,7 @@ type RemoteFrameProcessor
                     running <- false
 
             if stopped.IsCancellationRequested then
-                ExitCodes.value ExitCode.Cancelled
+                ExitCode.value ExitCode.Cancelled
             else
                 exitCode
         with error ->

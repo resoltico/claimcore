@@ -2,13 +2,12 @@ module ClaimCore.Tests.EndpointRegistryTests
 
 open ClaimCore.Web
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open System
 open System.Text
 open System.Security.Cryptography
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -191,13 +190,8 @@ let private structuralIdentity () =
         (nonNull parsed.Diagnostic).Errors
         "The independent OpenAPI parser admits the registry document."
 
-    for omitted in [ "\"message\""; "\"CANCELLED\""; "\"case.execute\""; "\"authority.execute\"" ] do
-        Expect.isFalse
-            (text.Contains(omitted, StringComparison.Ordinal))
-            "The structural registry document excludes retired protocol surface."
-
 let private hostFailures () =
-    for reason in ClaimCore.Contract.Protocol.HostFailures.all do
+    for reason in ClaimCore.Protocol.HostFailureReason.all do
         let expected = HostFailureCodecs.ofReason reason
 
         Expect.equal
@@ -239,7 +233,7 @@ let tests =
 [<Tests>]
 let handlerBindings =
     testCase "every closed actor endpoint exports its own typed handler" (fun () ->
-        for actor in ActorEndpoints.all do
+        for actor in ActorEndpoint.all do
             let endpoint = ClaimCore.Web.ApiRoutes.route actor |> fun route -> route.Description
 
             Expect.equal

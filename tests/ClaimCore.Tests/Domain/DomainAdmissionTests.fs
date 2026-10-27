@@ -2,7 +2,7 @@ module ClaimCore.Tests.DomainAdmissionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain
@@ -54,7 +54,7 @@ let private snapshots =
 let private payload =
     testCase "malformed payload admission precedes stale revision and eligibility" (fun () ->
         let malformed =
-            UnvalidatedCaseAct.Decide
+            AuthoredCaseAct.Decide
                 { decision with
                     PaymentDecisionDate = "not-a-date"
                 }

@@ -2,7 +2,7 @@ module ClaimCore.Tests.WireResponseTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -12,7 +12,6 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private bytes (raw: string) = Encoding.UTF8.GetBytes raw
@@ -72,7 +71,7 @@ let private malformed () =
         (Codec.decode 4096 DiagnosticCodecs.fault (bytes fault))
         "Fault action belongs to its reason"
 
-    for reason in HostFailures.all do
+    for reason in HostFailureReason.all do
         let encoded = HostFailureCodecs.encode reason
         let decoded = HostFailureCodecs.decode encoded |> accepted
 
@@ -89,13 +88,13 @@ let private malformed () =
             "Host phases form a closed vocabulary"
 
     let ordinary =
-        """{"act":"CLOSE","expectedRevision":1,"correction":{"registration":[],"decision":[],"payment":[]}}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[]}"""
 
-    let missing = """{"act":"CORRECT","expectedRevision":1}"""
+    let missing = """{"acts":["CORRECT"],"history":[]}"""
 
     for raw in [ ordinary; missing ] do
         Expect.isError
-            (Codec.decode 4096 ResponseCodecs.caseActOffer (bytes raw))
+            (Codec.decode 4096 ResponseCodecs.caseAdvice (bytes raw))
             "Correction advice is conditional"
 
     Expect.isError
@@ -134,7 +133,7 @@ let private frames () =
 
     roundTrip reply
 
-    for reason in HostFailures.all do
+    for reason in HostFailureReason.all do
         roundTrip
             { reply with
                 Result = FrameResult.HostFailure(HostFailureCodecs.ofReason reason)
@@ -152,7 +151,7 @@ let private frames () =
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "ReceiptSubject", "kind", 2; "CaseActOffer", "kind", 2 ] do
+    for name, property, count in [ "ReceiptSubject", "kind", 2 ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 
@@ -174,10 +173,10 @@ let private checkDiscriminators (root: JsonElement) =
                 "Each branch is named"
 
 let private openApi () =
-    let first = (ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes)
+    let first = (ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes)
 
     Expect.equal
-        ((ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes))
+        ((ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes))
         first
         "OpenAPI bytes are deterministic"
 
@@ -204,7 +203,7 @@ let private openApi () =
 
         Expect.equal
             (operation.GetProperty("x-claimcore-effect").GetString())
-            (EndpointEffects.token (Api.effect endpoint))
+            (EndpointEffect.token (Api.effect endpoint))
             "Delivery effect is part of the hashed public contract"
 
         Expect.isTrue

@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.AuthFoundationTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System

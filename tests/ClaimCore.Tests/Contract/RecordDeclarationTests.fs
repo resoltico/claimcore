@@ -1,14 +1,13 @@
 module ClaimCore.Tests.RecordDeclarationTests
 
-open ClaimCore.ContractGeneration
+open ClaimCore.ProtocolGeneration
 
 open System
 open System.IO
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 
@@ -80,7 +79,7 @@ let private domain () =
 
 let private diagnosticGroups () =
     let actual =
-        InputTargets.all
+        InputTarget.all
         |> List.choose (function
             | InputTarget.Group group, token -> Some(group, token)
             | _ -> None)
@@ -96,7 +95,7 @@ let private actGroups () =
         |> List.filter (fun row -> row.Group = Some group)
         |> List.map _.Field
 
-    let entry kind =
+    let entry (kind: CatalogOperation) =
         Catalog.document.Entries
         |> List.find (fun entry -> entry.Endpoint = Api.operationExecute.Token && entry.Kind = kind)
 
@@ -109,10 +108,11 @@ let private actGroups () =
 
     for kind, group in
         [
-            "OPEN", RecordGroup.Registration
-            "AMEND_REGISTRATION", RecordGroup.Registration
-            "DECIDE", RecordGroup.Decision
-            "RECORD_PAYMENT", RecordGroup.Payment
+            CatalogOperation.Act(ActKind.Case CaseActKind.Open), RecordGroup.Registration
+            CatalogOperation.Act(ActKind.Case CaseActKind.AmendRegistration),
+            RecordGroup.Registration
+            CatalogOperation.Act(ActKind.Case CaseActKind.Decide), RecordGroup.Decision
+            CatalogOperation.Act(ActKind.Case CaseActKind.RecordPayment), RecordGroup.Payment
         ] do
         Expect.equal
             (fields (entry kind).Inputs)
@@ -121,7 +121,7 @@ let private actGroups () =
 
     for group in Vocabulary.all RecordGroup.vocabulary do
         let inputs =
-            (entry "CORRECT").Inputs
+            (entry (CatalogOperation.Act(ActKind.Case CaseActKind.Correct))).Inputs
             |> List.filter (fun input ->
                 List.truncate 3 input.Path = [ "act"; "groups"; RecordGroup.token group ])
 
@@ -132,14 +132,15 @@ let private actGroups () =
 
 let private locales () =
     let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Contract/Localization")
+        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Localization")
 
     for language in LocalizationPolicy.languages do
         use document =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
 
         for row in Record.fields do
-            for key in [ RecordFields.labelId row.Field; RecordFields.meaningId row.Field ] do
+            for key in
+                [ FieldPresentation.labelId row.Field; FieldPresentation.meaningId row.Field ] do
                 Expect.isTrue
                     (document.RootElement.TryGetProperty key |> fst)
                     "Locale has both field messages"

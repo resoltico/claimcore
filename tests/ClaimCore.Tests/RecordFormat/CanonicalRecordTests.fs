@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System
@@ -50,7 +50,7 @@ let private requests () =
         Expect.equal first.ExpectedRevision 0L "Independent initial revision"
 
         match first.Authored.Act with
-        | (UnvalidatedCaseAct.Open registration) ->
+        | (AuthoredCaseAct.Open registration) ->
             Expect.equal
                 registration.ClaimantName
                 "Rīgas Tulkojumu Birojs SIA"
@@ -134,13 +134,11 @@ let private authority () =
 
         Expect.equal
             request.Act
-            (RecordedAuthorityAct.Operation(
-                ClaimCore.Domain.AuthorityAct.Grant
-                    {
-                        Role = "CASE_HANDLER"
-                        Scope = GrantTarget.CaseReference "Demo-0001"
-                    }
-            ))
+            (ClaimCore.Domain.AuthorityAct.Grant
+                {
+                    Role = "CASE_HANDLER"
+                    Scope = GrantTarget.CaseReference "Demo-0001"
+                })
             "Independent grant meaning"
 
         Expect.isTrue (AuthorityRecord.encode request = encoded) "Independent authority bytes"
@@ -249,16 +247,15 @@ let private malformedIdentity () =
         let request =
             Fixtures.request
                 0L
-                (UnvalidatedCaseAct.Open
+                (AuthoredCaseAct.Open
                     { Fixtures.registration with
                         ClaimedAmount = amount
                     })
 
-        let wire = ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Write request
+        let wire = ClaimCore.Protocol.RequestCodecs.caseRequest.Write request
 
         let admitted =
-            ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Read "$" wire
-            |> Fixtures.accepted
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire |> Fixtures.accepted
 
         Expect.equal admitted request "Wire admission preserves malformed authored scalars"
 

@@ -12,7 +12,7 @@ module RequestRecord =
         | Error(Refusal.InvalidInput(target, _)) ->
             Error
                 {
-                    Field = "$." + InputTargets.token target
+                    Field = "$." + DurableNames.inputTarget target
                     Message = "Invalid case-request format."
                 }
         | Error _ ->
@@ -23,7 +23,7 @@ module RequestRecord =
                 }
 
     let decode maxBytes bytes =
-        Codec.decode maxBytes codec bytes
+        Codec.decode (min maxBytes RecordLimits.MaximumRequestRecordBytes) codec bytes
         |> Result.mapError (fun problem ->
             {
                 Field = problem.Path
@@ -32,4 +32,6 @@ module RequestRecord =
         |> Result.bind validate
 
     let encode (command: CaseCommand) =
-        codec.Write command.Authored |> CanonicalWriter.bytes
+        codec.Write command.Authored
+        |> CanonicalWriter.bytes
+        |> RecordLimits.requestBytes

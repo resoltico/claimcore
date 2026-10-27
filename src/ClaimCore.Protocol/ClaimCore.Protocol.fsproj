@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <Compile Include="BuildIdentity.fsi" />
+    <Compile Include="BuildIdentity.fs" />
+    <Compile Include="ExitCode.fs" />
+    <Compile Include="Vocabulary/VocabularyCodec.fs" />
+    <Compile Include="FieldPresentation.fs" />
+    <Compile Include="Localization/LocalizationPolicy.fs" />
+    <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
+    <Compile Include="Vocabulary/ProtocolFailures.fs" />
+    <Compile Include="Messages/Templates.fs" />
+    <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Messages/TextDisplay.fs" />
+    <Compile Include="Api/Limits.fs" />
+    <Compile Include="HostReplies.fs" />
+    <Compile Include="RequestCodecs.fs" />
+    <Compile Include="ResponseScalars.fs" />
+    <Compile Include="DiagnosticCodecs.fs" />
+    <Compile Include="ResponseCodecs.fs" />
+    <Compile Include="Codecs/ReceiptCodecs.fs" />
+    <Compile Include="Codecs/ReplyCodecs.fs" />
+    <Compile Include="ResolutionCodecs.fs" />
+    <Compile Include="Catalog/Metadata.fs" />
+    <Compile Include="Catalog/Codecs.fs" />
+    <Compile Include="Api/Endpoints.fs" />
+    <Compile Include="HostFailures.fs" />
+    <Compile Include="Codecs/HostFailureCodecs.fs" />
+    <Compile Include="Api/OpenApi.fs" />
+    <Compile Include="Api/ContractIdentity.fs" />
+    <Compile Include="Catalog/OperationCatalog.fs" />
+    <Compile Include="Messages/Terms.fs" />
+    <Compile Include="Messages/ScalarGuidance.fs" />
+    <Compile Include="Catalog/Catalog.fs" />
+  </ItemGroup>
+</Project>

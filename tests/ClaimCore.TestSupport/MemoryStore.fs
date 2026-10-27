@@ -1,11 +1,12 @@
 module internal ClaimCore.TestSupport.MemoryStore
 
+open ClaimCore.RecordFormat
 open System
 open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
 open ClaimCore.Application
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 type private State =
@@ -45,7 +46,12 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
     interface IReadTx with
         member _.ObservedAt = observed
 
-        member _.Authority(principal, caseId) =
+        member _.Authority
+            ({
+                 AuthorityQuery.Principal = principal
+                 CaseId = caseId
+             })
+            =
             read ()
             let state = get ()
 
@@ -130,7 +136,16 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                 |> Seq.length
             )
 
-        member _.CasePage(visibility, actor, roles, forbidden, after, limit) =
+        member _.CasePage
+            ({
+                 CasePageQuery.Visibility = visibility
+                 ActorId = actor
+                 ReadRoles = roles
+                 ForbiddenRoles = forbidden
+                 AfterReference = after
+                 Limit = limit
+             })
+            =
             read ()
             let state = get ()
 
@@ -166,7 +181,13 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                 page limit (fun record -> CaseReference.identity record.Snapshot.Reference) rows
             )
 
-        member _.HistoryPage(id, after, limit) =
+        member _.HistoryPage
+            ({
+                 HistoryPageQuery.CaseId = id
+                 AfterRevision = after
+                 Limit = limit
+             })
+            =
             read ()
 
             let rows =
@@ -188,7 +209,12 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
 
             Task.FromResult(page limit revision rows)
 
-        member _.ActorPage(after, limit) =
+        member _.ActorPage
+            ({
+                 ActorPageQuery.AfterActorId = after
+                 Limit = limit
+             })
+            =
             read ()
 
             let rows =
@@ -201,7 +227,13 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
 
             Task.FromResult(page limit (fun actor -> actor.ActorId) rows)
 
-        member _.GrantPage(actor, after, limit) =
+        member _.GrantPage
+            ({
+                 GrantPageQuery.ActorId = actor
+                 AfterGrant = after
+                 Limit = limit
+             })
+            =
             read ()
             let state = get ()
 
@@ -225,8 +257,8 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                             |> Option.forall (fun after ->
                                 let ordering =
                                     StringComparer.Ordinal.Compare(
-                                        RoleTokens.token role,
-                                        RoleTokens.token after.Role
+                                        Role.token role,
+                                        Role.token after.Role
                                     )
 
                                 ordering > 0
@@ -251,11 +283,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                                 position
                             ))
                 |> Seq.sortWith (fun (_, a) (_, b) ->
-                    let role =
-                        StringComparer.Ordinal.Compare(
-                            RoleTokens.token a.Role,
-                            RoleTokens.token b.Role
-                        )
+                    let role = StringComparer.Ordinal.Compare(Role.token a.Role, Role.token b.Role)
 
                     if role = 0 then compareScope a.CaseId b.CaseId else role)
                 |> Seq.toList
@@ -275,7 +303,12 @@ type private Writer(get, set, observed, head, nonce, read) =
         member _.Head = head
         member _.Nonce = nonce
 
-        member _.IsFenced(actor, operation) =
+        member _.IsFenced
+            ({
+                 FenceKey.ActorId = actor
+                 OperationId = operation
+             })
+            =
             read ()
             Task.FromResult(Set.contains (actor, operation) (get ()).Fences)
 
@@ -400,7 +433,12 @@ type private Writer(get, set, observed, head, nonce, read) =
             set changed
             Task.FromResult(())
 
-        member _.Fence(actor, operation) =
+        member _.Fence
+            ({
+                 FenceKey.ActorId = actor
+                 OperationId = operation
+             })
+            =
             set
                 { get () with
                     Fences = Set.add (actor, operation) (get ()).Fences
@@ -444,7 +482,12 @@ type Store(observed: DateTimeOffset) =
             }
 
     interface IStore with
-        member this.Read(work, token) =
+        member this.Read
+            ({
+                 ReadOperation.Work = work
+                 CancellationToken = token
+             })
+            =
             task {
                 this.Calls <- this.Calls + 1
 
@@ -474,7 +517,12 @@ type Store(observed: DateTimeOffset) =
                         gate.Release() |> ignore
             }
 
-        member this.Write(work, token) =
+        member this.Write
+            ({
+                 WriteOperation.Work = work
+                 CancellationToken = token
+             })
+            =
             task {
                 this.Calls <- this.Calls + 1
 

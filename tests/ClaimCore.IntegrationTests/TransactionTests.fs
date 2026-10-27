@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.TransactionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System
@@ -86,8 +86,12 @@ let private waiter (database: PostgresFixture.Database) settings =
 
     let result =
         store.Write(
-            (fun _ -> Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>)),
-            token
+            {
+                WriteOperation.Work =
+                    (fun _ ->
+                        Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>))
+                CancellationToken = token
+            }
         )
 
     result
@@ -127,15 +131,14 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    (Core.execute
+                                    (Service.execute
                                         actor
                                         (OperationInput.Case(
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
-                                                (ClaimCore.Domain.UnvalidatedCaseAct.Open
-                                                    registration)
+                                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                         ))
                                         (token))
                             |]
@@ -222,7 +225,7 @@ let tests =
                             3L
                             "Neither waiter wrote"
 
-                        let! _ = (Core.get actor ({ CaseReference = "absent" }) (token))
+                        let! _ = (Service.get actor ({ CaseReference = "absent" }) (token))
 
                         return ()
                     }))
@@ -318,9 +321,10 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
-                        let! failed = (Core.execute actor (OperationInput.Case operation) (token))
+                        let! failed =
+                            (Service.execute actor (OperationInput.Case operation) (token))
 
                         Expect.equal
                             failed.Outcome
@@ -336,7 +340,8 @@ let tests =
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
-                        let! retry = (Core.execute actor (OperationInput.Case operation) (token))
+                        let! retry =
+                            (Service.execute actor (OperationInput.Case operation) (token))
 
                         accepted retry |> ignore
                     }))
@@ -376,14 +381,14 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            (Core.execute
+                            (Service.execute
                                 actor
                                 (OperationInput.Case(
                                     request
                                         20
                                         "synthetic-snapshot"
                                         0L
-                                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                 ))
                                 (token))
 

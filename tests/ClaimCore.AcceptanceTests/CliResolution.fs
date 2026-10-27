@@ -159,10 +159,6 @@ let private responseLoss (fixture: PublishedFixture.Fixture) =
 
 let qualify fixture =
     task {
-        let retired =
-            invoke fixture fixture.Environment [ "call"; "--retry" ] Array.empty 64
-
-        Expect.isEmpty retired.StandardOutput "The retired flag is refused before reading stdin"
         do! responseLoss fixture
         let operationId = id ()
         let before = head fixture

@@ -1,10 +1,10 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.IO
-open ClaimCore.Contract
 
 /// The current request stays frozen until its complete reply is flushed.
 type FrameDelivery(output: Stream, errors: Stream, language: string, render: CliReply -> byte array)
@@ -73,11 +73,11 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         output.WriteByte(byte '\n')
         output.Flush()
 
-        if reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown then
+        if reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown then
             retryFrame ()
 
         lock gate (fun () ->
-            potentiallyChanged <- reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown)
+            potentiallyChanged <- reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown)
 
     member _.Interrupt() =
         lock gate (fun () ->
@@ -89,9 +89,9 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                 with _ ->
                     ()
 
-                ExitCodes.value ExitCode.OutcomeUnknown
+                ExitCode.value ExitCode.OutcomeUnknown
             else
-                ExitCodes.value ExitCode.Cancelled)
+                ExitCode.value ExitCode.Cancelled)
 
     member _.Failure(error: exn) =
         let uncertain, sent = lock gate (fun () -> potentiallyChanged, dispatched)

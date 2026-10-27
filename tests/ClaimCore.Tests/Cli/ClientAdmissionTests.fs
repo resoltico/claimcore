@@ -7,10 +7,9 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 let private fixture name =
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()

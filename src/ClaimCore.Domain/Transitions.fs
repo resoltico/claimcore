@@ -133,12 +133,12 @@ module internal Transitions =
                     { claim with
                         Progress = PaymentProgress.Undecided
                     })
-        | Applicable.Paying(claim, decision), CaseAct.RecordPayment date ->
+        | Applicable.Paying(claim, decision), CaseAct.RecordPayment payment ->
             businessChange
                 claim
                 (Ok
                     { claim with
-                        Progress = PaymentProgress.Paid(decision, date)
+                        Progress = PaymentProgress.Paid(decision, payment.PaymentDate)
                     })
         | Applicable.Unpaying(claim, decision), CaseAct.ClearPayment ->
             businessChange
@@ -185,7 +185,7 @@ module internal Transitions =
         |> Result.bind (fun next ->
             match before, payload, next with
             | Some before, act, CaseState.Active after when
-                not (CaseActKind.isStewardship (CaseActs.kind act))
+                not (CaseActKind.isStewardship (CaseAct.kind act))
                 ->
                 result {
                     do! StateValidation.progress after.Facts after.Progress

@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 type ClientFailure =
     | Configuration

@@ -6,13 +6,12 @@ open System
 open System.Text
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
-open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private principal () =
-    for kind in [ PrincipalKinds.Human; PrincipalKinds.Service ] do
+    for kind in [ PrincipalKind.humanToken; PrincipalKind.serviceToken ] do
         Expect.isOk
             (PrincipalKey.admit kind "https://issuer.example/" "synthetic")
             "Valid authored principal"
@@ -30,7 +29,7 @@ let private principal () =
 
 let private localDiagnostics () =
     for setting, _ in InputDiagnostics.settings do
-        for issue, _ in InputDiagnostics.configurationIssues do
+        for issue, _ in ConfigurationIssue.all do
             let frame: ClaimCore.Cli.FrameReply =
                 {
                     Endpoint = None

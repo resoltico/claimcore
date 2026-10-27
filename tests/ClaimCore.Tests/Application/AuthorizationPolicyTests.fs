@@ -2,7 +2,7 @@ module ClaimCore.Tests.AuthorizationPolicyTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto
@@ -93,20 +93,19 @@ let private expectedPermission role capabilities principal grant resource capabi
     && (not humanRole || principal = human)
 
 let private matrix () =
-    Expect.equal RoleTokens.all.Length 7 "Seven roles"
+    Expect.equal Role.all.Length 7 "Seven roles"
 
     Expect.isTrue
-        (Set.ofList RoleTokens.all =
-            (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
+        (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
         "Exact role inventory"
 
     Expect.isTrue
-        (Set.ofList Capabilities.all = Set.ofList allCapabilities)
+        (Set.ofList Capability.all = Set.ofList allCapabilities)
         "Exact capability inventory"
 
     for role, token, capabilities in expectedRoles do
-        Expect.equal (RoleTokens.token role) token "Independent role token"
-        Expect.equal (RoleTokens.parse token) (Some role) "Role parser"
+        Expect.equal (Role.token role) token "Independent role token"
+        Expect.equal (Role.parse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
             for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
@@ -133,7 +132,7 @@ let private matrix () =
                             "Independent role, principal and scope expectation"
 
     for token in [ "CASE_EDITOR"; "case_handler"; "" ] do
-        Expect.isNone (RoleTokens.parse token) "Unsupported role names refuse"
+        Expect.isNone (Role.parse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
     for value in [ String([| char 0xD800 |]); "a\u0000b"; "a﷐b"; "a￿b" ] do
@@ -194,18 +193,17 @@ let private invalidActors () =
 let private ordinaryActs () =
     let cases =
         [
-            UnvalidatedCaseAct.Open registration, Capability.Register
-            UnvalidatedCaseAct.AmendRegistration registration, Capability.Register
-            UnvalidatedCaseAct.Decide decision, Capability.Decide
-            UnvalidatedCaseAct.WithdrawDecision, Capability.Decide
-            UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" },
-            Capability.RecordPayment
-            UnvalidatedCaseAct.ClearPayment, Capability.RecordPayment
-            UnvalidatedCaseAct.Close, Capability.Close
-            UnvalidatedCaseAct.Reopen, Capability.Close
-            UnvalidatedCaseAct.Void "Reason", Capability.Steward
-            UnvalidatedCaseAct.Reinstate "Reason", Capability.Steward
-            UnvalidatedCaseAct.Erase, Capability.Steward
+            AuthoredCaseAct.Open registration, Capability.Register
+            AuthoredCaseAct.AmendRegistration registration, Capability.Register
+            AuthoredCaseAct.Decide decision, Capability.Decide
+            AuthoredCaseAct.WithdrawDecision, Capability.Decide
+            AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
+            AuthoredCaseAct.ClearPayment, Capability.RecordPayment
+            AuthoredCaseAct.Close, Capability.Close
+            AuthoredCaseAct.Reopen, Capability.Close
+            AuthoredCaseAct.Void "Reason", Capability.Steward
+            AuthoredCaseAct.Reinstate "Reason", Capability.Steward
+            AuthoredCaseAct.Erase, Capability.Steward
         ]
 
     for act, capability in cases do
@@ -230,23 +228,23 @@ let private replacementCorrection
     registrationChanged
     decisionChanged
     paymentChanged
-    : CorrectionInput =
+    : AuthoredCorrection =
     {
         Registration =
             (if registrationChanged then
-                 RegistrationGroup.Replace registration
+                 Change.Replace registration
              else
-                 RegistrationGroup.Keep)
+                 Change.Keep)
         Decision =
             (if decisionChanged then
-                 DecisionGroup.Replace decision
+                 Change.Replace decision
              else
-                 DecisionGroup.Keep)
+                 Change.Keep)
         Payment =
             (if paymentChanged then
-                 PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                 Change.Replace { PaymentDate = "2026-08-20" }
              else
-                 PaymentGroup.Keep)
+                 Change.Keep)
     }
 
 let private corrections () =
@@ -254,24 +252,16 @@ let private corrections () =
         let correction =
             replacementCorrection registrationChanged decisionChanged paymentChanged
 
-        let act = (UnvalidatedCaseAct.Correct correction)
+        let act = (AuthoredCaseAct.Correct correction)
 
         Expect.equal
             (Authority.requiredCapabilities (CaseFixtures.act act))
             expected
             "Seven selected masks and all-KEEP"
 
-        let clearedDecision =
-            if decisionChanged then
-                DecisionGroup.Clear
-            else
-                DecisionGroup.Keep
+        let clearedDecision = if decisionChanged then Change.Clear else Change.Keep
 
-        let clearedPayment =
-            if paymentChanged then
-                PaymentGroup.Clear
-            else
-                PaymentGroup.Keep
+        let clearedPayment = if paymentChanged then Change.Clear else Change.Keep
 
         let cleared =
             { correction with
@@ -280,7 +270,7 @@ let private corrections () =
             }
 
         Expect.equal
-            (Authority.requiredCapabilities (CaseFixtures.act (UnvalidatedCaseAct.Correct cleared)))
+            (Authority.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct cleared)))
             expected
             "CLEAR selects the same capability"
 
@@ -296,11 +286,11 @@ let private reaffirmations () =
             ]
 
     let paymentReaffirmation =
-        (UnvalidatedCaseAct.Correct
+        (AuthoredCaseAct.Correct
             {
-                Registration = RegistrationGroup.Keep
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Replace { PaymentDate = "2026-08-20" }
+                Registration = Change.Keep
+                Decision = Change.Keep
+                Payment = Change.Replace { PaymentDate = "2026-08-20" }
             })
 
     Expect.isFalse
@@ -312,11 +302,11 @@ let private reaffirmations () =
         "An unchanged payment assertion still requires payment authority"
 
     let keep =
-        (UnvalidatedCaseAct.Correct
+        (AuthoredCaseAct.Correct
             {
-                Registration = RegistrationGroup.Keep
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
+                Registration = Change.Keep
+                Decision = Change.Keep
+                Payment = Change.Keep
             })
 
     Expect.isError
@@ -354,16 +344,22 @@ let private scopedAdvice () =
                 ]
 
         let advice =
-            Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+            Queries.caseRecord
+                (DecisionFixtures.services installation DecisionFixtures.calendar human)
+                (AuthorityView.ofActor (Some authority))
+                record
             |> accepted
 
-        let expected, correction =
-            advice.Advice.Acts
-            |> List.pick (function
-                | CaseActOffer.Correct(expected, choices) -> Some(expected, choices)
-                | _ -> None)
+        let correction =
+            advice.Advice.Correction
+            |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
-        Expect.equal expected snapshot.Revision "Revision bound in snapshot"
+        Expect.contains advice.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
+
+        Expect.equal
+            advice.Snapshot.Revision
+            snapshot.Revision
+            "The snapshot owns the expected revision"
 
         let history =
             advice.Advice.History
@@ -405,8 +401,7 @@ let private absentCorrectionValues () =
 let private noUsableCorrectionOffer () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
 
-    let snapshot =
-        opened () |> apply UnvalidatedCaseAct.Close |> accepted |> Case.snapshot
+    let snapshot = opened () |> apply AuthoredCaseAct.Close |> accepted |> Case.snapshot
 
     let target =
         ClaimCore.RecordFormat.CaseReferenceId.encode
@@ -426,19 +421,19 @@ let private noUsableCorrectionOffer () =
             ]
 
     let advice =
-        Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+        Queries.caseRecord
+            (DecisionFixtures.services installation DecisionFixtures.calendar human)
+            (AuthorityView.ofActor (Some authority))
+            record
         |> accepted
 
     Expect.isFalse
-        (advice.Advice.Acts
-         |> List.exists (function
-             | CaseActOffer.Correct _ -> true
-             | _ -> false))
+        (List.contains CaseActKind.Correct advice.Advice.Acts)
         "An all-KEEP form is never offered"
 
 let private humanOnlyCapabilities () =
     let derived policy =
-        RoleTokens.all
+        Role.all
         |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
 
     Expect.equal
@@ -447,7 +442,7 @@ let private humanOnlyCapabilities () =
         "Current human-only roles"
 
     Expect.equal
-        (RoleTokens.all |> List.filter Authority.humanOnlyRole)
+        (Role.all |> List.filter Authority.humanOnlyRole)
         [ Role.Owner; Role.DataSteward ]
         "Production roles derive from capabilities"
 

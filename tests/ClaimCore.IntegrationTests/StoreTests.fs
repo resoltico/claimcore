@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.StoreTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System.Threading
 open Expecto
@@ -14,11 +14,9 @@ open ClaimCore.TestSupport.StoreFixtures
 let private serviceCases (admin: ServiceContext) principal =
     task {
         let! registered =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 400) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 400) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -27,10 +25,10 @@ let private serviceCases (admin: ServiceContext) principal =
             let reference = $"SERVICE-{number}"
 
             let! opened =
-                (Core.execute
+                (Service.execute
                     admin
                     (OperationInput.Case(
-                        request (410 + number) reference 0L (UnvalidatedCaseAct.Open registration)
+                        request (410 + number) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -67,19 +65,20 @@ let private serviceScopeCorruption () =
                 DatabaseSession.execute
                     connection
                     "INSERT INTO claimcore.grants(actor_id,role,case_id) SELECT $1,$2,case_id FROM claimcore.cases WHERE case_reference=$3"
-                    [| box (id 400); box (RoleTokens.token Role.DataSteward); box "SERVICE-1" |]
+                    [| box (id 400); box (Role.token Role.DataSteward); box "SERVICE-1" |]
                     CancellationToken.None
                 |> Async.AwaitTask
 
             let service =
                 Service.create
+                    BuildIdentity.current.Version
                     database.Fixture.InstallationId
                     database.Fixture.Store
                     database.Fixture.Calendar
                     principal
 
             let! hidden =
-                (Core.get service ({ CaseReference = "SERVICE-1" }) (CancellationToken.None))
+                (Service.get service ({ CaseReference = "SERVICE-1" }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             Expect.equal
@@ -88,7 +87,7 @@ let private serviceScopeCorruption () =
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
-                (Core.list service ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
+                (Service.list service ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
                 |> Async.AwaitTask
 
             match visible with

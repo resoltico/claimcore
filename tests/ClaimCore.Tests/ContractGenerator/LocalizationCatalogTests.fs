@@ -1,8 +1,9 @@
 module ClaimCore.Tests.LocalizationCatalogTests
 
 open Expecto
-open ClaimCore.Contract
-open ClaimCore.ContractGeneration
+open ClaimCore.Domain
+open ClaimCore.Protocol
+open ClaimCore.ProtocolGeneration
 open ClaimCore.Cli
 
 let private change language transform =
@@ -106,7 +107,13 @@ let private structure () =
                 "input."
                 "field."
                 "group."
-                "token."
+                "status."
+                "lifecycle."
+                "role."
+                "principalKind."
+                "correction."
+                "scope."
+                "historyDetail."
             ] do
             let keys (catalog: Map<string, Template>) =
                 catalog
@@ -138,6 +145,75 @@ let private structure () =
             (MessageCatalogs.render language key Map.empty)
             expected
             "Literal catalog samples"
+
+[<Tests>]
+let rendererOwnership =
+    testCase "renderer wording cannot duplicate core wording" (fun () ->
+        CatalogValidation.validateRendererOwnership
+            "en"
+            [ "label.core", "Core meaning"; "ui.control", "Interaction text" ]
+
+        Expect.throws
+            (fun () ->
+                CatalogValidation.validateRendererOwnership
+                    "en"
+                    [ "label.core", "Core meaning"; "ui.control", "Core meaning" ])
+            "A browser/core duplicate is detected"
+
+        Expect.throws
+            (fun () ->
+                CatalogValidation.validateRendererOwnership
+                    "lv"
+                    [ "label.core", "Kopīgs teksts"; "cli.control", "Kopīgs teksts" ])
+            "A CLI/core duplicate is detected outside English")
+
+[<Tests>]
+let termRegistry =
+    testCase "rendered vocabularies have distinct names and qualified token keys" (fun () ->
+        let expected =
+            set
+                [
+                    "status"
+                    "lifecycle"
+                    "role"
+                    "principalKind"
+                    "correction"
+                    "scope"
+                    "act"
+                    "historyDetail"
+                    "subject"
+                    "field"
+                    "group"
+                    "input"
+                ]
+
+        Expect.equal
+            (Terms.all |> List.map _.Name |> Set.ofList)
+            expected
+            "Every rendered vocabulary is named"
+
+        let first = Terms.all.Head
+
+        Expect.throws
+            (fun () -> Terms.validateRegistry [ first; first ] |> ignore)
+            "Duplicate vocabulary names are detected"
+
+        Expect.throws
+            (fun () ->
+                Terms.validateRegistry
+                    [
+                        { first with
+                            Labels = first.Labels @ first.Labels
+                        }
+                    ]
+                |> ignore)
+            "Duplicate tokens within a vocabulary are detected"
+
+        Expect.isNonEmpty
+            (Terms.all
+             |> List.filter (fun vocabulary ->
+                 vocabulary.Labels |> List.exists (fun (token, _) -> token = "CASE")))
+            "Equal CASE tokens across scope and subject are valid")
 
 [<Tests>]
 let tests =

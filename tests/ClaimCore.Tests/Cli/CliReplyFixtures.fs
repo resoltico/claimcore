@@ -3,10 +3,9 @@ module ClaimCore.Tests.CliReplyFixtures
 open ClaimCore.TestSupport
 
 open System
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 let id = Guid.Parse "10000000-0000-4000-8000-000000000001"
 
@@ -16,7 +15,7 @@ let caseRequest =
         CaseReference = "x"
         ExpectedRevision = 0L
         Act =
-            UnvalidatedCaseAct.Open
+            AuthoredCaseAct.Open
                 { Fixtures.registration with
                     IncidentDate = "2026-01-01"
                     ClaimantName = "x"
@@ -166,8 +165,8 @@ let private context =
                 EffectiveBusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        Capabilities = []
-        Views = []
+        Capability = []
+        View = []
         Offers = []
     }
 
@@ -200,7 +199,7 @@ let private resourceResponses endpoint =
             Api.caseGet.Output
             {
                 Snapshot = snapshot
-                Advice = { Acts = []; History = [] }
+                Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
             }
     | "case.list" ->
         reads

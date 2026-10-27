@@ -13,7 +13,8 @@ type AuthenticationFailure =
     | UriInvalid
     | ActorPrincipalInvalid
 
-module AuthenticationFailures =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module AuthenticationFailure =
     let vocabulary =
         Vocabulary.ofUnion<AuthenticationFailure>
             "AuthenticationFailure"

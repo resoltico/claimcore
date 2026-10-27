@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
-open ClaimCore.Contract.Protocol
 
 open System
 open System.Threading

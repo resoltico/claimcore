@@ -1,11 +1,11 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Collections.Generic
 open System.Globalization
-open ClaimCore.Contract
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
@@ -32,10 +32,10 @@ type PreparedVerb =
 
 module Grammar =
     let private flag name =
-        "--" + OperationCatalog.kebab (OperationCatalog.inputKey name)
+        "--" + CommandGrammar.kebab (OperationCatalog.inputKey name)
 
     let private operand name =
-        OperationCatalog.kebab (OperationCatalog.inputKey name) |> _.ToUpperInvariant()
+        CommandGrammar.kebab (OperationCatalog.inputKey name) |> _.ToUpperInvariant()
 
     let private distance (left: string) (right: string) =
         let costs = Array2D.zeroCreate<int> (left.Length + 1) (right.Length + 1)
@@ -162,12 +162,12 @@ module Grammar =
             match
                 choices
                 |> List.tryFind (fun choice ->
-                    value = choice || value = OperationCatalog.kebab choice)
+                    value = choice || value = CommandGrammar.kebab choice)
             with
             | Some choice -> JsonValue.String choice
             | None ->
                 problems.Add(
-                    UsageError.InvalidChoice(name, value, List.map OperationCatalog.kebab choices)
+                    UsageError.InvalidChoice(name, value, List.map CommandGrammar.kebab choices)
                 )
 
                 JsonValue.Null
@@ -180,7 +180,7 @@ module Grammar =
         operands
         (problems: ResizeArray<UsageError>)
         =
-        let derived, constants = OperationCatalog.derive entry
+        let derived, constants = CommandGrammar.derive entry
         let used = HashSet<string>()
         let selectors = Dictionary<string, string>()
         let mutable position = 0
@@ -316,7 +316,7 @@ module Grammar =
                             derived
                             |> List.tryFind (fun selector -> selector.Binding.Path = branch.Path)
                             |> Option.map (fun selector ->
-                                flag selector.Name + " " + OperationCatalog.kebab value)
+                                flag selector.Name + " " + CommandGrammar.kebab value)
                         | _ -> None)
                     |> Option.defaultValue "the selected command"
 
@@ -328,7 +328,7 @@ module Grammar =
         let found =
             (Catalog.document.Entries |> List.map OperationCatalog.operation)
             |> List.tryPick (fun entry ->
-                let words = OperationCatalog.words entry
+                let words = CommandGrammar.words entry
 
                 if List.truncate words.Length arguments = words then
                     Some(entry, List.skip words.Length arguments)
@@ -346,12 +346,12 @@ module Grammar =
                         suggestions
                             value
                             ((Catalog.document.Entries |> List.map OperationCatalog.operation)
-                             |> List.map (OperationCatalog.words >> String.concat " "))
+                             |> List.map (CommandGrammar.words >> String.concat " "))
                     )
                 ]
         | Some(entry, arguments) ->
             let problems = ResizeArray<UsageError>()
-            let inputs, _ = OperationCatalog.derive entry
+            let inputs, _ = CommandGrammar.derive entry
 
             let named =
                 inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
@@ -375,16 +375,16 @@ module Grammar =
             let body = build newId entry options operands problems
 
             let endpoint =
-                if options.ContainsKey "--preview" && entry.Act.IsSome then
+                if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
                     Api.operationPreview.Token
                 else
-                    entry.Endpoint
+                    ActorEndpoint.token entry.Endpoint
 
-            if options.ContainsKey "--preview" && entry.Act.IsNone then
+            if options.ContainsKey "--preview" && entry.SelectedAct.IsNone then
                 problems.Add(
                     UsageError.NotApplicable(
                         "--preview",
-                        OperationCatalog.words entry |> String.concat " "
+                        CommandGrammar.words entry |> String.concat " "
                     )
                 )
 

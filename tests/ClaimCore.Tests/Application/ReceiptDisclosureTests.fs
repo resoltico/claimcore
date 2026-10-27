@@ -3,7 +3,7 @@ module ClaimCore.Tests.ReceiptDisclosureTests
 open ClaimCore.TestSupport
 
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
@@ -48,7 +48,10 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            view.Read
     with
     | Verdict.Replay value ->
         Expect.equal
@@ -95,12 +98,17 @@ let private foreignScope () =
         { original with
             CaseReference = CaseReference.format caseA.Snapshot.Reference
             ExpectedRevision = 1L
-            Act = UnvalidatedCaseAct.Close
+            Act = AuthoredCaseAct.Close
         }
 
     let read = (locked both (Some caseA) (Some entry)).Read
 
-    match CaseExecution.review installation calendar owner (CaseFixtures.command request) read with
+    match
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            read
+    with
     | Verdict.Refuse Refusal.IdempotencyConflict -> ()
     | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
@@ -113,7 +121,10 @@ let private foreignScope () =
         }
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) narrowed
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            narrowed
     with
     | Verdict.Refuse Refusal.ResourceUnavailable -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"
@@ -172,7 +183,7 @@ let private stewardship () =
             206
             (CaseReference.format current.Snapshot.Reference)
             1L
-            (UnvalidatedCaseAct.Void "Entered in error")
+            (AuthoredCaseAct.Void "Entered in error")
 
     let draft, projection, first =
         decide request (locked steward (Some current) None) |> appended
@@ -187,7 +198,7 @@ let private stewardship () =
             207
             (CaseReference.format current.Snapshot.Reference)
             2L
-            (UnvalidatedCaseAct.Reinstate "Confirmed")
+            (AuthoredCaseAct.Reinstate "Confirmed")
 
     let _, projection, _ =
         decide restore (locked steward (Some voided) None) |> appended
@@ -224,7 +235,7 @@ let tests =
                     Role.Auditor, true, true
                 ] do
                 testCase
-                    (RoleTokens.token role + " current and superseded history disclosure")
+                    (Role.token role + " current and superseded history disclosure")
                     (roles role readable full)
             testCase "stewardship replay retains full-history restrictions" stewardship
             testCase

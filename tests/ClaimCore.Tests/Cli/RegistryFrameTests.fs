@@ -1,13 +1,12 @@
 module ClaimCore.Tests.RegistryFrameTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.Cli
 
 open System
 open System.Text
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -120,7 +119,7 @@ let private byteBoundaries () =
 
 let private reply result delivery =
     {
-        Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
         OperationId = Some id
         Delivery = delivery
         Result = result
@@ -147,7 +146,7 @@ let private results () =
         frameRoundTrip (reply (FrameResult.LocalFailure failure) DeliveryState.NotSent)
 
     for setting, _ in InputDiagnostics.settings do
-        for issue, _ in InputDiagnostics.configurationIssues do
+        for issue, _ in ConfigurationIssue.all do
             frameRoundTrip (
                 reply
                     (FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)))
@@ -228,7 +227,9 @@ let private refusingFrames () =
             "Unknown, extra and duplicate frame members refuse."
 
     Expect.isError
-        (ServiceReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        (ServiceReply.read
+            (Api.forActor (ActorEndpoint.Operation OperationEndpoint.Execute))
+            (JsonValue.Object []))
         "A malformed raw reply cannot construct a typed value."
 
     let typed =
@@ -241,7 +242,7 @@ let private refusingFrames () =
 
     let invalid =
         { reply (FrameResult.Reply typed) DeliveryState.Delivered with
-            Endpoint = Some(EndpointId.Actor ActorEndpoint.Context)
+            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
         }
 
     Expect.throws

@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 module internal Actor =

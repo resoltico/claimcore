@@ -1,6 +1,6 @@
 module internal ClaimCore.WebTests.OidcCoreFixture
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -42,10 +42,10 @@ let createFor issuer subject =
                 |> Result.defaultWith (string >> invalidOp)
 
             let! registered =
-                (Core.execute
+                (Service.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id 20) service AuthorityCommandAct.Register
+                        authorityRequest (id 20) service AuthorityAct.Register
                     ))
                     (CancellationToken.None))
 
@@ -57,10 +57,10 @@ let createFor issuer subject =
             acceptedAuthority granted
 
             let! opened =
-                (Core.execute
+                (Service.execute
                     owner
                     (OperationInput.Case(
-                        request 10 "SYNTHETIC-001" 0L (UnvalidatedCaseAct.Open registration)
+                        request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 

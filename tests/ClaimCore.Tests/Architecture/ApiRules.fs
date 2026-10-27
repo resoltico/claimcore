@@ -80,9 +80,12 @@ let private forbiddenCalls =
 type ArchitectureRule =
     | Pure
     | Postgres
-    | Durable
+    | DurableNames
     | Serializer
-    | ApplicationProtocol
+    | ServiceModelWithoutProtocol
+    | ServiceSurface
+    | DomainJsonFree
+    | VocabularyModuleNaming
     | DomainBoundary
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
@@ -91,6 +94,40 @@ let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
 
     provider
 
+/// Reflection identifies declarations; ArchUnit evaluates the compiled product and negative subjects.
+let vocabularyModules () =
+    [
+        "ClaimCore.Domain"
+        "ClaimCore.Protocol"
+        "ClaimCore.RecordFormat"
+        "ClaimCore.Application"
+        "ClaimCore.Postgres"
+        "claimcore"
+        "claimcore-server"
+        "claimcore-database"
+        "ClaimCore.Tests"
+    ]
+    |> List.collect (fun name -> Assembly.Load(name).GetTypes() |> Array.toList)
+    |> List.choose (fun declaration ->
+        let property =
+            declaration.GetProperty(
+                "vocabulary",
+                BindingFlags.Public
+                ||| BindingFlags.NonPublic
+                ||| BindingFlags.Static
+                ||| BindingFlags.DeclaredOnly
+            )
+
+        match Option.ofObj property with
+        | Some property when
+            property.PropertyType.IsGenericType
+            && property.PropertyType.GetGenericTypeDefinition() =
+                typedefof<ClaimCore.Domain.Vocabulary<_>>
+            ->
+            Some(declaration, property.PropertyType.GetGenericArguments()[0])
+        | _ -> None)
+
+
 let rule architecture name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
 
@@ -98,7 +135,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         nonEmptyTargets architecture label provider
 
     let protocol () =
-        Types().That().ResideInNamespaceOrBelow("ClaimCore.Contract.Protocol")
+        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
         |> targets "wire namespace"
 
     match name with
@@ -113,23 +150,141 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
             |> targets "Postgres"
         )
         :> IArchRule
-    | ArchitectureRule.Durable
-    | ArchitectureRule.ApplicationProtocol -> clauses.NotDependOnAny(protocol ()) :> IArchRule
+    | ArchitectureRule.DurableNames ->
+        let names =
+            vocabularyModules ()
+            |> List.filter (fun (declaration, _) ->
+                declaration.Assembly = typeof<ClaimCore.Domain.CaseActKind>.Assembly)
+            |> List.map (fun (declaration, _) ->
+                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
+            |> String.concat "|"
+
+        let pattern = "^(" + names + ")$"
+
+        Types().That().HaveFullNameMatching(pattern)
+        |> targets "Domain vocabulary modules"
+        |> ignore
+
+        protocol () |> ignore
+
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+                .Or()
+                .HaveFullNameMatching(pattern)
+            |> targets "durable spelling boundary"
+        )
+        :> IArchRule
+    | ArchitectureRule.ServiceModelWithoutProtocol ->
+        clauses.NotDependOnAny(protocol ()) :> IArchRule
     | ArchitectureRule.Serializer ->
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")
             |> targets "JsonSerializer"
         )
         :> IArchRule
-    | ArchitectureRule.DomainBoundary ->
+    | ArchitectureRule.ServiceSurface ->
+        let allowed =
+            [
+                "Service"
+                "ServiceContext"
+                "IStore"
+                "IReadTx"
+                "IWriteTx"
+                "IBusinessCalendar"
+                "RuntimeOpenFault"
+                "StoreFailure"
+                "Verdict"
+                "LedgerHead"
+                "StoredCase"
+                "EntryTarget"
+                "StoredEntry"
+                "CaseProjection"
+                "EntryDraft"
+                "AuthorityProjection"
+                "AuthorityQuery"
+                "CasePageQuery"
+                "HistoryPageQuery"
+                "ActorPageQuery"
+                "GrantPageQuery"
+                "FenceKey"
+                "Page"
+                "ReadOperation"
+                "WriteOperation"
+            ]
+            |> List.map System.Text.RegularExpressions.Regex.Escape
+            |> String.concat "|"
+
+        let permitted =
+            "^ClaimCore\\.Application\\.(" + allowed + ")(?:`[0-9]+)?(?:\\+.*)?$"
+
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Contract")
+                .ResideInAssembly(Assembly.Load "ClaimCore.Application")
+                .And()
+                .DoNotHaveFullNameMatching(permitted)
+            |> targets "Application implementation outside the service and ports"
+        )
+        :> IArchRule
+    | ArchitectureRule.DomainJsonFree ->
+        clauses.NotDependOnAny(
+            Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Json")
+            |> targets "JSON assembly"
+        )
+        :> IArchRule
+    | ArchitectureRule.VocabularyModuleNaming ->
+        let declarations = vocabularyModules ()
+
+        let names =
+            declarations
+            |> List.map (fun (declaration, _) ->
+                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
+            |> String.concat "|"
+
+        Types().That().HaveFullNameMatching("^(" + names + ")$")
+        |> targets "vocabulary modules"
+        |> ignore
+
+        clauses.FollowCustomCondition(
+            System.Func<IType, bool>(fun candidate ->
+                declarations
+                |> List.tryFind (fun (declaration, _) ->
+                    nonNull declaration.FullName = candidate.FullName)
+                |> Option.forall (fun (declaration, value) ->
+                    declaration.Assembly = value.Assembly
+                    && nonNull declaration.FullName =
+                        nonNull value.Namespace + "." + value.Name + "Module")),
+            "declare vocabulary in the value type's module",
+            "Vocabulary must be declared by <Type>Module in the value type's namespace and assembly"
+        )
+        :> IArchRule
+    | ArchitectureRule.DomainBoundary ->
+        for assembly in
+            [
+                "ClaimCore.Protocol"
+                "ClaimCore.Application"
+                "ClaimCore.RecordFormat"
+                "ClaimCore.Json"
+                "ClaimCore.Postgres"
+            ] do
+            Types().That().ResideInAssembly(Assembly.Load assembly)
+            |> targets ("Domain excludes " + assembly)
+            |> ignore
+
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.Application")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Json")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
             |> targets "Domain boundary"
         )
         :> IArchRule

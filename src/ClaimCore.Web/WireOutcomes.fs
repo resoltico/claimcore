@@ -1,8 +1,8 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
@@ -33,4 +33,4 @@ module internal WebWire =
         result 200 bytes
 
     let hostFailure reason =
-        HostFailureCodecs.encode reason |> result (HostFailures.status reason)
+        HostFailureCodecs.encode reason |> result (HostFailureReason.status reason)

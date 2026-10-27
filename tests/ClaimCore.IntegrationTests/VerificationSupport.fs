@@ -2,7 +2,7 @@ module internal ClaimCore.IntegrationTests.VerificationSupport
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -64,10 +64,10 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "synthetic-a" 0L (UnvalidatedCaseAct.Open registration)
+                    request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -94,12 +94,12 @@ let private subject =
     function
     | RecordedTarget.Case value ->
         "CASE",
-        CaseActKinds.token value.Act,
+        CaseActKind.token value.Act,
         value.CaseId,
         Some value.Revision,
         Some value.BusinessDate
     | RecordedTarget.Authority value ->
-        "AUTHORITY", RecordedAuthorityActs.token value.Act, value.TargetActorId, None, None
+        "AUTHORITY", AuthorityKind.token value.Act, value.TargetActorId, None, None
 
 let private updateSql =
     "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"

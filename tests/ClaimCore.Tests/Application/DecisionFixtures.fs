@@ -4,7 +4,7 @@ open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
@@ -30,6 +30,18 @@ let calendar =
         member _.TimeZoneId = "Etc/UTC"
         member _.DateAt value = DateOnly.FromDateTime value.UtcDateTime
     }
+
+let private decisionStore =
+    { new IStore with
+        member _.Read _ =
+            failtest "Pure decisions must not read storage"
+
+        member _.Write _ =
+            failtest "Pure decisions must not write storage"
+    }
+
+let services installation calendar principal =
+    Service.create "decision-tests" installation decisionStore calendar principal
 
 let actor principal actorId roles cases : AuthorityView =
     {
@@ -57,7 +69,7 @@ let head =
 let nonce = Array.init 32 (fun index -> byte (index + 1))
 
 let opening n reference =
-    request n reference 0L (UnvalidatedCaseAct.Open registration)
+    request n reference 0L (AuthoredCaseAct.Open registration)
 
 type LockedFacts<'Facts> =
     {
@@ -83,9 +95,7 @@ let locked authority current existing : LockedFacts<CaseFacts> =
 
 let decide request view =
     CaseExecution.execute
-        installation
-        calendar
-        owner
+        (services installation calendar owner)
         (ClaimCore.TestSupport.CaseFixtures.command request)
         view.Head
         view.IsFenced
@@ -94,8 +104,7 @@ let decide request view =
 
 let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
     AuthorityExecution.execute
-        installation
-        principal
+        (services installation calendar principal)
         request
         view.Head
         view.IsFenced
@@ -104,7 +113,8 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
 
 let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
     match Authority.parse request with
-    | Ok command -> AuthorityExecution.review installation principal command view
+    | Ok command ->
+        AuthorityExecution.review (services installation calendar principal) command view
     | Error refusal -> Verdict.Refuse refusal
 
 let provisionAuthority
@@ -114,9 +124,8 @@ let provisionAuthority
     (view: LockedFacts<AuthorityExecutionFacts>)
     =
     AuthorityExecution.provision
-        installation
+        (services installation calendar principal)
         operation
-        principal
         view.Head
         view.IsFenced
         view.PayloadNonce

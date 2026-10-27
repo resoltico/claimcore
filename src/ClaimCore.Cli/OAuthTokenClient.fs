@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open System
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open System.Net.Http
 open System.Threading
 open Duende.IdentityModel.Client

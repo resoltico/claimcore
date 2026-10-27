@@ -3,10 +3,9 @@ module ClaimCore.Tests.SchemaFormatTests
 open System
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 let private admits codec (value: string) =
     Codec.decode 4096 codec (JsonSerializer.SerializeToUtf8Bytes value)

@@ -1,10 +1,10 @@
 namespace ClaimCore.Tests.Architecture.NegativeFixtures
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Threading.Tasks
-open ClaimCore.Contract.Protocol
 
 type PostgresReference =
     static member Target() = typeof<ClaimCore.Postgres.IRuntime>
@@ -52,7 +52,7 @@ type FileReaderCall =
 /// A compiled wire-codec dependency must never enter a durable grammar.
 type WireCodecCall =
     static member Read() =
-        ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Schema
+        ClaimCore.Protocol.RequestCodecs.caseRequest.Schema
 
 /// Distinct names let controls select compiler-generated bodies as well as declaring types.
 type AmbientShapes =
@@ -111,22 +111,82 @@ type SerializerTaskShape =
             return System.Text.Json.JsonSerializer.Serialize("control")
         }
 
-type ApplicationShapes =
-    static member ApplicationDirect() = ReplyCodecs.execute.Schema
+type ProtocolFromDomain =
+    static member ProtocolDirect() = ReplyCodecs.execute.Schema
 
-type ApplicationTaskShape =
-    static member ApplicationTask() =
+type ProtocolFromDomainTask =
+    static member ProtocolTask() =
         task {
             do! Task.Yield()
             return ReplyCodecs.execute.Schema
         }
 
-type DomainShapes =
-    static member DomainDirect() =
+type ApplicationFromDomain =
+    static member ApplicationDirect() = typeof<ClaimCore.Application.IStore>
+
+type ApplicationFromDomainTask =
+    static member ApplicationTask() =
+        task {
+            do! Task.Yield()
+            return typeof<ClaimCore.Application.IStore>
+        }
+
+[<RequireQualifiedAccess>]
+type VocabularySample = Sample
+
+module MisnamedVocabulary =
+    let vocabulary =
+        Vocabulary.ofUnion<VocabularySample> "sample" TokenCasing.CamelCase None
+
+    let Direct () = Vocabulary.all vocabulary
+
+module MisnamedTaskVocabulary =
+    let vocabulary =
+        Vocabulary.ofUnion<VocabularySample> "sample" TokenCasing.CamelCase None
+
+    let TaskShape () =
+        task {
+            do! Task.Yield()
+            return Vocabulary.all vocabulary
+        }
+
+type JsonFromDomain =
+    static member JsonDirect() = ClaimCore.Json.JsonValue.Null
+
+type JsonFromDomainTask =
+    static member JsonTask() =
+        task {
+            do! Task.Yield()
+            return ClaimCore.Json.JsonValue.Null
+        }
+
+type VocabularyFromRecordFormat =
+    static member VocabularyDirect() = Role.token Role.Owner
+
+type VocabularyFromRecordFormatTask =
+    static member VocabularyTask() =
+        task {
+            do! Task.Yield()
+            return Role.token Role.Owner
+        }
+
+type ApplicationInternalsFromWeb =
+    static member InternalsDirect() =
+        ClaimCore.Application.LedgerEntries.position 0L (Array.zeroCreate 32)
+
+type ApplicationInternalsFromWebTask =
+    static member InternalsTask() =
+        task {
+            do! Task.Yield()
+            return ClaimCore.Application.LedgerEntries.position 0L (Array.zeroCreate 32)
+        }
+
+type RecordFormatFromDomain =
+    static member RecordDirect() =
         typeof<ClaimCore.RecordFormat.DecodeProblem>
 
-type DomainTaskShape =
-    static member DomainTask() =
+type RecordFormatFromDomainTask =
+    static member RecordTask() =
         task {
             do! Task.Yield()
             return typeof<ClaimCore.RecordFormat.DecodeProblem>

@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open System
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 module UsageText =
     let private message language value =
@@ -41,7 +42,7 @@ module UsageText =
         let matched =
             OperationCatalog.all
             |> List.tryFind (fun entry ->
-                let words = OperationCatalog.words entry in
+                let words = CommandGrammar.words entry in
                 List.truncate words.Length arguments = words)
 
         let hints =
@@ -51,7 +52,7 @@ module UsageText =
                     message
                         language
                         (CliMessage.Synopsis(
-                            CliIdentity.programName + " " + OperationCatalog.synopsis entry
+                            CliIdentity.programName + " " + CommandGrammar.synopsis entry
                         ))
                 ]
             | None ->
@@ -69,7 +70,7 @@ module UsageText =
 
     let renderHost language arguments issue =
         let commandText = List.tryHead arguments |> Option.defaultValue "help"
-        let command = CliCommands.parseCommand commandText
+        let command = CliCommand.parse commandText
 
         let problem =
             match command, issue with

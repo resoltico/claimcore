@@ -16,7 +16,7 @@ export const ReceiptFields = ({
     case "WITHHELD":
       return <p>{p.text("ui.snapshotWithheld")}</p>;
     case "ERASED":
-      return <p>{p.text("ui.lifecycleErased")}</p>;
+      return <p>{p.text("lifecycle.ERASED.meaning")}</p>;
     case "DISCLOSED":
       return (
         <CaseFieldsView

@@ -1,6 +1,5 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain
@@ -31,7 +30,7 @@ module internal StoredEntries =
                 raise (RecordCorruptException "Invalid authority ledger shape.")
 
             let kind =
-                RecordedAuthorityActs.tryKind act
+                AuthorityKind.parse act
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 
@@ -41,7 +40,7 @@ module internal StoredEntries =
             let revision = DatabaseSession.value<int64> 10 row
 
             let kind =
-                CaseActKinds.parse act
+                CaseActKind.parse act
                 |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid case act."))
 
             let date = DatabaseSession.calendarDate 11 row

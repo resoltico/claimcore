@@ -1,6 +1,7 @@
 module ClaimCore.Tests.PropertyHarness
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Buffers.Binary
@@ -12,11 +13,11 @@ open Hedgehog.FSharp
 
 let wireName endpoint response =
     let direction = if response then "reply" else "request"
-    ClaimCore.Contract.Protocol.Api.id endpoint + " " + direction + " round trip"
+    ClaimCore.Protocol.Api.id endpoint + " " + direction + " round trip"
 
 let private wirePropertyNames =
     [
-        for endpoint in ClaimCore.Contract.Protocol.Api.all do
+        for endpoint in ClaimCore.Protocol.Api.all do
             yield wireName endpoint false
             yield wireName endpoint true
     ]
@@ -25,6 +26,8 @@ let private wirePropertyNames =
 let private propertyNames =
     set
         [
+            "CLI undeclared flag admission"
+            "endpoint member and kind strictness"
             "canonical JSON round trip"
             "canonical JSON spelling"
             "stewardship revision"
@@ -36,6 +39,9 @@ let private propertyNames =
             "money amount"
             "currency code"
             "business text"
+            "permanent case inventory"
+            "permanent snapshot inventory"
+            "permanent authority inventory"
             "case request record"
             "operation identity fingerprint"
             "case transition sequence"

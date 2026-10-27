@@ -5,7 +5,8 @@ open System.IO
 open System.Text
 open System.Collections.Generic
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.TestSupport
 
 type private Example =
@@ -334,3 +335,56 @@ let hostTests =
         testCase name (qualifyHost (arguments, key, syntax)))
     |> testList "published CLI host usage errors"
     |> testSequenced
+
+[<Tests>]
+let closedFlagsBeforeInput =
+    testCase "all published verbs reject undeclared flags while stdin remains open" (fun () ->
+        let directory = Directory.CreateTempSubdirectory("claimcore-closed-cli-flags-")
+
+        try
+            let root = RepositoryRoot.find ()
+            let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
+
+            let captured =
+                File.ReadAllLines(Path.Combine(root, "tests/fixtures/cli-frames.tsv"))
+                |> Array.map (fun row ->
+                    (row.Split('\t', 2)[0]).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    |> List.ofArray)
+                |> Array.toList
+
+            let host =
+                [
+                    [ "help" ]
+                    [ "version" ]
+                    [ "describe" ]
+                    [ "schema"; "invocation" ]
+                    [ "call" ]
+                    [ "session" ]
+                ]
+
+            for index, arguments in List.indexed (captured @ host) do
+                let start =
+                    System.Diagnostics.ProcessStartInfo(
+                        "dotnet",
+                        UseShellExecute = false,
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    )
+
+                CliProcessEnvironment.clearInherited start
+                start.ArgumentList.Add cli
+
+                for argument in arguments @ [ "--undeclared-flag-" + string index ] do
+                    start.ArgumentList.Add argument
+                // None deliberately leaves the redirected writer open: reading stdin would block.
+                let result = BoundedProcess.run start None 1_048_576 8_000
+
+                Expect.equal
+                    result.ExitCode
+                    64
+                    "Every verb refuses the unknown flag before stdin or dispatch"
+
+                Expect.isEmpty result.StandardOutput "Refused syntax emits no request or reply"
+        finally
+            directory.Delete true)

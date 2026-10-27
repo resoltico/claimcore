@@ -9,7 +9,7 @@ open System.Text.Json
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -50,17 +50,20 @@ let private actsGenerator =
             }
 
         let corrections =
-            [ RegistrationGroup.Keep; RegistrationGroup.Replace registration ]
+            [ Change.Keep; Change.Replace registration ]
             |> List.collect (fun registration ->
-                [ DecisionGroup.Keep; DecisionGroup.Replace decision; DecisionGroup.Clear ]
+                [ Change.Keep; Change.Replace decision; Change.Clear ]
                 |> List.collect (fun decision ->
                     [
-                        PaymentGroup.Keep
-                        PaymentGroup.Replace { PaymentDate = "2026-08-20" }
-                        PaymentGroup.Clear
+                        Change.Keep
+                        Change.Replace
+                            {
+                                PaymentInput.PaymentDate = "2026-08-20"
+                            }
+                        Change.Clear
                     ]
                     |> List.map (fun payment ->
-                        UnvalidatedCaseAct.Correct
+                        AuthoredCaseAct.Correct
                             {
                                 Registration = registration
                                 Decision = decision
@@ -69,14 +72,17 @@ let private actsGenerator =
 
         return
             [
-                UnvalidatedCaseAct.Open registration
-                UnvalidatedCaseAct.AmendRegistration registration
-                UnvalidatedCaseAct.Decide decision
-                UnvalidatedCaseAct.WithdrawDecision
-                UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-                UnvalidatedCaseAct.ClearPayment
-                UnvalidatedCaseAct.Close
-                UnvalidatedCaseAct.Reopen
+                AuthoredCaseAct.Open registration
+                AuthoredCaseAct.AmendRegistration registration
+                AuthoredCaseAct.Decide decision
+                AuthoredCaseAct.WithdrawDecision
+                AuthoredCaseAct.RecordPayment
+                    {
+                        PaymentInput.PaymentDate = "2026-08-20"
+                    }
+                AuthoredCaseAct.ClearPayment
+                AuthoredCaseAct.Close
+                AuthoredCaseAct.Reopen
             ]
             @ corrections
     }
@@ -107,23 +113,24 @@ let private limit = 65536
 
 let private correctionKindsMatch (request: UnvalidatedCaseRequest) (encoded: byte array) =
     match request.Act with
-    | (UnvalidatedCaseAct.Correct correction) ->
+    | (AuthoredCaseAct.Correct correction) ->
         let registration =
             match correction.Registration with
-            | RegistrationGroup.Keep -> "KEEP"
-            | RegistrationGroup.Replace _ -> "REPLACE"
+            | Change.Keep -> "KEEP"
+            | Change.Replace _ -> "REPLACE"
+            | Change.Clear -> "CLEAR"
 
         let decision =
             match correction.Decision with
-            | DecisionGroup.Keep -> "KEEP"
-            | DecisionGroup.Replace _ -> "REPLACE"
-            | DecisionGroup.Clear -> "CLEAR"
+            | Change.Keep -> "KEEP"
+            | Change.Replace _ -> "REPLACE"
+            | Change.Clear -> "CLEAR"
 
         let payment =
             match correction.Payment with
-            | PaymentGroup.Keep -> "KEEP"
-            | PaymentGroup.Replace _ -> "REPLACE"
-            | PaymentGroup.Clear -> "CLEAR"
+            | Change.Keep -> "KEEP"
+            | Change.Replace _ -> "REPLACE"
+            | Change.Clear -> "CLEAR"
 
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
         let groups = document.RootElement.GetProperty("act").GetProperty("groups")
@@ -184,8 +191,8 @@ let private identityChanges (request: UnvalidatedCaseRequest) =
 
     let differentAct =
         match request.Act with
-        | UnvalidatedCaseAct.Close -> UnvalidatedCaseAct.Reopen
-        | _ -> UnvalidatedCaseAct.Close
+        | AuthoredCaseAct.Close -> AuthoredCaseAct.Reopen
+        | _ -> AuthoredCaseAct.Close
 
     let changed =
         [

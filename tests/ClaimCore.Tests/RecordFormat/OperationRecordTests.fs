@@ -2,7 +2,7 @@ module ClaimCore.Tests.OperationRecordTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Text
@@ -36,9 +36,9 @@ let private stewardshipProperty =
         let! action =
             Gen.item
                 [
-                    UnvalidatedCaseAct.Void reason
-                    UnvalidatedCaseAct.Reinstate reason
-                    UnvalidatedCaseAct.Erase
+                    AuthoredCaseAct.Void reason
+                    AuthoredCaseAct.Reinstate reason
+                    AuthoredCaseAct.Erase
                 ]
 
         let request = steward action
@@ -70,20 +70,16 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
-                    RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
-                    RecordedAuthorityAct.Operation(
-                        (if active then
-                             ClaimCore.Domain.AuthorityAct.Grant
-                         else
-                             ClaimCore.Domain.AuthorityAct.Revoke)
-                            { Role = role; Scope = scope }
-                    )
-                    RecordedAuthorityAct.Operation(
-                        (if active then
-                             ClaimCore.Domain.AuthorityAct.Enable
-                         else
-                             ClaimCore.Domain.AuthorityAct.Disable)
-                    )
+                    (ClaimCore.Domain.AuthorityAct.Register)
+                    ((if active then
+                          ClaimCore.Domain.AuthorityAct.Grant
+                      else
+                          ClaimCore.Domain.AuthorityAct.Revoke)
+                        { Role = role; Scope = scope })
+                    ((if active then
+                          ClaimCore.Domain.AuthorityAct.Enable
+                      else
+                          ClaimCore.Domain.AuthorityAct.Disable))
                 ]
 
         let request = authority action
@@ -100,18 +96,16 @@ let private total decode bytes =
 let private decoderProperty =
     let seeds =
         [
-            Fixtures.request 0L (UnvalidatedCaseAct.Open Fixtures.registration)
+            Fixtures.request 0L (AuthoredCaseAct.Open Fixtures.registration)
             |> CaseFixtures.encode
             Fixtures.opened () |> Case.snapshot |> CaseRecord.encodeSnapshot
-            steward (UnvalidatedCaseAct.Void "Reason") |> CaseFixtures.encode
+            steward (AuthoredCaseAct.Void "Reason") |> CaseFixtures.encode
             authority (
-                RecordedAuthorityAct.Operation(
-                    ClaimCore.Domain.AuthorityAct.Grant
-                        {
-                            Role = "CASE_HANDLER"
-                            Scope = GrantTarget.Installation
-                        }
-                )
+                (ClaimCore.Domain.AuthorityAct.Grant
+                    {
+                        Role = "CASE_HANDLER"
+                        Scope = GrantTarget.Installation
+                    })
             )
             |> AuthorityRecord.encode
             LedgerEntry.encodePayload
@@ -136,9 +130,7 @@ let private decoderProperty =
 
 let private strictRecords () =
     let canonical =
-        steward UnvalidatedCaseAct.Erase
-        |> CaseFixtures.encode
-        |> Encoding.UTF8.GetString
+        steward AuthoredCaseAct.Erase |> CaseFixtures.encode |> Encoding.UTF8.GetString
 
     let variants =
         [
@@ -164,13 +156,11 @@ let private strictRecords () =
 
     let grant =
         authority (
-            RecordedAuthorityAct.Operation(
-                ClaimCore.Domain.AuthorityAct.Grant
-                    {
-                        Role = "CASE_HANDLER"
-                        Scope = GrantTarget.Installation
-                    }
-            )
+            (ClaimCore.Domain.AuthorityAct.Grant
+                {
+                    Role = "CASE_HANDLER"
+                    Scope = GrantTarget.Installation
+                })
         )
 
     let encoded = AuthorityRecord.encode grant |> Encoding.UTF8.GetString
@@ -199,7 +189,7 @@ let tests =
                     "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":1,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
-                    (steward UnvalidatedCaseAct.Erase
+                    (steward AuthoredCaseAct.Erase
                      |> CaseFixtures.encode
                      |> Encoding.UTF8.GetString)
                     expected
@@ -209,9 +199,7 @@ let tests =
                     "{\"act\":{\"kind\":\"REGISTER\"},\"format\":1,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
 
                 Expect.equal
-                    (authority (
-                        RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
-                     )
+                    (authority ((ClaimCore.Domain.AuthorityAct.Register))
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)
                     expected
@@ -222,7 +210,7 @@ let tests =
                 PropertyHarness.run "authority durable record" authorityProperty)
             testCase "strict record decoders reject hostile shapes" strictRecords
             testCase "record limits and malformed bytes are refused" (fun () ->
-                let encoded = steward UnvalidatedCaseAct.Erase |> CaseFixtures.encode
+                let encoded = steward AuthoredCaseAct.Erase |> CaseFixtures.encode
 
                 Expect.isError
                     (RequestRecord.decode (encoded.Length - 1) encoded)

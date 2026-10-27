@@ -208,6 +208,19 @@ def ledger(sources, requests, snapshot, authority):
             "actCodes": ACT_CODES, "vectors": vectors}
 
 
+def permanent_limits(sources, request_format, snapshot_format, authority_format):
+    result = []
+    for item in sources["permanentLimits"]:
+        version = {"CASE": request_format, "SNAPSHOT": snapshot_format, "AUTHORITY": authority_format}[item["subject"]]
+        value = with_format(item["value"], version)
+        # Refusing controls may deliberately contain an unsafe integer, outside I-JSON.
+        text = canonical(value) if item["accepted"] else json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        data = text.encode("utf-8")
+        result.append({"name": item["name"], "subject": item["subject"], "accepted": item["accepted"],
+                       "utf8": text, "hex": data.hex(), "sha256": hashlib.sha256(data).hexdigest()})
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--request", type=int, required=True)
@@ -243,6 +256,7 @@ def main():
             "caseSnapshot": canonical(snapshot),
             "authorityRequest": canonical(authority),
         },
+        "permanentLimits": permanent_limits(sources, arguments.request, arguments.snapshot, arguments.authority),
         "ledgerEntries": ledger(sources, [requests[0]],
                                 snapshot,
                                 authority),

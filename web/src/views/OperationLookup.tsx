@@ -30,14 +30,14 @@ const ReceiptView = ({
       <p>
         {p.text("ui.observedReceipt", {
           operationId: receipt.operationId,
-          act: p.token(receipt.subject.act),
+          act: p.term("act", receipt.subject.act),
           actor: receipt.recordedBy,
         })}
       </p>
       {receipt.subject.kind === "AUTHORITY" ? (
         <p>
           {p.text("ui.authorityReceipt", {
-            act: p.token(receipt.subject.act),
+            act: p.term("act", receipt.subject.act),
             actor: receipt.subject.targetActorId,
           })}
         </p>

@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.ReceiptContextTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System.Threading
 open Expecto
@@ -18,11 +18,9 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 3) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -39,13 +37,13 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         11
                         "PROBE-1"
                         1L
-                        (UnvalidatedCaseAct.AmendRegistration
+                        (AuthoredCaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })
 
                 let! amended =
-                    (Core.execute admin (OperationInput.Case amendment) (CancellationToken.None))
+                    (Service.execute admin (OperationInput.Case amendment) (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -58,10 +56,15 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
         let actor =
-            Service.create fixture.InstallationId (store :> IStore) fixture.Calendar principal
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                (store :> IStore)
+                fixture.Calendar
+                principal
 
         let! result =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(openRequest 10 "PROBE-1"))
                 (CancellationToken.None))
@@ -77,7 +80,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal receipt.RecordedBy (id 3) "Original executor"
 
         let! denied =
-            (Core.get
+            (Service.get
                 (core fixture principal)
                 ({ CaseReference = "PROBE-1" })
                 (CancellationToken.None))

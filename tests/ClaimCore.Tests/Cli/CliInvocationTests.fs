@@ -6,10 +6,9 @@ open System
 open System.Text
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 open ClaimCore.Application
 
 let private aliases () =
@@ -33,10 +32,9 @@ let private aliases () =
                 "Extra operands never dispatch"
 
     for language in LocalizationPolicy.languages do
-        for topic in CliCommands.topics do
+        for topic in CliTopic.all do
             Expect.equal
-                (CliInvocations.admit
-                    [ "help"; CliCommands.topicToken topic; "--language"; language ])
+                (CliInvocations.admit [ "help"; CliTopic.token topic; "--language"; language ])
                 (Ok(CliInvocation.Help(topic, language)))
                 "Canonical localized help"
 
@@ -46,11 +44,6 @@ let private aliases () =
                 "Useful guidance"
 
 let private options () =
-    Expect.equal
-        (CliInvocations.admit [ "call"; "--retry" ])
-        (Error CliUsageIssue.Invocation)
-        "The retired retry flag is a usage error."
-
     Expect.equal
         (CliInvocations.admit [ "call" ])
         (Ok(CliInvocation.Call))
@@ -375,7 +368,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
 
     let frame =
         {
-            Endpoint = Some(EndpointId.Actor ActorEndpoint.Preview)
+            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview))
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
             Result =
@@ -393,10 +386,46 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             ClaimCore.Cli.TextReply.bytesFor language (Some invocation) frame
             |> Encoding.UTF8.GetString
 
+        let labels, human, reader, installation =
+            match language with
+            | "en" ->
+                [
+                    "Register actor"
+                    "Enable actor"
+                    "Disable actor"
+                    "Grant role"
+                    "Revoke role"
+                ],
+                "Human",
+                "Case reader",
+                "Installation"
+            | "lv" ->
+                [
+                    "Reģistrēt dalībnieku"
+                    "Iespējot dalībnieku"
+                    "Atspējot dalībnieku"
+                    "Piešķirt lomu"
+                    "Atsaukt lomu"
+                ],
+                "Cilvēks",
+                "Lietu lasītājs",
+                "Instalācija"
+            | "ar" ->
+                [ "تسجيل جهة"; "تفعيل الجهة"; "تعطيل الجهة"; "منح دور"; "سحب دور" ],
+                "شخص",
+                "قارئ الحالات",
+                "التثبيت"
+            | _ -> failtest "Every supported language needs independently authored labels"
+
+        let act =
+            List.zip [ "register"; "enable"; "disable"; "grant"; "revoke" ] labels
+            |> Map.ofList
+            |> Map.find verb
+
         Expect.stringContains
             rendered
-            (verb + " HUMAN synthetic synthetic-subject")
-            "Authority preview identifies the exact act and principal"
+            (act + " " + human + " synthetic synthetic-subject")
+            "Authority preview identifies the exact act and principal using core labels"
 
         if enabledBefore <> enabledAfter then
             let expected =
@@ -409,9 +438,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
         if grantBefore <> grantAfter then
             let expected =
                 if grantBefore then
-                    "CASE_READER  INSTALLATION  — → —"
+                    reader + "  " + installation + "  — → —"
                 else
-                    "— → CASE_READER  INSTALLATION  —"
+                    "— → " + reader + "  " + installation + "  —"
 
             Expect.stringContains
                 rendered

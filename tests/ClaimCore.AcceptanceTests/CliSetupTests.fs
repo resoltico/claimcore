@@ -2,7 +2,8 @@ module ClaimCore.AcceptanceTests.CliSetupTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System.Text
 open System.Text.Json
@@ -11,7 +12,6 @@ open System.IO
 open Expecto
 open ClaimCore.AcceptanceTests.CliCalls
 open ClaimCore.TestSupport
-open ClaimCore.Contract.Protocol
 
 let private failureEvidence () =
     let encoded =
