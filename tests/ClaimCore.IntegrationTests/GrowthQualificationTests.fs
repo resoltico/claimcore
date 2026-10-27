@@ -103,7 +103,7 @@ let private act revision =
     | 4L ->
         AuthoredCaseAct.Correct
             {
-                Registration = Change.Replace amended
+                Registration = Amendment.Replace amended
                 Decision = Change.Keep
                 Payment = Change.Keep
             }

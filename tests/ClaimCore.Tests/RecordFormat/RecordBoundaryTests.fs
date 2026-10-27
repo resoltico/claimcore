@@ -302,7 +302,7 @@ let private kindRoundTrips () =
             AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
             AuthoredCaseAct.Correct
                 {
-                    Registration = Change.Keep
+                    Registration = Amendment.Keep
                     Decision = Change.Keep
                     Payment = Change.Keep
                 },

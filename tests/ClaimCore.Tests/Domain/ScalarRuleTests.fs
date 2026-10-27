@@ -146,21 +146,7 @@ let permanentBoundaries =
                     (Authority.parse request)
                     (Error Refusal.ActNotPermitted)
                     "Provisioning is admitted exclusively through its dedicated boundary")
-            testCase "registration clearing cannot enter permanent act parsing" (fun () ->
-                let request =
-                    Fixtures.request
-                        1L
-                        (AuthoredCaseAct.Correct
-                            {
-                                Registration = Change.Clear
-                                Decision = Change.Keep
-                                Payment = Change.Keep
-                            })
 
-                Expect.equal
-                    (Case.parse request)
-                    (Error Refusal.ActNotPermitted)
-                    "Registration remains mandatory even for directly authored typed requests")
         ]
 
 [<Tests>]

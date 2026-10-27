@@ -23,7 +23,7 @@ let private businessActs =
         AuthoredCaseAct.Correct
             {
                 Registration =
-                    Change.Replace
+                    Amendment.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Name"
                         }

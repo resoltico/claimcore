@@ -31,10 +31,14 @@ module internal CaseCorrections =
             | RecordGroup.Decision -> decisionChoice progress Change.Clear |> Result.isOk
             | RecordGroup.Payment -> paymentChoice progress Change.Clear |> Result.isOk
 
-        if present then
-            CorrectionGroupAction.forGroup group
-        else
-            [ CorrectionGroupAction.Keep ]
+        match group with
+        | RecordGroup.Registration -> Amendment.actions
+        | RecordGroup.Decision
+        | RecordGroup.Payment ->
+            if present then
+                CorrectionGroupAction.all
+            else
+                [ CorrectionGroupAction.Keep ]
 
     let private paidAcknowledgement progress (correction: ValidCorrection) =
         match progress, correction.Decision, correction.Payment with
@@ -50,11 +54,10 @@ module internal CaseCorrections =
 
     let apply facts progress (correction: ValidCorrection) =
         result {
-            let! nextFacts =
+            let nextFacts =
                 match correction.Registration with
-                | Change.Keep -> Ok facts
-                | Change.Replace replacement -> Ok replacement
-                | Change.Clear -> Error Refusal.ActNotPermitted
+                | Amendment.Keep -> facts
+                | Amendment.Replace replacement -> replacement
 
             let! nextDecision = decisionChoice progress correction.Decision
             let! nextPayment = paymentChoice progress correction.Payment

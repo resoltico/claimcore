@@ -83,7 +83,7 @@ let private acts =
         (AuthoredCaseAct.Correct
             {
                 Registration =
-                    Change.Replace
+                    Amendment.Replace
                         { registration with
                             ClaimantName = "Changed Party"
                         }

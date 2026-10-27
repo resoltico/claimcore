@@ -15,17 +15,14 @@ module internal RequestValidation =
         |> Result.mapError (fun violation -> Refusal.InvalidInput(InputTarget.Reason, violation))
 
     let private act (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
-        match input with
-        | CaseAct.Correct { Registration = Change.Clear } -> Error Refusal.ActNotPermitted
-        | _ ->
-            CaseAct.traverse
-                Validation.registration
-                Validation.decision
-                (fun (input: PaymentInput) ->
-                    Validation.date BusinessField.PaymentDate input.PaymentDate
-                    |> Result.map (fun date -> { Payment.PaymentDate = date }))
-                reason
-                input
+        CaseAct.traverse
+            Validation.registration
+            Validation.decision
+            (fun (input: PaymentInput) ->
+                Validation.date BusinessField.PaymentDate input.PaymentDate
+                |> Result.map (fun date -> { Payment.PaymentDate = date }))
+            reason
+            input
 
     let parse (request: UnvalidatedCaseRequest) =
         result {

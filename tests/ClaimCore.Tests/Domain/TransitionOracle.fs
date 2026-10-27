@@ -38,9 +38,8 @@ let private registration (value: RegistrationInput) (fields: CaseFields) =
 
 let private correctedRegistration fields =
     function
-    | Change.Replace value -> registration value fields
-    | Change.Keep -> fields
-    | Change.Clear -> failwith "Registration clearing is outside the authored grammar"
+    | Amendment.Replace value -> registration value fields
+    | Amendment.Keep -> fields
 
 let private changed fields act =
     match act with

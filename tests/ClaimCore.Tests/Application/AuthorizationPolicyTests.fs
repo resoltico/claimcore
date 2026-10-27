@@ -232,9 +232,9 @@ let private replacementCorrection
     {
         Registration =
             (if registrationChanged then
-                 Change.Replace registration
+                 Amendment.Replace registration
              else
-                 Change.Keep)
+                 Amendment.Keep)
         Decision =
             (if decisionChanged then
                  Change.Replace decision
@@ -288,7 +288,7 @@ let private reaffirmations () =
     let paymentReaffirmation =
         (AuthoredCaseAct.Correct
             {
-                Registration = Change.Keep
+                Registration = Amendment.Keep
                 Decision = Change.Keep
                 Payment = Change.Replace { PaymentDate = "2026-08-20" }
             })
@@ -304,7 +304,7 @@ let private reaffirmations () =
     let keep =
         (AuthoredCaseAct.Correct
             {
-                Registration = Change.Keep
+                Registration = Amendment.Keep
                 Decision = Change.Keep
                 Payment = Change.Keep
             })

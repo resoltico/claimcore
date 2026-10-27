@@ -156,7 +156,7 @@ module Authority =
         | (CaseAct.Correct correction) ->
             [
                 match correction.Registration with
-                | Change.Keep -> ()
+                | Amendment.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Registration
                 match correction.Decision with
                 | Change.Keep -> ()

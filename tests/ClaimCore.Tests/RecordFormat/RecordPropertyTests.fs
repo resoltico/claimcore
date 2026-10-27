@@ -50,7 +50,7 @@ let private actsGenerator =
             }
 
         let corrections =
-            [ Change.Keep; Change.Replace registration ]
+            [ Amendment.Keep; Amendment.Replace registration ]
             |> List.collect (fun registration ->
                 [ Change.Keep; Change.Replace decision; Change.Clear ]
                 |> List.collect (fun decision ->
@@ -116,9 +116,8 @@ let private correctionKindsMatch (request: UnvalidatedCaseRequest) (encoded: byt
     | (AuthoredCaseAct.Correct correction) ->
         let registration =
             match correction.Registration with
-            | Change.Keep -> "KEEP"
-            | Change.Replace _ -> "REPLACE"
-            | Change.Clear -> "CLEAR"
+            | Amendment.Keep -> "KEEP"
+            | Amendment.Replace _ -> "REPLACE"
 
         let decision =
             match correction.Decision with

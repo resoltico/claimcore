@@ -198,7 +198,11 @@ module OperationCatalog =
             let tag = prefix @ [ "kind" ]
 
             let choices =
-                CorrectionGroupAction.forGroup group |> List.map CorrectionGroupAction.token
+                (match group with
+                 | RecordGroup.Registration -> Amendment.actions
+                 | RecordGroup.Decision
+                 | RecordGroup.Payment -> CorrectionGroupAction.all)
+                |> List.map CorrectionGroupAction.token
 
             let selector =
                 input
@@ -226,30 +230,30 @@ module OperationCatalog =
 
     let caseInputs (operation: CatalogOperation) (declaration: CaseActKind) =
         let payload =
-            match CaseActKind.shape declaration with
-            | ActShape.NoValues -> []
-            | ActShape.RegistrationValues ->
+            match (CaseAct.slot declaration: CaseActSlot<unit, unit, unit, unit>) with
+            | CaseActSlot.Bare _ -> []
+            | CaseActSlot.Registration _ ->
                 values
                     operation
                     RecordGroup.Registration
                     (actPath [ "values" ])
                     []
                     (CaseActAnnotations.prefill declaration)
-            | ActShape.DecisionValues ->
+            | CaseActSlot.Decision _ ->
                 values
                     operation
                     RecordGroup.Decision
                     (actPath [ "values" ])
                     []
                     (CaseActAnnotations.prefill declaration)
-            | ActShape.PaymentValues ->
+            | CaseActSlot.Payment _ ->
                 values
                     operation
                     RecordGroup.Payment
                     (actPath [ "values" ])
                     []
                     (CaseActAnnotations.prefill declaration)
-            | ActShape.ReasonText ->
+            | CaseActSlot.Reason _ ->
                 [
                     named
                         operation
@@ -258,7 +262,7 @@ module OperationCatalog =
                         BindingKind.Text
                         true
                 ]
-            | ActShape.CorrectionGroups -> correction operation
+            | CaseActSlot.Correction _ -> correction operation
 
         let revision =
             match (CaseActAnnotations.revision declaration) with
@@ -314,9 +318,9 @@ module OperationCatalog =
             ]
 
         let grant =
-            match AuthorityAct.shape declaration with
-            | AuthorityShape.TargetOnly -> []
-            | AuthorityShape.GrantValues ->
+            match (AuthorityAct.slot declaration: AuthorityActSlot<unit>) with
+            | AuthorityActSlot.Bare _ -> []
+            | AuthorityActSlot.Grant _ ->
                 let scope = actPath ("scope" :: [ "kind" ])
 
                 [

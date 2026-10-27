@@ -33,7 +33,7 @@ let payment: PaymentInput = { PaymentDate = "2026-08-20" }
 
 let correction: AuthoredCorrection =
     {
-        Registration = Change.Keep
+        Registration = Amendment.Keep
         Decision = Change.Keep
         Payment = Change.Keep
     }

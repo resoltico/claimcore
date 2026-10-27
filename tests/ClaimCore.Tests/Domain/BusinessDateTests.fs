@@ -128,7 +128,7 @@ let private closedCorrectionRetainsDates =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Change.Replace
+                        Amendment.Replace
                             { registration with
                                 ClaimantName = "Synthetic corrected party"
                             }
@@ -156,7 +156,7 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Change.Replace
+                        Amendment.Replace
                             { registration with
                                 IncidentDate = "2026-08-02"
                             }
@@ -173,7 +173,7 @@ let private spellingDoesNotRevise =
         let act =
             AuthoredCaseAct.Correct
                 {
-                    Registration = Change.Keep
+                    Registration = Amendment.Keep
                     Decision = Change.Replace decision
                     Payment = Change.Replace { PaymentDate = "2026-08-20" }
                 }

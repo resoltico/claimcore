@@ -94,7 +94,7 @@ let private caseActs registration decision payment reason =
         AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
         AuthoredCaseAct.Correct
             {
-                Registration = Change.Replace registration
+                Registration = Amendment.Replace registration
                 Decision = Change.Replace decision
                 Payment = Change.Replace payment
             },

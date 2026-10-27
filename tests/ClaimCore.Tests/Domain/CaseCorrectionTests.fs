@@ -28,7 +28,7 @@ let private paidCorrectionTests =
 
                 let act =
                     correct
-                        (Change.Replace changedRegistration)
+                        (Amendment.Replace changedRegistration)
                         (Change.Replace
                             { decision with
                                 PayableAmount = "650.00"
@@ -66,7 +66,7 @@ let private paidCorrectionTests =
 
                 let act =
                     correct
-                        Change.Keep
+                        Amendment.Keep
                         (Change.Replace { decision with PayableAmount = "650" })
                         Change.Keep
 
@@ -74,7 +74,7 @@ let private paidCorrectionTests =
             testCase "clearing a paid decision requires clearing its payment record" (fun () ->
                 let before = paid ()
 
-                let act = correct Change.Keep Change.Clear Change.Keep
+                let act = correct Amendment.Keep Change.Clear Change.Keep
 
                 Expect.isError (before |> apply act) "Payment cannot outlive a cleared decision")
         ]
@@ -88,7 +88,9 @@ let private closedCorrectionTests =
 
                 let after =
                     closed
-                    |> apply (correct (Change.Replace changedRegistration) Change.Keep Change.Keep)
+                    |> apply (
+                        correct (Amendment.Replace changedRegistration) Change.Keep Change.Keep
+                    )
                     |> accepted
                     |> Case.snapshot
 
@@ -104,7 +106,7 @@ let private closedCorrectionTests =
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->
                 let before = paid ()
 
-                let result = before |> apply (correct Change.Keep Change.Keep Change.Keep)
+                let result = before |> apply (correct Amendment.Keep Change.Keep Change.Keep)
 
                 Expect.equal result (Error Refusal.CorrectionNoChanges) "No-op is refused"
                 Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
@@ -117,7 +119,7 @@ let private closedCorrectionTests =
                         before
                         |> apply (
                             correct
-                                Change.Keep
+                                Amendment.Keep
                                 (Change.Replace decision)
                                 (Change.Replace { PaymentDate = "2026-08-20" })
                         )
@@ -135,7 +137,7 @@ let private validationTests =
             testCase "correction cannot add a decision to an undecided case" (fun () ->
                 let act =
                     correct
-                        (Change.Replace changedRegistration)
+                        (Amendment.Replace changedRegistration)
                         (Change.Replace decision)
                         Change.Keep
 
@@ -146,7 +148,7 @@ let private validationTests =
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =
                     correct
-                        (Change.Replace
+                        (Amendment.Replace
                             { changedRegistration with
                                 IncidentDate = "2026-09-08"
                                 IncidentNotificationDate = "2026-09-08"

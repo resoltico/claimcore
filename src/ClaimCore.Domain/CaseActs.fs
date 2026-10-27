@@ -8,15 +8,6 @@ type CorrectionGroupAction =
     | Replace
     | Clear
 
-[<RequireQualifiedAccess>]
-type ActShape =
-    | NoValues
-    | RegistrationValues
-    | DecisionValues
-    | PaymentValues
-    | ReasonText
-    | CorrectionGroups
-
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
 type CaseActKind =
@@ -33,20 +24,10 @@ type CaseActKind =
     | Reinstate
     | Erase
 
-    static member shape(kind) =
-        match kind with
-        | CaseActKind.Open
-        | CaseActKind.AmendRegistration -> ActShape.RegistrationValues
-        | CaseActKind.Correct -> ActShape.CorrectionGroups
-        | CaseActKind.Decide -> ActShape.DecisionValues
-        | CaseActKind.RecordPayment -> ActShape.PaymentValues
-        | CaseActKind.Void
-        | CaseActKind.Reinstate -> ActShape.ReasonText
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Erase -> ActShape.NoValues
+[<RequireQualifiedAccess>]
+type Amendment<'value> =
+    | Keep
+    | Replace of 'value
 
 [<RequireQualifiedAccess>]
 type Change<'value> =
@@ -56,7 +37,7 @@ type Change<'value> =
 
 type Correction<'registration, 'decision, 'payment> =
     {
-        Registration: Change<'registration>
+        Registration: Amendment<'registration>
         Decision: Change<'decision>
         Payment: Change<'payment>
     }
@@ -81,40 +62,28 @@ type AuthoredCorrection = Correction<RegistrationInput, DecisionInput, PaymentIn
 type ValidCaseAct = CaseAct<Registration, Decision, Payment, Reason>
 type ValidCorrection = Correction<Registration, Decision, Payment>
 
-[<RequireQualifiedAccess>]
-type ActPayload<'registration, 'decision, 'payment, 'reason> =
-    | Empty
-    | Registration of 'registration
-    | Decision of 'decision
-    | Payment of 'payment
-    | Reason of 'reason
-    | Correction of Correction<'registration, 'decision, 'payment>
-
-module ActPayload =
-    let registration =
-        function
-        | ActPayload.Registration value -> Some value
-        | _ -> None
-
-    let decision =
-        function
-        | ActPayload.Decision value -> Some value
-        | _ -> None
-
-    let payment =
-        function
-        | ActPayload.Payment value -> Some value
-        | _ -> None
-
-    let reason =
-        function
-        | ActPayload.Reason value -> Some value
-        | _ -> None
-
-    let correction =
-        function
-        | ActPayload.Correction value -> Some value
-        | _ -> None
+[<RequireQualifiedAccess; NoEquality; NoComparison>]
+type CaseActSlot<'registration, 'decision, 'payment, 'reason> =
+    | Bare of CaseAct<'registration, 'decision, 'payment, 'reason>
+    | Registration of
+        inject: ('registration -> CaseAct<'registration, 'decision, 'payment, 'reason>) *
+        project: (CaseAct<'registration, 'decision, 'payment, 'reason> -> 'registration option)
+    | Decision of
+        inject: ('decision -> CaseAct<'registration, 'decision, 'payment, 'reason>) *
+        project: (CaseAct<'registration, 'decision, 'payment, 'reason> -> 'decision option)
+    | Payment of
+        inject: ('payment -> CaseAct<'registration, 'decision, 'payment, 'reason>) *
+        project: (CaseAct<'registration, 'decision, 'payment, 'reason> -> 'payment option)
+    | Reason of
+        inject: ('reason -> CaseAct<'registration, 'decision, 'payment, 'reason>) *
+        project: (CaseAct<'registration, 'decision, 'payment, 'reason> -> 'reason option)
+    | Correction of
+        inject:
+            (Correction<'registration, 'decision, 'payment>
+                -> CaseAct<'registration, 'decision, 'payment, 'reason>) *
+        project:
+            (CaseAct<'registration, 'decision, 'payment, 'reason>
+                -> Correction<'registration, 'decision, 'payment> option)
 
 module CaseAct =
     let kind =
@@ -132,6 +101,11 @@ module CaseAct =
         | CaseAct.Reinstate _ -> CaseActKind.Reinstate
         | CaseAct.Erase -> CaseActKind.Erase
 
+    let private amend transform =
+        function
+        | Amendment.Keep -> Ok Amendment.Keep
+        | Amendment.Replace value -> transform value |> Result.map Amendment.Replace
+
     let private change transform =
         function
         | Change.Keep -> Ok Change.Keep
@@ -148,7 +122,7 @@ module CaseAct =
         | CaseAct.Void value -> reason value |> Result.map CaseAct.Void
         | CaseAct.Reinstate value -> reason value |> Result.map CaseAct.Reinstate
         | CaseAct.Correct value ->
-            change registration value.Registration
+            amend registration value.Registration
             |> Result.bind (fun r ->
                 change decision value.Decision
                 |> Result.bind (fun d ->
@@ -170,39 +144,59 @@ module CaseAct =
         traverse (registration >> Ok) (decision >> Ok) (payment >> Ok) (reason >> Ok) act
         |> Result.defaultWith (fun () -> invalidOp "A total act mapping cannot fail.")
 
-    let payload =
+    let private projectOpen =
         function
-        | CaseAct.Open value
-        | CaseAct.AmendRegistration value -> ActPayload.Registration value
-        | CaseAct.Correct value -> ActPayload.Correction value
-        | CaseAct.Decide value -> ActPayload.Decision value
-        | CaseAct.RecordPayment value -> ActPayload.Payment value
-        | CaseAct.Void value
-        | CaseAct.Reinstate value -> ActPayload.Reason value
-        | CaseAct.WithdrawDecision
-        | CaseAct.ClearPayment
-        | CaseAct.Close
-        | CaseAct.Reopen
-        | CaseAct.Erase -> ActPayload.Empty
+        | CaseAct.Open value -> Some value
+        | _ -> None
 
-    // Exhaustive structural reconstruction; every valid kind/payload pairing is explicit.
-    // fsharplint:disable-next-line CyclomaticComplexity
-    let ofPayload kind payload =
-        match kind, payload with
-        | CaseActKind.Open, ActPayload.Registration value -> CaseAct.Open value
-        | CaseActKind.AmendRegistration, ActPayload.Registration value ->
-            CaseAct.AmendRegistration value
-        | CaseActKind.Correct, ActPayload.Correction value -> CaseAct.Correct value
-        | CaseActKind.Decide, ActPayload.Decision value -> CaseAct.Decide value
-        | CaseActKind.RecordPayment, ActPayload.Payment value -> CaseAct.RecordPayment value
-        | CaseActKind.Void, ActPayload.Reason value -> CaseAct.Void value
-        | CaseActKind.Reinstate, ActPayload.Reason value -> CaseAct.Reinstate value
-        | CaseActKind.WithdrawDecision, ActPayload.Empty -> CaseAct.WithdrawDecision
-        | CaseActKind.ClearPayment, ActPayload.Empty -> CaseAct.ClearPayment
-        | CaseActKind.Close, ActPayload.Empty -> CaseAct.Close
-        | CaseActKind.Reopen, ActPayload.Empty -> CaseAct.Reopen
-        | CaseActKind.Erase, ActPayload.Empty -> CaseAct.Erase
-        | _ -> invalidArg (nameof payload) "The payload must match the act's declared shape."
+    let private projectAmendRegistration =
+        function
+        | CaseAct.AmendRegistration value -> Some value
+        | _ -> None
+
+    let private projectCorrect =
+        function
+        | CaseAct.Correct value -> Some value
+        | _ -> None
+
+    let private projectDecide =
+        function
+        | CaseAct.Decide value -> Some value
+        | _ -> None
+
+    let private projectRecordPayment =
+        function
+        | CaseAct.RecordPayment value -> Some value
+        | _ -> None
+
+    let private projectVoid =
+        function
+        | CaseAct.Void value -> Some value
+        | _ -> None
+
+    let private projectReinstate =
+        function
+        | CaseAct.Reinstate value -> Some value
+        | _ -> None
+
+    let slot<'registration, 'decision, 'payment, 'reason>
+        kind
+        : CaseActSlot<'registration, 'decision, 'payment, 'reason> =
+        match kind with
+        | CaseActKind.Open -> CaseActSlot.Registration(CaseAct.Open, projectOpen)
+        | CaseActKind.AmendRegistration ->
+            CaseActSlot.Registration(CaseAct.AmendRegistration, projectAmendRegistration)
+        | CaseActKind.Correct -> CaseActSlot.Correction(CaseAct.Correct, projectCorrect)
+        | CaseActKind.Decide -> CaseActSlot.Decision(CaseAct.Decide, projectDecide)
+        | CaseActKind.WithdrawDecision -> CaseActSlot.Bare CaseAct.WithdrawDecision
+        | CaseActKind.RecordPayment ->
+            CaseActSlot.Payment(CaseAct.RecordPayment, projectRecordPayment)
+        | CaseActKind.ClearPayment -> CaseActSlot.Bare CaseAct.ClearPayment
+        | CaseActKind.Close -> CaseActSlot.Bare CaseAct.Close
+        | CaseActKind.Reopen -> CaseActSlot.Bare CaseAct.Reopen
+        | CaseActKind.Void -> CaseActSlot.Reason(CaseAct.Void, projectVoid)
+        | CaseActKind.Reinstate -> CaseActSlot.Reason(CaseAct.Reinstate, projectReinstate)
+        | CaseActKind.Erase -> CaseActSlot.Bare CaseAct.Erase
 
     let registration (value: Registration) : RegistrationInput =
         {
@@ -246,11 +240,21 @@ module CorrectionGroupAction =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
-    let forGroup =
+module Amendment =
+    let private action =
         function
-        | RecordGroup.Registration -> [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ]
-        | RecordGroup.Decision
-        | RecordGroup.Payment -> all
+        | Amendment.Keep -> CorrectionGroupAction.Keep
+        | Amendment.Replace _ -> CorrectionGroupAction.Replace
+
+    let actions =
+        Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<Amendment<unit>>
+        |> Array.map (fun case ->
+            let payloads = Array.create (case.GetFields().Length) (box ())
+
+            (Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(case, payloads) |> nonNull)
+            :?> Amendment<unit>
+            |> action)
+        |> Array.toList
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseActKind =

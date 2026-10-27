@@ -59,9 +59,9 @@ references from Application, RecordFormat and Postgres through called Domain hel
 supplies the compiler service. Compiled controls distinguish a used helper from an unrelated presentation
 member in the same module, and preserve references in signatures and later body expressions.
 
-A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
-on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
-wire-facing names. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
+A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot` and `AuthorityAct.slot`
+pair typed inject/project functions; wire and durable codecs select their own member names without
+reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 

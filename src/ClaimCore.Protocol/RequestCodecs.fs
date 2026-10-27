@@ -61,65 +61,49 @@ module RequestCodecs =
         |> Codec.build
         |> Codec.named "Payment"
 
-    let private correctionVariants group variants =
-        CorrectionGroupAction.forGroup group
-        |> List.map (fun action ->
-            variants
-            |> List.find (fun make -> make.Tag = CorrectionGroupAction.token action))
-
     let registrationGroup =
         tagged
             "RegistrationGroup"
-            (correctionVariants
-                RecordGroup.Registration
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id registration)
-                ])
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Amendment.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Amendment.Replace
+                    (function
+                    | Amendment.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field "values" id registration)
+            ]
 
     let decisionGroup =
         tagged
             "DecisionGroup"
-            (correctionVariants
-                RecordGroup.Decision
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id decision)
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        Change.Clear
-                ])
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Change.Replace
+                    (function
+                    | Change.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field "values" id decision)
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+            ]
 
     let paymentGroup =
         tagged
             "PaymentGroup"
-            (correctionVariants
-                RecordGroup.Payment
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id payment)
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        Change.Clear
-                ])
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Change.Replace
+                    (function
+                    | Change.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field "values" id payment)
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+            ]
 
     let correction =
         (record (fun v0 v1 v2 ->
@@ -135,42 +119,29 @@ module RequestCodecs =
         |> build
         |> named "Correction"
 
-    let private caseCodec token registration decision payment reason correction =
-        let memberCodec name codec inject project kind =
-            variant
-                (token kind)
-                (inject >> CaseAct.ofPayload kind)
-                (fun act ->
-                    if CaseAct.kind act = kind then
-                        project (CaseAct.payload act)
-                    else
-                        None)
-                (record id |> field name id codec)
-
+    let private caseCodec token (registration, decision, payment) (reason, correction) =
         CaseActKind.all
         |> List.map (fun kind ->
-            match CaseActKind.shape kind with
-            | ActShape.NoValues ->
-                unitVariant (token kind) (CaseAct.ofPayload kind ActPayload.Empty)
-            | ActShape.RegistrationValues ->
-                memberCodec
-                    "values"
-                    registration
-                    ActPayload.Registration
-                    ActPayload.registration
-                    kind
-            | ActShape.DecisionValues ->
-                memberCodec "values" decision ActPayload.Decision ActPayload.decision kind
-            | ActShape.PaymentValues ->
-                memberCodec "values" payment ActPayload.Payment ActPayload.payment kind
-            | ActShape.ReasonText ->
-                memberCodec "reason" reason ActPayload.Reason ActPayload.reason kind
-            | ActShape.CorrectionGroups ->
-                memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
+            let tag = token kind
+
+            let memberCodec name codec (inject, project) =
+                variant tag inject project (record id |> field name id codec)
+
+            match CaseAct.slot kind with
+            | CaseActSlot.Bare act -> unitVariant tag act
+            | CaseActSlot.Registration(inject, project) ->
+                memberCodec "values" registration (inject, project)
+            | CaseActSlot.Decision(inject, project) ->
+                memberCodec "values" decision (inject, project)
+            | CaseActSlot.Payment(inject, project) ->
+                memberCodec "values" payment (inject, project)
+            | CaseActSlot.Reason(inject, project) -> memberCodec "reason" reason (inject, project)
+            | CaseActSlot.Correction(inject, project) ->
+                memberCodec "groups" correction (inject, project))
         |> tagged "CaseAct"
 
     let caseActWithNames names =
-        caseCodec names registration decision payment text correction
+        caseCodec names (registration, decision, payment) (text, correction)
 
     let caseAct = caseActWithNames CaseActKind.token
 
@@ -233,18 +204,9 @@ module RequestCodecs =
         |> List.map (fun kind ->
             let token = AuthorityKind.token kind
 
-            match AuthorityAct.shape kind with
-            | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
-            | AuthorityShape.GrantValues ->
-                variant
-                    token
-                    (Some >> AuthorityAct.ofPayload kind)
-                    (fun act ->
-                        if AuthorityAct.kind act = kind then
-                            AuthorityAct.payload act
-                        else
-                            None)
-                    grant)
+            match AuthorityAct.slot kind with
+            | AuthorityActSlot.Bare act -> unitVariant token act
+            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
     let authorityActWith role =
         authorityVariantsWith role scope |> tagged "AuthorityAct"

@@ -44,10 +44,12 @@ type AuthorityRequest =
         Act: AuthoredAuthorityAct
     }
 
-[<RequireQualifiedAccess>]
-type AuthorityShape =
-    | TargetOnly
-    | GrantValues
+[<RequireQualifiedAccess; NoEquality; NoComparison>]
+type AuthorityActSlot<'grant> =
+    | Bare of AuthorityAct<'grant>
+    | Grant of
+        inject: ('grant -> AuthorityAct<'grant>) *
+        project: (AuthorityAct<'grant> -> 'grant option)
 
 module AuthorityAct =
     let kind =
@@ -59,14 +61,26 @@ module AuthorityAct =
         | AuthorityAct.Disable -> AuthorityKind.Disable
         | AuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
 
-    let shape =
-        function
-        | AuthorityKind.Grant
-        | AuthorityKind.Revoke -> AuthorityShape.GrantValues
-        | AuthorityKind.Register
-        | AuthorityKind.Enable
-        | AuthorityKind.Disable
-        | AuthorityKind.ProvisionOwner -> AuthorityShape.TargetOnly
+    let slot<'grant> kind : AuthorityActSlot<'grant> =
+        match kind with
+        | AuthorityKind.ProvisionOwner -> AuthorityActSlot.Bare AuthorityAct.ProvisionOwner
+        | AuthorityKind.Register -> AuthorityActSlot.Bare AuthorityAct.Register
+        | AuthorityKind.Grant ->
+            AuthorityActSlot.Grant(
+                AuthorityAct.Grant,
+                (function
+                | AuthorityAct.Grant value -> Some value
+                | _ -> None)
+            )
+        | AuthorityKind.Revoke ->
+            AuthorityActSlot.Grant(
+                AuthorityAct.Revoke,
+                (function
+                | AuthorityAct.Revoke value -> Some value
+                | _ -> None)
+            )
+        | AuthorityKind.Enable -> AuthorityActSlot.Bare AuthorityAct.Enable
+        | AuthorityKind.Disable -> AuthorityActSlot.Bare AuthorityAct.Disable
 
     let traverse grant =
         function
@@ -80,25 +94,6 @@ module AuthorityAct =
     let map grant act =
         traverse (grant >> Ok) act
         |> Result.defaultWith (fun () -> invalidOp "A total authority mapping cannot fail.")
-
-    let payload =
-        function
-        | AuthorityAct.Grant grant
-        | AuthorityAct.Revoke grant -> Some grant
-        | AuthorityAct.Register
-        | AuthorityAct.Enable
-        | AuthorityAct.Disable
-        | AuthorityAct.ProvisionOwner -> None
-
-    let ofPayload kind grant =
-        match kind, grant with
-        | AuthorityKind.Grant, Some grant -> AuthorityAct.Grant grant
-        | AuthorityKind.Revoke, Some grant -> AuthorityAct.Revoke grant
-        | AuthorityKind.Register, None -> AuthorityAct.Register
-        | AuthorityKind.Enable, None -> AuthorityAct.Enable
-        | AuthorityKind.Disable, None -> AuthorityAct.Disable
-        | AuthorityKind.ProvisionOwner, None -> AuthorityAct.ProvisionOwner
-        | _ -> invalidArg (nameof grant) "The grant must match the authority act shape."
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module AuthorityKind =

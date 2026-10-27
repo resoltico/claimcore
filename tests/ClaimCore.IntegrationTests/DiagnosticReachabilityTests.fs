@@ -27,7 +27,7 @@ let private decision: DecisionInput =
 
 let private keep: AuthoredCorrection =
     {
-        Registration = Change.Keep
+        Registration = Amendment.Keep
         Decision = Change.Keep
         Payment = Change.Keep
     }
@@ -267,7 +267,7 @@ let private stateScenarios () =
         [ decided ],
         correction
             { keep with
-                Registration = Change.Replace registration
+                Registration = Amendment.Replace registration
             }
         [], correction { keep with Decision = Change.Clear }
         [], payment

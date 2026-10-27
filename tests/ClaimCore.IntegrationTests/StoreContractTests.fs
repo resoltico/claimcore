@@ -696,7 +696,7 @@ let private revokedAdvice fixture =
         let correction: AuthoredCorrection =
             {
                 Registration =
-                    Change.Replace
+                    Amendment.Replace
                         { registration with
                             ClaimedAmount = "1001.0000"
                         }
