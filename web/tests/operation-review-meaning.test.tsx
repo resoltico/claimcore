@@ -1,3 +1,4 @@
+import { principal, registration } from "./support/inputs";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
@@ -28,15 +29,7 @@ const correction: OperationInput = {
     groups: {
       registration: {
         kind: "REPLACE",
-        values: {
-          incidentDate: "2026-09-01",
-          incidentNotificationDate: "2026-09-02",
-          incidentCountry: "LV",
-          claimantName: "KEEP",
-          insurerName: "Synthetic insurer",
-          claimedAmount: "12.3400",
-          claimedCurrency: "EUR",
-        },
+        values: registration({ claimantName: "KEEP", claimedAmount: "12.3400" }),
       },
       decision: {
         kind: "KEEP",
@@ -86,11 +79,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
   const input: OperationInput = {
     kind: "AUTHORITY",
     operationId,
-    target: {
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject: "KEEP",
-    },
+    target: principal({ subject: "KEEP" }),
     act: {
       kind: "GRANT",
       role: "CASE_READER",

@@ -72,24 +72,9 @@ let internal actRequest n reference revision act : UnvalidatedCaseRequest =
         Act = act
     }
 
-let internal authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
-    {
-        OperationId = operationId
-        Target = target
-        Act = act
-    }
-    |> AuthorityRequests.toInput
+let internal authorityRequest = Inputs.authorityRequest
 
-let internal registration: RegistrationInput =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic Party"
-        InsurerName = "Synthetic Insurer"
-        ClaimedAmount = "1000.00"
-        ClaimedCurrency = "EUR"
-    }
+let internal registration: RegistrationInput = Inputs.registration
 
 let internal accepted (reply: ExecuteReply) =
     match reply.Outcome with

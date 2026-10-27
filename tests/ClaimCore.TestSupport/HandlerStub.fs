@@ -49,14 +49,10 @@ let view reference =
             ExpectedRevision = 0L
             Act =
                 (UnvalidatedCaseAct.Open
-                    {
-                        IncidentDate = "2026-08-01"
-                        IncidentNotificationDate = "2026-08-03"
-                        IncidentCountry = "LV"
+                    { Inputs.registration with
                         ClaimantName = "Synthetic claimant"
                         InsurerName = "Synthetic insurer"
                         ClaimedAmount = "1.00"
-                        ClaimedCurrency = "EUR"
                     })
         }
 

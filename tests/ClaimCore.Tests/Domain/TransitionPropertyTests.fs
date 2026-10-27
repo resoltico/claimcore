@@ -65,14 +65,10 @@ let private initial: CaseSnapshot =
                     Status = CaseStatus.Opened
                     Registration =
                         CaseFixtures.registration
-                            {
-                                IncidentDate = "2026-08-01"
-                                IncidentNotificationDate = "2026-08-03"
-                                IncidentCountry = "LV"
+                            { Inputs.registration with
                                 ClaimantName = "Example Claimant Ltd"
                                 InsurerName = "Example Alleged Insurer"
                                 ClaimedAmount = "1000"
-                                ClaimedCurrency = "EUR"
                             }
                     Decision = None
                     Payment = None

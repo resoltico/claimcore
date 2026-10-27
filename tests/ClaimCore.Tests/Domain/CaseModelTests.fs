@@ -11,14 +11,8 @@ open ClaimCore.Domain
 let private today = DateOnly(2026, 9, 7)
 
 let private registration =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic Party"
-        InsurerName = "Synthetic Insurer"
+    { Inputs.registration with
         ClaimedAmount = "1000"
-        ClaimedCurrency = "EUR"
     }
 
 let private request revision act =
@@ -172,13 +166,7 @@ let private matrix =
                     (actual = Set.ofList expected)
                     "Independent advertisement expectation")
 
-let private allKeep =
-    (UnvalidatedCaseAct.Correct
-        {
-            Registration = RegistrationGroup.Keep
-            Decision = DecisionGroup.Keep
-            Payment = PaymentGroup.Keep
-        })
+let private allKeep = UnvalidatedCaseAct.Correct Inputs.correction
 
 let private allKeepStates =
     [

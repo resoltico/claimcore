@@ -25,12 +25,7 @@ let private steward action : UnvalidatedCaseRequest =
 let private authority action : AuthorityRequestRecord =
     {
         OperationId = operationId
-        Target =
-            {
-                Kind = "HUMAN"
-                Issuer = "https://issuer.example/"
-                Subject = "synthetic-owner"
-            }
+        Target = Inputs.principal
         Act = action
     }
 

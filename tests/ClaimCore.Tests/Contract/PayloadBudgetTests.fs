@@ -24,14 +24,10 @@ let private fields length : CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration
-                {
-                    IncidentDate = "2026-08-01"
-                    IncidentNotificationDate = "2026-08-03"
-                    IncidentCountry = "LV"
+                { Inputs.registration with
                     ClaimantName = String(char 1, length)
                     InsurerName = String(char 1, length)
                     ClaimedAmount = "999999999999999999.9999"
-                    ClaimedCurrency = "EUR"
                 }
         Decision = None
         Payment = None

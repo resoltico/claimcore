@@ -26,14 +26,12 @@ let private snapshot (reference: string) claimant : CaseSnapshot =
                     Status = CaseStatus.Opened
                     Registration =
                         CaseFixtures.registration
-                            {
-                                IncidentDate = registration.IncidentDate
-                                IncidentNotificationDate = registration.IncidentNotificationDate
-                                IncidentCountry = "LV"
+                            { (Inputs.registrationOn
+                                  registration.IncidentDate
+                                  registration.IncidentNotificationDate) with
                                 ClaimantName = claimant
                                 InsurerName = registration.InsurerName
                                 ClaimedAmount = "1000"
-                                ClaimedCurrency = "EUR"
                             }
                     Decision = None
                     Payment = None
