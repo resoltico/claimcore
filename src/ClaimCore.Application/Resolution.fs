@@ -1,7 +1,6 @@
 namespace ClaimCore.Application
 
 open System
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 /// Authorship permits receipt metadata; current authority still controls snapshot disclosure.

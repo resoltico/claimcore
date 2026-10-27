@@ -1,10 +1,10 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.IO
-open ClaimCore.Contract
 
 /// The current request stays frozen until its complete reply is flushed.
 type FrameDelivery(output: Stream, errors: Stream, language: string, render: CliReply -> byte array)

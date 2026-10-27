@@ -2,7 +2,7 @@ module ClaimCore.Tests.WireResponseTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -12,7 +12,6 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private bytes (raw: string) = Encoding.UTF8.GetBytes raw
@@ -174,10 +173,10 @@ let private checkDiscriminators (root: JsonElement) =
                 "Each branch is named"
 
 let private openApi () =
-    let first = (ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes)
+    let first = (ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes)
 
     Expect.equal
-        ((ClaimCore.Contract.Protocol.OpenApi.document |> WireWriter.bytes))
+        ((ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes))
         first
         "OpenAPI bytes are deterministic"
 

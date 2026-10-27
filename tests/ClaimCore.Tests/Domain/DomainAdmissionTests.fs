@@ -2,7 +2,7 @@ module ClaimCore.Tests.DomainAdmissionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain

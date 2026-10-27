@@ -1,11 +1,10 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Application
 
-open ClaimCore.Contract.Protocol
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery

@@ -1,13 +1,13 @@
 module ClaimCore.Tests.CliCharacterWarningTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System.IO
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Cli
 

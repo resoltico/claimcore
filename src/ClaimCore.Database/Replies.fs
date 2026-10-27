@@ -1,8 +1,7 @@
 namespace ClaimCore.Database
 
 open System
-open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Application

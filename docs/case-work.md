@@ -90,7 +90,7 @@ membership. ZZ means unknown/international country; translated country names are
 Retained business text is nonempty, excludes NUL, unpaired surrogates and Unicode noncharacters, and obeys
 permanent byte bounds. Newly asserted names/reasons contain 1–200 Unicode scalars, without surrounding
 whitespace, controls, line/paragraph separators or explicitly forbidden invisible/directional characters.
-Joining characters and permitted format characters remain allowed. The [display policy](../src/ClaimCore.Contract/Messages/TextDisplay.fs)
+Joining characters and permitted format characters remain allowed. The [display policy](../src/ClaimCore.Protocol/Messages/TextDisplay.fs)
 exposes bounded suspicious-scalar warnings without rewriting raw values.
 
 ## Revisions and history

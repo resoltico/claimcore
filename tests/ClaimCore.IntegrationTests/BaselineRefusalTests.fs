@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.BaselineRefusalTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System

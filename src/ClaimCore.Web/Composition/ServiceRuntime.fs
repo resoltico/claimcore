@@ -2,7 +2,7 @@ namespace ClaimCore.Web.Composition
 
 open ClaimCore.Domain
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading

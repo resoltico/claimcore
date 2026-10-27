@@ -1,11 +1,12 @@
 module internal ClaimCore.TestSupport.MemoryStore
 
+open ClaimCore.RecordFormat
 open System
 open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
 open ClaimCore.Application
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 type private State =

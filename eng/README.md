@@ -7,7 +7,7 @@ iteration. Run `bash eng/verify.sh growth` separately before release or on deman
 | Tool | Responsibility |
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and bounded native report retention |
-| [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Contracts, CLI reference and browser chrome messages; [generation instructions](../docs/contributing.md#generated-contracts) |
+| [ContractGenerator](ClaimCore.ProtocolGenerator/Program.fs) | Contracts, CLI reference and browser chrome messages; [generation instructions](../docs/contributing.md#generated-contracts) |
 | [Check-FSharpLint.sh](Check-FSharpLint.sh) | F# rules, collecting failures across source roots |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |
 

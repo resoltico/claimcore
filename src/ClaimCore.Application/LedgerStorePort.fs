@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -71,8 +70,6 @@ type AuthorityProjection =
     | SetEnabled of actorId: Guid * enabled: bool
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option
     | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
-
-type GrantPosition = { Role: Role; CaseId: Guid option }
 
 type CasePageSelection =
     {

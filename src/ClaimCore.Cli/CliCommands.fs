@@ -1,7 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 [<RequireQualifiedAccess>]
 type CliUsageIssue =

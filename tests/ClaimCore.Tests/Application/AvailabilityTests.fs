@@ -1,6 +1,6 @@
 module ClaimCore.Tests.AvailabilityTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain

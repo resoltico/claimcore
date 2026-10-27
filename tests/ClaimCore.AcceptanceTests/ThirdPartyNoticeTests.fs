@@ -1,6 +1,7 @@
 module ClaimCore.AcceptanceTests.ThirdPartyNoticeTests
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.IO

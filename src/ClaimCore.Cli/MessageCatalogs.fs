@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Reflection
 open System.Text.Json
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 /// Resource I/O belongs to the client; catalog admission and rendering remain pure.
 module internal MessageCatalogs =

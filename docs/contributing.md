@@ -48,7 +48,7 @@ and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architec
 [ArchUnitNET](../Directory.Packages.props) runs in the Debug unit stage. Subjects cover whole assemblies
 because F# task/async bodies and closures can live in StartupCode types. Forbidden targets use namespace boundaries with
 non-empty controls; direct and generated F# shapes prove detection. Product internals may be exposed to tests only.
-All wire codecs and endpoint descriptions live in ClaimCore.Contract.Protocol; Application and RecordFormat
+All wire codecs and endpoint descriptions live in ClaimCore.Protocol; Application and RecordFormat
 cannot depend on that namespace.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
@@ -76,11 +76,11 @@ a fresh installation. The runtime refuses unsupported installation identities wi
 After a declaration, codec or message change:
 
 ```sh
-dotnet run --project eng/ClaimCore.ContractGenerator --configuration Release --no-restore -- --output contracts
-dotnet run --project eng/ClaimCore.ContractGenerator --configuration Release --no-restore -- --check
+dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --no-restore -- --output contracts
+dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --no-restore -- --check
 ```
 
-The [generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns its exact inventory under
+The [generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns its exact inventory under
 [contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome messages](../web/src/generated/chrome-messages.ts).
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
 producer. Custom output directories contain only contract artifacts.

@@ -1,6 +1,6 @@
 module ClaimCore.TestSupport.PostgresFixture
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System

@@ -8,7 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
@@ -109,10 +109,20 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         let fixture = database.Fixture
 
         let writer =
-            Service.create fixture.InstallationId writerGate.Store fixture.Calendar principal
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                writerGate.Store
+                fixture.Calendar
+                principal
 
         let revoker =
-            Service.create fixture.InstallationId revokeGate.Store fixture.Calendar fixture.Owner
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                revokeGate.Store
+                fixture.Calendar
+                fixture.Owner
 
         let act =
             match snapshot.State with

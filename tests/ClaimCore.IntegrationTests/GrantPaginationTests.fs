@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.GrantPaginationTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -363,6 +363,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
 
         let actor =
             Service.create
+                BuildIdentity.current.Version
                 database.Fixture.InstallationId
                 (store :> IStore)
                 database.Fixture.Calendar

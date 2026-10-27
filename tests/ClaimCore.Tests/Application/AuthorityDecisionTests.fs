@@ -1,7 +1,7 @@
 module ClaimCore.Tests.AuthorityDecisionTests
 
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures

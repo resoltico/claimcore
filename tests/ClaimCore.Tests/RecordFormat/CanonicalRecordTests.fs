@@ -1,6 +1,6 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System
@@ -254,11 +254,10 @@ let private malformedIdentity () =
                         ClaimedAmount = amount
                     })
 
-        let wire = ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Write request
+        let wire = ClaimCore.Protocol.RequestCodecs.caseRequest.Write request
 
         let admitted =
-            ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Read "$" wire
-            |> Fixtures.accepted
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire |> Fixtures.accepted
 
         Expect.equal admitted request "Wire admission preserves malformed authored scalars"
 

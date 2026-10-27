@@ -1,8 +1,9 @@
 module ClaimCore.Tests.LocalizationCatalogTests
 
 open Expecto
-open ClaimCore.Contract
-open ClaimCore.ContractGeneration
+open ClaimCore.Domain
+open ClaimCore.Protocol
+open ClaimCore.ProtocolGeneration
 open ClaimCore.Cli
 
 let private change language transform =

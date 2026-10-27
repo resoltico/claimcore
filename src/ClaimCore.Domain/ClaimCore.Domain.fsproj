@@ -26,5 +26,16 @@
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
     <Compile Include="Authority.fs" />
+    <Compile Include="Service/Paging.fs" />
+    <Compile Include="Service/Faults.fs" />
+    <Compile Include="Service/Advice.fs" />
+    <Compile Include="Service/Receipts.fs" />
+    <Compile Include="Service/History.fs" />
+    <Compile Include="Service/CasePages.fs" />
+    <Compile Include="Service/AuthorityPages.fs" />
+    <Compile Include="Service/Replies.fs" />
+    <Compile Include="Service/Operations.fs" />
+    <Compile Include="Service/Resolution.fs" />
+    <Compile Include="Service/BusinessFields.fs" />
   </ItemGroup>
 </Project>

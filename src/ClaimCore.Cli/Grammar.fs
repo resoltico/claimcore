@@ -1,11 +1,11 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Collections.Generic
 open System.Globalization
-open ClaimCore.Contract
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]

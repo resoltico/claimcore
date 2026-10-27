@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open System
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 module UsageText =
     let private message language value =

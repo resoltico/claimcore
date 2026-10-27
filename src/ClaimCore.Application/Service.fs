@@ -5,11 +5,12 @@ open ClaimCore.Domain
 
 /// The typed application boundary; hosts choose their codecs and transport independently.
 module Service =
-    let create installationId store calendar principal =
+    let create productVersion installationId store calendar principal =
         if installationId = Guid.Empty then
             invalidArg (nameof installationId) "Use an admitted installation."
 
         {
+            ProductVersion = productVersion
             InstallationId = installationId
             Store = store
             Calendar = calendar

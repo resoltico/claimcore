@@ -98,7 +98,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         nonEmptyTargets architecture label provider
 
     let protocol () =
-        Types().That().ResideInNamespaceOrBelow("ClaimCore.Contract.Protocol")
+        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
         |> targets "wire namespace"
 
     match name with
@@ -125,7 +125,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Contract")
+                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.Application")
                 .Or()

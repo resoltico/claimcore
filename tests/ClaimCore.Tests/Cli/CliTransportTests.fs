@@ -1,8 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -103,19 +102,19 @@ let private requestBytes () =
 
 let private failurePhases () =
     for endpoint in Api.all do
-        for reason in ClaimCore.Contract.Protocol.HostFailures.all do
+        for reason in ClaimCore.Protocol.HostFailures.all do
             use handler =
                 new Handler(fun _ ->
                     Task.FromResult(
                         response
-                            (ClaimCore.Contract.Protocol.HostFailures.status reason)
+                            (ClaimCore.Protocol.HostFailures.status reason)
                             (HostFailureCodecs.encode reason)
                     ))
 
             let expected =
                 if
                     ((Api.executesLedger endpoint)
-                     && ClaimCore.Contract.Protocol.HostFailures.phase reason
+                     && ClaimCore.Protocol.HostFailures.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
                     4

@@ -1,10 +1,10 @@
 namespace ClaimCore.Tests.Architecture.NegativeFixtures
 
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System
 open System.Threading.Tasks
-open ClaimCore.Contract.Protocol
 
 type PostgresReference =
     static member Target() = typeof<ClaimCore.Postgres.IRuntime>
@@ -52,7 +52,7 @@ type FileReaderCall =
 /// A compiled wire-codec dependency must never enter a durable grammar.
 type WireCodecCall =
     static member Read() =
-        ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Schema
+        ClaimCore.Protocol.RequestCodecs.caseRequest.Schema
 
 /// Distinct names let controls select compiler-generated bodies as well as declaring types.
 type AmbientShapes =

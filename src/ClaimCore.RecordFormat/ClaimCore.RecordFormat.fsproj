@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <Compile Include="Cursors.fs" />
+    <Compile Include="RecordLimits.fs" />
     <Compile Include="Versions.fs" />
     <Compile Include="DecodeProblem.fs" />
     <Compile Include="LedgerPayload.fs" />

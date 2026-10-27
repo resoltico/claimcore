@@ -1,10 +1,10 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System.Text
 open System.Text.Json
-open ClaimCore.Contract
 open ClaimCore.Json
 
 module Discovery =

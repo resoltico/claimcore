@@ -1,10 +1,9 @@
 module ClaimCore.Tests.CliFrameTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 

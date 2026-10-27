@@ -1,0 +1,29 @@
+namespace ClaimCore.ProtocolGeneration
+
+open ClaimCore.Domain
+open ClaimCore.Protocol
+
+open ClaimCore.Json
+
+module ContractArtifacts =
+    let all () =
+        let catalogs = CatalogValidation.validate ()
+
+        [
+            {
+                Name = "openapi.json"
+                Bytes = Array.append (WireWriter.indentedBytes OpenApi.document) [| byte '\n' |]
+            }
+            {
+                Name = "client.ts"
+                Bytes = TypeScript.source ContractIdentity.value
+            }
+            {
+                Name = "messages.ts"
+                Bytes = MessageGeneration.source catalogs
+            }
+            {
+                Name = "catalog.json"
+                Bytes = ContractDocuments.catalog ()
+            }
+        ]

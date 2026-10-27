@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
@@ -25,7 +25,14 @@ let private inputs () =
 let private malformed () =
     async {
         use probe = unavailable ()
-        let core = Service.create installation (probe :> IStore) calendar owner
+
+        let core =
+            Service.create
+                BuildIdentity.current.Version
+                installation
+                (probe :> IStore)
+                calendar
+                owner
 
         let invalid =
             [
@@ -78,7 +85,14 @@ let private failures () =
             ] do
             use probe = unavailable ()
             probe.WriteFailure <- Some failure
-            let core = Service.create installation (probe :> IStore) calendar owner
+
+            let core =
+                Service.create
+                    BuildIdentity.current.Version
+                    installation
+                    (probe :> IStore)
+                    calendar
+                    owner
 
             for input in inputs () do
                 let! reply = (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
@@ -98,7 +112,14 @@ let private cancelled () =
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
         use probe = unavailable ()
-        let core = Service.create installation (probe :> IStore) calendar owner
+
+        let core =
+            Service.create
+                BuildIdentity.current.Version
+                installation
+                (probe :> IStore)
+                calendar
+                owner
 
         for input in inputs () do
             let! execute = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
@@ -162,7 +183,8 @@ let private committed () =
                         }
                 }
 
-            let core = Service.create installation probe calendar owner
+            let core =
+                Service.create BuildIdentity.current.Version installation probe calendar owner
 
             let! reply = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 

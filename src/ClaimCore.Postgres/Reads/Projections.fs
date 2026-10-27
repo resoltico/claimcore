@@ -1,6 +1,6 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Contract
+open ClaimCore.RecordFormat
 
 open System
 open System.Globalization

@@ -1,6 +1,6 @@
 module ClaimCore.IntegrationTests.ReceiptContextTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System.Threading
 open Expecto
@@ -58,7 +58,12 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
 
         let actor =
-            Service.create fixture.InstallationId (store :> IStore) fixture.Calendar principal
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                (store :> IStore)
+                fixture.Calendar
+                principal
 
         let! result =
             (Core.execute

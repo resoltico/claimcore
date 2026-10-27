@@ -2,13 +2,12 @@ module ClaimCore.Tests.EndpointRegistryTests
 
 open ClaimCore.Web
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open System
 open System.Text
 open System.Security.Cryptography
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -197,7 +196,7 @@ let private structuralIdentity () =
             "The structural registry document excludes retired protocol surface."
 
 let private hostFailures () =
-    for reason in ClaimCore.Contract.Protocol.HostFailures.all do
+    for reason in ClaimCore.Protocol.HostFailures.all do
         let expected = HostFailureCodecs.ofReason reason
 
         Expect.equal

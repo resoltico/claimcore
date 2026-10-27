@@ -42,7 +42,7 @@ let private rollback () =
         for verdict in
             [
                 Verdict.Refuse Refusal.ResourceUnavailable
-                Verdict.Fail ClaimCore.Contract.CoreFault.InternalError
+                Verdict.Fail ClaimCore.Domain.CoreFault.InternalError
             ] do
             let! result =
                 store.Write(

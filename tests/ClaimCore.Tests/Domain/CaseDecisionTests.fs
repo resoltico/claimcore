@@ -1,12 +1,11 @@
 module ClaimCore.Tests.CaseDecisionTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Json
 open ClaimCore.Domain
 open ClaimCore.Application

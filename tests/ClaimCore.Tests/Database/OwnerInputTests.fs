@@ -8,7 +8,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Database
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 open ClaimCore.Postgres
 

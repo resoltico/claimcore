@@ -2,7 +2,7 @@ module ClaimCore.Tests.QuerySelectionTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
@@ -150,7 +150,7 @@ let private context () =
 
     let view = ungranted
 
-    match Queries.contextResult calendar owner instant view with
+    match Queries.contextResult BuildIdentity.current.Version calendar owner instant view with
     | ReadReply.Succeeded value ->
         Expect.isEmpty value.Capabilities "Enabled actor has context without implied capabilities"
         Expect.isEmpty value.Views "No views before grants"
@@ -165,7 +165,12 @@ let private context () =
     | _ -> failtest "Enabled ungranted actor needs context"
 
     Expect.equal
-        (Queries.contextResult calendar owner instant AuthorityView.empty)
+        (Queries.contextResult
+            BuildIdentity.current.Version
+            calendar
+            owner
+            instant
+            AuthorityView.empty)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Unregistered actor has no context"
 
@@ -175,7 +180,7 @@ let private context () =
         }
 
     Expect.equal
-        (Queries.contextResult calendar owner instant disabled)
+        (Queries.contextResult BuildIdentity.current.Version calendar owner instant disabled)
         (ReadReply.Rejected Refusal.ResourceUnavailable)
         "Disabled actor has no context"
 

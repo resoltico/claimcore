@@ -33,7 +33,7 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Contract": "[0.12.0, )",
+          "ClaimCore.Protocol": "[0.12.0, )",
           "ClaimCore.Domain": "[0.12.0, )",
           "ClaimCore.Json": "[0.12.0, )",
           "ClaimCore.RecordFormat": "[0.12.0, )",

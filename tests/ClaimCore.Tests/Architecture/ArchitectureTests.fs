@@ -81,7 +81,7 @@ let private ambientEffects () =
     for name in
         [
             "ClaimCore.Json"
-            "ClaimCore.Contract"
+            "ClaimCore.Protocol"
             "ClaimCore.Domain"
             "ClaimCore.RecordFormat"
             "ClaimCore.Application"
@@ -122,7 +122,7 @@ let private importedReference () =
             "Unused imported project edge is evaluated"
 
         Expect.isFalse
-            (ProjectReferences.permitted "ClaimCore.Contract" references)
+            (ProjectReferences.permitted "ClaimCore.Protocol" references)
             "Only Web and Database may declare this edge"
     finally
         directory.Delete true
@@ -163,7 +163,7 @@ let private postgres () =
     rejects ArchitectureRule.Postgres typeof<PostgresReference>
 
 let private serializer () =
-    for name in [ "ClaimCore.Json"; "ClaimCore.Contract"; "ClaimCore.RecordFormat" ] do
+    for name in [ "ClaimCore.Json"; "ClaimCore.Protocol"; "ClaimCore.RecordFormat" ] do
         check ArchitectureRule.Serializer (Assembly.Load name)
 
     rejects ArchitectureRule.Serializer typeof<JsonSerializerCall>

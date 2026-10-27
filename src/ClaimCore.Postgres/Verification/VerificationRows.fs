@@ -1,6 +1,5 @@
 namespace ClaimCore.Postgres
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 open ClaimCore.Application

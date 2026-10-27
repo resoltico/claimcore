@@ -4,7 +4,7 @@ open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat

@@ -2,7 +2,8 @@ module internal ClaimCore.IntegrationTests.SubmissionStorage
 
 open System.Threading.Tasks
 open ClaimCore.Application
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 let private interceptWrites (store: IStore) intercept =
     { new IStore with

@@ -1,10 +1,9 @@
 module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
 open ClaimCore.Json
 
 open System

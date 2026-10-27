@@ -1,9 +1,8 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Contract.Protocol
 
 open System
 
@@ -85,7 +84,7 @@ type FrameReply =
 type Invocation =
     private
         {
-            Target: ClaimCore.Contract.Protocol.Route
+            Target: ClaimCore.Protocol.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -169,7 +168,7 @@ module Frames =
 
     let private configurationFailure =
         Codec.record (fun setting issue -> setting, issue)
-        |> Protocol.ResponseScalars.fixedField
+        |> ResponseScalars.fixedField
             "code"
             (CliFailureCodes.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)

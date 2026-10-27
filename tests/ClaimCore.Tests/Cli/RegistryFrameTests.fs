@@ -1,13 +1,12 @@
 module ClaimCore.Tests.RegistryFrameTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.Cli
 
 open System
 open System.Text
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 

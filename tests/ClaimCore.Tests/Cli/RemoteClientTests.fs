@@ -1,8 +1,7 @@
 module ClaimCore.Tests.RemoteClientTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
-open ClaimCore.Contract.Protocol
 
 open System
 open System.Security.Cryptography

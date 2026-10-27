@@ -9,7 +9,7 @@ open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres

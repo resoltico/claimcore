@@ -24,7 +24,7 @@ export default {
       output: {
         codeSplitting: {
           groups: [
-            { name: "presentation-catalogs", test: /\/ClaimCore.Contract\/Localization\//u },
+            { name: "presentation-catalogs", test: /\/ClaimCore.Protocol\/Localization\//u },
           ],
         },
       },

@@ -1,11 +1,11 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Application
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.Contract
 open ClaimCore.Json
 
 [<NoEquality; NoComparison>]
@@ -18,7 +18,7 @@ type PreparedRoute =
 [<NoEquality; NoComparison>]
 type Route =
     {
-        Description: ClaimCore.Contract.Protocol.Route
+        Description: ClaimCore.Protocol.Route
         Prepare: JsonValue -> Result<PreparedRoute, Problem>
     }
 
@@ -31,7 +31,7 @@ module Route =
         (invoke: ServiceContext -> 'Input -> CancellationToken -> Task<'Output>)
         : Route =
         {
-            Description = ClaimCore.Contract.Protocol.Route.describe endpoint
+            Description = ClaimCore.Protocol.Route.describe endpoint
             Prepare =
                 fun value ->
                     endpoint.Input.Read "$" value

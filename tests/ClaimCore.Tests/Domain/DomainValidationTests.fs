@@ -2,7 +2,7 @@ module ClaimCore.Tests.DomainValidationTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open Expecto
@@ -96,12 +96,12 @@ let private restorationTests =
                         ]
 
                 Expect.isOk
-                    (Protocol.ResponseCodecs.caseFields.Read "$" (candidate 7))
+                    (ResponseCodecs.caseFields.Read "$" (candidate 7))
                     "The complete independent control admits"
 
                 for mask in 1..6 do
                     Expect.isError
-                        (Protocol.ResponseCodecs.caseFields.Read "$" (candidate mask))
+                        (ResponseCodecs.caseFields.Read "$" (candidate mask))
                         "A decision object requires all three members")
             testCase "retained snapshots keep the exact-integer format bound" (fun () ->
                 let original = Case.snapshot (opened ())

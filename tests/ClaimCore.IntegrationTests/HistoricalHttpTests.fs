@@ -1,12 +1,11 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open ClaimCore.TestSupport
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
 open ClaimCore.Json
 
 open System.Text

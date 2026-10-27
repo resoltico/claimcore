@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open System
 open ClaimCore.Domain
@@ -24,7 +23,8 @@ module internal VerificationPayload =
     let private case installationId (entry: StoredEntry) id revision act (payload: LedgerPayload) =
         result {
             let! request =
-                RequestRecord.decode Limits.MaximumRequestBytes payload.Request |> decoded entry
+                RequestRecord.decode RecordLimits.MaximumRequestRecordBytes payload.Request
+                |> decoded entry
 
             do!
                 require
@@ -66,7 +66,7 @@ module internal VerificationPayload =
     let private authority (entry: StoredEntry) kind (payload: LedgerPayload) =
         result {
             let! request =
-                AuthorityRecord.decode Limits.MaximumRequestBytes payload.Request
+                AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes payload.Request
                 |> decoded entry
 
             do!

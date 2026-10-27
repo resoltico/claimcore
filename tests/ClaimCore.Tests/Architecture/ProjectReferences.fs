@@ -43,21 +43,14 @@ let allowed =
     [
         "ClaimCore.Json", []
         "ClaimCore.Domain", [ "ClaimCore.Json" ]
-        "ClaimCore.Contract", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
+        "ClaimCore.Protocol", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
         "ClaimCore.RecordFormat", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
-        "ClaimCore.Application",
-        [
-            "ClaimCore.Domain"
-            "ClaimCore.RecordFormat"
-            "ClaimCore.Contract"
-            "ClaimCore.Json"
-        ]
+        "ClaimCore.Application", [ "ClaimCore.Domain"; "ClaimCore.RecordFormat"; "ClaimCore.Json" ]
         "ClaimCore.Postgres",
         [
             "ClaimCore.Application"
             "ClaimCore.Domain"
             "ClaimCore.RecordFormat"
-            "ClaimCore.Contract"
             "ClaimCore.Json"
         ]
         "ClaimCore.HostSecurity", []
@@ -65,14 +58,14 @@ let allowed =
         [
             "ClaimCore.Application"
             "ClaimCore.Postgres"
-            "ClaimCore.Contract"
+            "ClaimCore.Protocol"
             "ClaimCore.Domain"
             "ClaimCore.HostSecurity"
             "ClaimCore.Json"
         ]
         "ClaimCore.Cli",
         [
-            "ClaimCore.Contract"
+            "ClaimCore.Protocol"
             "ClaimCore.Domain"
             "ClaimCore.HostSecurity"
             "ClaimCore.Json"
@@ -81,7 +74,7 @@ let allowed =
         [
             "ClaimCore.Application"
             "ClaimCore.Postgres"
-            "ClaimCore.Contract"
+            "ClaimCore.Protocol"
             "ClaimCore.Domain"
             "ClaimCore.HostSecurity"
             "ClaimCore.Json"

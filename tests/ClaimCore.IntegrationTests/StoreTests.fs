@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.StoreTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System.Threading
 open Expecto
@@ -73,6 +73,7 @@ let private serviceScopeCorruption () =
 
             let service =
                 Service.create
+                    BuildIdentity.current.Version
                     database.Fixture.InstallationId
                     database.Fixture.Store
                     database.Fixture.Calendar

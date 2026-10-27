@@ -2,7 +2,7 @@ module ClaimCore.Tests.OperationRecordTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Text

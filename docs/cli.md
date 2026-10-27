@@ -1,6 +1,6 @@
 # CLI reference
 
-Generated from the typed Contract operation catalog. Regenerate with `dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts`; generator `--check` also checks this file.
+Generated from the typed Contract operation catalog. Regenerate with `dotnet run --project eng/ClaimCore.ProtocolGenerator -- --output contracts`; generator `--check` also checks this file.
 
 A synopsis shows required inputs and brackets optional inputs. Choices use lowercase kebab spelling; exact uppercase wire tokens are also accepted. Mutation operations generate an operation ID when omitted. Keep that ID and the exact prepared frame for retries.
 

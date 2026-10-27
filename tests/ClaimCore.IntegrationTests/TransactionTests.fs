@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.TransactionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System

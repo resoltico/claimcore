@@ -2,7 +2,8 @@ module ClaimCore.Tests.CliDescriptionTests
 
 open System.Text
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Cli
 
 let private descriptions () =

@@ -1,7 +1,7 @@
 module ClaimCore.Cli.Program
 
-open ClaimCore.Contract.Protocol
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System

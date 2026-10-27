@@ -1,6 +1,8 @@
 module ClaimCore.Tests.CursorTests
 
-open ClaimCore.Contract
+open ClaimCore.RecordFormat
+
+open ClaimCore.Protocol
 
 open System
 open System.IO

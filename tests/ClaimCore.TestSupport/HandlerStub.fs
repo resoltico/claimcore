@@ -2,9 +2,8 @@ module ClaimCore.TestSupport.HandlerStub
 
 open ClaimCore.Web
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
-open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -146,7 +145,12 @@ type Stub() =
                     DateOnly.FromDateTime instant.UtcDateTime
             }
 
-        Service.create operationId (store :> IStore) calendar principal
+        Service.create
+            BuildIdentity.current.Version
+            operationId
+            (store :> IStore)
+            calendar
+            principal
 
     member this.Handlers =
         function

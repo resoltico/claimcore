@@ -2,7 +2,7 @@ module ClaimCore.TestSupport.StoreContractTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -802,7 +802,12 @@ let private scopedAuthority fixture =
 
         let! conflict =
             (Core.execute
-                (Service.create fixture.InstallationId fixture.Store fixture.Calendar principal)
+                (Service.create
+                    BuildIdentity.current.Version
+                    fixture.InstallationId
+                    fixture.Store
+                    fixture.Calendar
+                    principal)
                 (OperationInput.Case pending)
                 (CancellationToken.None))
 

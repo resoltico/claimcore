@@ -1,6 +1,6 @@
 module ClaimCore.WebTests.RequestGateEdgeTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System

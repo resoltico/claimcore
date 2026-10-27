@@ -5,8 +5,8 @@ open ClaimCore.Cli
 open System.IO
 open System.Text
 open ClaimCore.TestSupport
-open ClaimCore.Contract
-open ClaimCore.Contract.Protocol
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 let private stages =
     set

@@ -5,7 +5,8 @@ open System.IO
 open System.Text
 open System.Threading
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Cli
 open CliTransportFixture
 

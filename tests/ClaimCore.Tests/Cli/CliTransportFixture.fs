@@ -1,8 +1,7 @@
 module ClaimCore.Tests.CliTransportFixture
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
 

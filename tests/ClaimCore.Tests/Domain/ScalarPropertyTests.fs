@@ -2,7 +2,7 @@ module ClaimCore.Tests.ScalarPropertyTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Globalization

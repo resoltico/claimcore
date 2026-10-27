@@ -1,6 +1,6 @@
 module ClaimCore.TestSupport.StoreFixtures
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -103,7 +103,12 @@ let internal disclosedFields receipt =
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Service.create fixture.InstallationId fixture.Store fixture.Calendar principal
+    Service.create
+        BuildIdentity.current.Version
+        fixture.InstallationId
+        fixture.Store
+        fixture.Calendar
+        principal
 
 let internal bootstrap fixture =
     task {

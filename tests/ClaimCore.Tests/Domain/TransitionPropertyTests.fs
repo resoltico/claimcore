@@ -2,7 +2,7 @@ module ClaimCore.Tests.TransitionPropertyTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open Expecto
 open Hedgehog

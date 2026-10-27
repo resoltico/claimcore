@@ -7,7 +7,7 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open System.Xml.Linq
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 

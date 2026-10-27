@@ -2,7 +2,7 @@ module ClaimCore.Tests.VocabularyTests
 
 open System
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]

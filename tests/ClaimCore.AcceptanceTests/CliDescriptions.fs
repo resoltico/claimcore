@@ -1,10 +1,12 @@
 module internal ClaimCore.AcceptanceTests.CliDescriptions
 
+open ClaimCore.Cli
 open System.Collections.Generic
 open System.Text
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Domain
+open ClaimCore.Protocol
 
 let private invoke cli arguments source =
     ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) source

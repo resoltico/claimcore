@@ -1,7 +1,6 @@
 namespace ClaimCore.Application
 
 open System
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
@@ -23,11 +22,11 @@ module internal Queries =
         ReadReply.Rejected Refusal.ResourceUnavailable
 
     let private validLimit limit =
-        limit >= 1 && limit <= Limits.MaximumPageSize
+        limit >= 1 && limit <= Paging.MaximumPageSize
 
     let private invalidLimit () =
         ReadReply.Rejected(
-            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Limits.MaximumPageSize)
+            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Paging.MaximumPageSize)
         )
 
     let private parseReference value =
@@ -89,7 +88,7 @@ module internal Queries =
                 return readResult result
         }
 
-    let contextResult (calendar: IBusinessCalendar) principal observedAt actor =
+    let contextResult productVersion (calendar: IBusinessCalendar) principal observedAt actor =
         match currentActor principal actor with
         | Error _ -> unavailable
         | Ok _ ->
@@ -97,7 +96,7 @@ module internal Queries =
                 {
                     Runtime =
                         {
-                            ProductVersion = BuildIdentity.current.Version
+                            ProductVersion = productVersion
                             EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
@@ -109,14 +108,16 @@ module internal Queries =
                             Authority.can principal actor capability ResourceScope.Installation)
                 }
 
-    let context (store: IStore) calendar principal token =
+    let context productVersion (store: IStore) calendar principal token =
         task {
             let! result =
                 store.Read(
                     (fun tx ->
                         task {
                             let! actor = tx.Authority(principal, None)
-                            return contextResult calendar principal tx.ObservedAt actor
+
+                            return
+                                contextResult productVersion calendar principal tx.ObservedAt actor
                         }),
                     token
                 )
@@ -176,7 +177,7 @@ module internal Queries =
                                             request.Limit
                                         )
 
-                                    if page.Items.Length > Limits.MaximumPageSize then
+                                    if page.Items.Length > Paging.MaximumPageSize then
                                         return ReadReply.Failed CoreFault.StoreIntegrityError
                                     else
                                         return
@@ -337,7 +338,7 @@ module internal Queries =
                                 | Ok after ->
                                     let! page = tx.ActorPage(after, request.Limit)
 
-                                    if page.Items.Length > Limits.MaximumPageSize then
+                                    if page.Items.Length > Paging.MaximumPageSize then
                                         return ReadReply.Failed CoreFault.StoreIntegrityError
                                     else
                                         return
@@ -395,7 +396,7 @@ module internal Queries =
                                         let! page =
                                             tx.GrantPage(request.ActorId, after, request.Limit)
 
-                                        if page.Items.Length > Limits.MaximumPageSize then
+                                        if page.Items.Length > Paging.MaximumPageSize then
                                             return ReadReply.Failed CoreFault.StoreIntegrityError
                                         else
                                             return

@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.PaginationTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -159,6 +159,7 @@ let private snapshot (database: PostgresFixture.Database) =
 
         let facade =
             Service.create
+                BuildIdentity.current.Version
                 database.Fixture.InstallationId
                 (store :> IStore)
                 database.Fixture.Calendar

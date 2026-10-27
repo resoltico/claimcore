@@ -2,7 +2,6 @@ namespace ClaimCore.Postgres
 
 open System
 open System.Globalization
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 /// Column names derive from record keys; reads identify cells by name and bindings share the column sequence.

@@ -1,9 +1,9 @@
 namespace ClaimCore.Postgres
 
+open ClaimCore.RecordFormat
 open System
 open System.Threading
 open ClaimCore.Application
-open ClaimCore.Contract
 open ClaimCore.Domain
 open Npgsql
 

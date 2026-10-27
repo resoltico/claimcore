@@ -1,7 +1,6 @@
 namespace ClaimCore.Application
 
 open System
-open ClaimCore.Contract
 open ClaimCore.Domain
 
 type internal LedgerAppend<'projection> =

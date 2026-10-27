@@ -1,4 +1,4 @@
-/* Generated from ClaimCore.Contract registry codecs. Do not edit. */
+/* Generated from ClaimCore.Protocol registry codecs. Do not edit. */
 export type ActorContext = { readonly "productVersion": string; readonly "businessDate": string; readonly "timeZone": string; readonly "capabilities": ReadonlyArray<"READ_CASE" | "READ_HISTORY" | "READ_HISTORY_FULL" | "REGISTER" | "DECIDE" | "RECORD_PAYMENT" | "CLOSE" | "STEWARD" | "MANAGE_AUTHORITY" | "READ_AUTHORITY">; readonly "views": ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">; readonly "offers": ReadonlyArray<InstallationOffer>; };
 export type ActorSummary = { readonly "actorId": Uuid; readonly "principal": Principal; readonly "enabled": boolean; };
 export type ActorsPage = { readonly "items": ReadonlyArray<ActorSummary>; readonly "nextCursor": string | null; };

@@ -2,7 +2,7 @@ module ClaimCore.Tests.ContractTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Json
 
 open System
@@ -14,7 +14,6 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
@@ -23,21 +22,21 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 
-let private position: ClaimCore.Contract.LedgerPosition =
+let private position: ClaimCore.Domain.LedgerPosition =
     { Sequence = 1L; EntryHash = digest }
 
-let private receipt: ClaimCore.Contract.OperationReceipt =
+let private receipt: ClaimCore.Domain.OperationReceipt =
     {
         OperationId = id
         Position = position
         Subject =
-            ClaimCore.Contract.ReceiptSubject.Case
+            ClaimCore.Domain.ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = 1L
                     Act = CaseActKind.Open
                     Snapshot =
-                        ClaimCore.Contract.SnapshotDisclosure.Disclosed(
+                        ClaimCore.Domain.SnapshotDisclosure.Disclosed(
                             LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
                         )
                 }
@@ -48,7 +47,7 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
 let private authority =
     { receipt with
         Subject =
-            ClaimCore.Contract.ReceiptSubject.Authority
+            ClaimCore.Domain.ReceiptSubject.Authority
                 {
                     TargetActorId = id
                     Act = AuthorityKind.Register
@@ -186,7 +185,7 @@ let private disclosures () =
         let value =
             { receipt with
                 Subject =
-                    ClaimCore.Contract.ReceiptSubject.Case
+                    ClaimCore.Domain.ReceiptSubject.Case
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = 1L

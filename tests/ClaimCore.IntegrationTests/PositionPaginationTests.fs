@@ -1,7 +1,7 @@
 module ClaimCore.IntegrationTests.PositionPaginationTests
 
 open ClaimCore.TestSupport
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Threading
@@ -328,7 +328,12 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
                 "No malformed position is trusted"
 
         let restarted =
-            Service.create fixture.InstallationId fixture.Store fixture.Calendar owner
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                fixture.Store
+                fixture.Calendar
+                owner
 
         let! old =
             (Core.list
@@ -349,7 +354,12 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
-            Service.create fixture.InstallationId (proxy :> IStore) fixture.Calendar owner
+            Service.create
+                BuildIdentity.current.Version
+                fixture.InstallationId
+                (proxy :> IStore)
+                fixture.Calendar
+                owner
 
         let! first =
             (Core.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))

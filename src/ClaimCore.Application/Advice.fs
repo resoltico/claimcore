@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open ClaimCore.Domain
 
@@ -73,7 +72,7 @@ module internal Advice =
             if can principal actor Capability.Register ResourceScope.Installation then
                 yield InstallationOffer.Open
             if can principal actor Capability.ManageAuthority ResourceScope.Installation then
-                for kind in OperationCatalog.authorityKinds do
+                for kind in AuthorityKinds.all do
                     yield InstallationOffer.AuthorityAct kind
         ]
 

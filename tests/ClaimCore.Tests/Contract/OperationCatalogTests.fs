@@ -1,15 +1,14 @@
 module ClaimCore.Tests.OperationCatalogTests
 
-open ClaimCore.Contract.Protocol
+open ClaimCore.Protocol
 
 open System
 open System.IO
 open System.Text.Json
 open Expecto
-open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.ContractGeneration
+open ClaimCore.ProtocolGeneration
 open ClaimCore.TestSupport
 
 let private find words =
@@ -148,7 +147,7 @@ let tests =
                                 File.ReadAllBytes(
                                     Path.Combine(
                                         RepositoryRoot.find (),
-                                        "src/ClaimCore.Contract/Localization",
+                                        "src/ClaimCore.Protocol/Localization",
                                         language + ".json"
                                     )
                                 )

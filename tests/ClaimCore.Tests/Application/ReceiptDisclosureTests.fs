@@ -3,7 +3,7 @@ module ClaimCore.Tests.ReceiptDisclosureTests
 open ClaimCore.TestSupport
 
 open Expecto
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures

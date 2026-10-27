@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open ClaimCore.Contract
 
 open System
 open System.Threading
@@ -54,7 +53,7 @@ module internal Core =
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> RecordFields.values fields |> Map.ofList
+               } -> BusinessFields.values fields |> Map.ofList
         | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =
@@ -81,7 +80,7 @@ module internal Core =
                             After = after
                         })
 
-    let private advisory (calendar: IBusinessCalendar) instant act before after =
+    let private advisory productVersion (calendar: IBusinessCalendar) instant act before after =
         let before = before |> Option.map Case.snapshot
         let after = Case.snapshot after
 
@@ -91,7 +90,7 @@ module internal Core =
             Changes = changes act before after
             Context =
                 {
-                    ProductVersion = BuildIdentity.current.Version
+                    ProductVersion = productVersion
                     EffectiveBusinessDate = calendar.DateAt instant
                     TimeZoneId = calendar.TimeZoneId
                 }
@@ -126,7 +125,15 @@ module internal Core =
                             return PreviewResult.Reviewed(render request view proposal)
         }
 
-    let private preview (store: IStore) installationId calendar principal request ct =
+    let private preview
+        productVersion
+        (store: IStore)
+        installationId
+        calendar
+        principal
+        request
+        ct
+        =
         review
             ct
             (fun () -> admitCase request)
@@ -143,7 +150,7 @@ module internal Core =
                 ))
             (CaseExecution.review installationId calendar principal)
             (fun admitted (view: CaseFacts) (before, after) ->
-                advisory calendar view.ObservedAt admitted.Act before after
+                advisory productVersion calendar view.ObservedAt admitted.Act before after
                 |> OperationReview.Case)
 
     let private authorityPreview (store: IStore) installationId principal input ct =
@@ -166,12 +173,12 @@ module internal Core =
             (fun _ (view: AuthorityExecutionFacts) (_, projection) ->
                 AuthorityReviews.describe view projection |> OperationReview.Authority)
 
-    let private previewOperation store installationId calendar principal input ct =
+    let private previewOperation productVersion store installationId calendar principal input ct =
         task {
             let! outcome =
                 match input with
                 | OperationInput.Case request ->
-                    preview store installationId calendar principal request ct
+                    preview productVersion store installationId calendar principal request ct
                 | OperationInput.Authority request ->
                     authorityPreview store installationId principal request ct
 
@@ -191,10 +198,16 @@ module internal Core =
             authorityWrite store installationId principal request ct
 
     let context (services: ServiceContext) () ct =
-        Queries.context services.Store services.Calendar services.Principal ct
+        Queries.context
+            services.ProductVersion
+            services.Store
+            services.Calendar
+            services.Principal
+            ct
 
-    let previewReply services input ct =
+    let previewReply (services: ServiceContext) input ct =
         previewOperation
+            services.ProductVersion
             services.Store
             services.InstallationId
             services.Calendar

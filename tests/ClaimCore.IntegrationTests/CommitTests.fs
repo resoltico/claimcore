@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.CommitTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 
 open System
@@ -52,6 +52,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
 
     let actor =
         Service.create
+            BuildIdentity.current.Version
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar

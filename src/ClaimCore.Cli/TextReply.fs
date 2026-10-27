@@ -3,9 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open System.Text
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
-open ClaimCore.Contract.Protocol
 open ClaimCore.Json
 
 /// Human output consumes decoded DTOs and the authoritative field readers.
@@ -53,7 +52,7 @@ module internal TextReply =
                 line
                     language
                     (RecordFields.labelId row.Field)
-                    (displayed language (RecordFields.value fields row.Field)))
+                    (displayed language (BusinessFields.value fields row.Field)))
 
         rows None
         @ (Vocabulary.all RecordGroup.vocabulary
@@ -271,10 +270,10 @@ module internal TextReply =
                 Record.fields
                 |> List.choose (fun row ->
                     let previous =
-                        before |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+                        before |> Option.bind (fun fields -> BusinessFields.value fields row.Field)
 
                     let next =
-                        after |> Option.bind (fun fields -> RecordFields.value fields row.Field)
+                        after |> Option.bind (fun fields -> BusinessFields.value fields row.Field)
 
                     if previous = next then
                         None

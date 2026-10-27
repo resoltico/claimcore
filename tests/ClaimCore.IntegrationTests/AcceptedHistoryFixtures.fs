@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open Expecto

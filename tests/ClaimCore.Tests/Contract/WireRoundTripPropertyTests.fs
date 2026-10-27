@@ -1,6 +1,6 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -15,7 +15,6 @@ open Microsoft.FSharp.Reflection
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
@@ -521,7 +520,7 @@ let private actorProperty response actor =
     | ActorEndpoint.AuthorityGrants -> endpointProperty response Api.authorityGrants
     | ActorEndpoint.Context -> endpointProperty response Api.context
 
-let private propertyFor response (route: ClaimCore.Contract.Protocol.Route) =
+let private propertyFor response (route: ClaimCore.Protocol.Route) =
     match route.Id with
     | EndpointId.Host HostEndpoint.Session -> endpointProperty response Api.session
     | EndpointId.Host HostEndpoint.Logout -> endpointProperty response Api.logout

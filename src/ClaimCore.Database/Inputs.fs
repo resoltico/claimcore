@@ -2,7 +2,7 @@ namespace ClaimCore.Database
 
 open ClaimCore.Domain
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 
 open System
 open System.Globalization

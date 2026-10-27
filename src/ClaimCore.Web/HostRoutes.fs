@@ -1,11 +1,10 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Contract
+open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Json
 
-open ClaimCore.Contract.Protocol
 
 open System
 open System.IO
