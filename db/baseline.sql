@@ -14,9 +14,9 @@
 -- Domain and is applied to newly asserted values only; it is deliberately absent here so that a
 -- later policy change never invalidates accepted rows.
 --
--- Permanent byte bounds and scalar grammars: src/ClaimCore.Contract/Formats.fs.
--- Retained byte bounds (Contract Formats): free business text is at most 1024 UTF-8
--- bytes; a ledger payload (framed request plus snapshot) is at most 32768 bytes.
+-- Permanent scalar grammars and business-text byte bounds: src/ClaimCore.Domain/Values.fs.
+-- Durable payload grammar and byte bounds: src/ClaimCore.RecordFormat/LedgerPayload.fs.
+-- Free business text is at most 1024 UTF-8 bytes; a framed ledger payload is at most 32768 bytes.
 
 CREATE SCHEMA claimcore;
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
@@ -54,7 +54,7 @@ CREATE TABLE claimcore.installation (
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the fixed 183-byte metadata
--- preimage defined by RecordFormat (entry format 3). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 1). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -250,7 +250,7 @@ CREATE TABLE claimcore.cases (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     state text NOT NULL CHECK (state IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
-    -- Business payload columns follow Contract FieldTable; case_reference above survives erasure.
+    -- Business payload columns follow Domain Record.fields; case_reference above survives erasure.
     incident_date date CHECK (incident_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     incident_notification_date date CHECK (incident_notification_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     incident_country text,

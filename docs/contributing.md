@@ -62,9 +62,8 @@ through actual provider cleanup.
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
 [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent decoding does not
-reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source. Its comment
-naming the former Contract/Formats.fs is a historical pointer; scalar ownership now lives in Domain value
-modules. Preserve baseline bytes rather than editing that comment. Unsupported installation identities are
+reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source. Its SHA-256 installation identity is derived from the exact embedded source bytes. Edit the baseline
+for the supported fresh installation and rebuild to regenerate that identity. Unsupported installation identities are
 refused; this build provides no conversion or compatibility reader.
 
 ## Generated contracts
