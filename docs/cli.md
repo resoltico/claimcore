@@ -10,6 +10,18 @@ Human operations default to text. Add `--format json` for structured output or `
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
 
+## Offline commands
+
+- `claimcore help [topic] [--language en|lv|ar]`
+- `claimcore version [--json]`
+- `claimcore describe [family verb] [--format text|json] [--language en|lv|ar]`
+- `claimcore schema name`
+- `claimcore schema endpoint request|response`
+- `claimcore call`
+- `claimcore session`
+
+Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
+
 ## Exit codes
 
 Both executables use the shared Contract exit-code table. `claimcore-database help` reports its owner-command grammar without opening credentials or the database. Database refusals include a diagnostic; failures include a fault. Usage errors include the applicable synopsis.

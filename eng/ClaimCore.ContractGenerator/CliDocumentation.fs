@@ -2,6 +2,7 @@ namespace ClaimCore.ContractGeneration
 
 open System.Text
 open ClaimCore.Contract
+open ClaimCore.Cli
 
 module CliDocumentation =
     let private argument (input: CatalogDerivedInput) =
@@ -92,6 +93,20 @@ module CliDocumentation =
             "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values."
             ""
             "Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON."
+            ""
+            "## Offline commands"
+            ""
+            yield!
+                CliCommands.commands
+                |> List.collect (
+                    CliCommands.synopses >> List.map (fun syntax -> "- `claimcore " + syntax + "`")
+                )
+            ""
+            "Help topics: "
+            + (CliCommands.topics
+               |> List.map (fun topic -> "`" + CliCommands.topicToken topic + "`")
+               |> String.concat ", ")
+            + "."
             ""
             "## Exit codes"
             ""

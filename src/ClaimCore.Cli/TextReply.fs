@@ -418,10 +418,9 @@ module internal TextReply =
                 line language "cli.text.code" failure.Code
             ]
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
-            let setting = InputDiagnostics.settings |> List.find (fst >> (=) setting) |> snd
+            let setting = InputDiagnostics.settingName setting
 
-            let issue =
-                InputDiagnostics.configurationIssues |> List.find (fst >> (=) issue) |> snd
+            let issue = InputDiagnostics.issueToken issue
 
             [
                 MessageCatalogs.renderCli language (CliMessage.ConfigurationIssue(setting, issue))

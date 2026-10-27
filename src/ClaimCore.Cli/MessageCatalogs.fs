@@ -55,38 +55,70 @@ module internal MessageCatalogs =
     let renderCli language message =
         renderProduced language (CliMessages.produce message)
 
-    let private helpBody language topic =
-        let invocation = string Limits.MaximumInvocationBytes
-        let request = string Limits.MaximumRequestBytes
-        let response = string Limits.MaximumResponseBytes
-        let secret = string CliConfigurationLimits.MaximumSecretBytes
-        let trust = string CliConfigurationLimits.MaximumTrustRootBytes
-        let retry = CliIdentity.programName + " call"
-        let resolve = CliIdentity.programName + " operation resolve OPERATION_ID"
+    let private invocation = string Limits.MaximumInvocationBytes
+    let private request = string Limits.MaximumRequestBytes
+    let private response = string Limits.MaximumResponseBytes
+    let private secret = string CliConfigurationLimits.MaximumSecretBytes
+    let private trust = string CliConfigurationLimits.MaximumTrustRootBytes
+    let private retry = CliIdentity.programName + " call"
+    let private resolve = CliIdentity.programName + " operation resolve OPERATION_ID"
+
+    let private overview language =
+        let families =
+            [
+                "case", "cli.family.case"
+                "authority", "cli.family.authority"
+                "operation", "cli.family.operation"
+                "context", "cli.family.context"
+                "call", "cli.family.call"
+                "session", "cli.family.session"
+                "describe", "cli.family.describe"
+                "schema", "cli.family.schema"
+                "help", "cli.family.help"
+            ]
+
+        CliIdentity.programName
+        + "\n"
+        + (families
+           |> List.map (fun (family, key) -> family + " — " + render language key Map.empty)
+           |> String.concat "\n")
+        + "\n"
+
+    let private helpBody language =
+        function
+        | HelpTopic.Call ->
+            renderCli language (CliMessage.HelpCall(invocation, request, response, retry, resolve))
+        | HelpTopic.Session ->
+            renderCli language (CliMessage.HelpSession(invocation, request, response))
+        | HelpTopic.Configuration ->
+            renderCli language (CliMessage.HelpConfiguration(secret, trust))
+        | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
+        | HelpTopic.Describe -> render language "cli.help.describe" Map.empty
+        | HelpTopic.Examples -> render language "cli.help.examples" Map.empty
+        | HelpTopic.Help -> render language "cli.help.help" Map.empty
+        | HelpTopic.Schema -> render language "cli.help.schema" Map.empty
+        | HelpTopic.Version -> render language "cli.help.version" Map.empty
+        | HelpTopic.Overview -> overview language
+        | HelpTopic.Verbs ->
+            Catalog.document.Entries
+            |> List.map (fun entry -> CliIdentity.programName + " " + entry.Synopsis)
+            |> String.concat "\n"
+            |> fun value -> value + "\n"
+
+    let private guidanceBody language =
+        function
+        | CliGuidance.ProtocolGuidance ->
+            renderCli language (CliMessage.HelpProtocol(invocation, request, response))
+        | CliGuidance.ConfigurationIssue ->
+            renderCli language (CliMessage.HelpConfigurationIssue(secret, trust))
+
+    let help language topic =
+        let body =
+            match topic with
+            | CliTopic.Help help -> helpBody language help
+            | CliTopic.Diagnostic guidance -> guidanceBody language guidance
 
         match topic with
-        | "call" ->
-            renderCli language (CliMessage.HelpCall(invocation, request, response, retry, resolve))
-        | "session" -> renderCli language (CliMessage.HelpSession(invocation, request, response))
-        | "CLI_PROTOCOL_GUIDANCE" ->
-            renderCli language (CliMessage.HelpProtocol(invocation, request, response))
-        | "configuration" -> renderCli language (CliMessage.HelpConfiguration(secret, trust))
-        | "CLI_CONFIGURATION_ISSUE" ->
-            renderCli language (CliMessage.HelpConfigurationIssue(secret, trust))
-        | "delivery" -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
-        | "describe" -> render language "cli.help.describe" Map.empty
-        | "examples" -> render language "cli.help.examples" Map.empty
-        | "help" -> render language "cli.help.help" Map.empty
-        | "schema" -> render language "cli.help.schema" Map.empty
-        | "version" -> render language "cli.help.version" Map.empty
-        | _ -> invalidArg (nameof topic) "Unknown help topic."
-
-    let help language (topic: string) =
-        let topic =
-            if topic.StartsWith("diagnostic.", StringComparison.Ordinal) then
-                topic.Substring "diagnostic.".Length
-            else
-                topic
-
-        let body = helpBody language topic
-        renderCli language (CliMessage.HelpLayout body)
+        | CliTopic.Help(HelpTopic.Overview | HelpTopic.Verbs) -> body
+        | CliTopic.Help _
+        | CliTopic.Diagnostic _ -> renderCli language (CliMessage.HelpLayout body)

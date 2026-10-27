@@ -120,7 +120,9 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     for language in LocalizationPolicy.languages do
         for topic in CliCommands.topics do
-            let result = invoke [ "help"; topic; "--language"; language ] None
+            let result =
+                invoke [ "help"; CliCommands.topicToken topic; "--language"; language ] None
+
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
             Expect.isGreaterThan result.StandardOutput.Length 20 "Useful published help"
@@ -137,7 +139,9 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for command in CliCommands.commands do
+    for commandName in CliCommands.commands do
+        let command = CliCommands.commandToken commandName
+
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None
             Expect.equal result.ExitCode 0 "Alias never opens stdin/config/network"
