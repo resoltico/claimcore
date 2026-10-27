@@ -55,6 +55,9 @@ Current core advice filters eligible work by the actor's resource rights. Unauth
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
 revision; an offered act or preview grants no commit authority.
 
+The twelve case acts share one flat vocabulary. Business availability follows status and recorded facts;
+stewardship follows ACTIVE, VOIDED or ERASED lifecycle state. Both remain subject to current authority.
+
 ### Case stewardship
 
 Lifecycle state is ACTIVE, VOIDED or ERASED. Active and voided cases retain separate open/closed status

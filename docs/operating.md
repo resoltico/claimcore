@@ -90,11 +90,11 @@ Run [synthetic growth qualification](contributing.md#growth) before release and 
 then qualify actual storage, workloads and concurrency. Those measurements establish neither an SLA nor a
 production capacity guarantee. Timeout/cancellation guards remain enforced.
 
-
-
 ## Database administration
 
 Use the separate `claimcore-database` tool with owner credentials. Offline help/version do not connect.
+Command grammar errors return USAGE_ERROR with the applicable synopsis. REJECTED carries a diagnostic and
+FAILED carries a core fault; read those details along with the shared [exit-code reference](cli.md#exit-codes).
 
 | Command | Purpose |
 | --- | --- |
@@ -112,7 +112,8 @@ have no schema-owner authority. Remote database connections require verified TLS
 The exact [SQL baseline](../db/baseline.sql), its checksum, installation identity and immutable zone are
 checked on opening. Partial, unknown or incompatible schemas refuse untouched. Preserve incompatible
 installations with matching software. Supported PostgreSQL majors, minimum minors and image pins are owned
-by [postgresql-baseline.json](../db/postgresql-baseline.json).
+by [postgresql-baseline.json](../db/postgresql-baseline.json). This build changes the baseline source and
+checksum: initialize a fresh installation; there is no migration, adoption or compatibility reader.
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
 projections and head. It does not reapply today's capability policy. VERIFIED and DIVERGED are structured
