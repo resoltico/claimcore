@@ -73,10 +73,11 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         output.WriteByte(byte '\n')
         output.Flush()
 
-        if reply.ExitCode = 4 then
+        if reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown then
             retryFrame ()
 
-        lock gate (fun () -> potentiallyChanged <- reply.ExitCode = 4)
+        lock gate (fun () ->
+            potentiallyChanged <- reply.ExitCode = ExitCodes.value ExitCode.OutcomeUnknown)
 
     member _.Interrupt() =
         lock gate (fun () ->
@@ -88,9 +89,9 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                 with _ ->
                     ()
 
-                4
+                ExitCodes.value ExitCode.OutcomeUnknown
             else
-                130)
+                ExitCodes.value ExitCode.Cancelled)
 
     member _.Failure(error: exn) =
         let uncertain, sent = lock gate (fun () -> potentiallyChanged, dispatched)

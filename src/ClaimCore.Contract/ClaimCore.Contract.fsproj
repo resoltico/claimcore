@@ -4,6 +4,7 @@
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
+    <Compile Include="ExitCodes.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="RecordFields.fs" />
     <Compile Include="Refusals/Faults.fs" />

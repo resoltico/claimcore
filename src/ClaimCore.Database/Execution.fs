@@ -1,6 +1,8 @@
 namespace ClaimCore.Database
 
 open System
+open ClaimCore.Contract
+open ClaimCore.Domain
 open System.Threading
 open ClaimCore.Postgres
 
@@ -42,8 +44,7 @@ module Execution =
                 with error ->
                     return
                         match AdministrationFailures.classify error with
-                        | AdministrationFailure.Refused -> Replies.outcome "REJECTED" 2
-                        | AdministrationFailure.OutcomeUnknown ->
-                            Replies.outcome "OUTCOME_UNKNOWN" 4
-                        | AdministrationFailure.Failed -> Replies.outcome "FAILED" 3
+                        | AdministrationFailure.Refused -> Replies.rejected Refusal.ActNotPermitted
+                        | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
+                        | AdministrationFailure.Failed -> Replies.failed CoreFault.StoreUnavailable
         }

@@ -12,6 +12,18 @@ module CliDocumentation =
         | CatalogArgument.Operand -> name.ToUpperInvariant()
         | CatalogArgument.Implicit -> ""
 
+    let private exitMeaning =
+        function
+        | ExitCode.Success -> "Requested work completed."
+        | ExitCode.Rejected -> "Input, usage or action was refused."
+        | ExitCode.Failed -> "A known failure; earlier uncertain attempts remain unresolved."
+        | ExitCode.OutcomeUnknown ->
+            "Commit may have happened; retain the exact operation for recovery."
+        | ExitCode.Diverged -> "Ledger verification found divergence."
+        | ExitCode.Usage -> "CLI command usage was refused before dispatch."
+        | ExitCode.InternalError -> "Unexpected CLI defect."
+        | ExitCode.Cancelled -> "CLI interrupted or cancelled."
+
     let source () =
         let english = CatalogValidation.validate () |> Map.find "en"
         let message key = Template.render english[key] Map.empty
@@ -80,6 +92,27 @@ module CliDocumentation =
             "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values."
             ""
             "Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON."
+            ""
+            "## Exit codes"
+            ""
+            "Both executables use the shared Contract exit-code table. `claimcore-database help` reports its owner-command grammar without opening credentials or the database. Database refusals include a diagnostic; failures include a fault. Usage errors include the applicable synopsis."
+            ""
+            "| Exit | Meaning | claimcore | claimcore-database |"
+            "| --- | --- | --- | --- |"
+            yield!
+                ExitCodes.all
+                |> List.map (fun code ->
+                    let supported flag = if flag then "yes" else "—"
+
+                    "| "
+                    + string (ExitCodes.value code)
+                    + " | "
+                    + exitMeaning code
+                    + " | "
+                    + supported (ExitCodes.cli code)
+                    + " | "
+                    + supported (ExitCodes.database code)
+                    + " |")
             ""
             yield! OperationCatalog.all |> List.collect describe
         ]

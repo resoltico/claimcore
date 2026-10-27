@@ -41,13 +41,13 @@ let private discovery binary connection principal =
                 invoke binary (connection + ".absent") (principal + ".absent") [ "version" ] 0
 
             let! refusal = invoke binary connection principal [ "unsupported.synthetic" ] 2
-            Expect.equal (kind refusal) "REJECTED" "Unsupported command"
+            Expect.equal (kind refusal) "USAGE_ERROR" "Unsupported command has actionable usage"
     }
 
 let private initialize binary connection principal =
     task {
         let! missing = invoke binary connection principal [ "migrate" ] 2
-        Expect.equal (kind missing) "REJECTED" "Removed command refuses"
+        Expect.equal (kind missing) "USAGE_ERROR" "Removed command reports usage"
         let! _ = invoke binary connection principal [ "head" ] 2
         let! _ = invoke binary connection principal [ "verify" ] 2
         let! _ = invoke binary connection principal [ "initialize"; "UTC" ] 2
@@ -343,9 +343,9 @@ let private inputAndDeliveryGuards () =
             [ "head"; "extra" ]
             [ "verify"; "--expect"; "9007199254740992:" + String.replicate 64 "0" ]
         ] do
-        Expect.isNone (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"
+        Expect.isError (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"
 
-    Expect.isSome
+    Expect.isOk
         (ClaimCore.Database.Inputs.command [ "verify"; "--expect"; "0:" + String.replicate 64 "0" ])
         "Canonical expected position"
 

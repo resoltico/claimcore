@@ -51,29 +51,11 @@ type VerificationResult =
     | Diverged of VerificationDivergence
 
 module VerificationFindings =
-    let all =
-        [
-            VerificationFinding.Link, "LINK"
-            VerificationFinding.EntryHash, "ENTRY_HASH"
-            VerificationFinding.Commitment, "COMMITMENT"
-            VerificationFinding.PayloadFormat, "PAYLOAD_FORMAT"
-            VerificationFinding.RevisionSequence, "REVISION_SEQUENCE"
-            VerificationFinding.HistoryStart, "HISTORY_START"
-            VerificationFinding.StateSequence, "STATE_SEQUENCE"
-            VerificationFinding.ErasureIncomplete, "ERASURE_INCOMPLETE"
-            VerificationFinding.PayloadWithoutErasure, "PAYLOAD_WITHOUT_ERASURE"
-            VerificationFinding.AuthorityFold, "AUTHORITY_FOLD"
-            VerificationFinding.ActorNotEnabled, "ACTOR_NOT_ENABLED"
-            VerificationFinding.HumanRequired, "HUMAN_REQUIRED"
-            VerificationFinding.OwnerRequired, "OWNER_REQUIRED"
-            VerificationFinding.CaseProjection, "CASE_PROJECTION"
-            VerificationFinding.AuthorityProjection, "AUTHORITY_PROJECTION"
-            VerificationFinding.Head, "HEAD"
-            VerificationFinding.ExpectedPosition, "EXPECTED_POSITION"
-        ]
+    let vocabulary =
+        Vocabulary.ofUnion<VerificationFinding> "finding" TokenCasing.ScreamingSnake None
 
-    let token finding =
-        all |> List.find (fst >> (=) finding) |> snd
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary
 
 module VerificationChecks =
     type Builder() =

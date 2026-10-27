@@ -10,6 +10,21 @@ Human operations default to text. Add `--format json` for structured output or `
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
 
+## Exit codes
+
+Both executables use the shared Contract exit-code table. `claimcore-database help` reports its owner-command grammar without opening credentials or the database. Database refusals include a diagnostic; failures include a fault. Usage errors include the applicable synopsis.
+
+| Exit | Meaning | claimcore | claimcore-database |
+| --- | --- | --- | --- |
+| 0 | Requested work completed. | yes | yes |
+| 2 | Input, usage or action was refused. | yes | yes |
+| 3 | A known failure; earlier uncertain attempts remain unresolved. | yes | yes |
+| 4 | Commit may have happened; retain the exact operation for recovery. | yes | yes |
+| 5 | Ledger verification found divergence. | — | yes |
+| 64 | CLI command usage was refused before dispatch. | yes | — |
+| 70 | Unexpected CLI defect. | yes | — |
+| 130 | CLI interrupted or cancelled. | yes | — |
+
 ## case open
 
 Open a case

@@ -21,6 +21,50 @@ type Command =
     | Help
     | Version
 
+[<RequireQualifiedAccess>]
+type CommandName =
+    | Initialize
+    | ProvisionOwner
+    | Verify
+    | Head
+    | Help
+    | Version
+
+module Commands =
+    let vocabulary =
+        Vocabulary.ofUnion<CommandName> "command" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+
+    let token name =
+        Vocabulary.token vocabulary name
+        |> _.ToLowerInvariant()
+        |> fun value -> value.Replace('_', '-')
+
+    let parse value =
+        all |> List.tryFind (fun name -> token name = value)
+
+    let synopsis =
+        function
+        | CommandName.Initialize -> "claimcore-database initialize TIME_ZONE"
+        | CommandName.ProvisionOwner -> "claimcore-database provision-owner"
+        | CommandName.Verify -> "claimcore-database verify [--expect SEQUENCE:HASH]"
+        | CommandName.Head -> "claimcore-database head"
+        | CommandName.Help -> "claimcore-database help"
+        | CommandName.Version -> "claimcore-database version"
+
+[<RequireQualifiedAccess>]
+type UsageIssue =
+    | UnknownCommand
+    | ArgumentsInvalid
+    | CheckpointInvalid
+
+type UsageError =
+    {
+        Issue: UsageIssue
+        Command: CommandName option
+    }
+
 module Inputs =
     let private expected (text: string) =
         let parts = text.Split(':')
@@ -48,17 +92,49 @@ module Inputs =
         else
             None
 
-    let command =
-        function
-        | []
-        | [ "help" ] -> Some Help
-        | [ "version" ] -> Some Version
-        | [ "initialize"; zone ] -> Some(Initialize zone)
-        | [ "provision-owner" ] -> Some ProvisionOwner
-        | [ "verify" ] -> Some(Verify None)
-        | [ "verify"; "--expect"; position ] -> expected position |> Option.map (Some >> Verify)
-        | [ "head" ] -> Some Head
-        | _ -> None
+    let private noArguments command arguments =
+        if List.isEmpty arguments then
+            Ok command
+        else
+            Error UsageIssue.ArgumentsInvalid
+
+    let private initialize arguments =
+        match arguments with
+        | [ zone ] -> Ok(Initialize zone)
+        | _ -> Error UsageIssue.ArgumentsInvalid
+
+    let private verify arguments =
+        match arguments with
+        | [] -> Ok(Verify None)
+        | [ "--expect"; value ] ->
+            expected value
+            |> Option.map (Some >> Verify >> Ok)
+            |> Option.defaultValue (Error UsageIssue.CheckpointInvalid)
+        | _ -> Error UsageIssue.ArgumentsInvalid
+
+    let private parse name arguments =
+        match name with
+        | CommandName.Help -> noArguments Help arguments
+        | CommandName.Version -> noArguments Version arguments
+        | CommandName.Initialize -> initialize arguments
+        | CommandName.ProvisionOwner -> noArguments ProvisionOwner arguments
+        | CommandName.Head -> noArguments Head arguments
+        | CommandName.Verify -> verify arguments
+
+    let command arguments =
+        match arguments with
+        | [] -> Ok Help
+        | first :: rest ->
+            match Commands.parse first with
+            | None ->
+                Error
+                    {
+                        Issue = UsageIssue.UnknownCommand
+                        Command = None
+                    }
+            | Some name ->
+                parse name rest
+                |> Result.mapError (fun issue -> { Issue = issue; Command = Some name })
 
     let private bytes setting maximum =
         Environment.GetEnvironmentVariable setting

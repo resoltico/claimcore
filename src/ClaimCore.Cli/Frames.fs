@@ -297,20 +297,21 @@ module Frames =
     let private outcomeExitCode reply =
         match outcome reply with
         | Some "REJECTED"
-        | Some "NOT_ACCEPTED" -> 2
-        | Some "FAILED" -> 3
-        | Some "OUTCOME_UNKNOWN" -> 4
-        | _ -> 0
+        | Some "NOT_ACCEPTED" -> ExitCode.Rejected
+        | Some "FAILED" -> ExitCode.Failed
+        | Some "OUTCOME_UNKNOWN" -> ExitCode.OutcomeUnknown
+        | _ -> ExitCode.Success
 
     let exitCode frame =
-        if frame.Delivery = DeliveryState.Uncertain && mutation frame then
-            4
-        else
-            match frame.Result with
-            | FrameResult.LocalFailure CliFailure.Cancelled -> 130
-            | FrameResult.LocalFailure CliFailure.Internal -> 70
-            | FrameResult.LocalFailure(CliFailure.InvalidFrame | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
-                2
-            | FrameResult.LocalFailure _
-            | FrameResult.HostFailure _ -> 3
-            | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply)
+        (if frame.Delivery = DeliveryState.Uncertain && mutation frame then
+             ExitCode.OutcomeUnknown
+         else
+             match frame.Result with
+             | FrameResult.LocalFailure CliFailure.Cancelled -> ExitCode.Cancelled
+             | FrameResult.LocalFailure CliFailure.Internal -> ExitCode.InternalError
+             | FrameResult.LocalFailure(CliFailure.InvalidFrame | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
+                 ExitCode.Rejected
+             | FrameResult.LocalFailure _
+             | FrameResult.HostFailure _ -> ExitCode.Failed
+             | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply))
+        |> ExitCodes.value
