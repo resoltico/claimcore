@@ -62,10 +62,11 @@ claimcore describe case open
 claimcore authority list
 ```
 
-A human mutation generates an ID unless `--operation-id` is supplied. Existing-case work requires an
-explicit expected revision; the CLI does not fetch or rebase it. `--preview` requests review, and `--dry-run`
-prints the prepared frame without authentication. Human verbs default to text; `--format json` selects
-structured output and `--language` selects authored language. Output does not change with TTY detection.
+Case and authority mutation verbs generate an ID unless `--operation-id` is supplied. Existing-case work
+requires an explicit expected revision; the CLI does not fetch or rebase it. `--preview` requests review,
+and `--dry-run` prints the prepared frame without authentication. Verbs default to text; `--format json`
+selects structured output and `--language` selects interface language. Authored business values remain
+unchanged. Output does not change with TTY detection.
 
 `call` reads one `{ "endpoint": ..., "input": ... }` document. `session` reads NDJSON frames and reuses
 process-local authentication. Reply frames contain nullable `endpoint` and `operationId`, a `delivery` tag,

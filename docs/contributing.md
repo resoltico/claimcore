@@ -68,9 +68,11 @@ Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/
 
 ## Transactions and durable formats
 
-Permanent scalar grammars used to decode format-1 history may only be relaxed under the same format
-number. Tightening requires a separately authorized format change. Independent permanent-limit vectors in
-[record-format-vectors.json](../tests/fixtures/record-format-vectors.json) protect historical decoding.
+[RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
+[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent scalar grammars used
+to decode retained records may only be relaxed under the same format number. Tightening requires a
+separately authorized format change. Independent permanent-limit vectors in
+[record-format-vectors.json](../tests/fixtures/record-format-vectors.json) protect retained-record decoding.
 [DurableNames.fs](../src/ClaimCore.RecordFormat/DurableNames.fs) owns exhaustive literal spellings;
 [RecordLimits.fs](../src/ClaimCore.RecordFormat/RecordLimits.fs) owns the 65,536-byte request-record ceiling.
 Wire spelling and transport limits do not govern retained records. Oversized encoding is an internal fault.
@@ -84,11 +86,10 @@ repeatable-read snapshot; writes read decision state under the lock and commit o
 construction uses that same state, without a later read changing disclosure. Runtime leases remain held
 through actual provider cleanup.
 
-[RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
-[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent decoding does not
-reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source; its
-SHA-256 installation identity derives from the exact embedded bytes. Baseline edits require a rebuild and
-a fresh installation. The runtime refuses unsupported installation identities without modifying them.
+Permanent decoding does not reapply current admission. [baseline.sql](../db/baseline.sql) is the
+checksum-bound schema source; its SHA-256 installation identity derives from the exact embedded bytes.
+Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
+identities without modifying them.
 
 ## Generated contracts
 
@@ -114,8 +115,10 @@ composite `act` vocabulary. Identical renderer/core wording is refused in every 
 Catalogs share one Template grammar. Structural checks cover language parity, producer arguments and every
 template before publication. Handwritten
 [template vectors](../tests/fixtures/message-template-vectors.json), wire examples, correction/transition
-matrices, CLI frames and the [Python oracle](../tests/fixtures/oracle/generate_vectors.py) provide independent expectations.
-Do not generate an independent oracle with the implementation being checked.
+matrices and CLI frames provide independent expectations. Hand-authored durable cases in
+[sources.json](../tests/fixtures/oracle/sources.json) define inputs and acceptance expectations; the
+[Python oracle](../tests/fixtures/oracle/generate_vectors.py) derives their bytes and hashes without calling
+the implementation. Keep those source cases independent of production codecs and validators.
 
 ## Browser boundaries and lint
 

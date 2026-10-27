@@ -8,8 +8,6 @@ look up an act. The sections below explain the business meaning and the limits o
 
 ## Business record
 
-### Exact public business record
-
 A case has thirteen business fields: incident date, this handler's first notification date, incident country,
 claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
@@ -29,15 +27,14 @@ There are no policy, coverage, reserve, banking, address, notes or attachment fi
 
 ## State and acts
 
-### Core-owned act availability and revalidation
-
 A case may be OPENED or CLOSED independently of its payment progress. Payment does not close a case; closing
 needs no decision or payment. Use `claimcore describe` for current inputs and correction choices.
 
 - OPEN creates revision one with expected revision zero. AMEND_REGISTRATION replaces registration on an open,
   undecided case.
-- DECIDE and WITHDRAW_DECISION record or remove an unpaid decision. RECORD_PAYMENT and CLEAR_PAYMENT record
-  or remove its payment date. Clearing recorded facts does not reverse a real transfer.
+- DECIDE records or replaces an unpaid decision; WITHDRAW_DECISION removes it. RECORD_PAYMENT requires an
+  unpaid decision with a positive payable amount. CLEAR_PAYMENT removes a recorded payment date. Recording
+  or clearing payment facts does not execute or reverse a real transfer.
 - CLOSE and REOPEN change status. Ordinary editing of a closed case requires reopening.
 - CORRECT changes existing facts atomically while preserving reference and status. An open case needs an
   existing decision; a closed case permits correction independently of payment progress.
