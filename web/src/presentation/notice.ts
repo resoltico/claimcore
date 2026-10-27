@@ -1,7 +1,8 @@
 import type { Notice } from "../protocol/notices";
 import { diagnosticParameters as requirements } from "@contracts/messages";
 import { exactInteger } from "./format";
-import { renderKey, translate } from "./messages";
+import { renderKey, renderCatalogKey, translate } from "./messages";
+import type { MessageKey } from "./types";
 import type { Preferences } from "./preferences";
 
 const limits: Readonly<
@@ -48,12 +49,15 @@ const diagnosticText = (
       typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
     ]),
   );
-  return renderKey(preferences, messageKey, parameters);
+  return renderCatalogKey(preferences, messageKey, parameters);
 };
 export const renderNotice = (preferences: Preferences, notice: Notice): string => {
   switch (notice.kind) {
-    case "local":
-      return renderKey(preferences, `notice.${notice.reason}`);
+    case "local": {
+      const key: MessageKey =
+        notice.reason === "incomplete" ? "ui.incompleteResponse" : `notice.${notice.reason}`;
+      return renderKey(preferences, key);
+    }
     case "diagnostic":
       return diagnosticText(preferences, notice.diagnostic);
     case "invalidHttp":

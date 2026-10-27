@@ -77,6 +77,30 @@ type CliMessage =
     | [<MessageKey("label.reviewTitle")>] ReviewTitle
     | [<MessageKey("label.revisionLabel")>] RevisionLabel
 
+    | [<MessageKey("cli.text.state")>] StateLabel
+    | [<MessageKey("cli.text.next")>] NextLabel
+    | [<MessageKey("cli.text.grants")>] GrantsLabel
+    | [<MessageKey("cli.text.code")>] CodeLabel
+    | [<MessageKey("cli.text.uncertain")>] UncertainDelivery
+    | [<MessageKey("cli.family.case")>] CaseFamily
+    | [<MessageKey("cli.family.authority")>] AuthorityFamily
+    | [<MessageKey("cli.family.operation")>] OperationFamily
+    | [<MessageKey("cli.family.context")>] ContextFamily
+    | [<MessageKey("cli.family.call")>] CallFamily
+    | [<MessageKey("cli.family.session")>] SessionFamily
+    | [<MessageKey("cli.family.describe")>] DescribeFamily
+    | [<MessageKey("cli.family.schema")>] SchemaFamily
+    | [<MessageKey("cli.family.help")>] HelpFamily
+    | [<MessageKey("cli.help.describe")>] HelpDescribe
+    | [<MessageKey("cli.help.examples")>] HelpExamples
+    | [<MessageKey("cli.help.help")>] HelpHelp
+    | [<MessageKey("cli.help.schema")>] HelpSchema
+    | [<MessageKey("cli.help.version")>] HelpVersion
+    | [<MessageKey("cli.callbackAccepted")>] CallbackAccepted
+    | [<MessageKey("cli.callbackRefused")>] CallbackRefused
+    | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
+    | Failure of ClientFailure
+
 /// Rendering and publication inspect the same closed producers; no separate argument-name list exists.
 module CliMessages =
     let private definition (case: UnionCaseInfo) =
@@ -93,9 +117,34 @@ module CliMessages =
 
         key, fields |> Array.map _.Name
 
+    let private failureKey =
+        function
+        | ClientFailure.Configuration -> "cli.failure.CONFIGURATION_INVALID"
+        | ClientFailure.ConfigurationIssue _ -> "cli.configurationIssue"
+        | ClientFailure.Authentication -> "cli.failure.AUTHENTICATION_FAILED"
+        | ClientFailure.Unavailable -> "cli.failure.SERVICE_UNAVAILABLE"
+        | ClientFailure.Cancelled -> "cli.failure.CANCELLED"
+        | ClientFailure.Unexpected -> "cli.failure.INTERNAL"
+        | ClientFailure.InvalidFrame -> "cli.failure.INVALID_FRAME"
+        | ClientFailure.InvalidResponse -> "cli.failure.INVALID_RESPONSE"
+        | ClientFailure.ContractMismatch -> "cli.failure.CONTRACT_MISMATCH"
+
+    let private failureDefinitions =
+        FSharpType.GetUnionCases typeof<ClientFailure>
+        |> Array.filter (fun case -> case.GetFields().Length = 0)
+        |> Array.map (fun case ->
+            let failure = (FSharpValue.MakeUnion(case, [||]) |> nonNull) :?> ClientFailure
+            failure, failureKey failure)
+        |> Array.toList
+
     let contracts =
         let definitions =
-            FSharpType.GetUnionCases typeof<CliMessage> |> Array.map definition
+            (FSharpType.GetUnionCases typeof<CliMessage>
+             |> Array.filter (fun case -> case.Name <> "Failure")
+             |> Array.map definition)
+            |> Array.append (
+                failureDefinitions |> List.map (fun (_, key) -> key, [||]) |> List.toArray
+            )
 
         let result =
             definitions
@@ -107,16 +156,30 @@ module CliMessages =
 
         result
 
-    let produce message =
-        let case, values = FSharpValue.GetUnionFields(message, typeof<CliMessage>)
-        let key, fields = definition case
+    let rec produce message =
+        match message with
+        | CliMessage.Failure(ClientFailure.ConfigurationIssue(setting, issue)) ->
+            produce (
+                CliMessage.ConfigurationIssue(
+                    InputDiagnostics.settingName setting,
+                    ConfigurationIssue.token issue
+                )
+            )
+        | CliMessage.Failure failure ->
+            {
+                Key = failureKey failure
+                Arguments = Map.empty
+            }
+        | _ ->
+            let case, values = FSharpValue.GetUnionFields(message, typeof<CliMessage>)
+            let key, fields = definition case
 
-        {
-            Key = key
-            Arguments =
-                Array.zip fields values
-                |> Array.map (fun (name, value) -> name, unbox<string> value)
-                |> Map.ofArray
-        }
+            {
+                Key = key
+                Arguments =
+                    Array.zip fields values
+                    |> Array.map (fun (name, value) -> name, unbox<string> value)
+                    |> Map.ofArray
+            }
 
     let key message = (produce message).Key

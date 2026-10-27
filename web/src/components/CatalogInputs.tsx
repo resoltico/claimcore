@@ -4,7 +4,7 @@ import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
-import { renderKey } from "../presentation/messages";
+import { renderCatalogKey } from "../presentation/messages";
 import { usePresentation } from "../presentation/context";
 import { CatalogField } from "./CatalogField";
 import { productMetadata } from "../protocol/productMetadata";
@@ -45,7 +45,7 @@ const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice
   return (
     <>
       {input.meaningId === null ? null : (
-        <small id={`${input.identity}-meaning`}>{renderKey(p, input.meaningId)}</small>
+        <small id={`${input.identity}-meaning`}>{renderCatalogKey(p, input.meaningId)}</small>
       )}
       {error === null ? null : (
         <small id={`${input.identity}-error`}>
@@ -62,9 +62,9 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const error = inputError(input, props);
   return (
     <fieldset>
-      {group ? <legend>{renderKey(p, input.labelId)}</legend> : null}
+      {group ? <legend>{renderCatalogKey(p, input.labelId)}</legend> : null}
       <label>
-        {group ? p.text("label.action") : renderKey(p, input.labelId)}
+        {group ? p.text("label.action") : renderCatalogKey(p, input.labelId)}
         <select
           name={path}
           id={
@@ -119,7 +119,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   }
   return (
     <div className="text-field">
-      <label htmlFor={input.identity}>{renderKey(p, input.labelId)}</label>
+      <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
       <input
         id={input.identity}
         name={path}
@@ -158,7 +158,7 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
               props.onChange(path, event.target.checked);
             }}
           />
-          {renderKey(p, input.labelId)}
+          {renderCatalogKey(p, input.labelId)}
         </label>
         <InputDescription input={input} error={error} />
       </div>

@@ -6,7 +6,7 @@ import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { OperationReview as Review, CaseReview } from "../../protocol/types";
-import { renderKey } from "../../presentation/messages";
+import { renderCatalogKey } from "../../presentation/messages";
 type ReviewModel = Pick<
   OperationModel,
   "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
@@ -109,7 +109,7 @@ const ReviewConfirmation = ({
             model.confirm(event.target.checked);
           }}
         />
-        {renderKey(p, confirmationId)}
+        {renderCatalogKey(p, confirmationId)}
       </label>
       <button
         type="button"

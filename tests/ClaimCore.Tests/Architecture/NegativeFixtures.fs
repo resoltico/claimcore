@@ -196,3 +196,7 @@ type RecordFormatFromDomainTask =
 type DirectEnumeration =
     static member Read() =
         ClaimCore.Json.Codec.enumeration [ 0, "ZERO" ]
+
+/// A compiled source literal bypasses producer typing and must be refused by G7.
+type DirectCliMessageKey =
+    static member Read() = "cli.fixture"

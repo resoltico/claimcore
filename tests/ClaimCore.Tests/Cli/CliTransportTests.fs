@@ -292,6 +292,10 @@ let private localExits () =
             ClientFailure.Authentication, 3
             ClientFailure.Unavailable, 3
             ClientFailure.Cancelled, 130
+            ClientFailure.Unexpected, 70
+            ClientFailure.InvalidFrame, 2
+            ClientFailure.InvalidResponse, 2
+            ClientFailure.ContractMismatch, 2
         ] do
         let code, output, _ =
             call (frameBytes (frame "case.get")) (fun _ _ _ ->

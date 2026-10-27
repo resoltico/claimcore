@@ -20,6 +20,7 @@
     <Compile Include="Architecture/DomainOwnershipTests.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
+    <Compile Include="Architecture/MessageKeyTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Database/OwnerInputTests.fs" />

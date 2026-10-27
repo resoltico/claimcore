@@ -77,18 +77,36 @@ let private producerMutations () =
 let private actualProducers () =
     let catalogs = CatalogValidation.validate ()
 
-    for case in Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<CliMessage> do
-        let values = case.GetFields() |> Array.map (fun _ -> box "producer-value")
+    let fixedMessages =
+        Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<CliMessage>
+        |> Array.filter (fun case -> case.Name <> "Failure")
+        |> Array.map (fun case ->
+            let values = case.GetFields() |> Array.map (fun _ -> box "producer-value")
 
-        let message =
             Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(case, values)
             |> nonNull
-            |> unbox<CliMessage>
-            |> CliMessages.produce
+            |> unbox<CliMessage>)
+        |> Array.toList
+
+    let failures =
+        [
+            for code in Vocabulary.all CliFailureCode.vocabulary do
+                yield CliMessage.Failure(code |> CliFailureCode.toFailure |> ClientFailure.ofFrame)
+            yield
+                CliMessage.Failure(
+                    ClientFailure.ConfigurationIssue(
+                        CliSetting.ServiceUrl,
+                        ConfigurationIssue.Missing
+                    )
+                )
+        ]
+
+    for message in fixedMessages @ failures do
+        let produced = CliMessages.produce message
 
         for language in LocalizationPolicy.languages do
-            let rendered = Template.render (catalogs[language][message.Key]) message.Arguments
-            Expect.isNonEmpty rendered "Every actual closed CLI producer renders in every language"
+            let rendered = Template.render (catalogs[language][produced.Key]) produced.Arguments
+            Expect.isNonEmpty rendered "Every typed CLI producer renders in every language"
 
 let private structure () =
     let authored = AuthoredMessages.all ()

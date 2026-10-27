@@ -87,7 +87,7 @@ module internal TextReply =
                 (number value.Snapshot.Revision)
             line
                 language
-                "cli.text.state"
+                (CliMessages.key CliMessage.StateLabel)
                 (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
         ]
         @ (CaseState.fields value.Snapshot.State
@@ -131,7 +131,7 @@ module internal TextReply =
     let private nextLines language =
         function
         | None -> []
-        | Some value -> [ line language "cli.text.next" value ]
+        | Some value -> [ line language (CliMessages.key CliMessage.NextLabel) value ]
 
     let private historyLines language (page: HistoryResultPage) =
         (page.Entries
@@ -262,7 +262,7 @@ module internal TextReply =
     let private authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
-            "cli.text.grants",
+            (CliMessages.key CliMessage.GrantsLabel),
             (before.Grants |> List.map (grantRow language) |> String.concat "; "),
             (after.Grants |> List.map (grantRow language) |> String.concat "; ")
         ]
@@ -333,7 +333,7 @@ module internal TextReply =
 
         [
             message
-            line language "cli.text.code" code
+            line language (CliMessages.key CliMessage.CodeLabel) code
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
@@ -345,7 +345,7 @@ module internal TextReply =
 
         [
             label language ("fault." + code)
-            line language "cli.text.code" code
+            line language (CliMessages.key CliMessage.CodeLabel) code
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
@@ -398,7 +398,8 @@ module internal TextReply =
         | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
         | ExecuteResult.Rejected refusal -> failed (Outcome.Rejected refusal)
         | ExecuteResult.Failed fault -> failed (Outcome.Failed fault)
-        | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
+        | ExecuteResult.OutcomeUnknown ->
+            [ label language (CliMessages.key CliMessage.UncertainDelivery) ]
 
     let private resolveLines language (reply: Outcome<Resolved>) =
         readLines
@@ -432,7 +433,7 @@ module internal TextReply =
                 label language ("host." + Vocabulary.token HostFailureCode.vocabulary failure.Code)
                 line
                     language
-                    "cli.text.code"
+                    (CliMessages.key CliMessage.CodeLabel)
                     (Vocabulary.token HostFailureCode.vocabulary failure.Code)
             ]
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
@@ -445,11 +446,17 @@ module internal TextReply =
             ]
         | FrameResult.LocalFailure failure ->
             let code = Frames.failureCode failure
-            [ label language ("cli.failure." + code); line language "cli.text.code" code ]
+
+            [
+                MessageCatalogs.renderCli
+                    language
+                    (CliMessage.Failure(ClientFailure.ofFrame failure))
+                line language (CliMessages.key CliMessage.CodeLabel) code
+            ]
 
     let bytesFor language request (frame: FrameReply) =
         let lines = resultLines language request frame.Result
-        let warning = label language "cli.text.uncertain"
+        let warning = label language (CliMessages.key CliMessage.UncertainDelivery)
 
         let lines =
             if frame.Delivery = DeliveryState.Uncertain && not (List.contains warning lines) then

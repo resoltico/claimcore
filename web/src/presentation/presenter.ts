@@ -6,7 +6,7 @@ import { correctionTargets, fieldGuidance } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
-import { renderKey, translate } from "./messages";
+import { renderCatalogKey, translate } from "./messages";
 import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
@@ -62,7 +62,7 @@ const metadata = (
   if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
-  return renderKey(preferences, identity);
+  return renderCatalogKey(preferences, identity);
 };
 const fieldValueText = (
   preferences: Preferences,
@@ -91,7 +91,7 @@ const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
         typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
       ]),
     );
-    return renderKey(preferences, guidance.key, values);
+    return renderCatalogKey(preferences, guidance.key, values);
   }
   return field.scalar.kind === "CASE_STATUS"
     ? field.scalar.allowedValues.map((value) => termLabel(preferences, "status", value)).join(", ")

@@ -129,7 +129,8 @@ let private dispatch output errors argv =
         try
             writeText
                 errors
-                (ContractDiscovery.message "cli.beforeDispatchFailure" + Environment.NewLine)
+                (ContractDiscovery.message (CliMessages.key CliMessage.BeforeDispatchFailure)
+                 + Environment.NewLine)
         with _ ->
             ()
 

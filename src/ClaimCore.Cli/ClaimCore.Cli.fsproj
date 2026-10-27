@@ -2,6 +2,7 @@
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
   <ItemGroup>
     <Compile Include="InputDiagnostics.fs" />
+    <Compile Include="FrameFailures.fs" />
     <Compile Include="Localization/CliMessages.fs" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />

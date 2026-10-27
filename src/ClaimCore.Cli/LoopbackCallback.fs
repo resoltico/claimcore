@@ -134,11 +134,11 @@ module internal LoopbackTransport =
     let callbackResponse accepted =
         let status, identity =
             if accepted then
-                "200 OK", "cli.callbackAccepted"
+                "200 OK", CliMessage.CallbackAccepted
             else
-                "400 Bad Request", "cli.callbackRefused"
+                "400 Bad Request", CliMessage.CallbackRefused
 
-        response status (ContractDiscovery.message identity)
+        response status (ContractDiscovery.message (CliMessages.key identity))
 
     let respond (stream: NetworkStream) accepted cancelled =
         task {

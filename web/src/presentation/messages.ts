@@ -19,7 +19,7 @@ const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = Obj
 export const messageShapes = { ...coreShapes, ...chromeShapes };
 const shapes: Readonly<Record<string, Readonly<Record<string, string>>>> = messageShapes;
 const cache = new Map<string, ReadonlyArray<TemplatePart>>();
-const message = (key: string, preferences: Preferences): ReadonlyArray<TemplatePart> => {
+const message = (key: MessageKey, preferences: Preferences): ReadonlyArray<TemplatePart> => {
   const identity = `${preferences.language}|${key}`;
   const cached = cache.get(identity);
   if (cached !== undefined) {
@@ -55,7 +55,7 @@ const isolate = (value: string | number, preferences: Preferences): string =>
   languageDirection(preferences.language) === "rtl" ? `\u2068${value}\u2069` : String(value);
 export const renderKey = (
   preferences: Preferences,
-  key: string,
+  key: MessageKey,
   values: Readonly<Record<string, string | number>> = {},
 ): string => {
   const selected = safeArgs(key, values) ? key : "notice.unknownDiagnostic";
@@ -72,10 +72,18 @@ export const translate = <K extends MessageKey>(
 ): string => renderKey(preferences, key, values[0] ?? {});
 export const hasMessage = (key: string): key is MessageKey => Object.hasOwn(shapes, key);
 
+/** Admit a key arriving in independently loaded catalog metadata. */
+const catalogMessageKey = (key: string): MessageKey | null => (hasMessage(key) ? key : null);
+export const renderCatalogKey = (
+  preferences: Preferences,
+  key: string,
+  values: Readonly<Record<string, string | number>> = {},
+): string => renderKey(preferences, catalogMessageKey(key) ?? "notice.unknownDiagnostic", values);
+
 /** Retain word order and substitute a DOM-isolated reference for the selected hole. */
 export const renderIsolatedValue = <T>(
   preferences: Preferences,
-  key: string,
+  key: MessageKey,
   values: Readonly<Record<string, string | number>>,
   reference: T,
   argument = "reference",
