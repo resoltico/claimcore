@@ -111,25 +111,24 @@ type SerializerTaskShape =
             return System.Text.Json.JsonSerializer.Serialize("control")
         }
 
-type ApplicationShapes =
-    static member ApplicationDirect() = ReplyCodecs.execute.Schema
+type ProtocolFromDomain =
+    static member ProtocolDirect() = ReplyCodecs.execute.Schema
 
-type ApplicationTaskShape =
-    static member ApplicationTask() =
+type ProtocolFromDomainTask =
+    static member ProtocolTask() =
         task {
             do! Task.Yield()
             return ReplyCodecs.execute.Schema
         }
 
-type DomainShapes =
-    static member DomainDirect() =
-        typeof<ClaimCore.RecordFormat.DecodeProblem>
+type ApplicationFromDomain =
+    static member ApplicationDirect() = typeof<ClaimCore.Application.IStore>
 
-type DomainTaskShape =
-    static member DomainTask() =
+type ApplicationFromDomainTask =
+    static member ApplicationTask() =
         task {
             do! Task.Yield()
-            return typeof<ClaimCore.RecordFormat.DecodeProblem>
+            return typeof<ClaimCore.Application.IStore>
         }
 
 [<RequireQualifiedAccess>]

@@ -252,11 +252,11 @@ let private shapeControls () =
             ArchitectureRule.Serializer, typeof<SerializerShapes>, [ "SerializerDirect" ]
             ArchitectureRule.Serializer, typeof<SerializerTaskShape>, [ "SerializerTask" ]
             ArchitectureRule.ServiceModelWithoutProtocol,
-            typeof<ApplicationShapes>,
-            [ "ApplicationDirect" ]
+            typeof<ProtocolFromDomain>,
+            [ "ProtocolDirect" ]
             ArchitectureRule.ServiceModelWithoutProtocol,
-            typeof<ApplicationTaskShape>,
-            [ "ApplicationTask" ]
+            typeof<ProtocolFromDomainTask>,
+            [ "ProtocolTask" ]
             ArchitectureRule.VocabularyModuleNaming,
             nonNull (
                 typeof<VocabularySample>
@@ -271,16 +271,6 @@ let private shapeControls () =
                     .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedTaskVocabulary")
             ),
             [ "TaskShape" ]
-            ArchitectureRule.DomainBoundary, typeof<JsonFromDomain>, [ "JsonDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<JsonFromDomainTask>, [ "JsonTask" ]
-            ArchitectureRule.DomainBoundary, typeof<PostgresShapes>, [ "PostgresDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<PostgresTaskShape>, [ "PostgresTask" ]
-            ArchitectureRule.DomainBoundary, typeof<ApplicationShapes>, [ "ApplicationDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<ApplicationTaskShape>, [ "ApplicationTask" ]
-            ArchitectureRule.DomainBoundary, typeof<RecordFormatFromDomain>, [ "RecordDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<RecordFormatFromDomainTask>, [ "RecordTask" ]
-            ArchitectureRule.DomainBoundary, typeof<DomainShapes>, [ "DomainDirect" ]
-            ArchitectureRule.DomainBoundary, typeof<DomainTaskShape>, [ "DomainTask" ]
         ]
 
     for rule, fixture, members in cases do
@@ -294,6 +284,83 @@ let private shapeControls () =
             Expect.isFalse
                 ((ApiRules.rule model.Value rule selected).HasNoViolations model.Value)
                 (string rule + " detects " + memberName)
+
+    // A label alone cannot prove coverage: each pair must violate its claimed target in isolation.
+    let domainTargets =
+        [
+            "ClaimCore.Json",
+            typeof<JsonFromDomain>,
+            "JsonDirect",
+            typeof<JsonFromDomainTask>,
+            "JsonTask"
+            "ClaimCore.Protocol",
+            typeof<ProtocolFromDomain>,
+            "ProtocolDirect",
+            typeof<ProtocolFromDomainTask>,
+            "ProtocolTask"
+            "ClaimCore.Application",
+            typeof<ApplicationFromDomain>,
+            "ApplicationDirect",
+            typeof<ApplicationFromDomainTask>,
+            "ApplicationTask"
+            "ClaimCore.RecordFormat",
+            typeof<RecordFormatFromDomain>,
+            "RecordDirect",
+            typeof<RecordFormatFromDomainTask>,
+            "RecordTask"
+            "ClaimCore.Postgres",
+            typeof<PostgresShapes>,
+            "PostgresDirect",
+            typeof<PostgresTaskShape>,
+            "PostgresTask"
+        ]
+
+    Expect.equal
+        (domainTargets |> List.map (fun (target, _, _, _, _) -> target) |> List.sort)
+        ([
+            "ClaimCore.Json"
+            "ClaimCore.Protocol"
+            "ClaimCore.Application"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Postgres"
+         ]
+         |> List.sort)
+        "A6 covers each forbidden assembly exactly once"
+
+    let detectsTarget (target: string) fixture memberName =
+        let selected = shapeSubjects fixture memberName
+
+        Expect.isNonEmpty
+            (selected.GetObjects model.Value)
+            ("Compiled target control: " + memberName)
+
+        let forbidden =
+            Types().That().ResideInAssembly(Assembly.Load target)
+            |> ApiRules.nonEmptyTargets model.Value target
+
+        not (
+            Types().That().Are(selected).Should().NotDependOnAny(forbidden).HasNoViolations
+                model.Value
+        )
+
+    for target, direct, directMember, task, taskMember in domainTargets do
+        for fixture, memberName in [ direct, directMember; task, taskMember ] do
+            Expect.isTrue
+                (detectsTarget target fixture memberName)
+                (target + " is the actual compiled dependency")
+
+            Expect.isFalse
+                ((ApiRules.rule
+                    model.Value
+                    ArchitectureRule.DomainBoundary
+                    (shapeSubjects fixture memberName))
+                    .HasNoViolations
+                    model.Value)
+                ("A6 detects " + target + " through " + memberName)
+
+    Expect.isFalse
+        (detectsTarget "ClaimCore.Application" typeof<RecordFormatFromDomain> "RecordDirect")
+        "A duplicate RecordFormat fixture cannot qualify Application coverage"
 
 let private vocabularyModuleNaming () =
     for assembly in products.Value do

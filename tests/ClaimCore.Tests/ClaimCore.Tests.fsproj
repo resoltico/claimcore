@@ -43,6 +43,7 @@
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
     <Compile Include="RecordFormat/RecordBoundaryTests.fs" />
     <Compile Include="RecordFormat/RecordPropertyTests.fs" />
+    <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="RecordFormat/OperationRecordTests.fs" />
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />

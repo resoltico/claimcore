@@ -50,7 +50,9 @@ with Application and Postgres excluded. The
 [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) run ArchUnitNET in Debug. Subjects
 cover whole assemblies because F# task/async bodies and closures can live in StartupCode types. Nonempty
 forbidden sets and compiled direct/task controls cover Domain isolation, durable vocabulary isolation,
-service-model independence, host usage and vocabulary naming. Product internals may be exposed to tests only.
+service-model independence, host usage and vocabulary naming. Domain controls verify each forbidden
+assembly separately, so duplicate fixtures cannot mask a missing boundary. Product internals may be exposed
+to tests only.
 
 A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
 on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
@@ -72,6 +74,9 @@ number. Tightening requires a separately authorized format change. Independent p
 [DurableNames.fs](../src/ClaimCore.RecordFormat/DurableNames.fs) owns exhaustive literal spellings;
 [RecordLimits.fs](../src/ClaimCore.RecordFormat/RecordLimits.fs) owns the 65,536-byte request-record ceiling.
 Wire spelling and transport limits do not govern retained records. Oversized encoding is an internal fault.
+[Generated inventory properties](../tests/ClaimCore.Tests/RecordFormat/DurableRoundTripProperties.fs) visit
+every case kind, snapshot status, authority kind, role and scope on each of 200 deterministic trials, with
+varied permanent values and independently authored spellings; fixed byte vectors remain independent.
 
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) exposes read/write callbacks over primitives.
 The PostgreSQL adapter creates a write transaction capability after taking the head lock. Reads use one
