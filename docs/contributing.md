@@ -30,8 +30,8 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | JSON-free value types, structural declarations, service requests/replies, policy and decisions |
-| Protocol | Wire codecs, endpoints, semantic catalog, OpenAPI, core messages and host build identity |
+| Domain | JSON-free values, typed acts, accepted state, outcomes, authority policy and decisions |
+| Protocol | Wire codecs, endpoints, derived catalog, diagnostic/command-line contracts and host build identity |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
@@ -58,6 +58,9 @@ to tests only.
 references from Application, RecordFormat and Postgres through called Domain helpers. The pinned SDK
 supplies the compiler service. Compiled controls distinguish a used helper from an unrelated presentation
 member in the same module, and preserve references in signatures and later body expressions.
+Unused-declaration controls use actual product consumers and compiler-visible union-case uses, including
+pattern matches. Structural checks compare record fields and union cases; generated containers are not
+source declarations. Explicit exceptions require a concrete consumer or ownership reason.
 
 A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot` and `AuthorityAct.slot`
 pair typed inject/project functions; wire and durable codecs select their own member names without
@@ -113,6 +116,10 @@ producer. Custom output directories contain only contract artifacts.
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
 `synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
+Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/WireMembers.fs) supplies technical
+member names; catalog annotations identify meaning by named schema definition/member. The schema walk
+resolves references and nested discriminators, and validates complete, non-orphan annotations and tokens.
+
 Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
 `p.term(vocabulary, value)`. Registry checks allow equal tokens in different vocabularies and reserve one
 composite `act` vocabulary. Identical renderer/core wording is refused in every locale.
@@ -139,6 +146,10 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 `web/tests/flows`, with fixtures and setup under `web/tests/support`. `npm run lint` rejects unit paths
 without a matching source module. The lint configuration omits root category defaults while preserving
 explicit override policy; review the complete `oxlint --print-config` output when changing it.
+
+Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
+tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
+Each FSharpLint suppression needs a preceding justification comment; new suppressions do not qualify a split.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
@@ -189,8 +200,8 @@ still run with caches; shared caches are not disposable task resources.
 
 ## Dependencies
 
-[Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and reviewed package lockfiles
-record transitive resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
+[Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and selected production
+transitives that track the runtime security train; reviewed lockfiles record the complete resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
 Audit all dependencies, retain image digests and use locked restore/npm ci. Dependency changes must update
 consumers, lockfiles, licensing evidence and qualification together.
 

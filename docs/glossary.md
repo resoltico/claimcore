@@ -4,8 +4,10 @@
 
 A principal is an exact issuer and immutable human subject or service client identity. An actor is its
 registered identifier and enabled state. Current grants authorize actions on an installation or case.
-Domain Authority parses principal/role/scope inputs and decides changes from current authority facts;
-Application loads those facts under the transaction and persists the typed change.
+Principal kinds and roles are closed typed vocabularies before Domain admission. `PrincipalInput` holds
+authored identity fields; admitted state and outputs hold `PrincipalKey`. Domain admits issuer/subject and
+scope values, then decides from authority facts loaded under the transaction. Storage adapters interpret
+permanent spellings and report corrupted kinds/roles as integrity faults.
 
 ## Admission and permanent format
 
@@ -20,8 +22,10 @@ A Domain module owns one value type and its `parse`, `admit`, `format` and `desc
 
 ## Declaration
 
-The typed Domain declaration describes record groups, fields, act payloads and endpoint inputs.
-Boundary codecs, catalog inputs and projection names derive from it.
+Domain declares business fields and typed act slots pairing injection with projection. Protocol owns
+endpoint and interaction declarations. Request codecs own wire structure; catalog paths, kinds, constants
+and conditions derive from their schemas. Semantic annotations attach by named definition/member;
+projection columns derive from Domain field declarations.
 
 ## Case act
 
@@ -33,6 +37,28 @@ its authored inputs into a `CaseCommand`; transitions apply the typed act to acc
 A `Decision` is the accepted payment decision: its date, payable amount and currency.
 Application's `Verdict` is Proceed, Replay, Refuse or Fail. Only Proceed permits a transaction to commit;
 the other verdicts discard staged changes.
+
+## Public outcome
+
+`Outcome<'success>` is Succeeded, Rejected or Failed. Preview and resolution use their own success payloads
+inside that common shape. Execute retains Accepted, AlreadyAccepted, Rejected, Failed and OutcomeUnknown;
+unknown commit/delivery is not a known failure. `Verdict` remains the internal decision-flow type.
+
+## Input issues
+
+A nonempty ordered collection of field-specific violations from independent checks in the same admission
+phase. The wire carries `INVALID_INPUT.issues`; the CLI and browser present every issue. Parsing and
+state/today admission stay sequential, and transition refusals stay single.
+
+## Payment progress
+
+Undecided, Decided or Paid, with a decision included in every Paid value. `CaseFields.Progress` is the
+stored in-memory authority; separate decision/payment wire members are boundary projections.
+
+## Ledger position
+
+One sequence/hash model shared by receipts, heads and operator expectations. `EntryHash` owns a copied
+32-byte value; boundaries choose hexadecimal formatting. Genesis is sequence zero with the zero hash.
 
 ## Applicable
 
