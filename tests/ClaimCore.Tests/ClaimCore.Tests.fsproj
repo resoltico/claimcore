@@ -82,6 +82,7 @@
     <Compile Include="Contract/PayloadBudgetTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
+    <Compile Include="Contract/CatalogBindingTests.fs" />
     <Compile Include="Contract/OperationCatalogTests.fs" />
     <Compile Include="Cli/RemoteClientTests.fs" />
     <Compile Include="Cli/RemoteTlsTests.fs" />

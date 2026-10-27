@@ -10,6 +10,9 @@ open ClaimCore.Json
 module RequestCodecs =
     open Codec
 
+    let private tagged name variants =
+        Codec.taggedOn WireMembers.Kind name variants
+
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
@@ -36,7 +39,7 @@ module RequestCodecs =
         |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
         |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
         |> Codec.build
-        |> Codec.named "Registration"
+        |> Codec.named RequestSchemas.Registration
 
     let decision =
         (Codec.record (fun date amount currency ->
@@ -50,17 +53,17 @@ module RequestCodecs =
         |> inputField BusinessField.PayableAmount _.PayableAmount
         |> inputField BusinessField.PayableCurrency _.PayableCurrency
         |> Codec.build
-        |> Codec.named "Decision"
+        |> Codec.named RequestSchemas.Decision
 
     let payment =
         (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
         |> inputField BusinessField.PaymentDate _.PaymentDate
         |> Codec.build
-        |> Codec.named "Payment"
+        |> Codec.named RequestSchemas.Payment
 
     let registrationGroup =
         tagged
-            "RegistrationGroup"
+            RequestSchemas.RegistrationGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Amendment.Keep
                 variant
@@ -69,12 +72,12 @@ module RequestCodecs =
                     (function
                     | Amendment.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id registration)
+                    (record id |> field WireMembers.Values id registration)
             ]
 
     let decisionGroup =
         tagged
-            "DecisionGroup"
+            RequestSchemas.DecisionGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
@@ -83,13 +86,13 @@ module RequestCodecs =
                     (function
                     | Change.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id decision)
+                    (record id |> field WireMembers.Values id decision)
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
     let paymentGroup =
         tagged
-            "PaymentGroup"
+            RequestSchemas.PaymentGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
@@ -98,7 +101,7 @@ module RequestCodecs =
                     (function
                     | Change.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id payment)
+                    (record id |> field WireMembers.Values id payment)
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
@@ -110,11 +113,11 @@ module RequestCodecs =
                 Payment = v2
             })
         : Fields<AuthoredCorrection, _>)
-        |> field "registration" _.Registration (registrationGroup)
-        |> field "decision" _.Decision (decisionGroup)
-        |> field "payment" _.Payment (paymentGroup)
+        |> field (RecordGroup.token RecordGroup.Registration) _.Registration (registrationGroup)
+        |> field (RecordGroup.token RecordGroup.Decision) _.Decision (decisionGroup)
+        |> field (RecordGroup.token RecordGroup.Payment) _.Payment (paymentGroup)
         |> build
-        |> named "Correction"
+        |> named RequestSchemas.Correction
 
     let private caseCodec token (registration, decision, payment) (reason, correction) =
         CaseActKind.all
@@ -127,15 +130,16 @@ module RequestCodecs =
             match CaseAct.slot kind with
             | CaseActSlot.Bare act -> unitVariant tag act
             | CaseActSlot.Registration(inject, project) ->
-                memberCodec "values" registration (inject, project)
+                memberCodec WireMembers.Values registration (inject, project)
             | CaseActSlot.Decision(inject, project) ->
-                memberCodec "values" decision (inject, project)
+                memberCodec WireMembers.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
-                memberCodec "values" payment (inject, project)
-            | CaseActSlot.Reason(inject, project) -> memberCodec "reason" reason (inject, project)
+                memberCodec WireMembers.Values payment (inject, project)
+            | CaseActSlot.Reason(inject, project) ->
+                memberCodec WireMembers.Reason reason (inject, project)
             | CaseActSlot.Correction(inject, project) ->
-                memberCodec "groups" correction (inject, project))
-        |> tagged "CaseAct"
+                memberCodec WireMembers.Groups correction (inject, project))
+        |> tagged RequestSchemas.CaseAct
 
     let caseActWithNames names =
         caseCodec names (registration, decision, payment) (text, correction)
@@ -151,12 +155,12 @@ module RequestCodecs =
                 Act = v3
             })
         : Fields<UnvalidatedCaseRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
+        |> field WireMembers.OperationId _.OperationId (uuid)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference (text)
-        |> field "expectedRevision" _.ExpectedRevision (revision)
-        |> field "act" _.Act (caseAct)
+        |> field WireMembers.ExpectedRevision _.ExpectedRevision (revision)
+        |> field WireMembers.Act _.Act (caseAct)
 
-    let caseRequest = caseRequestFields |> build |> named "CaseRequest"
+    let caseRequest = caseRequestFields |> build |> named RequestSchemas.CaseRequest
 
     let principal =
         (record (fun v0 v1 v2 ->
@@ -166,15 +170,15 @@ module RequestCodecs =
                 Subject = v2
             })
         : Fields<PrincipalInput, _>)
-        |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
-        |> field "issuer" _.Issuer (text)
-        |> field "subject" _.Subject (text)
+        |> field WireMembers.Kind _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
+        |> field WireMembers.Issuer _.Issuer (text)
+        |> field WireMembers.Subject _.Subject (text)
         |> build
-        |> named "PrincipalInput"
+        |> named RequestSchemas.PrincipalInput
 
     let scope =
         tagged
-            "Scope"
+            RequestSchemas.Scope
             [
                 unitVariant (ScopeKind.token ScopeKind.Installation) GrantTarget.Installation
                 variant
@@ -193,8 +197,8 @@ module RequestCodecs =
                     AuthoredGrant.Role = role
                     Scope = scope
                 })
-            |> field "role" _.Role role
-            |> field "scope" _.Scope scope
+            |> field WireMembers.Role _.Role role
+            |> field WireMembers.Scope _.Scope scope
 
         AuthorityKind.all
         |> List.filter ((<>) AuthorityKind.ProvisionOwner)
@@ -206,7 +210,7 @@ module RequestCodecs =
             | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
     let authorityActWith role =
-        authorityVariantsWith role scope |> tagged "AuthorityAct"
+        authorityVariantsWith role scope |> tagged RequestSchemas.AuthorityAct
 
     let authorityAct = authorityActWith (VocabularyCodec.create Role.vocabulary)
 
@@ -218,11 +222,12 @@ module RequestCodecs =
                 Act = v2
             })
         : Fields<AuthorityRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "target" _.Target (principal)
-        |> field "act" _.Act (authorityAct)
+        |> field WireMembers.OperationId _.OperationId (uuid)
+        |> field WireMembers.Target _.Target (principal)
+        |> field WireMembers.Act _.Act (authorityAct)
 
-    let authorityRequest = authorityRequestFields |> build |> named "AuthorityRequest"
+    let authorityRequest =
+        authorityRequestFields |> build |> named RequestSchemas.AuthorityRequest
 
     let private caseVariant =
         variant
@@ -242,7 +247,8 @@ module RequestCodecs =
             | _ -> None)
             authorityRequestFields
 
-    let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
+    let operationInput =
+        tagged RequestSchemas.OperationInput [ caseVariant; authorityVariant ]
 
     [<NoEquality; NoComparison>]
     type private ReadFields<'request, 'ctor> =
@@ -262,13 +268,13 @@ module RequestCodecs =
     let private operationOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.OperationOperand ]
-            Fields = fields.Fields |> field "operationId" get uuid
+            Fields = fields.Fields |> field WireMembers.OperationId get uuid
         }
 
     let private actorOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.ActorOperand ]
-            Fields = fields.Fields |> field "actorId" get uuid
+            Fields = fields.Fields |> field WireMembers.ActorId get uuid
         }
 
     let private detail get (fields: ReadFields<'request, HistoryDetail -> 'rest>) =
@@ -276,7 +282,7 @@ module RequestCodecs =
             Inputs = fields.Inputs @ [ ReadInput.Detail ]
             Fields =
                 fields.Fields
-                |> field "detail" get (VocabularyCodec.create HistoryDetail.vocabulary)
+                |> field WireMembers.Detail get (VocabularyCodec.create HistoryDetail.vocabulary)
         }
 
     let private page cursor limit (fields: ReadFields<'request, string option -> int -> 'rest>) =
@@ -284,8 +290,11 @@ module RequestCodecs =
             Inputs = fields.Inputs @ [ ReadInput.Page ]
             Fields =
                 fields.Fields
-                |> optionalField "cursor" cursor (boundedText 1 512)
-                |> field "limit" limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+                |> optionalField WireMembers.Cursor cursor (boundedText 1 512)
+                |> field
+                    WireMembers.Limit
+                    limit
+                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
 
     let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
@@ -304,7 +313,7 @@ module RequestCodecs =
             })
         : ReadFields<CaseGetRequest, _>)
         |> caseOperand _.CaseReference
-        |> finishRead "CaseGetRequest" QueryEndpoint.CaseGet
+        |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
     let pageRequest =
         (read (fun cursor limit ->
@@ -314,7 +323,7 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> page _.AfterCursor _.Limit
-        |> finishRead "PageRequest" QueryEndpoint.CaseList
+        |> finishRead RequestSchemas.PageRequest QueryEndpoint.CaseList
 
     let historyRequest =
         (read (fun reference detail cursor limit ->
@@ -328,7 +337,7 @@ module RequestCodecs =
         |> caseOperand _.CaseReference
         |> detail _.Detail
         |> page _.AfterCursor _.Limit
-        |> finishRead "HistoryRequest" QueryEndpoint.CaseHistory
+        |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory
 
     let observeRequest =
         (read (fun operation ->
@@ -337,7 +346,7 @@ module RequestCodecs =
             })
         : ReadFields<ObserveRequest, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ObserveRequest" QueryEndpoint.Observe
+        |> finishRead RequestSchemas.ObserveRequest QueryEndpoint.Observe
 
     let resolveRequest =
         (read (fun operation ->
@@ -346,7 +355,7 @@ module RequestCodecs =
             })
         : ReadFields<ResolveRequest, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ResolveRequest" QueryEndpoint.Resolve
+        |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
 
     let grantsRequest =
         (read (fun actor cursor limit ->
@@ -358,6 +367,6 @@ module RequestCodecs =
         : ReadFields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead "GrantsRequest" QueryEndpoint.AuthorityGrants
+        |> finishRead RequestSchemas.GrantsRequest QueryEndpoint.AuthorityGrants
 
-    let empty = read () |> finishRead "Empty" QueryEndpoint.Context
+    let empty = read () |> finishRead RequestSchemas.Empty QueryEndpoint.Context
