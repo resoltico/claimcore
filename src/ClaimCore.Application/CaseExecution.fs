@@ -44,13 +44,14 @@ module internal CaseExecution =
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
 
-    let private authorizeIdentity installationId principal request bytes (view: CaseFacts) =
+    let private authorizeIdentity (services: ServiceContext) request bytes (view: CaseFacts) =
+        let principal = services.Principal
+
         match permission principal view.Actor request view.Case with
         | Error refusal -> Verdict.Refuse refusal
         | Ok() ->
             OperationIdentity.decide
-                installationId
-                principal
+                services
                 view.Actor
                 request.OperationId
                 bytes
@@ -109,33 +110,32 @@ module internal CaseExecution =
             Projection = projection
         }
 
-    let review installationId calendar principal (command: CaseCommand) (view: CaseFacts) =
+    let review (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
         let identity = Case.canonical command |> RequestRecord.encode
 
-        authorizeIdentity installationId principal command identity view
-        |> Verdict.bind (fun () -> propose installationId calendar command view)
+        authorizeIdentity services command identity view
+        |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
 
     let execute
-        installationId
-        calendar
-        principal
+        (services: ServiceContext)
         (command: CaseCommand)
         head
         fenced
         nonce
         (view: CaseFacts)
         =
+        let installationId = services.InstallationId
+        let calendar = services.Calendar
         let identity = Case.canonical command |> RequestRecord.encode
 
-        authorizeIdentity installationId principal command identity view
+        authorizeIdentity services command identity view
         |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
-        |> Verdict.bind (fun () -> propose installationId calendar command view)
+        |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after
 
             LedgerEnvelope.accept
-                installationId
-                principal
+                services
                 view.Actor
                 command.OperationId
                 head
@@ -143,31 +143,27 @@ module internal CaseExecution =
                 plan
                 (RequestRecord.encode command))
 
-    let run (store: IStore) installationId calendar principal (command: CaseCommand) token =
+    let run (services: ServiceContext) (command: CaseCommand) token =
+        let store = services.Store
+
         store.Write(
-            (fun tx ->
-                task {
-                    let! view =
-                        ExecutionFacts.case
-                            tx
-                            installationId
-                            principal
-                            (Some command.OperationId)
-                            (CaseReference.format command.Reference)
+            {
+                WriteOperation.Work =
+                    (fun tx ->
+                        task {
+                            let! view =
+                                ExecutionFacts.case
+                                    services
+                                    tx
+                                    (Some command.OperationId)
+                                    (CaseReference.format command.Reference)
 
-                    let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
+                            let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
 
-                    return!
-                        execute
-                            installationId
-                            calendar
-                            principal
-                            command
-                            tx.Head
-                            fenced
-                            tx.Nonce
-                            view
-                        |> ExecutionFacts.persist tx tx.ProjectCase
-                }),
-            token
+                            return!
+                                execute services command tx.Head fenced tx.Nonce view
+                                |> ExecutionFacts.persist tx tx.ProjectCase
+                        })
+                CancellationToken = token
+            }
         )

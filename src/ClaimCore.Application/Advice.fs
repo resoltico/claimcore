@@ -35,7 +35,10 @@ module internal Advice =
             else
                 None)
 
-    let caseRecord installationId principal actor (record: StoredCase) =
+    let caseRecord (services: ServiceContext) actor (record: StoredCase) =
+        let installationId = services.InstallationId
+        let principal = services.Principal
+
         CaseExecution.current installationId record
         |> Result.map (fun accepted ->
             let resource = ResourceScope.Case record.CaseId

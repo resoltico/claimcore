@@ -49,7 +49,7 @@ let private target subject =
 let private register (actor: ServiceContext) n principal =
     task {
         let! outcome =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id n) principal AuthorityAct.Register))
                 (token))
@@ -150,7 +150,7 @@ let private stateSequence (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! closed =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
                 (token))
@@ -186,7 +186,7 @@ let private erasure (database: PostgresFixture.Database) =
         acceptedAuthority granted
 
         let! erased =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(actRequest 11 "synthetic-a" 1L (AuthoredCaseAct.Erase)))
                 (token))
@@ -276,7 +276,7 @@ let private human (database: PostgresFixture.Database) =
         acceptedAuthority added
 
         let! voided =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
                     actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Void "Entered in error"))
@@ -299,7 +299,7 @@ let private owner (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! changed =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Enable)))
                 (token))
@@ -397,7 +397,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! disabled =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Disable)))
                 (token))
@@ -405,7 +405,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         acceptedAuthority disabled
 
         let! opened =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 11 "another" 0L (AuthoredCaseAct.Open registration)))
                 (token))
@@ -454,7 +454,7 @@ let private lastOwner (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! unchanged =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Enable)
@@ -487,7 +487,7 @@ let private permanentPolicyOnly (database: PostgresFixture.Database) =
         do! register actor 3 reader
 
         let! opened =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
                     request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
@@ -590,7 +590,7 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
             }
 
         let! decided =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)))
                 (token))
@@ -642,7 +642,7 @@ let private duplicateIdentity earlierFailure occurrences (database: PostgresFixt
         let! actor = populated database
 
         let! closed =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
                 (token))
@@ -650,7 +650,7 @@ let private duplicateIdentity earlierFailure occurrences (database: PostgresFixt
         accepted closed |> ignore
 
         let! reopened =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 12 "synthetic-a" 2L AuthoredCaseAct.Reopen))
                 (token))

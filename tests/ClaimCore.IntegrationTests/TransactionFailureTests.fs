@@ -52,13 +52,16 @@ let private programmerFailure () =
 
             let! outcome =
                 database.Fixture.Store.Write(
-                    (fun _ ->
-                        task {
-                            return
-                                (invalidArg "synthetic" "synthetic programming failure"
-                                : Verdict<unit>)
-                        }),
-                    CancellationToken.None
+                    {
+                        WriteOperation.Work =
+                            (fun _ ->
+                                task {
+                                    return
+                                        (invalidArg "synthetic" "synthetic programming failure"
+                                        : Verdict<unit>)
+                                })
+                        CancellationToken = CancellationToken.None
+                    }
                 )
                 |> Async.AwaitTask
 

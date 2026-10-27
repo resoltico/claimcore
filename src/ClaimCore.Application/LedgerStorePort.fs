@@ -71,11 +71,43 @@ type AuthorityProjection =
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option
     | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
 
-type CasePageSelection =
+type AuthorityQuery =
+    {
+        Principal: PrincipalKey
+        CaseId: Guid option
+    }
+
+type CasePageQuery =
     {
         Visibility: CaseVisibility
+        ActorId: Guid
+        ReadRoles: Role list
+        ForbiddenRoles: Role list
         AfterReference: string option
+        Limit: int
     }
+
+type HistoryPageQuery =
+    {
+        CaseId: Guid
+        AfterRevision: int64
+        Limit: int
+    }
+
+type ActorPageQuery =
+    {
+        AfterActorId: Guid option
+        Limit: int
+    }
+
+type GrantPageQuery =
+    {
+        ActorId: Guid
+        AfterGrant: GrantPosition option
+        Limit: int
+    }
+
+type FenceKey = { ActorId: Guid; OperationId: Guid }
 
 /// A page carries only rows and a continuation position from the same transaction snapshot.
 type Page<'Item, 'Position> =
@@ -86,19 +118,16 @@ type Page<'Item, 'Position> =
 
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
-    abstract Authority: PrincipalKey * Guid option -> Task<AuthorityView>
+    abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract FindCase: Guid -> Task<StoredCase option>
     abstract FindEntry: Guid -> Task<StoredEntry option>
 
-    abstract CasePage:
-        CaseVisibility * Guid * Role list * Role list * string option * int ->
-            Task<Page<StoredCase, string>>
+    abstract CasePage: CasePageQuery -> Task<Page<StoredCase, string>>
 
-    abstract HistoryPage: Guid * int64 * int -> Task<Page<StoredEntry, int64>>
-    abstract ActorPage: Guid option * int -> Task<Page<Actor, Guid>>
+    abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, int64>>
+    abstract ActorPage: ActorPageQuery -> Task<Page<Actor, Guid>>
 
-    abstract GrantPage:
-        Guid * GrantPosition option * int -> Task<Page<AuthorityGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<AuthorityGrant, GrantPosition>>
 
     abstract FindActor: Guid -> Task<Actor option>
     abstract EnabledHumanOwners: unit -> Task<int>
@@ -108,15 +137,26 @@ type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerHead
     abstract Nonce: byte array
-    abstract IsFenced: Guid * Guid -> Task<bool>
+    abstract IsFenced: FenceKey -> Task<bool>
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
-    abstract Fence: Guid * Guid -> Task<unit>
+    abstract Fence: FenceKey -> Task<unit>
+
+[<NoEquality; NoComparison>]
+type ReadOperation<'result> =
+    {
+        Work: IReadTx -> Task<'result>
+        CancellationToken: CancellationToken
+    }
+
+[<NoEquality; NoComparison>]
+type WriteOperation<'result> =
+    {
+        Work: IWriteTx -> Task<Verdict<'result>>
+        CancellationToken: CancellationToken
+    }
 
 type IStore =
-    abstract Read: (IReadTx -> Task<'T>) * CancellationToken -> Task<Result<'T, StoreFailure>>
-
-    abstract Write:
-        (IWriteTx -> Task<Verdict<'T>>) * CancellationToken ->
-            Task<Result<Verdict<'T>, StoreFailure>>
+    abstract Read: ReadOperation<'result> -> Task<Result<'result, StoreFailure>>
+    abstract Write: WriteOperation<'result> -> Task<Result<Verdict<'result>, StoreFailure>>

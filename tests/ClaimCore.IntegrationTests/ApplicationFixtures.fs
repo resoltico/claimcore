@@ -48,13 +48,36 @@ type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =
     member _.ReadCalls = reads
 
     interface IStore with
-        member _.Read(work, ct) =
+        member _.Read
+            ({
+                 ReadOperation.Work = work
+                 CancellationToken = ct
+             })
+            =
             reads <- reads + 1
-            inner.Read(work, ct)
 
-        member _.Write(work, ct) =
+            inner.Read(
+                {
+                    ReadOperation.Work = work
+                    CancellationToken = ct
+                }
+            )
+
+        member _.Write
+            ({
+                 WriteOperation.Work = work
+                 CancellationToken = ct
+             })
+            =
             task {
-                let! result = inner.Write(work, ct)
+                let! result =
+                    inner.Write(
+                        {
+                            WriteOperation.Work = work
+                            CancellationToken = ct
+                        }
+                    )
+
                 do! afterWrite ()
                 return result
             }

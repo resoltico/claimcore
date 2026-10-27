@@ -1,4 +1,4 @@
-module ClaimCore.Tests.CoreBoundaryTests
+module ClaimCore.Tests.ServiceBoundaryTests
 
 open System
 open System.Threading
@@ -48,10 +48,10 @@ let private malformed () =
 
         for input in invalid do
             let! execute =
-                (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
+                (Service.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             let! preview =
-                (Core.previewReply core (input) (CancellationToken.None)) |> Async.AwaitTask
+                (Service.preview core (input) (CancellationToken.None)) |> Async.AwaitTask
 
             Expect.isTrue
                 (match execute.Outcome with
@@ -89,7 +89,8 @@ let private failures () =
                     owner
 
             for input in inputs () do
-                let! reply = (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
+                let! reply =
+                    (Service.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
 
                 Expect.equal
                     reply.OperationId
@@ -116,10 +117,9 @@ let private cancelled () =
                 owner
 
         for input in inputs () do
-            let! execute = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
+            let! execute = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
-            let! preview =
-                (Core.previewReply core (input) (cancellation.Token)) |> Async.AwaitTask
+            let! preview = (Service.preview core (input) (cancellation.Token)) |> Async.AwaitTask
 
             Expect.equal
                 execute.OperationId
@@ -138,14 +138,14 @@ let private cancelled () =
 
         Expect.equal probe.Calls 0 "No writes or previews dispatched"
 
-        let! context = (Core.context core () cancellation.Token) |> Async.AwaitTask
+        let! context = (Service.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            (Core.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            (Service.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
             |> Async.AwaitTask
 
         let! observed =
-            (Core.observe core ({ OperationId = id 470 }) (cancellation.Token))
+            (Service.observe core ({ OperationId = id 470 }) (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled context"
@@ -167,11 +167,34 @@ let private committed () =
 
             let probe =
                 { new IStore with
-                    member _.Read(work, ct) = inner.Read(work, ct)
+                    member _.Read
+                        ({
+                             ReadOperation.Work = work
+                             CancellationToken = ct
+                         })
+                        =
+                        inner.Read(
+                            {
+                                ReadOperation.Work = work
+                                CancellationToken = ct
+                            }
+                        )
 
-                    member _.Write(work, ct) =
+                    member _.Write
+                        ({
+                             WriteOperation.Work = work
+                             CancellationToken = ct
+                         })
+                        =
                         task {
-                            let! result = inner.Write(work, ct)
+                            let! result =
+                                inner.Write(
+                                    {
+                                        WriteOperation.Work = work
+                                        CancellationToken = ct
+                                    }
+                                )
+
                             cancellation.Cancel()
                             return result
                         }
@@ -180,10 +203,10 @@ let private committed () =
             let core =
                 Service.create BuildIdentity.current.Version installation probe calendar owner
 
-            let! reply = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
+            let! reply = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             let! observed =
-                Core.observe
+                Service.observe
                     core
                     {
                         OperationId = OperationInput.operationId input

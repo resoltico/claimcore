@@ -27,8 +27,7 @@ module internal LedgerEnvelope =
             Verdict.Proceed()
 
     let accept
-        installationId
-        principal
+        (services: ServiceContext)
         actor
         operationId
         head
@@ -36,6 +35,9 @@ module internal LedgerEnvelope =
         (plan: LedgerAppend<'Projection>)
         bytes
         =
+        let installationId = services.InstallationId
+        let principal = services.Principal
+
         try
             let entry =
                 LedgerEntries.create

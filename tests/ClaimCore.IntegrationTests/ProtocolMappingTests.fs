@@ -153,7 +153,7 @@ let private cancellationPolicy () =
         cancellation.Cancel()
 
         let! preview =
-            (Core.previewReply actor (input) (cancellation.Token)) |> Async.AwaitTask
+            (Service.preview actor (input) (cancellation.Token)) |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
@@ -161,7 +161,7 @@ let private cancellationPolicy () =
             "Preview observes caller cancellation."
 
         let! execute =
-            (Core.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
+            (Service.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

@@ -28,6 +28,7 @@
     <Compile Include="Service/Faults.fs" />
     <Compile Include="Service/Advice.fs" />
     <Compile Include="Service/Receipts.fs" />
+    <Compile Include="Service/Verification.fs" />
     <Compile Include="Service/History.fs" />
     <Compile Include="Service/CasePages.fs" />
     <Compile Include="Service/AuthorityPages.fs" />

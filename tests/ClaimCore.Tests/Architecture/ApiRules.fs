@@ -83,6 +83,7 @@ type ArchitectureRule =
     | DurableNames
     | Serializer
     | ServiceModelWithoutProtocol
+    | ServiceSurface
     | DomainJsonFree
     | VocabularyModuleNaming
     | DomainBoundary
@@ -181,6 +182,50 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")
             |> targets "JsonSerializer"
+        )
+        :> IArchRule
+    | ArchitectureRule.ServiceSurface ->
+        let allowed =
+            [
+                "Service"
+                "ServiceContext"
+                "IStore"
+                "IReadTx"
+                "IWriteTx"
+                "IBusinessCalendar"
+                "RuntimeOpenFault"
+                "StoreFailure"
+                "Verdict"
+                "LedgerHead"
+                "StoredCase"
+                "EntryTarget"
+                "StoredEntry"
+                "CaseProjection"
+                "EntryDraft"
+                "AuthorityProjection"
+                "AuthorityQuery"
+                "CasePageQuery"
+                "HistoryPageQuery"
+                "ActorPageQuery"
+                "GrantPageQuery"
+                "FenceKey"
+                "Page"
+                "ReadOperation"
+                "WriteOperation"
+            ]
+            |> List.map System.Text.RegularExpressions.Regex.Escape
+            |> String.concat "|"
+
+        let permitted =
+            "^ClaimCore\\.Application\\.(" + allowed + ")(?:`[0-9]+)?(?:\\+.*)?$"
+
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Application")
+                .And()
+                .DoNotHaveFullNameMatching(permitted)
+            |> targets "Application implementation outside the service and ports"
         )
         :> IArchRule
     | ArchitectureRule.DomainJsonFree ->

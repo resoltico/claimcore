@@ -66,7 +66,7 @@ let private sameCase database (actor: ServiceContext) =
             Task.WhenAll
                 [|
                     for index in 0..1 ->
-                        (Core.execute
+                        (Service.execute
                             actor
                             (OperationInput.Case(
                                 request
@@ -133,7 +133,7 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             | _ -> AuthoredCaseAct.Close
 
         let write =
-            (Core.execute
+            (Service.execute
                 writer
                 (OperationInput.Case(
                     request 710010 (CaseReference.format snapshot.Reference) snapshot.Revision act
@@ -190,7 +190,7 @@ let private longCase database (actor: ServiceContext) =
                     AuthoredCaseAct.Close
 
             let! reply =
-                (Core.execute
+                (Service.execute
                     actor
                     (OperationInput.Case(
                         request
@@ -237,7 +237,7 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
         let! snapshot = current database "synthetic-growth-999"
 
         let! erased =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(
                     request

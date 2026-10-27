@@ -151,7 +151,12 @@ let private reviewAndFences () =
     let request = admitted 105 other AuthorityAct.Register
     let view = authorityView worker AuthorityView.empty None
 
-    match AuthorityExecution.review installation owner request view.Read with
+    match
+        AuthorityExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            request
+            view.Read
+    with
     | Verdict.Proceed(_, AuthorityProjection.Register _) -> ()
     | _ -> failtest "Review must be a pure proposal"
 

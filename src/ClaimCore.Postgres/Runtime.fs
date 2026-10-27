@@ -120,9 +120,9 @@ module internal LedgerAdministration =
         | Error StoreFailure.Integrity -> ProvisionOwnerOutcome.Failed CoreFault.StoreIntegrityError
         | Error StoreFailure.Unavailable -> ProvisionOwnerOutcome.Failed CoreFault.StoreUnavailable
 
-    let provisionOwner source operationId principal cancellationToken =
+    let provisionOwner source productVersion operationId principal cancellationToken =
         task {
-            let! installationId, _ =
+            let! installationId, timeZoneId =
                 DatabaseSession.read source cancellationToken (fun connection ->
                     task {
                         ServerSupport.require connection.PostgreSqlVersion
@@ -132,8 +132,18 @@ module internal LedgerAdministration =
 
             let store = LedgerStore(source, installationId, Transactions.timeouts) :> IStore
 
-            let! result =
-                Service.provisionOwner store installationId operationId principal cancellationToken
+            let zone = TimeZoneInfo.FindSystemTimeZoneById timeZoneId
+
+            let calendar =
+                { new IBusinessCalendar with
+                    member _.TimeZoneId = timeZoneId
+
+                    member _.DateAt instant =
+                        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, zone).DateTime)
+                }
+
+            let services = Service.create productVersion installationId store calendar principal
+            let! result = Service.provisionOwner services operationId cancellationToken
 
             return provisionResult operationId result
         }
@@ -159,7 +169,7 @@ module AdministrationFailures =
 
 /// The owner administration process supplies its connection; runtime composition does not expose it.
 [<Sealed>]
-type Administration(connectionString: string) =
+type Administration(connectionString: string, productVersion: string) =
     let source =
         InstallationCheck.transport (NpgsqlConnectionStringBuilder connectionString)
         NpgsqlDataSource.Create connectionString
@@ -174,7 +184,12 @@ type Administration(connectionString: string) =
         LedgerAdministration.head source cancellationToken
 
     member _.ProvisionOwner(operationId, principal, cancellationToken) =
-        LedgerAdministration.provisionOwner source operationId principal cancellationToken
+        LedgerAdministration.provisionOwner
+            source
+            productVersion
+            operationId
+            principal
+            cancellationToken
 
     interface IDisposable with
         member _.Dispose() = source.Dispose()

@@ -98,12 +98,13 @@ module internal AuthorityExecution =
         | _, None -> Error CoreFault.StoreIntegrityError
 
     let private authorizeIdentity
-        installationId
-        principal
+        (services: ServiceContext)
         operationId
         bytes
         (view: AuthorityExecutionFacts)
         =
+        let principal = services.Principal
+
         if
             not (
                 Authority.can
@@ -116,8 +117,7 @@ module internal AuthorityExecution =
             Verdict.Refuse Refusal.ResourceUnavailable
         else
             OperationIdentity.decide
-                installationId
-                principal
+                services
                 view.Actor
                 operationId
                 bytes
@@ -137,13 +137,15 @@ module internal AuthorityExecution =
                 |> Result.defaultWith Verdict.Fail
 
     let private provisionIdentity
-        installationId
+        (services: ServiceContext)
         operationId
-        principal
         bytes
         (head: LedgerHead)
         (view: AuthorityExecutionFacts)
         =
+        let installationId = services.InstallationId
+        let principal = services.Principal
+
         if view.ActorCount = 0 then
             if head.Sequence = 0L && view.ExistingOperation.IsNone then
                 Verdict.Proceed()
@@ -184,20 +186,19 @@ module internal AuthorityExecution =
         }
 
     let review
-        installationId
-        principal
+        (services: ServiceContext)
         (command: AuthorityCommand)
         (view: AuthorityExecutionFacts)
         =
+        let installationId = services.InstallationId
         let record = AuthorityRequests.toRecord command
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
-        authorizeIdentity installationId principal command.OperationId bytes view
+        authorizeIdentity services command.OperationId bytes view
         |> Verdict.bind (fun () -> propose installationId command view)
 
     let private executeRecord
-        installationId
-        principal
+        (services: ServiceContext)
         (command: AuthorityCommand)
         admit
         head
@@ -205,6 +206,7 @@ module internal AuthorityExecution =
         nonce
         (view: AuthorityExecutionFacts)
         =
+        let installationId = services.InstallationId
         let record = AuthorityRequests.toRecord command
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
@@ -215,8 +217,7 @@ module internal AuthorityExecution =
             let plan = project command record view proposed
 
             LedgerEnvelope.accept
-                installationId
-                principal
+                services
                 view.Actor
                 command.OperationId
                 head
@@ -225,8 +226,7 @@ module internal AuthorityExecution =
                 (AuthorityRecord.encode record))
 
     let execute
-        installationId
-        principal
+        (services: ServiceContext)
         (command: AuthorityCommand)
         head
         fenced
@@ -234,71 +234,79 @@ module internal AuthorityExecution =
         (view: AuthorityExecutionFacts)
         =
         executeRecord
-            installationId
-            principal
+            services
             command
-            (fun bytes -> authorizeIdentity installationId principal command.OperationId bytes view)
+            (fun bytes -> authorizeIdentity services command.OperationId bytes view)
             head
             fenced
             nonce
             view
 
     let provision
-        installationId
+        (services: ServiceContext)
         operationId
-        target
         head
         fenced
         nonce
         (view: AuthorityExecutionFacts)
         =
+        let target = services.Principal
+
         match Authority.provision operationId target with
         | Error refusal -> Verdict.Refuse refusal
         | Ok command ->
             executeRecord
-                installationId
-                target
+                services
                 command
-                (fun bytes -> provisionIdentity installationId operationId target bytes head view)
+                (fun bytes -> provisionIdentity services operationId bytes head view)
                 head
                 fenced
                 nonce
                 view
 
-    let run (store: IStore) installationId principal (command: AuthorityCommand) token =
+    let run (services: ServiceContext) (command: AuthorityCommand) token =
+        let store = services.Store
+
         store.Write(
-            (fun tx ->
-                task {
-                    let! view =
-                        ExecutionFacts.target
-                            tx
-                            installationId
-                            principal
-                            command.OperationId
-                            command.Target
-                            (AuthorityRequests.targetCase command)
+            {
+                WriteOperation.Work =
+                    (fun tx ->
+                        task {
+                            let! view =
+                                ExecutionFacts.target
+                                    services
+                                    tx
+                                    command.OperationId
+                                    command.Target
+                                    (AuthorityRequests.targetCase command)
 
-                    let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
+                            let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
 
-                    return!
-                        execute installationId principal command tx.Head fenced tx.Nonce view
-                        |> ExecutionFacts.persist tx tx.ProjectAuthority
-                }),
-            token
+                            return!
+                                execute services command tx.Head fenced tx.Nonce view
+                                |> ExecutionFacts.persist tx tx.ProjectAuthority
+                        })
+                CancellationToken = token
+            }
         )
 
-    let provisionStore (store: IStore) installationId operationId target token =
+    let provisionStore (services: ServiceContext) operationId token =
+        let store = services.Store
+        let target = services.Principal
+
         store.Write(
-            (fun tx ->
-                task {
-                    let! view =
-                        ExecutionFacts.target tx installationId target operationId target None
+            {
+                WriteOperation.Work =
+                    (fun tx ->
+                        task {
+                            let! view = ExecutionFacts.target services tx operationId target None
 
-                    let! fenced = ExecutionFacts.fenced tx view.Actor operationId
+                            let! fenced = ExecutionFacts.fenced tx view.Actor operationId
 
-                    return!
-                        provision installationId operationId target tx.Head fenced tx.Nonce view
-                        |> ExecutionFacts.persist tx tx.ProjectAuthority
-                }),
-            token
+                            return!
+                                provision services operationId tx.Head fenced tx.Nonce view
+                                |> ExecutionFacts.persist tx tx.ProjectAuthority
+                        })
+                CancellationToken = token
+            }
         )

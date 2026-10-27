@@ -48,7 +48,10 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            view.Read
     with
     | Verdict.Replay value ->
         Expect.equal
@@ -100,7 +103,12 @@ let private foreignScope () =
 
     let read = (locked both (Some caseA) (Some entry)).Read
 
-    match CaseExecution.review installation calendar owner (CaseFixtures.command request) read with
+    match
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            read
+    with
     | Verdict.Refuse Refusal.IdempotencyConflict -> ()
     | _ -> failtest "Visible existing-operation subject reveals only conflict"
 
@@ -113,7 +121,10 @@ let private foreignScope () =
         }
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) narrowed
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            narrowed
     with
     | Verdict.Refuse Refusal.ResourceUnavailable -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"

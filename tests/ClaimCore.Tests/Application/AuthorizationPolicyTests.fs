@@ -344,7 +344,10 @@ let private scopedAdvice () =
                 ]
 
         let advice =
-            Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+            Queries.caseRecord
+                (DecisionFixtures.services installation DecisionFixtures.calendar human)
+                (AuthorityView.ofActor (Some authority))
+                record
             |> accepted
 
         let correction =
@@ -418,7 +421,10 @@ let private noUsableCorrectionOffer () =
             ]
 
     let advice =
-        Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
+        Queries.caseRecord
+            (DecisionFixtures.services installation DecisionFixtures.calendar human)
+            (AuthorityView.ofActor (Some authority))
+            record
         |> accepted
 
     Expect.isFalse

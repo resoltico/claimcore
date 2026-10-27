@@ -46,18 +46,21 @@ let private rollback () =
             ] do
             let! result =
                 store.Write(
-                    (fun tx ->
-                        task {
-                            let! _ = tx.ActorCount()
+                    {
+                        WriteOperation.Work =
+                            (fun tx ->
+                                task {
+                                    let! _ = tx.ActorCount()
 
-                            do!
-                                tx.ProjectAuthority(
-                                    AuthorityProjection.Register(id 800, principal)
-                                )
+                                    do!
+                                        tx.ProjectAuthority(
+                                            AuthorityProjection.Register(id 800, principal)
+                                        )
 
-                            return verdict
-                        }),
-                    CancellationToken.None
+                                    return verdict
+                                })
+                        CancellationToken = CancellationToken.None
+                    }
                 )
                 |> Async.AwaitTask
 
@@ -69,7 +72,12 @@ let private rollback () =
                 "Write capability is created after locking"
 
             let! count =
-                store.Read((fun tx -> tx.ActorCount()), CancellationToken.None)
+                store.Read(
+                    {
+                        ReadOperation.Work = (fun tx -> tx.ActorCount())
+                        CancellationToken = CancellationToken.None
+                    }
+                )
                 |> Async.AwaitTask
 
             Expect.equal count (Ok 0) "Rejected staged projection is discarded"

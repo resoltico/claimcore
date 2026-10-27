@@ -42,7 +42,7 @@ let createFor issuer subject =
                 |> Result.defaultWith (string >> invalidOp)
 
             let! registered =
-                (Core.execute
+                (Service.execute
                     owner
                     (OperationInput.Authority(
                         authorityRequest (id 20) service AuthorityAct.Register
@@ -57,7 +57,7 @@ let createFor issuer subject =
             acceptedAuthority granted
 
             let! opened =
-                (Core.execute
+                (Service.execute
                     owner
                     (OperationInput.Case(
                         request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)

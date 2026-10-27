@@ -123,7 +123,7 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (Core.execute (actor: ServiceContext) (OperationInput.Case pending) (ct))
+    (Service.execute (actor: ServiceContext) (OperationInput.Case pending) (ct))
 
 let private opening values =
     { openRequest 10 "REACH-1" with
@@ -320,11 +320,11 @@ let private stateEvidence (setup, final) =
 let private queryEvidence actor =
     task {
         let! limit =
-            (Core.list (actor: ServiceContext) ({ AfterCursor = None; Limit = 0 }) (ct))
+            (Service.list (actor: ServiceContext) ({ AfterCursor = None; Limit = 0 }) (ct))
 
-        let! cursor = (Core.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
+        let! cursor = (Service.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
 
-        let! missing = (Core.get actor ({ CaseReference = "MISSING" }) (ct))
+        let! missing = (Service.get actor ({ CaseReference = "MISSING" }) (ct))
         return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
     }
 
@@ -335,7 +335,7 @@ let private authorityEvidence actor =
             |> Result.defaultWith (string >> failtest)
 
         let send n target act =
-            (Core.execute
+            (Service.execute
                 (actor: ServiceContext)
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
@@ -365,7 +365,7 @@ let private identityEvidence actor =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id 35) reader AuthorityAct.Register))
                 (ct))
@@ -403,7 +403,7 @@ let private principalEvidence (actor: ServiceContext) =
                     Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
-            let! outcome = (Core.execute actor (OperationInput.Authority request) (ct))
+            let! outcome = (Service.execute actor (OperationInput.Authority request) (ct))
 
             evidence.Add(refused outcome)
 
@@ -420,7 +420,7 @@ let private principalEvidence (actor: ServiceContext) =
                             }
                 }
 
-            let! outcome = Core.execute actor (OperationInput.Authority request) ct
+            let! outcome = Service.execute actor (OperationInput.Authority request) ct
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence
@@ -445,7 +445,7 @@ let private boundaryEvidence () =
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
 
-        let! resolved = (Core.resolve actor ({ OperationId = id 42 }) (ct))
+        let! resolved = (Service.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L AuthoredCaseAct.Close)

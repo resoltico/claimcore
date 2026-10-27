@@ -338,14 +338,16 @@ module LedgerEntries =
 
 module internal OperationIdentity =
     let internal decide
-        installationId
-        principal
+        (services: ServiceContext)
         actor
         operationId
         bytes
         (existing: StoredEntry option)
         receipt
         =
+        let installationId = services.InstallationId
+        let principal = services.Principal
+
         match existing with
         | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->

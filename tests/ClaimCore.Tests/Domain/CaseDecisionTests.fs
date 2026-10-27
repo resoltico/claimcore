@@ -54,9 +54,7 @@ let private replay () =
 
     match
         CaseExecution.review
-            installation
-            calendar
-            owner
+            (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             laterView.Read
     with
@@ -94,7 +92,10 @@ let private reviewAndTime () =
     let view = locked worker None None
 
     match
-        CaseExecution.review installation calendar owner (CaseFixtures.command request) view.Read
+        CaseExecution.review
+            (DecisionFixtures.services installation calendar owner)
+            (CaseFixtures.command request)
+            view.Read
     with
     | Verdict.Proceed(None, after) ->
         Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"

@@ -5,6 +5,7 @@
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
+    <Compile Include="ServiceContext.fs" />
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="ExecutionFacts.fs" />
     <Compile Include="LedgerEnvelope.fs" />
@@ -14,8 +15,6 @@
     <Compile Include="Advice.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
-    <Compile Include="ServiceContext.fs" />
-    <Compile Include="Core.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />

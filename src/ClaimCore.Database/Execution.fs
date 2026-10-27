@@ -39,7 +39,9 @@ module Execution =
             | Version -> return Replies.version ()
             | _ ->
                 try
-                    use administration = new Administration(Inputs.connection ())
+                    use administration =
+                        new Administration(Inputs.connection (), BuildIdentity.current.Version)
+
                     return! perform administration command
                 with error ->
                     return

@@ -36,7 +36,7 @@ let private authority (actor: ServiceContext) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
-                (Core.execute
+                (Service.execute
                     actor
                     (OperationInput.Authority(
                         authorityRequest (id (100000 + index * 20)) principal AuthorityAct.Register
@@ -68,7 +68,7 @@ let private openCases (actor: ServiceContext) count =
     task {
         for index in 0 .. count - 1 do
             let! result =
-                (Core.execute
+                (Service.execute
                     actor
                     (OperationInput.Case(
                         request
@@ -134,7 +134,7 @@ let private writeLane (actor: ServiceContext) workload lane =
 
             let watch = Stopwatch.StartNew()
 
-            let! result = (Core.execute actor (OperationInput.Case authored) (token))
+            let! result = (Service.execute actor (OperationInput.Case authored) (token))
 
             accepted result |> ignore
 
@@ -190,9 +190,14 @@ let private timeout (database: PostgresFixture.Database) =
 
         let! result =
             store.Write(
-                (fun _ ->
-                    Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>)),
-                token
+                {
+                    WriteOperation.Work =
+                        (fun _ ->
+                            Task.FromResult(
+                                Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>
+                            ))
+                    CancellationToken = token
+                }
             )
 
         Expect.equal
@@ -250,7 +255,7 @@ let private report
 let private history workload (actor: ServiceContext) =
     task {
         let! history =
-            (Core.history
+            (Service.history
                 actor
                 ({
                     CaseReference = "synthetic-growth-0"

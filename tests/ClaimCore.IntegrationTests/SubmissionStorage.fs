@@ -7,12 +7,35 @@ open ClaimCore.Protocol
 
 let private interceptWrites (store: IStore) intercept =
     { new IStore with
-        member _.Read(work, token) = store.Read(work, token)
+        member _.Read
+            ({
+                 ReadOperation.Work = work
+                 CancellationToken = token
+             })
+            =
+            store.Read(
+                {
+                    ReadOperation.Work = work
+                    CancellationToken = token
+                }
+            )
 
-        member _.Write(work, token) =
+        member _.Write
+            ({
+                 WriteOperation.Work = work
+                 CancellationToken = token
+             })
+            =
             task {
                 do! intercept ()
-                return! store.Write(work, token)
+
+                return!
+                    store.Write(
+                        {
+                            WriteOperation.Work = work
+                            CancellationToken = token
+                        }
+                    )
             }
     }
 

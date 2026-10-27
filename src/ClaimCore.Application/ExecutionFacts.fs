@@ -31,13 +31,33 @@ module internal ExecutionFacts =
     let authority (tx: IReadTx) principal caseIds =
         task {
             match List.distinct caseIds with
-            | [] -> return! tx.Authority(principal, None)
+            | [] ->
+                return!
+                    tx.Authority(
+                        {
+                            AuthorityQuery.Principal = principal
+                            CaseId = None
+                        }
+                    )
             | first :: rest ->
-                let! initial = tx.Authority(principal, Some first)
+                let! initial =
+                    tx.Authority(
+                        {
+                            AuthorityQuery.Principal = principal
+                            CaseId = Some first
+                        }
+                    )
+
                 let mutable actor = initial
 
                 for id in rest do
-                    let! scoped = tx.Authority(principal, Some id)
+                    let! scoped =
+                        tx.Authority(
+                            {
+                                AuthorityQuery.Principal = principal
+                                CaseId = Some id
+                            }
+                        )
 
                     actor <-
                         { actor with
@@ -51,7 +71,10 @@ module internal ExecutionFacts =
                 return actor
         }
 
-    let case (tx: IReadTx) installation principal operationId reference =
+    let case (services: ServiceContext) (tx: IReadTx) operationId reference =
+        let installation = services.InstallationId
+        let principal = services.Principal
+
         task {
             let! existing =
                 match operationId with
@@ -71,7 +94,10 @@ module internal ExecutionFacts =
                 }
         }
 
-    let target (tx: IReadTx) installation principal operationId target reference =
+    let target (services: ServiceContext) (tx: IReadTx) operationId target reference =
+        let installation = services.InstallationId
+        let principal = services.Principal
+
         task {
             let! existing = tx.FindEntry operationId
 
@@ -119,7 +145,13 @@ module internal ExecutionFacts =
     let fenced (tx: IWriteTx) (actor: AuthorityView) operation =
         match actor.Actor with
         | None -> System.Threading.Tasks.Task.FromResult false
-        | Some actor -> tx.IsFenced(actor.ActorId, operation)
+        | Some actor ->
+            tx.IsFenced(
+                {
+                    FenceKey.ActorId = actor.ActorId
+                    OperationId = operation
+                }
+            )
 
     let persist (tx: IWriteTx) project verdict =
         task {

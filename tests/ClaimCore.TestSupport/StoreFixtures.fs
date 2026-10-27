@@ -19,38 +19,68 @@ type internal Fixture =
         Dispose: unit -> unit
     }
 
+let internal core fixture principal =
+    Service.create
+        BuildIdentity.current.Version
+        fixture.InstallationId
+        fixture.Store
+        fixture.Calendar
+        principal
+
 let internal inspectCase fixture principal operation reference token =
     fixture.Store.Read(
-        (fun tx -> ExecutionFacts.case tx fixture.InstallationId principal operation reference),
-        token
+        {
+            ReadOperation.Work =
+                (fun tx -> ExecutionFacts.case (core fixture principal) tx operation reference)
+            CancellationToken = token
+        }
     )
 
 let internal inspectTarget fixture principal operation target reference token =
     fixture.Store.Read(
-        (fun tx ->
-            ExecutionFacts.target tx fixture.InstallationId principal operation target reference),
-        token
+        {
+            ReadOperation.Work =
+                (fun tx ->
+                    ExecutionFacts.target (core fixture principal) tx operation target reference)
+            CancellationToken = token
+        }
     )
 
 let internal inspectOperation fixture principal operation token =
     fixture.Store.Read(
-        (fun tx ->
-            task {
-                let! actor, entry, current = ExecutionFacts.operation tx principal operation
+        {
+            ReadOperation.Work =
+                (fun tx ->
+                    task {
+                        let! actor, entry, current =
+                            ExecutionFacts.operation tx principal operation
 
-                return
-                    {
-                        CaseFacts.ObservedAt = tx.ObservedAt
-                        Actor = actor
-                        ExistingOperation = entry
-                        Case = current
-                    }
-            }),
-        token
+                        return
+                            {
+                                CaseFacts.ObservedAt = tx.ObservedAt
+                                Actor = actor
+                                ExistingOperation = entry
+                                Case = current
+                            }
+                    })
+            CancellationToken = token
+        }
     )
 
 let internal inspectAuthority fixture principal token =
-    fixture.Store.Read((fun tx -> tx.Authority(principal, None)), token)
+    fixture.Store.Read(
+        {
+            ReadOperation.Work =
+                (fun tx ->
+                    tx.Authority(
+                        {
+                            AuthorityQuery.Principal = principal
+                            CaseId = None
+                        }
+                    ))
+            CancellationToken = token
+        }
+    )
 
 let internal id n =
     Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
@@ -102,22 +132,12 @@ let internal disclosedFields receipt =
     | SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields)) -> fields
     | _ -> failtest "Expected disclosed live fields."
 
-let internal core fixture principal =
-    Service.create
-        BuildIdentity.current.Version
-        fixture.InstallationId
-        fixture.Store
-        fixture.Calendar
-        principal
-
 let internal bootstrap fixture =
     task {
         let! result =
             AuthorityExecution.provisionStore
-                fixture.Store
-                fixture.InstallationId
+                (core fixture fixture.Owner)
                 (id 1)
-                fixture.Owner
                 CancellationToken.None
 
         match result with
@@ -128,7 +148,7 @@ let internal bootstrap fixture =
     }
 
 let internal grant (actor: ServiceContext) operationId target role scope active =
-    (Core.execute
+    (Service.execute
         actor
         (OperationInput.Authority(
             authorityRequest

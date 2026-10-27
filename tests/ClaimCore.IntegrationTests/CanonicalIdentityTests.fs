@@ -70,12 +70,12 @@ let private casePairs (database: PostgresFixture.Database) =
         Expect.equal cases.Length 4 "Equivalent amounts/references and distinct amounts/names"
 
         for vector, left, right in cases do
-            let! first = (Core.execute actor (OperationInput.Case left) (token))
+            let! first = (Service.execute actor (OperationInput.Case left) (token))
 
             let receipt = accepted first
             let! before = verified database
 
-            let! replay = (Core.execute actor (OperationInput.Case right) (token))
+            let! replay = (Service.execute actor (OperationInput.Case right) (token))
 
             let expected =
                 if vector.GetProperty("same").GetBoolean() then
@@ -108,7 +108,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
             |> List.find (fun value -> value.GetProperty("name").GetString() = "equal reference")
 
         let! opened =
-            (Core.execute actor (OperationInput.Case(caseInput opening "left")) (token))
+            (Service.execute actor (OperationInput.Case(caseInput opening "left")) (token))
 
         accepted opened |> ignore
 
@@ -120,7 +120,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let target = (authorityInput cases.Head "left").Target
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id 901) target AuthorityAct.Register))
                 (token))
@@ -138,12 +138,12 @@ let private authorityPairs (database: PostgresFixture.Database) =
                 |> AuthorityRequests.toInput
                 |> Result.defaultWith (string >> failtest)
 
-            let! first = (Core.execute actor (OperationInput.Authority left) (token))
+            let! first = (Service.execute actor (OperationInput.Authority left) (token))
 
             let receipt = accepted first
             let! before = verified database
 
-            let! replay = (Core.execute actor (OperationInput.Authority right) (token))
+            let! replay = (Service.execute actor (OperationInput.Authority right) (token))
 
             Expect.equal
                 replay.Outcome
@@ -185,7 +185,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 CaseReference = left.CaseReference
             }
 
-        let! first = (Core.execute actor (OperationInput.Case left) (token))
+        let! first = (Service.execute actor (OperationInput.Case left) (token))
 
         accepted first |> ignore
 
@@ -194,7 +194,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Authority(authorityRequest (id 920) outsider AuthorityAct.Register))
                 (token))
@@ -202,9 +202,9 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedAuthority registered
         let other = core database.Fixture outsider
 
-        let! hiddenEqual = (Core.execute other (OperationInput.Case right) (token))
+        let! hiddenEqual = (Service.execute other (OperationInput.Case right) (token))
 
-        let! hiddenDifferent = (Core.execute other (OperationInput.Case unequal) (token))
+        let! hiddenDifferent = (Service.execute other (OperationInput.Case unequal) (token))
 
         Expect.equal
             hiddenEqual.Outcome
@@ -228,7 +228,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedAuthority stewardship
 
         let! erased =
-            (Core.execute
+            (Service.execute
                 actor
                 (OperationInput.Case(request 922 left.CaseReference 1L AuthoredCaseAct.Erase))
                 (token))
@@ -236,7 +236,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         accepted erased |> ignore
         let! before = verified database
 
-        let! retry = (Core.execute actor (OperationInput.Case right) (token))
+        let! retry = (Service.execute actor (OperationInput.Case right) (token))
 
         Expect.equal
             retry.Outcome
