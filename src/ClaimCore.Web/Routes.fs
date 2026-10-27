@@ -52,4 +52,4 @@ module Route =
         }
 
     let read endpoint operationId invoke =
-        bind endpoint operationId (fun _ -> ReadReply.Failed CoreFault.StoreUnavailable) invoke
+        bind endpoint operationId (fun _ -> Outcome.Failed CoreFault.StoreUnavailable) invoke

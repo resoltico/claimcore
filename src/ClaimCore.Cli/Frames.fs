@@ -297,14 +297,6 @@ module Frames =
 
             Api.executesLedger endpoint)
 
-    let private outcomeExitCode reply =
-        match outcome reply with
-        | Some "REJECTED"
-        | Some "NOT_ACCEPTED" -> ExitCode.Rejected
-        | Some "FAILED" -> ExitCode.Failed
-        | Some "OUTCOME_UNKNOWN" -> ExitCode.OutcomeUnknown
-        | _ -> ExitCode.Success
-
     let exitCode frame =
         (if frame.Delivery = DeliveryState.Uncertain && mutation frame then
              ExitCode.OutcomeUnknown
@@ -316,5 +308,5 @@ module Frames =
                  ExitCode.Rejected
              | FrameResult.LocalFailure _
              | FrameResult.HostFailure _ -> ExitCode.Failed
-             | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply))
+             | FrameResult.Reply reply -> ServiceReply.exitCode reply)
         |> ExitCode.value

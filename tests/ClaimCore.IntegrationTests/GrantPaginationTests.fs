@@ -16,7 +16,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private page =
     function
-    | ReadReply.Succeeded p -> p
+    | Outcome.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
 let private seedCases (admin: ServiceContext) target =
@@ -208,7 +208,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Current caller authority precedes token acceptance"
     }
 
@@ -223,18 +223,18 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
                 })
                 (token))
 
-        Expect.equal crossTarget (ReadReply.Rejected Refusal.InvalidCursor) "Target is bound"
+        Expect.equal crossTarget (Outcome.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint =
             (Service.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
 
-        Expect.equal crossEndpoint (ReadReply.Rejected Refusal.InvalidCursor) "Endpoint is bound"
+        Expect.equal crossEndpoint (Outcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
         let! missing = (Service.grants admin ({ query with ActorId = id 999 }) (token))
 
         Expect.equal
             missing
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Absent target refuses generically"
 
     }
@@ -368,8 +368,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
 
         let reading =
-            Task.Run<ReadReply<AuthorityGrantPage>>(
-                Func<Task<ReadReply<AuthorityGrantPage>>>(fun () ->
+            Task.Run<Outcome<AuthorityGrantPage>>(
+                Func<Task<Outcome<AuthorityGrantPage>>>(fun () ->
                     (Service.grants actor (query) (token)))
             )
 

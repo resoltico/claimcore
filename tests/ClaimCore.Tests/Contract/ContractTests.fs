@@ -79,7 +79,7 @@ let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
 let private contextCodec () =
     admitted
         Api.context.Output
-        (ReadReply.Succeeded
+        (Outcome.Succeeded
             {
                 Runtime =
                     {
@@ -106,7 +106,7 @@ let private queryCodecs () =
         ] do
         admitted
             Api.caseGet.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Snapshot = view
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
@@ -116,7 +116,7 @@ let private queryCodecs () =
 
     admitted
         Api.caseList.Output
-        (ReadReply.Succeeded
+        (Outcome.Succeeded
             {
                 Items = []
                 NextCursor = None
@@ -125,15 +125,15 @@ let private queryCodecs () =
 
     |> ignore
 
-    admitted Api.caseHistory.Output (ReadReply.Succeeded { Entries = []; NextCursor = None })
+    admitted Api.caseHistory.Output (Outcome.Succeeded { Entries = []; NextCursor = None })
 
     |> ignore
 
-    admitted Api.operationObserve.Output (ReadReply.Succeeded authority)
+    admitted Api.operationObserve.Output (Outcome.Succeeded authority)
 
     |> ignore
 
-    admitted Api.authorityList.Output (ReadReply.Succeeded { Items = []; NextCursor = None })
+    admitted Api.authorityList.Output (Outcome.Succeeded { Items = []; NextCursor = None })
 
     |> ignore
 
@@ -198,7 +198,7 @@ let private disclosures () =
                         }
             }
 
-        let result = admitted Api.operationObserve.Output (ReadReply.Succeeded value)
+        let result = admitted Api.operationObserve.Output (Outcome.Succeeded value)
 
         Expect.equal
             (result
@@ -227,17 +227,17 @@ let private previewCodecs () =
 
     for value in
         [
-            PreviewResult.Reviewed(OperationReview.Case review)
-            PreviewResult.AlreadyAccepted receipt
-            PreviewResult.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
-            PreviewResult.Failed CoreFault.StoreIntegrityError
+            (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
+            (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
+            Outcome.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
+            Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
         |> ignore
 
 let private diagnostics () =
     for fault, _ in CoreFault.all do
-        admitted Api.caseGet.Output (ReadReply.Failed fault) |> ignore
+        admitted Api.caseGet.Output (Outcome.Failed fault) |> ignore
 
     for value, expectedCode in
         [
@@ -246,7 +246,7 @@ let private diagnostics () =
             ClaimCore.Domain.Refusal.ActNotPermitted, "ACT_NOT_PERMITTED"
             ClaimCore.Domain.Refusal.ResourceUnavailable, "RESOURCE_UNAVAILABLE"
         ] do
-        let result = admitted Api.caseGet.Output (ReadReply.Rejected value)
+        let result = admitted Api.caseGet.Output (Outcome.Rejected value)
 
         Expect.equal
             (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
@@ -318,7 +318,7 @@ let private actionTokens () =
     diagnosticRevisions ()
 
     for refusal, _, expected, field, revision in actionExpectations do
-        let result = admitted Api.caseGet.Output (ReadReply.Rejected refusal)
+        let result = admitted Api.caseGet.Output (Outcome.Rejected refusal)
 
         let data = result.GetProperty("outcome").GetProperty("data")
 
@@ -430,7 +430,7 @@ let private retainedText () =
 
         admitted
             Api.caseGet.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Snapshot = snapshot
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)

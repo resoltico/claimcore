@@ -65,7 +65,7 @@ let private receipt disclosure : OperationReceipt =
 let private encodedHistory count disclosure =
     Codec.encode
         Api.caseHistory.Output
-        (ReadReply.Succeeded
+        (Outcome.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -136,7 +136,7 @@ let private boundedAuthority () =
     let actors count =
         Codec.encode
             Api.authorityList.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -145,7 +145,7 @@ let private boundedAuthority () =
     let grants count =
         Codec.encode
             Api.authorityGrants.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Actor = actor
                     Items = List.replicate count grant

@@ -87,7 +87,7 @@ let private baselinePolicy code (reason: Refusal) =
 let private diagnostic reason =
     let identifier = DiagnosticCodecs.code reason
 
-    let reply: ReadReply<CaseReadModel> = ReadReply.Rejected reason
+    let reply: Outcome<CaseReadModel> = Outcome.Rejected reason
     let encoded = Codec.encode Api.caseGet.Output reply
 
     Expect.equal
@@ -119,7 +119,7 @@ let private refused (reply: ExecuteReply) =
 
 let private queryRefused =
     function
-    | ReadReply.Rejected reason -> diagnostic reason
+    | Outcome.Rejected reason -> diagnostic reason
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
@@ -431,7 +431,7 @@ let private boundaryEvidence () =
 
         let! resolved = (Service.resolve actor ({ OperationId = id 42 }) (ct))
 
-        Expect.equal resolved ResolveReply.NotAccepted "Resolve installs a fence"
+        Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Resolve installs a fence"
         let! fenced = execute actor (request 42 "REACH-1" 1L AuthoredCaseAct.Close)
         return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
     }

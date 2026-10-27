@@ -325,7 +325,7 @@ let private authorityPreview () =
         match Codec.decode 100000 Api.operationPreview.Output response with
         | Ok {
                  OperationId = id
-                 Outcome = PreviewResult.Reviewed(OperationReview.Authority review)
+                 Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review))
              } ->
             Expect.equal id operationId "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"

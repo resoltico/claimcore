@@ -128,9 +128,9 @@ let input endpoint =
 
 let private reads codec data =
     [
-        ReadReply.Succeeded data
-        ReadReply.Rejected Refusal.InvalidCursor
-        ReadReply.Failed CoreFault.StoreUnavailable
+        Outcome.Succeeded data
+        Outcome.Rejected Refusal.InvalidCursor
+        Outcome.Failed CoreFault.StoreUnavailable
     ]
     |> List.map codec.Write
 
@@ -152,10 +152,10 @@ let private execute () =
 
 let private preview () =
     [
-        PreviewResult.Reviewed review
-        PreviewResult.AlreadyAccepted receipt
-        PreviewResult.Rejected Refusal.ResourceUnavailable
-        PreviewResult.Failed CoreFault.StoreUnavailable
+        (Previewed.Reviewed >> Outcome.Succeeded) review
+        (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
+        Outcome.Rejected Refusal.ResourceUnavailable
+        Outcome.Failed CoreFault.StoreUnavailable
     ]
     |> List.map (fun outcome ->
         Api.operationPreview.Output.Write { OperationId = id; Outcome = outcome })
@@ -229,10 +229,10 @@ let responses endpoint =
     match endpoint with
     | "operation.resolve" ->
         [
-            ResolveReply.Accepted receipt
-            ResolveReply.NotAccepted
-            ResolveReply.Rejected Refusal.ResourceUnavailable
-            ResolveReply.Failed CoreFault.StoreUnavailable
+            (Resolved.Accepted >> Outcome.Succeeded) receipt
+            (Outcome.Succeeded Resolved.NotAccepted)
+            Outcome.Rejected Refusal.ResourceUnavailable
+            Outcome.Failed CoreFault.StoreUnavailable
         ]
         |> List.map Api.operationResolve.Output.Write
     | _ -> resourceResponses endpoint

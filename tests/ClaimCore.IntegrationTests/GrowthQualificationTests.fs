@@ -266,7 +266,7 @@ let private history workload (actor: ServiceContext) =
                 (token))
 
         match history with
-        | ReadReply.Succeeded page ->
+        | Outcome.Succeeded page ->
             let operations = (workload.Writes + workload.Writers - 1) / workload.Writers
             let targets = (workload.Cases + workload.Writers - 1) / workload.Writers
 

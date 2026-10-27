@@ -597,7 +597,7 @@ let private checkScopedAdvice (actor: ServiceContext) reference =
             (Service.get actor ({ CaseReference = reference }) (CancellationToken.None))
 
         match result with
-        | ReadReply.Succeeded value ->
+        | Outcome.Succeeded value ->
             Expect.equal
                 value.Advice.History
                 [ HistoryDetail.Summary; HistoryDetail.Full ]
@@ -665,7 +665,7 @@ let private refusedAdvice fixture (actor: ServiceContext) pending =
                 (CancellationToken.None))
 
         match current with
-        | ReadReply.Succeeded value ->
+        | Outcome.Succeeded value ->
             Expect.equal value.Snapshot.Revision 2L "Refusal preserves the projection"
 
             Expect.equal
@@ -710,7 +710,7 @@ let private revokedAdvice fixture =
             (Service.preview actor (OperationInput.Case pending) (CancellationToken.None))
 
         match preview.Outcome with
-        | PreviewResult.Reviewed _ -> ()
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ()
         | _ -> failtest "Expected authoritative correction review"
 
         let! removed =
@@ -903,7 +903,7 @@ let private authorityReviewRefusals fixture =
 
             Expect.equal
                 preview.Outcome
-                (PreviewResult.Rejected expected)
+                (Outcome.Rejected expected)
                 "Fresh authority preview enforces the execution refusal."
 
             let! execution =
@@ -946,7 +946,7 @@ let private authorityReadIsNotManage fixture =
 
         Expect.equal
             preview.Outcome
-            (PreviewResult.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Read authority cannot authorize mutation preview."
 
         let! execution =
@@ -974,7 +974,7 @@ let private authorityReviewReplay fixture =
         let! preview, _ = authorityReview fixture fixture.Owner input
 
         match preview.Outcome with
-        | PreviewResult.Reviewed(OperationReview.Authority review) ->
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
             Expect.isNone review.Target "The unregistered principal has no current actor."
             Expect.equal review.Before { Enabled = false; Grants = [] } "Unregistered before state."
 
@@ -1001,7 +1001,7 @@ let private authorityReviewReplay fixture =
 
         Expect.equal
             replay.Outcome
-            (PreviewResult.AlreadyAccepted receipt)
+            ((Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt)
             "Accepted registration replays before fresh-state refusal."
 
         let changed = authorityRequest (id 2) target (AuthorityAct.Disable)
@@ -1009,7 +1009,7 @@ let private authorityReviewReplay fixture =
 
         Expect.equal
             conflict.Outcome
-            (PreviewResult.Rejected Refusal.IdempotencyConflict)
+            (Outcome.Rejected Refusal.IdempotencyConflict)
             "Changed authority content conflicts with its accepted identity."
     }
 
@@ -1098,7 +1098,8 @@ let private authorityGrantReview fixture =
         let! preview, _ = authorityReview fixture fixture.Owner input
 
         match preview.Outcome with
-        | PreviewResult.Reviewed(OperationReview.Authority review) -> assertGrantRevocation review
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+            assertGrantRevocation review
         | _ -> failtest "Expected a case-grant revocation proposal."
 
         let! after = ledgerHead fixture
@@ -1155,7 +1156,7 @@ let private authorityReviewRechecks fixture =
         Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."
 
         match preview.Outcome with
-        | PreviewResult.Reviewed(OperationReview.Authority _) -> ()
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority _)) -> ()
         | _ -> failtest "Disabling one of two owners is initially permitted."
 
         let! revoked = grant actor (id 5) other Role.Owner GrantTarget.Installation false

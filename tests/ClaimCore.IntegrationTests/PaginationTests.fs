@@ -16,9 +16,9 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
 
-let private page (outcome: ReadReply<CaseSummaryPage>) =
+let private page (outcome: Outcome<CaseSummaryPage>) =
     match outcome with
-    | ReadReply.Succeeded value -> value
+    | Outcome.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
 let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
@@ -70,7 +70,7 @@ let private revocation (database: PostgresFixture.Database) =
 
         Expect.equal
             next
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Current grants are rechecked at the real database boundary"
     }
 
@@ -250,8 +250,8 @@ let private snapshot (database: PostgresFixture.Database) =
                 principal
 
         let reading =
-            Task.Run<ReadReply<CaseSummaryPage>>(
-                Func<Task<ReadReply<CaseSummaryPage>>>(fun () ->
+            Task.Run<Outcome<CaseSummaryPage>>(
+                Func<Task<Outcome<CaseSummaryPage>>>(fun () ->
                     (Service.list facade (query cursor 50) (token)))
             )
 

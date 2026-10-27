@@ -63,7 +63,7 @@ let private qualify path (database: PostgresFixture.Database) =
         let! before = Service.observe actor { OperationId = operationId } token
 
         match before with
-        | ReadReply.Succeeded _ -> ()
+        | Outcome.Succeeded _ -> ()
         | _ -> failtest "The exact receipt is readable before its stored enum is damaged"
 
         do! rewrite database receipt.Position.Sequence (corrupt path)
@@ -71,7 +71,7 @@ let private qualify path (database: PostgresFixture.Database) =
 
         Expect.equal
             after
-            (ReadReply.Failed CoreFault.StoreIntegrityError)
+            (Outcome.Failed CoreFault.StoreIntegrityError)
             "Stored corruption is never a user-input refusal"
     }
 

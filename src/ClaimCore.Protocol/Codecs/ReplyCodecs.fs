@@ -12,30 +12,30 @@ module ReplyCodecs =
 
     let private data codec = record id |> field "data" id codec
 
-    let readReply name (codec: Codec<'T>) : Codec<ReadReply<'T>> =
+    let readReply name (codec: Codec<'T>) : Codec<Outcome<'T>> =
         let outcome =
             tagged
                 (name + ".Outcome")
                 [
                     variant
                         "SUCCEEDED"
-                        ReadReply.Succeeded
+                        Outcome.Succeeded
                         (function
-                        | ReadReply.Succeeded value -> Some value
+                        | Outcome.Succeeded value -> Some value
                         | _ -> None)
                         (data codec)
                     variant
                         "REJECTED"
-                        ReadReply.Rejected
+                        Outcome.Rejected
                         (function
-                        | ReadReply.Rejected value -> Some value
+                        | Outcome.Rejected value -> Some value
                         | _ -> None)
                         (data DiagnosticCodecs.diagnostic)
                     variant
                         "FAILED"
-                        ReadReply.Failed
+                        Outcome.Failed
                         (function
-                        | ReadReply.Failed value -> Some value
+                        | Outcome.Failed value -> Some value
                         | _ -> None)
                         (data DiagnosticCodecs.fault)
                 ]
@@ -93,30 +93,30 @@ module ReplyCodecs =
             [
                 variant
                     "REVIEWED"
-                    PreviewResult.Reviewed
+                    (Previewed.Reviewed >> Outcome.Succeeded)
                     (function
-                    | PreviewResult.Reviewed value -> Some value
+                    | Outcome.Succeeded(Previewed.Reviewed value) -> Some value
                     | _ -> None)
                     (data reviewed)
                 variant
                     "ALREADY_ACCEPTED"
-                    PreviewResult.AlreadyAccepted
+                    (Previewed.AlreadyAccepted >> Outcome.Succeeded)
                     (function
-                    | PreviewResult.AlreadyAccepted value -> Some value
+                    | Outcome.Succeeded(Previewed.AlreadyAccepted value) -> Some value
                     | _ -> None)
                     (data ReceiptCodecs.receipt)
                 variant
                     "REJECTED"
-                    PreviewResult.Rejected
+                    Outcome.Rejected
                     (function
-                    | PreviewResult.Rejected value -> Some value
+                    | Outcome.Rejected value -> Some value
                     | _ -> None)
                     (data DiagnosticCodecs.diagnostic)
                 variant
                     "FAILED"
-                    PreviewResult.Failed
+                    Outcome.Failed
                     (function
-                    | PreviewResult.Failed value -> Some value
+                    | Outcome.Failed value -> Some value
                     | _ -> None)
                     (data DiagnosticCodecs.fault)
             ]

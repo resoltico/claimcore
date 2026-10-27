@@ -87,7 +87,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
 
         Expect.equal
             denied
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Later reads use revoked authority"
     }
 

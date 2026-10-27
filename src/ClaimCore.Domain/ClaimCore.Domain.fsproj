@@ -27,6 +27,7 @@
     <Compile Include="Authority.fs" />
     <Compile Include="Outcomes/Paging.fs" />
     <Compile Include="Outcomes/Faults.fs" />
+    <Compile Include="Outcomes/Outcome.fs" />
     <Compile Include="Outcomes/Advice.fs" />
     <Compile Include="Outcomes/Receipts.fs" />
     <Compile Include="Outcomes/Verification.fs" />

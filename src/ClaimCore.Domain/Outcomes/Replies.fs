@@ -22,22 +22,14 @@ type OperationReview =
     | Authority of AuthorityReview
 
 [<RequireQualifiedAccess>]
-type ReadReply<'T> =
-    | Succeeded of 'T
-    | Rejected of Refusal
-    | Failed of CoreFault
-
-[<RequireQualifiedAccess>]
-type PreviewResult =
+type Previewed =
     | Reviewed of OperationReview
     | AlreadyAccepted of OperationReceipt
-    | Rejected of Refusal
-    | Failed of CoreFault
 
 type PreviewReply =
     {
         OperationId: Guid
-        Outcome: PreviewResult
+        Outcome: Outcome<Previewed>
     }
 
 [<RequireQualifiedAccess>]

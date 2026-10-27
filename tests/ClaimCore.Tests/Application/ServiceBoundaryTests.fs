@@ -61,7 +61,7 @@ let private malformed () =
 
             Expect.isTrue
                 (match preview.Outcome with
-                 | PreviewResult.Rejected _ -> true
+                 | Outcome.Rejected _ -> true
                  | _ -> false)
                 "Invalid preview refused"
 
@@ -133,7 +133,7 @@ let private cancelled () =
 
             Expect.equal
                 preview.Outcome
-                (PreviewResult.Failed CoreFault.StoreUnavailable)
+                (Outcome.Failed CoreFault.StoreUnavailable)
                 "Cancelled preview"
 
         Expect.equal probe.Calls 0 "No writes or previews dispatched"
@@ -148,9 +148,9 @@ let private cancelled () =
             (Service.observe core ({ OperationId = id 470 }) (cancellation.Token))
             |> Async.AwaitTask
 
-        Expect.equal context (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled context"
-        Expect.equal current (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled case"
-        Expect.equal observed (ReadReply.Failed CoreFault.StoreUnavailable) "Cancelled observation"
+        Expect.equal context (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled context"
+        Expect.equal current (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled case"
+        Expect.equal observed (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled observation"
     }
 
 let private committed () =
@@ -215,7 +215,7 @@ let private committed () =
                 |> Async.AwaitTask
 
             match reply.Outcome, observed with
-            | ExecuteResult.Accepted receipt, ReadReply.Succeeded stored ->
+            | ExecuteResult.Accepted receipt, Outcome.Succeeded stored ->
                 Expect.equal receipt stored "Completed acceptance is forwarded despite cancellation"
             | _ -> failtest "Committed acceptance and stored receipt must agree"
 

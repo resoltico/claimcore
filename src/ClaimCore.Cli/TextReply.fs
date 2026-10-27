@@ -352,11 +352,8 @@ module internal TextReply =
                 (RecommendedAction.token fault.Action)
         ]
 
-    let private readLines language success =
-        function
-        | ReadReply.Succeeded value -> success value
-        | ReadReply.Rejected refusal -> refusalLines language refusal
-        | ReadReply.Failed fault -> faultLines language fault
+    let private readLines language success outcome =
+        Outcome.fold success (refusalLines language) (faultLines language) outcome
 
     let private contextLines (value: ActorContext) =
         [
@@ -385,26 +382,31 @@ module internal TextReply =
         ]
 
     let private previewLines language request (reply: PreviewReply) =
-        match reply.Outcome with
-        | PreviewResult.Reviewed review -> reviewLines language request review
-        | PreviewResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
-        | PreviewResult.Rejected refusal -> refusalLines language refusal
-        | PreviewResult.Failed fault -> faultLines language fault
+        readLines
+            language
+            (function
+            | Previewed.Reviewed review -> reviewLines language request review
+            | Previewed.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt)
+            reply.Outcome
 
     let private executeLines language (reply: ExecuteReply) =
+        let failed outcome =
+            readLines language (fun () -> []) outcome
+
         match reply.Outcome with
         | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
         | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
-        | ExecuteResult.Rejected refusal -> refusalLines language refusal
-        | ExecuteResult.Failed fault -> faultLines language fault
+        | ExecuteResult.Rejected refusal -> failed (Outcome.Rejected refusal)
+        | ExecuteResult.Failed fault -> failed (Outcome.Failed fault)
         | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
 
-    let private resolveLines language (reply: ResolveReply) =
-        match reply with
-        | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-        | ResolveReply.NotAccepted -> [ label language "notice.notAccepted" ]
-        | ResolveReply.Rejected refusal -> refusalLines language refusal
-        | ResolveReply.Failed fault -> faultLines language fault
+    let private resolveLines language (reply: Outcome<Resolved>) =
+        readLines
+            language
+            (function
+            | Resolved.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
+            reply
 
     let private replyLines language request =
         function

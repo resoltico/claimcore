@@ -15,17 +15,17 @@ module internal Queries =
 
     let failure =
         function
-        | StoreFailure.Cancelled -> ReadReply.Failed CoreFault.StoreUnavailable
-        | value -> ReadReply.Failed(fault value)
+        | StoreFailure.Cancelled -> Outcome.Failed CoreFault.StoreUnavailable
+        | value -> Outcome.Failed(fault value)
 
-    let private unavailable<'Value> : ReadReply<'Value> =
-        ReadReply.Rejected Refusal.ResourceUnavailable
+    let private unavailable<'Value> : Outcome<'Value> =
+        Outcome.Rejected Refusal.ResourceUnavailable
 
     let private validLimit limit =
         limit >= 1 && limit <= Paging.MaximumPageSize
 
     let private invalidLimit () =
-        ReadReply.Rejected(
+        Outcome.Rejected(
             Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Paging.MaximumPageSize)
         )
 
@@ -42,8 +42,7 @@ module internal Queries =
 
     let private readResult result = result |> Result.defaultWith failure
 
-    let private succeeded result =
-        result |> Result.map ReadReply.Succeeded |> Result.defaultWith ReadReply.Failed
+    let private succeeded result = Outcome.ofResult result
 
     let private collect results =
         List.foldBack
@@ -67,14 +66,14 @@ module internal Queries =
         else
             match view.Case with
             | Some record -> caseRecord services view.Actor record |> succeeded
-            | None -> ReadReply.Failed CoreFault.StoreIntegrityError
+            | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
     let get (services: ServiceContext) reference token =
         let store = services.Store
 
         task {
             match parseReference reference with
-            | Error refusal -> return ReadReply.Rejected refusal
+            | Error refusal -> return Outcome.Rejected refusal
             | Ok _ ->
                 let! result =
                     store.Read(
@@ -101,7 +100,7 @@ module internal Queries =
         match currentActor principal actor with
         | Error _ -> unavailable
         | Ok _ ->
-            ReadReply.Succeeded
+            Outcome.Succeeded
                 {
                     Runtime =
                         {
@@ -197,13 +196,12 @@ module internal Queries =
                                             )
 
                                         match selectCases principal request actor with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
 
                                             if page.Items.Length > Paging.MaximumPageSize then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
                                                     page.Items
@@ -262,7 +260,7 @@ module internal Queries =
 
         task {
             match parseReference request.CaseReference with
-            | Error refusal -> return ReadReply.Rejected refusal
+            | Error refusal -> return Outcome.Rejected refusal
             | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok _ ->
                 let! result =
@@ -287,12 +285,11 @@ module internal Queries =
                                         let! record = tx.FindCase id
 
                                         match selectHistory principal request actor record with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match record with
                                             | None ->
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             | Some current ->
                                                 let! page =
                                                     tx.HistoryPage(
@@ -342,7 +339,7 @@ module internal Queries =
         task {
             if operation = Guid.Empty then
                 return
-                    ReadReply.Rejected(
+                    Outcome.Rejected(
                         Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
                     )
             else
@@ -360,8 +357,7 @@ module internal Queries =
                                             LedgerEntries.canObserve principal actor entry.Subject
                                             ->
                                             if entry.OperationId <> operation then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
                                                     LedgerEntries.validate installation entry
@@ -411,7 +407,7 @@ module internal Queries =
                                             )
 
                                         match selectActors principal request actor with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             let! page =
                                                 tx.ActorPage(
@@ -422,11 +418,10 @@ module internal Queries =
                                                 )
 
                                             if page.Items.Length > Paging.MaximumPageSize then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
-                                                    ReadReply.Succeeded
+                                                    Outcome.Succeeded
                                                         {
                                                             ActorReviewPage.Items = page.Items
 
@@ -483,12 +478,11 @@ module internal Queries =
                                         let! target = tx.FindActor request.ActorId
 
                                         match selectGrants principal request actor target with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match target with
                                             | None ->
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             | Some target ->
                                                 let! page =
                                                     tx.GrantPage(
@@ -502,11 +496,11 @@ module internal Queries =
 
                                                 if page.Items.Length > Paging.MaximumPageSize then
                                                     return
-                                                        ReadReply.Failed
+                                                        Outcome.Failed
                                                             CoreFault.StoreIntegrityError
                                                 else
                                                     return
-                                                        ReadReply.Succeeded
+                                                        Outcome.Succeeded
                                                             {
                                                                 AuthorityGrantPage.Actor = target
                                                                 Items = page.Items

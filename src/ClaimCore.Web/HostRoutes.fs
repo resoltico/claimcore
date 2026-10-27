@@ -45,7 +45,7 @@ module HostRoutes =
 
                 return
                     Api.session.Output.Write(
-                        ReadReply.Succeeded
+                        Outcome.Succeeded
                             {
                                 Authenticated = authenticated
                                 ContractIdentity = ContractIdentity.value
@@ -85,7 +85,7 @@ module HostRoutes =
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
                                 return
-                                    Api.logout.Output.Write(ReadReply.Succeeded())
+                                    Api.logout.Output.Write(Outcome.Succeeded())
                                     |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }

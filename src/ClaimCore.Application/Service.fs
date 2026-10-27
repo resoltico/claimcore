@@ -114,24 +114,23 @@ module Service =
         =
         task {
             if ct.IsCancellationRequested then
-                return PreviewResult.Failed CoreFault.StoreUnavailable
+                return Outcome.Failed CoreFault.StoreUnavailable
             else
                 match admit () with
-                | Error refusal -> return PreviewResult.Rejected refusal
+                | Error refusal -> return Outcome.Rejected refusal
                 | Ok request ->
                     let! result = read request
 
                     match result with
                     | Error StoreFailure.Cancelled ->
-                        return PreviewResult.Failed CoreFault.StoreUnavailable
-                    | Error failure -> return PreviewResult.Failed(Queries.fault failure)
+                        return Outcome.Failed CoreFault.StoreUnavailable
+                    | Error failure -> return Queries.failure failure
                     | Ok view ->
-                        match decide request view with
-                        | Verdict.Refuse refusal -> return PreviewResult.Rejected refusal
-                        | Verdict.Fail fault -> return PreviewResult.Failed fault
-                        | Verdict.Replay receipt -> return PreviewResult.AlreadyAccepted receipt
-                        | Verdict.Proceed proposal ->
-                            return PreviewResult.Reviewed(render request view proposal)
+                        return
+                            decide request view
+                            |> Verdict.outcome
+                                (fun proposal -> Previewed.Reviewed(render request view proposal))
+                                Previewed.AlreadyAccepted
         }
 
     let private previewCase (services: ServiceContext) request ct =

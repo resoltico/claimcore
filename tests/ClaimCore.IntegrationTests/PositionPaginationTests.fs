@@ -27,7 +27,7 @@ let private cases (actor: ServiceContext) =
 
 let private succeeded =
     function
-    | ReadReply.Succeeded page -> page
+    | Outcome.Succeeded page -> page
     | _ -> failtest "Missing case page"
 
 let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
@@ -187,7 +187,7 @@ let private differentHistoryResource (actor: ServiceContext) (query: HistoryRequ
                 })
                 (CancellationToken.None))
 
-        Expect.equal resource (ReadReply.Rejected Refusal.InvalidCursor) "Resource is bound"
+        Expect.equal resource (Outcome.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
 let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
@@ -218,7 +218,7 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
                 (CancellationToken.None))
 
         match rest with
-        | ReadReply.Succeeded page ->
+        | Outcome.Succeeded page ->
             Expect.equal
                 page.Entries.Length
                 2
@@ -278,7 +278,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
                 (CancellationToken.None))
 
         match third with
-        | ReadReply.Succeeded page ->
+        | Outcome.Succeeded page ->
             Expect.equal (page.Items |> List.map _.ActorId) [ id 12 ] "No omission"
             Expect.isNone page.NextCursor "End of review"
         | _ -> failtest "Missing final review page"
@@ -294,7 +294,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal
             wrongEndpoint
-            (ReadReply.Rejected Refusal.InvalidCursor)
+            (Outcome.Rejected Refusal.InvalidCursor)
             "Authority continuation is endpoint-bound even when its position is valid ASCII"
     }
 
@@ -320,7 +320,7 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
 
             Expect.equal
                 outcome
-                (ReadReply.Rejected Refusal.InvalidCursor)
+                (Outcome.Rejected Refusal.InvalidCursor)
                 "No malformed position is trusted"
 
         let restarted =
@@ -375,7 +375,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
                 (CancellationToken.None))
 
         match history with
-        | ReadReply.Succeeded _ -> ()
+        | Outcome.Succeeded _ -> ()
         | _ -> failtest "History unavailable"
 
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
@@ -384,7 +384,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.actors actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
 
         match authority with
-        | ReadReply.Succeeded _ -> ()
+        | Outcome.Succeeded _ -> ()
         | _ -> failtest "Authority review unavailable"
 
         Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
@@ -561,7 +561,7 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
 
             Expect.equal
                 refused
-                (ReadReply.Rejected Refusal.InvalidCursor)
+                (Outcome.Rejected Refusal.InvalidCursor)
                 "A plain envelope does not admit an invalid grant position"
 
         let! invalidLimit =
@@ -576,9 +576,7 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
 
         Expect.equal
             invalidLimit
-            (ReadReply.Rejected(
-                Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)
-            ))
+            (Outcome.Rejected(Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)))
             "Public grant page is bounded"
     }
 

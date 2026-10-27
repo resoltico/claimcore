@@ -129,11 +129,11 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! current = (Service.get actor ({ CaseReference = "historical-1" }) (token))
 
         match current with
-        | ReadReply.Succeeded {
-                                  Snapshot = {
-                                                 State = (CaseState.Active(fields) | CaseState.Voided(fields))
-                                             }
-                              } ->
+        | Outcome.Succeeded {
+                                Snapshot = {
+                                               State = (CaseState.Active(fields) | CaseState.Voided(fields))
+                                           }
+                            } ->
             Expect.equal
                 (PartyName.format fields.Registration.ClaimantName)
                 name
@@ -221,7 +221,7 @@ let private assertRetained name entries =
 
 let private historyPage =
     function
-    | ReadReply.Succeeded page -> page
+    | Outcome.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
 let private remainingHistory (actor: ServiceContext) (query: HistoryRequest) =
@@ -278,7 +278,7 @@ let private assertRemainingHistoryAccess
 
         Expect.equal
             observed
-            (ReadReply.Succeeded(withheldReceipt original))
+            (Outcome.Succeeded(withheldReceipt original))
             "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
     }
 
@@ -323,7 +323,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (ReadReply.Rejected Refusal.ResourceUnavailable)
+                (Outcome.Rejected Refusal.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original
@@ -382,7 +382,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 (token))
 
         match summary with
-        | ReadReply.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
+        | Outcome.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
 
         do! revokedFullHistory database actor query first

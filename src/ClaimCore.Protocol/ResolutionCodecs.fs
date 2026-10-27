@@ -20,30 +20,30 @@ module ResolutionCodecs =
                 [
                     variant
                         "ACCEPTED"
-                        ResolveReply.Accepted
+                        (Resolved.Accepted >> Outcome.Succeeded)
                         (function
-                        | ResolveReply.Accepted value -> Some value
+                        | Outcome.Succeeded(Resolved.Accepted value) -> Some value
                         | _ -> None)
                         (data ReceiptCodecs.receipt)
                     variant
                         "NOT_ACCEPTED"
-                        (fun () -> ResolveReply.NotAccepted)
+                        (fun () -> (Outcome.Succeeded Resolved.NotAccepted))
                         (function
-                        | ResolveReply.NotAccepted -> Some()
+                        | Outcome.Succeeded Resolved.NotAccepted -> Some()
                         | _ -> None)
                         (data nullValue)
                     variant
                         "REJECTED"
-                        ResolveReply.Rejected
+                        Outcome.Rejected
                         (function
-                        | ResolveReply.Rejected value -> Some value
+                        | Outcome.Rejected value -> Some value
                         | _ -> None)
                         (data DiagnosticCodecs.diagnostic)
                     variant
                         "FAILED"
-                        ResolveReply.Failed
+                        Outcome.Failed
                         (function
-                        | ResolveReply.Failed value -> Some value
+                        | Outcome.Failed value -> Some value
                         | _ -> None)
                         (data DiagnosticCodecs.fault)
                 ]

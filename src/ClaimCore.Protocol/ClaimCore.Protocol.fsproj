@@ -8,6 +8,7 @@
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="DiagnosticMetadata.fs" />
     <Compile Include="ReplyPresentation.fs" />
+    <Compile Include="OutcomePresentation.fs" />
     <Compile Include="Api/Operations.fs" />
     <Compile Include="Catalog/Reads.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />

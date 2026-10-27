@@ -36,7 +36,7 @@ module internal ApiRoutes =
                 (fun input ->
                     {
                         PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
+                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
                     })
                 Service.preview
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
@@ -53,7 +53,7 @@ module internal ApiRoutes =
             Route.bind
                 Api.operationResolve
                 (fun input -> Some input.OperationId)
-                (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
+                (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
                 Service.resolve
 
     let handshake (context: HttpContext) =

@@ -83,7 +83,7 @@ let private serviceScopeCorruption () =
 
             Expect.equal
                 hidden
-                (ReadReply.Rejected Refusal.ResourceUnavailable)
+                (Outcome.Rejected Refusal.ResourceUnavailable)
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
@@ -91,7 +91,7 @@ let private serviceScopeCorruption () =
                 |> Async.AwaitTask
 
             match visible with
-            | ReadReply.Succeeded page ->
+            | Outcome.Succeeded page ->
                 Expect.equal
                     (page.Items
                      |> List.map (fun (summary: CaseSummary) ->
