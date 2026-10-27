@@ -1,4 +1,4 @@
-import { lifecycleLabels } from "../LifecycleStatus";
+import { lifecycleMessageIds } from "../LifecycleStatus";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
@@ -16,9 +16,11 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
   return (
     <>
       {review.before === null ? null : (
-        <p>{p.text("ui.before", { value: p.text(lifecycleLabels[review.before.state.kind]) })}</p>
+        <p>
+          {p.text("ui.before", { value: p.text(lifecycleMessageIds[review.before.state.kind]) })}
+        </p>
       )}
-      <p>{p.text("ui.after", { value: p.text(lifecycleLabels[review.after.state.kind]) })}</p>
+      <p>{p.text("ui.after", { value: p.text(lifecycleMessageIds[review.after.state.kind]) })}</p>
       <dl className="review-values">
         {review.changes.map((change) => (
           <div key={change.field}>

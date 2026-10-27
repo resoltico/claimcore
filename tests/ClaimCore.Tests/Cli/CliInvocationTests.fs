@@ -391,10 +391,46 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             ClaimCore.Cli.TextReply.bytesFor language (Some invocation) frame
             |> Encoding.UTF8.GetString
 
+        let labels, human, reader, installation =
+            match language with
+            | "en" ->
+                [
+                    "Register actor"
+                    "Enable actor"
+                    "Disable actor"
+                    "Grant role"
+                    "Revoke role"
+                ],
+                "Human",
+                "Case reader",
+                "Installation"
+            | "lv" ->
+                [
+                    "Reģistrēt dalībnieku"
+                    "Iespējot dalībnieku"
+                    "Atspējot dalībnieku"
+                    "Piešķirt lomu"
+                    "Atsaukt lomu"
+                ],
+                "Cilvēks",
+                "Lietu lasītājs",
+                "Instalācija"
+            | "ar" ->
+                [ "تسجيل جهة"; "تفعيل الجهة"; "تعطيل الجهة"; "منح دور"; "سحب دور" ],
+                "شخص",
+                "قارئ الحالات",
+                "التثبيت"
+            | _ -> failtest "Every supported language needs independently authored labels"
+
+        let act =
+            List.zip [ "register"; "enable"; "disable"; "grant"; "revoke" ] labels
+            |> Map.ofList
+            |> Map.find verb
+
         Expect.stringContains
             rendered
-            (verb + " HUMAN synthetic synthetic-subject")
-            "Authority preview identifies the exact act and principal"
+            (act + " " + human + " synthetic synthetic-subject")
+            "Authority preview identifies the exact act and principal using core labels"
 
         if enabledBefore <> enabledAfter then
             let expected =
@@ -407,9 +443,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
         if grantBefore <> grantAfter then
             let expected =
                 if grantBefore then
-                    "CASE_READER  INSTALLATION  — → —"
+                    reader + "  " + installation + "  — → —"
                 else
-                    "— → CASE_READER  INSTALLATION  —"
+                    "— → " + reader + "  " + installation + "  —"
 
             Expect.stringContains
                 rendered

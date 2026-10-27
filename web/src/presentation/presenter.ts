@@ -2,7 +2,7 @@ import { isTerm, termLabel } from "./terms";
 import type { Terms } from "@contracts/messages";
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { correctionTargets } from "@contracts/messages";
+import { correctionTargets, fieldGuidance } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
@@ -80,32 +80,22 @@ const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
   return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
+const isGuidanceField = (name: string): name is keyof typeof fieldGuidance =>
+  Object.hasOwn(fieldGuidance, name);
 const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
-  if (field.name === "caseReference") {
-    return translate(preferences, "ui.referenceHint");
+  if (isGuidanceField(field.name)) {
+    const guidance = fieldGuidance[field.name];
+    const values = Object.fromEntries(
+      Object.entries(guidance.arguments).map(([name, value]: [string, string | number]) => [
+        name,
+        typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
+      ]),
+    );
+    return renderKey(preferences, guidance.key, values);
   }
-  if (field.name === "incidentCountry") {
-    return translate(preferences, "ui.countryHint");
-  }
-  const s = field.scalar;
-  switch (s.kind) {
-    case "TEXT":
-      return translate(preferences, "ui.textHint", {
-        maximum: exactInteger(String(s.maximumCharacters ?? ""), preferences.displayLocale),
-      });
-    case "CALENDAR_DATE":
-      return translate(preferences, "ui.dateHint");
-    case "AMOUNT":
-      return translate(preferences, "ui.amountHint", {
-        maximum: exactInteger(String(s.maximumFractionalDigits), preferences.displayLocale),
-      });
-    case "CURRENCY":
-      return translate(preferences, "ui.currencyHint", {
-        length: exactInteger(String(s.exactCharacters), preferences.displayLocale),
-      });
-    case "CASE_STATUS":
-      return s.allowedValues.map((v) => termLabel(preferences, "status", v)).join(", ");
-  }
+  return field.scalar.kind === "CASE_STATUS"
+    ? field.scalar.allowedValues.map((value) => termLabel(preferences, "status", value)).join(", ")
+    : "";
 };
 export const createPresenter = (
   preferences: Preferences,

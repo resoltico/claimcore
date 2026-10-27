@@ -30,14 +30,16 @@ module CatalogCodecs =
             (fun value -> value.ToString(CalendarDate.ExactFormat, CultureInfo.InvariantCulture))
 
     let private textFormat =
-        (record (fun v0 v1 ->
+        (record (fun v0 v1 v2 ->
             {
                 TextFormatConstraints.MinimumCharacters = v0
                 Grammar = v1
+                UnknownCode = v2
             })
         : Fields<TextFormatConstraints, _>)
         |> field "minimumCharacters" _.MinimumCharacters (count)
         |> field "grammar" _.Grammar (nullable text)
+        |> optionalField "unknownCode" _.UnknownCode text
         |> build
         |> named "Presentation.TextFormatConstraints"
 

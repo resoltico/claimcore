@@ -147,6 +147,27 @@ let private structure () =
             "Literal catalog samples"
 
 [<Tests>]
+let rendererOwnership =
+    testCase "renderer wording cannot duplicate core wording" (fun () ->
+        CatalogValidation.validateRendererOwnership
+            "en"
+            [ "label.core", "Core meaning"; "ui.control", "Interaction text" ]
+
+        Expect.throws
+            (fun () ->
+                CatalogValidation.validateRendererOwnership
+                    "en"
+                    [ "label.core", "Core meaning"; "ui.control", "Core meaning" ])
+            "A browser/core duplicate is detected"
+
+        Expect.throws
+            (fun () ->
+                CatalogValidation.validateRendererOwnership
+                    "lv"
+                    [ "label.core", "Kopīgs teksts"; "cli.control", "Kopīgs teksts" ])
+            "A CLI/core duplicate is detected outside English")
+
+[<Tests>]
 let termRegistry =
     testCase "rendered vocabularies have distinct names and qualified token keys" (fun () ->
         let expected =

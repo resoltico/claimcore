@@ -105,6 +105,25 @@ let private numericAndStatusRuleTests =
         ]
 
 [<Tests>]
+let countryUnknown =
+    testCase "Domain owns the permanent unknown country code" (fun () ->
+        Expect.equal (CountryCode.format CountryCode.unknown) "ZZ" "Permanent unknown code"
+
+        Expect.equal
+            (CountryCode.parse "ZZ")
+            (Ok CountryCode.unknown)
+            "The declared code satisfies permanent parsing"
+
+        Expect.equal
+            CountryCode.descriptor.Format.UnknownCode
+            (Some "ZZ")
+            "The descriptor publishes the same code"
+
+        Expect.isNone
+            PartyName.descriptor.Format.UnknownCode
+            "Business text has no country meaning")
+
+[<Tests>]
 let permanentBoundaries =
     testList
         "typed service boundaries"

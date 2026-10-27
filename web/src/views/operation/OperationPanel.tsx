@@ -145,7 +145,7 @@ const UnavailableDisclosure = ({ model }: { model: OperationModel }) => {
       />
       {!model.disclosureRefused && !model.contextChanged ? (
         <button type="button" disabled={model.busy} onClick={() => void model.preview()}>
-          {p.text("ui.previewOperation")}
+          {p.text("label.reviewTitle")}
         </button>
       ) : null}
     </section>

@@ -34,7 +34,8 @@
         "kind": "TEXT",
         "format": {
           "minimumCharacters": 1,
-          "grammar": "[A-Z]{2}"
+          "grammar": "[A-Z]{2}",
+          "unknownCode": "ZZ"
         },
         "maximumCharacters": null
       },

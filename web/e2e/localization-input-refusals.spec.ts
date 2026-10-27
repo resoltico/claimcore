@@ -51,9 +51,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
   const pending = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );
-  await page
-    .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
-    .click();
+  await page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click();
   const value: unknown = await (await pending).json();
   expect(isResponse("operation.preview", value)).toBe(true);
   if (!isResponse("operation.preview", value)) {
@@ -80,9 +78,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.locator(`input[data-field-name="${name}"]`).fill(value);
       const before = requests.length;
       await expectBusinessFormatRefusal(page, name, diagnostic, () =>
-        page
-          .getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true })
-          .click(),
+        page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
       );
       await expect(page.getByRole("alert")).toContainText(
         businessFormatRefusalText[diagnostic][language],

@@ -25,7 +25,7 @@ const editorLanguage = async (page: Page) => {
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
+      page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),

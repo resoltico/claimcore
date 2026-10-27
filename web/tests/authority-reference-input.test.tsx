@@ -99,7 +99,10 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
 };
 const expectReferenceDescription = (reference: HTMLElement, locale: Locale, invalid: boolean) => {
   const meaning = locale.field["field.caseReference.meaning"];
-  const hint = locale.ui["ui.referenceHint"];
+  const hint = locale.ui["scalar.reference.guidance"].replace(
+    "{maximumCharacters}",
+    locale.language === "ar" ? "\u206880\u2069" : "80",
+  );
   const description = reference
     .getAttribute("aria-describedby")!
     .split(" ")
@@ -167,7 +170,7 @@ it.each(
     expectReferenceDescription(reference, locale, false);
     await user.click(
       screen.getByRole("button", {
-        name: locale.ui["ui.previewOperation"],
+        name: locale.ui["label.reviewTitle"],
       }),
     );
     await waitFor(() => {

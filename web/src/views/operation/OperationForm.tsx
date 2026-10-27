@@ -131,7 +131,7 @@ export const OperationForm = (props: OperationFormProps) => {
           type="submit"
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
         >
-          {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "ui.previewOperation")}
+          {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "label.reviewTitle")}
         </button>
         {onClose === undefined ? null : (
           <button type="button" disabled={model.busy} onClick={onClose}>

@@ -70,9 +70,27 @@ module CatalogValidation =
         if not unused.IsEmpty then
             invalidOp ("Unreferenced " + owner + " message keys: " + String.concat ", " unused)
 
+    let validateRendererOwnership language entries =
+        let renderer (key: string) =
+            key.StartsWith("ui.", System.StringComparison.Ordinal)
+            || key.StartsWith("cli.", System.StringComparison.Ordinal)
+
+        let core =
+            entries
+            |> List.filter (fun (key, _) -> not (renderer key))
+            |> List.map snd
+            |> Set.ofList
+
+        for key, value in entries do
+            if renderer key && Set.contains value core then
+                invalidOp (language + ": renderer duplicates core wording: " + key)
+
     let validateCatalogs (authored: Map<string, (string * string) list>) =
         if (authored |> Map.keys |> Set.ofSeq) <> Set.ofList LocalizationPolicy.languages then
             invalidOp "Localization languages differ."
+
+        for KeyValue(language, entries) in authored do
+            validateRendererOwnership language entries
 
         let catalogs =
             authored
@@ -128,6 +146,7 @@ module CatalogValidation =
                 "scope"
                 "historyDetail"
                 "subject"
+                "scalar"
                 "ui"
                 "cli"
             ]

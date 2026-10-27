@@ -66,10 +66,35 @@ module Discovery =
                                + "]"
                            | _ -> ""
 
+                       let guidance =
+                           match input.Name with
+                           | CatalogInputName.Field field -> ScalarGuidance.forField field
+                           | CatalogInputName.Technical TechnicalInput.Reason ->
+                               Some ScalarGuidance.forReason
+                           | _ -> None
+
+                       let hint =
+                           guidance
+                           |> Option.map (fun guidance ->
+                               let args =
+                                   guidance.Arguments
+                                   |> Map.map (fun _ value ->
+                                       match value with
+                                       | GuidanceArgument.Count count ->
+                                           count.ToString(
+                                               System.Globalization.CultureInfo
+                                                   .InvariantCulture
+                                           )
+                                       | GuidanceArgument.Code code -> code)
+
+                               " " + MessageCatalogs.render language guidance.Key args)
+                           |> Option.defaultValue ""
+
                        message input.Binding.LabelId
                        + ": "
                        + (input.Binding.MeaningId |> Option.map message |> Option.defaultValue "")
-                       + allowed))
+                       + allowed
+                       + hint))
                 |> String.concat "\n")
             |> String.concat "\n\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))

@@ -33,6 +33,26 @@ module CliDocumentation =
         let escape (text: string) =
             text.Replace("|", "\\|").Replace("\n", " ")
 
+        let scalarGuidance (input: CatalogDerivedInput) =
+            let guidance =
+                match input.Name with
+                | CatalogInputName.Field field -> ScalarGuidance.forField field
+                | CatalogInputName.Technical TechnicalInput.Reason -> Some ScalarGuidance.forReason
+                | _ -> None
+
+            guidance
+            |> Option.map (fun guidance ->
+                let arguments =
+                    guidance.Arguments
+                    |> Map.map (fun _ value ->
+                        match value with
+                        | GuidanceArgument.Count count ->
+                            count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        | GuidanceArgument.Code code -> code)
+
+                " " + Template.render english[guidance.Key] arguments)
+            |> Option.defaultValue ""
+
         let describe operation =
             let inputs, _ = CommandGrammar.derive operation
 
@@ -72,7 +92,10 @@ module CliDocumentation =
                         + escape (message input.Binding.LabelId)
                         + " — "
                         + escape (
-                            input.Binding.MeaningId |> Option.map message |> Option.defaultValue ""
+                            (input.Binding.MeaningId
+                             |> Option.map message
+                             |> Option.defaultValue "")
+                            + scalarGuidance input
                         )
                         + " | "
                         + escape choices
