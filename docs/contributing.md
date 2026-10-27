@@ -54,6 +54,11 @@ service-model independence, host usage and vocabulary naming. Domain controls ve
 assembly separately, so duplicate fixtures cannot mask a missing boundary. Product internals may be exposed
 to tests only.
 
+[Domain ownership](../tests/ClaimCore.Tests/Architecture/DomainOwnershipTests.fs) follows compiler symbol
+references from Application, RecordFormat and Postgres through called Domain helpers. The pinned SDK
+supplies the compiler service. Compiled controls distinguish a used helper from an unrelated presentation
+member in the same module, and preserve references in signatures and later body expressions.
+
 A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
 on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
 wire-facing names. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;

@@ -1,4 +1,15 @@
-namespace ClaimCore.Domain
+namespace ClaimCore.Protocol
+
+open ClaimCore.Domain
+
+type RecommendedAction =
+    | CorrectInput
+    | ReadCurrent
+    | RetrySafe
+    | ReplayExact
+    | Reauthenticate
+    | StopAndInvestigate
+    | NoneRequired
 
 module Refusals =
     // This exhaustive business policy intentionally requires a decision for every refusal case.
@@ -62,3 +73,18 @@ module RefusalProperties =
         member this.Field = Refusals.field this
         member this.ActualRevision = Refusals.actualRevision this
         member this.Action = Refusals.action this
+
+module FaultAdvice =
+    let internal action =
+        function
+        | CoreFault.StoreUnavailable -> RecommendedAction.RetrySafe
+        | CoreFault.InternalError
+        | CoreFault.StoreIntegrityError
+        | CoreFault.SchemaMismatch
+        | CoreFault.OperationContentConflict -> RecommendedAction.StopAndInvestigate
+
+
+[<AutoOpen>]
+module CoreFaultProperties =
+    type CoreFault with
+        member this.Action = FaultAdvice.action this

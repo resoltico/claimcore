@@ -29,12 +29,3 @@ type Refusal =
     | ActorUnknown
     | HumanPrincipalRequired
     | InvalidCursor
-
-type RecommendedAction =
-    | CorrectInput
-    | ReadCurrent
-    | RetrySafe
-    | ReplayExact
-    | Reauthenticate
-    | StopAndInvestigate
-    | NoneRequired
