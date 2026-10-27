@@ -7,7 +7,8 @@ type ExecutionPhase =
     | NotStarted
     | StartedUnconfirmed
 
-module DeliveryTokens =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ExecutionPhase =
     let vocabulary =
         Vocabulary.ofUnion<ExecutionPhase> "phase" TokenCasing.ScreamingSnake None
 

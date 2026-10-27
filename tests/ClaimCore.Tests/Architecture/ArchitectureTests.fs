@@ -241,6 +241,20 @@ let private shapeControls () =
             ArchitectureRule.ApplicationProtocol,
             typeof<ApplicationTaskShape>,
             [ "ApplicationTask" ]
+            ArchitectureRule.VocabularyModuleNaming,
+            nonNull (
+                typeof<VocabularySample>
+                    .Assembly
+                    .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedVocabulary")
+            ),
+            [ "Direct" ]
+            ArchitectureRule.VocabularyModuleNaming,
+            nonNull (
+                typeof<VocabularySample>
+                    .Assembly
+                    .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedTaskVocabulary")
+            ),
+            [ "TaskShape" ]
             ArchitectureRule.DomainBoundary, typeof<DomainShapes>, [ "DomainDirect" ]
             ArchitectureRule.DomainBoundary, typeof<DomainTaskShape>, [ "DomainTask" ]
         ]
@@ -252,6 +266,10 @@ let private shapeControls () =
             Expect.isFalse
                 ((ApiRules.rule model.Value rule selected).HasNoViolations model.Value)
                 (string rule + " detects " + memberName)
+
+let private vocabularyModuleNaming () =
+    for assembly in products.Value do
+        check ArchitectureRule.VocabularyModuleNaming assembly
 
 let private emptyTargets () =
     let missing = Types().That().HaveFullName("No.Such.ForbiddenTarget")
@@ -323,6 +341,7 @@ let tests =
             testCase "empty forbidden target sets fail explicitly" emptyTargets
             testCase "product friendship is limited to test assemblies" productFriends
             testCase "Domain excludes outer layers" domainBoundary
+            testCase "vocabularies belong to their value type modules" vocabularyModuleNaming
             testCase
                 "Application uses models without wire codecs or endpoint descriptions"
                 applicationProtocol

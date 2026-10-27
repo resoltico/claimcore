@@ -26,7 +26,8 @@ type TechnicalInput =
     | Full
     | Reason
 
-module TechnicalInputs =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module TechnicalInput =
     let vocabulary =
         Vocabulary.ofUnion<TechnicalInput> "input" TokenCasing.CamelCase None
 
@@ -71,16 +72,16 @@ type CatalogDerivedInput =
 module OperationCatalog =
     let inputKey =
         function
-        | CatalogInputName.Field field -> Record.key field
+        | CatalogInputName.Field field -> BusinessField.key field
         | CatalogInputName.Group group -> RecordGroup.token group
-        | CatalogInputName.Technical input -> TechnicalInputs.token input
+        | CatalogInputName.Technical input -> TechnicalInput.token input
 
     let inputMessage name part =
         match name with
-        | CatalogInputName.Field field -> Vocabulary.messageKey RecordFields.vocabulary field part
+        | CatalogInputName.Field field -> Vocabulary.messageKey BusinessField.vocabulary field part
         | CatalogInputName.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group part
         | CatalogInputName.Technical input ->
-            Vocabulary.messageKey TechnicalInputs.vocabulary input part
+            Vocabulary.messageKey TechnicalInput.vocabulary input part
 
     [<NoEquality; NoComparison>]
     type private Declaration =
@@ -106,7 +107,7 @@ module OperationCatalog =
         @ (Record.reads
            |> List.map (fun declaration ->
                {
-                   Endpoint = Vocabulary.token ActorEndpoints.vocabulary declaration.Endpoint
+                   Endpoint = Vocabulary.token ActorEndpoint.vocabulary declaration.Endpoint
                    Act = None
                },
                Read declaration))
@@ -124,7 +125,7 @@ module OperationCatalog =
 
     let private message entry part =
         match entry.Act with
-        | Some act -> Vocabulary.messageKey ActKinds.vocabulary act part
+        | Some act -> Vocabulary.messageKey ActKind.vocabulary act part
         | None -> "endpoint." + entry.Endpoint + "." + part
 
     let labelId entry = message entry "label"
@@ -138,8 +139,8 @@ module OperationCatalog =
 
     let words entry =
         match entry.Act with
-        | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKinds.token kind) ]
-        | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKinds.token kind) ]
+        | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
+        | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
         | None -> entry.Endpoint.Split('.') |> List.ofArray
 
     let private source entry name =
@@ -158,7 +159,7 @@ module OperationCatalog =
 
     let private diagnostics =
         function
-        | CatalogInputName.Field field -> [ Record.key field ]
+        | CatalogInputName.Field field -> [ BusinessField.key field ]
         | CatalogInputName.Group group -> [ RecordGroup.token group ]
         | CatalogInputName.Technical TechnicalInput.OperationId -> [ "operationId" ]
         | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> [ "expectedRevision" ]
@@ -215,7 +216,7 @@ module OperationCatalog =
             None
 
     let private caseOperand operation =
-        let path = [ Record.key BusinessField.CaseReference ]
+        let path = [ BusinessField.key BusinessField.CaseReference ]
 
         input
             operation
@@ -237,14 +238,14 @@ module OperationCatalog =
             input
                 operation
                 (CatalogInputName.Field field)
-                (prefix @ [ Record.key field ])
+                (prefix @ [ BusinessField.key field ])
                 BindingKind.Text
                 CatalogArgument.Named
                 branches
                 true
                 None
                 (if prefill then
-                     Some [ RecordGroup.token group; Record.key field ]
+                     Some [ RecordGroup.token group; BusinessField.key field ]
                  else
                      None))
 
@@ -253,7 +254,9 @@ module OperationCatalog =
         |> List.collect (fun group ->
             let prefix = actPath ("groups" :: [ RecordGroup.token group ])
             let tag = prefix @ [ "kind" ]
-            let choices = CorrectionActions.forGroup group |> List.map CorrectionActions.token
+
+            let choices =
+                CorrectionGroupAction.forGroup group |> List.map CorrectionGroupAction.token
 
             let selector =
                 input
@@ -275,7 +278,7 @@ module OperationCatalog =
                 [
                     {
                         Path = tag
-                        Value = CorrectionActions.token CorrectionGroupAction.Replace
+                        Value = CorrectionGroupAction.token CorrectionGroupAction.Replace
                     }
                 ]
                 true)
@@ -334,7 +337,7 @@ module OperationCatalog =
                 yield
                     {
                         Path = actPath [ "kind" ]
-                        Value = BindingValue.Text(CaseActKinds.token declaration.Kind)
+                        Value = BindingValue.Text(CaseActKind.token declaration.Kind)
                         Branches = []
                     }
             ]
@@ -348,7 +351,7 @@ module OperationCatalog =
                     operation
                     TechnicalInput.PrincipalKind
                     [ "target"; "kind" ]
-                    (BindingKind.Choice PrincipalKinds.all)
+                    (BindingKind.Choice PrincipalKind.all)
                     true
                 named operation TechnicalInput.Issuer [ "target"; "issuer" ] BindingKind.Text true
                 named operation TechnicalInput.Subject [ "target"; "subject" ] BindingKind.Text true
@@ -365,7 +368,7 @@ module OperationCatalog =
                         operation
                         TechnicalInput.Role
                         (actPath [ "role" ])
-                        (BindingKind.Choice(RoleTokens.all |> List.map RoleTokens.token))
+                        (BindingKind.Choice(Role.all |> List.map Role.token))
                         true
                     input
                         operation
@@ -380,7 +383,7 @@ module OperationCatalog =
                     input
                         operation
                         (CatalogInputName.Field BusinessField.CaseReference)
-                        (actPath ("scope" :: [ Record.key BusinessField.CaseReference ]))
+                        (actPath ("scope" :: [ BusinessField.key BusinessField.CaseReference ]))
                         BindingKind.Text
                         CatalogArgument.Named
                         [ { Path = scope; Value = "CASE" } ]
@@ -398,7 +401,7 @@ module OperationCatalog =
                 }
                 {
                     Path = actPath [ "kind" ]
-                    Value = BindingValue.Text(AuthorityKinds.token declaration.Kind)
+                    Value = BindingValue.Text(AuthorityKind.token declaration.Kind)
                     Branches = []
                 }
             ]
@@ -425,8 +428,8 @@ module OperationCatalog =
             | ReadInput.ActorOperand -> [ operand TechnicalInput.ActorId [ "actorId" ] ]
             | ReadInput.Detail ->
                 let off, on =
-                    Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Summary,
-                    Vocabulary.token HistoryDetails.vocabulary HistoryDetail.Full
+                    Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Summary,
+                    Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Full
 
                 let binding =
                     named
@@ -527,7 +530,7 @@ module OperationCatalog =
                 Subject = words operation |> List.head |> _.ToUpperInvariant()
                 Kind =
                     operation.Act
-                    |> Option.map ActKinds.token
+                    |> Option.map ActKind.token
                     |> Option.defaultValue operation.Endpoint
                 Inputs = inputs |> List.map _.Binding
                 Constants = constants
@@ -539,7 +542,7 @@ module OperationCatalog =
             Act =
                 if entry.Endpoint = Api.operationExecute.Token then
                     Some(
-                        Vocabulary.tryParse ActKinds.vocabulary entry.Kind
+                        Vocabulary.tryParse ActKind.vocabulary entry.Kind
                         |> Option.defaultWith (fun () ->
                             invalidArg (nameof entry) "Unknown catalog act.")
                     )

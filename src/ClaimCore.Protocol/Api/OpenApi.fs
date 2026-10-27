@@ -71,8 +71,8 @@ module OpenApi =
         )
 
     let private hostResponses =
-        HostFailures.all
-        |> List.map HostFailures.status
+        HostFailureReason.all
+        |> List.map HostFailureReason.status
         |> List.distinct
         |> List.sort
         |> List.map (fun status ->
@@ -107,7 +107,7 @@ module OpenApi =
         let fields =
             [
                 "operationId", text endpoint.Token
-                "x-claimcore-effect", text (EndpointEffects.token endpoint.Effect)
+                "x-claimcore-effect", text (EndpointEffect.token endpoint.Effect)
                 "parameters", array parameters
                 "security", security endpoint.Token
                 "responses", responses endpoint.OutputSchema

@@ -35,12 +35,12 @@ module ReceiptCodecs =
                 Snapshot = snapshot
             })
         : Fields<CaseReceipt, _>)
-        |> field (Record.key BusinessField.CaseReference) _.Reference caseReference
+        |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field
             "act"
             _.Act
-            (enumeration (CaseActKinds.all |> List.map (fun act -> act, CaseActKinds.token act)))
+            (enumeration (CaseActKind.all |> List.map (fun act -> act, CaseActKind.token act)))
         |> field "snapshot" _.Snapshot disclosure
 
     let private authorityFields =
@@ -50,7 +50,7 @@ module ReceiptCodecs =
         |> field
             "act"
             _.Act
-            (enumeration (AuthorityKinds.all |> List.map (fun act -> act, AuthorityKinds.token act)))
+            (enumeration (AuthorityKind.all |> List.map (fun act -> act, AuthorityKind.token act)))
 
     let private caseVariant =
         variant

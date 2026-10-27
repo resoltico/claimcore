@@ -108,7 +108,7 @@ let private delayedDelivery () =
             Expect.isFalse token.CanReuse "Short-lived token cannot enter the reuse margin"
         | Error reason ->
             Expect.equal
-                (AccessFailures.token reason)
+                (AccessFailure.token reason)
                 "OIDC_TOKEN_UNAVAILABLE"
                 "No secret or provider details"
 

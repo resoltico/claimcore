@@ -31,22 +31,6 @@ type CaseActKind =
     | Reinstate
     | Erase
 
-module CaseActKind =
-    let isStewardship =
-        function
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> true
-        | CaseActKind.Open
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen -> false
-
 [<RequireQualifiedAccess>]
 type BusinessField =
     | IncidentDate
@@ -211,12 +195,14 @@ module AuthorityActs =
         | AuthorityAct.Enable -> AuthorityKind.Enable
         | AuthorityAct.Disable -> AuthorityKind.Disable
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module RecordGroup =
     let vocabulary = Vocabulary.ofUnion<RecordGroup> "group" TokenCasing.CamelCase None
 
     let token = Vocabulary.token vocabulary
 
-module CorrectionActions =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CorrectionGroupAction =
     let vocabulary =
         Vocabulary.ofUnion<CorrectionGroupAction> "token" TokenCasing.ScreamingSnake None
 
@@ -229,7 +215,8 @@ module CorrectionActions =
         | RecordGroup.Decision
         | RecordGroup.Payment -> all
 
-module CaseStatuses =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseStatus =
     let vocabulary =
         Vocabulary.ofUnion<CaseStatus> "token" TokenCasing.ScreamingSnake None
 
@@ -237,7 +224,23 @@ module CaseStatuses =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-module CaseActKinds =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseActKind =
+    let isStewardship =
+        function
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> true
+        | CaseActKind.Open
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen -> false
+
     let vocabulary =
         Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
 
@@ -245,7 +248,8 @@ module CaseActKinds =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-module AuthorityKinds =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module AuthorityKind =
     let vocabulary =
         Vocabulary.ofUnion<AuthorityKind> "act" TokenCasing.ScreamingSnake None
 
@@ -253,14 +257,15 @@ module AuthorityKinds =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-module ActKinds =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ActKind =
     let vocabulary =
         [
             yield!
-                Vocabulary.entries CaseActKinds.vocabulary
+                Vocabulary.entries CaseActKind.vocabulary
                 |> List.map (fun (value, token) -> ActKind.Case value, token)
             yield!
-                Vocabulary.entries AuthorityKinds.vocabulary
+                Vocabulary.entries AuthorityKind.vocabulary
                 |> List.map (fun (value, token) -> ActKind.Authority value, token)
         ]
         |> Vocabulary.ofEntries "act"
@@ -269,7 +274,8 @@ module ActKinds =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-module ActorEndpoints =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ActorEndpoint =
     let vocabulary =
         Vocabulary.define
             "endpoint"
@@ -315,7 +321,7 @@ module UnvalidatedCaseActs =
         | UnvalidatedCaseAct.Reinstate _ -> CaseActKind.Reinstate
         | UnvalidatedCaseAct.Erase -> CaseActKind.Erase
 
-    let name act = kind act |> CaseActKinds.token
+    let name act = kind act |> CaseActKind.token
 
 /// Accepted registration values retain their validated structure.
 type Registration =
@@ -352,6 +358,7 @@ type Lifecycle =
     | Voided
     | Erased
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Lifecycle =
     let vocabulary =
         Vocabulary.ofUnion<Lifecycle> "token" TokenCasing.ScreamingSnake None
@@ -524,7 +531,8 @@ type ObserveRequest = { OperationId: Guid }
 
 type ResolveRequest = { OperationId: Guid }
 
-module HistoryDetails =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module HistoryDetail =
     let vocabulary =
         Vocabulary.ofUnion<HistoryDetail> "historyDetail" TokenCasing.ScreamingSnake None
 
@@ -569,12 +577,12 @@ type private ReadFields<'Request, 'Ctor> =
         Build: ReadProfile -> Fields<'Request, 'Ctor>
     }
 
-/// Record layout and authored payloads are declared together. Boundaries choose their text profile.
-module Record =
-    let fieldVocabulary =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module BusinessField =
+    let vocabulary =
         Vocabulary.ofUnion<BusinessField> "field" TokenCasing.CamelCase None
 
-    let key = Vocabulary.token fieldVocabulary
+    let key = Vocabulary.token vocabulary
 
     // Scalar meaning is an exhaustive domain declaration; compiler coverage protects every field.
     // fsharplint:disable-next-line CyclomaticComplexity
@@ -593,6 +601,40 @@ module Record =
         | BusinessField.PayableCurrency -> FieldValueKind.Currency
         | BusinessField.CaseReference -> FieldValueKind.Reference
         | BusinessField.Status -> FieldValueKind.Status
+
+    // This exhaustive field projection formats data; it selects no business policy.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let value (fields: CaseFields) =
+        function
+        | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
+        | BusinessField.Status -> Some(CaseStatus.token fields.Status)
+        | BusinessField.IncidentDate -> Some(CalendarDate.format fields.Registration.IncidentDate)
+        | BusinessField.IncidentNotificationDate ->
+            Some(CalendarDate.format fields.Registration.IncidentNotificationDate)
+        | BusinessField.IncidentCountry ->
+            Some(CountryCode.format fields.Registration.IncidentCountry)
+        | BusinessField.ClaimantName -> Some(PartyName.format fields.Registration.ClaimantName)
+        | BusinessField.InsurerName -> Some(PartyName.format fields.Registration.InsurerName)
+        | BusinessField.ClaimedAmount -> Some(Money.format fields.Registration.ClaimedAmount)
+        | BusinessField.ClaimedCurrency -> Some(Money.currency fields.Registration.ClaimedAmount)
+        | BusinessField.PaymentDecisionDate ->
+            fields.Decision
+            |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate)
+        | BusinessField.PayableAmount ->
+            fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount)
+        | BusinessField.PayableCurrency ->
+            fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount)
+        | BusinessField.PaymentDate ->
+            fields.Payment
+            |> Option.map (fun value -> CalendarDate.format value.PaymentDate)
+
+    let values fields =
+        Vocabulary.all vocabulary |> List.map (fun field -> field, value fields field)
+
+/// Record layout and authored payloads are declared together. Boundaries choose their text profile.
+module Record =
+    let private key = BusinessField.key
+    let private valueKind = BusinessField.valueKind
 
     let private record ctor : GroupFields<'Whole, 'Ctor> =
         {
@@ -967,7 +1009,7 @@ module Record =
 
         caseActs
         |> List.map (fun declaration ->
-            let token = CaseActKinds.token declaration.Kind
+            let token = CaseActKind.token declaration.Kind
 
             match declaration.Payload with
             | CasePayload.NoPayload act -> Codec.unitVariant token act
@@ -1000,7 +1042,7 @@ module Record =
 
         authorityActs
         |> List.map (fun declaration ->
-            let token = AuthorityKinds.token declaration.Kind
+            let token = AuthorityKind.token declaration.Kind
 
             match declaration.Payload with
             | AuthorityPayload.Target act -> Codec.unitVariant token act

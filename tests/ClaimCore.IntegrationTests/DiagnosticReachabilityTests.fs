@@ -407,7 +407,7 @@ let private principalEvidence (actor: ServiceContext) =
                     OperationId = id (60 + index)
                     Target =
                         {
-                            Kind = PrincipalKinds.Human
+                            Kind = PrincipalKind.humanToken
                             Issuer = issuer
                             Subject = subject
                         }
@@ -504,7 +504,7 @@ let private completeVocabulary () =
         let fields = evidence |> List.choose snd |> Set.ofList
 
         let expectedFields =
-            (InputTargets.all |> List.map snd) @ [ "limit"; "cursor" ] |> Set.ofList
+            (InputTarget.all |> List.map snd) @ [ "limit"; "cursor" ] |> Set.ofList
 
         Expect.equal
             fields
@@ -531,7 +531,7 @@ let private missingCasePrivacy () =
         let kinds = acts |> List.map UnvalidatedCaseActs.kind |> Set.ofList
 
         let expected =
-            CaseActKinds.all
+            CaseActKind.all
             |> List.filter (fun kind -> kind <> CaseActKind.Open)
             |> Set.ofList
 

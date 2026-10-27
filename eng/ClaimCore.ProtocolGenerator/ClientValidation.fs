@@ -161,8 +161,8 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         |> fun fields -> "{" + fields + "}"
 
     let private hosts () =
-        ClaimCore.Protocol.HostFailures.all
-        |> List.map ClaimCore.Protocol.HostFailures.status
+        ClaimCore.Protocol.HostFailureReason.all
+        |> List.map ClaimCore.Protocol.HostFailureReason.status
         |> List.distinct
         |> List.map (fun status ->
             string status

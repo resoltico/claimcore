@@ -331,10 +331,10 @@ let tests =
             testCase "every finding has a pure rejection case" (fun () ->
                 Expect.equal
                     (cases |> List.map fst |> Set.ofList)
-                    (VerificationFindings.all |> List.map fst |> Set.ofList)
+                    (VerificationFinding.all |> List.map fst |> Set.ofList)
                     "Complete vocabulary")
             for expected, run in cases do
-                testCase (VerificationFindings.token expected) (fun () -> finding expected run)
+                testCase (VerificationFinding.token expected) (fun () -> finding expected run)
         ]
 
 [<Tests>]

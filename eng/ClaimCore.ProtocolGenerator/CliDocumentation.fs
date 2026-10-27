@@ -98,14 +98,14 @@ module CliDocumentation =
             "## Offline commands"
             ""
             yield!
-                CliCommands.commands
+                CliCommand.all
                 |> List.collect (
                     CliCommands.synopses >> List.map (fun syntax -> "- `claimcore " + syntax + "`")
                 )
             ""
             "Help topics: "
-            + (CliCommands.topics
-               |> List.map (fun topic -> "`" + CliCommands.topicToken topic + "`")
+            + (CliTopic.all
+               |> List.map (fun topic -> "`" + CliTopic.token topic + "`")
                |> String.concat ", ")
             + "."
             ""
@@ -116,18 +116,18 @@ module CliDocumentation =
             "| Exit | Meaning | claimcore | claimcore-database |"
             "| --- | --- | --- | --- |"
             yield!
-                ExitCodes.all
+                ExitCode.all
                 |> List.map (fun code ->
                     let supported flag = if flag then "yes" else "—"
 
                     "| "
-                    + string (ExitCodes.value code)
+                    + string (ExitCode.value code)
                     + " | "
                     + exitMeaning code
                     + " | "
-                    + supported (ExitCodes.cli code)
+                    + supported (ExitCode.cli code)
                     + " | "
-                    + supported (ExitCodes.database code)
+                    + supported (ExitCode.database code)
                     + " |")
             ""
             yield! OperationCatalog.all |> List.collect describe

@@ -79,7 +79,7 @@ module ResponseCodecs =
             })
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference caseReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
@@ -139,23 +139,25 @@ module ResponseCodecs =
                 State = view
             })
         : Fields<CaseSnapshot, _>)
-        |> field (Record.key BusinessField.CaseReference) _.Reference caseReference
+        |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field "state" _.State caseState
         |> build
         |> named "CaseSnapshot"
 
-    let private correctionAction = VocabularyCodec.create CorrectionActions.vocabulary
-    let private historyDetail = VocabularyCodec.create HistoryDetails.vocabulary
+    let private correctionAction =
+        VocabularyCodec.create CorrectionGroupAction.vocabulary
+
+    let private historyDetail = VocabularyCodec.create HistoryDetail.vocabulary
 
     let private authorityKind =
-        Vocabulary.entries AuthorityKinds.vocabulary
+        Vocabulary.entries AuthorityKind.vocabulary
         |> List.filter (fun (value, _) -> value <> AuthorityKind.ProvisionOwner)
         |> enumeration
 
     let private maximumInstallationOffers =
         1
-        + (AuthorityKinds.all
+        + (AuthorityKind.all
            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
            |> List.length)
 
@@ -179,7 +181,7 @@ module ResponseCodecs =
             _.Registration
             (list
                 2
-                (Vocabulary.entries CorrectionActions.vocabulary
+                (Vocabulary.entries CorrectionGroupAction.vocabulary
                  |> List.filter (fun (value, _) -> value <> CorrectionGroupAction.Clear)
                  |> enumeration))
         |> field "decision" _.Decision (list 3 correctionAction)
@@ -194,9 +196,9 @@ module ResponseCodecs =
                 "act"
                 fst
                 (enumeration (
-                    CaseActKinds.all
+                    CaseActKind.all
                     |> List.filter ((<>) CaseActKind.Correct)
-                    |> List.map (fun kind -> kind, CaseActKinds.token kind)
+                    |> List.map (fun kind -> kind, CaseActKind.token kind)
                 ))
             |> field "expectedRevision" snd revision
 
@@ -243,7 +245,7 @@ module ResponseCodecs =
                 Advice = advice
             })
         : Fields<CaseReadModel, _>)
-        |> field (Record.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
+        |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision sequence
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
@@ -293,8 +295,8 @@ module ResponseCodecs =
                         EffectiveBusinessDate = date
                         TimeZoneId = zone
                     }
-                Capabilities = capabilities
-                Views = views
+                Capability = capabilities
+                View = views
                 Offers = offers
             })
         : Fields<ActorContext, _>)
@@ -303,13 +305,13 @@ module ResponseCodecs =
         |> field "timeZone" _.Runtime.TimeZoneId nonempty
         |> field
             "capabilities"
-            _.Capabilities
+            _.Capability
             (list
                 16
                 (enumeration (
-                    Capabilities.all |> List.map (fun value -> value, Capabilities.token value)
+                    Capability.all |> List.map (fun value -> value, Capability.token value)
                 )))
-        |> field "views" _.Views (list 3 (VocabularyCodec.create Views.vocabulary))
+        |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"
@@ -343,7 +345,7 @@ module ResponseCodecs =
         |> field
             "act"
             _.Act
-            (enumeration (CaseActKinds.all |> List.map (fun act -> act, CaseActKinds.token act)))
+            (enumeration (CaseActKind.all |> List.map (fun act -> act, CaseActKind.token act)))
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy uuid
         |> build
@@ -357,7 +359,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration (Vocabulary.entries RecordFields.vocabulary))
+        |> field "field" _.FieldName (enumeration (Vocabulary.entries BusinessField.vocabulary))
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
@@ -396,7 +398,7 @@ module ResponseCodecs =
         |> field
             "role"
             _.Role
-            (enumeration (RoleTokens.all |> List.map (fun role -> role, RoleTokens.token role)))
+            (enumeration (Role.all |> List.map (fun role -> role, Role.token role)))
         |> field "scope" _.Scope (scope)
         |> build
         |> named "AuthorityGrant"
@@ -514,7 +516,7 @@ module ResponseCodecs =
         let state =
             stateCodec
                 "CaseSummaryState"
-                (record id |> field "status" id (VocabularyCodec.create CaseStatuses.vocabulary))
+                (record id |> field "status" id (VocabularyCodec.create CaseStatus.vocabulary))
 
         (record (fun reference revision state ->
             {

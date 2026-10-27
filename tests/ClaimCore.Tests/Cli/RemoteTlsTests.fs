@@ -25,7 +25,7 @@ let private trustRootScope () =
         failtest "A local test root must not authorize a remote production endpoint"
     | Error reason ->
         Expect.equal
-            (AccessFailures.token reason)
+            (AccessFailure.token reason)
             "TLS_TRUST_ROOT_SCOPE_INVALID"
             "No remote custom trust root"
 

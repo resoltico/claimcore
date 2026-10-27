@@ -22,10 +22,10 @@ module internal RecordCodecs =
             "RegistrationGroup"
             [
                 unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Keep)
+                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
                     RegistrationGroup.Keep
                 variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                     RegistrationGroup.Replace
                     (function
                     | RegistrationGroup.Replace value -> Some value
@@ -37,16 +37,18 @@ module internal RecordCodecs =
         tagged
             "DecisionGroup"
             [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) DecisionGroup.Keep
+                unitVariant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
+                    DecisionGroup.Keep
                 variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                     DecisionGroup.Replace
                     (function
                     | DecisionGroup.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id decision)
                 unitVariant
-                    (CorrectionActions.token CorrectionGroupAction.Clear)
+                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
                     DecisionGroup.Clear
             ]
 
@@ -54,15 +56,19 @@ module internal RecordCodecs =
         tagged
             "PaymentGroup"
             [
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Keep) PaymentGroup.Keep
+                unitVariant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
+                    PaymentGroup.Keep
                 variant
-                    (CorrectionActions.token CorrectionGroupAction.Replace)
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                     PaymentGroup.Replace
                     (function
                     | PaymentGroup.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id payment)
-                unitVariant (CorrectionActions.token CorrectionGroupAction.Clear) PaymentGroup.Clear
+                unitVariant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
+                    PaymentGroup.Clear
             ]
 
     let correction =
@@ -103,7 +109,7 @@ module internal RecordCodecs =
                 Subject = v2
             })
         : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens PrincipalKinds.all)
+        |> field "kind" _.Kind (tokens PrincipalKind.all)
         |> field "issuer" _.Issuer (text)
         |> field "subject" _.Subject (text)
         |> build
@@ -222,7 +228,7 @@ module internal RecordCodecs =
             })
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference acceptedReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatuses.vocabulary))
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
         |> field "registration" _.Registration acceptedRegistration
         |> field "decision" _.Decision (nullable acceptedDecision)
         |> field "payment" _.Payment (nullable acceptedPayment)

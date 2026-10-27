@@ -152,8 +152,8 @@ let private context () =
 
     match Queries.contextResult BuildIdentity.current.Version calendar owner instant view with
     | ReadReply.Succeeded value ->
-        Expect.isEmpty value.Capabilities "Enabled actor has context without implied capabilities"
-        Expect.isEmpty value.Views "No views before grants"
+        Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
+        Expect.isEmpty value.View "No views before grants"
         Expect.isEmpty value.Offers "No offers before grants"
 
         Expect.equal

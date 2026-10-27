@@ -250,7 +250,7 @@ module Case =
         | Some record -> existing today command record
 
     let eligibleActs (record: CaseRecord) =
-        CaseActKinds.all
+        CaseActKind.all
         |> List.filter (Transitions.applicable record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =

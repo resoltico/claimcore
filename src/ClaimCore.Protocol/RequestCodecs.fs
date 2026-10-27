@@ -20,9 +20,10 @@ module RequestCodecs =
     let payment = Record.payment.Codec text
 
     let private correctionVariants group variants =
-        CorrectionActions.forGroup group
+        CorrectionGroupAction.forGroup group
         |> List.map (fun action ->
-            variants |> List.find (fun make -> make.Tag = CorrectionActions.token action))
+            variants
+            |> List.find (fun make -> make.Tag = CorrectionGroupAction.token action))
 
     let registrationGroup =
         tagged
@@ -31,10 +32,10 @@ module RequestCodecs =
                 RecordGroup.Registration
                 [
                     unitVariant
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
                         RegistrationGroup.Keep
                     variant
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                         RegistrationGroup.Replace
                         (function
                         | RegistrationGroup.Replace value -> Some value
@@ -49,17 +50,17 @@ module RequestCodecs =
                 RecordGroup.Decision
                 [
                     unitVariant
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
                         DecisionGroup.Keep
                     variant
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                         DecisionGroup.Replace
                         (function
                         | DecisionGroup.Replace value -> Some value
                         | _ -> None)
                         (record id |> field "values" id decision)
                     unitVariant
-                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
                         DecisionGroup.Clear
                 ])
 
@@ -70,17 +71,17 @@ module RequestCodecs =
                 RecordGroup.Payment
                 [
                     unitVariant
-                        (CorrectionActions.token CorrectionGroupAction.Keep)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
                         PaymentGroup.Keep
                     variant
-                        (CorrectionActions.token CorrectionGroupAction.Replace)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
                         PaymentGroup.Replace
                         (function
                         | PaymentGroup.Replace value -> Some value
                         | _ -> None)
                         (record id |> field "values" id payment)
                     unitVariant
-                        (CorrectionActions.token CorrectionGroupAction.Clear)
+                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
                         PaymentGroup.Clear
                 ])
 
@@ -110,7 +111,7 @@ module RequestCodecs =
             })
         : Fields<UnvalidatedCaseRequest, _>)
         |> field "operationId" _.OperationId (uuid)
-        |> field (Record.key BusinessField.CaseReference) _.CaseReference (text)
+        |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference (text)
         |> field "expectedRevision" _.ExpectedRevision (revision)
         |> field "act" _.Act (caseAct)
 
@@ -124,7 +125,7 @@ module RequestCodecs =
                 Subject = v2
             })
         : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens PrincipalKinds.all)
+        |> field "kind" _.Kind (tokens PrincipalKind.all)
         |> field "issuer" _.Issuer (text)
         |> field "subject" _.Subject (text)
         |> build
@@ -141,14 +142,13 @@ module RequestCodecs =
                     (function
                     | GrantTarget.CaseReference value -> Some value
                     | _ -> None)
-                    (record id |> field (Record.key BusinessField.CaseReference) id text)
+                    (record id |> field (BusinessField.key BusinessField.CaseReference) id text)
             ]
 
     let authorityActWith role =
         Record.authorityVariants role scope |> tagged "AuthorityAct"
 
-    let authorityAct =
-        authorityActWith (tokens (RoleTokens.all |> List.map RoleTokens.token))
+    let authorityAct = authorityActWith (tokens (Role.all |> List.map Role.token))
 
     let authorityRequestFields =
         (record (fun v0 v1 v2 ->
@@ -189,7 +189,7 @@ module RequestCodecs =
             ReadProfile.Text = text
             Cursor = boundedText 1 512
             Limit = integer 1L (int64 Paging.MaximumPageSize) |> map int int64
-            Detail = VocabularyCodec.create HistoryDetails.vocabulary
+            Detail = VocabularyCodec.create HistoryDetail.vocabulary
         }
 
     let pageRequest = Record.caseList.Codec readProfile

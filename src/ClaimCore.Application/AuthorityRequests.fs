@@ -37,7 +37,7 @@ module AuthorityRequests =
     let private authoredAct =
         let grant role scope =
             {
-                Role = RoleTokens.token role
+                Role = Role.token role
                 Scope = scope
             }
 

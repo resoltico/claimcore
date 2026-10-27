@@ -28,9 +28,9 @@ module RecordedAuthorityActs =
         | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> AuthorityKind.Enable
         | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable -> AuthorityKind.Disable
 
-    let all = AuthorityKinds.all
+    let all = AuthorityKind.all
 
-    let token = AuthorityKinds.token
+    let token = AuthorityKind.token
 
     let tryKind value =
         all |> List.tryFind (token >> (=) value)
@@ -97,7 +97,7 @@ module AuthorityRecord =
     let private validate request =
         if
             request.OperationId = Guid.Empty
-            || not (List.contains request.Target.Kind PrincipalKinds.all)
+            || not (List.contains request.Target.Kind PrincipalKind.all)
             || not (validScope request.Act)
         then
             Error

@@ -69,7 +69,7 @@ module Authority =
                 Capability.ReadAuthority
             ]
 
-    let roles = RoleTokens.all
+    let roles = Role.all
 
     let rolesFor capability =
         roles |> List.filter (fun role -> List.contains capability (policy role))
@@ -234,7 +234,7 @@ module Authority =
                 PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject
 
             let grant make (value: GrantChange) =
-                RoleTokens.parse value.Role
+                Role.parse value.Role
                 |> Option.map (fun role -> make (role, value.Scope) |> Ok)
                 |> Option.defaultValue (
                     Error(

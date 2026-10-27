@@ -103,3 +103,8 @@ type CatalogDocument =
         Entries: CatalogEntry list
         ProductVersion: string
     }
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module InputSource =
+    let vocabulary =
+        Vocabulary.ofUnion<InputSource> "inputSource" TokenCasing.ScreamingSnake None

@@ -67,7 +67,7 @@ module internal CaseCorrections =
             | RecordGroup.Payment -> paymentChoice progress PaymentChange.Clear |> Result.isOk
 
         if present then
-            CorrectionActions.forGroup group
+            CorrectionGroupAction.forGroup group
         else
             [ CorrectionGroupAction.Keep ]
 

@@ -125,7 +125,7 @@ let matrix () =
             record
             |> Option.map Case.eligibleActs
             |> Option.defaultValue []
-            |> List.map CaseActKinds.token
+            |> List.map CaseActKind.token
 
         for token, act in acts do
             let revision = if record.IsNone then 0L else 3L

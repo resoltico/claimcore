@@ -10,7 +10,8 @@ type CoreFault =
     | SchemaMismatch
     | OperationContentConflict
 
-module CoreFaults =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CoreFault =
     let internal action =
         function
         | CoreFault.StoreUnavailable -> RecommendedAction.RetrySafe
@@ -26,4 +27,4 @@ module CoreFaults =
     let token = Vocabulary.token vocabulary
 
 type CoreFault with
-    member this.Action = CoreFaults.action this
+    member this.Action = CoreFault.action this

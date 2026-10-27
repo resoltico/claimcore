@@ -54,7 +54,7 @@ let private statuses () =
         |> child "post"
         |> child "responses"
 
-    for status in HostFailures.all |> List.map HostFailures.status |> List.distinct do
+    for status in HostFailureReason.all |> List.map HostFailureReason.status |> List.distinct do
         let selected =
             responses
             |> child (string status)
@@ -65,17 +65,17 @@ let private statuses () =
 
         let schema = validator document (selected.DeepClone())
 
-        for reason in HostFailures.all do
+        for reason in HostFailureReason.all do
             let failure = HostFailureCodecs.ofReason reason
 
             Expect.equal
                 (evaluates schema (HostFailureCodecs.encode reason))
-                (HostFailures.status reason = status)
+                (HostFailureReason.status reason = status)
                 "Only the policy's actual HTTP status admits the body."
 
             Expect.equal
                 (HostFailureCodecs.matchesStatus status failure)
-                (HostFailures.status reason = status)
+                (HostFailureReason.status reason = status)
                 "Transport applies the same fixed status policy."
 
 let private phases () =
@@ -86,7 +86,7 @@ let private phases () =
             document
             (JsonNode.Parse "{\"$ref\":\"#/components/schemas/HostFailure\"}" |> nonNull)
 
-    for code in HostFailures.all |> List.map HostFailures.code |> List.distinct do
+    for code in HostFailureReason.all |> List.map HostFailureReason.code |> List.distinct do
         for phase in
             [ None; Some ExecutionPhase.NotStarted; Some ExecutionPhase.StartedUnconfirmed ] do
             let value =
@@ -94,13 +94,13 @@ let private phases () =
                     [
                         "code", ClaimCore.Json.JsonValue.String code
                         "phase",
-                        (Codec.nullable (Codec.enumeration DeliveryTokens.phases)).Write phase
+                        (Codec.nullable (Codec.enumeration ExecutionPhase.phases)).Write phase
                     ]
 
             let expected =
-                HostFailures.all
+                HostFailureReason.all
                 |> List.exists (fun reason ->
-                    HostFailures.code reason = code && HostFailures.phase reason = phase)
+                    HostFailureReason.code reason = code && HostFailureReason.phase reason = phase)
 
             let bytes = WireWriter.bytes value
 

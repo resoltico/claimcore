@@ -16,11 +16,11 @@ module CatalogCodecs =
     let private count = integer 0L (int64 Int32.MaxValue) |> map int int64
     let private many codec = list Int32.MaxValue codec
 
-    let private fieldName = VocabularyCodec.create RecordFields.vocabulary
+    let private fieldName = VocabularyCodec.create BusinessField.vocabulary
 
-    let private inputTarget = VocabularyCodec.create InputTargets.vocabulary
+    let private inputTarget = VocabularyCodec.create InputTarget.vocabulary
 
-    let private caseStatus = VocabularyCodec.create CaseStatuses.vocabulary
+    let private caseStatus = VocabularyCodec.create CaseStatus.vocabulary
 
     let private date =
         ResponseScalars.date
@@ -277,9 +277,7 @@ module CatalogCodecs =
                     (record id |> field "options" id (many text))
             ]
 
-    let private inputSource =
-        Vocabulary.ofUnion<InputSource> "inputSource" TokenCasing.ScreamingSnake None
-        |> VocabularyCodec.create
+    let private inputSource = InputSource.vocabulary |> VocabularyCodec.create
 
     let private binding =
         record

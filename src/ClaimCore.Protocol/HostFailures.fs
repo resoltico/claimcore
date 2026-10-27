@@ -21,7 +21,18 @@ type HostFailureCode =
     | ResponseFailed
 
 /// Fixed transport policy; each reason owns its code, status and dispatch phase together.
-module HostFailures =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module HostFailureCode =
+    let vocabulary =
+        Vocabulary.ofUnion<HostFailureCode> "host" TokenCasing.ScreamingSnake None
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module HostFailureReason =
+    // Reasons and wire codes are separate sets: dispatch reasons share INTERNAL and differ by phase.
+    let vocabulary =
+        Vocabulary.ofUnion<HostFailureReason> "host-reason" TokenCasing.ScreamingSnake None
+
+
     // Flat exhaustive transport policy; compiler coverage replaces a partial table lookup.
     // fsharplint:disable-next-line CyclomaticComplexity
     let private policy =
@@ -58,17 +69,10 @@ module HostFailures =
 
     let private codeKind reason = let code, _, _ = policy reason in code
 
-    let vocabulary =
-        Vocabulary.ofUnion<HostFailureCode> "host" TokenCasing.ScreamingSnake None
-
-    // Reasons and wire codes are separate sets: dispatch reasons share INTERNAL and differ by phase.
-    let private reasonVocabulary =
-        Vocabulary.ofUnion<HostFailureReason> "host-reason" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all reasonVocabulary
+    let all = Vocabulary.all vocabulary
 
     let code reason =
-        codeKind reason |> Vocabulary.token vocabulary
+        codeKind reason |> Vocabulary.token HostFailureCode.vocabulary
 
     let status reason =
         let _, value, _ = policy reason in value

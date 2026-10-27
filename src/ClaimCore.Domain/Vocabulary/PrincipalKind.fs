@@ -6,11 +6,12 @@ type PrincipalKind =
     | Service
 
 /// Stable principal-kind syntax; admission and authority remain Application policy.
-module PrincipalKinds =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module PrincipalKind =
     let vocabulary =
         Vocabulary.ofUnion<PrincipalKind> "token" TokenCasing.ScreamingSnake None
 
-    let Human = Vocabulary.token vocabulary PrincipalKind.Human
-    let Service = Vocabulary.token vocabulary PrincipalKind.Service
+    let humanToken = Vocabulary.token vocabulary PrincipalKind.Human
+    let serviceToken = Vocabulary.token vocabulary PrincipalKind.Service
 
     let all = Vocabulary.tokens vocabulary

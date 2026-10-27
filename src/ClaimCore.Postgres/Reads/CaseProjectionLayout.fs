@@ -7,7 +7,7 @@ open ClaimCore.Domain
 /// Column names derive from record keys; reads identify cells by name and bindings share the column sequence.
 module internal CaseProjectionLayout =
     let name field =
-        Record.key field
+        BusinessField.key field
         |> Seq.collect (fun character ->
             if Char.IsAsciiLetterUpper character then
                 [ '_'; Char.ToLowerInvariant character ]
@@ -70,7 +70,7 @@ module internal CaseProjectionLayout =
     let private parameter (fields: CaseFields) =
         function
         | BusinessField.CaseReference -> box (CaseReference.format fields.CaseReference)
-        | BusinessField.Status -> box (CaseStatuses.token fields.Status)
+        | BusinessField.Status -> box (CaseStatus.token fields.Status)
         | BusinessField.IncidentDate -> box (CalendarDate.value fields.Registration.IncidentDate)
         | BusinessField.IncidentNotificationDate ->
             box (CalendarDate.value fields.Registration.IncidentNotificationDate)

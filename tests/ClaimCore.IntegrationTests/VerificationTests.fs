@@ -555,7 +555,7 @@ let private priorCaseRequired (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.grants SET case_id=$1 WHERE actor_id=$2 AND role=$3"
-                [| box caseId; box (id 1); box (RoleTokens.token Role.PaymentRecorder) |]
+                [| box caseId; box (id 1); box (Role.token Role.PaymentRecorder) |]
 
         do! finding VerificationFinding.AuthorityFold database
     }
@@ -717,11 +717,11 @@ let tests =
 
                 Expect.equal
                     (findingCases |> List.map fst |> Set.ofList)
-                    (VerificationFindings.all |> List.map fst |> Set.ofList)
+                    (VerificationFinding.all |> List.map fst |> Set.ofList)
                     "Every finding has an independent real-boundary case")
             for code, check in findingCases do
                 testCaseAsync
-                    (VerificationFindings.token code + " has an exact real-boundary control")
+                    (VerificationFinding.token code + " has an exact real-boundary control")
                     (run check)
             testCaseAsync "disabled historical executors are divergence" (run disabledExecutor)
             testCaseAsync

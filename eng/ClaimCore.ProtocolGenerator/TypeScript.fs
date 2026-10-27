@@ -55,7 +55,7 @@ module TypeScript =
                 id = Api.id endpoint
                 method = (Api.method endpoint).Method
                 path = Api.path endpoint
-                effect = EndpointEffects.token (Api.effect endpoint)
+                effect = EndpointEffect.token (Api.effect endpoint)
             |})
         |> JsonSerializer.Serialize
 

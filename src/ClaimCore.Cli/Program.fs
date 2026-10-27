@@ -24,26 +24,26 @@ let private writeText (output: System.IO.Stream) (value: string) =
 let private unsupported errors language arguments issue =
     writeText errors (UsageText.renderHost language arguments issue)
 
-    ExitCodes.value ExitCode.Usage
+    ExitCode.value ExitCode.Usage
 
 let private writeDiscovery output errors language command response =
     match response with
     | Some bytes ->
         writeBytes output bytes
-        ExitCodes.value ExitCode.Success
+        ExitCode.value ExitCode.Success
     | None -> unsupported errors language [ command ] CliUsageIssue.Selector
 
 let private discovery output errors =
     function
     | CliInvocation.Help(topic, language) ->
         writeText output (ContractDiscovery.helpTopic language topic)
-        ExitCodes.value ExitCode.Success
+        ExitCode.value ExitCode.Success
     | CliInvocation.Version false ->
         writeText output (BuildIdentity.current.Version + Environment.NewLine)
-        ExitCodes.value ExitCode.Success
+        ExitCode.value ExitCode.Success
     | CliInvocation.Version true ->
         Discovery.versionJson () |> writeBytes output
-        ExitCodes.value ExitCode.Success
+        ExitCode.value ExitCode.Success
     | CliInvocation.Describe(selector, false, _) ->
         Discovery.describe selector |> writeDiscovery output errors "en" "describe"
     | CliInvocation.Describe(selector, true, language) ->
@@ -91,10 +91,10 @@ let private verb output errors arguments =
     | Error issues ->
         let language = CliInvocations.usageLanguage arguments
         writeText errors (UsageText.render language arguments issues)
-        ExitCodes.value ExitCode.Usage
+        ExitCode.value ExitCode.Usage
     | Ok prepared when prepared.DryRun ->
         writeBytes output prepared.Bytes
-        ExitCodes.value ExitCode.Success
+        ExitCode.value ExitCode.Success
     | Ok prepared ->
         use input = new System.IO.MemoryStream(prepared.Bytes, false)
 
@@ -133,7 +133,7 @@ let private dispatch output errors argv =
         with _ ->
             ()
 
-        ExitCodes.value ExitCode.InternalError
+        ExitCode.value ExitCode.InternalError
 
 [<EntryPoint>]
 let main argv =
@@ -142,4 +142,4 @@ let main argv =
         use errors = StandardSinks.errors ()
         dispatch output errors argv
     with _ ->
-        ExitCodes.value ExitCode.InternalError
+        ExitCode.value ExitCode.InternalError

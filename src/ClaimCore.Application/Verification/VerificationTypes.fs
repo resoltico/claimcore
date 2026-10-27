@@ -49,7 +49,8 @@ type VerificationResult =
     | Verified of LedgerPosition
     | Diverged of VerificationDivergence
 
-module VerificationFindings =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module VerificationFinding =
     let vocabulary =
         Vocabulary.ofUnion<VerificationFinding> "finding" TokenCasing.ScreamingSnake None
 

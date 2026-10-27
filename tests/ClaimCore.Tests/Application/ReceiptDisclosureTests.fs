@@ -224,7 +224,7 @@ let tests =
                     Role.Auditor, true, true
                 ] do
                 testCase
-                    (RoleTokens.token role + " current and superseded history disclosure")
+                    (Role.token role + " current and superseded history disclosure")
                     (roles role readable full)
             testCase "stewardship replay retains full-history restrictions" stewardship
             testCase

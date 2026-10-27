@@ -45,7 +45,7 @@ module CliInvocations =
         collect [] None None arguments
 
     let private help topic language =
-        CliCommands.parseTopic topic
+        CliTopic.parse topic
         |> Option.map (fun topic -> CliInvocation.Help(topic, language))
         |> Option.map Ok
         |> Option.defaultValue (Error CliUsageIssue.Topic)
@@ -135,7 +135,7 @@ module CliInvocations =
         | [ flag ] when List.contains flag CliCommands.aliases ->
             Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
         | head :: tail ->
-            match CliCommands.parseCommand head with
+            match CliCommand.parse head with
             | Some command -> admitCommand command tail
             | None -> Ok(CliInvocation.Verb arguments)
 

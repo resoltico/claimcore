@@ -22,13 +22,13 @@ let tests =
         [
             testCase "every actor-facing act occurs exactly once" (fun () ->
                 let actual =
-                    OperationCatalog.mutations |> List.choose _.Act |> List.map ActKinds.token
+                    OperationCatalog.mutations |> List.choose _.Act |> List.map ActKind.token
 
                 let expected =
-                    (CaseActKinds.all |> List.map CaseActKinds.token)
-                    @ (AuthorityKinds.all
+                    (CaseActKind.all |> List.map CaseActKind.token)
+                    @ (AuthorityKind.all
                        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-                       |> List.map AuthorityKinds.token)
+                       |> List.map AuthorityKind.token)
 
                 Expect.equal
                     (Set.ofList actual)
@@ -57,7 +57,7 @@ let tests =
                     |> List.choose (fun input ->
                         match input.Name with
                         | CatalogInputName.Field field when field <> BusinessField.CaseReference ->
-                            Some(Record.key field)
+                            Some(BusinessField.key field)
                         | _ -> None)
 
                 Expect.equal

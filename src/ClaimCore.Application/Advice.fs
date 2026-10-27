@@ -72,8 +72,9 @@ module internal Advice =
             if can principal actor Capability.Register ResourceScope.Installation then
                 yield InstallationOffer.Open
             if can principal actor Capability.ManageAuthority ResourceScope.Installation then
-                for kind in AuthorityKinds.all do
-                    yield InstallationOffer.AuthorityAct kind
+                for kind in AuthorityKind.all do
+                    if kind <> AuthorityKind.ProvisionOwner then
+                        yield InstallationOffer.AuthorityAct kind
         ]
 
     let views principal actor =

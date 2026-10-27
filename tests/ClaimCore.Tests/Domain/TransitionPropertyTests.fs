@@ -266,7 +266,7 @@ let private availabilityProperty =
 
         let claim = reach state
         let expected = expectedActs state |> Set.ofList
-        let actual = (Case.eligibleActs claim |> List.map CaseActKinds.token) |> Set.ofList
+        let actual = (Case.eligibleActs claim |> List.map CaseActKind.token) |> Set.ofList
         return actual = expected && executionMatchesAdvertisement claim expected
     }
 

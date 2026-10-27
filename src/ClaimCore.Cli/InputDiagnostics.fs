@@ -7,6 +7,7 @@ type CliGuidance =
     | ProtocolGuidance
     | ConfigurationIssue
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CliGuidance =
     let vocabulary =
         Vocabulary.ofUnion<CliGuidance> "guidance" TokenCasing.ScreamingSnake (Some "CLI_")
@@ -29,6 +30,18 @@ type ConfigurationIssue =
     | Invalid
     | PrivateInputRefused
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CliSetting =
+    let vocabulary = Vocabulary.ofUnion<CliSetting> "setting" TokenCasing.CamelCase None
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ConfigurationIssue =
+    let vocabulary =
+        Vocabulary.ofUnion<ConfigurationIssue> "issue" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary
+
 module InputDiagnostics =
     let configurationId = CliGuidance.token CliGuidance.ConfigurationIssue
     let localId = "CLI_LOCAL_FAILURE"
@@ -46,15 +59,8 @@ module InputDiagnostics =
         | CliSetting.ServiceTrustRoot -> "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
 
     let settings =
-        Vocabulary.ofUnion<CliSetting> "setting" TokenCasing.CamelCase None
-        |> Vocabulary.all
+        Vocabulary.all CliSetting.vocabulary
         |> List.map (fun setting -> setting, settingName setting)
-
-    let private issueVocabulary =
-        Vocabulary.ofUnion<ConfigurationIssue> "issue" TokenCasing.ScreamingSnake None
-
-    let configurationIssues = Vocabulary.entries issueVocabulary
-    let issueToken = Vocabulary.token issueVocabulary
 
 /// Existing CLI admission/read bounds; help and boundary consumers share these exact values.
 module CliConfigurationLimits =

@@ -102,19 +102,19 @@ let private requestBytes () =
 
 let private failurePhases () =
     for endpoint in Api.all do
-        for reason in ClaimCore.Protocol.HostFailures.all do
+        for reason in ClaimCore.Protocol.HostFailureReason.all do
             use handler =
                 new Handler(fun _ ->
                     Task.FromResult(
                         response
-                            (ClaimCore.Protocol.HostFailures.status reason)
+                            (ClaimCore.Protocol.HostFailureReason.status reason)
                             (HostFailureCodecs.encode reason)
                     ))
 
             let expected =
                 if
                     ((Api.executesLedger endpoint)
-                     && ClaimCore.Protocol.HostFailures.phase reason
+                     && ClaimCore.Protocol.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
                     4

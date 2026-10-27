@@ -165,8 +165,8 @@ let private context =
                 EffectiveBusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        Capabilities = []
-        Views = []
+        Capability = []
+        View = []
         Offers = []
     }
 

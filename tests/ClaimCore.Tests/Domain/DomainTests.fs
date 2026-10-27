@@ -9,7 +9,7 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private availableActs record =
-    Case.eligibleActs record |> List.map CaseActKinds.token
+    Case.eligibleActs record |> List.map CaseActKind.token
 
 let private registrationTests =
     testList

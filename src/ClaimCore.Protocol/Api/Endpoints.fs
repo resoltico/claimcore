@@ -14,7 +14,8 @@ type EndpointEffect =
     | OperationalWrite
     | LedgerExecution
 
-module EndpointEffects =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module EndpointEffect =
     let vocabulary =
         Vocabulary.ofUnion<EndpointEffect> "effect" TokenCasing.ScreamingSnake None
 
@@ -25,7 +26,8 @@ type HostEndpoint =
     | Session
     | Logout
 
-module HostEndpoints =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module HostEndpoint =
     let vocabulary =
         Vocabulary.define "endpoint" [ HostEndpoint.Session; HostEndpoint.Logout ] (function
             | HostEndpoint.Session -> "session"
@@ -41,8 +43,8 @@ type EndpointId =
 module EndpointIds =
     let token =
         function
-        | EndpointId.Host value -> Vocabulary.token HostEndpoints.vocabulary value
-        | EndpointId.Actor value -> Vocabulary.token ActorEndpoints.vocabulary value
+        | EndpointId.Host value -> Vocabulary.token HostEndpoint.vocabulary value
+        | EndpointId.Actor value -> Vocabulary.token ActorEndpoint.vocabulary value
 
 [<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
@@ -216,8 +218,8 @@ module Api =
         | ActorEndpoint.AuthorityGrants -> Route.describe authorityGrants
 
     let all =
-        (HostEndpoints.all |> List.map forHost)
-        @ (ActorEndpoints.all |> List.map forActor)
+        (HostEndpoint.all |> List.map forHost)
+        @ (ActorEndpoint.all |> List.map forActor)
 
     let identity (endpoint: Route) = endpoint.Id
     let id (endpoint: Route) = endpoint.Token

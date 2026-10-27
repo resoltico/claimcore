@@ -79,7 +79,7 @@ let private domain () =
 
 let private diagnosticGroups () =
     let actual =
-        InputTargets.all
+        InputTarget.all
         |> List.choose (function
             | InputTarget.Group group, token -> Some(group, token)
             | _ -> None)
@@ -138,7 +138,8 @@ let private locales () =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
 
         for row in Record.fields do
-            for key in [ RecordFields.labelId row.Field; RecordFields.meaningId row.Field ] do
+            for key in
+                [ FieldPresentation.labelId row.Field; FieldPresentation.meaningId row.Field ] do
                 Expect.isTrue
                     (document.RootElement.TryGetProperty key |> fst)
                     "Locale has both field messages"

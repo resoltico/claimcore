@@ -70,7 +70,7 @@ module UsageText =
 
     let renderHost language arguments issue =
         let commandText = List.tryHead arguments |> Option.defaultValue "help"
-        let command = CliCommands.parseCommand commandText
+        let command = CliCommand.parse commandText
 
         let problem =
             match command, issue with

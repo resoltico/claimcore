@@ -32,10 +32,9 @@ let private aliases () =
                 "Extra operands never dispatch"
 
     for language in LocalizationPolicy.languages do
-        for topic in CliCommands.topics do
+        for topic in CliTopic.all do
             Expect.equal
-                (CliInvocations.admit
-                    [ "help"; CliCommands.topicToken topic; "--language"; language ])
+                (CliInvocations.admit [ "help"; CliTopic.token topic; "--language"; language ])
                 (Ok(CliInvocation.Help(topic, language)))
                 "Canonical localized help"
 

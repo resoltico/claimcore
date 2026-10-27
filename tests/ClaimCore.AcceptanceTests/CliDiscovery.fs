@@ -120,9 +120,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
         ProcessRunner.dotnet 8_000 fixture.Cli args environment input
 
     for language in LocalizationPolicy.languages do
-        for topic in CliCommands.topics do
-            let result =
-                invoke [ "help"; CliCommands.topicToken topic; "--language"; language ] None
+        for topic in CliTopic.all do
+            let result = invoke [ "help"; CliTopic.token topic; "--language"; language ] None
 
             Expect.equal result.ExitCode 0 "All topics work offline"
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
@@ -140,8 +139,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 identity
                 "Human summary includes exact generated capability and field identities"
 
-    for commandName in CliCommands.commands do
-        let command = CliCommands.commandToken commandName
+    for commandName in CliCommand.all do
+        let command = CliCommand.token commandName
 
         for alias in [ "--help"; "-h" ] do
             let result = invoke [ command; alias ] None

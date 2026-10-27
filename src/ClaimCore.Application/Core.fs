@@ -53,7 +53,7 @@ module internal Core =
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> BusinessFields.values fields |> Map.ofList
+               } -> BusinessField.values fields |> Map.ofList
         | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =

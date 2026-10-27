@@ -32,8 +32,8 @@ module MessageGeneration =
                                 ])
 
                     yield family + "." + definition.Id, JsonValue.Object parameters
-            for failure in HostFailures.all do
-                yield "host." + HostFailures.code failure, JsonValue.Object []
+            for failure in HostFailureReason.all do
+                yield "host." + HostFailureReason.code failure, JsonValue.Object []
         ]
         |> Map.ofList
         |> Map.toList

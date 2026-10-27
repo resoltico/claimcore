@@ -84,8 +84,8 @@ let private contextCodec () =
                         EffectiveBusinessDate = today
                         TimeZoneId = "Etc/UTC"
                     }
-                Capabilities = []
-                Views = []
+                Capability = []
+                View = []
                 Offers = []
             })
 
@@ -232,7 +232,7 @@ let private previewCodecs () =
         |> ignore
 
 let private diagnostics () =
-    for fault, _ in CoreFaults.all do
+    for fault, _ in CoreFault.all do
         admitted Api.caseGet.Output (ReadReply.Failed fault) |> ignore
 
     for value, expectedCode in
@@ -566,7 +566,7 @@ let private authorityFieldPresentation () =
 
     Expect.equal
         (Set.ofList names)
-        (Vocabulary.tokens TechnicalInputs.vocabulary |> Set.ofList)
+        (Vocabulary.tokens TechnicalInput.vocabulary |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do

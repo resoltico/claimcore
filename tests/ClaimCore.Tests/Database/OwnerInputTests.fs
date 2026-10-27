@@ -139,7 +139,7 @@ let private usageAndExits () =
             ExitCode.InternalError, 70
             ExitCode.Cancelled, 130
         ] do
-        Expect.equal (ExitCodes.value code) expected "Independent literal exit number"
+        Expect.equal (ExitCode.value code) expected "Independent literal exit number"
 
 [<Tests>]
 let tests =

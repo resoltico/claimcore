@@ -52,7 +52,7 @@ module internal Projections =
         {
             CaseReference = reference
             Status =
-                CaseStatuses.parse (field<string> BusinessField.Status row)
+                CaseStatus.parse (field<string> BusinessField.Status row)
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid stored status."))
             Registration =
@@ -128,7 +128,7 @@ module internal Projections =
         }
 
     let private role row =
-        RoleTokens.parse (required<string> 0 row)
+        Role.parse (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -141,7 +141,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            RoleTokens.parse role
+                            Role.parse role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -188,7 +188,7 @@ module internal Projections =
             | None -> return view
             | Some actor ->
                 let forbidden =
-                    Authority.invalidRoles principal |> List.map RoleTokens.token |> List.toArray
+                    Authority.invalidRoles principal |> List.map Role.token |> List.toArray
 
                 let! rows =
                     DatabaseSession.rows
@@ -196,7 +196,7 @@ module internal Projections =
                         "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
                         [|
                             box actor.ActorId
-                            box (readRoles |> List.map RoleTokens.token |> List.toArray)
+                            box (readRoles |> List.map Role.token |> List.toArray)
                             box forbidden
                         |]
                         token

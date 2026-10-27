@@ -226,8 +226,8 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                             |> Option.forall (fun after ->
                                 let ordering =
                                     StringComparer.Ordinal.Compare(
-                                        RoleTokens.token role,
-                                        RoleTokens.token after.Role
+                                        Role.token role,
+                                        Role.token after.Role
                                     )
 
                                 ordering > 0
@@ -252,11 +252,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                                 position
                             ))
                 |> Seq.sortWith (fun (_, a) (_, b) ->
-                    let role =
-                        StringComparer.Ordinal.Compare(
-                            RoleTokens.token a.Role,
-                            RoleTokens.token b.Role
-                        )
+                    let role = StringComparer.Ordinal.Compare(Role.token a.Role, Role.token b.Role)
 
                     if role = 0 then compareScope a.CaseId b.CaseId else role)
                 |> Seq.toList

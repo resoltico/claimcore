@@ -100,8 +100,8 @@ let description =
                 EffectiveBusinessDate = DateOnly(2026, 10, 13)
                 TimeZoneId = "Etc/UTC"
             }
-        Views = [ View.Cases; View.Authority; View.Operations ]
-        Capabilities = Capabilities.all
+        View = [ View.Cases; View.Authority; View.Operations ]
+        Capability = Capability.all
         Offers = []
     }
 

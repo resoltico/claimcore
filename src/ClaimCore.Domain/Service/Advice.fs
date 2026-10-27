@@ -42,8 +42,8 @@ type CaseAdvice =
 type ActorContext =
     {
         Runtime: RuntimeContext
-        Capabilities: Capability list
-        Views: View list
+        Capability: Capability list
+        View: View list
         Offers: InstallationOffer list
     }
 
@@ -68,5 +68,6 @@ type AdvisoryReview =
         Context: RuntimeContext
     }
 
-module Views =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module View =
     let vocabulary = Vocabulary.ofUnion<View> "view" TokenCasing.ScreamingSnake None

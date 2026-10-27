@@ -11,17 +11,17 @@ module Catalog =
                     {
                         Name = row.Field
                         Group = row.Group
-                        LabelId = RecordFields.labelId row.Field
-                        MeaningId = RecordFields.meaningId row.Field
-                        Scalar = RecordFields.descriptor row.Field
+                        LabelId = FieldPresentation.labelId row.Field
+                        MeaningId = FieldPresentation.meaningId row.Field
+                        Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
                     })
             InputFields =
-                Vocabulary.all TechnicalInputs.vocabulary
+                Vocabulary.all TechnicalInput.vocabulary
                 |> List.map (fun input ->
                     {
-                        Name = TechnicalInputs.token input
-                        LabelId = Vocabulary.messageKey TechnicalInputs.vocabulary input "label"
+                        Name = TechnicalInput.token input
+                        LabelId = Vocabulary.messageKey TechnicalInput.vocabulary input "label"
                         MeaningId =
                             (match input with
                              | TechnicalInput.Target
@@ -29,7 +29,7 @@ module Catalog =
                              | _ ->
                                  Some(
                                      Vocabulary.messageKey
-                                         TechnicalInputs.vocabulary
+                                         TechnicalInput.vocabulary
                                          input
                                          "meaning"
                                  ))

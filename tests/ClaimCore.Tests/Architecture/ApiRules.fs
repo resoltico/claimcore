@@ -83,6 +83,7 @@ type ArchitectureRule =
     | Durable
     | Serializer
     | ApplicationProtocol
+    | VocabularyModuleNaming
     | DomainBoundary
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
@@ -90,6 +91,40 @@ let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
         invalidOp (name + ": no forbidden targets matched")
 
     provider
+
+/// Reflection identifies declarations; ArchUnit evaluates the compiled product and negative subjects.
+let vocabularyModules () =
+    [
+        "ClaimCore.Domain"
+        "ClaimCore.Protocol"
+        "ClaimCore.RecordFormat"
+        "ClaimCore.Application"
+        "ClaimCore.Postgres"
+        "claimcore"
+        "claimcore-server"
+        "claimcore-database"
+        "ClaimCore.Tests"
+    ]
+    |> List.collect (fun name -> Assembly.Load(name).GetTypes() |> Array.toList)
+    |> List.choose (fun declaration ->
+        let property =
+            declaration.GetProperty(
+                "vocabulary",
+                BindingFlags.Public
+                ||| BindingFlags.NonPublic
+                ||| BindingFlags.Static
+                ||| BindingFlags.DeclaredOnly
+            )
+
+        match Option.ofObj property with
+        | Some property when
+            property.PropertyType.IsGenericType
+            && property.PropertyType.GetGenericTypeDefinition() =
+                typedefof<ClaimCore.Domain.Vocabulary<_>>
+            ->
+            Some(declaration, property.PropertyType.GetGenericArguments()[0])
+        | _ -> None)
+
 
 let rule architecture name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
@@ -119,6 +154,32 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")
             |> targets "JsonSerializer"
+        )
+        :> IArchRule
+    | ArchitectureRule.VocabularyModuleNaming ->
+        let declarations = vocabularyModules ()
+
+        let names =
+            declarations
+            |> List.map (fun (declaration, _) ->
+                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
+            |> String.concat "|"
+
+        Types().That().HaveFullNameMatching("^(" + names + ")$")
+        |> targets "vocabulary modules"
+        |> ignore
+
+        clauses.FollowCustomCondition(
+            System.Func<IType, bool>(fun candidate ->
+                declarations
+                |> List.tryFind (fun (declaration, _) ->
+                    nonNull declaration.FullName = candidate.FullName)
+                |> Option.forall (fun (declaration, value) ->
+                    declaration.Assembly = value.Assembly
+                    && nonNull declaration.FullName =
+                        nonNull value.Namespace + "." + value.Name + "Module")),
+            "declare vocabulary in the value type's module",
+            "Vocabulary must be declared by <Type>Module in the value type's namespace and assembly"
         )
         :> IArchRule
     | ArchitectureRule.DomainBoundary ->

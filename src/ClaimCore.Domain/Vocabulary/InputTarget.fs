@@ -1,6 +1,7 @@
 namespace ClaimCore.Domain
 
-module InputTargets =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module InputTarget =
     let private definitions =
         (Record.fields
          |> List.filter (fun row -> row.Field <> BusinessField.Status)
@@ -20,7 +21,7 @@ module InputTargets =
 
     let vocabulary =
         Vocabulary.define "field" (List.map fst definitions) (function
-            | InputTarget.Field field -> Record.key field
+            | InputTarget.Field field -> BusinessField.key field
             | InputTarget.OperationId -> "operationId"
             | InputTarget.ExpectedRevision -> "expectedRevision"
             | InputTarget.Group group -> RecordGroup.token group

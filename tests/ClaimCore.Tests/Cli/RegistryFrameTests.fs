@@ -146,7 +146,7 @@ let private results () =
         frameRoundTrip (reply (FrameResult.LocalFailure failure) DeliveryState.NotSent)
 
     for setting, _ in InputDiagnostics.settings do
-        for issue, _ in InputDiagnostics.configurationIssues do
+        for issue, _ in ConfigurationIssue.all do
             frameRoundTrip (
                 reply
                     (FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)))

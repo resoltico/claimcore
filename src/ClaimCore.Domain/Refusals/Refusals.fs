@@ -41,14 +41,15 @@ module Refusals =
         | _ -> None
 
     let field refusal =
-        target refusal |> Option.map InputTargets.token
+        target refusal |> Option.map InputTarget.token
 
     let actualRevision =
         function
         | Refusal.RevisionConflict revision -> Some revision
         | _ -> None
 
-module RecommendedActions =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module RecommendedAction =
     let vocabulary =
         Vocabulary.ofUnion<RecommendedAction> "action" TokenCasing.ScreamingSnake None
 

@@ -12,7 +12,7 @@ module RequestRecord =
         | Error(Refusal.InvalidInput(target, _)) ->
             Error
                 {
-                    Field = "$." + InputTargets.token target
+                    Field = "$." + InputTarget.token target
                     Message = "Invalid case-request format."
                 }
         | Error _ ->

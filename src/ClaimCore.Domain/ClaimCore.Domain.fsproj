@@ -7,12 +7,12 @@
     <Compile Include="Values.fs" />
     <Compile Include="Record.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
-    <Compile Include="Vocabulary/InputTargets.fs" />
+    <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="Refusals/DiagnosticMetadata.fs" />
     <Compile Include="Refusals/Refusals.fs" />
-    <Compile Include="Vocabulary/Capabilities.fs" />
+    <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
-    <Compile Include="Vocabulary/PrincipalKinds.fs" />
+    <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />
@@ -36,6 +36,5 @@
     <Compile Include="Service/Replies.fs" />
     <Compile Include="Service/Operations.fs" />
     <Compile Include="Service/Resolution.fs" />
-    <Compile Include="Service/BusinessFields.fs" />
   </ItemGroup>
 </Project>

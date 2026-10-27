@@ -131,3 +131,22 @@ type DomainTaskShape =
             do! Task.Yield()
             return typeof<ClaimCore.RecordFormat.DecodeProblem>
         }
+
+[<RequireQualifiedAccess>]
+type VocabularySample = Sample
+
+module MisnamedVocabulary =
+    let vocabulary =
+        Vocabulary.ofUnion<VocabularySample> "sample" TokenCasing.CamelCase None
+
+    let Direct () = Vocabulary.all vocabulary
+
+module MisnamedTaskVocabulary =
+    let vocabulary =
+        Vocabulary.ofUnion<VocabularySample> "sample" TokenCasing.CamelCase None
+
+    let TaskShape () =
+        task {
+            do! Task.Yield()
+            return Vocabulary.all vocabulary
+        }

@@ -59,20 +59,20 @@ module DiagnosticCodecs =
     let violation = taggedOn "code" "Violation" violationVariants
 
     let private actionField action =
-        ResponseScalars.fixedField "action" (RecommendedActions.token action)
+        ResponseScalars.fixedField "action" (RecommendedAction.token action)
 
     let private nullaryRefusalFields refusal =
         let fields = record () |> actionField (Refusals.action refusal)
 
         match Refusals.target refusal with
         | None -> fields
-        | Some target -> fields |> ResponseScalars.fixedField "target" (InputTargets.token target)
+        | Some target -> fields |> ResponseScalars.fixedField "target" (InputTarget.token target)
 
     let private diagnosticVariants =
         let inputFields =
             record id
             |> actionField RecommendedAction.CorrectInput
-            |> field "target" id (enumeration InputTargets.all |> named "InputTarget")
+            |> field "target" id (enumeration InputTarget.all |> named "InputTarget")
 
         (violationVariants
          |> List.map (
@@ -142,7 +142,7 @@ module DiagnosticCodecs =
     let parameters refusal = describe refusal |> snd
 
     let private faultVariants =
-        CoreFaults.all
+        CoreFault.all
         |> List.map (fun (value, code) ->
             variant
                 code

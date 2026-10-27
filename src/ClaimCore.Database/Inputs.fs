@@ -30,7 +30,8 @@ type CommandName =
     | Help
     | Version
 
-module Commands =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CommandName =
     let vocabulary =
         Vocabulary.ofUnion<CommandName> "command" TokenCasing.ScreamingSnake None
 
@@ -125,7 +126,7 @@ module Inputs =
         match arguments with
         | [] -> Ok Help
         | first :: rest ->
-            match Commands.parse first with
+            match CommandName.parse first with
             | None ->
                 Error
                     {
@@ -177,3 +178,8 @@ module Inputs =
             decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module UsageIssue =
+    let vocabulary =
+        Vocabulary.ofUnion<UsageIssue> "usage" TokenCasing.ScreamingSnake None

@@ -159,6 +159,19 @@ let private reviewAndFences () =
         (Advice.installationOffers service (actor service (id 2) [ Role.Owner ] []))
         "Invalid service owner grants convey no offers"
 
+    let installationOwner = actor owner (id 1) [ Role.Owner ] []
+
+    Expect.equal
+        (Advice.installationOffers owner installationOwner)
+        [
+            InstallationOffer.AuthorityAct AuthorityKind.Register
+            InstallationOffer.AuthorityAct AuthorityKind.Grant
+            InstallationOffer.AuthorityAct AuthorityKind.Revoke
+            InstallationOffer.AuthorityAct AuthorityKind.Enable
+            InstallationOffer.AuthorityAct AuthorityKind.Disable
+        ]
+        "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
+
 [<Tests>]
 let tests =
     testList

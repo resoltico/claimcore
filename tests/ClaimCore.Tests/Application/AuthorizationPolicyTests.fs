@@ -93,20 +93,19 @@ let private expectedPermission role capabilities principal grant resource capabi
     && (not humanRole || principal = human)
 
 let private matrix () =
-    Expect.equal RoleTokens.all.Length 7 "Seven roles"
+    Expect.equal Role.all.Length 7 "Seven roles"
 
     Expect.isTrue
-        (Set.ofList RoleTokens.all =
-            (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
+        (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
         "Exact role inventory"
 
     Expect.isTrue
-        (Set.ofList Capabilities.all = Set.ofList allCapabilities)
+        (Set.ofList Capability.all = Set.ofList allCapabilities)
         "Exact capability inventory"
 
     for role, token, capabilities in expectedRoles do
-        Expect.equal (RoleTokens.token role) token "Independent role token"
-        Expect.equal (RoleTokens.parse token) (Some role) "Role parser"
+        Expect.equal (Role.token role) token "Independent role token"
+        Expect.equal (Role.parse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
             for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
@@ -133,7 +132,7 @@ let private matrix () =
                             "Independent role, principal and scope expectation"
 
     for token in [ "CASE_EDITOR"; "case_handler"; "" ] do
-        Expect.isNone (RoleTokens.parse token) "Unsupported role names refuse"
+        Expect.isNone (Role.parse token) "Unsupported role names refuse"
 
 let private invalidPrincipals () =
     for value in [ String([| char 0xD800 |]); "a\u0000b"; "a﷐b"; "a￿b" ] do
@@ -438,7 +437,7 @@ let private noUsableCorrectionOffer () =
 
 let private humanOnlyCapabilities () =
     let derived policy =
-        RoleTokens.all
+        Role.all
         |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
 
     Expect.equal
@@ -447,7 +446,7 @@ let private humanOnlyCapabilities () =
         "Current human-only roles"
 
     Expect.equal
-        (RoleTokens.all |> List.filter Authority.humanOnlyRole)
+        (Role.all |> List.filter Authority.humanOnlyRole)
         [ Role.Owner; Role.DataSteward ]
         "Production roles derive from capabilities"
 

@@ -26,8 +26,8 @@ let main arguments =
 
                 bytes,
                 code,
-                (code = ExitCodes.value ExitCode.OutcomeUnknown
-                 || (mutates && code = ExitCodes.value ExitCode.Success))
+                (code = ExitCode.value ExitCode.OutcomeUnknown
+                 || (mutates && code = ExitCode.value ExitCode.Success))
         with _ ->
             let bytes, code = Replies.failed CoreFault.InternalError
             bytes, code, false
@@ -35,7 +35,7 @@ let main arguments =
     try
         Replies.write (Console.OpenStandardOutput()) (bytes, code, deliveryUnknown)
     with _ ->
-        ExitCodes.value (
+        ExitCode.value (
             if deliveryUnknown then
                 ExitCode.OutcomeUnknown
             else

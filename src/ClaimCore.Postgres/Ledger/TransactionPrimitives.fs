@@ -33,8 +33,8 @@ module internal TransactionPages =
                         DatabaseSession.parameter after
                         box (visibility = CaseVisibility.Every)
                         box actor
-                        box (roles |> List.map RoleTokens.token |> List.toArray)
-                        box (forbidden |> List.map RoleTokens.token |> List.toArray)
+                        box (roles |> List.map Role.token |> List.toArray)
+                        box (forbidden |> List.map Role.token |> List.toArray)
                         box (limit + 1)
                     |]
                     token
@@ -85,7 +85,7 @@ module internal TransactionPages =
                     [|
                         box target
                         DatabaseSession.parameter (
-                            after |> Option.map (fun value -> RoleTokens.token value.Role)
+                            after |> Option.map (fun value -> Role.token value.Role)
                         )
                         DatabaseSession.parameter (after |> Option.bind _.CaseId)
                         box (limit + 1)
@@ -159,7 +159,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-                        [| box (RoleTokens.token Role.Owner) |]
+                        [| box (Role.token Role.Owner) |]
                         token
 
                 return DatabaseSession.value<int> 0 rows.Head

@@ -151,14 +151,14 @@ let private matrix =
             let revision = if view.IsSome then 1L else 0L
 
             for kind, act in acts do
-                let allowed = List.contains (CaseActKinds.token kind) expected
+                let allowed = List.contains (CaseActKind.token kind) expected
                 let result = CaseFixtures.decide today (request revision act) current
                 Expect.equal (Result.isOk result) allowed "Independent transition expectation"
 
             match current with
             | None -> ()
             | Some value ->
-                let actual = Case.eligibleActs value |> List.map CaseActKinds.token |> Set.ofList
+                let actual = Case.eligibleActs value |> List.map CaseActKind.token |> Set.ofList
 
                 Expect.isTrue
                     (actual = Set.ofList expected)

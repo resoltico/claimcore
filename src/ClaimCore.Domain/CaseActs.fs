@@ -58,4 +58,4 @@ module CaseActs =
         | CaseAct.Reinstate _ -> CaseActKind.Reinstate
         | CaseAct.Erase -> CaseActKind.Erase
 
-    let name act = kind act |> CaseActKinds.token
+    let name act = kind act |> CaseActKind.token

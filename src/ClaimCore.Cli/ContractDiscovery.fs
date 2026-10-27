@@ -42,7 +42,7 @@ module ContractDiscovery =
                     id = Api.id endpoint
                     method = (Api.method endpoint).Method
                     path = Api.path endpoint
-                    effect = EndpointEffects.token (Api.effect endpoint)
+                    effect = EndpointEffect.token (Api.effect endpoint)
                 |})
 
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}
@@ -57,7 +57,8 @@ module ContractDiscovery =
                     DiagnosticCodecs.faultDefinitions
                     |> List.map (fun definition -> "fault." + definition.Id)
                 yield!
-                    HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
+                    HostFailureReason.all
+                    |> List.map (fun reason -> "host." + HostFailureReason.code reason)
             ]
             |> Set.ofList
 

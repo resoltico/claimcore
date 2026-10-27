@@ -100,10 +100,10 @@ module internal Queries =
                             EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
-                    Views = Advice.views principal actor
+                    View = Advice.views principal actor
                     Offers = Advice.installationOffers principal actor
-                    Capabilities =
-                        Capabilities.all
+                    Capability =
+                        Capability.all
                         |> List.filter (fun capability ->
                             Authority.can principal actor capability ResourceScope.Installation)
                 }

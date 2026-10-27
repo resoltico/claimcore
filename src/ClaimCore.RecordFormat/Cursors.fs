@@ -140,7 +140,7 @@ module Cursors =
                     after.CaseId
                     |> Option.map (fun id -> JsonValue.String(id.ToString("D")))
                     |> Option.defaultValue JsonValue.Null
-                    "role", JsonValue.String(RoleTokens.token after.Role)
+                    "role", JsonValue.String(Role.token after.Role)
                 ]
 
         encode
@@ -158,7 +158,7 @@ module Cursors =
             | JsonValue.String value -> uuid value |> Option.map Some
             | _ -> None
 
-        match RoleTokens.parse role, scope with
+        match Role.parse role, scope with
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 

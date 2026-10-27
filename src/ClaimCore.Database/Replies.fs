@@ -51,9 +51,7 @@ module Replies =
         |> field "number" snd (integer 0L 255L |> map int int64)
         |> build
 
-    let private usageIssue =
-        Vocabulary.ofUnion<UsageIssue> "usage" TokenCasing.ScreamingSnake None
-        |> VocabularyCodec.create
+    let private usageIssue = UsageIssue.vocabulary |> VocabularyCodec.create
 
     let private successVariants =
         [
@@ -136,7 +134,7 @@ module Replies =
                  |> field
                      "finding"
                      (fun (value: VerificationDivergence) -> value.Finding)
-                     (enumeration VerificationFindings.all))
+                     (enumeration VerificationFinding.all))
             variant
                 "USAGE_ERROR"
                 Reply.Usage
@@ -195,7 +193,7 @@ module Replies =
         | Reply.Version _ -> ExitCode.Success
 
     let encode reply =
-        Codec.encode codec reply, ExitCodes.value (exit reply)
+        Codec.encode codec reply, ExitCode.value (exit reply)
 
     let initialized id = Reply.Initialized id |> encode
     let head position = Reply.Head position |> encode
@@ -234,18 +232,18 @@ module Replies =
     let usage (error: UsageError) =
         let usage =
             error.Command
-            |> Option.map (Commands.synopsis >> List.singleton)
-            |> Option.defaultWith (fun () -> Commands.all |> List.map Commands.synopsis)
+            |> Option.map (CommandName.synopsis >> List.singleton)
+            |> Option.defaultWith (fun () -> CommandName.all |> List.map CommandName.synopsis)
 
         encode (Reply.Usage(error.Issue, usage))
 
     let help () =
         encode (
             Reply.Help(
-                Commands.all |> List.map Commands.token,
-                ExitCodes.all
-                |> List.filter ExitCodes.database
-                |> List.map (fun code -> ExitCodes.token code, ExitCodes.value code)
+                CommandName.all |> List.map CommandName.token,
+                ExitCode.all
+                |> List.filter ExitCode.database
+                |> List.map (fun code -> ExitCode.token code, ExitCode.value code)
             )
         )
 
@@ -268,7 +266,7 @@ module Replies =
             output.Flush()
             code
         with _ ->
-            ExitCodes.value (
+            ExitCode.value (
                 if deliveryUnknown then
                     ExitCode.OutcomeUnknown
                 else

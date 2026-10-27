@@ -45,27 +45,29 @@ module PrincipalKey =
                     Violation.PrincipalFormat
             )
 
-        let maximum = if kind = PrincipalKinds.Human then 512 else 256
+        let maximum = if kind = PrincipalKind.humanToken then 512 else 256
 
         match issuer issuerValue, identifier maximum subject with
         | false, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
         | _, false -> Error(issue InputTarget.PrincipalSubject subject)
-        | true, true when kind = PrincipalKinds.Human -> Ok(HumanPrincipal(issuerValue, subject))
-        | true, true when kind = PrincipalKinds.Service ->
+        | true, true when kind = PrincipalKind.humanToken ->
+            Ok(HumanPrincipal(issuerValue, subject))
+        | true, true when kind = PrincipalKind.serviceToken ->
             Ok(ServicePrincipal(issuerValue, subject))
         | _ -> Error(issue InputTarget.PrincipalSubject kind)
 
     let human issuerValue subject =
-        admit PrincipalKinds.Human issuerValue subject
+        admit PrincipalKind.humanToken issuerValue subject
 
     let service issuerValue clientId =
-        admit PrincipalKinds.Service issuerValue clientId
+        admit PrincipalKind.serviceToken issuerValue clientId
 
     /// Private storage projection; never infer identity from email, display name or groups.
     let storageParts =
         function
-        | HumanPrincipal(issuerValue, subject) -> PrincipalKinds.Human, issuerValue, subject
-        | ServicePrincipal(issuerValue, clientId) -> PrincipalKinds.Service, issuerValue, clientId
+        | HumanPrincipal(issuerValue, subject) -> PrincipalKind.humanToken, issuerValue, subject
+        | ServicePrincipal(issuerValue, clientId) ->
+            PrincipalKind.serviceToken, issuerValue, clientId
 
     let describe principal : Principal =
         let kind, issuer, subject = storageParts principal
@@ -77,7 +79,7 @@ module PrincipalKey =
         }
 
     let fromStorage kind issuerValue stableValue =
-        match Vocabulary.tryParse PrincipalKinds.vocabulary kind with
+        match Vocabulary.tryParse PrincipalKind.vocabulary kind with
         | Some PrincipalKind.Human -> human issuerValue stableValue
         | Some PrincipalKind.Service -> service issuerValue stableValue
         | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.PrincipalFormat))

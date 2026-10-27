@@ -15,7 +15,8 @@ type Capability =
     | ManageAuthority
     | ReadAuthority
 
-module Capabilities =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Capability =
     let vocabulary =
         Vocabulary.ofUnion<Capability> "capability" TokenCasing.ScreamingSnake None
 

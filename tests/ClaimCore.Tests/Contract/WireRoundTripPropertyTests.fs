@@ -234,8 +234,8 @@ let private tokens =
             "Field"
             "RecommendedAction"
             "History"
-            "Capabilities"
-            "Views"
+            "Capability"
+            "View"
             "Registration"
             "Decision"
             "Payment"
@@ -338,8 +338,8 @@ let private listBounds (path: string) =
                 "CaseAdvice.Acts", 12
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2
-                "ActorContext.Capabilities", 10
-                "ActorContext.Views", 3
+                "ActorContext.Capability", 10
+                "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
                 "CorrectionChoices.Payment", 3
                 "ActorContext.Offers", 4

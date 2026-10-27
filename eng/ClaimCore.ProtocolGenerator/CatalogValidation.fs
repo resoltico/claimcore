@@ -45,12 +45,12 @@ module CatalogValidation =
             ResponseCodecs.caseState.Write CaseState.Erased |> JsonValue.tryMember "kind"
 
         [
-            yield! CaseStatuses.all |> List.map CaseStatuses.token
-            yield! ActKinds.all |> List.map ActKinds.token
-            yield! RoleTokens.all |> List.map RoleTokens.token
+            yield! CaseStatus.all |> List.map CaseStatus.token
+            yield! ActKind.all |> List.map ActKind.token
+            yield! Role.all |> List.map Role.token
             yield! Lifecycle.all |> List.map Lifecycle.token
-            yield! CorrectionActions.all |> List.map CorrectionActions.token
-            yield! PrincipalKinds.all
+            yield! CorrectionGroupAction.all |> List.map CorrectionGroupAction.token
+            yield! PrincipalKind.all
             yield! List.distinct scopes
         ]
         |> Vocabulary.requireUniqueTokens "rendered token namespace"
@@ -89,8 +89,8 @@ module CatalogValidation =
                 ("fault." + definition.Id)
                 (definition.Parameters |> List.map _.Name |> Set.ofList)
 
-        for failure in HostFailures.all do
-            matches ("host." + HostFailures.code failure) Set.empty
+        for failure in HostFailureReason.all do
+            matches ("host." + HostFailureReason.code failure) Set.empty
 
     let validateReferences owner keys references =
         let unused = Set.difference keys references

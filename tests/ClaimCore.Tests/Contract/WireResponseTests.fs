@@ -71,7 +71,7 @@ let private malformed () =
         (Codec.decode 4096 DiagnosticCodecs.fault (bytes fault))
         "Fault action belongs to its reason"
 
-    for reason in HostFailures.all do
+    for reason in HostFailureReason.all do
         let encoded = HostFailureCodecs.encode reason
         let decoded = HostFailureCodecs.decode encoded |> accepted
 
@@ -133,7 +133,7 @@ let private frames () =
 
     roundTrip reply
 
-    for reason in HostFailures.all do
+    for reason in HostFailureReason.all do
         roundTrip
             { reply with
                 Result = FrameResult.HostFailure(HostFailureCodecs.ofReason reason)
@@ -203,7 +203,7 @@ let private openApi () =
 
         Expect.equal
             (operation.GetProperty("x-claimcore-effect").GetString())
-            (EndpointEffects.token (Api.effect endpoint))
+            (EndpointEffect.token (Api.effect endpoint))
             "Delivery effect is part of the hashed public contract"
 
         Expect.isTrue

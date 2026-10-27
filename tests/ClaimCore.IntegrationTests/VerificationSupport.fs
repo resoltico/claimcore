@@ -94,7 +94,7 @@ let private subject =
     function
     | RecordedTarget.Case value ->
         "CASE",
-        CaseActKinds.token value.Act,
+        CaseActKind.token value.Act,
         value.CaseId,
         Some value.Revision,
         Some value.BusinessDate

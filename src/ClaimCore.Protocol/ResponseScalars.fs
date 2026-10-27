@@ -75,9 +75,9 @@ module ResponseScalars =
     let countryCode = parsed CountryCode.parse CountryCode.format country
     let partyName = parsed PartyName.parse PartyName.format nonempty
 
-    let businessField = Vocabulary.tokens RecordFields.vocabulary |> tokens
+    let businessField = Vocabulary.tokens BusinessField.vocabulary |> tokens
 
-    let capability = Capabilities.all |> List.map Capabilities.token |> tokens
+    let capability = Capability.all |> List.map Capability.token |> tokens
 
     let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
         let codec = constant token

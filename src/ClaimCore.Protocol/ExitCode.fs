@@ -14,7 +14,8 @@ type ExitCode =
     | Cancelled
 
 /// One numeric table for the two executables and their published references.
-module ExitCodes =
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ExitCode =
     let vocabulary = Vocabulary.ofUnion<ExitCode> "exit" TokenCasing.CamelCase None
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
