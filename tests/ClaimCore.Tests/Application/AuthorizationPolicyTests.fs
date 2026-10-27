@@ -124,7 +124,7 @@ let private matrix () =
                             expectedPermission role capabilities principal scope resource capability
 
                         Expect.equal
-                            (ActorAuthorization.can
+                            (Authority.can
                                 principal
                                 (AuthorityView.ofActor (Some current))
                                 capability
@@ -160,7 +160,7 @@ let private invalidActors () =
             { current with Principal = service }
         ] do
         Expect.isFalse
-            (ActorAuthorization.can
+            (Authority.can
                 human
                 (AuthorityView.ofActor (Some invalid))
                 Capability.ReadCase
@@ -168,11 +168,7 @@ let private invalidActors () =
             "Invalid actor grants no rights"
 
     Expect.isFalse
-        (ActorAuthorization.can
-            human
-            AuthorityView.empty
-            Capability.ReadCase
-            (ResourceScope.Case caseId))
+        (Authority.can human AuthorityView.empty Capability.ReadCase (ResourceScope.Case caseId))
         "Absent actor grants no rights"
 
     let scoped =
@@ -186,7 +182,7 @@ let private invalidActors () =
             ]
 
     Expect.isFalse
-        (ActorAuthorization.can
+        (Authority.can
             human
             (AuthorityView.ofActor (Some scoped))
             Capability.ReadAuthority
@@ -214,7 +210,7 @@ let private ordinaryActs () =
 
     for act, capability in cases do
         Expect.equal
-            (ActorAuthorization.requiredCapabilities (CaseFixtures.act act))
+            (Authority.requiredCapabilities (CaseFixtures.act act))
             [ capability ]
             "Independent act capability"
 
@@ -261,7 +257,7 @@ let private corrections () =
         let act = (UnvalidatedCaseAct.Correct correction)
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities (CaseFixtures.act act))
+            (Authority.requiredCapabilities (CaseFixtures.act act))
             expected
             "Seven selected masks and all-KEEP"
 
@@ -284,9 +280,7 @@ let private corrections () =
             }
 
         Expect.equal
-            (ActorAuthorization.requiredCapabilities (
-                CaseFixtures.act (UnvalidatedCaseAct.Correct cleared)
-            ))
+            (Authority.requiredCapabilities (CaseFixtures.act (UnvalidatedCaseAct.Correct cleared)))
             expected
             "CLEAR selects the same capability"
 
@@ -310,7 +304,7 @@ let private reaffirmations () =
             })
 
     Expect.isFalse
-        (ActorAuthorization.canAct
+        (Authority.canAct
             human
             (AuthorityView.ofActor (Some handler))
             (ResourceScope.Case caseId)
@@ -445,21 +439,20 @@ let private noUsableCorrectionOffer () =
 let private humanOnlyCapabilities () =
     let derived policy =
         RoleTokens.all
-        |> List.filter (fun role ->
-            policy role |> List.exists ActorAuthorization.humanOnlyCapability)
+        |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
 
     Expect.equal
-        (derived ActorAuthorization.capabilities)
+        (derived Authority.policy)
         [ Role.Owner; Role.DataSteward ]
         "Current human-only roles"
 
     Expect.equal
-        (RoleTokens.all |> List.filter ActorAuthorization.humanOnlyRole)
+        (RoleTokens.all |> List.filter Authority.humanOnlyRole)
         [ Role.Owner; Role.DataSteward ]
         "Production roles derive from capabilities"
 
     let withSteward role =
-        let granted = ActorAuthorization.capabilities role
+        let granted = Authority.policy role
 
         if role = Role.CaseReader then
             Capability.Steward :: granted

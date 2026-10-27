@@ -1,28 +1,6 @@
-namespace ClaimCore.Application
-
-open ClaimCore.Contract
+namespace ClaimCore.Domain
 
 open System
-open ClaimCore.Domain
-open ClaimCore.RecordFormat
-
-[<RequireQualifiedAccess>]
-type AuthorityInputFailure =
-    | IssuerInvalid
-    | IdentityInvalid
-    | PrincipalInvalid
-    | RoleInvalid
-    | ActInvalid
-
-module AuthorityInputFailures =
-    let vocabulary =
-        Vocabulary.ofUnion<AuthorityInputFailure>
-            "AuthorityInputFailure"
-            TokenCasing.ScreamingSnake
-            None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
 
 /// Identity is the exact configured issuer plus its immutable subject or client ID.
 /// Email, display name, groups and a database login are deliberately absent.
@@ -40,32 +18,22 @@ module PrincipalKey =
                 || value.Length > 2048
                 || not (UnicodeText.isPersisted value)
             then
-                Error AuthorityInputFailure.IssuerInvalid
+                false
             else
                 let parsed = Uri(value, UriKind.Absolute)
 
-                if
-                    parsed.Scheme = Uri.UriSchemeHttps
-                    && parsed.UserInfo = ""
-                    && parsed.Query = ""
-                    && parsed.Fragment = ""
-                    && String.Equals(parsed.AbsoluteUri, value, StringComparison.Ordinal)
-                then
-                    Ok value
-                else
-                    Error AuthorityInputFailure.IssuerInvalid
+                parsed.Scheme = Uri.UriSchemeHttps
+                && parsed.UserInfo = ""
+                && parsed.Query = ""
+                && parsed.Fragment = ""
+                && String.Equals(parsed.AbsoluteUri, value, StringComparison.Ordinal)
         with :? UriFormatException ->
-            Error AuthorityInputFailure.IssuerInvalid
+            false
 
     let private identifier maximum value =
-        if
-            not (String.IsNullOrWhiteSpace value)
-            && value.Length <= maximum
-            && UnicodeText.isPersisted value
-        then
-            Ok value
-        else
-            Error AuthorityInputFailure.IdentityInvalid
+        not (String.IsNullOrWhiteSpace value)
+        && value.Length <= maximum
+        && UnicodeText.isPersisted value
 
     let admit kind issuerValue subject =
         let issue target value =
@@ -80,24 +48,21 @@ module PrincipalKey =
         let maximum = if kind = PrincipalKinds.Human then 512 else 256
 
         match issuer issuerValue, identifier maximum subject with
-        | Error _, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
-        | _, Error _ -> Error(issue InputTarget.PrincipalSubject subject)
-        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Human ->
-            Ok(HumanPrincipal(validIssuer, validSubject))
-        | Ok validIssuer, Ok validSubject when kind = PrincipalKinds.Service ->
-            Ok(ServicePrincipal(validIssuer, validSubject))
+        | false, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
+        | _, false -> Error(issue InputTarget.PrincipalSubject subject)
+        | true, true when kind = PrincipalKinds.Human -> Ok(HumanPrincipal(issuerValue, subject))
+        | true, true when kind = PrincipalKinds.Service ->
+            Ok(ServicePrincipal(issuerValue, subject))
         | _ -> Error(issue InputTarget.PrincipalSubject kind)
 
     let human issuerValue subject =
         admit PrincipalKinds.Human issuerValue subject
-        |> Result.mapError (fun _ -> AuthorityInputFailure.PrincipalInvalid)
 
     let service issuerValue clientId =
         admit PrincipalKinds.Service issuerValue clientId
-        |> Result.mapError (fun _ -> AuthorityInputFailure.PrincipalInvalid)
 
     /// Private storage projection; never infer identity from email, display name or groups.
-    let internal storageParts =
+    let storageParts =
         function
         | HumanPrincipal(issuerValue, subject) -> PrincipalKinds.Human, issuerValue, subject
         | ServicePrincipal(issuerValue, clientId) -> PrincipalKinds.Service, issuerValue, clientId
@@ -111,13 +76,13 @@ module PrincipalKey =
             Subject = subject
         }
 
-    let internal fromStorage kind issuerValue stableValue =
+    let fromStorage kind issuerValue stableValue =
         match Vocabulary.tryParse PrincipalKinds.vocabulary kind with
         | Some PrincipalKind.Human -> human issuerValue stableValue
         | Some PrincipalKind.Service -> service issuerValue stableValue
-        | _ -> Error AuthorityInputFailure.PrincipalInvalid
+        | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.PrincipalFormat))
 
-    let internal isHuman =
+    let isHuman =
         function
         | HumanPrincipal _ -> true
         | ServicePrincipal _ -> false
@@ -144,14 +109,6 @@ type Actor =
         Principal: PrincipalKey
         Enabled: bool
     }
-
-module internal Actor =
-    let describe (actor: Actor) : ActorSummary =
-        {
-            ActorId = actor.ActorId
-            Principal = PrincipalKey.describe actor.Principal
-            Enabled = actor.Enabled
-        }
 
 /// Only roles that can influence this decision are loaded. Operation identity may add a second case.
 type AuthorityView =
@@ -205,3 +162,13 @@ module AuthorityView =
                 Cases = cases
                 HasAssignedCases = false
             }
+
+[<RequireQualifiedAccess>]
+type ResourceScope =
+    | Installation
+    | Case of Guid
+
+[<RequireQualifiedAccess>]
+type CaseVisibility =
+    | Every
+    | Assigned

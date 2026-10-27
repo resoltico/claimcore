@@ -32,7 +32,7 @@ let private subjects count =
             |> Result.defaultWith (string >> failtest)
     ]
 
-let private authority (actor: HandlerContext) principals =
+let private authority (actor: ServiceContext) principals =
     task {
         for index, principal in principals |> List.indexed do
             let! registered =
@@ -42,7 +42,7 @@ let private authority (actor: HandlerContext) principals =
                         authorityRequest
                             (id (100000 + index * 20))
                             principal
-                            AdmittedAuthorityAct.Register
+                            AuthorityCommandAct.Register
                     ))
                     (token))
 
@@ -67,7 +67,7 @@ let private authority (actor: HandlerContext) principals =
 
     }
 
-let private openCases (actor: HandlerContext) count =
+let private openCases (actor: ServiceContext) count =
     task {
         for index in 0 .. count - 1 do
             let! result =
@@ -114,7 +114,7 @@ let private act revision =
     | 6L -> UnvalidatedCaseAct.Close
     | _ -> UnvalidatedCaseAct.Reopen
 
-let private writeLane (actor: HandlerContext) workload lane =
+let private writeLane (actor: ServiceContext) workload lane =
     task {
         let durations = ResizeArray<float>()
         let revisions = Array.create workload.Cases 1L
@@ -250,7 +250,7 @@ let private report
         unexpectedErrors = 0
     |}
 
-let private history workload (actor: HandlerContext) =
+let private history workload (actor: ServiceContext) =
     task {
         let! history =
             (Core.history

@@ -39,7 +39,7 @@ let private caller (database: PostgresFixture.Database) =
             (Core.execute
                 owner
                 (OperationInput.Authority(
-                    authorityRequest (id 20) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 20) principal AuthorityCommandAct.Register
                 ))
                 (token))
 

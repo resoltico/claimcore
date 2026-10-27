@@ -184,7 +184,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         return ()
     }
 
-let private appendTransitions (actor: HandlerContext) =
+let private appendTransitions (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
             let act =
@@ -223,7 +223,7 @@ let private historyPage =
     | ReadReply.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
-let private remainingHistory (actor: HandlerContext) (query: HistoryRequest) =
+let private remainingHistory (actor: ServiceContext) (query: HistoryRequest) =
     task {
         let mutable cursor = query.AfterCursor
         let mutable entries = []
@@ -256,7 +256,7 @@ let private withheldReceipt (receipt: OperationReceipt) =
     }
 
 let private assertRemainingHistoryAccess
-    (actor: HandlerContext)
+    (actor: ServiceContext)
     (query: HistoryRequest)
     (original: OperationReceipt)
     =
@@ -282,7 +282,7 @@ let private assertRemainingHistoryAccess
 
 let private revokedFullHistory
     (database: PostgresFixture.Database)
-    (actor: HandlerContext)
+    (actor: ServiceContext)
     (query: HistoryRequest)
     (first: HistoryResultPage)
     =

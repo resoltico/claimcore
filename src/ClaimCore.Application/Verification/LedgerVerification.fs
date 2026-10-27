@@ -8,7 +8,7 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
 /// Deterministic ledger interpretation independent of storage, current admission and clocks.
-module internal LedgerVerification =
+module LedgerVerification =
     type Scan =
         {
             Head: LedgerHead
@@ -121,3 +121,5 @@ module internal LedgerVerification =
             )
         else
             Ok(LedgerEntries.position state.Head.Sequence state.Head.EntryHash)
+
+    let erasure (state: Scan) = CaseFold.erasure state.Cases

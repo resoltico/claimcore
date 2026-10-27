@@ -1,10 +1,12 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Domain
+
 open System
 
 /// Request-scoped dependencies; authority is loaded afresh by each operation.
 [<NoEquality; NoComparison>]
-type HandlerContext =
+type ServiceContext =
     internal
         {
             InstallationId: Guid

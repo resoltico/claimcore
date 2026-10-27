@@ -75,8 +75,11 @@ let private mappedExamples () =
                 | EndpointId.Actor actor -> actor
                 | _ -> failtest "Expected an actor endpoint"
 
-            let prepared = (Handlers.route actorEndpoint).Prepare input |> admitted
-            let! reply = prepared (Some actor) CancellationToken.None ignore |> Async.AwaitTask
+            let prepared = (ApiRoutes.route actorEndpoint).Prepare input |> admitted
+
+            let! reply =
+                prepared.Invoke (Some actor) CancellationToken.None ignore |> Async.AwaitTask
+
             Api.admitOutput endpoint reply |> admitted |> ignore
 
             Expect.isTrue

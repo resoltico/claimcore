@@ -125,7 +125,7 @@ let private queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let private execute actor pending =
-    (Core.execute (actor: HandlerContext) (OperationInput.Case pending) (ct))
+    (Core.execute (actor: ServiceContext) (OperationInput.Case pending) (ct))
 
 let private opening values =
     { openRequest 10 "REACH-1" with
@@ -330,7 +330,7 @@ let private stateEvidence (setup, final) =
 let private queryEvidence actor =
     task {
         let! limit =
-            (Core.list (actor: HandlerContext) ({ AfterCursor = None; Limit = 0 }) (ct))
+            (Core.list (actor: ServiceContext) ({ AfterCursor = None; Limit = 0 }) (ct))
 
         let! cursor = (Core.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
 
@@ -346,14 +346,14 @@ let private authorityEvidence actor =
 
         let send n target act =
             (Core.execute
-                (actor: HandlerContext)
+                (actor: ServiceContext)
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
 
-        let! registered = send 30 owner AdmittedAuthorityAct.Register
-        let! unknown = send 31 service (AdmittedAuthorityAct.Disable)
-        let! last = send 32 owner (AdmittedAuthorityAct.Disable)
-        let! admitted = send 33 service AdmittedAuthorityAct.Register
+        let! registered = send 30 owner AuthorityCommandAct.Register
+        let! unknown = send 31 service (AuthorityCommandAct.Disable)
+        let! last = send 32 owner (AuthorityCommandAct.Disable)
+        let! admitted = send 33 service AuthorityCommandAct.Register
         acceptedAuthority admitted
 
         let! human =
@@ -378,7 +378,7 @@ let private identityEvidence actor =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 35) reader AdmittedAuthorityAct.Register
+                    authorityRequest (id 35) reader AuthorityCommandAct.Register
                 ))
                 (ct))
 
@@ -391,7 +391,7 @@ let private identityEvidence actor =
         return [ refused conflict; refused revision ], reader
     }
 
-let private principalEvidence (actor: HandlerContext) =
+let private principalEvidence (actor: ServiceContext) =
     task {
         let evidence = ResizeArray<_>()
 
@@ -417,6 +417,22 @@ let private principalEvidence (actor: HandlerContext) =
 
             let! outcome = (Core.execute actor (OperationInput.Authority request) (ct))
 
+            evidence.Add(refused outcome)
+
+        for index, role in List.indexed [ ""; "UNDECLARED_ROLE" ] do
+            let request: ClaimCore.Domain.AuthorityRequest =
+                {
+                    OperationId = id (64 + index)
+                    Target = PrincipalKey.describe actor.Principal
+                    Act =
+                        AuthorityAct.Grant
+                            {
+                                Role = role
+                                Scope = GrantTarget.Installation
+                            }
+                }
+
+            let! outcome = Core.execute actor (OperationInput.Authority request) ct
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence
@@ -464,7 +480,7 @@ let private completeVocabulary () =
         Expect.equal
             (Set.ofList DiagnosticCodecs.codes)
             (baselineCodes |> Set.add "PRINCIPAL_FORMAT" |> Set.add "OPERATION_RESOLVED")
-            "The code table preserves every captured refusal with the adopted principal extension."
+            "The codec preserves captured refusal semantics and includes principal and role admission."
 
         let produced = Set.ofList evidence
 

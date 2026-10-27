@@ -72,6 +72,7 @@ type InputTarget =
     | Reason
     | PrincipalIssuer
     | PrincipalSubject
+    | Role
     | Limit
     | Cursor
 

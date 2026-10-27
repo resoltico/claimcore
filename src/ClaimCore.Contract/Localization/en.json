@@ -244,5 +244,6 @@
   "act.GRANT.confirmation": "I confirm this exact request.",
   "act.REVOKE.confirmation": "I confirm this exact request.",
   "act.ENABLE.confirmation": "I confirm this exact request.",
-  "act.DISABLE.confirmation": "I confirm this exact request."
+  "act.DISABLE.confirmation": "I confirm this exact request.",
+  "diagnostic.ROLE_FORMAT": "Choose a declared role."
 }

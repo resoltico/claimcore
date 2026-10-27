@@ -21,8 +21,8 @@ let private lastOwner () =
 
     for act in
         [
-            AdmittedAuthorityAct.Disable
-            AdmittedAuthorityAct.Revoke(Role.Owner, GrantTarget.Installation)
+            AuthorityCommandAct.Disable
+            AuthorityCommandAct.Revoke(Role.Owner, GrantTarget.Installation)
         ] do
         let request = admitted 100 owner act
 
@@ -36,7 +36,7 @@ let private humanOnly () =
 
     for role in [ Role.Owner; Role.DataSteward ] do
         let request =
-            admitted 101 service (AdmittedAuthorityAct.Grant(role, GrantTarget.Installation))
+            admitted 101 service (AuthorityCommandAct.Grant(role, GrantTarget.Installation))
 
         Expect.equal
             (executeAuthority installation owner request (authorityView worker target None))
@@ -61,7 +61,7 @@ let private humanOnly () =
         "Bootstrap also requires a human"
 
 let private replay () =
-    let request = admitted 103 other AdmittedAuthorityAct.Register
+    let request = admitted 103 other AuthorityCommandAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     let entry, receipt =
@@ -81,9 +81,9 @@ let private replay () =
         "Executor target and position survive replay"
 
     let changed =
-        { request with
-            Act = AdmittedAuthorityAct.Disable
-        }
+        AuthorityRequests.input request.OperationId request.Target AuthorityCommandAct.Disable
+        |> Result.bind Authority.parse
+        |> Result.defaultWith (string >> failtest)
 
     Expect.equal
         (executeAuthority installation owner changed existing)
@@ -137,7 +137,7 @@ let private provision () =
         "Bootstrap exact replay is idempotent"
 
 let private reviewAndFences () =
-    let request = admitted 105 other AdmittedAuthorityAct.Register
+    let request = admitted 105 other AuthorityCommandAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     match AuthorityExecution.review installation owner request view.Read with

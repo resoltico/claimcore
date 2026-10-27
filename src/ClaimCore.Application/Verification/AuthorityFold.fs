@@ -125,8 +125,7 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HumanRequired
-                    (not (ActorAuthorization.humanOnlyRole role)
-                     || PrincipalKey.isHuman actor.Principal)
+                    (not (Authority.humanOnlyRole role) || PrincipalKey.isHuman actor.Principal)
 
             let! scope =
                 match scope with

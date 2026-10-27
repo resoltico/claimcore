@@ -244,5 +244,6 @@
   "act.GRANT.confirmation": "Apstiprinu šo precīzo pieprasījumu.",
   "act.REVOKE.confirmation": "Apstiprinu šo precīzo pieprasījumu.",
   "act.ENABLE.confirmation": "Apstiprinu šo precīzo pieprasījumu.",
-  "act.DISABLE.confirmation": "Apstiprinu šo precīzo pieprasījumu."
+  "act.DISABLE.confirmation": "Apstiprinu šo precīzo pieprasījumu.",
+  "diagnostic.ROLE_FORMAT": "Izvēlieties deklarētu lomu."
 }

@@ -46,7 +46,7 @@ let private setup (database: PostgresFixture.Database) =
             (Core.execute
                 admin
                 (OperationInput.Authority(
-                    authorityRequest (id 3) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id 3) principal AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -121,7 +121,7 @@ type internal PausedPageStore
                 ct
             )
 
-let private freshAdvice (actor: HandlerContext) cursor current =
+let private freshAdvice (actor: ServiceContext) cursor current =
     task {
         Expect.isTrue
             ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
@@ -158,7 +158,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let store = PausedPageStore(database.Fixture.Store, entered, release)
 
         let facade =
-            Handlers.context
+            Service.create
                 database.Fixture.InstallationId
                 (store :> IStore)
                 database.Fixture.Calendar

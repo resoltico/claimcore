@@ -521,7 +521,7 @@ let private principalAdmission () =
 
         Expect.equal
             (match syntax with
-             | OperationInput.Authority request -> AuthorityRequests.admit request |> Result.isOk
+             | OperationInput.Authority request -> Authority.parse request |> Result.isOk
              | _ -> false)
             admitted
             "Only authoritative principal admission judges identity semantics"

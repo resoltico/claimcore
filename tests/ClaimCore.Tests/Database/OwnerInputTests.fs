@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OwnerInputTests
 
+open ClaimCore.Domain
+
 open System
 open System.Text
 open System.Text.Json

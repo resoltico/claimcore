@@ -6,7 +6,7 @@ open System
 open ClaimCore.Domain
 open ClaimCore.Application.VerificationChecks
 
-type internal CaseHistory =
+type CaseHistory =
     {
         Revision: int64
         Snapshot: CaseSnapshot option

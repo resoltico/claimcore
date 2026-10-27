@@ -19,13 +19,13 @@ let private unavailable () =
 let private inputs () =
     [
         OperationInput.Case(opening 470 "BOUNDARY")
-        OperationInput.Authority(authorityRequest (id 471) other AdmittedAuthorityAct.Register)
+        OperationInput.Authority(authorityRequest (id 471) other AuthorityCommandAct.Register)
     ]
 
 let private malformed () =
     async {
         use probe = unavailable ()
-        let core = Handlers.context installation (probe :> IStore) calendar owner
+        let core = Service.create installation (probe :> IStore) calendar owner
 
         let invalid =
             [
@@ -41,7 +41,7 @@ let private malformed () =
                         (UnvalidatedCaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(
-                    authorityRequest Guid.Empty other AdmittedAuthorityAct.Register
+                    authorityRequest Guid.Empty other AuthorityCommandAct.Register
                 )
             ]
 
@@ -78,7 +78,7 @@ let private failures () =
             ] do
             use probe = unavailable ()
             probe.WriteFailure <- Some failure
-            let core = Handlers.context installation (probe :> IStore) calendar owner
+            let core = Service.create installation (probe :> IStore) calendar owner
 
             for input in inputs () do
                 let! reply = (Core.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
@@ -98,7 +98,7 @@ let private cancelled () =
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
         use probe = unavailable ()
-        let core = Handlers.context installation (probe :> IStore) calendar owner
+        let core = Service.create installation (probe :> IStore) calendar owner
 
         for input in inputs () do
             let! execute = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
@@ -162,7 +162,7 @@ let private committed () =
                         }
                 }
 
-            let core = Handlers.context installation probe calendar owner
+            let core = Service.create installation probe calendar owner
 
             let! reply = (Core.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 

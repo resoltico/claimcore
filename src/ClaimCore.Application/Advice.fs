@@ -6,11 +6,11 @@ open ClaimCore.Domain
 
 module internal Advice =
     let private can principal actor capability resource =
-        ActorAuthorization.can principal actor capability resource
+        Authority.can principal actor capability resource
 
     let private correctionChoices principal actor resource accepted : CorrectionChoices =
         let actions group =
-            if can principal actor (ActorAuthorization.correctionCapability group) resource then
+            if can principal actor (Authority.correctionCapability group) resource then
                 Case.correctionActions accepted group
             else
                 [ CorrectionGroupAction.Keep ]
@@ -54,7 +54,7 @@ module internal Advice =
 
             let acts =
                 Case.eligibleActs accepted
-                |> List.filter (ActorAuthorization.canAdvertise principal actor resource)
+                |> List.filter (Authority.canAdvertise principal actor resource)
                 |> List.choose (
                     actOffer principal actor resource accepted record.Snapshot.Revision
                 )
@@ -78,7 +78,7 @@ module internal Advice =
         ]
 
     let views principal actor =
-        let cases = ActorAuthorization.visibility principal actor |> Option.isSome
+        let cases = Authority.visibility principal actor |> Option.isSome
 
         let authority =
             can principal actor Capability.ReadAuthority ResourceScope.Installation

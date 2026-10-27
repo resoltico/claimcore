@@ -13,6 +13,7 @@
     <Compile Include="Vocabulary/Capabilities.fs" />
     <Compile Include="Vocabulary/Roles.fs" />
     <Compile Include="Vocabulary/PrincipalKinds.fs" />
+    <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="PaymentProgress.fs" />
@@ -24,5 +25,6 @@
     <Compile Include="RequestValidation.fs" />
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
+    <Compile Include="Authority.fs" />
   </ItemGroup>
 </Project>

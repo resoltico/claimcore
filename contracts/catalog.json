@@ -2624,7 +2624,7 @@
         },
         {
           "identity": "act.role",
-          "field": null,
+          "field": "role",
           "path": [
             "act",
             "role"
@@ -2648,7 +2648,9 @@
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "role"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -2827,7 +2829,7 @@
         },
         {
           "identity": "act.role",
-          "field": null,
+          "field": "role",
           "path": [
             "act",
             "role"
@@ -2851,7 +2853,9 @@
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "role"
+          ],
           "source": "AUTHORED"
         },
         {

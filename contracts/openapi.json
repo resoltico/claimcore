@@ -3501,6 +3501,7 @@
             "REFERENCE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "ROLE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "CALENDAR_DATE_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "CHRONOLOGICAL_ORDER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "FUTURE_DATE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
@@ -3789,6 +3790,9 @@
               },
               {
                 "const": "PRINCIPAL_FORMAT"
+              },
+              {
+                "const": "ROLE_FORMAT"
               },
               {
                 "const": "CALENDAR_DATE_REQUIRED"
@@ -4773,6 +4777,9 @@
           },
           {
             "const": "principal.subject"
+          },
+          {
+            "const": "role"
           },
           {
             "const": "limit"

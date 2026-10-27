@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Domain
+
 open ClaimCore.Application
 
 /// Verified identity facts admitted by the HTTPS authentication boundary.

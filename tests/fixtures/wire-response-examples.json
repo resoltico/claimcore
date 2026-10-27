@@ -2,6 +2,21 @@
   "source": "Hand-authored synthetic boundary examples; retired cancellation outcomes are explicit rejecting controls.",
   "cases": [
     {
+      "name": "role-admission-refusal",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ROLE_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "role"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
       "name": "diagnostic-legacy-extra-container-refused",
       "endpoint": "context",
       "value": {

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.Architecture.ArchitectureTests
 
+open ClaimCore.Domain
+
 open System
 open System.IO
 open System.Reflection
@@ -188,7 +190,7 @@ let private publishedClosure () =
             ClaimCore.TestSupport.PublishedClientClosure.violations directory.FullName
 
         Expect.isEmpty (check ()) "A clean synthetic deliverable is admitted"
-        let source = typeof<ClaimCore.Application.PrincipalKey>.Assembly.Location
+        let source = typeof<ClaimCore.Application.IBusinessCalendar>.Assembly.Location
         let target = Path.Combine(directory.FullName, Path.GetFileName source |> nonNull)
         File.Copy(source, target)
 
@@ -267,16 +269,6 @@ let private emptySubjects () =
         ((ApiRules.rule model.Value ArchitectureRule.Pure selected).HasNoViolations model.Value)
         "ArchUnitNET requires positive subjects by default"
 
-// WP6 removes these product grants and the exception mechanism together.
-let private productFriendExceptions =
-    Set.ofList
-        [
-            "ClaimCore.Domain", "ClaimCore.Application"
-            "ClaimCore.Application", "ClaimCore.Postgres"
-            "ClaimCore.Application", "claimcore-server"
-            "ClaimCore.Postgres", "claimcore-server"
-        ]
-
 let private productFriends () =
     let names =
         products.Value
@@ -305,14 +297,13 @@ let private productFriends () =
 
     for source, target in allGrants do
         Expect.isTrue
-            (Set.contains target testAssemblies
-             || Set.contains (source, target) productFriendExceptions)
-            "Friendship names a test assembly or an exact WP6 exception"
+            (Set.contains target testAssemblies)
+            (source + " may grant friendship only to a test assembly")
 
-    Expect.equal
-        grants
-        productFriendExceptions
-        "Product grants are exactly the named WP6 exceptions; stale exceptions fail"
+    Expect.isEmpty grants "No product assembly grants friendship to another product"
+
+let private applicationProtocol () =
+    check ArchitectureRule.ApplicationProtocol (Assembly.Load "ClaimCore.Application")
 
 let private domainBoundary () =
     check ArchitectureRule.DomainBoundary (Assembly.Load "ClaimCore.Domain")
@@ -330,8 +321,11 @@ let tests =
             testCase "F# compiled shapes reject every rule family" shapeControls
             testCase "empty subjects fail through ArchUnitNET" emptySubjects
             testCase "empty forbidden target sets fail explicitly" emptyTargets
-            testCase "product friendship exceptions are exact and current" productFriends
+            testCase "product friendship is limited to test assemblies" productFriends
             testCase "Domain excludes outer layers" domainBoundary
+            testCase
+                "Application uses models without wire codecs or endpoint descriptions"
+                applicationProtocol
             testCase "evaluated product edges and Postgres boundary" postgres
             testCase
                 "published client closure rejects compiled server dependencies"

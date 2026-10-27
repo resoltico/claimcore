@@ -1,5 +1,7 @@
 namespace ClaimCore.Web.Composition
 
+open ClaimCore.Domain
+
 open ClaimCore.Contract
 
 open System
@@ -10,7 +12,7 @@ open ClaimCore.Application
 /// The HTTPS composition supplies actor-bound Application operations.
 type IServiceRuntime =
     inherit IDisposable
-    abstract WithActor: PrincipalKey * (HandlerContext -> Task<'Value>) -> Task<'Value option>
+    abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<unit>

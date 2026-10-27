@@ -29,8 +29,7 @@ type Fixture(database: PostgresFixture.Database) =
 let createFor issuer subject =
     task {
         let principal =
-            PrincipalKey.human issuer subject
-            |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
+            PrincipalKey.human issuer subject |> Result.defaultWith (string >> invalidOp)
 
         let! database = PostgresFixture.createFor principal
         let fixture = database.Fixture
@@ -40,13 +39,13 @@ let createFor issuer subject =
 
             let service =
                 PrincipalKey.service issuer "service"
-                |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
+                |> Result.defaultWith (string >> invalidOp)
 
             let! registered =
                 (Core.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id 20) service AdmittedAuthorityAct.Register
+                        authorityRequest (id 20) service AuthorityCommandAct.Register
                     ))
                     (CancellationToken.None))
 

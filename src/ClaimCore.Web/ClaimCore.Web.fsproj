@@ -37,6 +37,7 @@
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="RouteSupport.fs" />
     <Compile Include="RateLimits.fs" />
+    <Compile Include="Routes.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="Readiness.fs" />
     <Compile Include="HostRoutes.fs" />

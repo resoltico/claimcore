@@ -37,7 +37,7 @@ let private failureCategory (error: exn) =
 
 let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"
-    |> Result.defaultWith (AuthorityInputFailures.token >> invalidOp)
+    |> Result.defaultWith (string >> invalidOp)
 
 let private calendar =
     { new IBusinessCalendar with

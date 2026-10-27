@@ -93,7 +93,7 @@ type Host
         root: X509Certificate2,
         forActor,
         stage: string -> unit,
-        ?handlers: ActorEndpoint -> ClaimCore.Application.Route
+        ?handlers: ActorEndpoint -> ClaimCore.Web.Route
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-oidc-host-").FullName
 
@@ -144,7 +144,7 @@ type Host
         HostRoutes.map
             assets
             web
-            (defaultArg handlers ClaimCore.Application.Handlers.route)
+            (defaultArg handlers ClaimCore.Web.ApiRoutes.route)
             (fun principal action ->
                 task { let! value = action (forActor principal) in return Some value })
             application

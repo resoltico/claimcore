@@ -25,7 +25,7 @@ let private run action =
 
 let private token = CancellationToken.None
 
-let private replay (database: PostgresFixture.Database) (actor: HandlerContext) operation landed =
+let private replay (database: PostgresFixture.Database) (actor: ServiceContext) operation landed =
     task {
         let! replay = (Core.execute actor (OperationInput.Case operation) (token))
 
@@ -51,7 +51,7 @@ let private proxyCore (database: PostgresFixture.Database) source =
         LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> IStore
 
     let actor =
-        Handlers.context
+        Service.create
             database.Fixture.InstallationId
             store
             database.Fixture.Calendar
@@ -156,7 +156,7 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request = authorityRequest (id 145) target AdmittedAuthorityAct.Register
+        let request = authorityRequest (id 145) target AuthorityCommandAct.Register
 
         let! unknown =
             (Core.execute (proxyCore database source) (OperationInput.Authority request) (token))

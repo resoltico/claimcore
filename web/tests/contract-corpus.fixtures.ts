@@ -55,6 +55,11 @@ export const wireReply = <K extends EndpointId>(
       row.endpoint === endpoint &&
       row.direction === "response" &&
       row.valid &&
+      isObject(row.value) &&
+      isObject(row.value["outcome"]) &&
+      ["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED", "REVIEWED", "NOT_ACCEPTED"].includes(
+        String(row.value["outcome"]["kind"]),
+      ) &&
       (!["operation.execute", "operation.preview"].includes(endpoint) ||
         hasScope(row.value, endpoint, subject)),
   );

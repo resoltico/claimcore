@@ -301,6 +301,7 @@ module internal TextReply =
         | InputTarget.PrincipalSubject -> ContractDiscovery.inputLabel "subject"
         | InputTarget.Limit -> "input.limit.label"
         | InputTarget.Cursor -> "input.cursor.label"
+        | InputTarget.Role -> "input.role.label"
 
     let private refusalLines language refusal =
         let code, parameters = DiagnosticCodecs.describe refusal

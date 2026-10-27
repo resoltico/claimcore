@@ -1,6 +1,27 @@
 [
   {
     "arguments": {},
+    "expected": "Choose a declared role.",
+    "isolated": "Choose a declared role.",
+    "key": "diagnostic.ROLE_FORMAT",
+    "language": "en"
+  },
+  {
+    "arguments": {},
+    "expected": "Izvēlieties deklarētu lomu.",
+    "isolated": "Izvēlieties deklarētu lomu.",
+    "key": "diagnostic.ROLE_FORMAT",
+    "language": "lv"
+  },
+  {
+    "arguments": {},
+    "expected": "اختر دورًا معرّفًا.",
+    "isolated": "اختر دورًا معرّفًا.",
+    "key": "diagnostic.ROLE_FORMAT",
+    "language": "ar"
+  },
+  {
+    "arguments": {},
     "expected": "Operation",
     "isolated": "Operation",
     "key": "input.act.label",

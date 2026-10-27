@@ -103,7 +103,7 @@ let internal disclosedFields receipt =
     | _ -> failtest "Expected disclosed live fields."
 
 let internal core fixture principal =
-    Handlers.context fixture.InstallationId fixture.Store fixture.Calendar principal
+    Service.create fixture.InstallationId fixture.Store fixture.Calendar principal
 
 let internal bootstrap fixture =
     task {
@@ -122,7 +122,7 @@ let internal bootstrap fixture =
         return core fixture fixture.Owner
     }
 
-let internal grant (actor: HandlerContext) operationId target role scope active =
+let internal grant (actor: ServiceContext) operationId target role scope active =
     (Core.execute
         actor
         (OperationInput.Authority(
@@ -130,9 +130,9 @@ let internal grant (actor: HandlerContext) operationId target role scope active 
                 operationId
                 target
                 ((if active then
-                      AdmittedAuthorityAct.Grant
+                      AuthorityCommandAct.Grant
                   else
-                      AdmittedAuthorityAct.Revoke) (
+                      AuthorityCommandAct.Revoke) (
                     role,
                     scope
                 ))

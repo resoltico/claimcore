@@ -122,7 +122,7 @@ module internal Verification =
         token
         =
         task {
-            match CaseFold.erasure state.Cases with
+            match LedgerVerification.erasure state with
             | Error error -> return VerificationResult.Diverged error
             | Ok() ->
                 let! projections = projections connection installationId state token

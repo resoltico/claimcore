@@ -92,7 +92,7 @@ let decide request view =
         view.PayloadNonce
         view.Read
 
-let executeAuthority installation principal request (view: LockedFacts<AuthorityFacts>) =
+let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
     AuthorityExecution.execute
         installation
         principal
@@ -103,11 +103,16 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
         view.Read
 
 let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
-    match AuthorityRequests.admit request with
+    match Authority.parse request with
     | Ok command -> AuthorityExecution.review installation principal command view
     | Error refusal -> Verdict.Refuse refusal
 
-let provisionAuthority installation operation principal (view: LockedFacts<AuthorityFacts>) =
+let provisionAuthority
+    installation
+    operation
+    principal
+    (view: LockedFacts<AuthorityExecutionFacts>)
+    =
     AuthorityExecution.provision
         installation
         operation
@@ -135,7 +140,7 @@ let created n reference =
 
     request, LedgerEntries.stored entry, current, receipt
 
-let authorityView caller target existing : LockedFacts<AuthorityFacts> =
+let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -152,9 +157,7 @@ let authorityView caller target existing : LockedFacts<AuthorityFacts> =
             }
     }
 
-let admitted n target act : AdmittedAuthorityRequest =
-    {
-        OperationId = id n
-        Target = target
-        Act = act
-    }
+let admitted n target act : AuthorityCommand =
+    AuthorityRequests.input (id n) target act
+    |> Result.bind Authority.parse
+    |> Result.defaultWith (fun refusal -> failtestf "Invalid authority test command: %A" refusal)

@@ -244,5 +244,6 @@
   "act.GRANT.confirmation": "أؤكد هذا الطلب الدقيق.",
   "act.REVOKE.confirmation": "أؤكد هذا الطلب الدقيق.",
   "act.ENABLE.confirmation": "أؤكد هذا الطلب الدقيق.",
-  "act.DISABLE.confirmation": "أؤكد هذا الطلب الدقيق."
+  "act.DISABLE.confirmation": "أؤكد هذا الطلب الدقيق.",
+  "diagnostic.ROLE_FORMAT": "اختر دورًا معرّفًا."
 }

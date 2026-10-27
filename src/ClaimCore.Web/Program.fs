@@ -1,5 +1,7 @@
 module ClaimCore.Web.Program
 
+open ClaimCore.Web
+
 open ClaimCore.Contract
 open ClaimCore.Domain
 
@@ -206,7 +208,7 @@ let private configureRoutes
     HostRoutes.map
         assets
         configuration
-        ClaimCore.Application.Handlers.route
+        ClaimCore.Web.ApiRoutes.route
         (fun principal action -> runtime.WithActor(principal, action))
         application
 

@@ -9,7 +9,7 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
-type internal StoreFailure =
+type StoreFailure =
     | Internal
     | Unavailable
     | SchemaMismatch
@@ -17,21 +17,21 @@ type internal StoreFailure =
     | Cancelled
     | CommitOutcomeUnknown
 
-type internal LedgerHead =
+type LedgerHead =
     {
         Sequence: int64
         EntryHash: byte array
     }
 
-type internal StoredCase =
+type StoredCase =
     { CaseId: Guid; Snapshot: CaseSnapshot }
 
 [<RequireQualifiedAccess>]
-type internal EntryTarget =
+type EntryTarget =
     | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: Guid * act: AuthorityKind
 
-type internal StoredEntry =
+type StoredEntry =
     {
         Sequence: int64
         EntryHash: byte array
@@ -45,12 +45,12 @@ type internal StoredEntry =
     }
 
 [<RequireQualifiedAccess>]
-type internal CaseProjection =
+type CaseProjection =
     | Insert of caseId: Guid * snapshot: CaseSnapshot
     | Update of caseId: Guid * snapshot: CaseSnapshot
     | Erase of caseId: Guid * revision: int64
 
-type internal EntryDraft =
+type EntryDraft =
     {
         Sequence: int64
         PreviousHash: byte array
@@ -65,29 +65,29 @@ type internal EntryDraft =
     }
 
 [<RequireQualifiedAccess>]
-type internal AuthorityProjection =
+type AuthorityProjection =
     | Register of actorId: Guid * principal: PrincipalKey
     | ProvisionOwner of actorId: Guid * principal: PrincipalKey
     | SetEnabled of actorId: Guid * enabled: bool
     | AddGrant of actorId: Guid * role: Role * caseId: Guid option
     | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
 
-type internal GrantPosition = { Role: Role; CaseId: Guid option }
+type GrantPosition = { Role: Role; CaseId: Guid option }
 
-type internal CasePageSelection =
+type CasePageSelection =
     {
         Visibility: CaseVisibility
         AfterReference: string option
     }
 
 /// A page carries only rows and a continuation position from the same transaction snapshot.
-type internal Page<'Item, 'Position> =
+type Page<'Item, 'Position> =
     {
         Items: 'Item list
         Next: 'Position option
     }
 
-type internal IReadTx =
+type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Authority: PrincipalKey * Guid option -> Task<AuthorityView>
     abstract FindCase: Guid -> Task<StoredCase option>
@@ -107,7 +107,7 @@ type internal IReadTx =
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
 
-type internal IWriteTx =
+type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerHead
     abstract Nonce: byte array
@@ -117,7 +117,7 @@ type internal IWriteTx =
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
     abstract Fence: Guid * Guid -> Task<unit>
 
-type internal IStore =
+type IStore =
     abstract Read: (IReadTx -> Task<'T>) * CancellationToken -> Task<Result<'T, StoreFailure>>
 
     abstract Write:

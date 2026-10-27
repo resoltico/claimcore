@@ -153,6 +153,7 @@ module OperationCatalog =
         function
         | CatalogInputName.Field field -> Some(InputTarget.Field field)
         | CatalogInputName.Technical TechnicalInput.Reason -> Some InputTarget.Reason
+        | CatalogInputName.Technical TechnicalInput.Role -> Some InputTarget.Role
         | _ -> None
 
     let private diagnostics =
@@ -164,6 +165,7 @@ module OperationCatalog =
         | CatalogInputName.Technical TechnicalInput.Issuer -> [ "principal.issuer" ]
         | CatalogInputName.Technical TechnicalInput.Subject -> [ "principal.subject" ]
         | CatalogInputName.Technical TechnicalInput.Reason -> [ "reason" ]
+        | CatalogInputName.Technical TechnicalInput.Role -> [ "role" ]
         | _ -> []
 
 

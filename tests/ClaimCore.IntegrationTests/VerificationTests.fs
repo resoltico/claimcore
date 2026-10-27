@@ -46,13 +46,13 @@ let private target subject =
     PrincipalKey.human "https://issuer.example/" subject
     |> Result.defaultWith (string >> failtest)
 
-let private register (actor: HandlerContext) n principal =
+let private register (actor: ServiceContext) n principal =
     task {
         let! outcome =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id n) principal AdmittedAuthorityAct.Register
+                    authorityRequest (id n) principal AuthorityCommandAct.Register
                 ))
                 (token))
 
@@ -231,8 +231,8 @@ let private authority (database: PostgresFixture.Database) =
         let sequence = (accepted added).Position.Sequence
 
         let altered =
-            authorityRequest (id 20) (target "absent") (AdmittedAuthorityAct.Enable)
-            |> AuthorityRequests.admit
+            authorityRequest (id 20) (target "absent") (AuthorityCommandAct.Enable)
+            |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
 
@@ -304,7 +304,7 @@ let private owner (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 4) reader (AdmittedAuthorityAct.Enable)
+                    authorityRequest (id 4) reader (AuthorityCommandAct.Enable)
                 ))
                 (token))
 
@@ -404,7 +404,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 4) reader (AdmittedAuthorityAct.Disable)
+                    authorityRequest (id 4) reader (AuthorityCommandAct.Disable)
                 ))
                 (token))
 
@@ -442,8 +442,8 @@ let private serviceGrantTarget (database: PostgresFixture.Database) =
             authorityRequest
                 (id 4)
                 service
-                (AdmittedAuthorityAct.Grant(Role.Owner, GrantTarget.Installation))
-            |> AuthorityRequests.admit
+                (AuthorityCommandAct.Grant(Role.Owner, GrantTarget.Installation))
+            |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
 
@@ -459,13 +459,13 @@ let private lastOwner (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 20) database.Fixture.Owner (AdmittedAuthorityAct.Enable)
+                    authorityRequest (id 20) database.Fixture.Owner (AuthorityCommandAct.Enable)
                 ))
                 (token))
 
         let altered =
-            authorityRequest (id 20) database.Fixture.Owner (AdmittedAuthorityAct.Disable)
-            |> AuthorityRequests.admit
+            authorityRequest (id 20) database.Fixture.Owner (AuthorityCommandAct.Disable)
+            |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
 
@@ -540,11 +540,11 @@ let private priorCaseRequired (database: PostgresFixture.Database) =
             authorityRequest
                 (id 900000)
                 database.Fixture.Owner
-                (AdmittedAuthorityAct.Grant(
+                (AuthorityCommandAct.Grant(
                     Role.PaymentRecorder,
                     GrantTarget.CaseReference "synthetic-a"
                 ))
-            |> AuthorityRequests.admit
+            |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
 

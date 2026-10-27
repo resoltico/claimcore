@@ -76,9 +76,5 @@ let admittedPayment (input: PaymentInput) : Payment =
 
 
 let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
-    {
-        OperationId = operationId
-        Target = target
-        Act = act
-    }
-    |> AuthorityRequests.toInput
+    AuthorityRequests.input operationId target act
+    |> Result.defaultWith (fun _ -> failtest "Owner provisioning is not an authored test input.")

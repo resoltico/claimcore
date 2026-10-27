@@ -33,7 +33,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Domain | Value modules, declaration, accepted state, acts, refusals and transitions |
 | Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages |
 | RecordFormat | Durable byte grammars |
-| Application | Authorization, use cases, bound routes and verification |
+| Application | Use cases, replay, fencing, projections and verification |
 | Postgres | Transaction primitives, projections and installation administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Web | Authentication, request gates, runtime leases and route serving |
@@ -48,7 +48,8 @@ and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architec
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
 [typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.
-Routes bind matching input/output handlers through [Route.bind](../src/ClaimCore.Application/Routes.fs).
+Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
+[Route.bind](../src/ClaimCore.Web/Routes.fs).
 Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/Vocabulary.fs) mechanism.
 
 ## Transactions and durable formats

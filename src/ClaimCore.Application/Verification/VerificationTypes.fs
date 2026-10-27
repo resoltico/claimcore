@@ -75,7 +75,7 @@ module VerificationFindings =
     let token finding =
         all |> List.find (fst >> (=) finding) |> snd
 
-module internal VerificationChecks =
+module VerificationChecks =
     type Builder() =
         member _.Bind(value, binder) = Result.bind binder value
         member _.Return(value) = Ok value

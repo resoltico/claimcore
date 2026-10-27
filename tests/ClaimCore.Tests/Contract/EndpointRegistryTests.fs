@@ -1,5 +1,7 @@
 module ClaimCore.Tests.EndpointRegistryTests
 
+open ClaimCore.Web
+
 open ClaimCore.Contract.Protocol
 
 open System
@@ -238,8 +240,7 @@ let tests =
 let handlerBindings =
     testCase "every closed actor endpoint exports its own typed handler" (fun () ->
         for actor in ActorEndpoints.all do
-            let endpoint =
-                ClaimCore.Application.Handlers.route actor |> fun route -> route.Description
+            let endpoint = ClaimCore.Web.ApiRoutes.route actor |> fun route -> route.Description
 
             Expect.equal
                 (Api.identity endpoint)
@@ -250,14 +251,14 @@ let handlerBindings =
 let handlerCallTypes =
     testCase "handler calls tie nominal input and output to the registered endpoint" (fun () ->
         let method =
-            typeof<ClaimCore.Application.HandlerContext>.Assembly.GetTypes()
+            typeof<ClaimCore.Web.Route>.Assembly.GetTypes()
             |> Array.collect (fun kind ->
                 kind.GetMethods(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Static))
             |> Array.find (fun method ->
                 let parameters = method.GetParameters()
 
                 method.Name = "bind"
-                && parameters.Length = 3
+                && parameters.Length = 4
                 && parameters[0].ParameterType.IsGenericType
                 && parameters[0].ParameterType.GetGenericTypeDefinition() =
                     typedefof<Endpoint<_, _>>)
@@ -265,7 +266,19 @@ let handlerCallTypes =
 
         let parameters = method.GetParameters()
         let endpointTypes = parameters[0].ParameterType.GetGenericArguments()
-        let unavailable = parameters[1].ParameterType.GetGenericArguments()
+        let identity = parameters[1].ParameterType.GetGenericArguments()
+
+        Expect.equal
+            identity[0]
+            endpointTypes[0]
+            "Logging identity receives the typed endpoint input"
+
+        Expect.equal
+            identity[1]
+            typeof<Guid option>
+            "Logging receives an optional admitted operation id"
+
+        let unavailable = parameters[2].ParameterType.GetGenericArguments()
 
         Expect.equal
             (unavailable[0])
@@ -278,7 +291,7 @@ let handlerCallTypes =
             "The unavailable response has this endpoint's exact output"
 
         let arguments (kind: Type) = kind.GetGenericArguments()
-        let invocation = parameters[2].ParameterType |> arguments
+        let invocation = parameters[3].ParameterType |> arguments
         let input = invocation[1] |> arguments
 
         Expect.equal

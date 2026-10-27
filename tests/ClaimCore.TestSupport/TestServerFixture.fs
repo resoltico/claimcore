@@ -138,7 +138,7 @@ let private login (context: HttpContext) : Task =
         context.Response.StatusCode <- 200
     }
 
-type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
+type Host(ready: bool, ?forActor: PrincipalKey -> ServiceContext) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
     let certificate = ProbeHttpsFixture.certificate ()
@@ -165,7 +165,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> HandlerContext) =
             assets
             (configuration certificate)
             (if forActor.IsSome then
-                 ClaimCore.Application.Handlers.route
+                 ClaimCore.Web.ApiRoutes.route
              else
                  facade.Handlers)
             (fun principal action ->
