@@ -72,13 +72,14 @@ trusted. See [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) and its
 ## Backups and restore
 
 Protect PostgreSQL backups as sensitive data and retain sequence/hash checkpoints independently. Restore into
-an empty database with ordinary full-restore tools, then use Database verify with the expected checkpoint before
-reopening actor access. A data-only restore into an initialized schema is unsupported.
+an empty database with ordinary full-restore tools, then run `claimcore-database verify --expect SEQUENCE:HASH`
+with the retained checkpoint before reopening actor access. A data-only restore into an initialized schema
+is unsupported.
 
 An older restore behind the checkpoint is detectable; no primary-only inspection proves there was no newer
 acceptance. Identify later erasures and affected copies before use. ClaimCore does not orchestrate backup,
 restore, replication, copy custody or multi-party approval. Preserve incompatible installations with matching
-software; no conversion is supplied.
+software. The administration tool provides no schema conversion.
 
 ## Serialized writes and verification growth
 
@@ -110,10 +111,11 @@ an unchanged repeated invocation. Private-input validation precedes database acc
 have no schema-owner authority. Remote database connections require verified TLS.
 
 The exact [SQL baseline](../db/baseline.sql), its checksum, installation identity and immutable zone are
-checked on opening. Partial, unknown or incompatible schemas refuse untouched. Preserve incompatible
-installations with matching software. Supported PostgreSQL majors, minimum minors and image pins are owned
-by [postgresql-baseline.json](../db/postgresql-baseline.json). This build changes the baseline source and
-checksum: initialize a fresh installation; there is no migration, adoption or compatibility reader.
+checked on opening. Use a fresh database for initial setup. Initialization creates the baseline when the
+`claimcore` schema is absent; repeating it requires the matching baseline and business zone. Partial,
+unknown or incompatible schemas refuse untouched; there is no schema adoption or conversion. Supported
+PostgreSQL majors, minimum minors and image pins are owned by
+[postgresql-baseline.json](../db/postgresql-baseline.json).
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
 projections and head. It does not reapply today's capability policy. VERIFIED and DIVERGED are structured

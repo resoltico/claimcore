@@ -15,7 +15,8 @@ value can represent. Reading retained values uses permanent format.
 ## Value module
 
 A Domain module owns one value type and its `parse`, `admit`, `format` and `descriptor` functions.
-CalendarDate, Money, CountryCode, PartyName, Reason and CaseReference are value modules.
+`CalendarDate`, `Money`, `CountryCode`, `PartyName`, `Reason` and `CaseReference` are value modules.
+`Money` owns amount and currency together.
 
 ## Declaration
 
@@ -24,8 +25,8 @@ Boundary codecs, catalog inputs and projection names derive from it.
 
 ## Case act
 
-One of twelve flat requested changes to a case, including business work and stewardship. Domain parses its authored inputs into a
-`CaseCommand`; transitions apply the typed act to accepted state.
+One of twelve flat requested changes to a case, including business work and stewardship. Domain parses
+its authored inputs into a `CaseCommand`; transitions apply the typed act to accepted state.
 
 ## Decision and verdict
 

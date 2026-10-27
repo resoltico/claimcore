@@ -27,8 +27,8 @@ closed; malformed UTF-8, duplicate decoded members, unsafe numbers and excessive
 Business-value guidance is a typed rejection with HTTP 200; structural failures use host responses.
 Servers return codes and parameters for local rendering. Diagnostics and faults are flat code-tagged
 objects: for example `{ "code": "TOO_LONG", "action": "CORRECT_INPUT", "target": "claimantName", "maximumCharacters": 200 }`.
-There is no limits container; actualRevision appears only on revision conflicts. Roles use ROLE_FORMAT at role.
-Derived vocabulary tokens and catalog locale keys require matching regenerated clients.
+Diagnostic parameters are direct object members; `actualRevision` appears only on revision conflicts.
+An invalid role yields `ROLE_FORMAT` with target `role`. Use identifiers from the generated contracts.
 
 HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
@@ -71,8 +71,8 @@ trust-root files replace system roots while retaining hostname and validity chec
 
 Keep the exact prepared frame and its original ID until a submitted change is settled. Resend it unchanged
 with `claimcore call`. `ACCEPTED` or `ALREADY_ACCEPTED` in the reply to the resent frame confirms acceptance.
-A later ordinary refusal, fault or `NOT_STARTED` response cannot disprove an earlier commit; `OUTCOME_UNKNOWN` means commit confirmation
-was lost after commit could have started.
+A refusal, fault or `NOT_STARTED` response cannot disprove a prior uncertain commit. `OUTCOME_UNKNOWN`
+means commit confirmation was lost after commit could have started.
 
 `operation.observe` is a read-only audit lookup under current resource rights, including authority receipt
 lookup for auditors. Its absence proves nothing about an uncertain submission, and metadata alone cannot

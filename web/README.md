@@ -21,7 +21,9 @@ npm --prefix web ci
 npm --prefix web run build
 ```
 
-`build` typechecks app sources and their strict protocol dependency, produces `dist` and generates notices from the locked production graph. The full `typecheck` command includes tests and e2e sources. Production builds need no test fixtures.
+`build` typechecks app sources and their strict protocol dependency, produces `dist` and generates notices
+from the locked production graph. The full `typecheck` command includes tests and e2e sources. Production
+builds need no test fixtures.
 Review summaries use catalog bindings and JSON values, preserving unknown members as raw JSON; OpenAPI is
 not bundled. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
 

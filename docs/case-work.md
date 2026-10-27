@@ -47,7 +47,7 @@ all three tagged groups. Registration may KEEP or REPLACE all registration value
 KEEP, REPLACE their complete tuples, or CLEAR. KEEP reads accepted state under the ledger lock.
 
 A correction cannot be all-KEEP, make a no-op revision, add a missing decision/payment, or silently carry an
-old payment assertion to a replaced payable amount. Clearing a paid decision also clears payment. Replacing
+existing payment assertion to a replaced payable amount. Clearing a paid decision also clears payment. Replacing
 it requires explicit payment replacement/reaffirmation or clearing. Acceptance creates one complete revision;
 refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domain/Case.fs) own these rules.
 
@@ -75,7 +75,7 @@ cannot replay. [Operations](operating.md#erasure-limits) explains the physical l
 
 Permanent syntax and current admission live in [Domain value modules](../src/ClaimCore.Domain/Values.fs). The [validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns their diagnostics to input targets.
 Retained reads and verification enforce permanent format/state invariants, without applying today's admission
-to old assertions. Unchanged retained names and dates may be reaffirmed.
+to retained assertions. Unchanged retained names and dates may be reaffirmed.
 
 Dates are real YYYY-MM-DD values in years 0001–9999. Present dates follow incident ≤ notification ≤ decision
 ≤ payment. Newly asserted event dates cannot exceed the supplied business date, derived from the database

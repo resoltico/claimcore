@@ -40,13 +40,13 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | CLI | HTTPS, command grammar, typed replies and frames |
 | Database | Owner administration |
 
-Postgres retains its Contract edge because owner-administration outcomes contain `CoreFault`. Its transaction
+Postgres references Contract because owner-administration outcomes contain `CoreFault`. Its transaction
 modules contain SQL and primitives; Application composes case/authority work, reads and fencing.
 RecordFormat has no Contract dependency. The published CLI may contain pure Domain and excludes Application
 and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) verify these boundaries.
 [ProjectReferences.fs](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the allowed direct project edges.
-ArchUnitNET 0.13.5 runs in the Debug unit stage. Subjects cover whole assemblies because F# task/async
-bodies and closures can live in StartupCode types. Forbidden targets use namespace boundaries with
+[ArchUnitNET](../Directory.Packages.props) runs in the Debug unit stage. Subjects cover whole assemblies
+because F# task/async bodies and closures can live in StartupCode types. Forbidden targets use namespace boundaries with
 non-empty controls; direct and generated F# shapes prove detection. Product internals may be exposed to tests only.
 All wire codecs and endpoint descriptions live in ClaimCore.Contract.Protocol; Application and RecordFormat
 cannot depend on that namespace.
@@ -67,9 +67,9 @@ through actual provider cleanup.
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
 [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent decoding does not
-reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source. Its SHA-256 installation identity is derived from the exact embedded source bytes. Edit the baseline
-for the supported fresh installation and rebuild to regenerate that identity. Unsupported installation identities are
-refused; this build provides no conversion or compatibility reader.
+reapply current admission. [baseline.sql](../db/baseline.sql) is the checksum-bound schema source; its
+SHA-256 installation identity derives from the exact embedded bytes. Baseline edits require a rebuild and
+a fresh installation. The runtime refuses unsupported installation identities without modifying them.
 
 ## Generated contracts
 
@@ -96,11 +96,12 @@ Do not generate an independent oracle with the implementation being checked.
 [oxlint.config.ts](../web/oxlint.config.ts) is the single browser policy. Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
-manifest. Its explicit JSON inputs are the existing contract-owned locale data; portable encoding/clone
+manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
 declarations support the byte boundary without enabling DOM or Node types. Pure DTOs live under protocol.
 React, DOM, Node and outside source imports must fail that project. Browser and test projects still check
 actual platform declarations. The app-only build references the strict protocol project, whose declarations
-are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources. F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
+are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
+F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
 
 ## Verification
