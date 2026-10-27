@@ -58,6 +58,7 @@
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
+    <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />

@@ -102,6 +102,11 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
         view.PayloadNonce
         view.Read
 
+let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
+    match AuthorityRequests.admit request with
+    | Ok command -> AuthorityExecution.review installation principal command view
+    | Error refusal -> Verdict.Refuse refusal
+
 let provisionAuthority installation operation principal (view: LockedFacts<AuthorityFacts>) =
     AuthorityExecution.provision
         installation
