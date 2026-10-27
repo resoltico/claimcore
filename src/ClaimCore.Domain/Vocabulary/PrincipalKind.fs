@@ -9,7 +9,7 @@ type PrincipalKind =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PrincipalKind =
     let vocabulary =
-        Vocabulary.ofUnion<PrincipalKind> "token" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<PrincipalKind> "principalKind" TokenCasing.ScreamingSnake None
 
     let humanToken = Vocabulary.token vocabulary PrincipalKind.Human
     let serviceToken = Vocabulary.token vocabulary PrincipalKind.Service

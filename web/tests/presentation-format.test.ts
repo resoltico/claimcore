@@ -1,3 +1,4 @@
+import { isTerm } from "../src/presentation/terms";
 import { expect, it } from "vitest";
 import { calendarDate, displayField, exactAmount, exactInteger } from "../src/presentation/format";
 import { createPresenter } from "../src/presentation/presenter";
@@ -83,8 +84,8 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   expect(p.groupMeaning("registration")).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
   expect(p.fieldMeaning("FUTURE_TECHNICAL_FIELD")).toBe("");
-  expect(p.token("CLOSE")).toBe(p.actLabel("CLOSE"));
-  expect(p.token("opaque-identifier")).toBe("opaque-identifier");
+  expect(p.term("act", "CLOSE")).toBe(p.actLabel("CLOSE"));
+  expect(isTerm("act", "opaque-identifier")).toBe(false);
   expect(p.integer("42")).toBe("42");
   expect(p.amount("42.0000")).toBe("42.0000");
   expect(p.date("2026-09-22")).toBe("22/09/2026");

@@ -208,9 +208,9 @@ module RequestCodecs =
         tagged
             "Scope"
             [
-                unitVariant "INSTALLATION" GrantTarget.Installation
+                unitVariant (ScopeKind.token ScopeKind.Installation) GrantTarget.Installation
                 variant
-                    "CASE"
+                    (ScopeKind.token ScopeKind.Case)
                     GrantTarget.CaseReference
                     (function
                     | GrantTarget.CaseReference value -> Some value

@@ -42,10 +42,12 @@ const CaseRow = ({
       <CharacterWarning value={caseView.caseReference} />
       <span>
         {p.text("ui.caseRow", {
-          status: p.token(caseView.state.kind),
+          status: p.term("lifecycle", caseView.state.kind),
           revision: p.integer(caseView.revision),
         })}
-        {caseView.state.kind === "ERASED" ? null : <> · {p.token(caseView.state.status)}</>}
+        {caseView.state.kind === "ERASED" ? null : (
+          <> · {p.term("status", caseView.state.status)}</>
+        )}
       </span>
       <CopyValue label={p.fieldLabel("caseReference")} value={caseView.caseReference} />
     </li>

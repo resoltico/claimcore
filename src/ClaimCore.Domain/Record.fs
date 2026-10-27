@@ -397,6 +397,19 @@ type Principal =
         Subject: string
     }
 
+[<RequireQualifiedAccess>]
+type ScopeKind =
+    | Installation
+    | Case
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ScopeKind =
+    let vocabulary =
+        Vocabulary.ofUnion<ScopeKind> "scope" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
 /// Caller-authored scope; accepted grants resolve case references to case IDs.
 [<RequireQualifiedAccess>]
 type GrantTarget =
@@ -488,7 +501,7 @@ module RecordGroup =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CorrectionGroupAction =
     let vocabulary =
-        Vocabulary.ofUnion<CorrectionGroupAction> "token" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<CorrectionGroupAction> "correction" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -502,7 +515,7 @@ module CorrectionGroupAction =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseStatus =
     let vocabulary =
-        Vocabulary.ofUnion<CaseStatus> "token" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<CaseStatus> "status" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -623,7 +636,7 @@ type Lifecycle =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Lifecycle =
     let vocabulary =
-        Vocabulary.ofUnion<Lifecycle> "token" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<Lifecycle> "lifecycle" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

@@ -29,37 +29,9 @@ module CatalogValidation =
         |> collect
         |> Set.ofList
 
-    let private renderedTokens () =
-        let scopes =
-            OperationCatalog.mutations
-            |> List.collect (fun operation ->
-                CommandGrammar.derive operation
-                |> fst
-                |> List.collect (fun input ->
-                    match input.Name, input.Atom with
-                    | CatalogInputName.Technical TechnicalInput.Scope, CatalogAtom.Choice choices ->
-                        choices
-                    | _ -> []))
-
-        let erased =
-            ResponseCodecs.caseState.Write CaseState.Erased |> JsonValue.tryMember "kind"
-
-        [
-            yield! CaseStatus.all |> List.map CaseStatus.token
-            yield! ActKind.all |> List.map ActKind.token
-            yield! Role.all |> List.map Role.token
-            yield! Lifecycle.all |> List.map Lifecycle.token
-            yield! CorrectionGroupAction.all |> List.map CorrectionGroupAction.token
-            yield! PrincipalKind.all
-            yield! List.distinct scopes
-        ]
-        |> Vocabulary.requireUniqueTokens "rendered token namespace"
-        |> fun tokens ->
-            if erased <> Some(JsonValue.String(Lifecycle.token Lifecycle.Erased)) then
-                invalidOp "Erased state tag differs from the lifecycle vocabulary."
-
-            tokens
-        |> List.map (fun token -> "token." + token)
+    let private renderedTerms () =
+        Terms.all
+        |> List.collect (fun vocabulary -> vocabulary.Labels |> List.map snd)
         |> Set.ofList
 
     let private producers templates =
@@ -133,7 +105,7 @@ module CatalogValidation =
         validateReferences "CLI" cli cliReferences
 
         let required = presentationIds ()
-        let tokens = renderedTokens ()
+        let tokens = renderedTerms ()
 
         let families =
             [
@@ -148,7 +120,14 @@ module CatalogValidation =
                 "fault"
                 "host"
                 "notice"
-                "token"
+                "status"
+                "lifecycle"
+                "role"
+                "principalKind"
+                "correction"
+                "scope"
+                "historyDetail"
+                "subject"
                 "ui"
                 "cli"
             ]
@@ -162,13 +141,6 @@ module CatalogValidation =
                 )
             then
                 invalidOp ("Unknown message family: " + key)
-
-        if
-            (keys
-             |> Set.filter (fun key -> key.StartsWith("token.", System.StringComparison.Ordinal)))
-            <> tokens
-        then
-            invalidOp "Rendered token catalogs differ from their producer vocabularies."
 
         for KeyValue(language, templates) in catalogs do
             if (templates |> Map.keys |> Set.ofSeq) <> keys then

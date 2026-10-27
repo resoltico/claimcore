@@ -89,7 +89,7 @@ module OperationCatalog =
     let private message (entry: CatalogOperation) part =
         match entry.SelectedAct with
         | Some act -> Vocabulary.messageKey ActKind.vocabulary act part
-        | None -> "endpoint." + ActorEndpoint.token entry.Endpoint + "." + part
+        | None -> Vocabulary.messageKey ActorEndpoint.vocabulary entry.Endpoint part
 
     let labelId (entry: CatalogOperation) = message entry "label"
     let meaningId (entry: CatalogOperation) = message entry "meaning"
@@ -330,7 +330,7 @@ module OperationCatalog =
                         operation
                         (CatalogInputName.Technical TechnicalInput.Scope)
                         scope
-                        (BindingKind.Group [ "INSTALLATION"; "CASE" ])
+                        (BindingKind.Group(ScopeKind.all |> List.map ScopeKind.token))
                         []
                         false
                         None

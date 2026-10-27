@@ -1,7 +1,8 @@
+import { isTerm } from "../presentation/terms";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import { renderKey } from "../presentation/messages";
-import { atPath, type CatalogEntry } from "../protocol/catalogAssembly";
+import { atPath, termVocabulary, type CatalogEntry } from "../protocol/catalogAssembly";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,10 +55,16 @@ const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): s
 };
 const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
   const p = usePresentation();
-  if (typeof value === "string" && isToken(value, path, bindings)) {
+  const vocabulary = termVocabulary(path);
+  if (
+    typeof value === "string" &&
+    isToken(value, path, bindings) &&
+    vocabulary !== null &&
+    isTerm(vocabulary, value)
+  ) {
     return (
       <>
-        <span>{p.token(value)}</span>{" "}
+        <span>{p.term(vocabulary, value)}</span>{" "}
         <code>
           <bdi>{value}</bdi>
         </code>

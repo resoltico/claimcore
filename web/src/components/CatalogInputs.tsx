@@ -1,3 +1,5 @@
+import { isTerm } from "../presentation/terms";
+import { termVocabulary } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
@@ -80,7 +82,12 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         >
           {permittedOptions(input, props).map((value) => (
             <option key={value} value={value}>
-              {p.token(value)}
+              {(() => {
+                const vocabulary = termVocabulary(input.path);
+                return vocabulary !== null && isTerm(vocabulary, value)
+                  ? p.term(vocabulary, value)
+                  : value;
+              })()}
             </option>
           ))}
         </select>

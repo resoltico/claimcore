@@ -23,7 +23,7 @@ const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
         <li
           key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseReference : ""}`}
         >
-          {p.token(grant.role)} · {p.token(grant.scope.kind)}{" "}
+          {p.term("role", grant.role)} · {p.term("scope", grant.scope.kind)}{" "}
           {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
         </li>
       ))}

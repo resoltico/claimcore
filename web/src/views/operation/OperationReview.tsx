@@ -52,11 +52,11 @@ const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }
           <dl>
             <dt>{p.text("input.role.label")}</dt>
             <dd>
-              <span>{p.token(grant.role)}</span>
+              <span>{p.term("role", grant.role)}</span>
             </dd>
             <dt>{p.text("input.scope.label")}</dt>
             <dd>
-              <span>{p.token(grant.scope.kind)}</span>{" "}
+              <span>{p.term("scope", grant.scope.kind)}</span>{" "}
               {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
             </dd>
           </dl>

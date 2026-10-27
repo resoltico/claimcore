@@ -142,7 +142,7 @@ const AuthorityLayout = ({ token, model, disclosure, recorded }: AuthorityLayout
   const { invalidate } = disclosure;
   return (
     <section aria-labelledby="authority-title" className="authority-panel">
-      <h2 id="authority-title">{p.text("ui.authority")}</h2>
+      <h2 id="authority-title">{p.text("subject.AUTHORITY.label")}</h2>
       {recorded?.token === token ? (
         <AuthorityReceipt key={recorded.id} identity={recorded.id} />
       ) : null}

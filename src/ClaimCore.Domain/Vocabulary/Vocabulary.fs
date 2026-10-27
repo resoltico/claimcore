@@ -105,6 +105,7 @@ module Vocabulary =
             |> Option.map snd
             |> Option.defaultWith (fun () -> invalidArg name "Value is outside the vocabulary."))
 
+    let name vocabulary = vocabulary.Name
     let all vocabulary = vocabulary.All
     let token vocabulary = vocabulary.Token
 

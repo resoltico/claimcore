@@ -30,6 +30,7 @@
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="Catalog/OperationCatalog.fs" />
+    <Compile Include="Messages/Terms.fs" />
     <Compile Include="Catalog/Catalog.fs" />
   </ItemGroup>
 </Project>

@@ -12,7 +12,7 @@ type Role =
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Role =
-    let vocabulary = Vocabulary.ofUnion<Role> "token" TokenCasing.ScreamingSnake None
+    let vocabulary = Vocabulary.ofUnion<Role> "role" TokenCasing.ScreamingSnake None
 
     let definitions = Vocabulary.entries vocabulary
     let all = Vocabulary.all vocabulary

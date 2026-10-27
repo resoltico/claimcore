@@ -10,7 +10,7 @@ export const LifecycleStatus = ({ value }: { value: CaseView }) => {
   return (
     <p role="status">
       {p.text(lifecycleLabels[value.state.kind])}
-      {value.state.kind === "ERASED" ? null : <> · {p.token(value.state.fields.status)}</>}
+      {value.state.kind === "ERASED" ? null : <> · {p.term("status", value.state.fields.status)}</>}
     </p>
   );
 };
