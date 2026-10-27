@@ -17,7 +17,7 @@ type CorrectionGroupAction =
 
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
-type BusinessActKind =
+type CaseActKind =
     | Open
     | AmendRegistration
     | Correct
@@ -27,17 +27,25 @@ type BusinessActKind =
     | ClearPayment
     | Close
     | Reopen
-
-[<RequireQualifiedAccess>]
-type StewardshipActKind =
     | Void
     | Reinstate
     | Erase
 
-[<RequireQualifiedAccess>]
-type CaseActKind =
-    | Business of BusinessActKind
-    | Stewardship of StewardshipActKind
+module CaseActKind =
+    let isStewardship =
+        function
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> true
+        | CaseActKind.Open
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen -> false
 
 [<RequireQualifiedAccess>]
 type BusinessField =
@@ -237,54 +245,6 @@ module CorrectionActions =
         | RecordGroup.Decision
         | RecordGroup.Payment -> all
 
-module BusinessActKinds =
-    let vocabulary =
-        Vocabulary.define
-            "act"
-            [
-                BusinessActKind.Open
-                BusinessActKind.AmendRegistration
-                BusinessActKind.Correct
-                BusinessActKind.Decide
-                BusinessActKind.WithdrawDecision
-                BusinessActKind.RecordPayment
-                BusinessActKind.ClearPayment
-                BusinessActKind.Close
-                BusinessActKind.Reopen
-            ]
-            (function
-             | BusinessActKind.Open -> "OPEN"
-             | BusinessActKind.AmendRegistration -> "AMEND_REGISTRATION"
-             | BusinessActKind.Correct -> "CORRECT"
-             | BusinessActKind.Decide -> "DECIDE"
-             | BusinessActKind.WithdrawDecision -> "WITHDRAW_DECISION"
-             | BusinessActKind.RecordPayment -> "RECORD_PAYMENT"
-             | BusinessActKind.ClearPayment -> "CLEAR_PAYMENT"
-             | BusinessActKind.Close -> "CLOSE"
-             | BusinessActKind.Reopen -> "REOPEN")
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary
-
-module StewardshipActKinds =
-    let vocabulary =
-        Vocabulary.define
-            "act"
-            [
-                StewardshipActKind.Void
-                StewardshipActKind.Reinstate
-                StewardshipActKind.Erase
-            ]
-            (function
-             | StewardshipActKind.Void -> "VOID"
-             | StewardshipActKind.Reinstate -> "REINSTATE"
-             | StewardshipActKind.Erase -> "ERASE")
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary
-
 module CaseStatuses =
     let vocabulary =
         Vocabulary.define "token" [ CaseStatus.Opened; CaseStatus.Closed ] (function
@@ -299,13 +259,34 @@ module CaseActKinds =
     let vocabulary =
         Vocabulary.define
             "act"
-            ((BusinessActKinds.all |> List.map CaseActKind.Business)
-             @ (StewardshipActKinds.all |> List.map CaseActKind.Stewardship))
+            [
+                CaseActKind.Open
+                CaseActKind.AmendRegistration
+                CaseActKind.Correct
+                CaseActKind.Decide
+                CaseActKind.WithdrawDecision
+                CaseActKind.RecordPayment
+                CaseActKind.ClearPayment
+                CaseActKind.Close
+                CaseActKind.Reopen
+                CaseActKind.Void
+                CaseActKind.Reinstate
+                CaseActKind.Erase
+            ]
             (function
-             | CaseActKind.Business value -> BusinessActKinds.token value
-             | CaseActKind.Stewardship value -> StewardshipActKinds.token value)
+             | CaseActKind.Open -> "OPEN"
+             | CaseActKind.AmendRegistration -> "AMEND_REGISTRATION"
+             | CaseActKind.Correct -> "CORRECT"
+             | CaseActKind.Decide -> "DECIDE"
+             | CaseActKind.WithdrawDecision -> "WITHDRAW_DECISION"
+             | CaseActKind.RecordPayment -> "RECORD_PAYMENT"
+             | CaseActKind.ClearPayment -> "CLEAR_PAYMENT"
+             | CaseActKind.Close -> "CLOSE"
+             | CaseActKind.Reopen -> "REOPEN"
+             | CaseActKind.Void -> "VOID"
+             | CaseActKind.Reinstate -> "REINSTATE"
+             | CaseActKind.Erase -> "ERASE")
 
-    let business = BusinessActKinds.all |> List.map CaseActKind.Business
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
@@ -381,20 +362,18 @@ module ActorEndpoints =
 module UnvalidatedCaseActs =
     let kind =
         function
-        | UnvalidatedCaseAct.Open _ -> CaseActKind.Business BusinessActKind.Open
-        | UnvalidatedCaseAct.AmendRegistration _ ->
-            CaseActKind.Business BusinessActKind.AmendRegistration
-        | UnvalidatedCaseAct.Correct _ -> CaseActKind.Business BusinessActKind.Correct
-        | UnvalidatedCaseAct.Decide _ -> CaseActKind.Business BusinessActKind.Decide
-        | UnvalidatedCaseAct.WithdrawDecision ->
-            CaseActKind.Business BusinessActKind.WithdrawDecision
-        | UnvalidatedCaseAct.RecordPayment _ -> CaseActKind.Business BusinessActKind.RecordPayment
-        | UnvalidatedCaseAct.ClearPayment -> CaseActKind.Business BusinessActKind.ClearPayment
-        | UnvalidatedCaseAct.Close -> CaseActKind.Business BusinessActKind.Close
-        | UnvalidatedCaseAct.Reopen -> CaseActKind.Business BusinessActKind.Reopen
-        | UnvalidatedCaseAct.Void _ -> CaseActKind.Stewardship StewardshipActKind.Void
-        | UnvalidatedCaseAct.Reinstate _ -> CaseActKind.Stewardship StewardshipActKind.Reinstate
-        | UnvalidatedCaseAct.Erase -> CaseActKind.Stewardship StewardshipActKind.Erase
+        | UnvalidatedCaseAct.Open _ -> CaseActKind.Open
+        | UnvalidatedCaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
+        | UnvalidatedCaseAct.Correct _ -> CaseActKind.Correct
+        | UnvalidatedCaseAct.Decide _ -> CaseActKind.Decide
+        | UnvalidatedCaseAct.WithdrawDecision -> CaseActKind.WithdrawDecision
+        | UnvalidatedCaseAct.RecordPayment _ -> CaseActKind.RecordPayment
+        | UnvalidatedCaseAct.ClearPayment -> CaseActKind.ClearPayment
+        | UnvalidatedCaseAct.Close -> CaseActKind.Close
+        | UnvalidatedCaseAct.Reopen -> CaseActKind.Reopen
+        | UnvalidatedCaseAct.Void _ -> CaseActKind.Void
+        | UnvalidatedCaseAct.Reinstate _ -> CaseActKind.Reinstate
+        | UnvalidatedCaseAct.Erase -> CaseActKind.Erase
 
     let name act = kind act |> CaseActKinds.token
 
@@ -767,16 +746,13 @@ module Record =
             Payload = payload
         }
 
-    let private business kind payload =
-        existing (CaseActKind.Business kind) payload
-
     let private unit act =
         existing (UnvalidatedCaseActs.kind act) (CasePayload.NoPayload act)
 
     let caseActs =
         [
             {
-                Kind = CaseActKind.Business BusinessActKind.Open
+                Kind = CaseActKind.Open
                 RevisionMode = RevisionInput.New
                 Payload =
                     CasePayload.Registration(
@@ -785,30 +761,30 @@ module Record =
                             | _ -> None)
                     )
             }
-            business
-                BusinessActKind.AmendRegistration
+            existing
+                CaseActKind.AmendRegistration
                 (CasePayload.Registration(
                     values true UnvalidatedCaseAct.AmendRegistration (function
                         | UnvalidatedCaseAct.AmendRegistration value -> Some value
                         | _ -> None)
                 ))
-            business
-                BusinessActKind.Correct
+            existing
+                CaseActKind.Correct
                 (CasePayload.Correction(
                     values true UnvalidatedCaseAct.Correct (function
                         | UnvalidatedCaseAct.Correct value -> Some value
                         | _ -> None)
                 ))
-            business
-                BusinessActKind.Decide
+            existing
+                CaseActKind.Decide
                 (CasePayload.Decision(
                     values true UnvalidatedCaseAct.Decide (function
                         | UnvalidatedCaseAct.Decide value -> Some value
                         | _ -> None)
                 ))
             unit UnvalidatedCaseAct.WithdrawDecision
-            business
-                BusinessActKind.RecordPayment
+            existing
+                CaseActKind.RecordPayment
                 (CasePayload.Payment(
                     values false UnvalidatedCaseAct.RecordPayment (function
                         | UnvalidatedCaseAct.RecordPayment value -> Some value
@@ -818,14 +794,14 @@ module Record =
             unit UnvalidatedCaseAct.Close
             unit UnvalidatedCaseAct.Reopen
             existing
-                (CaseActKind.Stewardship StewardshipActKind.Void)
+                CaseActKind.Void
                 (CasePayload.Reason(
                     values false UnvalidatedCaseAct.Void (function
                         | UnvalidatedCaseAct.Void value -> Some value
                         | _ -> None)
                 ))
             existing
-                (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+                CaseActKind.Reinstate
                 (CasePayload.Reason(
                     values false UnvalidatedCaseAct.Reinstate (function
                         | UnvalidatedCaseAct.Reinstate value -> Some value

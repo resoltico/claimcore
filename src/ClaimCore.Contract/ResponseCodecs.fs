@@ -199,7 +199,7 @@ module ResponseCodecs =
                 fst
                 (enumeration (
                     CaseActKinds.all
-                    |> List.filter ((<>) (CaseActKind.Business BusinessActKind.Correct))
+                    |> List.filter ((<>) CaseActKind.Correct)
                     |> List.map (fun kind -> kind, CaseActKinds.token kind)
                 ))
             |> field "expectedRevision" snd revision

@@ -513,14 +513,13 @@ let private missingCasePrivacy () =
         let acts =
             stateScenarios ()
             |> List.collect (fun (setup, final) -> final :: setup)
-            |> List.filter (fun act ->
-                UnvalidatedCaseActs.kind act <> CaseActKind.Business BusinessActKind.Open)
+            |> List.filter (fun act -> UnvalidatedCaseActs.kind act <> CaseActKind.Open)
 
         let kinds = acts |> List.map UnvalidatedCaseActs.kind |> Set.ofList
 
         let expected =
             CaseActKinds.all
-            |> List.filter (fun kind -> kind <> CaseActKind.Business BusinessActKind.Open)
+            |> List.filter (fun kind -> kind <> CaseActKind.Open)
             |> Set.ofList
 
         Expect.equal kinds expected "Every non-OPEN operation is exercised against an absent case"

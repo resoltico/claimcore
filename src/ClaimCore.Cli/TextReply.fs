@@ -65,8 +65,7 @@ module internal TextReply =
     let private offerAct =
         function
         | CaseActOffer.Act(act, _) -> CaseActKinds.token act
-        | CaseActOffer.Correct _ ->
-            CaseActKinds.token (CaseActKind.Business BusinessActKind.Correct)
+        | CaseActOffer.Correct _ -> CaseActKinds.token CaseActKind.Correct
 
     let private caseLines language (value: CaseReadModel) =
         [

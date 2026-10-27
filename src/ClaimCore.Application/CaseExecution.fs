@@ -27,7 +27,7 @@ module internal CaseExecution =
                 Error CoreFault.StoreIntegrityError)
 
     let permission principal actor (request: CaseCommand) (record: StoredCase option) =
-        if CaseActs.kind request.Act = (CaseActKind.Business BusinessActKind.Open) then
+        if CaseActs.kind request.Act = CaseActKind.Open then
             if ActorAuthorization.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
             else

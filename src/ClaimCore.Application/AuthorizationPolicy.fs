@@ -97,17 +97,17 @@ module ActorAuthorization =
     let private ordinaryActs =
         Map.ofList
             [
-                (CaseActKind.Business BusinessActKind.Open), Capability.Register
-                (CaseActKind.Business BusinessActKind.AmendRegistration), Capability.Register
-                (CaseActKind.Business BusinessActKind.Decide), Capability.Decide
-                (CaseActKind.Business BusinessActKind.WithdrawDecision), Capability.Decide
-                (CaseActKind.Business BusinessActKind.RecordPayment), Capability.RecordPayment
-                (CaseActKind.Business BusinessActKind.ClearPayment), Capability.RecordPayment
-                (CaseActKind.Business BusinessActKind.Close), Capability.Close
-                (CaseActKind.Business BusinessActKind.Reopen), Capability.Close
-                (CaseActKind.Stewardship StewardshipActKind.Void), Capability.Steward
-                (CaseActKind.Stewardship StewardshipActKind.Reinstate), Capability.Steward
-                (CaseActKind.Stewardship StewardshipActKind.Erase), Capability.Steward
+                CaseActKind.Open, Capability.Register
+                CaseActKind.AmendRegistration, Capability.Register
+                CaseActKind.Decide, Capability.Decide
+                CaseActKind.WithdrawDecision, Capability.Decide
+                CaseActKind.RecordPayment, Capability.RecordPayment
+                CaseActKind.ClearPayment, Capability.RecordPayment
+                CaseActKind.Close, Capability.Close
+                CaseActKind.Reopen, Capability.Close
+                CaseActKind.Void, Capability.Steward
+                CaseActKind.Reinstate, Capability.Steward
+                CaseActKind.Erase, Capability.Steward
             ]
 
     let correctionCapability =
@@ -125,7 +125,7 @@ module ActorAuthorization =
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
         function
-        | (CaseAct.Business(BusinessAct.Correct correction)) ->
+        | (CaseAct.Correct correction) ->
             [
                 match correction.Registration with
                 | RegistrationChange.Keep -> ()
@@ -140,7 +140,7 @@ module ActorAuthorization =
         | act -> [ ordinaryActs[CaseActs.kind act] ]
 
     let canAdvertise principal actor resource kind =
-        if kind = (CaseActKind.Business BusinessActKind.Correct) then
+        if kind = CaseActKind.Correct then
             correctionCapabilities
             |> List.exists (fun capability -> can principal actor capability resource)
         else

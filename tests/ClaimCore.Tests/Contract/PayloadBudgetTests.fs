@@ -55,7 +55,7 @@ let private receipt disclosure : OperationReceipt =
                 {
                     Reference = CaseFixtures.reference reference
                     Revision = maximum
-                    Act = (CaseActKind.Business BusinessActKind.AmendRegistration)
+                    Act = CaseActKind.AmendRegistration
                     Snapshot = disclosure
                 }
     }

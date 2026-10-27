@@ -39,7 +39,7 @@ module internal VerificationPayload =
                          =
                          id)
 
-            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
+            if act = CaseActKind.Erase then
                 do!
                     require
                         (Some entry.Sequence)

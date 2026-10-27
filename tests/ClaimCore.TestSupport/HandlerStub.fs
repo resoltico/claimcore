@@ -69,7 +69,7 @@ let receipt id (reference: string) =
                 {
                     Reference = CaseFixtures.reference reference
                     Revision = 1L
-                    Act = (CaseActKind.Business BusinessActKind.Open)
+                    Act = CaseActKind.Open
                     Snapshot =
                         SnapshotDisclosure.Disclosed(
                             LiveCase.ofState (view reference).State |> Option.get

@@ -137,10 +137,9 @@ let private staleRevision () =
 let private vocabulary () =
     for action, expected in
         [
-            UnvalidatedCaseAct.Void "Reason", (CaseActKind.Stewardship StewardshipActKind.Void)
-            UnvalidatedCaseAct.Reinstate "Reason",
-            (CaseActKind.Stewardship StewardshipActKind.Reinstate)
-            UnvalidatedCaseAct.Erase, (CaseActKind.Stewardship StewardshipActKind.Erase)
+            UnvalidatedCaseAct.Void "Reason", CaseActKind.Void
+            UnvalidatedCaseAct.Reinstate "Reason", CaseActKind.Reinstate
+            UnvalidatedCaseAct.Erase, CaseActKind.Erase
         ] do
         Expect.equal
             (UnvalidatedCaseActs.kind (action))

@@ -132,28 +132,25 @@ module Case =
             | PaymentChange.Clear -> PaymentGroup.Clear
             | PaymentChange.Replace value -> PaymentGroup.Replace(payment value)
 
-        let business =
-            function
-            | BusinessAct.Open value -> UnvalidatedCaseAct.Open(registration value)
-            | BusinessAct.AmendRegistration value ->
+        let act =
+            match command.Act with
+            | CaseAct.Open value -> UnvalidatedCaseAct.Open(registration value)
+            | CaseAct.AmendRegistration value ->
                 UnvalidatedCaseAct.AmendRegistration(registration value)
-            | BusinessAct.Correct value ->
+            | CaseAct.Correct value ->
                 UnvalidatedCaseAct.Correct
                     {
                         Registration = registrationGroup value.Registration
                         Decision = decisionGroup value.Decision
                         Payment = paymentGroup value.Payment
                     }
-            | BusinessAct.Decide value -> UnvalidatedCaseAct.Decide(decision value)
-            | BusinessAct.WithdrawDecision -> UnvalidatedCaseAct.WithdrawDecision
-            | BusinessAct.RecordPayment date -> UnvalidatedCaseAct.RecordPayment(payment date)
-            | BusinessAct.ClearPayment -> UnvalidatedCaseAct.ClearPayment
-            | BusinessAct.Close -> UnvalidatedCaseAct.Close
-            | BusinessAct.Reopen -> UnvalidatedCaseAct.Reopen
+            | CaseAct.Decide value -> UnvalidatedCaseAct.Decide(decision value)
+            | CaseAct.WithdrawDecision -> UnvalidatedCaseAct.WithdrawDecision
+            | CaseAct.RecordPayment date -> UnvalidatedCaseAct.RecordPayment(payment date)
+            | CaseAct.ClearPayment -> UnvalidatedCaseAct.ClearPayment
+            | CaseAct.Close -> UnvalidatedCaseAct.Close
+            | CaseAct.Reopen -> UnvalidatedCaseAct.Reopen
 
-        let act =
-            match command.Act with
-            | CaseAct.Business value -> business value
             | CaseAct.Void reason -> UnvalidatedCaseAct.Void(Reason.format reason)
             | CaseAct.Reinstate reason -> UnvalidatedCaseAct.Reinstate(Reason.format reason)
             | CaseAct.Erase -> UnvalidatedCaseAct.Erase
@@ -216,9 +213,8 @@ module Case =
 
     let private create today (command: CaseCommand) =
         match command.Act with
-        | CaseAct.Business(BusinessAct.Open _) when command.ExpectedRevision <> 0L ->
-            Error(Refusal.RevisionConflict 0L)
-        | CaseAct.Business(BusinessAct.Open facts) ->
+        | CaseAct.Open _ when command.ExpectedRevision <> 0L -> Error(Refusal.RevisionConflict 0L)
+        | CaseAct.Open facts ->
             BusinessState.openCase today facts
             |> Result.map (fun claim ->
                 {
@@ -237,7 +233,7 @@ module Case =
         else
             match record.State, request.Act with
             | CaseState.Erased, _ -> Error Refusal.CaseErased
-            | _, CaseAct.Business(BusinessAct.Open _) -> Error Refusal.CaseAlreadyExists
+            | _, CaseAct.Open _ -> Error Refusal.CaseAlreadyExists
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->

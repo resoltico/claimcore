@@ -72,10 +72,7 @@ let tests =
 
                     Expect.throwsT<ArgumentException>
                         (fun () ->
-                            Vocabulary.define
-                                "act"
-                                [ CaseActKind.Business BusinessActKind.Open ]
-                                CaseActKinds.token
+                            Vocabulary.define "act" [ CaseActKind.Open ] CaseActKinds.token
                             |> ignore)
                         "Missing stewardship variant")
             testCase "one act vocabulary covers disjoint case and authority tokens" (fun () ->

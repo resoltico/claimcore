@@ -70,7 +70,7 @@ let receipt =
                 {
                     Reference = CaseFixtures.reference "x"
                     Revision = 1L
-                    Act = CaseActKind.Business BusinessActKind.Open
+                    Act = CaseActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

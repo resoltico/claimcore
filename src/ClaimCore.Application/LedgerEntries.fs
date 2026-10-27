@@ -146,7 +146,7 @@ module internal LedgerEntries =
                 id <> Guid.Empty
                 && revision >= 1L
                 && revision <= Revision.Maximum
-                && ((revision = 1L) = (act = (CaseActKind.Business BusinessActKind.Open)))
+                && ((revision = 1L) = (act = CaseActKind.Open))
             | EntryTarget.Authority(id, _) -> id <> Guid.Empty
 
         entry.Sequence >= 1L
@@ -173,7 +173,7 @@ module internal LedgerEntries =
             && CaseActs.kind request.Act = act
             && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
-            if act = (CaseActKind.Stewardship StewardshipActKind.Erase) then
+            if act = CaseActKind.Erase then
                 if Array.isEmpty data.Snapshot then
                     Ok(EntryContent.Case(request, None))
                 else
@@ -288,9 +288,7 @@ module internal LedgerEntries =
             let shown =
                 match record.Snapshot.State, content with
                 | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
-                | CaseState.Erased, EntryContent.Case(_, None) when
-                    act = (CaseActKind.Stewardship StewardshipActKind.Erase)
-                    ->
+                | CaseState.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
                     Ok SnapshotDisclosure.Erased
                 | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some snapshot) when
                     snapshot.Reference = record.Snapshot.Reference

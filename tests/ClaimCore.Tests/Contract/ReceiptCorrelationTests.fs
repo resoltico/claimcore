@@ -25,7 +25,7 @@ let private caseReceipt =
     {
         Reference = CaseFixtures.reference "synthetic-1"
         Revision = 3L
-        Act = CaseActKind.Business BusinessActKind.Close
+        Act = CaseActKind.Close
         Snapshot = SnapshotDisclosure.Withheld
     }
 
@@ -79,7 +79,7 @@ let private contradictions () =
             receipt (
                 ReceiptSubject.Case
                     { caseReceipt with
-                        Act = CaseActKind.Business BusinessActKind.Reopen
+                        Act = CaseActKind.Reopen
                     }
             )
         ]

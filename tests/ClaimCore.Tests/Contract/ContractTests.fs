@@ -35,7 +35,7 @@ let private receipt: ClaimCore.Contract.OperationReceipt =
                 {
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = 1L
-                    Act = (CaseActKind.Business BusinessActKind.Open)
+                    Act = CaseActKind.Open
                     Snapshot =
                         ClaimCore.Contract.SnapshotDisclosure.Disclosed(
                             LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
@@ -190,7 +190,7 @@ let private disclosures () =
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = 1L
-                            Act = CaseActKind.Business BusinessActKind.Open
+                            Act = CaseActKind.Open
                             Snapshot = snapshot
                         }
             }

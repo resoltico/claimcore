@@ -77,9 +77,7 @@ let tests =
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
                 let original =
-                    Record.caseActs
-                    |> List.find (fun item ->
-                        item.Kind = CaseActKind.Business BusinessActKind.Decide)
+                    Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Decide)
 
                 let operation = find [ "case"; "decide" ]
 
@@ -111,9 +109,7 @@ let tests =
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
                     let original =
-                        Record.caseActs
-                        |> List.find (fun item ->
-                            item.Kind = CaseActKind.Business BusinessActKind.Open)
+                        Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Open)
 
                     let operation = find [ "case"; "open" ]
 

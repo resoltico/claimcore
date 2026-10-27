@@ -136,10 +136,7 @@ let private start (database: PostgresFixture.Database) =
                     snapshot.State
 
             value
-            |> caseSubject (fun subject ->
-                { subject with
-                    Act = (CaseActKind.Business BusinessActKind.Close)
-                })
+            |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
             |> updateCase
                 { request with
                     Act = UnvalidatedCaseAct.Close
@@ -168,7 +165,7 @@ let private stateSequence (database: PostgresFixture.Database) =
             value
             |> caseSubject (fun subject ->
                 { subject with
-                    Act = (CaseActKind.Stewardship StewardshipActKind.Reinstate)
+                    Act = CaseActKind.Reinstate
                 })
             |> updateCase
                 { request with
