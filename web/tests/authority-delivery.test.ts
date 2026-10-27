@@ -101,16 +101,10 @@ const refusalData = {
   refusal: {
     code: "RESOURCE_UNAVAILABLE",
     action: "NONE_REQUIRED",
-    target: null,
-    actualRevision: null,
-    limits: {},
   },
   conflict: {
     code: "IDEMPOTENCY_CONFLICT",
     action: "STOP_AND_INVESTIGATE",
-    target: null,
-    actualRevision: null,
-    limits: {},
   },
 } as const;
 const replayResult = (

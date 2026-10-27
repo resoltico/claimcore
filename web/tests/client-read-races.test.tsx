@@ -35,7 +35,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   });
   expect(result.current.message).toEqual({
     kind: "diagnostic",
-    diagnostic: { code: unavailable.code, limits: unavailable.limits },
+    diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
   });
   await act(async () => {
     first.resolve(response("operation.observe", "SUCCEEDED", receipt));
@@ -44,7 +44,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   expect(result.current.receipt).toBeNull();
   expect(result.current.message).toEqual({
     kind: "diagnostic",
-    diagnostic: { code: unavailable.code, limits: unavailable.limits },
+    diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
   });
 });
 

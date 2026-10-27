@@ -19,22 +19,18 @@ let private frame refusal =
             )
     }
 
-let private assertTarget target identity violation =
+let private assertTarget target identity violation code parameters =
     let refusal = Refusal.InvalidInput(target, violation)
     let source = Frames.encode (frame refusal)
     let original = Array.copy source
 
-    let parameters =
-        Refusals.parameters refusal
-        |> List.map (fun (key, value) -> key, string value)
-        |> Map.ofList
+    let parameters = Map.ofList parameters
 
     for language in LocalizationPolicy.languages do
         let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
         let label = MessageCatalogs.render language identity Map.empty
 
-        let message =
-            MessageCatalogs.render language ("diagnostic." + (Refusals.row refusal).Code) parameters
+        let message = MessageCatalogs.render language ("diagnostic." + code) parameters
 
         Expect.equal
             (rendered.Split('\n')[0])
@@ -46,7 +42,7 @@ let private assertTarget target identity violation =
         Expect.equal
             (Frames.decode source)
             (Ok(frame refusal))
-            "Structured diagnostic target and limits remain unchanged"
+            "Structured diagnostic target and typed parameters remain unchanged"
 
 let private requiredNames () =
     for field, identity in
@@ -54,7 +50,7 @@ let private requiredNames () =
             BusinessField.ClaimantName, "field.claimantName.label"
             BusinessField.InsurerName, "field.insurerName.label"
         ] do
-        assertTarget (InputTarget.Field field) identity Violation.TextRequired
+        assertTarget (InputTarget.Field field) identity Violation.TextRequired "TEXT_REQUIRED" []
 
 let private dates () =
     for field, identity in
@@ -62,42 +58,73 @@ let private dates () =
             BusinessField.IncidentDate, "field.incidentDate.label"
             BusinessField.IncidentNotificationDate, "field.incidentNotificationDate.label"
         ] do
-        assertTarget (InputTarget.Field field) identity Violation.CalendarDateRequired
+        assertTarget
+            (InputTarget.Field field)
+            identity
+            Violation.CalendarDateRequired
+            "CALENDAR_DATE_REQUIRED"
+            []
 
 let private principalAndPayment () =
-    assertTarget InputTarget.PrincipalIssuer "input.issuer.label" Violation.PrincipalFormat
+    assertTarget
+        InputTarget.PrincipalIssuer
+        "input.issuer.label"
+        Violation.PrincipalFormat
+        "PRINCIPAL_FORMAT"
+        []
 
-    assertTarget InputTarget.PrincipalSubject "input.subject.label" Violation.TextRequired
+    assertTarget
+        InputTarget.PrincipalSubject
+        "input.subject.label"
+        Violation.TextRequired
+        "TEXT_REQUIRED"
+        []
 
     assertTarget
         (InputTarget.Group RecordGroup.Payment)
         "group.payment.label"
         Violation.PaymentClearRequired
+        "PAYMENT_CLEAR_REQUIRED"
+        []
 
 let private remainingTargets () =
-    assertTarget InputTarget.OperationId "input.operationId.label" Violation.OperationIdRequired
+    assertTarget
+        InputTarget.OperationId
+        "input.operationId.label"
+        Violation.OperationIdRequired
+        "OPERATION_ID_REQUIRED"
+        []
 
     assertTarget
         InputTarget.ExpectedRevision
         "input.expectedRevision.label"
         Violation.ExpectedRevisionRange
+        "EXPECTED_REVISION_RANGE"
+        []
 
-    assertTarget InputTarget.Reason "input.reason.label" Violation.TextRequired
-    assertTarget InputTarget.Limit "input.limit.label" (Violation.PageLimitRange 50)
+    assertTarget InputTarget.Reason "input.reason.label" Violation.TextRequired "TEXT_REQUIRED" []
+
+    assertTarget
+        InputTarget.Limit
+        "input.limit.label"
+        (Violation.PageLimitRange 50)
+        "PAGE_LIMIT_RANGE"
+        [ "maximumPageSize", "50" ]
 
     assertTarget
         (InputTarget.Field BusinessField.ClaimantName)
         "field.claimantName.label"
         (Violation.TooLong 200)
+        "TOO_LONG"
+        [ "maximumCharacters", "200" ]
 
-let private assertOptionalTarget refusal identity =
+let private assertOptionalTarget refusal identity code =
     let source = Frames.encode (frame refusal)
 
     for language in LocalizationPolicy.languages do
         let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
 
-        let message =
-            MessageCatalogs.render language ("diagnostic." + (Refusals.row refusal).Code) Map.empty
+        let message = MessageCatalogs.render language ("diagnostic." + code) Map.empty
 
         let expected =
             identity
@@ -131,7 +158,10 @@ let tests =
                 "operation revision reason page and limit parameters retain their identity"
                 remainingTargets
             testCase "cursor uses a localized identity" (fun () ->
-                assertOptionalTarget Refusal.InvalidCursor (Some "input.cursor.label"))
+                assertOptionalTarget
+                    Refusal.InvalidCursor
+                    (Some "input.cursor.label")
+                    "INVALID_CURSOR")
             testCase "targetless refusal has no invented target" (fun () ->
-                assertOptionalTarget Refusal.ResourceUnavailable None)
+                assertOptionalTarget Refusal.ResourceUnavailable None "RESOURCE_UNAVAILABLE")
         ]

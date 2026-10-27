@@ -35,8 +35,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   const { outcome } = (await policy.ready).reply;
   expect(outcome.kind).toBe("REJECTED");
   if (outcome.kind === "REJECTED") {
-    expect(outcome.data.code).toBe("TOO_LONG");
-    expect(outcome.data.target).toBe("claimantName");
+    expect(outcome.data).toMatchObject({ code: "TOO_LONG", target: "claimantName" });
   }
   policy.release();
   await expect(name).toBeFocused();

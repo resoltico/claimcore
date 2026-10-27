@@ -10,20 +10,14 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
       ? localNotice("definitionMismatch")
       : {
           kind: "diagnostic",
-          diagnostic: {
-            code: result.failure.code,
-            limits: {},
-          },
+          diagnostic: result.failure,
         };
   }
   const { outcome } = result.value;
   if (outcome.kind === "REJECTED" || outcome.kind === "FAILED") {
     return {
       kind: "diagnostic",
-      diagnostic: {
-        code: outcome.data.code,
-        limits: "limits" in outcome.data ? outcome.data.limits : {},
-      },
+      diagnostic: outcome.data,
     };
   }
   if (outcome.kind === "OUTCOME_UNKNOWN") {

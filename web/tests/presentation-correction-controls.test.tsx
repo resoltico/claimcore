@@ -81,8 +81,6 @@ it("associates payment acknowledgement with the generated mode control", async (
           code: "PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
           action: "CORRECT_INPUT",
           target: "payment",
-          actualRevision: null,
-          limits: {},
         }),
       ),
     ),

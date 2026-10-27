@@ -38,9 +38,3 @@ type RecommendedAction =
     | Reauthenticate
     | StopAndInvestigate
     | NoneRequired
-
-type RefusalRow =
-    {
-        Code: string
-        Action: RecommendedAction
-    }

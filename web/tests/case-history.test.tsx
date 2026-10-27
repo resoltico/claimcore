@@ -70,8 +70,6 @@ it("recovers a refused continuation with a fresh no-cursor request without repor
         code: "INVALID_CURSOR",
         action: "READ_CURRENT",
         target: "cursor",
-        actualRevision: null,
-        limits: {},
       }),
     )
     .mockResolvedValueOnce(

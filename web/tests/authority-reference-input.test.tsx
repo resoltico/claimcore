@@ -65,8 +65,6 @@ const rejectedPreview = () =>
             code: "REFERENCE_FORMAT",
             action: "CORRECT_INPUT",
             target: "caseReference",
-            actualRevision: null,
-            limits: {},
           },
         },
       },

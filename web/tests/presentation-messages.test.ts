@@ -74,7 +74,10 @@ it("renders every specific diagnostic using only its closed safe parameter contr
         range.enum?.[0] ?? range.minimum ?? 0,
       ]),
     );
-    const diagnostic = { code: id.slice(id.indexOf(".") + 1), limits: values } as DiagnosticNotice;
+    const diagnostic = {
+      code: id.slice(id.indexOf(".") + 1),
+      ...values,
+    } as unknown as DiagnosticNotice;
     for (const language of languages) {
       const p = { ...defaults, language };
       expect(renderNotice(p, { kind: "diagnostic", diagnostic })).not.toBe(
@@ -88,7 +91,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
     { maximumCharacters: 2147483648 },
     { maximumCharacters: 1.5 },
   ]) {
-    const diagnostic = { code: "TOO_LONG", limits: parameters } as DiagnosticNotice;
+    const diagnostic = { code: "TOO_LONG", ...parameters } as unknown as DiagnosticNotice;
     expect(renderNotice(defaults, { kind: "diagnostic", diagnostic })).toBe(
       translate(defaults, "notice.unknownDiagnostic"),
     );
@@ -96,7 +99,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
   expect(
     renderNotice(defaults, {
       kind: "diagnostic",
-      diagnostic: { code: "secret", limits: {} } as unknown as DiagnosticNotice,
+      diagnostic: { code: "secret" } as unknown as DiagnosticNotice,
     }),
   ).toBe(translate(defaults, "notice.unknownDiagnostic"));
 });

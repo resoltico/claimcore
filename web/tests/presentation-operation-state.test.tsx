@@ -109,8 +109,6 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
       code: "TEXT_REQUIRED",
       action: "CORRECT_INPUT",
       target: "claimantName",
-      actualRevision: null,
-      limits: {},
     }),
   );
   await waitFor(() => {

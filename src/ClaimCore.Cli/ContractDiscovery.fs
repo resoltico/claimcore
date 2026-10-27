@@ -97,9 +97,11 @@ module ContractDiscovery =
         let keys =
             [
                 yield!
-                    Refusals.definitions
+                    DiagnosticCodecs.definitions
                     |> List.map (fun definition -> "diagnostic." + definition.Id)
-                yield! CoreFaults.all |> List.map (fun (_, code) -> "fault." + code)
+                yield!
+                    DiagnosticCodecs.faultDefinitions
+                    |> List.map (fun definition -> "fault." + definition.Id)
                 yield!
                     HostFailures.all |> List.map (fun reason -> "host." + HostFailures.code reason)
             ]

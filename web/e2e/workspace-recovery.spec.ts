@@ -38,8 +38,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
   if (!isResponse("operation.preview", reply) || reply.outcome.kind !== "REJECTED") {
     throw new Error("Expected an Application principal refusal.");
   }
-  expect(reply.outcome.data.code).toBe("TEXT_REQUIRED");
-  expect(reply.outcome.data.target).toBe("principal.issuer");
+  expect(reply.outcome.data).toMatchObject({ code: "TEXT_REQUIRED", target: "principal.issuer" });
   await expect(page.getByRole("alert")).toContainText("A non-blank value is required.");
   await expect(page.locator('[name="target.issuer"]')).toBeFocused();
   await expect(page.locator('[name="target.subject"]')).toHaveValue(/^repair-/u);

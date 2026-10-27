@@ -303,30 +303,27 @@ module internal TextReply =
         | InputTarget.Cursor -> "input.cursor.label"
 
     let private refusalLines language refusal =
-        let row = Refusals.row refusal
+        let code, parameters = DiagnosticCodecs.describe refusal
 
         let arguments =
-            Refusals.parameters refusal
+            parameters
             |> List.map (fun (name, value) -> name, number (int64 value))
             |> Map.ofList
 
-        let message = MessageCatalogs.render language ("diagnostic." + row.Code) arguments
+        let message = MessageCatalogs.render language ("diagnostic." + code) arguments
 
         let message =
-            match
-                Refusals.field refusal
-                |> Option.bind (Vocabulary.tryParse InputTargets.vocabulary)
-            with
+            match Refusals.target refusal with
             | None -> message
             | Some target -> label language (diagnosticTargetIdentity target) + ": " + message
 
         [
             message
-            line language "cli.text.code" row.Code
+            line language "cli.text.code" code
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedActions.token row.Action)
+                (RecommendedActions.token refusal.Action)
         ]
 
     let private faultLines language fault =

@@ -89,8 +89,6 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
       code: "TEXT_REQUIRED",
       action: "CORRECT_INPUT",
       target: "caseReference",
-      actualRevision: null,
-      limits: {},
     }),
   );
   render(editor({ current: null, initialAct: "OPEN" }));

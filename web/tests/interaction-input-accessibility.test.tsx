@@ -9,7 +9,7 @@ import type { Notice } from "../src/protocol/notices";
 
 const error: Notice = {
   kind: "diagnostic",
-  diagnostic: { code: "PRINCIPAL_FORMAT", limits: {} },
+  diagnostic: { code: "PRINCIPAL_FORMAT", action: "CORRECT_INPUT", target: "principal.issuer" },
 };
 const preferences = (language: "en" | "lv" | "ar") => {
   localStorage.setItem(

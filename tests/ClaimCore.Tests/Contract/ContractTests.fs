@@ -236,18 +236,18 @@ let private diagnostics () =
     for fault, _ in CoreFaults.all do
         admitted Api.caseGet.Output (ReadReply.Failed fault) |> ignore
 
-    for value in
+    for value, expectedCode in
         [
-            ClaimCore.Domain.Refusal.InvalidCursor
-            ClaimCore.Domain.Refusal.LastOwner
-            ClaimCore.Domain.Refusal.ActNotPermitted
-            ClaimCore.Domain.Refusal.ResourceUnavailable
+            ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
+            ClaimCore.Domain.Refusal.LastOwner, "LAST_OWNER"
+            ClaimCore.Domain.Refusal.ActNotPermitted, "ACT_NOT_PERMITTED"
+            ClaimCore.Domain.Refusal.ResourceUnavailable, "RESOURCE_UNAVAILABLE"
         ] do
         let result = admitted Api.caseGet.Output (ReadReply.Rejected value)
 
         Expect.equal
             (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
-            (Refusals.row value).Code
+            expectedCode
             "The refusal carries its stable code"
 
 let private actionExpectations =
@@ -321,14 +321,22 @@ let private actionTokens () =
 
         Expect.equal (data.GetProperty("action").GetString()) expected "Literal wire guidance"
 
-        Expect.equal
-            (data.GetProperty("target").GetString())
-            (Option.toObj field)
-            "Serialized field metadata is retained"
+        let mutable encodedTarget = Unchecked.defaultof<JsonElement>
+        let hasTarget = data.TryGetProperty("target", &encodedTarget)
+        Expect.equal hasTarget field.IsSome "Only applicable target metadata is serialized"
 
-        let encodedRevision = data.GetProperty("actualRevision").GetRawText()
-        let expectedRevision = revision |> Option.map string |> Option.defaultValue "null"
-        Expect.equal encodedRevision expectedRevision "Serialized revision metadata is retained"
+        field
+        |> Option.iter (fun target ->
+            Expect.equal (encodedTarget.GetString()) target "Literal target")
+
+        let mutable encodedRevision = Unchecked.defaultof<JsonElement>
+        let hasRevision = data.TryGetProperty("actualRevision", &encodedRevision)
+        Expect.equal hasRevision revision.IsSome "Only revision conflicts carry revision metadata"
+
+        revision
+        |> Option.iter (fun revision ->
+            Expect.equal (encodedRevision.GetInt64()) revision "Literal revision")
+
         Expect.equal refusal.Field field "Field metadata is retained"
         Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
 

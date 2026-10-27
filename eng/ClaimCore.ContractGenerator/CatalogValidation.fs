@@ -80,13 +80,15 @@ module CatalogValidation =
             then
                 matches key Set.empty
 
-        for definition in Refusals.definitions do
+        for definition in DiagnosticCodecs.definitions do
             matches
                 ("diagnostic." + definition.Id)
                 (definition.Parameters |> List.map _.Name |> Set.ofList)
 
-        for _, code in CoreFaults.all do
-            matches ("fault." + code) Set.empty
+        for definition in DiagnosticCodecs.faultDefinitions do
+            matches
+                ("fault." + definition.Id)
+                (definition.Parameters |> List.map _.Name |> Set.ofList)
 
         for failure in HostFailures.all do
             matches ("host." + HostFailures.code failure) Set.empty

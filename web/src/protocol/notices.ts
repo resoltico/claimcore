@@ -1,8 +1,5 @@
 import type { Diagnostic, Fault, HostFailure } from "@contracts/client";
-export type DiagnosticNotice = {
-  readonly code: Diagnostic["code"] | Fault["code"] | HostFailure["code"];
-  readonly limits: Readonly<Record<string, number | string>>;
-};
+export type DiagnosticNotice = Diagnostic | Fault | HostFailure;
 export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"

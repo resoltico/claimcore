@@ -6,7 +6,6 @@
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="RecordFields.fs" />
-    <Compile Include="Vocabulary/FaultDiagnosticIds.fs" />
     <Compile Include="Refusals/Faults.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />

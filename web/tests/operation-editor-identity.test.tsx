@@ -57,23 +57,16 @@ const refusedResponse = () =>
   response("operation.execute", "REJECTED", {
     code: "IDEMPOTENCY_CONFLICT",
     action: "STOP_AND_INVESTIGATE",
-    target: null,
-    actualRevision: null,
-    limits: {},
   });
 const validationRefusal: Diagnostic = {
   code: "TEXT_REQUIRED",
   action: "CORRECT_INPUT",
   target: "claimantName",
-  actualRevision: null,
-  limits: {},
 };
 const staleRefusal: Diagnostic = {
   code: "REVISION_CONFLICT",
   action: "READ_CURRENT",
-  target: null,
   actualRevision: 2,
-  limits: {},
 };
 const rejectedResponse = (rejection: Diagnostic) =>
   response("operation.preview", "REJECTED", rejection);

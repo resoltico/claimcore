@@ -153,10 +153,11 @@ let private zeroRevisionReply endpoint status response =
     Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "No response encoding failure"
     let diagnostic = outcome.GetProperty("data")
 
-    Expect.equal
-        (diagnostic.GetProperty("target").ValueKind)
-        JsonValueKind.Null
-        "Original target guidance is unchanged"
+    let mutable target = Unchecked.defaultof<JsonElement>
+
+    Expect.isFalse
+        (diagnostic.TryGetProperty("target", &target))
+        "A revision conflict has no input target"
 
     Expect.equal
         (diagnostic.GetProperty("code").GetString())

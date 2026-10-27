@@ -45,16 +45,10 @@ export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operatio
         ? {
             code: "IDEMPOTENCY_CONFLICT",
             action: "STOP_AND_INVESTIGATE",
-            target: null,
-            actualRevision: null,
-            limits: {},
           }
         : {
             code: "RESOURCE_UNAVAILABLE",
             action: "NONE_REQUIRED",
-            target: null,
-            actualRevision: null,
-            limits: {},
           },
     },
   },

@@ -87,7 +87,7 @@ let private baselinePolicy code (reason: Refusal) =
             "Principal admission is repairable input."
 
 let private diagnostic reason =
-    let identifier = (Refusals.row reason).Code
+    let identifier = DiagnosticCodecs.code reason
 
     let reply: ReadReply<CaseReadModel> = ReadReply.Rejected reason
     let encoded = Codec.encode Api.caseGet.Output reply
@@ -462,7 +462,7 @@ let private completeVocabulary () =
         let baselineCodes = baseline.Value.Keys |> Seq.map fst |> Set.ofSeq
 
         Expect.equal
-            (Set.ofList Refusals.codes)
+            (Set.ofList DiagnosticCodecs.codes)
             (baselineCodes |> Set.add "PRINCIPAL_FORMAT" |> Set.add "OPERATION_RESOLVED")
             "The code table preserves every captured refusal with the adopted principal extension."
 
@@ -474,7 +474,7 @@ let private completeVocabulary () =
                 "Captured code/target witnesses missing: %A"
                 (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced))
 
-        let expected = Refusals.codes |> Set.ofList
+        let expected = DiagnosticCodecs.codes |> Set.ofList
 
         Expect.isEmpty
             (Set.difference expected identifiers |> Set.toList)
@@ -532,7 +532,7 @@ let private missingCasePrivacy () =
                 "Missing case stays private"
 
         Expect.isFalse
-            (Refusals.codes |> List.contains "CASE_NOT_FOUND")
+            (DiagnosticCodecs.codes |> List.contains "CASE_NOT_FOUND")
             "Domain-only missing state has no public diagnostic"
     }
 

@@ -1105,23 +1105,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "INPUT_INVALID"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "INPUT_INVALID"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1157,23 +1153,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "SESSION_REJECTED"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "SESSION_REJECTED"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1309,23 +1301,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "ENDPOINT_MISSING"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "ENDPOINT_MISSING"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1361,23 +1349,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "METHOD_REJECTED"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "METHOD_REJECTED"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1413,23 +1397,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "CONTRACT_MISMATCH"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "CONTRACT_MISMATCH"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1465,23 +1445,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "BODY_TOO_LARGE"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "BODY_TOO_LARGE"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1517,23 +1493,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "MEDIA_TYPE_REJECTED"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "MEDIA_TYPE_REJECTED"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -1569,23 +1541,19 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "const": "RATE_LIMITED"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "const": "RATE_LIMITED"
+                        },
+                        "phase": {
+                          "const": "NOT_STARTED"
                         }
+                      },
+                      "required": [
+                        "code",
+                        "phase"
                       ]
                     }
                   },
@@ -3495,748 +3463,396 @@
       "Diagnostic": {
         "oneOf": [
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "TEXT_REQUIRED"
-                  },
-                  {
-                    "const": "MALFORMED_UNICODE"
-                  },
-                  {
-                    "const": "SURROUNDING_WHITESPACE"
-                  },
-                  {
-                    "const": "CONTROL_CHARACTERS"
-                  },
-                  {
-                    "const": "FORMATTING_CHARACTER"
-                  },
-                  {
-                    "const": "REFERENCE_FORMAT"
-                  },
-                  {
-                    "const": "COUNTRY_FORMAT"
-                  },
-                  {
-                    "const": "PRINCIPAL_FORMAT"
-                  },
-                  {
-                    "const": "CALENDAR_DATE_REQUIRED"
-                  },
-                  {
-                    "const": "CHRONOLOGICAL_ORDER"
-                  },
-                  {
-                    "const": "FUTURE_DATE"
-                  },
-                  {
-                    "const": "CURRENCY_FORMAT"
-                  },
-                  {
-                    "const": "OPERATION_ID_REQUIRED"
-                  },
-                  {
-                    "const": "EXPECTED_REVISION_RANGE"
-                  },
-                  {
-                    "const": "PAYMENT_CLEAR_REQUIRED"
-                  },
-                  {
-                    "const": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "CORRECT_INPUT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "incidentDate"
-                  },
-                  {
-                    "const": "incidentNotificationDate"
-                  },
-                  {
-                    "const": "incidentCountry"
-                  },
-                  {
-                    "const": "claimantName"
-                  },
-                  {
-                    "const": "insurerName"
-                  },
-                  {
-                    "const": "claimedAmount"
-                  },
-                  {
-                    "const": "claimedCurrency"
-                  },
-                  {
-                    "const": "caseReference"
-                  },
-                  {
-                    "const": "paymentDecisionDate"
-                  },
-                  {
-                    "const": "payableAmount"
-                  },
-                  {
-                    "const": "payableCurrency"
-                  },
-                  {
-                    "const": "paymentDate"
-                  },
-                  {
-                    "const": "operationId"
-                  },
-                  {
-                    "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
-                  },
-                  {
-                    "const": "reason"
-                  },
-                  {
-                    "const": "principal.issuer"
-                  },
-                  {
-                    "const": "principal.subject"
-                  },
-                  {
-                    "const": "limit"
-                  },
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.TEXT_REQUIRED"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "TOO_LONG"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "CORRECT_INPUT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "incidentDate"
-                  },
-                  {
-                    "const": "incidentNotificationDate"
-                  },
-                  {
-                    "const": "incidentCountry"
-                  },
-                  {
-                    "const": "claimantName"
-                  },
-                  {
-                    "const": "insurerName"
-                  },
-                  {
-                    "const": "claimedAmount"
-                  },
-                  {
-                    "const": "claimedCurrency"
-                  },
-                  {
-                    "const": "caseReference"
-                  },
-                  {
-                    "const": "paymentDecisionDate"
-                  },
-                  {
-                    "const": "payableAmount"
-                  },
-                  {
-                    "const": "payableCurrency"
-                  },
-                  {
-                    "const": "paymentDate"
-                  },
-                  {
-                    "const": "operationId"
-                  },
-                  {
-                    "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
-                  },
-                  {
-                    "const": "reason"
-                  },
-                  {
-                    "const": "principal.issuer"
-                  },
-                  {
-                    "const": "principal.subject"
-                  },
-                  {
-                    "const": "limit"
-                  },
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "maximumCharacters": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 2147483647
-                  }
-                },
-                "required": [
-                  "maximumCharacters"
-                ]
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.TOO_LONG"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "DECIMAL_FORMAT"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "CORRECT_INPUT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "incidentDate"
-                  },
-                  {
-                    "const": "incidentNotificationDate"
-                  },
-                  {
-                    "const": "incidentCountry"
-                  },
-                  {
-                    "const": "claimantName"
-                  },
-                  {
-                    "const": "insurerName"
-                  },
-                  {
-                    "const": "claimedAmount"
-                  },
-                  {
-                    "const": "claimedCurrency"
-                  },
-                  {
-                    "const": "caseReference"
-                  },
-                  {
-                    "const": "paymentDecisionDate"
-                  },
-                  {
-                    "const": "payableAmount"
-                  },
-                  {
-                    "const": "payableCurrency"
-                  },
-                  {
-                    "const": "paymentDate"
-                  },
-                  {
-                    "const": "operationId"
-                  },
-                  {
-                    "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
-                  },
-                  {
-                    "const": "reason"
-                  },
-                  {
-                    "const": "principal.issuer"
-                  },
-                  {
-                    "const": "principal.subject"
-                  },
-                  {
-                    "const": "limit"
-                  },
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "maximumFractionalDigits": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 2147483647
-                  },
-                  "maximumIntegerDigits": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 2147483647
-                  }
-                },
-                "required": [
-                  "maximumFractionalDigits",
-                  "maximumIntegerDigits"
-                ]
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.DECIMAL_FORMAT"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "PAGE_LIMIT_RANGE"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "CORRECT_INPUT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "incidentDate"
-                  },
-                  {
-                    "const": "incidentNotificationDate"
-                  },
-                  {
-                    "const": "incidentCountry"
-                  },
-                  {
-                    "const": "claimantName"
-                  },
-                  {
-                    "const": "insurerName"
-                  },
-                  {
-                    "const": "claimedAmount"
-                  },
-                  {
-                    "const": "claimedCurrency"
-                  },
-                  {
-                    "const": "caseReference"
-                  },
-                  {
-                    "const": "paymentDecisionDate"
-                  },
-                  {
-                    "const": "payableAmount"
-                  },
-                  {
-                    "const": "payableCurrency"
-                  },
-                  {
-                    "const": "paymentDate"
-                  },
-                  {
-                    "const": "operationId"
-                  },
-                  {
-                    "const": "expectedRevision"
-                  },
-                  {
-                    "const": "payment"
-                  },
-                  {
-                    "const": "reason"
-                  },
-                  {
-                    "const": "principal.issuer"
-                  },
-                  {
-                    "const": "principal.subject"
-                  },
-                  {
-                    "const": "limit"
-                  },
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "maximumPageSize": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 2147483647
-                  }
-                },
-                "required": [
-                  "maximumPageSize"
-                ]
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.PAGE_LIMIT_RANGE"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "REVISION_CONFLICT"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "READ_CURRENT"
-                  }
-                ]
-              },
-              "target": {
-                "type": "null"
-              },
-              "actualRevision": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.REVISION_CONFLICT"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "CASE_ALREADY_EXISTS"
-                  },
-                  {
-                    "const": "CASE_ERASED"
-                  },
-                  {
-                    "const": "CASE_VOIDED"
-                  },
-                  {
-                    "const": "ALREADY_VOIDED"
-                  },
-                  {
-                    "const": "NOT_VOIDED"
-                  },
-                  {
-                    "const": "CASE_CLOSED"
-                  },
-                  {
-                    "const": "ALREADY_CLOSED"
-                  },
-                  {
-                    "const": "ALREADY_OPENED"
-                  },
-                  {
-                    "const": "AMENDMENT_REQUIRES_UNDECIDED"
-                  },
-                  {
-                    "const": "CORRECTION_NO_CHANGES"
-                  },
-                  {
-                    "const": "CORRECTION_REQUIRES_EXISTING_VALUE"
-                  },
-                  {
-                    "const": "DECISION_REQUIRED"
-                  },
-                  {
-                    "const": "PAYMENT_ALREADY_RECORDED"
-                  },
-                  {
-                    "const": "PAYMENT_NOT_RECORDED"
-                  },
-                  {
-                    "const": "DECISION_ALREADY_PAID"
-                  },
-                  {
-                    "const": "ZERO_DECISION_CANNOT_BE_PAID"
-                  },
-                  {
-                    "const": "RESOURCE_UNAVAILABLE"
-                  },
-                  {
-                    "const": "ACT_NOT_PERMITTED"
-                  },
-                  {
-                    "const": "LAST_OWNER"
-                  },
-                  {
-                    "const": "ACTOR_ALREADY_REGISTERED"
-                  },
-                  {
-                    "const": "ACTOR_UNKNOWN"
-                  },
-                  {
-                    "const": "HUMAN_PRINCIPAL_REQUIRED"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "NONE_REQUIRED"
-                  }
-                ]
-              },
-              "target": {
-                "type": "null"
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "IDEMPOTENCY_CONFLICT"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "STOP_AND_INVESTIGATE"
-                  }
-                ]
-              },
-              "target": {
-                "type": "null"
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.OPERATION_RESOLVED"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "OPERATION_RESOLVED"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "READ_CURRENT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "operationId"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "INVALID_CURSOR"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "READ_CURRENT"
-                  }
-                ]
-              },
-              "target": {
-                "oneOf": [
-                  {
-                    "const": "cursor"
-                  }
-                ]
-              },
-              "actualRevision": {
-                "type": "null"
-              },
-              "limits": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {},
-                "required": []
-              }
-            },
-            "required": [
-              "code",
-              "action",
-              "target",
-              "actualRevision",
-              "limits"
-            ]
+            "$ref": "#/components/schemas/Diagnostic.INVALID_CURSOR"
           }
+        ],
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "TEXT_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "MALFORMED_UNICODE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "SURROUNDING_WHITESPACE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "CONTROL_CHARACTERS": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "FORMATTING_CHARACTER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "REFERENCE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "COUNTRY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "PRINCIPAL_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "CALENDAR_DATE_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "CHRONOLOGICAL_ORDER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "FUTURE_DATE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "CURRENCY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "OPERATION_ID_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "EXPECTED_REVISION_RANGE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
+            "TOO_LONG": "#/components/schemas/Diagnostic.TOO_LONG",
+            "DECIMAL_FORMAT": "#/components/schemas/Diagnostic.DECIMAL_FORMAT",
+            "PAGE_LIMIT_RANGE": "#/components/schemas/Diagnostic.PAGE_LIMIT_RANGE",
+            "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
+            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "CASE_ERASED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "CASE_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ALREADY_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "NOT_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "CASE_CLOSED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ALREADY_CLOSED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ALREADY_OPENED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ACT_NOT_PERMITTED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "LAST_OWNER": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "OPERATION_RESOLVED": "#/components/schemas/Diagnostic.OPERATION_RESOLVED",
+            "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
+            "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
+          }
+        }
+      },
+      "Diagnostic.CASE_ALREADY_EXISTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "const": "CASE_ALREADY_EXISTS"
+              },
+              {
+                "const": "CASE_ERASED"
+              },
+              {
+                "const": "CASE_VOIDED"
+              },
+              {
+                "const": "ALREADY_VOIDED"
+              },
+              {
+                "const": "NOT_VOIDED"
+              },
+              {
+                "const": "CASE_CLOSED"
+              },
+              {
+                "const": "ALREADY_CLOSED"
+              },
+              {
+                "const": "ALREADY_OPENED"
+              },
+              {
+                "const": "AMENDMENT_REQUIRES_UNDECIDED"
+              },
+              {
+                "const": "CORRECTION_NO_CHANGES"
+              },
+              {
+                "const": "CORRECTION_REQUIRES_EXISTING_VALUE"
+              },
+              {
+                "const": "DECISION_REQUIRED"
+              },
+              {
+                "const": "PAYMENT_ALREADY_RECORDED"
+              },
+              {
+                "const": "PAYMENT_NOT_RECORDED"
+              },
+              {
+                "const": "DECISION_ALREADY_PAID"
+              },
+              {
+                "const": "ZERO_DECISION_CANNOT_BE_PAID"
+              },
+              {
+                "const": "RESOURCE_UNAVAILABLE"
+              },
+              {
+                "const": "ACT_NOT_PERMITTED"
+              },
+              {
+                "const": "LAST_OWNER"
+              },
+              {
+                "const": "ACTOR_ALREADY_REGISTERED"
+              },
+              {
+                "const": "ACTOR_UNKNOWN"
+              },
+              {
+                "const": "HUMAN_PRINCIPAL_REQUIRED"
+              }
+            ]
+          },
+          "action": {
+            "const": "NONE_REQUIRED"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "Diagnostic.DECIMAL_FORMAT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "DECIMAL_FORMAT"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumIntegerDigits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "maximumFractionalDigits": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target",
+          "maximumIntegerDigits",
+          "maximumFractionalDigits"
+        ]
+      },
+      "Diagnostic.IDEMPOTENCY_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "IDEMPOTENCY_CONFLICT"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "Diagnostic.INVALID_CURSOR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "INVALID_CURSOR"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "target": {
+            "const": "cursor"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target"
+        ]
+      },
+      "Diagnostic.OPERATION_RESOLVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "OPERATION_RESOLVED"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "target": {
+            "const": "operationId"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target"
+        ]
+      },
+      "Diagnostic.PAGE_LIMIT_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "PAGE_LIMIT_RANGE"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumPageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target",
+          "maximumPageSize"
+        ]
+      },
+      "Diagnostic.REVISION_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REVISION_CONFLICT"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "actualRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "actualRevision"
+        ]
+      },
+      "Diagnostic.TEXT_REQUIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "const": "TEXT_REQUIRED"
+              },
+              {
+                "const": "MALFORMED_UNICODE"
+              },
+              {
+                "const": "SURROUNDING_WHITESPACE"
+              },
+              {
+                "const": "CONTROL_CHARACTERS"
+              },
+              {
+                "const": "FORMATTING_CHARACTER"
+              },
+              {
+                "const": "REFERENCE_FORMAT"
+              },
+              {
+                "const": "COUNTRY_FORMAT"
+              },
+              {
+                "const": "PRINCIPAL_FORMAT"
+              },
+              {
+                "const": "CALENDAR_DATE_REQUIRED"
+              },
+              {
+                "const": "CHRONOLOGICAL_ORDER"
+              },
+              {
+                "const": "FUTURE_DATE"
+              },
+              {
+                "const": "CURRENCY_FORMAT"
+              },
+              {
+                "const": "OPERATION_ID_REQUIRED"
+              },
+              {
+                "const": "EXPECTED_REVISION_RANGE"
+              },
+              {
+                "const": "PAYMENT_CLEAR_REQUIRED"
+              },
+              {
+                "const": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+              }
+            ]
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/InputTarget"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target"
+        ]
+      },
+      "Diagnostic.TOO_LONG": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "TOO_LONG"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumCharacters": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target",
+          "maximumCharacters"
         ]
       },
       "Empty": {
@@ -4373,62 +3989,66 @@
       "Fault": {
         "oneOf": [
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "CORE_INTERNAL_ERROR"
-                  },
-                  {
-                    "const": "CORE_STORE_INTEGRITY_ERROR"
-                  },
-                  {
-                    "const": "CORE_SCHEMA_MISMATCH"
-                  },
-                  {
-                    "const": "CORE_OPERATION_CONTENT_CONFLICT"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "STOP_AND_INVESTIGATE"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "code",
-              "action"
-            ]
+            "$ref": "#/components/schemas/Fault.CORE_INTERNAL_ERROR"
           },
           {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "oneOf": [
-                  {
-                    "const": "CORE_STORE_UNAVAILABLE"
-                  }
-                ]
-              },
-              "action": {
-                "oneOf": [
-                  {
-                    "const": "RETRY_SAFE"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "code",
-              "action"
-            ]
+            "$ref": "#/components/schemas/Fault.CORE_STORE_UNAVAILABLE"
           }
+        ],
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "CORE_INTERNAL_ERROR": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
+            "CORE_STORE_INTEGRITY_ERROR": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
+            "CORE_SCHEMA_MISMATCH": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
+            "CORE_OPERATION_CONTENT_CONFLICT": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
+            "CORE_STORE_UNAVAILABLE": "#/components/schemas/Fault.CORE_STORE_UNAVAILABLE"
+          }
+        }
+      },
+      "Fault.CORE_INTERNAL_ERROR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "const": "CORE_INTERNAL_ERROR"
+              },
+              {
+                "const": "CORE_STORE_INTEGRITY_ERROR"
+              },
+              {
+                "const": "CORE_SCHEMA_MISMATCH"
+              },
+              {
+                "const": "CORE_OPERATION_CONTENT_CONFLICT"
+              }
+            ]
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "Fault.CORE_STORE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CORE_STORE_UNAVAILABLE"
+          },
+          "action": {
+            "const": "RETRY_SAFE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
         ]
       },
       "FieldChange": {
@@ -4656,11 +4276,7 @@
               "additionalProperties": false,
               "properties": {
                 "kind": {
-                  "oneOf": [
-                    {
-                      "const": "SUMMARY"
-                    }
-                  ]
+                  "const": "SUMMARY"
                 },
                 "change": {
                   "$ref": "#/components/schemas/ChangeSummary"
@@ -4681,11 +4297,7 @@
               "additionalProperties": false,
               "properties": {
                 "kind": {
-                  "oneOf": [
-                    {
-                      "const": "SUMMARY"
-                    }
-                  ]
+                  "const": "SUMMARY"
                 },
                 "change": {
                   "$ref": "#/components/schemas/ChangeSummary"
@@ -4706,11 +4318,7 @@
               "additionalProperties": false,
               "properties": {
                 "kind": {
-                  "oneOf": [
-                    {
-                      "const": "FULL"
-                    }
-                  ]
+                  "const": "FULL"
                 },
                 "receipt": {
                   "$ref": "#/components/schemas/CaseReceipt"
@@ -5107,6 +4715,70 @@
               "code",
               "phase"
             ]
+          }
+        ]
+      },
+      "InputTarget": {
+        "oneOf": [
+          {
+            "const": "incidentDate"
+          },
+          {
+            "const": "incidentNotificationDate"
+          },
+          {
+            "const": "incidentCountry"
+          },
+          {
+            "const": "claimantName"
+          },
+          {
+            "const": "insurerName"
+          },
+          {
+            "const": "claimedAmount"
+          },
+          {
+            "const": "claimedCurrency"
+          },
+          {
+            "const": "caseReference"
+          },
+          {
+            "const": "paymentDecisionDate"
+          },
+          {
+            "const": "payableAmount"
+          },
+          {
+            "const": "payableCurrency"
+          },
+          {
+            "const": "paymentDate"
+          },
+          {
+            "const": "operationId"
+          },
+          {
+            "const": "expectedRevision"
+          },
+          {
+            "const": "payment"
+          },
+          {
+            "const": "reason"
+          },
+          {
+            "const": "principal.issuer"
+          },
+          {
+            "const": "principal.subject"
+          },
+          {
+            "const": "limit"
+          },
+          {
+            "const": "cursor"
           }
         ]
       },

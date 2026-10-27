@@ -16,20 +16,23 @@ module MessageGeneration =
 
     let private requirements =
         [
-            for definition in Refusals.definitions do
-                let parameters =
-                    definition.Parameters
-                    |> List.map (fun parameter ->
-                        parameter.Name,
-                        JsonValue.Object
-                            [
-                                "minimum", JsonValue.Integer(int64 parameter.Minimum)
-                                "maximum", JsonValue.Integer(int64 parameter.Maximum)
-                            ])
+            for family, definitions in
+                [
+                    "diagnostic", DiagnosticCodecs.definitions
+                    "fault", DiagnosticCodecs.faultDefinitions
+                ] do
+                for definition in definitions do
+                    let parameters =
+                        definition.Parameters
+                        |> List.map (fun parameter ->
+                            parameter.Name,
+                            JsonValue.Object
+                                [
+                                    "minimum", JsonValue.Integer(int64 parameter.Minimum)
+                                    "maximum", JsonValue.Integer(int64 parameter.Maximum)
+                                ])
 
-                yield "diagnostic." + definition.Id, JsonValue.Object parameters
-            for _, code in CoreFaults.all do
-                yield "fault." + code, JsonValue.Object []
+                    yield family + "." + definition.Id, JsonValue.Object parameters
             for failure in HostFailures.all do
                 yield "host." + HostFailures.code failure, JsonValue.Object []
         ]

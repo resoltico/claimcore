@@ -39,9 +39,6 @@ const unavailable: ApiResult<ListResponse> = {
       data: {
         code: "RESOURCE_UNAVAILABLE",
         action: "NONE_REQUIRED",
-        target: null,
-        actualRevision: null,
-        limits: {},
       },
     },
   },
@@ -104,7 +101,7 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
         kind: "diagnostic",
         diagnostic: {
           code: "RESOURCE_UNAVAILABLE",
-          limits: {},
+          action: "NONE_REQUIRED",
         },
       },
     }),
@@ -122,8 +119,6 @@ it("resets an invalid continuation locally and waits for a deliberate fresh relo
           code: "INVALID_CURSOR",
           action: "READ_CURRENT",
           target: "cursor",
-          actualRevision: null,
-          limits: {},
         },
       },
     },
