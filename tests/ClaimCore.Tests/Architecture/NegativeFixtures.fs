@@ -181,3 +181,14 @@ type ApplicationInternalsFromWebTask =
             do! Task.Yield()
             return ClaimCore.Application.LedgerEntries.position 0L (Array.zeroCreate 32)
         }
+
+type RecordFormatFromDomain =
+    static member RecordDirect() =
+        typeof<ClaimCore.RecordFormat.DecodeProblem>
+
+type RecordFormatFromDomainTask =
+    static member RecordTask() =
+        task {
+            do! Task.Yield()
+            return typeof<ClaimCore.RecordFormat.DecodeProblem>
+        }

@@ -271,6 +271,14 @@ let private shapeControls () =
                     .GetType("ClaimCore.Tests.Architecture.NegativeFixtures.MisnamedTaskVocabulary")
             ),
             [ "TaskShape" ]
+            ArchitectureRule.DomainBoundary, typeof<JsonFromDomain>, [ "JsonDirect" ]
+            ArchitectureRule.DomainBoundary, typeof<JsonFromDomainTask>, [ "JsonTask" ]
+            ArchitectureRule.DomainBoundary, typeof<PostgresShapes>, [ "PostgresDirect" ]
+            ArchitectureRule.DomainBoundary, typeof<PostgresTaskShape>, [ "PostgresTask" ]
+            ArchitectureRule.DomainBoundary, typeof<ApplicationShapes>, [ "ApplicationDirect" ]
+            ArchitectureRule.DomainBoundary, typeof<ApplicationTaskShape>, [ "ApplicationTask" ]
+            ArchitectureRule.DomainBoundary, typeof<RecordFormatFromDomain>, [ "RecordDirect" ]
+            ArchitectureRule.DomainBoundary, typeof<RecordFormatFromDomainTask>, [ "RecordTask" ]
             ArchitectureRule.DomainBoundary, typeof<DomainShapes>, [ "DomainDirect" ]
             ArchitectureRule.DomainBoundary, typeof<DomainTaskShape>, [ "DomainTask" ]
         ]
@@ -278,6 +286,10 @@ let private shapeControls () =
     for rule, fixture, members in cases do
         for memberName in members do
             let selected = shapeSubjects fixture memberName
+
+            Expect.isNonEmpty
+                (selected.GetObjects model.Value)
+                ("Compiled negative shape is present: " + memberName)
 
             Expect.isFalse
                 ((ApiRules.rule model.Value rule selected).HasNoViolations model.Value)
@@ -336,7 +348,7 @@ let private productFriends () =
 
     Expect.isEmpty grants "No product assembly grants friendship to another product"
 
-let private applicationProtocol () =
+let private serviceModelWithoutProtocol () =
     check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Application")
     check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Postgres")
 
@@ -351,7 +363,9 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
-            testCase "durable codecs reject wire codec dependencies" durableCodecs
+            testCase
+                "durable formats reject Protocol and Domain vocabulary dependencies"
+                durableCodecs
             testCase "JSON has no project dependencies" jsonDependencies
             testCase "F# compiled shapes reject every rule family" shapeControls
             testCase "empty subjects fail through ArchUnitNET" emptySubjects
@@ -365,8 +379,8 @@ let tests =
                 check ArchitectureRule.DomainJsonFree (Assembly.Load "ClaimCore.Domain"))
             testCase "vocabularies belong to their value type modules" vocabularyModuleNaming
             testCase
-                "Application uses models without wire codecs or endpoint descriptions"
-                applicationProtocol
+                "Application and Postgres use the service model without Protocol"
+                serviceModelWithoutProtocol
             testCase "evaluated product edges and Postgres boundary" postgres
             testCase
                 "published client closure rejects compiled server dependencies"

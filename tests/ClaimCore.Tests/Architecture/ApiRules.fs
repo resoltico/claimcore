@@ -261,6 +261,18 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         )
         :> IArchRule
     | ArchitectureRule.DomainBoundary ->
+        for assembly in
+            [
+                "ClaimCore.Protocol"
+                "ClaimCore.Application"
+                "ClaimCore.RecordFormat"
+                "ClaimCore.Json"
+                "ClaimCore.Postgres"
+            ] do
+            Types().That().ResideInAssembly(Assembly.Load assembly)
+            |> targets ("Domain excludes " + assembly)
+            |> ignore
+
         clauses.NotDependOnAny(
             Types()
                 .That()
@@ -269,6 +281,10 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                 .ResideInAssembly(Assembly.Load "ClaimCore.Application")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Json")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
             |> targets "Domain boundary"
         )
         :> IArchRule
