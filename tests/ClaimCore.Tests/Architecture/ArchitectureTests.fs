@@ -176,8 +176,8 @@ let private serializer () =
          |> fun selected -> selected.And().HaveFullName(typeof<JsonWriterCall>.FullName |> nonNull))
 
 let private durableCodecs () =
-    check ArchitectureRule.Durable (Assembly.Load "ClaimCore.RecordFormat")
-    rejects ArchitectureRule.Durable typeof<WireCodecCall>
+    check ArchitectureRule.DurableNames (Assembly.Load "ClaimCore.RecordFormat")
+    rejects ArchitectureRule.DurableNames typeof<WireCodecCall>
 
 let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
@@ -235,12 +235,20 @@ let private shapeControls () =
             ArchitectureRule.Pure, typeof<AmbientTaskClosureShape>, [ "AmbientTaskClosure" ]
             ArchitectureRule.Postgres, typeof<PostgresShapes>, [ "PostgresDirect" ]
             ArchitectureRule.Postgres, typeof<PostgresTaskShape>, [ "PostgresTask" ]
-            ArchitectureRule.Durable, typeof<DurableShapes>, [ "DurableDirect" ]
-            ArchitectureRule.Durable, typeof<DurableTaskShape>, [ "DurableTask" ]
+            ArchitectureRule.DurableNames,
+            typeof<VocabularyFromRecordFormat>,
+            [ "VocabularyDirect" ]
+            ArchitectureRule.DurableNames,
+            typeof<VocabularyFromRecordFormatTask>,
+            [ "VocabularyTask" ]
+            ArchitectureRule.DurableNames, typeof<DurableShapes>, [ "DurableDirect" ]
+            ArchitectureRule.DurableNames, typeof<DurableTaskShape>, [ "DurableTask" ]
             ArchitectureRule.Serializer, typeof<SerializerShapes>, [ "SerializerDirect" ]
             ArchitectureRule.Serializer, typeof<SerializerTaskShape>, [ "SerializerTask" ]
-            ArchitectureRule.ApplicationProtocol, typeof<ApplicationShapes>, [ "ApplicationDirect" ]
-            ArchitectureRule.ApplicationProtocol,
+            ArchitectureRule.ServiceModelWithoutProtocol,
+            typeof<ApplicationShapes>,
+            [ "ApplicationDirect" ]
+            ArchitectureRule.ServiceModelWithoutProtocol,
             typeof<ApplicationTaskShape>,
             [ "ApplicationTask" ]
             ArchitectureRule.VocabularyModuleNaming,
@@ -323,7 +331,8 @@ let private productFriends () =
     Expect.isEmpty grants "No product assembly grants friendship to another product"
 
 let private applicationProtocol () =
-    check ArchitectureRule.ApplicationProtocol (Assembly.Load "ClaimCore.Application")
+    check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Application")
+    check ArchitectureRule.ServiceModelWithoutProtocol (Assembly.Load "ClaimCore.Postgres")
 
 let private domainBoundary () =
     check ArchitectureRule.DomainBoundary (Assembly.Load "ClaimCore.Domain")

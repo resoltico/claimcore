@@ -135,10 +135,10 @@ module RequestCodecs =
         |> build
         |> named "Correction"
 
-    let private caseCodec registration decision payment reason correction =
+    let private caseCodec token registration decision payment reason correction =
         let memberCodec name codec inject project kind =
             variant
-                (CaseActKind.token kind)
+                (token kind)
                 (inject >> CaseAct.ofPayload kind)
                 (fun act ->
                     if CaseAct.kind act = kind then
@@ -151,7 +151,7 @@ module RequestCodecs =
         |> List.map (fun kind ->
             match CaseActKind.shape kind with
             | ActShape.NoValues ->
-                unitVariant (CaseActKind.token kind) (CaseAct.ofPayload kind ActPayload.Empty)
+                unitVariant (token kind) (CaseAct.ofPayload kind ActPayload.Empty)
             | ActShape.RegistrationValues ->
                 memberCodec
                     "values"
@@ -169,7 +169,10 @@ module RequestCodecs =
                 memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
         |> tagged "CaseAct"
 
-    let caseAct = caseCodec registration decision payment text correction
+    let caseActWithNames names =
+        caseCodec names registration decision payment text correction
+
+    let caseAct = caseActWithNames CaseActKind.token
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->

@@ -76,36 +76,37 @@ module Cursors =
     let encodeCases after =
         encode
             [
-                "after", JsonValue.String(CaseReference.key after)
-                "kind", JsonValue.String "CASES"
-                "v", JsonValue.Integer 1L
+                DurableNames.After, JsonValue.String(CaseReference.key after)
+                DurableNames.Kind, JsonValue.String "CASES"
+                DurableNames.V, JsonValue.Integer 1L
             ]
 
     let decodeCases token =
         decode
             (function
-            | JsonValue.Object [ "after", JsonValue.String after
-                                 "kind", JsonValue.String "CASES"
-                                 "v", JsonValue.Integer 1L ] when reference after -> Some after
+            | JsonValue.Object [ DurableNames.After, JsonValue.String after
+                                 DurableNames.Kind, JsonValue.String "CASES"
+                                 DurableNames.V, JsonValue.Integer 1L ] when reference after ->
+                Some after
             | _ -> None)
             token
 
     let encodeHistory reference after =
         encode
             [
-                "after", JsonValue.Integer after
-                "case", JsonValue.String(CaseReference.key reference)
-                "kind", JsonValue.String "HISTORY"
-                "v", JsonValue.Integer 1L
+                DurableNames.After, JsonValue.Integer after
+                DurableNames.Case, JsonValue.String(CaseReference.key reference)
+                DurableNames.Kind, JsonValue.String "HISTORY"
+                DurableNames.V, JsonValue.Integer 1L
             ]
 
     let decodeHistory requested token =
         decode
             (function
-            | JsonValue.Object [ "after", JsonValue.Integer after
-                                 "case", JsonValue.String target
-                                 "kind", JsonValue.String "HISTORY"
-                                 "v", JsonValue.Integer 1L ] when
+            | JsonValue.Object [ DurableNames.After, JsonValue.Integer after
+                                 DurableNames.Case, JsonValue.String target
+                                 DurableNames.Kind, JsonValue.String "HISTORY"
+                                 DurableNames.V, JsonValue.Integer 1L ] when
                 after >= 1L
                 && after <= Revision.Maximum
                 && reference target
@@ -118,17 +119,17 @@ module Cursors =
     let encodeActors (after: Guid) =
         encode
             [
-                "after", JsonValue.String(after.ToString("D"))
-                "kind", JsonValue.String "ACTORS"
-                "v", JsonValue.Integer 1L
+                DurableNames.After, JsonValue.String(after.ToString("D"))
+                DurableNames.Kind, JsonValue.String "ACTORS"
+                DurableNames.V, JsonValue.Integer 1L
             ]
 
     let decodeActors token =
         decode
             (function
-            | JsonValue.Object [ "after", JsonValue.String after
-                                 "kind", JsonValue.String "ACTORS"
-                                 "v", JsonValue.Integer 1L ] -> uuid after
+            | JsonValue.Object [ DurableNames.After, JsonValue.String after
+                                 DurableNames.Kind, JsonValue.String "ACTORS"
+                                 DurableNames.V, JsonValue.Integer 1L ] -> uuid after
             | _ -> None)
             token
 
@@ -136,19 +137,19 @@ module Cursors =
         let position =
             JsonValue.Object
                 [
-                    "caseId",
+                    DurableNames.CaseId,
                     after.CaseId
                     |> Option.map (fun id -> JsonValue.String(id.ToString("D")))
                     |> Option.defaultValue JsonValue.Null
-                    "role", JsonValue.String(Role.token after.Role)
+                    DurableNames.Role, JsonValue.String(DurableNames.role after.Role)
                 ]
 
         encode
             [
-                "actor", JsonValue.String(actorId.ToString("D"))
-                "after", position
-                "kind", JsonValue.String "GRANTS"
-                "v", JsonValue.Integer 1L
+                DurableNames.Actor, JsonValue.String(actorId.ToString("D"))
+                DurableNames.After, position
+                DurableNames.Kind, JsonValue.String "GRANTS"
+                DurableNames.V, JsonValue.Integer 1L
             ]
 
     let private grant role caseId =
@@ -158,18 +159,21 @@ module Cursors =
             | JsonValue.String value -> uuid value |> Option.map Some
             | _ -> None
 
-        match Role.parse role, scope with
+        match DurableNames.tryRole role, scope with
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 
     let decodeGrants actorId token =
         decode
             (function
-            | JsonValue.Object [ "actor", JsonValue.String target
-                                 "after",
-                                 JsonValue.Object [ "caseId", caseId; "role", JsonValue.String role ]
-                                 "kind", JsonValue.String "GRANTS"
-                                 "v", JsonValue.Integer 1L ] when uuid target = Some actorId ->
+            | JsonValue.Object [ DurableNames.Actor, JsonValue.String target
+                                 DurableNames.After,
+                                 JsonValue.Object [ DurableNames.CaseId, caseId
+                                                    DurableNames.Role, JsonValue.String role ]
+                                 DurableNames.Kind, JsonValue.String "GRANTS"
+                                 DurableNames.V, JsonValue.Integer 1L ] when
+                uuid target = Some actorId
+                ->
                 grant role caseId
             | _ -> None)
             token

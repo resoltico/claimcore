@@ -227,6 +227,9 @@ module Authority =
                     }
         }
 
+    /// Restores structurally parsed permanent inputs without current authorization decisions.
+    let restore operationId target (act: ValidAuthorityAct) = command operationId target act
+
     let parse (request: AuthorityRequest) =
         result {
             let! target =

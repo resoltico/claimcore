@@ -59,6 +59,9 @@ Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/
 
 ## Transactions and durable formats
 
+Permanent scalar grammars used to decode format-1 history may only be relaxed under the same record format number. Tightening a grammar requires a separately authorized format change. Independent permanent-limit vectors in `tests/fixtures/record-format-vectors.json` protect historical decoding. RecordFormat owns literal names and the 65,536-byte request-record ceiling; wire spelling and transport limits do not govern retained records.
+
+
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) exposes read/write callbacks over primitives.
 The PostgreSQL adapter creates a write transaction capability after taking the head lock. Reads use one
 repeatable-read snapshot; writes read decision state under the lock and commit only on Proceed. Receipt

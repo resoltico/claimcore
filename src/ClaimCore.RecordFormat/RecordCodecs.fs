@@ -8,6 +8,9 @@ open ClaimCore.Json
 module internal RecordCodecs =
     open Codec
 
+    let private tagged name variants =
+        Codec.taggedOn DurableNames.Kind name variants
+
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
@@ -15,7 +18,7 @@ module internal RecordCodecs =
         values |> List.map (fun value -> value, value) |> enumeration
 
     let private inputField name get fields =
-        Codec.field (BusinessField.key name) get Codec.text fields
+        Codec.field (DurableNames.field name) get Codec.text fields
 
     let registration =
         (Codec.record (fun incident notification country claimant insurer amount currency ->
@@ -63,44 +66,44 @@ module internal RecordCodecs =
         tagged
             "RegistrationGroup"
             [
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
                 variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    (DurableNames.correction CorrectionGroupAction.Replace)
                     Change.Replace
                     (function
                     | Change.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id registration)
+                    (record id |> field DurableNames.Values id registration)
             ]
 
     let decisionGroup =
         tagged
             "DecisionGroup"
             [
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
                 variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    (DurableNames.correction CorrectionGroupAction.Replace)
                     Change.Replace
                     (function
                     | Change.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id decision)
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+                    (record id |> field DurableNames.Values id decision)
+                unitVariant (DurableNames.correction CorrectionGroupAction.Clear) Change.Clear
             ]
 
     let paymentGroup =
         tagged
             "PaymentGroup"
             [
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
                 variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    (DurableNames.correction CorrectionGroupAction.Replace)
                     Change.Replace
                     (function
                     | Change.Replace value -> Some value
                     | _ -> None)
-                    (record id |> field "values" id payment)
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+                    (record id |> field DurableNames.Values id payment)
+                unitVariant (DurableNames.correction CorrectionGroupAction.Clear) Change.Clear
             ]
 
     let correction =
@@ -111,16 +114,16 @@ module internal RecordCodecs =
                 Payment = v2
             })
         : Fields<AuthoredCorrection, _>)
-        |> field "registration" _.Registration (registrationGroup)
-        |> field "decision" _.Decision (decisionGroup)
-        |> field "payment" _.Payment (paymentGroup)
+        |> field DurableNames.Registration _.Registration (registrationGroup)
+        |> field DurableNames.Decision _.Decision (decisionGroup)
+        |> field DurableNames.Payment _.Payment (paymentGroup)
         |> build
         |> named "Correction"
 
     let private caseCodec registration decision payment reason correction =
         let memberCodec name codec inject project kind =
             variant
-                (CaseActKind.token kind)
+                (DurableNames.caseAct kind)
                 (inject >> CaseAct.ofPayload kind)
                 (fun act ->
                     if CaseAct.kind act = kind then
@@ -129,26 +132,36 @@ module internal RecordCodecs =
                         None)
                 (record id |> field name id codec)
 
-        CaseActKind.all
+        DurableNames.caseKinds
         |> List.map (fun kind ->
             match CaseActKind.shape kind with
             | ActShape.NoValues ->
-                unitVariant (CaseActKind.token kind) (CaseAct.ofPayload kind ActPayload.Empty)
+                unitVariant (DurableNames.caseAct kind) (CaseAct.ofPayload kind ActPayload.Empty)
             | ActShape.RegistrationValues ->
                 memberCodec
-                    "values"
+                    DurableNames.Values
                     registration
                     ActPayload.Registration
                     ActPayload.registration
                     kind
             | ActShape.DecisionValues ->
-                memberCodec "values" decision ActPayload.Decision ActPayload.decision kind
+                memberCodec
+                    DurableNames.Values
+                    decision
+                    ActPayload.Decision
+                    ActPayload.decision
+                    kind
             | ActShape.PaymentValues ->
-                memberCodec "values" payment ActPayload.Payment ActPayload.payment kind
+                memberCodec DurableNames.Values payment ActPayload.Payment ActPayload.payment kind
             | ActShape.ReasonText ->
-                memberCodec "reason" reason ActPayload.Reason ActPayload.reason kind
+                memberCodec DurableNames.Reason reason ActPayload.Reason ActPayload.reason kind
             | ActShape.CorrectionGroups ->
-                memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
+                memberCodec
+                    DurableNames.Groups
+                    correction
+                    ActPayload.Correction
+                    ActPayload.correction
+                    kind)
         |> tagged "CaseAct"
 
     let caseAct = caseCodec registration decision payment text correction
@@ -162,10 +175,10 @@ module internal RecordCodecs =
                 Act = v3
             })
         : Fields<UnvalidatedCaseRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "caseReference" _.CaseReference (text)
-        |> field "expectedRevision" _.ExpectedRevision (revision)
-        |> field "act" _.Act (caseAct)
+        |> field DurableNames.OperationId _.OperationId (uuid)
+        |> field DurableNames.CaseReference _.CaseReference (text)
+        |> field DurableNames.ExpectedRevision _.ExpectedRevision (revision)
+        |> field DurableNames.Act _.Act (caseAct)
 
     let principal =
         (record (fun v0 v1 v2 ->
@@ -175,9 +188,9 @@ module internal RecordCodecs =
                 Subject = v2
             })
         : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens PrincipalKind.all)
-        |> field "issuer" _.Issuer (text)
-        |> field "subject" _.Subject (text)
+        |> field DurableNames.Kind _.Kind (tokens DurableNames.principalKinds)
+        |> field DurableNames.Issuer _.Issuer (text)
+        |> field DurableNames.Subject _.Subject (text)
         |> build
         |> named "Principal"
 
@@ -185,14 +198,14 @@ module internal RecordCodecs =
         tagged
             "Scope"
             [
-                unitVariant "INSTALLATION" GrantTarget.Installation
+                unitVariant DurableNames.InstallationScope GrantTarget.Installation
                 variant
-                    "CASE"
+                    DurableNames.CaseScope
                     GrantTarget.CaseReference
                     (function
                     | GrantTarget.CaseReference value -> Some value
                     | _ -> None)
-                    (record id |> field "caseReference" id text)
+                    (record id |> field DurableNames.CaseReference id text)
             ]
 
     let private authorityVariantsWith role scope =
@@ -202,13 +215,13 @@ module internal RecordCodecs =
                     GrantChange.Role = role
                     Scope = scope
                 })
-            |> field "role" _.Role role
-            |> field "scope" _.Scope scope
+            |> field DurableNames.Role _.Role role
+            |> field DurableNames.Scope _.Scope scope
 
-        AuthorityKind.all
+        DurableNames.authorityKinds
         |> List.filter ((<>) AuthorityKind.ProvisionOwner)
         |> List.map (fun kind ->
-            let token = AuthorityKind.token kind
+            let token = DurableNames.authorityAct kind
 
             match AuthorityAct.shape kind with
             | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
@@ -231,11 +244,11 @@ module internal RecordCodecs =
         let fields =
             caseRequestFields
             |> field
-                "format"
+                DurableNames.Format
                 (fun _ -> ())
                 (integer version version |> map (fun _ -> ()) (fun () -> version))
 
-        tagged "CaseRequestRecord.Subject" [ variant "CASE" id Some fields ]
+        tagged "CaseRequestRecord.Subject" [ variant DurableNames.CaseSubject id Some fields ]
 
     let private scalar parse format =
         text
@@ -280,14 +293,14 @@ module internal RecordCodecs =
                     ClaimedAmount = money
                 }))
         : Fields<Registration, _>)
-        |> field "incidentDate" _.IncidentDate acceptedDate
-        |> field "incidentNotificationDate" _.IncidentNotificationDate acceptedDate
-        |> field "incidentCountry" _.IncidentCountry acceptedCountry
-        |> field "claimantName" _.ClaimantName acceptedName
-        |> field "insurerName" _.InsurerName acceptedName
-        |> field "claimedAmount" (fun value -> Money.format value.ClaimedAmount) text
-        |> field "claimedCurrency" (fun value -> Money.currency value.ClaimedAmount) text
-        |> buildResult (moneyProblem "claimedAmount" "claimedCurrency")
+        |> field DurableNames.IncidentDate _.IncidentDate acceptedDate
+        |> field DurableNames.IncidentNotificationDate _.IncidentNotificationDate acceptedDate
+        |> field DurableNames.IncidentCountry _.IncidentCountry acceptedCountry
+        |> field DurableNames.ClaimantName _.ClaimantName acceptedName
+        |> field DurableNames.InsurerName _.InsurerName acceptedName
+        |> field DurableNames.ClaimedAmount (fun value -> Money.format value.ClaimedAmount) text
+        |> field DurableNames.ClaimedCurrency (fun value -> Money.currency value.ClaimedAmount) text
+        |> buildResult (moneyProblem DurableNames.ClaimedAmount DurableNames.ClaimedCurrency)
         |> named "Registration"
 
     let private acceptedDecision =
@@ -299,15 +312,15 @@ module internal RecordCodecs =
                     PayableAmount = money
                 }))
         : Fields<Decision, _>)
-        |> field "paymentDecisionDate" _.PaymentDecisionDate acceptedDate
-        |> field "payableAmount" (fun value -> Money.format value.PayableAmount) text
-        |> field "payableCurrency" (fun value -> Money.currency value.PayableAmount) text
-        |> buildResult (moneyProblem "payableAmount" "payableCurrency")
+        |> field DurableNames.PaymentDecisionDate _.PaymentDecisionDate acceptedDate
+        |> field DurableNames.PayableAmount (fun value -> Money.format value.PayableAmount) text
+        |> field DurableNames.PayableCurrency (fun value -> Money.currency value.PayableAmount) text
+        |> buildResult (moneyProblem DurableNames.PayableAmount DurableNames.PayableCurrency)
         |> named "Decision"
 
     let private acceptedPayment =
         (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
-        |> field "paymentDate" _.PaymentDate acceptedDate
+        |> field DurableNames.PaymentDate _.PaymentDate acceptedDate
         |> build
         |> named "Payment"
 
@@ -321,28 +334,28 @@ module internal RecordCodecs =
                 Payment = payment
             })
         : Fields<CaseFields, _>)
-        |> field "caseReference" _.CaseReference acceptedReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
-        |> field "registration" _.Registration acceptedRegistration
-        |> field "decision" _.Decision (nullable acceptedDecision)
-        |> field "payment" _.Payment (nullable acceptedPayment)
+        |> field DurableNames.CaseReference _.CaseReference acceptedReference
+        |> field DurableNames.Status _.Status (enumeration (DurableNames.statusEntries))
+        |> field DurableNames.Registration _.Registration acceptedRegistration
+        |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
+        |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
         |> build
 
     let liveState =
-        let fields = record id |> field "fields" id caseFields
+        let fields = record id |> field DurableNames.Fields id caseFields
 
         tagged
             "SnapshotRecord.State"
             [
                 variant
-                    "ACTIVE"
+                    (DurableNames.lifecycle Lifecycle.Active)
                     LiveCase.Active
                     (function
                     | LiveCase.Active fields -> Some fields
                     | _ -> None)
                     fields
                 variant
-                    "VOIDED"
+                    (DurableNames.lifecycle Lifecycle.Voided)
                     LiveCase.Voided
                     (function
                     | LiveCase.Voided fields -> Some fields

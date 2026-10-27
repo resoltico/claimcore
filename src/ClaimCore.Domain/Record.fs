@@ -14,6 +14,20 @@ type CorrectionGroupAction =
     | Replace
     | Clear
 
+[<RequireQualifiedAccess>]
+type ActShape =
+    | NoValues
+    | RegistrationValues
+    | DecisionValues
+    | PaymentValues
+    | ReasonText
+    | CorrectionGroups
+
+[<RequireQualifiedAccess>]
+type RevisionInput =
+    | New
+    | Expected
+
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
 type CaseActKind =
@@ -29,6 +43,52 @@ type CaseActKind =
     | Void
     | Reinstate
     | Erase
+
+    static member shape(kind) =
+        match kind with
+        | CaseActKind.Open
+        | CaseActKind.AmendRegistration -> ActShape.RegistrationValues
+        | CaseActKind.Correct -> ActShape.CorrectionGroups
+        | CaseActKind.Decide -> ActShape.DecisionValues
+        | CaseActKind.RecordPayment -> ActShape.PaymentValues
+        | CaseActKind.Void
+        | CaseActKind.Reinstate -> ActShape.ReasonText
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Erase -> ActShape.NoValues
+
+    static member revision(kind) =
+        match kind with
+        | CaseActKind.Open -> RevisionInput.New
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> RevisionInput.Expected
+
+    static member prefill(kind) =
+        match kind with
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide -> true
+        | CaseActKind.Open
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> false
+
 
 [<RequireQualifiedAccess>]
 type BusinessField =
@@ -158,15 +218,6 @@ type AuthoredCaseAct = CaseAct<RegistrationInput, DecisionInput, PaymentInput, s
 type AuthoredCorrection = Correction<RegistrationInput, DecisionInput, PaymentInput>
 type ValidCaseAct = CaseAct<Registration, Decision, Payment, Reason>
 type ValidCorrection = Correction<Registration, Decision, Payment>
-
-[<RequireQualifiedAccess>]
-type ActShape =
-    | NoValues
-    | RegistrationValues
-    | DecisionValues
-    | PaymentValues
-    | ReasonText
-    | CorrectionGroups
 
 [<RequireQualifiedAccess>]
 type ActPayload<'registration, 'decision, 'payment, 'reason> =
@@ -444,11 +495,6 @@ module CaseStatus =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-[<RequireQualifiedAccess>]
-type RevisionInput =
-    | New
-    | Expected
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseActKind =
     let isStewardship =
@@ -468,51 +514,6 @@ module CaseActKind =
 
     let vocabulary =
         Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
-
-    let shape =
-        function
-        | CaseActKind.Open
-        | CaseActKind.AmendRegistration -> ActShape.RegistrationValues
-        | CaseActKind.Correct -> ActShape.CorrectionGroups
-        | CaseActKind.Decide -> ActShape.DecisionValues
-        | CaseActKind.RecordPayment -> ActShape.PaymentValues
-        | CaseActKind.Void
-        | CaseActKind.Reinstate -> ActShape.ReasonText
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Erase -> ActShape.NoValues
-
-    let revision =
-        function
-        | CaseActKind.Open -> RevisionInput.New
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> RevisionInput.Expected
-
-    let prefill =
-        function
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide -> true
-        | CaseActKind.Open
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> false
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

@@ -80,9 +80,9 @@ let private forbiddenCalls =
 type ArchitectureRule =
     | Pure
     | Postgres
-    | Durable
+    | DurableNames
     | Serializer
-    | ApplicationProtocol
+    | ServiceModelWithoutProtocol
     | DomainJsonFree
     | VocabularyModuleNaming
     | DomainBoundary
@@ -149,8 +149,34 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
             |> targets "Postgres"
         )
         :> IArchRule
-    | ArchitectureRule.Durable
-    | ArchitectureRule.ApplicationProtocol -> clauses.NotDependOnAny(protocol ()) :> IArchRule
+    | ArchitectureRule.DurableNames ->
+        let names =
+            vocabularyModules ()
+            |> List.filter (fun (declaration, _) ->
+                declaration.Assembly = typeof<ClaimCore.Domain.CaseActKind>.Assembly)
+            |> List.map (fun (declaration, _) ->
+                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
+            |> String.concat "|"
+
+        let pattern = "^(" + names + ")$"
+
+        Types().That().HaveFullNameMatching(pattern)
+        |> targets "Domain vocabulary modules"
+        |> ignore
+
+        protocol () |> ignore
+
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+                .Or()
+                .HaveFullNameMatching(pattern)
+            |> targets "durable spelling boundary"
+        )
+        :> IArchRule
+    | ArchitectureRule.ServiceModelWithoutProtocol ->
+        clauses.NotDependOnAny(protocol ()) :> IArchRule
     | ArchitectureRule.Serializer ->
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")

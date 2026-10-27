@@ -33,12 +33,7 @@ module AuthorityRequests =
                 })
             act
 
-    let toRecord (command: AuthorityCommand) : AuthorityRequestRecord =
-        {
-            OperationId = command.OperationId
-            Target = PrincipalKey.describe command.Target
-            Act = authored command.Act
-        }
+    let toRecord command = AuthorityRecord.ofCommand command
 
     /// Owner provisioning has a dedicated host boundary, never an ordinary wire request.
     let input operationId target act : Result<AuthorityRequest, Refusal> =
@@ -56,21 +51,7 @@ module AuthorityRequests =
         input command.OperationId command.Target command.Act
 
     /// Permanent parsing does not reapply current capability decisions.
-    let fromRecord (request: AuthorityRequestRecord) =
-        match request.Act with
-        | AuthorityAct.ProvisionOwner ->
-            PrincipalKey.fromStorage
-                request.Target.Kind
-                request.Target.Issuer
-                request.Target.Subject
-            |> Result.bind (Authority.provision request.OperationId)
-        | act ->
-            Authority.parse
-                {
-                    OperationId = request.OperationId
-                    Target = request.Target
-                    Act = act
-                }
+    let fromRecord request = AuthorityRecord.interpret request
 
     let internal validRecord request =
         fromRecord request

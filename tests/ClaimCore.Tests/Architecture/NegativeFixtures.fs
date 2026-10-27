@@ -160,3 +160,13 @@ type JsonFromDomainTask =
             do! Task.Yield()
             return ClaimCore.Json.JsonValue.Null
         }
+
+type VocabularyFromRecordFormat =
+    static member VocabularyDirect() = Role.token Role.Owner
+
+type VocabularyFromRecordFormatTask =
+    static member VocabularyTask() =
+        task {
+            do! Task.Yield()
+            return Role.token Role.Owner
+        }
