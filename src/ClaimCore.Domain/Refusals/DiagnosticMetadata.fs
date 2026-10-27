@@ -22,19 +22,7 @@ type DiagnosticArgument =
 
 module DiagnosticArguments =
     let vocabulary =
-        Vocabulary.define
-            "argument"
-            [
-                DiagnosticArgument.MaximumCharacters
-                DiagnosticArgument.MaximumIntegerDigits
-                DiagnosticArgument.MaximumFractionalDigits
-                DiagnosticArgument.MaximumPageSize
-            ]
-            (function
-             | DiagnosticArgument.MaximumCharacters -> "maximumCharacters"
-             | DiagnosticArgument.MaximumIntegerDigits -> "maximumIntegerDigits"
-             | DiagnosticArgument.MaximumFractionalDigits -> "maximumFractionalDigits"
-             | DiagnosticArgument.MaximumPageSize -> "maximumPageSize")
+        Vocabulary.ofUnion<DiagnosticArgument> "argument" TokenCasing.CamelCase None
 
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary

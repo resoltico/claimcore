@@ -67,7 +67,7 @@ it("recovers a refused continuation with a fresh no-cursor request without repor
     )
     .mockResolvedValueOnce(
       response("case.history", "REJECTED", {
-        code: "QUERY_CURSOR_INVALID",
+        code: "INVALID_CURSOR",
         action: "READ_CURRENT",
         target: "cursor",
         actualRevision: null,

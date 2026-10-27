@@ -352,7 +352,7 @@ module internal TextReply =
             "productVersion: " + value.Runtime.ProductVersion
             "businessDate: "
             + value.Runtime.EffectiveBusinessDate.ToString(
-                Formats.CalendarDateFormat,
+                CalendarDate.ExactFormat,
                 CultureInfo.InvariantCulture
             )
             "timeZone: " + value.Runtime.TimeZoneId

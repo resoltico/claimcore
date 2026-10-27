@@ -33,7 +33,7 @@ export const context = {
 };
 
 export const unavailable = {
-  code: "ACCESS_RESOURCE_UNAVAILABLE",
+  code: "RESOURCE_UNAVAILABLE",
   action: "NONE_REQUIRED",
   target: null,
   actualRevision: null,

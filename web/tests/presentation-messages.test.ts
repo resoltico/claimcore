@@ -88,7 +88,7 @@ it("renders every specific diagnostic using only its closed safe parameter contr
     { maximumCharacters: 2147483648 },
     { maximumCharacters: 1.5 },
   ]) {
-    const diagnostic = { code: "INPUT_TEXT_TOO_LONG", limits: parameters } as DiagnosticNotice;
+    const diagnostic = { code: "TOO_LONG", limits: parameters } as DiagnosticNotice;
     expect(renderNotice(defaults, { kind: "diagnostic", diagnostic })).toBe(
       translate(defaults, "notice.unknownDiagnostic"),
     );

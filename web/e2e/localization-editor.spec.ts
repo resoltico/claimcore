@@ -66,11 +66,11 @@ const unacceptedCase = async (page: Page, reference: string) => {
   }
   expect(reply.payload.outcome.kind).toBe("REJECTED");
   if (reply.payload.outcome.kind === "REJECTED") {
-    expect(reply.payload.outcome.data.code).toBe("ACCESS_RESOURCE_UNAVAILABLE");
+    expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
   }
 };
 const invalidCalendar = async (page: Page, requests: string[]) => {
-  await expectBusinessFormatRefusal(page, "incidentDate", "INPUT_CALENDAR_DATE_REQUIRED", () =>
+  await expectBusinessFormatRefusal(page, "incidentDate", "CALENDAR_DATE_REQUIRED", () =>
     page.getByRole("button", { name: "Review changes" }).click(),
   );
   await expect(page.locator('input[data-field-name="incidentDate"]')).toBeFocused();
@@ -81,7 +81,7 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expect(page.getByRole("alert")).toContainText(
-      businessFormatRefusalText.INPUT_CALENDAR_DATE_REQUIRED[language],
+      businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
     );
   }
   await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveValue("2026-02-30");
@@ -104,7 +104,7 @@ const policyRefusal = async (page: Page, requests: string[]) => {
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
       expect(outcome.data.target).toBe("claimantName");
-      expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
+      expect(outcome.data.code).toBe("TOO_LONG");
       expect(outcome.data.limits).toEqual({ maximumCharacters: 200 });
     }
     await selectLanguage(page, "lv");

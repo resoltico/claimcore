@@ -19,12 +19,10 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   const amount = page.getByLabel("Amount claimed", { exact: true });
   await amount.fill("00.10");
   const requests = trackRequests(page);
-  await expectBusinessFormatRefusal(page, "claimedAmount", "INPUT_DECIMAL_FORMAT", () =>
+  await expectBusinessFormatRefusal(page, "claimedAmount", "DECIMAL_FORMAT", () =>
     page.getByRole("button", { name: "Review changes" }).click(),
   );
-  await expect(page.getByRole("alert")).toContainText(
-    businessFormatRefusalText.INPUT_DECIMAL_FORMAT.en,
-  );
+  await expect(page.getByRole("alert")).toContainText(businessFormatRefusalText.DECIMAL_FORMAT.en);
   await expect(amount).toBeFocused();
   await expect(amount).toHaveAttribute("aria-invalid", "true");
   expect(requests).toEqual(["POST /api/operation.preview"]);
@@ -37,7 +35,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   const { outcome } = (await policy.ready).reply;
   expect(outcome.kind).toBe("REJECTED");
   if (outcome.kind === "REJECTED") {
-    expect(outcome.data.code).toBe("INPUT_TEXT_TOO_LONG");
+    expect(outcome.data.code).toBe("TOO_LONG");
     expect(outcome.data.target).toBe("claimantName");
   }
   policy.release();

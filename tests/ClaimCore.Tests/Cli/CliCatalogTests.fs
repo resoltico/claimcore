@@ -150,7 +150,7 @@ let private retiredBooleanInput () =
             [
                 "authority"
                 "enable"
-                "--kind"
+                "--principal-kind"
                 "human"
                 "--issuer"
                 "https://issuer.example/"

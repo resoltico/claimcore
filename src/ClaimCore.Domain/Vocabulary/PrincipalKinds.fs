@@ -7,15 +7,10 @@ type PrincipalKind =
 
 /// Stable principal-kind syntax; admission and authority remain Application policy.
 module PrincipalKinds =
-    [<Literal>]
-    let Human = "HUMAN"
-
-    [<Literal>]
-    let Service = "SERVICE"
-
     let vocabulary =
-        Vocabulary.define "token" [ PrincipalKind.Human; PrincipalKind.Service ] (function
-            | PrincipalKind.Human -> Human
-            | PrincipalKind.Service -> Service)
+        Vocabulary.ofUnion<PrincipalKind> "token" TokenCasing.ScreamingSnake None
+
+    let Human = Vocabulary.token vocabulary PrincipalKind.Human
+    let Service = Vocabulary.token vocabulary PrincipalKind.Service
 
     let all = Vocabulary.tokens vocabulary

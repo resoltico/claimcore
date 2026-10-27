@@ -49,14 +49,17 @@ module CatalogValidation =
             yield! CaseStatuses.all |> List.map CaseStatuses.token
             yield! ActKinds.all |> List.map ActKinds.token
             yield! RoleTokens.all |> List.map RoleTokens.token
-            yield! CaseState.all |> List.map CaseState.token
+            yield! Lifecycle.all |> List.map Lifecycle.token
             yield! CorrectionActions.all |> List.map CorrectionActions.token
             yield! PrincipalKinds.all
-            yield! scopes
-            match erased with
-            | Some(JsonValue.String tag) -> yield tag
-            | _ -> invalidOp "Missing erased state tag."
+            yield! List.distinct scopes
         ]
+        |> Vocabulary.requireUniqueTokens "rendered token namespace"
+        |> fun tokens ->
+            if erased <> Some(JsonValue.String(Lifecycle.token Lifecycle.Erased)) then
+                invalidOp "Erased state tag differs from the lifecycle vocabulary."
+
+            tokens
         |> List.map (fun token -> "token." + token)
         |> Set.ofList
 

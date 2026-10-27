@@ -34,10 +34,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     const subject = page.locator('[name="target.subject"]');
     await issuer.fill("http://invalid.example/");
     await subject.fill(source.ownerSubject);
-    await previewRefusal(page, issuer, "principal.issuer", "INPUT_PRINCIPAL_FORMAT");
+    await previewRefusal(page, issuer, "principal.issuer", "PRINCIPAL_FORMAT");
     await expect(issuer).toHaveAccessibleName(inputMessage(language, "input.issuer.label"));
     await expect(issuer).toHaveAccessibleDescription(
-      `${inputMessage(language, "input.issuer.meaning")} ${inputMessage(language, "diagnostic.INPUT_PRINCIPAL_FORMAT")}`,
+      `${inputMessage(language, "input.issuer.meaning")} ${inputMessage(language, "diagnostic.PRINCIPAL_FORMAT")}`,
     );
     await issuer.fill(source.issuer);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
@@ -47,10 +47,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await issuer.press("Tab");
     await expect(subject).toBeFocused();
     await subject.fill("");
-    await previewRefusal(page, subject, "principal.subject", "INPUT_TEXT_REQUIRED");
+    await previewRefusal(page, subject, "principal.subject", "TEXT_REQUIRED");
     await expect(subject).toHaveAccessibleName(inputMessage(language, "input.subject.label"));
     await expect(subject).toHaveAccessibleDescription(
-      `${inputMessage(language, "input.subject.meaning")} ${inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED")}`,
+      `${inputMessage(language, "input.subject.meaning")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
     );
     await subject.fill(source.ownerSubject);
     await expect(subject).not.toHaveAttribute("aria-invalid");
@@ -80,13 +80,13 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.locator('[name="act.role"]').selectOption("CASE_READER");
       await page.locator('[name="act.scope.kind"]').selectOption("CASE");
       await reference.fill("");
-      await previewRefusal(page, reference, "caseReference", "INPUT_TEXT_REQUIRED");
+      await previewRefusal(page, reference, "caseReference", "TEXT_REQUIRED");
       await expect(reference).toHaveAccessibleName(
         inputMessage(language, "field.caseReference.label"),
       );
       await expect(reference).toHaveAccessibleDescription(
         new RegExp(
-          inputMessage(language, "diagnostic.INPUT_TEXT_REQUIRED").replace(
+          inputMessage(language, "diagnostic.TEXT_REQUIRED").replace(
             /[.*+?^${}()|[\]\\]/gu,
             "\\$&",
           ),

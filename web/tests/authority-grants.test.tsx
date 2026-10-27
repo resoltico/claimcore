@@ -178,7 +178,7 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
           outcome: {
             kind: "REJECTED",
             data: {
-              code: "ACCESS_RESOURCE_UNAVAILABLE",
+              code: "RESOURCE_UNAVAILABLE",
               action: "NONE_REQUIRED",
               target: null,
               actualRevision: null,
@@ -302,7 +302,7 @@ it("resets only the selected grant page on invalid continuation and reloads it w
         outcome: {
           kind: "REJECTED",
           data: {
-            code: "QUERY_CURSOR_INVALID",
+            code: "INVALID_CURSOR",
             action: "READ_CURRENT",
             target: "cursor",
             actualRevision: null,

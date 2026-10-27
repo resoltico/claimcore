@@ -26,16 +26,7 @@ module CoreFaults =
             FaultDiagnosticIds.OperationContentConflict, RecommendedAction.StopAndInvestigate
 
     let vocabulary =
-        Vocabulary.define
-            "fault"
-            [
-                CoreFault.InternalError
-                CoreFault.StoreUnavailable
-                CoreFault.StoreIntegrityError
-                CoreFault.SchemaMismatch
-                CoreFault.OperationContentConflict
-            ]
-            (policy >> fst)
+        Vocabulary.ofUnion<CoreFault> "fault" TokenCasing.ScreamingSnake (Some "CORE_")
 
     let all = Vocabulary.entries vocabulary
     let token = Vocabulary.token vocabulary

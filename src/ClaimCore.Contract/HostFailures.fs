@@ -56,51 +56,14 @@ module HostFailures =
             HostFailureCode.Internal, 500, Some ExecutionPhase.StartedUnconfirmed
         | HostFailureReason.CompletedResponseFailed -> HostFailureCode.ResponseFailed, 500, None
 
-    let private reasons =
-        [
-            HostFailureReason.ContractMismatch
-            HostFailureReason.ConnectionRejected
-            HostFailureReason.OriginRejected
-            HostFailureReason.MediaTypeRejected
-            HostFailureReason.BodyTooLarge
-            HostFailureReason.SessionRejected
-            HostFailureReason.SessionForbidden
-            HostFailureReason.MethodRejected
-            HostFailureReason.AntiforgeryRejected
-            HostFailureReason.EndpointMissing
-            HostFailureReason.RateLimited
-            HostFailureReason.InputInvalid
-            HostFailureReason.BeforeDispatchFailed
-            HostFailureReason.DispatchUnconfirmed
-            HostFailureReason.CompletedResponseFailed
-        ]
-
     let private codeKind reason = let code, _, _ = policy reason in code
 
-    // Flat exhaustive code spelling; union coverage and token uniqueness use the shared mechanism.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
-        Vocabulary.define "host" (reasons |> List.map codeKind |> List.distinct) (function
-            | HostFailureCode.ContractMismatch -> "CONTRACT_MISMATCH"
-            | HostFailureCode.ConnectionRejected -> "CONNECTION_REJECTED"
-            | HostFailureCode.OriginRejected -> "ORIGIN_REJECTED"
-            | HostFailureCode.MediaTypeRejected -> "MEDIA_TYPE_REJECTED"
-            | HostFailureCode.BodyTooLarge -> "BODY_TOO_LARGE"
-            | HostFailureCode.SessionRejected -> "SESSION_REJECTED"
-            | HostFailureCode.SessionForbidden -> "SESSION_FORBIDDEN"
-            | HostFailureCode.MethodRejected -> "METHOD_REJECTED"
-            | HostFailureCode.AntiforgeryRejected -> "ANTIFORGERY_REJECTED"
-            | HostFailureCode.EndpointMissing -> "ENDPOINT_MISSING"
-            | HostFailureCode.RateLimited -> "RATE_LIMITED"
-            | HostFailureCode.InputInvalid -> "INPUT_INVALID"
-            | HostFailureCode.Internal -> "INTERNAL"
-            | HostFailureCode.ResponseFailed -> "RESPONSE_FAILED")
+        Vocabulary.ofUnion<HostFailureCode> "host" TokenCasing.ScreamingSnake None
 
-    // Two dispatch reasons share INTERNAL, distinguished by their phase in the wire contract.
+    // Reasons and wire codes are separate sets: dispatch reasons share INTERNAL and differ by phase.
     let private reasonVocabulary =
-        Vocabulary.define "host-reason" reasons (fun reason ->
-            let code, status, phase = policy reason
-            Vocabulary.token vocabulary code + ":" + string status + ":" + string phase)
+        Vocabulary.ofUnion<HostFailureReason> "host-reason" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.all reasonVocabulary
 

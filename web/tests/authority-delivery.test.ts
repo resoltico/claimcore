@@ -99,14 +99,14 @@ it("ignores completion from a superseded session while retaining the exact froze
 type RetryKind = "refusal" | "conflict" | "failed" | "not-started" | "replay";
 const refusalData = {
   refusal: {
-    code: "ACCESS_RESOURCE_UNAVAILABLE",
+    code: "RESOURCE_UNAVAILABLE",
     action: "NONE_REQUIRED",
     target: null,
     actualRevision: null,
     limits: {},
   },
   conflict: {
-    code: "OPERATION_CONTENT_CONFLICT",
+    code: "IDEMPOTENCY_CONFLICT",
     action: "STOP_AND_INVESTIGATE",
     target: null,
     actualRevision: null,

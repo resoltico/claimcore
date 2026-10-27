@@ -38,27 +38,7 @@ type CliFailureCode =
 
 module CliFailureCodes =
     let vocabulary =
-        Vocabulary.define
-            "cli-failure"
-            [
-                CliFailureCode.ConfigurationInvalid
-                CliFailureCode.AuthenticationFailed
-                CliFailureCode.ServiceUnavailable
-                CliFailureCode.Cancelled
-                CliFailureCode.Internal
-                CliFailureCode.InvalidFrame
-                CliFailureCode.InvalidResponse
-                CliFailureCode.ContractMismatch
-            ]
-            (function
-             | CliFailureCode.ConfigurationInvalid -> "CLI_CONFIGURATION_INVALID"
-             | CliFailureCode.AuthenticationFailed -> "CLI_AUTHENTICATION_FAILED"
-             | CliFailureCode.ServiceUnavailable -> "CLI_SERVICE_UNAVAILABLE"
-             | CliFailureCode.Cancelled -> "CLI_CANCELLED"
-             | CliFailureCode.Internal -> "CLI_INTERNAL"
-             | CliFailureCode.InvalidFrame -> "INVALID_FRAME"
-             | CliFailureCode.InvalidResponse -> "INVALID_RESPONSE"
-             | CliFailureCode.ContractMismatch -> "CONTRACT_MISMATCH")
+        Vocabulary.ofUnion<CliFailureCode> "cli-failure" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
     let codes = Vocabulary.tokens vocabulary
@@ -170,13 +150,7 @@ module Frames =
         |> WireWriter.bytes
 
     let private delivery =
-        Vocabulary.define
-            "delivery"
-            [ DeliveryState.NotSent; DeliveryState.Delivered; DeliveryState.Uncertain ]
-            (function
-             | DeliveryState.NotSent -> "NOT_SENT"
-             | DeliveryState.Delivered -> "DELIVERED"
-             | DeliveryState.Uncertain -> "UNCERTAIN")
+        Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
         |> Vocabulary.entries
         |> Codec.enumeration
 

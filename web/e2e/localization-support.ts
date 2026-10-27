@@ -193,17 +193,17 @@ export const confirmReview = async (page: Page): Promise<void> => {
 };
 
 export const businessFormatRefusalText = {
-  INPUT_CALENDAR_DATE_REQUIRED: {
+  CALENDAR_DATE_REQUIRED: {
     en: "Use one valid calendar date in YYYY-MM-DD format.",
     lv: "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD.",
     ar: "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
   },
-  INPUT_DECIMAL_FORMAT: {
+  DECIMAL_FORMAT: {
     en: "Use non-negative decimal text: up to 18 integer digits and 4 fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
     lv: "Izmantojiet nenegatīvu decimālskaitli: līdz 18 veseliem cipariem un 4 daļas cipariem; bez zīmes vai eksponenta.",
     ar: "استخدم نصًا عشريًا غير سالب: حتى \u206818\u2069 رقمًا صحيحًا و\u20684\u2069 أرقام كسرية؛ دون إشارة أو أس.",
   },
-  INPUT_CURRENCY_FORMAT: {
+  CURRENCY_FORMAT: {
     en: "Use three uppercase ASCII letters (A–Z) for the currency identifier.",
     lv: "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
     ar: "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
@@ -227,7 +227,7 @@ export const expectBusinessFormatRefusal = async (
     expect(outcome.data.target).toBe(field);
     expect(outcome.data.code).toBe(diagnostic);
     expect(outcome.data.action).toBe("CORRECT_INPUT");
-    if (diagnostic === "INPUT_DECIMAL_FORMAT") {
+    if (diagnostic === "DECIMAL_FORMAT") {
       expect(outcome.data.limits).toEqual({
         maximumIntegerDigits: 18,
         maximumFractionalDigits: 4,

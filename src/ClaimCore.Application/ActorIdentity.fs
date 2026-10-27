@@ -16,21 +16,10 @@ type AuthorityInputFailure =
 
 module AuthorityInputFailures =
     let vocabulary =
-        Vocabulary.define
+        Vocabulary.ofUnion<AuthorityInputFailure>
             "AuthorityInputFailure"
-            [
-                AuthorityInputFailure.IssuerInvalid
-                AuthorityInputFailure.IdentityInvalid
-                AuthorityInputFailure.PrincipalInvalid
-                AuthorityInputFailure.RoleInvalid
-                AuthorityInputFailure.ActInvalid
-            ]
-            (function
-             | AuthorityInputFailure.IssuerInvalid -> "ACTOR_ISSUER_INVALID"
-             | AuthorityInputFailure.IdentityInvalid -> "ACTOR_IDENTITY_INVALID"
-             | AuthorityInputFailure.PrincipalInvalid -> "ACTOR_PRINCIPAL_INVALID"
-             | AuthorityInputFailure.RoleInvalid -> "AUTHORITY_ROLE_INVALID"
-             | AuthorityInputFailure.ActInvalid -> "AUTHORITY_ACT_INVALID")
+            TokenCasing.ScreamingSnake
+            None
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -123,9 +112,9 @@ module PrincipalKey =
         }
 
     let internal fromStorage kind issuerValue stableValue =
-        match kind with
-        | PrincipalKinds.Human -> human issuerValue stableValue
-        | PrincipalKinds.Service -> service issuerValue stableValue
+        match Vocabulary.tryParse PrincipalKinds.vocabulary kind with
+        | Some PrincipalKind.Human -> human issuerValue stableValue
+        | Some PrincipalKind.Service -> service issuerValue stableValue
         | _ -> Error AuthorityInputFailure.PrincipalInvalid
 
     let internal isHuman =

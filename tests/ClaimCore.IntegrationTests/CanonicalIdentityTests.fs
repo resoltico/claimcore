@@ -46,7 +46,7 @@ let private retainedRequest database (receipt: OperationReceipt) =
             |> Option.defaultWith (fun () -> failtest "Expected retained payload")
 
         return
-            LedgerEntry.decodePayload Formats.MaximumPayloadBytes bytes
+            LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes
             |> Result.defaultWith (fun _ -> failtest "Expected a framed payload")
             |> _.Request
     }

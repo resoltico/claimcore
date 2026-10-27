@@ -38,12 +38,6 @@ type LedgerMetadata =
         PayloadCommitment: byte array
     }
 
-type LedgerPayload =
-    {
-        Request: byte array
-        Snapshot: byte array
-    }
-
 module LedgerEntry =
     let private u64 value =
         let bytes = Array.zeroCreate<byte> 8

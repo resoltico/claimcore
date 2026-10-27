@@ -24,7 +24,7 @@
     "arguments": {},
     "expected": "Type",
     "isolated": "Type",
-    "key": "input.kind.label",
+    "key": "input.principalKind.label",
     "language": "en"
   },
   {
@@ -97,35 +97,35 @@
     "arguments": {},
     "expected": "Authentication failed.",
     "isolated": "Authentication failed.",
-    "key": "cli.failure.CLI_AUTHENTICATION_FAILED",
+    "key": "cli.failure.AUTHENTICATION_FAILED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "The request was cancelled.",
     "isolated": "The request was cancelled.",
-    "key": "cli.failure.CLI_CANCELLED",
+    "key": "cli.failure.CANCELLED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "CLI configuration is invalid.",
     "isolated": "CLI configuration is invalid.",
-    "key": "cli.failure.CLI_CONFIGURATION_INVALID",
+    "key": "cli.failure.CONFIGURATION_INVALID",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "An internal client error occurred.",
     "isolated": "An internal client error occurred.",
-    "key": "cli.failure.CLI_INTERNAL",
+    "key": "cli.failure.INTERNAL",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "The service is unavailable.",
     "isolated": "The service is unavailable.",
-    "key": "cli.failure.CLI_SERVICE_UNAVAILABLE",
+    "key": "cli.failure.SERVICE_UNAVAILABLE",
     "language": "en"
   },
   {
@@ -472,7 +472,7 @@
     "arguments": {},
     "expected": "The requested resource is unavailable.",
     "isolated": "The requested resource is unavailable.",
-    "key": "diagnostic.ACCESS_RESOURCE_UNAVAILABLE",
+    "key": "diagnostic.RESOURCE_UNAVAILABLE",
     "language": "en"
   },
   {
@@ -507,7 +507,7 @@
     "arguments": {},
     "expected": "The case is already closed.",
     "isolated": "The case is already closed.",
-    "key": "diagnostic.CASE_ALREADY_CLOSED",
+    "key": "diagnostic.ALREADY_CLOSED",
     "language": "en"
   },
   {
@@ -521,14 +521,14 @@
     "arguments": {},
     "expected": "The case is already open.",
     "isolated": "The case is already open.",
-    "key": "diagnostic.CASE_ALREADY_OPENED",
+    "key": "diagnostic.ALREADY_OPENED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "“Amend registration” requires an undecided case. Use “Correct case facts” to correct recorded registration while keeping its decision.",
     "isolated": "“Amend registration” requires an undecided case. Use “Correct case facts” to correct recorded registration while keeping its decision.",
-    "key": "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED",
+    "key": "diagnostic.AMENDMENT_REQUIRES_UNDECIDED",
     "language": "en"
   },
   {
@@ -542,14 +542,14 @@
     "arguments": {},
     "expected": "“Record payment decision” and “Withdraw payment decision” cannot change a paid decision. Use “Correct case facts” for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision.",
     "isolated": "“Record payment decision” and “Withdraw payment decision” cannot change a paid decision. Use “Correct case facts” for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision.",
-    "key": "diagnostic.CASE_DECISION_ALREADY_PAID",
+    "key": "diagnostic.DECISION_ALREADY_PAID",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Record a payment decision first.",
     "isolated": "Record a payment decision first.",
-    "key": "diagnostic.CASE_DECISION_REQUIRED",
+    "key": "diagnostic.DECISION_REQUIRED",
     "language": "en"
   },
   {
@@ -563,21 +563,21 @@
     "arguments": {},
     "expected": "ClaimCore records one full payment.",
     "isolated": "ClaimCore records one full payment.",
-    "key": "diagnostic.CASE_PAYMENT_ALREADY_RECORDED",
+    "key": "diagnostic.PAYMENT_ALREADY_RECORDED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "There is no payment record to clear.",
     "isolated": "There is no payment record to clear.",
-    "key": "diagnostic.CASE_PAYMENT_NOT_RECORDED",
+    "key": "diagnostic.PAYMENT_NOT_RECORDED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Read the current case before making a changed request.",
     "isolated": "Read the current case before making a changed request.",
-    "key": "diagnostic.CASE_REVISION_CONFLICT",
+    "key": "diagnostic.REVISION_CONFLICT",
     "language": "en"
   },
   {
@@ -591,28 +591,28 @@
     "arguments": {},
     "expected": "A zero decision is not a payment.",
     "isolated": "A zero decision is not a payment.",
-    "key": "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID",
+    "key": "diagnostic.ZERO_DECISION_CANNOT_BE_PAID",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use an integer revision from 0 through 9007199254740991.",
     "isolated": "Use an integer revision from 0 through 9007199254740991.",
-    "key": "diagnostic.COMMAND_EXPECTED_REVISION_RANGE",
+    "key": "diagnostic.EXPECTED_REVISION_RANGE",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use a non-empty UUID.",
     "isolated": "Use a non-empty UUID.",
-    "key": "diagnostic.COMMAND_OPERATION_ID_REQUIRED",
+    "key": "diagnostic.OPERATION_ID_REQUIRED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "A correction can only replace or clear a value already recorded on this case.",
     "isolated": "A correction can only replace or clear a value already recorded on this case.",
-    "key": "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED",
+    "key": "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
     "language": "en"
   },
   {
@@ -626,14 +626,14 @@
     "arguments": {},
     "expected": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record.",
     "isolated": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record.",
-    "key": "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+    "key": "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Clearing a paid decision requires clearing the payment record.",
     "isolated": "Clearing a paid decision requires clearing the payment record.",
-    "key": "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED",
+    "key": "diagnostic.PAYMENT_CLEAR_REQUIRED",
     "language": "en"
   },
   {
@@ -647,42 +647,42 @@
     "arguments": {},
     "expected": "Use one valid calendar date in YYYY-MM-DD format.",
     "isolated": "Use one valid calendar date in YYYY-MM-DD format.",
-    "key": "diagnostic.INPUT_CALENDAR_DATE_REQUIRED",
+    "key": "diagnostic.CALENDAR_DATE_REQUIRED",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use 1 to 80 printable non-space ASCII characters.",
     "isolated": "Use 1 to 80 printable non-space ASCII characters.",
-    "key": "diagnostic.INPUT_CASE_REFERENCE_FORMAT",
+    "key": "diagnostic.REFERENCE_FORMAT",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Control characters are not accepted.",
     "isolated": "Control characters are not accepted.",
-    "key": "diagnostic.INPUT_CONTROL_CHARACTERS",
+    "key": "diagnostic.CONTROL_CHARACTERS",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use two uppercase ASCII letters for the country code.",
     "isolated": "Use two uppercase ASCII letters for the country code.",
-    "key": "diagnostic.INPUT_COUNTRY_FORMAT",
+    "key": "diagnostic.COUNTRY_FORMAT",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use three uppercase ASCII letters (A–Z) for the currency identifier.",
     "isolated": "Use three uppercase ASCII letters (A–Z) for the currency identifier.",
-    "key": "diagnostic.INPUT_CURRENCY_FORMAT",
+    "key": "diagnostic.CURRENCY_FORMAT",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "The dates are in an invalid chronological order.",
     "isolated": "The dates are in an invalid chronological order.",
-    "key": "diagnostic.INPUT_DATE_ORDER",
+    "key": "diagnostic.CHRONOLOGICAL_ORDER",
     "language": "en"
   },
   {
@@ -692,42 +692,42 @@
     },
     "expected": "Use non-negative decimal text: up to «maximumIntegerDigits» integer digits and «maximumFractionalDigits» fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
     "isolated": "Use non-negative decimal text: up to «maximumIntegerDigits» integer digits and «maximumFractionalDigits» fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
-    "key": "diagnostic.INPUT_DECIMAL_FORMAT",
+    "key": "diagnostic.DECIMAL_FORMAT",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "A future date cannot record an event that has already occurred.",
     "isolated": "A future date cannot record an event that has already occurred.",
-    "key": "diagnostic.INPUT_FUTURE_DATE",
+    "key": "diagnostic.FUTURE_DATE",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Malformed Unicode is not accepted.",
     "isolated": "Malformed Unicode is not accepted.",
-    "key": "diagnostic.INPUT_MALFORMED_UNICODE",
+    "key": "diagnostic.MALFORMED_UNICODE",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
     "isolated": "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
-    "key": "diagnostic.INPUT_PRINCIPAL_FORMAT",
+    "key": "diagnostic.PRINCIPAL_FORMAT",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Leading or trailing whitespace is not accepted.",
     "isolated": "Leading or trailing whitespace is not accepted.",
-    "key": "diagnostic.INPUT_SURROUNDING_WHITESPACE",
+    "key": "diagnostic.SURROUNDING_WHITESPACE",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "A non-blank value is required.",
     "isolated": "A non-blank value is required.",
-    "key": "diagnostic.INPUT_TEXT_REQUIRED",
+    "key": "diagnostic.TEXT_REQUIRED",
     "language": "en"
   },
   {
@@ -736,7 +736,7 @@
     },
     "expected": "The value must not exceed «maximumCharacters» Unicode characters.",
     "isolated": "The value must not exceed «maximumCharacters» Unicode characters.",
-    "key": "diagnostic.INPUT_TEXT_TOO_LONG",
+    "key": "diagnostic.TOO_LONG",
     "language": "en"
   },
   {
@@ -757,7 +757,7 @@
     "arguments": {},
     "expected": "This operation ID belongs to different act content. Do not reuse it.",
     "isolated": "This operation ID belongs to different act content. Do not reuse it.",
-    "key": "diagnostic.OPERATION_CONTENT_CONFLICT",
+    "key": "diagnostic.IDEMPOTENCY_CONFLICT",
     "language": "en"
   },
   {
@@ -771,7 +771,7 @@
     "arguments": {},
     "expected": "Use one pagination cursor returned by ClaimCore.",
     "isolated": "Use one pagination cursor returned by ClaimCore.",
-    "key": "diagnostic.QUERY_CURSOR_INVALID",
+    "key": "diagnostic.INVALID_CURSOR",
     "language": "en"
   },
   {
@@ -780,14 +780,14 @@
     },
     "expected": "Use a value from 1 through «maximumPageSize».",
     "isolated": "Use a value from 1 through «maximumPageSize».",
-    "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
+    "key": "diagnostic.PAGE_LIMIT_RANGE",
     "language": "en"
   },
   {
     "arguments": {},
     "expected": "Formatting characters are not accepted in a new assertion.",
     "isolated": "Formatting characters are not accepted in a new assertion.",
-    "key": "diagnostic.TEXT_FORMATTING_CHARACTER",
+    "key": "diagnostic.FORMATTING_CHARACTER",
     "language": "en"
   },
   {
@@ -2707,7 +2707,7 @@
     "arguments": {},
     "expected": "Whether the target principal is a person or a service.",
     "isolated": "Whether the target principal is a person or a service.",
-    "key": "input.kind.meaning",
+    "key": "input.principalKind.meaning",
     "language": "en"
   },
   {
@@ -3128,7 +3128,7 @@
     "arguments": {},
     "expected": "Veids",
     "isolated": "Veids",
-    "key": "input.kind.label",
+    "key": "input.principalKind.label",
     "language": "lv"
   },
   {
@@ -3201,35 +3201,35 @@
     "arguments": {},
     "expected": "Autentifikācija neizdevās.",
     "isolated": "Autentifikācija neizdevās.",
-    "key": "cli.failure.CLI_AUTHENTICATION_FAILED",
+    "key": "cli.failure.AUTHENTICATION_FAILED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Pieprasījums tika atcelts.",
     "isolated": "Pieprasījums tika atcelts.",
-    "key": "cli.failure.CLI_CANCELLED",
+    "key": "cli.failure.CANCELLED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "CLI konfigurācija nav derīga.",
     "isolated": "CLI konfigurācija nav derīga.",
-    "key": "cli.failure.CLI_CONFIGURATION_INVALID",
+    "key": "cli.failure.CONFIGURATION_INVALID",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Radās iekšēja klienta kļūda.",
     "isolated": "Radās iekšēja klienta kļūda.",
-    "key": "cli.failure.CLI_INTERNAL",
+    "key": "cli.failure.INTERNAL",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Pakalpojums nav pieejams.",
     "isolated": "Pakalpojums nav pieejams.",
-    "key": "cli.failure.CLI_SERVICE_UNAVAILABLE",
+    "key": "cli.failure.SERVICE_UNAVAILABLE",
     "language": "lv"
   },
   {
@@ -3576,7 +3576,7 @@
     "arguments": {},
     "expected": "Šis resurss nav pieejams.",
     "isolated": "Šis resurss nav pieejams.",
-    "key": "diagnostic.ACCESS_RESOURCE_UNAVAILABLE",
+    "key": "diagnostic.RESOURCE_UNAVAILABLE",
     "language": "lv"
   },
   {
@@ -3611,7 +3611,7 @@
     "arguments": {},
     "expected": "Lieta jau ir slēgta.",
     "isolated": "Lieta jau ir slēgta.",
-    "key": "diagnostic.CASE_ALREADY_CLOSED",
+    "key": "diagnostic.ALREADY_CLOSED",
     "language": "lv"
   },
   {
@@ -3625,14 +3625,14 @@
     "arguments": {},
     "expected": "Lieta jau ir atvērta.",
     "isolated": "Lieta jau ir atvērta.",
-    "key": "diagnostic.CASE_ALREADY_OPENED",
+    "key": "diagnostic.ALREADY_OPENED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "“Grozīt reģistrāciju” var tikai lietai bez lēmuma. Izmantojiet “Labot lietas faktus”, lai labotu reģistrētos sākotnējos faktus, saglabājot lēmumu.",
     "isolated": "“Grozīt reģistrāciju” var tikai lietai bez lēmuma. Izmantojiet “Labot lietas faktus”, lai labotu reģistrētos sākotnējos faktus, saglabājot lēmumu.",
-    "key": "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED",
+    "key": "diagnostic.AMENDMENT_REQUIRES_UNDECIDED",
     "language": "lv"
   },
   {
@@ -3646,14 +3646,14 @@
     "arguments": {},
     "expected": "“Reģistrēt izmaksas lēmumu” un “Atsaukt izmaksas lēmumu” nevar mainīt apmaksātu lēmumu. Izmantojiet “Labot lietas faktus” faktu labošanai; aizstājot apmaksātu lēmumu, maksājums ir skaidri jāapstiprina atkārtoti vai jādzēš tā ieraksts.",
     "isolated": "“Reģistrēt izmaksas lēmumu” un “Atsaukt izmaksas lēmumu” nevar mainīt apmaksātu lēmumu. Izmantojiet “Labot lietas faktus” faktu labošanai; aizstājot apmaksātu lēmumu, maksājums ir skaidri jāapstiprina atkārtoti vai jādzēš tā ieraksts.",
-    "key": "diagnostic.CASE_DECISION_ALREADY_PAID",
+    "key": "diagnostic.DECISION_ALREADY_PAID",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Vispirms reģistrējiet izmaksas lēmumu.",
     "isolated": "Vispirms reģistrējiet izmaksas lēmumu.",
-    "key": "diagnostic.CASE_DECISION_REQUIRED",
+    "key": "diagnostic.DECISION_REQUIRED",
     "language": "lv"
   },
   {
@@ -3667,21 +3667,21 @@
     "arguments": {},
     "expected": "ClaimCore reģistrē vienu pilnu maksājumu.",
     "isolated": "ClaimCore reģistrē vienu pilnu maksājumu.",
-    "key": "diagnostic.CASE_PAYMENT_ALREADY_RECORDED",
+    "key": "diagnostic.PAYMENT_ALREADY_RECORDED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Nav maksājuma ieraksta, ko dzēst.",
     "isolated": "Nav maksājuma ieraksta, ko dzēst.",
-    "key": "diagnostic.CASE_PAYMENT_NOT_RECORDED",
+    "key": "diagnostic.PAYMENT_NOT_RECORDED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Pirms mainīta pieprasījuma veidošanas nolasiet pašreizējo lietu.",
     "isolated": "Pirms mainīta pieprasījuma veidošanas nolasiet pašreizējo lietu.",
-    "key": "diagnostic.CASE_REVISION_CONFLICT",
+    "key": "diagnostic.REVISION_CONFLICT",
     "language": "lv"
   },
   {
@@ -3695,28 +3695,28 @@
     "arguments": {},
     "expected": "Nulles lēmums nav maksājums.",
     "isolated": "Nulles lēmums nav maksājums.",
-    "key": "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID",
+    "key": "diagnostic.ZERO_DECISION_CANNOT_BE_PAID",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Izmantojiet veselu redakcijas numuru no 0 līdz 9007199254740991.",
     "isolated": "Izmantojiet veselu redakcijas numuru no 0 līdz 9007199254740991.",
-    "key": "diagnostic.COMMAND_EXPECTED_REVISION_RANGE",
+    "key": "diagnostic.EXPECTED_REVISION_RANGE",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Izmantojiet netukšu UUID.",
     "isolated": "Izmantojiet netukšu UUID.",
-    "key": "diagnostic.COMMAND_OPERATION_ID_REQUIRED",
+    "key": "diagnostic.OPERATION_ID_REQUIRED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Labojums var aizstāt vai dzēst tikai jau reģistrētu šīs lietas vērtību.",
     "isolated": "Labojums var aizstāt vai dzēst tikai jau reģistrētu šīs lietas vērtību.",
-    "key": "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED",
+    "key": "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
     "language": "lv"
   },
   {
@@ -3730,14 +3730,14 @@
     "arguments": {},
     "expected": "Apmaksāta lēmuma aizstāšanai skaidri jāapstiprina maksājums vai jādzēš tā ieraksts.",
     "isolated": "Apmaksāta lēmuma aizstāšanai skaidri jāapstiprina maksājums vai jādzēš tā ieraksts.",
-    "key": "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+    "key": "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Apmaksāta lēmuma dzēšanai jādzēš arī maksājuma ieraksts.",
     "isolated": "Apmaksāta lēmuma dzēšanai jādzēš arī maksājuma ieraksts.",
-    "key": "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED",
+    "key": "diagnostic.PAYMENT_CLEAR_REQUIRED",
     "language": "lv"
   },
   {
@@ -3751,42 +3751,42 @@
     "arguments": {},
     "expected": "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD.",
     "isolated": "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD.",
-    "key": "diagnostic.INPUT_CALENDAR_DATE_REQUIRED",
+    "key": "diagnostic.CALENDAR_DATE_REQUIRED",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Izmantojiet no 1 līdz 80 drukājamām ASCII rakstzīmēm bez atstarpēm.",
     "isolated": "Izmantojiet no 1 līdz 80 drukājamām ASCII rakstzīmēm bez atstarpēm.",
-    "key": "diagnostic.INPUT_CASE_REFERENCE_FORMAT",
+    "key": "diagnostic.REFERENCE_FORMAT",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Vadības rakstzīmes nav atļautas.",
     "isolated": "Vadības rakstzīmes nav atļautas.",
-    "key": "diagnostic.INPUT_CONTROL_CHARACTERS",
+    "key": "diagnostic.CONTROL_CHARACTERS",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Valsts kodam izmantojiet divus lielos ASCII burtus.",
     "isolated": "Valsts kodam izmantojiet divus lielos ASCII burtus.",
-    "key": "diagnostic.INPUT_COUNTRY_FORMAT",
+    "key": "diagnostic.COUNTRY_FORMAT",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
     "isolated": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
-    "key": "diagnostic.INPUT_CURRENCY_FORMAT",
+    "key": "diagnostic.CURRENCY_FORMAT",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Datumu hronoloģiskā secība nav derīga.",
     "isolated": "Datumu hronoloģiskā secība nav derīga.",
-    "key": "diagnostic.INPUT_DATE_ORDER",
+    "key": "diagnostic.CHRONOLOGICAL_ORDER",
     "language": "lv"
   },
   {
@@ -3796,42 +3796,42 @@
     },
     "expected": "Izmantojiet nenegatīvu decimālskaitli: līdz «maximumIntegerDigits» veseliem cipariem un «maximumFractionalDigits» daļas cipariem; bez zīmes vai eksponenta. Bez liekām sākuma nullēm: 0.10 ir derīgs; 00.10 nav derīgs.",
     "isolated": "Izmantojiet nenegatīvu decimālskaitli: līdz «maximumIntegerDigits» veseliem cipariem un «maximumFractionalDigits» daļas cipariem; bez zīmes vai eksponenta. Bez liekām sākuma nullēm: 0.10 ir derīgs; 00.10 nav derīgs.",
-    "key": "diagnostic.INPUT_DECIMAL_FORMAT",
+    "key": "diagnostic.DECIMAL_FORMAT",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Nākotnes datums nevar apzīmēt jau notikušu notikumu.",
     "isolated": "Nākotnes datums nevar apzīmēt jau notikušu notikumu.",
-    "key": "diagnostic.INPUT_FUTURE_DATE",
+    "key": "diagnostic.FUTURE_DATE",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Nederīgs Unicode nav atļauts.",
     "isolated": "Nederīgs Unicode nav atļauts.",
-    "key": "diagnostic.INPUT_MALFORMED_UNICODE",
+    "key": "diagnostic.MALFORMED_UNICODE",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
     "isolated": "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
-    "key": "diagnostic.INPUT_PRINCIPAL_FORMAT",
+    "key": "diagnostic.PRINCIPAL_FORMAT",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Atstarpes vērtības sākumā vai beigās nav atļautas.",
     "isolated": "Atstarpes vērtības sākumā vai beigās nav atļautas.",
-    "key": "diagnostic.INPUT_SURROUNDING_WHITESPACE",
+    "key": "diagnostic.SURROUNDING_WHITESPACE",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Nepieciešama netukša vērtība.",
     "isolated": "Nepieciešama netukša vērtība.",
-    "key": "diagnostic.INPUT_TEXT_REQUIRED",
+    "key": "diagnostic.TEXT_REQUIRED",
     "language": "lv"
   },
   {
@@ -3840,7 +3840,7 @@
     },
     "expected": "Vērtība nedrīkst pārsniegt «maximumCharacters» Unicode rakstzīmes.",
     "isolated": "Vērtība nedrīkst pārsniegt «maximumCharacters» Unicode rakstzīmes.",
-    "key": "diagnostic.INPUT_TEXT_TOO_LONG",
+    "key": "diagnostic.TOO_LONG",
     "language": "lv"
   },
   {
@@ -3861,7 +3861,7 @@
     "arguments": {},
     "expected": "Šis operācijas ID pieder citam komandas saturam. Neizmantojiet to atkārtoti.",
     "isolated": "Šis operācijas ID pieder citam komandas saturam. Neizmantojiet to atkārtoti.",
-    "key": "diagnostic.OPERATION_CONTENT_CONFLICT",
+    "key": "diagnostic.IDEMPOTENCY_CONFLICT",
     "language": "lv"
   },
   {
@@ -3875,7 +3875,7 @@
     "arguments": {},
     "expected": "Lapas turpinājums vairs nav derīgs. Pārlādējiet sarakstu no sākuma.",
     "isolated": "Lapas turpinājums vairs nav derīgs. Pārlādējiet sarakstu no sākuma.",
-    "key": "diagnostic.QUERY_CURSOR_INVALID",
+    "key": "diagnostic.INVALID_CURSOR",
     "language": "lv"
   },
   {
@@ -3884,14 +3884,14 @@
     },
     "expected": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
     "isolated": "Izmantojiet vērtību no 1 līdz «maximumPageSize».",
-    "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
+    "key": "diagnostic.PAGE_LIMIT_RANGE",
     "language": "lv"
   },
   {
     "arguments": {},
     "expected": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas.",
     "isolated": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas.",
-    "key": "diagnostic.TEXT_FORMATTING_CHARACTER",
+    "key": "diagnostic.FORMATTING_CHARACTER",
     "language": "lv"
   },
   {
@@ -5811,7 +5811,7 @@
     "arguments": {},
     "expected": "Vai mērķa identitāte ir cilvēks vai pakalpojums.",
     "isolated": "Vai mērķa identitāte ir cilvēks vai pakalpojums.",
-    "key": "input.kind.meaning",
+    "key": "input.principalKind.meaning",
     "language": "lv"
   },
   {
@@ -6232,7 +6232,7 @@
     "arguments": {},
     "expected": "النوع",
     "isolated": "النوع",
-    "key": "input.kind.label",
+    "key": "input.principalKind.label",
     "language": "ar"
   },
   {
@@ -6305,35 +6305,35 @@
     "arguments": {},
     "expected": "فشلت المصادقة.",
     "isolated": "فشلت المصادقة.",
-    "key": "cli.failure.CLI_AUTHENTICATION_FAILED",
+    "key": "cli.failure.AUTHENTICATION_FAILED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "أُلغي الطلب.",
     "isolated": "أُلغي الطلب.",
-    "key": "cli.failure.CLI_CANCELLED",
+    "key": "cli.failure.CANCELLED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "تهيئة CLI غير صالحة.",
     "isolated": "تهيئة CLI غير صالحة.",
-    "key": "cli.failure.CLI_CONFIGURATION_INVALID",
+    "key": "cli.failure.CONFIGURATION_INVALID",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "حدث خطأ داخلي في العميل.",
     "isolated": "حدث خطأ داخلي في العميل.",
-    "key": "cli.failure.CLI_INTERNAL",
+    "key": "cli.failure.INTERNAL",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "الخدمة غير متاحة.",
     "isolated": "الخدمة غير متاحة.",
-    "key": "cli.failure.CLI_SERVICE_UNAVAILABLE",
+    "key": "cli.failure.SERVICE_UNAVAILABLE",
     "language": "ar"
   },
   {
@@ -6680,7 +6680,7 @@
     "arguments": {},
     "expected": "هذا المورد غير متاح.",
     "isolated": "هذا المورد غير متاح.",
-    "key": "diagnostic.ACCESS_RESOURCE_UNAVAILABLE",
+    "key": "diagnostic.RESOURCE_UNAVAILABLE",
     "language": "ar"
   },
   {
@@ -6715,7 +6715,7 @@
     "arguments": {},
     "expected": "الملف مغلق بالفعل.",
     "isolated": "الملف مغلق بالفعل.",
-    "key": "diagnostic.CASE_ALREADY_CLOSED",
+    "key": "diagnostic.ALREADY_CLOSED",
     "language": "ar"
   },
   {
@@ -6729,14 +6729,14 @@
     "arguments": {},
     "expected": "الملف مفتوح بالفعل.",
     "isolated": "الملف مفتوح بالفعل.",
-    "key": "diagnostic.CASE_ALREADY_OPENED",
+    "key": "diagnostic.ALREADY_OPENED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "يتطلب «تعديل التسجيل» ملفًا بلا قرار. استخدم «تصحيح وقائع الملف» لتصحيح تفاصيل التسجيل المسجلة مع الاحتفاظ بالقرار.",
     "isolated": "يتطلب «تعديل التسجيل» ملفًا بلا قرار. استخدم «تصحيح وقائع الملف» لتصحيح تفاصيل التسجيل المسجلة مع الاحتفاظ بالقرار.",
-    "key": "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED",
+    "key": "diagnostic.AMENDMENT_REQUIRES_UNDECIDED",
     "language": "ar"
   },
   {
@@ -6750,14 +6750,14 @@
     "arguments": {},
     "expected": "لا يمكن لـ«تسجيل قرار الدفع» و«سحب قرار الدفع» تغيير قرار تم دفعه. استخدم «تصحيح وقائع الملف» للتصحيح، مع إعادة تأكيد الدفع صراحةً أو مسح سجله عند استبدال قرار تم دفعه.",
     "isolated": "لا يمكن لـ«تسجيل قرار الدفع» و«سحب قرار الدفع» تغيير قرار تم دفعه. استخدم «تصحيح وقائع الملف» للتصحيح، مع إعادة تأكيد الدفع صراحةً أو مسح سجله عند استبدال قرار تم دفعه.",
-    "key": "diagnostic.CASE_DECISION_ALREADY_PAID",
+    "key": "diagnostic.DECISION_ALREADY_PAID",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "سجّل قرار الدفع أولًا.",
     "isolated": "سجّل قرار الدفع أولًا.",
-    "key": "diagnostic.CASE_DECISION_REQUIRED",
+    "key": "diagnostic.DECISION_REQUIRED",
     "language": "ar"
   },
   {
@@ -6771,21 +6771,21 @@
     "arguments": {},
     "expected": "يسجّل ClaimCore دفعة كاملة واحدة.",
     "isolated": "يسجّل ClaimCore دفعة كاملة واحدة.",
-    "key": "diagnostic.CASE_PAYMENT_ALREADY_RECORDED",
+    "key": "diagnostic.PAYMENT_ALREADY_RECORDED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا يوجد سجل دفع لمسحه.",
     "isolated": "لا يوجد سجل دفع لمسحه.",
-    "key": "diagnostic.CASE_PAYMENT_NOT_RECORDED",
+    "key": "diagnostic.PAYMENT_NOT_RECORDED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",
     "isolated": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",
-    "key": "diagnostic.CASE_REVISION_CONFLICT",
+    "key": "diagnostic.REVISION_CONFLICT",
     "language": "ar"
   },
   {
@@ -6799,28 +6799,28 @@
     "arguments": {},
     "expected": "القرار بمبلغ صفر ليس دفعًا.",
     "isolated": "القرار بمبلغ صفر ليس دفعًا.",
-    "key": "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID",
+    "key": "diagnostic.ZERO_DECISION_CANNOT_BE_PAID",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم رقم مراجعة صحيحًا من 0 إلى 9007199254740991.",
     "isolated": "استخدم رقم مراجعة صحيحًا من 0 إلى 9007199254740991.",
-    "key": "diagnostic.COMMAND_EXPECTED_REVISION_RANGE",
+    "key": "diagnostic.EXPECTED_REVISION_RANGE",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم UUID غير فارغ.",
     "isolated": "استخدم UUID غير فارغ.",
-    "key": "diagnostic.COMMAND_OPERATION_ID_REQUIRED",
+    "key": "diagnostic.OPERATION_ID_REQUIRED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط.",
     "isolated": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط.",
-    "key": "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED",
+    "key": "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
     "language": "ar"
   },
   {
@@ -6834,14 +6834,14 @@
     "arguments": {},
     "expected": "يتطلب استبدال قرار مدفوع إعادة تأكيد الدفع صراحةً أو مسح سجل الدفع.",
     "isolated": "يتطلب استبدال قرار مدفوع إعادة تأكيد الدفع صراحةً أو مسح سجل الدفع.",
-    "key": "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+    "key": "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا.",
     "isolated": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا.",
-    "key": "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED",
+    "key": "diagnostic.PAYMENT_CLEAR_REQUIRED",
     "language": "ar"
   },
   {
@@ -6855,42 +6855,42 @@
     "arguments": {},
     "expected": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
     "isolated": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
-    "key": "diagnostic.INPUT_CALENDAR_DATE_REQUIRED",
+    "key": "diagnostic.CALENDAR_DATE_REQUIRED",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
     "isolated": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
-    "key": "diagnostic.INPUT_CASE_REFERENCE_FORMAT",
+    "key": "diagnostic.REFERENCE_FORMAT",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا تُقبل محارف التحكم.",
     "isolated": "لا تُقبل محارف التحكم.",
-    "key": "diagnostic.INPUT_CONTROL_CHARACTERS",
+    "key": "diagnostic.CONTROL_CHARACTERS",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم حرفي ASCII كبيرين لرمز البلد.",
     "isolated": "استخدم حرفي ASCII كبيرين لرمز البلد.",
-    "key": "diagnostic.INPUT_COUNTRY_FORMAT",
+    "key": "diagnostic.COUNTRY_FORMAT",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
     "isolated": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
-    "key": "diagnostic.INPUT_CURRENCY_FORMAT",
+    "key": "diagnostic.CURRENCY_FORMAT",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "الترتيب الزمني للتواريخ غير صالح.",
     "isolated": "الترتيب الزمني للتواريخ غير صالح.",
-    "key": "diagnostic.INPUT_DATE_ORDER",
+    "key": "diagnostic.CHRONOLOGICAL_ORDER",
     "language": "ar"
   },
   {
@@ -6900,42 +6900,42 @@
     },
     "expected": "استخدم نصًا عشريًا غير سالب: حتى «maximumIntegerDigits» رقمًا صحيحًا و«maximumFractionalDigits» أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
     "isolated": "استخدم نصًا عشريًا غير سالب: حتى ⁨«maximumIntegerDigits»⁩ رقمًا صحيحًا و⁨«maximumFractionalDigits»⁩ أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
-    "key": "diagnostic.INPUT_DECIMAL_FORMAT",
+    "key": "diagnostic.DECIMAL_FORMAT",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",
     "isolated": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",
-    "key": "diagnostic.INPUT_FUTURE_DATE",
+    "key": "diagnostic.FUTURE_DATE",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا يُقبل Unicode غير السليم.",
     "isolated": "لا يُقبل Unicode غير السليم.",
-    "key": "diagnostic.INPUT_MALFORMED_UNICODE",
+    "key": "diagnostic.MALFORMED_UNICODE",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "isolated": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
-    "key": "diagnostic.INPUT_PRINCIPAL_FORMAT",
+    "key": "diagnostic.PRINCIPAL_FORMAT",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا تُقبل المسافات في بداية القيمة أو نهايتها.",
     "isolated": "لا تُقبل المسافات في بداية القيمة أو نهايتها.",
-    "key": "diagnostic.INPUT_SURROUNDING_WHITESPACE",
+    "key": "diagnostic.SURROUNDING_WHITESPACE",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "يجب إدخال قيمة غير فارغة.",
     "isolated": "يجب إدخال قيمة غير فارغة.",
-    "key": "diagnostic.INPUT_TEXT_REQUIRED",
+    "key": "diagnostic.TEXT_REQUIRED",
     "language": "ar"
   },
   {
@@ -6944,7 +6944,7 @@
     },
     "expected": "يجب ألا تتجاوز القيمة «maximumCharacters» محارف Unicode.",
     "isolated": "يجب ألا تتجاوز القيمة ⁨«maximumCharacters»⁩ محارف Unicode.",
-    "key": "diagnostic.INPUT_TEXT_TOO_LONG",
+    "key": "diagnostic.TOO_LONG",
     "language": "ar"
   },
   {
@@ -6965,7 +6965,7 @@
     "arguments": {},
     "expected": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
     "isolated": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
-    "key": "diagnostic.OPERATION_CONTENT_CONFLICT",
+    "key": "diagnostic.IDEMPOTENCY_CONFLICT",
     "language": "ar"
   },
   {
@@ -6979,7 +6979,7 @@
     "arguments": {},
     "expected": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
     "isolated": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
-    "key": "diagnostic.QUERY_CURSOR_INVALID",
+    "key": "diagnostic.INVALID_CURSOR",
     "language": "ar"
   },
   {
@@ -6988,14 +6988,14 @@
     },
     "expected": "استخدم قيمة من 1 إلى «maximumPageSize».",
     "isolated": "استخدم قيمة من 1 إلى ⁨«maximumPageSize»⁩.",
-    "key": "diagnostic.QUERY_PAGE_LIMIT_RANGE",
+    "key": "diagnostic.PAGE_LIMIT_RANGE",
     "language": "ar"
   },
   {
     "arguments": {},
     "expected": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
     "isolated": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
-    "key": "diagnostic.TEXT_FORMATTING_CHARACTER",
+    "key": "diagnostic.FORMATTING_CHARACTER",
     "language": "ar"
   },
   {
@@ -8915,7 +8915,7 @@
     "arguments": {},
     "expected": "ما إذا كانت هوية الجهة المستهدفة لشخص أو لخدمة.",
     "isolated": "ما إذا كانت هوية الجهة المستهدفة لشخص أو لخدمة.",
-    "key": "input.kind.meaning",
+    "key": "input.principalKind.meaning",
     "language": "ar"
   },
   {

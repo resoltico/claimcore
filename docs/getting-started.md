@@ -120,7 +120,7 @@ List the fresh installation's sole owner and use its human issuer/subject to gra
 ```sh
 claimcore authority list
 claimcore authority grant \
-  --kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
+  --principal-kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
   --role CASE_HANDLER --preview
 ```
 

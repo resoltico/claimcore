@@ -316,7 +316,7 @@ let private authorityPreviewInvocation verb =
             [
                 "authority"
                 verb
-                "--kind"
+                "--principal-kind"
                 "HUMAN"
                 "--issuer"
                 "synthetic"

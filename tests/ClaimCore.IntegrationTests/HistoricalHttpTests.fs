@@ -128,7 +128,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         Expect.equal
             (refusal.GetProperty("data").GetProperty("code").GetString())
-            "INPUT_TEXT_TOO_LONG"
+            "TOO_LONG"
             "Current policy owns the refusal"
 
         let! _ = verified database
@@ -160,7 +160,7 @@ let private zeroRevisionReply endpoint status response =
 
     Expect.equal
         (diagnostic.GetProperty("code").GetString())
-        "CASE_REVISION_CONFLICT"
+        "REVISION_CONFLICT"
         "Domain refusal preserved"
 
     Expect.equal

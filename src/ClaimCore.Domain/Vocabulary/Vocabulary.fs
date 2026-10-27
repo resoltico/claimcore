@@ -1,6 +1,12 @@
 namespace ClaimCore.Domain
 
 open Microsoft.FSharp.Reflection
+open System.Text.RegularExpressions
+
+[<RequireQualifiedAccess>]
+type TokenCasing =
+    | ScreamingSnake
+    | CamelCase
 
 [<NoEquality; NoComparison>]
 type Vocabulary<'T when 'T: equality> =
@@ -16,14 +22,39 @@ module Vocabulary =
         System.Reflection.BindingFlags.Public
         ||| System.Reflection.BindingFlags.NonPublic
 
+    let formatToken casing prefix (name: string) =
+        let words =
+            Regex.Replace(name, "([A-Z]+)([A-Z][a-z])", "$1_$2")
+            |> fun value -> Regex.Replace(value, "([a-z0-9])([A-Z])", "$1_$2")
+            |> fun value -> value.Split('_') |> Array.toList
+
+        let token =
+            match casing, words with
+            | TokenCasing.ScreamingSnake, _ -> String.concat "_" words |> _.ToUpperInvariant()
+            | TokenCasing.CamelCase, first :: rest ->
+                first.ToLowerInvariant()
+                + (rest
+                   |> List.map (fun word ->
+                       word.Substring(0, 1).ToUpperInvariant()
+                       + word.Substring(1).ToLowerInvariant())
+                   |> String.concat "")
+            | TokenCasing.CamelCase, [] -> ""
+
+        Option.defaultValue "" prefix + token
+
+    let requireUniqueTokens name tokens =
+        if List.distinct tokens <> tokens then
+            invalidArg name "Duplicate token."
+
+        tokens
+
     let define<'T when 'T: equality> name (all: 'T list) (token: 'T -> string) : Vocabulary<'T> =
         if List.distinct all <> all then
             invalidArg name "Duplicate case."
 
         let tokens = List.map token all
 
-        if List.distinct tokens <> tokens then
-            invalidArg name "Duplicate token."
+        requireUniqueTokens name tokens |> ignore
 
         if FSharpType.IsUnion(typeof<'T>, representation) then
             let expected =
@@ -46,6 +77,33 @@ module Vocabulary =
             All = all
             Token = token
         }
+
+    let ofUnion<'T when 'T: equality> name casing prefix : Vocabulary<'T> =
+        if not (FSharpType.IsUnion(typeof<'T>, representation)) then
+            invalidArg name "A vocabulary requires a nullary union."
+
+        let cases = FSharpType.GetUnionCases(typeof<'T>, representation)
+
+        if cases |> Array.exists (fun case -> case.GetFields().Length <> 0) then
+            invalidArg name "A vocabulary requires a nullary union."
+
+        let values =
+            cases
+            |> Array.map (fun case ->
+                (FSharpValue.MakeUnion(case, [||], representation) |> nonNull) :?> 'T)
+            |> Array.toList
+
+        define name values (fun value ->
+            let case, _ = FSharpValue.GetUnionFields(value, typeof<'T>, representation)
+            formatToken casing prefix case.Name)
+
+    /// Compose already-declared sets, rejecting collisions in their shared token namespace.
+    let ofEntries name (entries: ('T * string) list) : Vocabulary<'T> =
+        define name (List.map fst entries) (fun value ->
+            entries
+            |> List.tryFind (fun (candidate, _) -> candidate = value)
+            |> Option.map snd
+            |> Option.defaultWith (fun () -> invalidArg name "Value is outside the vocabulary."))
 
     let all vocabulary = vocabulary.All
     let token vocabulary = vocabulary.Token

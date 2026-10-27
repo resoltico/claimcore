@@ -70,14 +70,14 @@ let private encodedHistory count disclosure =
             })
 
 let private fullHistoryBudget () =
-    let accepted = snapshot Formats.MaximumFreeTextBytes
+    let accepted = snapshot PartyName.MaximumBytes
 
     let bytes =
         encodedHistory
             50
             (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
 
-    let perEntry = 2 * 6 * Formats.MaximumFreeTextBytes + 6 * 80 + 2048
+    let perEntry = 2 * 6 * PartyName.MaximumBytes + 6 * 80 + 2048
     let bound = 50 * perEntry + 1024
 
     Expect.isOk
@@ -96,7 +96,7 @@ let private fullHistoryBudget () =
 
     Expect.equal ClaimCore.Contract.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
-    Expect.equal Formats.MaximumPayloadBytes 32768 "Permanent framed payload bound"
+    Expect.equal LedgerPayload.MaximumBytes 32768 "Permanent framed payload bound"
 
     Expect.throws
         (fun () ->

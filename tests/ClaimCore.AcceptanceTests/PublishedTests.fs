@@ -313,7 +313,7 @@ let private inputBoundaries fixture =
             .GetProperty("localFailure")
             .GetProperty("code")
             .GetString())
-        "CLI_AUTHENTICATION_FAILED"
+        "AUTHENTICATION_FAILED"
         "Forged PKCE state refuses"
 
 let private supplementary fixture =

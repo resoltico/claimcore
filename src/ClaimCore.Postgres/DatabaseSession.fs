@@ -114,13 +114,13 @@ module internal DatabaseSession =
         match
             DateOnly.TryParseExact(
                 text,
-                (Formats.CalendarDateFormat + " 'AD'"),
+                (CalendarDate.ExactFormat + " 'AD'"),
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None
             )
         with
         | true, parsed when
-            parsed.ToString((Formats.CalendarDateFormat + " 'AD'"), CultureInfo.InvariantCulture) =
+            parsed.ToString((CalendarDate.ExactFormat + " 'AD'"), CultureInfo.InvariantCulture) =
                 text
             ->
             parsed

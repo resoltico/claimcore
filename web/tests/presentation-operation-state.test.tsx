@@ -106,7 +106,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
     response("operation.preview", "REJECTED", {
-      code: "INPUT_TEXT_REQUIRED",
+      code: "TEXT_REQUIRED",
       action: "CORRECT_INPUT",
       target: "claimantName",
       actualRevision: null,

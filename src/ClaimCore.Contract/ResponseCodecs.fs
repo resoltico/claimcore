@@ -163,11 +163,7 @@ module ResponseCodecs =
         date
         |> map
             (fun value ->
-                DateOnly.ParseExact(
-                    value,
-                    Formats.CalendarDateFormat,
-                    CultureInfo.InvariantCulture
-                ))
+                DateOnly.ParseExact(value, CalendarDate.ExactFormat, CultureInfo.InvariantCulture))
             (fun value -> value.ToString("O", CultureInfo.InvariantCulture))
 
     let correctionAdvice =

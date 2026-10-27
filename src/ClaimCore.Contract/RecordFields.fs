@@ -4,8 +4,7 @@ open ClaimCore.Domain
 
 /// Presentation maps validated values to client fields; Domain owns every field and scalar rule.
 module RecordFields =
-    let vocabulary =
-        Vocabulary.define "field" (Record.fields |> List.map _.Field) Record.key
+    let vocabulary = Record.fieldVocabulary
 
     let labelId field =
         Vocabulary.messageKey vocabulary field "label"

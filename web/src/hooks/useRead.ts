@@ -70,7 +70,7 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
     const cursorInvalid =
       result.kind === "outcome" &&
       result.value.outcome.kind === "REJECTED" &&
-      result.value.outcome.data.code === "QUERY_CURSOR_INVALID";
+      result.value.outcome.data.code === "INVALID_CURSOR";
     if (isDisclosureRefused(result) || cursorInvalid) {
       if (isDisclosureRefused(result)) {
         sinks.onDisclosureRefused?.(resultNotice(result));

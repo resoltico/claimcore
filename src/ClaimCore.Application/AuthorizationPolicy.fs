@@ -94,22 +94,6 @@ module ActorAuthorization =
                 List.exists (fun role -> List.contains capability (capabilities role))
             ))
 
-    let private ordinaryActs =
-        Map.ofList
-            [
-                CaseActKind.Open, Capability.Register
-                CaseActKind.AmendRegistration, Capability.Register
-                CaseActKind.Decide, Capability.Decide
-                CaseActKind.WithdrawDecision, Capability.Decide
-                CaseActKind.RecordPayment, Capability.RecordPayment
-                CaseActKind.ClearPayment, Capability.RecordPayment
-                CaseActKind.Close, Capability.Close
-                CaseActKind.Reopen, Capability.Close
-                CaseActKind.Void, Capability.Steward
-                CaseActKind.Reinstate, Capability.Steward
-                CaseActKind.Erase, Capability.Steward
-            ]
-
     let correctionCapability =
         function
         | RecordGroup.Registration -> Capability.Register
@@ -121,6 +105,21 @@ module ActorAuthorization =
         |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
+
+    let private ordinaryActs =
+        function
+        | CaseActKind.Open
+        | CaseActKind.AmendRegistration -> [ Capability.Register ]
+        | CaseActKind.Decide
+        | CaseActKind.WithdrawDecision -> [ Capability.Decide ]
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment -> [ Capability.RecordPayment ]
+        | CaseActKind.Close
+        | CaseActKind.Reopen -> [ Capability.Close ]
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> [ Capability.Steward ]
+        | CaseActKind.Correct -> correctionCapabilities
 
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
@@ -137,14 +136,11 @@ module ActorAuthorization =
                 | PaymentChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
-        | act -> [ ordinaryActs[CaseActs.kind act] ]
+        | act -> ordinaryActs (CaseActs.kind act)
 
     let canAdvertise principal actor resource kind =
-        if kind = CaseActKind.Correct then
-            correctionCapabilities
-            |> List.exists (fun capability -> can principal actor capability resource)
-        else
-            can principal actor ordinaryActs[kind] resource
+        ordinaryActs kind
+        |> List.exists (fun capability -> can principal actor capability resource)
 
     let canAct principal actor resource act =
         canAdvertise principal actor resource (CaseActs.kind act)

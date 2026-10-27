@@ -242,13 +242,13 @@ Register actor
 Register a principal without granting case or administration capabilities.
 
 ```sh
-claimcore authority register [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 
@@ -259,13 +259,13 @@ Grant role
 Grant a role at installation or case scope.
 
 ```sh
-claimcore authority grant [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
+claimcore authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 | `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
@@ -278,13 +278,13 @@ Revoke role
 Revoke a role at installation or case scope. The final enabled human owner remains protected.
 
 ```sh
-claimcore authority revoke [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
+claimcore authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 | `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
@@ -297,13 +297,13 @@ Enable actor
 Enable a registered actor.
 
 ```sh
-claimcore authority enable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+claimcore authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 
@@ -314,13 +314,13 @@ Disable actor
 Disable a registered actor. The final enabled human owner remains protected.
 
 ```sh
-claimcore authority disable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE
+claimcore authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `--kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 

@@ -9,7 +9,7 @@
     "/api/session": {
       "get": {
         "operationId": "session",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -166,7 +166,7 @@
     "/api/operation.preview": {
       "post": {
         "operationId": "operation.preview",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -346,7 +346,7 @@
     "/api/case.get": {
       "post": {
         "operationId": "case.get",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -436,7 +436,7 @@
     "/api/case.list": {
       "post": {
         "operationId": "case.list",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -526,7 +526,7 @@
     "/api/case.history": {
       "post": {
         "operationId": "case.history",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -616,7 +616,7 @@
     "/api/operation.observe": {
       "post": {
         "operationId": "operation.observe",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -796,7 +796,7 @@
     "/api/authority.list": {
       "post": {
         "operationId": "authority.list",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -886,7 +886,7 @@
     "/api/authority.grants": {
       "post": {
         "operationId": "authority.grants",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -976,7 +976,7 @@
     "/api/context": {
       "post": {
         "operationId": "context",
-        "x-claimcore-effect": "READ_ONLY",
+        "x-claimcore-effect": "READ",
         "parameters": [
           {
             "name": "ClaimCore-Contract",
@@ -3501,52 +3501,52 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "INPUT_TEXT_REQUIRED"
+                    "const": "TEXT_REQUIRED"
                   },
                   {
-                    "const": "INPUT_MALFORMED_UNICODE"
+                    "const": "MALFORMED_UNICODE"
                   },
                   {
-                    "const": "INPUT_SURROUNDING_WHITESPACE"
+                    "const": "SURROUNDING_WHITESPACE"
                   },
                   {
-                    "const": "INPUT_CONTROL_CHARACTERS"
+                    "const": "CONTROL_CHARACTERS"
                   },
                   {
-                    "const": "TEXT_FORMATTING_CHARACTER"
+                    "const": "FORMATTING_CHARACTER"
                   },
                   {
-                    "const": "INPUT_CASE_REFERENCE_FORMAT"
+                    "const": "REFERENCE_FORMAT"
                   },
                   {
-                    "const": "INPUT_COUNTRY_FORMAT"
+                    "const": "COUNTRY_FORMAT"
                   },
                   {
-                    "const": "INPUT_PRINCIPAL_FORMAT"
+                    "const": "PRINCIPAL_FORMAT"
                   },
                   {
-                    "const": "INPUT_CALENDAR_DATE_REQUIRED"
+                    "const": "CALENDAR_DATE_REQUIRED"
                   },
                   {
-                    "const": "INPUT_DATE_ORDER"
+                    "const": "CHRONOLOGICAL_ORDER"
                   },
                   {
-                    "const": "INPUT_FUTURE_DATE"
+                    "const": "FUTURE_DATE"
                   },
                   {
-                    "const": "INPUT_CURRENCY_FORMAT"
+                    "const": "CURRENCY_FORMAT"
                   },
                   {
-                    "const": "COMMAND_OPERATION_ID_REQUIRED"
+                    "const": "OPERATION_ID_REQUIRED"
                   },
                   {
-                    "const": "COMMAND_EXPECTED_REVISION_RANGE"
+                    "const": "EXPECTED_REVISION_RANGE"
                   },
                   {
-                    "const": "CORRECTION_PAYMENT_CLEAR_REQUIRED"
+                    "const": "PAYMENT_CLEAR_REQUIRED"
                   },
                   {
-                    "const": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+                    "const": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
                   }
                 ]
               },
@@ -3646,7 +3646,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "INPUT_TEXT_TOO_LONG"
+                    "const": "TOO_LONG"
                   }
                 ]
               },
@@ -3754,7 +3754,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "INPUT_DECIMAL_FORMAT"
+                    "const": "DECIMAL_FORMAT"
                   }
                 ]
               },
@@ -3868,7 +3868,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "QUERY_PAGE_LIMIT_RANGE"
+                    "const": "PAGE_LIMIT_RANGE"
                   }
                 ]
               },
@@ -3976,7 +3976,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "CASE_REVISION_CONFLICT"
+                    "const": "REVISION_CONFLICT"
                   }
                 ]
               },
@@ -4035,37 +4035,37 @@
                     "const": "CASE_CLOSED"
                   },
                   {
-                    "const": "CASE_ALREADY_CLOSED"
+                    "const": "ALREADY_CLOSED"
                   },
                   {
-                    "const": "CASE_ALREADY_OPENED"
+                    "const": "ALREADY_OPENED"
                   },
                   {
-                    "const": "CASE_AMENDMENT_REQUIRES_UNDECIDED"
+                    "const": "AMENDMENT_REQUIRES_UNDECIDED"
                   },
                   {
                     "const": "CORRECTION_NO_CHANGES"
                   },
                   {
-                    "const": "CORRECTION_EXISTING_VALUE_REQUIRED"
+                    "const": "CORRECTION_REQUIRES_EXISTING_VALUE"
                   },
                   {
-                    "const": "CASE_DECISION_REQUIRED"
+                    "const": "DECISION_REQUIRED"
                   },
                   {
-                    "const": "CASE_PAYMENT_ALREADY_RECORDED"
+                    "const": "PAYMENT_ALREADY_RECORDED"
                   },
                   {
-                    "const": "CASE_PAYMENT_NOT_RECORDED"
+                    "const": "PAYMENT_NOT_RECORDED"
                   },
                   {
-                    "const": "CASE_DECISION_ALREADY_PAID"
+                    "const": "DECISION_ALREADY_PAID"
                   },
                   {
-                    "const": "CASE_ZERO_DECISION_CANNOT_BE_PAID"
+                    "const": "ZERO_DECISION_CANNOT_BE_PAID"
                   },
                   {
-                    "const": "ACCESS_RESOURCE_UNAVAILABLE"
+                    "const": "RESOURCE_UNAVAILABLE"
                   },
                   {
                     "const": "ACT_NOT_PERMITTED"
@@ -4119,7 +4119,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "OPERATION_CONTENT_CONFLICT"
+                    "const": "IDEMPOTENCY_CONFLICT"
                   }
                 ]
               },
@@ -4201,7 +4201,7 @@
               "code": {
                 "oneOf": [
                   {
-                    "const": "QUERY_CURSOR_INVALID"
+                    "const": "INVALID_CURSOR"
                   }
                 ]
               },

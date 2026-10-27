@@ -37,4 +37,4 @@ export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean
     (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
   (result.kind === "outcome" &&
     result.value.outcome.kind === "REJECTED" &&
-    result.value.outcome.data.code === "ACCESS_RESOURCE_UNAVAILABLE");
+    result.value.outcome.data.code === "RESOURCE_UNAVAILABLE");

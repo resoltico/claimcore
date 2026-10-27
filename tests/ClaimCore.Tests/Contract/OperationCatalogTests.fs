@@ -170,7 +170,7 @@ let tests =
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->
                 let grant = OperationCatalog.synopsis (find [ "authority"; "grant" ])
-                Expect.stringContains grant "--kind human|service" "Vocabulary choices"
+                Expect.stringContains grant "--principal-kind human|service" "Vocabulary choices"
 
                 Expect.stringContains
                     grant

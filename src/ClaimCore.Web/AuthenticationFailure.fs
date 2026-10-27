@@ -15,27 +15,10 @@ type AuthenticationFailure =
 
 module AuthenticationFailures =
     let vocabulary =
-        Vocabulary.define
+        Vocabulary.ofUnion<AuthenticationFailure>
             "AuthenticationFailure"
-            [
-                AuthenticationFailure.ClaimAmbiguous
-                AuthenticationFailure.ClientInvalid
-                AuthenticationFailure.MetadataInvalid
-                AuthenticationFailure.PrincipalInvalid
-                AuthenticationFailure.PrincipalUnauthenticated
-                AuthenticationFailure.SubjectInvalid
-                AuthenticationFailure.UriInvalid
-                AuthenticationFailure.ActorPrincipalInvalid
-            ]
-            (function
-             | AuthenticationFailure.ClaimAmbiguous -> "OIDC_CLAIM_AMBIGUOUS"
-             | AuthenticationFailure.ClientInvalid -> "OIDC_CLIENT_INVALID"
-             | AuthenticationFailure.MetadataInvalid -> "OIDC_METADATA_INVALID"
-             | AuthenticationFailure.PrincipalInvalid -> "OIDC_PRINCIPAL_INVALID"
-             | AuthenticationFailure.PrincipalUnauthenticated -> "OIDC_PRINCIPAL_UNAUTHENTICATED"
-             | AuthenticationFailure.SubjectInvalid -> "OIDC_SUBJECT_INVALID"
-             | AuthenticationFailure.UriInvalid -> "OIDC_URI_INVALID"
-             | AuthenticationFailure.ActorPrincipalInvalid -> "ACTOR_PRINCIPAL_INVALID")
+            TokenCasing.ScreamingSnake
+            (Some "OIDC_")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

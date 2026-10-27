@@ -77,7 +77,7 @@ let private baselinePolicy code (reason: Refusal) =
             "Only principal targets extend the captured baseline."
 
         Expect.contains
-            [ "INPUT_TEXT_REQUIRED"; "INPUT_PRINCIPAL_FORMAT" ]
+            [ "TEXT_REQUIRED"; "PRINCIPAL_FORMAT" ]
             code
             "Only principal admission extends the captured baseline."
 
@@ -463,9 +463,7 @@ let private completeVocabulary () =
 
         Expect.equal
             (Set.ofList Refusals.codes)
-            (baselineCodes
-             |> Set.add "INPUT_PRINCIPAL_FORMAT"
-             |> Set.add "OPERATION_RESOLVED")
+            (baselineCodes |> Set.add "PRINCIPAL_FORMAT" |> Set.add "OPERATION_RESOLVED")
             "The code table preserves every captured refusal with the adopted principal extension."
 
         let produced = Set.ofList evidence
@@ -530,7 +528,7 @@ let private missingCasePrivacy () =
 
             Expect.equal
                 (refused outcome |> fst)
-                "ACCESS_RESOURCE_UNAVAILABLE"
+                "RESOURCE_UNAVAILABLE"
                 "Missing case stays private"
 
         Expect.isFalse

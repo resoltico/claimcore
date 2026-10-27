@@ -1,8 +1,8 @@
 {
-  "revision": "5b15553172396ad6a7cbd04c1c79179cc3a8bd5e",
+  "source": "Hand-authored refusal actions and targets for the derived vocabulary.",
   "observations": [
     {
-      "code": "ACCESS_RESOURCE_UNAVAILABLE",
+      "code": "RESOURCE_UNAVAILABLE",
       "action": "NoneRequired",
       "target": null
     },
@@ -27,7 +27,7 @@
       "target": null
     },
     {
-      "code": "CASE_ALREADY_CLOSED",
+      "code": "ALREADY_CLOSED",
       "action": "NoneRequired",
       "target": null
     },
@@ -37,12 +37,12 @@
       "target": null
     },
     {
-      "code": "CASE_ALREADY_OPENED",
+      "code": "ALREADY_OPENED",
       "action": "NoneRequired",
       "target": null
     },
     {
-      "code": "CASE_AMENDMENT_REQUIRES_UNDECIDED",
+      "code": "AMENDMENT_REQUIRES_UNDECIDED",
       "action": "NoneRequired",
       "target": null
     },
@@ -52,12 +52,12 @@
       "target": null
     },
     {
-      "code": "CASE_DECISION_ALREADY_PAID",
+      "code": "DECISION_ALREADY_PAID",
       "action": "NoneRequired",
       "target": null
     },
     {
-      "code": "CASE_DECISION_REQUIRED",
+      "code": "DECISION_REQUIRED",
       "action": "NoneRequired",
       "target": null
     },
@@ -67,17 +67,17 @@
       "target": null
     },
     {
-      "code": "CASE_PAYMENT_ALREADY_RECORDED",
+      "code": "PAYMENT_ALREADY_RECORDED",
       "action": "NoneRequired",
       "target": null
     },
     {
-      "code": "CASE_PAYMENT_NOT_RECORDED",
+      "code": "PAYMENT_NOT_RECORDED",
       "action": "NoneRequired",
       "target": null
     },
     {
-      "code": "CASE_REVISION_CONFLICT",
+      "code": "REVISION_CONFLICT",
       "action": "ReadCurrent",
       "target": null
     },
@@ -87,22 +87,22 @@
       "target": null
     },
     {
-      "code": "CASE_ZERO_DECISION_CANNOT_BE_PAID",
+      "code": "ZERO_DECISION_CANNOT_BE_PAID",
       "action": "NoneRequired",
       "target": null
     },
     {
-      "code": "COMMAND_EXPECTED_REVISION_RANGE",
+      "code": "EXPECTED_REVISION_RANGE",
       "action": "CorrectInput",
       "target": "expectedRevision"
     },
     {
-      "code": "COMMAND_OPERATION_ID_REQUIRED",
+      "code": "OPERATION_ID_REQUIRED",
       "action": "CorrectInput",
       "target": "operationId"
     },
     {
-      "code": "CORRECTION_EXISTING_VALUE_REQUIRED",
+      "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
       "action": "NoneRequired",
       "target": null
     },
@@ -112,12 +112,12 @@
       "target": null
     },
     {
-      "code": "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+      "code": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
       "action": "CorrectInput",
       "target": "payment"
     },
     {
-      "code": "CORRECTION_PAYMENT_CLEAR_REQUIRED",
+      "code": "PAYMENT_CLEAR_REQUIRED",
       "action": "CorrectInput",
       "target": "payment"
     },
@@ -127,97 +127,97 @@
       "target": null
     },
     {
-      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "code": "CALENDAR_DATE_REQUIRED",
       "action": "CorrectInput",
       "target": "incidentDate"
     },
     {
-      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "code": "CALENDAR_DATE_REQUIRED",
       "action": "CorrectInput",
       "target": "incidentNotificationDate"
     },
     {
-      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "code": "CALENDAR_DATE_REQUIRED",
       "action": "CorrectInput",
       "target": "paymentDate"
     },
     {
-      "code": "INPUT_CALENDAR_DATE_REQUIRED",
+      "code": "CALENDAR_DATE_REQUIRED",
       "action": "CorrectInput",
       "target": "paymentDecisionDate"
     },
     {
-      "code": "INPUT_CASE_REFERENCE_FORMAT",
+      "code": "REFERENCE_FORMAT",
       "action": "CorrectInput",
       "target": "caseReference"
     },
     {
-      "code": "INPUT_CONTROL_CHARACTERS",
+      "code": "CONTROL_CHARACTERS",
       "action": "CorrectInput",
       "target": "claimantName"
     },
     {
-      "code": "INPUT_COUNTRY_FORMAT",
+      "code": "COUNTRY_FORMAT",
       "action": "CorrectInput",
       "target": "incidentCountry"
     },
     {
-      "code": "INPUT_CURRENCY_FORMAT",
+      "code": "CURRENCY_FORMAT",
       "action": "CorrectInput",
       "target": "claimedCurrency"
     },
     {
-      "code": "INPUT_CURRENCY_FORMAT",
+      "code": "CURRENCY_FORMAT",
       "action": "CorrectInput",
       "target": "payableCurrency"
     },
     {
-      "code": "INPUT_DATE_ORDER",
+      "code": "CHRONOLOGICAL_ORDER",
       "action": "CorrectInput",
       "target": "incidentNotificationDate"
     },
     {
-      "code": "INPUT_DECIMAL_FORMAT",
+      "code": "DECIMAL_FORMAT",
       "action": "CorrectInput",
       "target": "claimedAmount"
     },
     {
-      "code": "INPUT_DECIMAL_FORMAT",
+      "code": "DECIMAL_FORMAT",
       "action": "CorrectInput",
       "target": "payableAmount"
     },
     {
-      "code": "INPUT_FUTURE_DATE",
+      "code": "FUTURE_DATE",
       "action": "CorrectInput",
       "target": "incidentDate"
     },
     {
-      "code": "INPUT_MALFORMED_UNICODE",
+      "code": "MALFORMED_UNICODE",
       "action": "CorrectInput",
       "target": "claimantName"
     },
     {
-      "code": "INPUT_SURROUNDING_WHITESPACE",
+      "code": "SURROUNDING_WHITESPACE",
       "action": "CorrectInput",
       "target": "claimantName"
     },
     {
-      "code": "INPUT_TEXT_REQUIRED",
+      "code": "TEXT_REQUIRED",
       "action": "CorrectInput",
       "target": "claimantName"
     },
     {
-      "code": "INPUT_TEXT_REQUIRED",
+      "code": "TEXT_REQUIRED",
       "action": "CorrectInput",
       "target": "insurerName"
     },
     {
-      "code": "INPUT_TEXT_REQUIRED",
+      "code": "TEXT_REQUIRED",
       "action": "CorrectInput",
       "target": "reason"
     },
     {
-      "code": "INPUT_TEXT_TOO_LONG",
+      "code": "TOO_LONG",
       "action": "CorrectInput",
       "target": "claimantName"
     },
@@ -232,22 +232,22 @@
       "target": null
     },
     {
-      "code": "OPERATION_CONTENT_CONFLICT",
+      "code": "IDEMPOTENCY_CONFLICT",
       "action": "StopAndInvestigate",
       "target": null
     },
     {
-      "code": "QUERY_CURSOR_INVALID",
+      "code": "INVALID_CURSOR",
       "action": "ReadCurrent",
       "target": "cursor"
     },
     {
-      "code": "QUERY_PAGE_LIMIT_RANGE",
+      "code": "PAGE_LIMIT_RANGE",
       "action": "CorrectInput",
       "target": "limit"
     },
     {
-      "code": "TEXT_FORMATTING_CHARACTER",
+      "code": "FORMATTING_CHARACTER",
       "action": "CorrectInput",
       "target": "claimantName"
     }

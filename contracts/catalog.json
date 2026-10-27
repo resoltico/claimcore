@@ -219,9 +219,9 @@
       "scalar": null
     },
     {
-      "name": "kind",
-      "labelId": "input.kind.label",
-      "meaningId": "input.kind.meaning",
+      "name": "principalKind",
+      "labelId": "input.principalKind.label",
+      "meaningId": "input.principalKind.meaning",
       "scalar": null
     },
     {
@@ -2414,7 +2414,7 @@
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
       "confirmationId": "act.REGISTER.confirmation",
-      "synopsis": "authority register [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "synopsis": "authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2452,8 +2452,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.kind.label",
-          "meaningId": "input.kind.meaning",
+          "labelId": "input.principalKind.label",
+          "meaningId": "input.principalKind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
@@ -2531,7 +2531,7 @@
       "labelId": "act.GRANT.label",
       "meaningId": "act.GRANT.meaning",
       "confirmationId": "act.GRANT.confirmation",
-      "synopsis": "authority grant [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
+      "synopsis": "authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -2569,8 +2569,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.kind.label",
-          "meaningId": "input.kind.meaning",
+          "labelId": "input.principalKind.label",
+          "meaningId": "input.principalKind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
@@ -2734,7 +2734,7 @@
       "labelId": "act.REVOKE.label",
       "meaningId": "act.REVOKE.meaning",
       "confirmationId": "act.REVOKE.confirmation",
-      "synopsis": "authority revoke [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
+      "synopsis": "authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -2772,8 +2772,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.kind.label",
-          "meaningId": "input.kind.meaning",
+          "labelId": "input.principalKind.label",
+          "meaningId": "input.principalKind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
@@ -2937,7 +2937,7 @@
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
       "confirmationId": "act.ENABLE.confirmation",
-      "synopsis": "authority enable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "synopsis": "authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2975,8 +2975,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.kind.label",
-          "meaningId": "input.kind.meaning",
+          "labelId": "input.principalKind.label",
+          "meaningId": "input.principalKind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
@@ -3054,7 +3054,7 @@
       "labelId": "act.DISABLE.label",
       "meaningId": "act.DISABLE.meaning",
       "confirmationId": "act.DISABLE.confirmation",
-      "synopsis": "authority disable [--operation-id VALUE] --kind human|service --issuer VALUE --subject VALUE",
+      "synopsis": "authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3092,8 +3092,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.kind.label",
-          "meaningId": "input.kind.meaning",
+          "labelId": "input.principalKind.label",
+          "meaningId": "input.principalKind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,

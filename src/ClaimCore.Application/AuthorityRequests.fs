@@ -153,6 +153,5 @@ module AuthorityRequests =
                  >> Result.map ignore
                  >> Result.mapError (fun violation ->
                      Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
-                >> Result.mapError (fun value -> value)
             )
             |> Option.defaultValue (Ok())

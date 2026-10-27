@@ -26,7 +26,7 @@ test.setTimeout(45_000);
 // These real-boundary cases retain acceptance, refusal, focus guidance and RTL per language.
 const outcomes = [
   ["REPLACE", "CLEAR", "CLEAR", null],
-  ["KEEP", "REPLACE", "KEEP", "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED"],
+  ["KEEP", "REPLACE", "KEEP", "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"],
 ] as const;
 const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
@@ -75,7 +75,7 @@ const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "C
   return before;
 };
 const expectPaymentGuidance = async (page: Page, refusal: string) => {
-  if (refusal !== "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
+  if (refusal !== "PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
     return;
   }
   const payment = page.locator('[name="act.groups.payment.kind"]');
@@ -95,7 +95,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
     await expect(description).toContainText(text);
     await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
     await expect(payment).toHaveAccessibleDescription(
-      `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
+      `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
     );
     await expect(payment).toHaveAttribute("aria-invalid", "true");
   }

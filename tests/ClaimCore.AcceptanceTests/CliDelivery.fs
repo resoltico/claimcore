@@ -169,7 +169,7 @@ let private differentContent fixture source =
 
     Expect.equal
         ((require "REJECTED" conflict).GetProperty("code").GetString())
-        "OPERATION_CONTENT_CONFLICT"
+        "IDEMPOTENCY_CONFLICT"
         "Even a conflict cannot disprove acceptance of an earlier uncertain request"
 
 let private coreUnknown (fixture: PublishedFixture.Fixture) =

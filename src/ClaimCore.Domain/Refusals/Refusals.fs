@@ -23,53 +23,8 @@ type ViolationCode =
     | PaymentAcknowledgementRequired
 
 module ViolationCodes =
-    // Flat exhaustive declaration: compiler coverage and artifact parity protect this mapping.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
-        Vocabulary.define
-            "violation"
-            [
-                ViolationCode.TextRequired
-                ViolationCode.MalformedUnicode
-                ViolationCode.SurroundingWhitespace
-                ViolationCode.TooLong
-                ViolationCode.ControlCharacters
-                ViolationCode.FormattingCharacter
-                ViolationCode.ReferenceFormat
-                ViolationCode.CountryFormat
-                ViolationCode.PrincipalFormat
-                ViolationCode.CalendarDateRequired
-                ViolationCode.ChronologicalOrder
-                ViolationCode.FutureDate
-                ViolationCode.DecimalFormat
-                ViolationCode.CurrencyFormat
-                ViolationCode.OperationIdRequired
-                ViolationCode.ExpectedRevisionRange
-                ViolationCode.PageLimitRange
-                ViolationCode.PaymentClearRequired
-                ViolationCode.PaymentAcknowledgementRequired
-            ]
-            (function
-             | ViolationCode.TextRequired -> "INPUT_TEXT_REQUIRED"
-             | ViolationCode.MalformedUnicode -> "INPUT_MALFORMED_UNICODE"
-             | ViolationCode.SurroundingWhitespace -> "INPUT_SURROUNDING_WHITESPACE"
-             | ViolationCode.TooLong -> "INPUT_TEXT_TOO_LONG"
-             | ViolationCode.ControlCharacters -> "INPUT_CONTROL_CHARACTERS"
-             | ViolationCode.FormattingCharacter -> "TEXT_FORMATTING_CHARACTER"
-             | ViolationCode.ReferenceFormat -> "INPUT_CASE_REFERENCE_FORMAT"
-             | ViolationCode.CountryFormat -> "INPUT_COUNTRY_FORMAT"
-             | ViolationCode.PrincipalFormat -> "INPUT_PRINCIPAL_FORMAT"
-             | ViolationCode.CalendarDateRequired -> "INPUT_CALENDAR_DATE_REQUIRED"
-             | ViolationCode.ChronologicalOrder -> "INPUT_DATE_ORDER"
-             | ViolationCode.FutureDate -> "INPUT_FUTURE_DATE"
-             | ViolationCode.DecimalFormat -> "INPUT_DECIMAL_FORMAT"
-             | ViolationCode.CurrencyFormat -> "INPUT_CURRENCY_FORMAT"
-             | ViolationCode.OperationIdRequired -> "COMMAND_OPERATION_ID_REQUIRED"
-             | ViolationCode.ExpectedRevisionRange -> "COMMAND_EXPECTED_REVISION_RANGE"
-             | ViolationCode.PageLimitRange -> "QUERY_PAGE_LIMIT_RANGE"
-             | ViolationCode.PaymentClearRequired -> "CORRECTION_PAYMENT_CLEAR_REQUIRED"
-             | ViolationCode.PaymentAcknowledgementRequired ->
-                 "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED")
+        Vocabulary.ofUnion<ViolationCode> "violation" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -157,68 +112,20 @@ type RefusalCode =
     | InvalidCursor
 
 module RefusalCodes =
-    // Flat exhaustive declaration: compiler coverage and artifact parity protect this mapping.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
-        Vocabulary.define
-            "refusal"
-            ((ViolationCodes.all |> List.map RefusalCode.InvalidInput)
-             @ [
-                 RefusalCode.RevisionConflict
-                 RefusalCode.CaseAlreadyExists
-                 RefusalCode.CaseErased
-                 RefusalCode.CaseVoided
-                 RefusalCode.AlreadyVoided
-                 RefusalCode.NotVoided
-                 RefusalCode.CaseClosed
-                 RefusalCode.AlreadyClosed
-                 RefusalCode.AlreadyOpened
-                 RefusalCode.AmendmentRequiresUndecided
-                 RefusalCode.CorrectionNoChanges
-                 RefusalCode.CorrectionRequiresExistingValue
-                 RefusalCode.DecisionRequired
-                 RefusalCode.PaymentAlreadyRecorded
-                 RefusalCode.PaymentNotRecorded
-                 RefusalCode.DecisionAlreadyPaid
-                 RefusalCode.ZeroDecisionCannotBePaid
-                 RefusalCode.OperationResolved
-                 RefusalCode.IdempotencyConflict
-                 RefusalCode.ResourceUnavailable
-                 RefusalCode.ActNotPermitted
-                 RefusalCode.LastOwner
-                 RefusalCode.ActorAlreadyRegistered
-                 RefusalCode.ActorUnknown
-                 RefusalCode.HumanPrincipalRequired
-                 RefusalCode.InvalidCursor
-             ])
-            (function
-             | RefusalCode.InvalidInput code -> ViolationCodes.token code
-             | RefusalCode.RevisionConflict -> "CASE_REVISION_CONFLICT"
-             | RefusalCode.CaseAlreadyExists -> "CASE_ALREADY_EXISTS"
-             | RefusalCode.CaseErased -> "CASE_ERASED"
-             | RefusalCode.CaseVoided -> "CASE_VOIDED"
-             | RefusalCode.AlreadyVoided -> "ALREADY_VOIDED"
-             | RefusalCode.NotVoided -> "NOT_VOIDED"
-             | RefusalCode.CaseClosed -> "CASE_CLOSED"
-             | RefusalCode.AlreadyClosed -> "CASE_ALREADY_CLOSED"
-             | RefusalCode.AlreadyOpened -> "CASE_ALREADY_OPENED"
-             | RefusalCode.AmendmentRequiresUndecided -> "CASE_AMENDMENT_REQUIRES_UNDECIDED"
-             | RefusalCode.CorrectionNoChanges -> "CORRECTION_NO_CHANGES"
-             | RefusalCode.CorrectionRequiresExistingValue -> "CORRECTION_EXISTING_VALUE_REQUIRED"
-             | RefusalCode.DecisionRequired -> "CASE_DECISION_REQUIRED"
-             | RefusalCode.PaymentAlreadyRecorded -> "CASE_PAYMENT_ALREADY_RECORDED"
-             | RefusalCode.PaymentNotRecorded -> "CASE_PAYMENT_NOT_RECORDED"
-             | RefusalCode.DecisionAlreadyPaid -> "CASE_DECISION_ALREADY_PAID"
-             | RefusalCode.ZeroDecisionCannotBePaid -> "CASE_ZERO_DECISION_CANNOT_BE_PAID"
-             | RefusalCode.OperationResolved -> "OPERATION_RESOLVED"
-             | RefusalCode.IdempotencyConflict -> "OPERATION_CONTENT_CONFLICT"
-             | RefusalCode.ResourceUnavailable -> "ACCESS_RESOURCE_UNAVAILABLE"
-             | RefusalCode.ActNotPermitted -> "ACT_NOT_PERMITTED"
-             | RefusalCode.LastOwner -> "LAST_OWNER"
-             | RefusalCode.ActorAlreadyRegistered -> "ACTOR_ALREADY_REGISTERED"
-             | RefusalCode.ActorUnknown -> "ACTOR_UNKNOWN"
-             | RefusalCode.HumanPrincipalRequired -> "HUMAN_PRINCIPAL_REQUIRED"
-             | RefusalCode.InvalidCursor -> "QUERY_CURSOR_INVALID")
+        let nullary =
+            Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<RefusalCode>
+            |> Array.filter (fun case -> case.GetFields().Length = 0)
+            |> Array.map (fun case ->
+                (Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(case, [||]) |> nonNull)
+                :?> RefusalCode,
+                Vocabulary.formatToken TokenCasing.ScreamingSnake None case.Name)
+            |> Array.toList
+
+        (Vocabulary.entries ViolationCodes.vocabulary
+         |> List.map (fun (value, token) -> RefusalCode.InvalidInput value, token))
+        @ nullary
+        |> Vocabulary.ofEntries "refusal"
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -430,28 +337,8 @@ module Refusals =
         | RefusalCode.InvalidCursor -> Refusal.InvalidCursor
 
 module RecommendedActions =
-    // Flat exhaustive declaration: compiler coverage and artifact parity protect this mapping.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
-        Vocabulary.define
-            "action"
-            [
-                RecommendedAction.CorrectInput
-                RecommendedAction.ReadCurrent
-                RecommendedAction.RetrySafe
-                RecommendedAction.ReplayExact
-                RecommendedAction.Reauthenticate
-                RecommendedAction.StopAndInvestigate
-                RecommendedAction.NoneRequired
-            ]
-            (function
-             | RecommendedAction.CorrectInput -> "CORRECT_INPUT"
-             | RecommendedAction.ReadCurrent -> "READ_CURRENT"
-             | RecommendedAction.RetrySafe -> "RETRY_SAFE"
-             | RecommendedAction.ReplayExact -> "REPLAY_EXACT"
-             | RecommendedAction.Reauthenticate -> "REAUTHENTICATE"
-             | RecommendedAction.StopAndInvestigate -> "STOP_AND_INVESTIGATE"
-             | RecommendedAction.NoneRequired -> "NONE_REQUIRED")
+        Vocabulary.ofUnion<RecommendedAction> "action" TokenCasing.ScreamingSnake None
 
     let all = Vocabulary.entries vocabulary
     let token = Vocabulary.token vocabulary

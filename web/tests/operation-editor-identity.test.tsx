@@ -55,21 +55,21 @@ const preparedResponse = () =>
   });
 const refusedResponse = () =>
   response("operation.execute", "REJECTED", {
-    code: "OPERATION_CONTENT_CONFLICT",
+    code: "IDEMPOTENCY_CONFLICT",
     action: "STOP_AND_INVESTIGATE",
     target: null,
     actualRevision: null,
     limits: {},
   });
 const validationRefusal: Diagnostic = {
-  code: "INPUT_TEXT_REQUIRED",
+  code: "TEXT_REQUIRED",
   action: "CORRECT_INPUT",
   target: "claimantName",
   actualRevision: null,
   limits: {},
 };
 const staleRefusal: Diagnostic = {
-  code: "CASE_REVISION_CONFLICT",
+  code: "REVISION_CONFLICT",
   action: "READ_CURRENT",
   target: null,
   actualRevision: 2,
