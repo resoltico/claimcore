@@ -54,7 +54,7 @@ module ReceiptCodecs =
 
     let private caseVariant =
         variant
-            OperationSubjects.Case
+            (ActSubject.token ActSubject.Case)
             ReceiptSubject.Case
             (function
             | ReceiptSubject.Case value -> Some value
@@ -67,7 +67,7 @@ module ReceiptCodecs =
             [
                 caseVariant
                 variant
-                    OperationSubjects.Authority
+                    (ActSubject.token ActSubject.Authority)
                     ReceiptSubject.Authority
                     (function
                     | ReceiptSubject.Authority value -> Some value

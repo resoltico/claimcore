@@ -53,13 +53,6 @@ type CatalogAtom =
     | Choice of string list
     | Switch of off: string * on: string
 
-/// Catalog identity is an endpoint and, for execution, one act selected from its codec.
-type CatalogOperation =
-    {
-        Endpoint: string
-        Act: ActKind option
-    }
-
 /// CLI argument presentation is derived alongside the published binding, never authored as a second shape.
 type CatalogDerivedInput =
     {
@@ -91,61 +84,48 @@ module OperationCatalog =
 
     let private declarations =
         (CaseActKind.all
-         |> List.map (fun declaration ->
-             {
-                 Endpoint = Api.operationExecute.Token
-                 Act = Some(ActKind.Case declaration)
-             },
-             Case declaration))
-        @ ((AuthorityKind.all |> List.filter ((<>) AuthorityKind.ProvisionOwner))
-           |> List.map (fun declaration ->
-               {
-                   Endpoint = Api.operationExecute.Token
-                   Act = Some(ActKind.Authority declaration)
-               },
-               Authority declaration))
+         |> List.map (fun kind -> CatalogOperation.Act(ActKind.Case kind), Case kind))
+        @ (AuthorityKind.all
+           |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+           |> List.map (fun kind -> CatalogOperation.Act(ActKind.Authority kind), Authority kind))
         @ (Record.reads
            |> List.map (fun declaration ->
-               {
-                   Endpoint = Vocabulary.token ActorEndpoint.vocabulary declaration.Endpoint
-                   Act = None
-               },
-               Read declaration))
+               CatalogOperation.Query declaration.Endpoint, Read declaration))
 
     let all = declarations |> List.map fst
 
-    let mutations = all |> List.filter (fun operation -> operation.Act.IsSome)
+    let mutations = all |> List.filter (fun operation -> operation.SelectedAct.IsSome)
 
     let authorityKinds =
         mutations
         |> List.choose (fun operation ->
-            match operation.Act with
+            match operation.SelectedAct with
             | Some(ActKind.Authority kind) -> Some kind
             | _ -> None)
 
-    let private message entry part =
-        match entry.Act with
+    let private message (entry: CatalogOperation) part =
+        match entry.SelectedAct with
         | Some act -> Vocabulary.messageKey ActKind.vocabulary act part
-        | None -> "endpoint." + entry.Endpoint + "." + part
+        | None -> "endpoint." + ActorEndpoint.token entry.Endpoint + "." + part
 
-    let labelId entry = message entry "label"
-    let meaningId entry = message entry "meaning"
+    let labelId (entry: CatalogOperation) = message entry "label"
+    let meaningId (entry: CatalogOperation) = message entry "meaning"
 
-    let confirmationId entry =
-        entry.Act |> Option.map (fun _ -> message entry "confirmation")
+    let confirmationId (entry: CatalogOperation) =
+        entry.SelectedAct |> Option.map (fun _ -> message entry "confirmation")
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
-    let words entry =
-        match entry.Act with
+    let words (entry: CatalogOperation) =
+        match entry.SelectedAct with
         | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None -> entry.Endpoint.Split('.') |> List.ofArray
+        | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
-    let private source entry name =
+    let private source (entry: CatalogOperation) name =
         match name with
-        | CatalogInputName.Technical TechnicalInput.OperationId when entry.Act.IsSome ->
+        | CatalogInputName.Technical TechnicalInput.OperationId when entry.SelectedAct.IsSome ->
             InputSource.OperationIdentity
         | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> InputSource.ExpectedRevision
         | _ -> InputSource.Authored
@@ -172,7 +152,17 @@ module OperationCatalog =
 
     let private actPath tail = "act" :: tail
 
-    let private input operation name path kind argument branches required defaultValue prefill =
+    let private input
+        (operation: CatalogOperation)
+        name
+        path
+        kind
+        argument
+        branches
+        required
+        defaultValue
+        prefill
+        =
         let atom =
             match kind with
             | BindingKind.Text -> CatalogAtom.Text
@@ -203,7 +193,7 @@ module OperationCatalog =
                 }
         }
 
-    let private named operation technical path kind required =
+    let private named (operation: CatalogOperation) technical path kind required =
         input
             operation
             (CatalogInputName.Technical technical)
@@ -215,7 +205,7 @@ module OperationCatalog =
             None
             None
 
-    let private caseOperand operation =
+    let private caseOperand (operation: CatalogOperation) =
         let path = [ BusinessField.key BusinessField.CaseReference ]
 
         input
@@ -229,10 +219,10 @@ module OperationCatalog =
             None
             (Some path)
 
-    let private operationIdentity operation =
+    let private operationIdentity (operation: CatalogOperation) =
         named operation TechnicalInput.OperationId [ "operationId" ] BindingKind.Text false
 
-    let private values operation group prefix branches prefill =
+    let private values (operation: CatalogOperation) group prefix branches prefill =
         Record.fieldsOf group
         |> List.map (fun field ->
             input
@@ -249,7 +239,7 @@ module OperationCatalog =
                  else
                      None))
 
-    let private correction operation =
+    let private correction (operation: CatalogOperation) =
         Vocabulary.all RecordGroup.vocabulary
         |> List.collect (fun group ->
             let prefix = actPath ("groups" :: [ RecordGroup.token group ])
@@ -283,7 +273,7 @@ module OperationCatalog =
                 ]
                 true)
 
-    let caseInputs operation (declaration: CaseActKind) =
+    let caseInputs (operation: CatalogOperation) (declaration: CaseActKind) =
         let payload =
             match CaseActKind.shape declaration with
             | ActShape.NoValues -> []
@@ -337,7 +327,7 @@ module OperationCatalog =
                 yield
                     {
                         Path = [ "kind" ]
-                        Value = BindingValue.Text OperationSubjects.Case
+                        Value = BindingValue.Text(ActSubject.token ActSubject.Case)
                         Branches = []
                     }
                 match (CaseActKind.revision declaration) with
@@ -359,7 +349,7 @@ module OperationCatalog =
 
         operationIdentity operation :: caseOperand operation :: (revision @ payload), constants
 
-    let private authorityInputs operation (declaration: AuthorityKind) =
+    let private authorityInputs (operation: CatalogOperation) (declaration: AuthorityKind) =
         let target =
             [
                 named
@@ -411,7 +401,7 @@ module OperationCatalog =
             [
                 {
                     Path = [ "kind" ]
-                    Value = BindingValue.Text OperationSubjects.Authority
+                    Value = BindingValue.Text(ActSubject.token ActSubject.Authority)
                     Branches = []
                 }
                 {
@@ -423,7 +413,7 @@ module OperationCatalog =
 
         operationIdentity operation :: (target @ grant), constants
 
-    let private readInputs operation (declaration: ReadDeclaration) =
+    let private readInputs (operation: CatalogOperation) (declaration: ReadDeclaration) =
         let operand technical path =
             input
                 operation
@@ -475,7 +465,7 @@ module OperationCatalog =
                 ]),
         []
 
-    let private construct operation declaration =
+    let private construct (operation: CatalogOperation) declaration =
         let inputs, constants =
             match declaration with
             | Case declaration -> caseInputs operation declaration
@@ -494,9 +484,9 @@ module OperationCatalog =
         |> List.map (fun (operation, declaration) -> operation, construct operation declaration)
         |> Map.ofList
 
-    let derive operation = Map.find operation derived
+    let derive (operation: CatalogOperation) = Map.find operation derived
 
-    let synopsis operation =
+    let synopsis (operation: CatalogOperation) =
         let placeholder =
             function
             | CatalogAtom.Text -> "VALUE"
@@ -537,30 +527,13 @@ module OperationCatalog =
             let inputs, constants = derive operation
 
             {
-                Endpoint = operation.Endpoint
+                Kind = operation
                 LabelId = labelId operation
                 MeaningId = meaningId operation
                 ConfirmationId = confirmationId operation
                 Synopsis = synopsis operation
-                Subject = words operation |> List.head |> _.ToUpperInvariant()
-                Kind =
-                    operation.Act
-                    |> Option.map ActKind.token
-                    |> Option.defaultValue operation.Endpoint
                 Inputs = inputs |> List.map _.Binding
                 Constants = constants
             })
 
-    let operation (entry: CatalogEntry) =
-        {
-            Endpoint = entry.Endpoint
-            Act =
-                if entry.Endpoint = Api.operationExecute.Token then
-                    Some(
-                        Vocabulary.tryParse ActKind.vocabulary entry.Kind
-                        |> Option.defaultWith (fun () ->
-                            invalidArg (nameof entry) "Unknown catalog act.")
-                    )
-                else
-                    None
-        }
+    let operation (entry: CatalogEntry) = entry.Kind

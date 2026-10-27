@@ -106,7 +106,7 @@ let private queryCodecs () =
             (ReadReply.Succeeded
                 {
                     Snapshot = view
-                    Advice = { Acts = []; History = [] }
+                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 
         |> ignore
@@ -156,7 +156,8 @@ let private executeOutcomes () =
 
             let frame: ClaimCore.Cli.FrameReply =
                 {
-                    Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
+                    Endpoint =
+                        Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
                     OperationId = Some id
                     Delivery =
                         if exit = 4 then
@@ -429,7 +430,7 @@ let private retainedText () =
             (ReadReply.Succeeded
                 {
                     Snapshot = snapshot
-                    Advice = { Acts = []; History = [] }
+                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 
         |> ignore

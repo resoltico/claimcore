@@ -189,48 +189,20 @@ module ResponseCodecs =
         |> build
         |> named "CorrectionAdvice"
 
-    let caseActOffer =
-        let ordinary =
-            record (fun act revision -> act, revision)
-            |> field
-                "act"
-                fst
-                (enumeration (
-                    CaseActKind.all
-                    |> List.filter ((<>) CaseActKind.Correct)
-                    |> List.map (fun kind -> kind, CaseActKind.token kind)
-                ))
-            |> field "expectedRevision" snd revision
-
-        let correction =
-            record (fun revision choices -> revision, choices)
-            |> field "expectedRevision" fst revision
-            |> field "correction" snd correctionAdvice
-
-        tagged
-            "CaseActOffer"
-            [
-                variant
-                    "ACT"
-                    CaseActOffer.Act
-                    (function
-                    | CaseActOffer.Act(act, revision) -> Some(act, revision)
-                    | _ -> None)
-                    ordinary
-                variant
-                    "CORRECT"
-                    CaseActOffer.Correct
-                    (function
-                    | CaseActOffer.Correct(revision, choices) -> Some(revision, choices)
-                    | _ -> None)
-                    correction
-            ]
-
     let caseAdvice =
-        (record (fun v0 v1 -> { CaseAdvice.Acts = v0; History = v1 }): Fields<CaseAdvice, _>)
-        |> field "acts" _.Acts (list 12 caseActOffer)
-        |> field "history" _.History (list 2 historyDetail)
+        record (fun acts correction history -> acts, correction, history)
+        |> field
+            "acts"
+            (fun (acts, _, _) -> acts)
+            (list 12 (VocabularyCodec.create CaseActKind.vocabulary))
+        |> optionalField "correction" (fun (_, correction, _) -> correction) correctionAdvice
+        |> field "history" (fun (_, _, history) -> history) (list 2 historyDetail)
         |> build
+        |> mapResult
+            (fun path (acts, correction, history) ->
+                CaseAdvice.create acts correction history
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (fun (advice: CaseAdvice) -> advice.Acts, advice.Correction, advice.History)
         |> named "CaseAdvice"
 
     let caseView =
@@ -256,13 +228,7 @@ module ResponseCodecs =
         tagged
             "InstallationOffer"
             [
-                variant
-                    "OPEN"
-                    (fun () -> InstallationOffer.Open)
-                    (function
-                    | InstallationOffer.Open -> Some()
-                    | _ -> None)
-                    (record (fun _ -> ()) |> field "expectedRevision" (fun () -> 0L) (integer 0L 0L))
+                unitVariant "OPEN" InstallationOffer.Open
                 variant
                     "AUTHORITY_ACT"
                     InstallationOffer.AuthorityAct

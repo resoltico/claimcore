@@ -326,10 +326,28 @@ module CatalogCodecs =
         |> build
         |> named "Presentation.CatalogInput"
 
+    let private identityName =
+        function
+        | CatalogOperation.Act act -> ActKind.token act
+        | CatalogOperation.Query query -> ActorEndpoint.token (ActorEndpoint.Query query)
+
+    type private EntryWire =
+        {
+            Endpoint: string
+            Subject: string
+            Kind: string
+            LabelId: string
+            MeaningId: string
+            ConfirmationId: string option
+            Synopsis: string
+            Inputs: CatalogInput list
+            Constants: BindingAssignment list
+        }
+
     let entry =
         record (fun endpoint subject kind label meaning confirmation synopsis inputs constants ->
             {
-                CatalogEntry.Endpoint = endpoint
+                EntryWire.Endpoint = endpoint
                 Subject = subject
                 Kind = kind
                 LabelId = label
@@ -339,7 +357,7 @@ module CatalogCodecs =
                 Inputs = inputs
                 Constants = constants
             })
-        |> field "endpoint" (fun (value: CatalogEntry) -> value.Endpoint) text
+        |> field "endpoint" _.Endpoint text
         |> field "subject" _.Subject text
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
@@ -349,6 +367,53 @@ module CatalogCodecs =
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
+        |> mapResult
+            (fun path wire ->
+                let identity =
+                    if
+                        wire.Endpoint =
+                            ActorEndpoint.token (ActorEndpoint.Operation OperationEndpoint.Execute)
+                    then
+                        ActKind.parse wire.Kind |> Option.map CatalogOperation.Act
+                    else
+                        ActorEndpoint.parse wire.Kind
+                        |> Option.bind (function
+                            | ActorEndpoint.Query query -> Some(CatalogOperation.Query query)
+                            | _ -> None)
+
+                match identity with
+                | Some operation when
+                    ActorEndpoint.token operation.Endpoint = wire.Endpoint
+                    && operation.Subject = wire.Subject
+                    ->
+                    Ok
+                        {
+                            CatalogEntry.Kind = operation
+                            LabelId = wire.LabelId
+                            MeaningId = wire.MeaningId
+                            ConfirmationId = wire.ConfirmationId
+                            Synopsis = wire.Synopsis
+                            Inputs = wire.Inputs
+                            Constants = wire.Constants
+                        }
+                | _ ->
+                    Error
+                        {
+                            Path = path
+                            Reason = "Invalid catalog operation identity."
+                        })
+            (fun (value: CatalogEntry) ->
+                {
+                    EntryWire.Endpoint = value.Endpoint
+                    Subject = value.Subject
+                    Kind = identityName value.Kind
+                    LabelId = value.LabelId
+                    MeaningId = value.MeaningId
+                    ConfirmationId = value.ConfirmationId
+                    Synopsis = value.Synopsis
+                    Inputs = value.Inputs
+                    Constants = value.Constants
+                })
         |> named "Presentation.CatalogEntry"
 
     let codec =

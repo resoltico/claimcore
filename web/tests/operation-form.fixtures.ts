@@ -1,6 +1,6 @@
 import type { CurrentCase } from "../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
 import { type FormValues } from "../src/protocol/forms";
 import { buildRequest } from "../src/protocol/client";
@@ -11,7 +11,7 @@ export const current: CurrentCase = {
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
+    ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
   state: {

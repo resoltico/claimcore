@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { fillRegistrationInputs } from "./registration-inputs.fixtures";
 import { previewForRequest } from "./preview-request.fixtures";
 import { getButton, render, screen, waitFor } from "./presentation-test-support";
@@ -106,7 +106,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
-      acts: caseOffers(["CLOSE"]),
+      ...caseAdvice(["CLOSE"]),
       history: ["SUMMARY", "FULL"],
     },
     state: {
@@ -143,7 +143,7 @@ const paidCase: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["CORRECT"]),
+    ...caseAdvice(["CORRECT"]),
     history: ["SUMMARY", "FULL"],
   },
   state: {

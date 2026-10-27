@@ -9,7 +9,7 @@ open ClaimCore.Cli
 
 let private frame refusal =
     {
-        Endpoint = Some(EndpointId.Actor ActorEndpoint.CaseGet)
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
         OperationId = None
         Delivery = DeliveryState.Delivered
         Result =

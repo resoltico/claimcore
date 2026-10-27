@@ -28,16 +28,29 @@ type CorrectionChoices =
         Payment: CorrectionGroupAction list
     }
 
-[<RequireQualifiedAccess>]
-type CaseActOffer =
-    | Act of act: CaseActKind * expectedRevision: int64
-    | Correct of expectedRevision: int64 * choices: CorrectionChoices
-
 type CaseAdvice =
-    {
-        Acts: CaseActOffer list
-        History: HistoryDetail list
-    }
+    private
+        {
+            OfferedActs: CaseActKind list
+            CorrectionChoices: CorrectionChoices option
+            HistoryDetails: HistoryDetail list
+        }
+
+    member this.Acts = this.OfferedActs
+    member this.Correction = this.CorrectionChoices
+    member this.History = this.HistoryDetails
+
+module CaseAdvice =
+    let create acts correction history =
+        if List.contains CaseActKind.Correct acts <> Option.isSome correction then
+            Error "Correction choices must be present exactly when Correct is offered."
+        else
+            Ok
+                {
+                    OfferedActs = acts
+                    CorrectionChoices = correction
+                    HistoryDetails = history
+                }
 
 type ActorContext =
     {

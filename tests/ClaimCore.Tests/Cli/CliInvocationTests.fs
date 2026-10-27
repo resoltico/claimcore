@@ -373,7 +373,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
 
     let frame =
         {
-            Endpoint = Some(EndpointId.Actor ActorEndpoint.Preview)
+            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview))
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
             Result =

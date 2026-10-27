@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -26,7 +26,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
         caseReference: fields.caseReference,
         revision: 1,
         advice: {
-          acts: caseOffers([]),
+          ...caseAdvice([]),
           history: ["SUMMARY", "FULL"],
         },
         state: {

@@ -118,7 +118,7 @@ module Api =
 
     let context =
         endpoint
-            (EndpointId.Actor ActorEndpoint.Context)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.empty
@@ -126,7 +126,7 @@ module Api =
 
     let caseGet =
         endpoint
-            (EndpointId.Actor ActorEndpoint.CaseGet)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.caseGetRequest
@@ -134,7 +134,7 @@ module Api =
 
     let caseList =
         endpoint
-            (EndpointId.Actor ActorEndpoint.CaseList)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.pageRequest
@@ -142,7 +142,7 @@ module Api =
 
     let caseHistory =
         endpoint
-            (EndpointId.Actor ActorEndpoint.CaseHistory)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseHistory))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.historyRequest
@@ -152,7 +152,7 @@ module Api =
 
     let operationPreview =
         endpoint
-            (EndpointId.Actor ActorEndpoint.Preview)
+            (EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.operationInput
@@ -160,7 +160,7 @@ module Api =
 
     let operationExecute =
         endpoint
-            (EndpointId.Actor ActorEndpoint.Execute)
+            (EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
             HttpMethod.Post
             EndpointEffect.LedgerExecution
             RequestCodecs.operationInput
@@ -168,7 +168,7 @@ module Api =
 
     let operationResolve =
         endpoint
-            (EndpointId.Actor ActorEndpoint.Resolve)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
             HttpMethod.Post
             EndpointEffect.OperationalWrite
             ResolutionCodecs.request
@@ -176,7 +176,7 @@ module Api =
 
     let operationObserve =
         endpoint
-            (EndpointId.Actor ActorEndpoint.Observe)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.observeRequest
@@ -184,7 +184,7 @@ module Api =
 
     let authorityList =
         endpoint
-            (EndpointId.Actor ActorEndpoint.AuthorityList)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.pageRequest
@@ -192,7 +192,7 @@ module Api =
 
     let authorityGrants =
         endpoint
-            (EndpointId.Actor ActorEndpoint.AuthorityGrants)
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants))
             HttpMethod.Post
             EndpointEffect.Read
             RequestCodecs.grantsRequest
@@ -206,16 +206,16 @@ module Api =
 
     let forActor =
         function
-        | ActorEndpoint.Context -> Route.describe context
-        | ActorEndpoint.CaseGet -> Route.describe caseGet
-        | ActorEndpoint.CaseList -> Route.describe caseList
-        | ActorEndpoint.CaseHistory -> Route.describe caseHistory
-        | ActorEndpoint.Preview -> Route.describe operationPreview
-        | ActorEndpoint.Execute -> Route.describe operationExecute
-        | ActorEndpoint.Resolve -> Route.describe operationResolve
-        | ActorEndpoint.Observe -> Route.describe operationObserve
-        | ActorEndpoint.AuthorityList -> Route.describe authorityList
-        | ActorEndpoint.AuthorityGrants -> Route.describe authorityGrants
+        | (ActorEndpoint.Query QueryEndpoint.Context) -> Route.describe context
+        | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> Route.describe caseGet
+        | (ActorEndpoint.Query QueryEndpoint.CaseList) -> Route.describe caseList
+        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> Route.describe caseHistory
+        | (ActorEndpoint.Operation OperationEndpoint.Preview) -> Route.describe operationPreview
+        | (ActorEndpoint.Operation OperationEndpoint.Execute) -> Route.describe operationExecute
+        | (ActorEndpoint.Query QueryEndpoint.Resolve) -> Route.describe operationResolve
+        | (ActorEndpoint.Query QueryEndpoint.Observe) -> Route.describe operationObserve
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> Route.describe authorityList
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> Route.describe authorityGrants
 
     let all =
         (HostEndpoint.all |> List.map forHost)

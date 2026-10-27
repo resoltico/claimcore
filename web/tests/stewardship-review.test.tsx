@@ -79,14 +79,8 @@ it.each([
         current: {
           ...current,
           advice: {
-            ...current.advice,
-            acts: [
-              {
-                kind: "ACT",
-                act,
-                expectedRevision: current.revision,
-              },
-            ],
+            history: current.advice.history,
+            acts: [act],
           },
         },
       }),

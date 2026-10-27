@@ -49,18 +49,44 @@ type CatalogInput =
         Source: InputSource
     }
 
+[<RequireQualifiedAccess>]
+type CatalogOperation =
+    | Act of ActKind
+    | Query of QueryEndpoint
+
+    member this.Endpoint =
+        match this with
+        | CatalogOperation.Act _ -> ActorEndpoint.Operation OperationEndpoint.Execute
+        | CatalogOperation.Query query -> ActorEndpoint.Query query
+
+    member this.SelectedAct =
+        match this with
+        | CatalogOperation.Act act -> Some act
+        | CatalogOperation.Query _ -> None
+
+    member this.Subject =
+        match this with
+        | CatalogOperation.Act act -> ActKind.subject act |> ActSubject.token
+        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseHistory) ->
+            ActSubject.token ActSubject.Case
+        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants) ->
+            ActSubject.token ActSubject.Authority
+        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) -> "OPERATION"
+        | CatalogOperation.Query QueryEndpoint.Context -> "CONTEXT"
+
 type CatalogEntry =
     {
-        Endpoint: string
         LabelId: string
         MeaningId: string
         ConfirmationId: string option
         Synopsis: string
-        Subject: string
-        Kind: string
+        Kind: CatalogOperation
         Inputs: CatalogInput list
         Constants: BindingAssignment list
     }
+
+    member this.Endpoint = ActorEndpoint.token this.Kind.Endpoint
+    member this.Subject = this.Kind.Subject
 
 /// Static consumer metadata is encoded from this model, not inferred from an example JSON value.
 type FieldPresentationDefinition =

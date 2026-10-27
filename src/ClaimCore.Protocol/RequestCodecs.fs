@@ -267,7 +267,7 @@ module RequestCodecs =
 
     let private caseVariant =
         variant
-            OperationSubjects.Case
+            (ActSubject.token ActSubject.Case)
             OperationInput.Case
             (function
             | OperationInput.Case value -> Some value
@@ -276,7 +276,7 @@ module RequestCodecs =
 
     let private authorityVariant =
         variant
-            OperationSubjects.Authority
+            (ActSubject.token ActSubject.Authority)
             OperationInput.Authority
             (function
             | OperationInput.Authority value -> Some value
@@ -344,7 +344,7 @@ module RequestCodecs =
             })
         : ReadFields<CaseGetRequest, _>)
         |> caseOperand _.CaseReference
-        |> finishRead "CaseGetRequest" ActorEndpoint.CaseGet
+        |> finishRead "CaseGetRequest" QueryEndpoint.CaseGet
 
     let pageRequest =
         (read (fun cursor limit ->
@@ -354,7 +354,7 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> page _.AfterCursor _.Limit
-        |> finishRead "PageRequest" ActorEndpoint.CaseList
+        |> finishRead "PageRequest" QueryEndpoint.CaseList
 
     let historyRequest =
         (read (fun reference detail cursor limit ->
@@ -368,7 +368,7 @@ module RequestCodecs =
         |> caseOperand _.CaseReference
         |> detail _.Detail
         |> page _.AfterCursor _.Limit
-        |> finishRead "HistoryRequest" ActorEndpoint.CaseHistory
+        |> finishRead "HistoryRequest" QueryEndpoint.CaseHistory
 
     let observeRequest =
         (read (fun operation ->
@@ -377,7 +377,7 @@ module RequestCodecs =
             })
         : ReadFields<ObserveRequest, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ObserveRequest" ActorEndpoint.Observe
+        |> finishRead "ObserveRequest" QueryEndpoint.Observe
 
     let resolveRequest =
         (read (fun operation ->
@@ -386,7 +386,7 @@ module RequestCodecs =
             })
         : ReadFields<ResolveRequest, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ResolveRequest" ActorEndpoint.Resolve
+        |> finishRead "ResolveRequest" QueryEndpoint.Resolve
 
     let grantsRequest =
         (read (fun actor cursor limit ->
@@ -398,6 +398,6 @@ module RequestCodecs =
         : ReadFields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead "GrantsRequest" ActorEndpoint.AuthorityGrants
+        |> finishRead "GrantsRequest" QueryEndpoint.AuthorityGrants
 
-    let empty = read () |> finishRead "Empty" ActorEndpoint.Context
+    let empty = read () |> finishRead "Empty" QueryEndpoint.Context

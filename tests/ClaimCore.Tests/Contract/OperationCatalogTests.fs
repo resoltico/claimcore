@@ -22,7 +22,9 @@ let tests =
         [
             testCase "every actor-facing act occurs exactly once" (fun () ->
                 let actual =
-                    OperationCatalog.mutations |> List.choose _.Act |> List.map ActKind.token
+                    OperationCatalog.mutations
+                    |> List.choose _.SelectedAct
+                    |> List.map ActKind.token
 
                 let expected =
                     (CaseActKind.all |> List.map CaseActKind.token)
@@ -44,7 +46,9 @@ let tests =
                     |> Set.ofList
 
                 let actual =
-                    Api.operationPreview.Token :: (OperationCatalog.all |> List.map _.Endpoint)
+                    Api.operationPreview.Token
+                    :: (OperationCatalog.all
+                        |> List.map (fun operation -> ActorEndpoint.token operation.Endpoint))
                     |> Set.ofList
 
                 Expect.equal actual expected "Session bootstrap and logout belong to the host")

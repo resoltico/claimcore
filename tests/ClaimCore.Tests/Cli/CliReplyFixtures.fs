@@ -199,7 +199,7 @@ let private resourceResponses endpoint =
             Api.caseGet.Output
             {
                 Snapshot = snapshot
-                Advice = { Acts = []; History = [] }
+                Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
             }
     | "case.list" ->
         reads

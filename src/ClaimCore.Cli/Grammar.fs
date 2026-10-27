@@ -375,12 +375,12 @@ module Grammar =
             let body = build newId entry options operands problems
 
             let endpoint =
-                if options.ContainsKey "--preview" && entry.Act.IsSome then
+                if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
                     Api.operationPreview.Token
                 else
-                    entry.Endpoint
+                    ActorEndpoint.token entry.Endpoint
 
-            if options.ContainsKey "--preview" && entry.Act.IsNone then
+            if options.ContainsKey "--preview" && entry.SelectedAct.IsNone then
                 problems.Add(
                     UsageError.NotApplicable(
                         "--preview",

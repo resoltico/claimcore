@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -9,7 +9,7 @@ import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
-  advice: { acts: caseOffers(["CORRECT"]), history: ["SUMMARY", "FULL"] },
+  advice: { ...caseAdvice(["CORRECT"]), history: ["SUMMARY", "FULL"] },
 
   state: {
     ...current.state,

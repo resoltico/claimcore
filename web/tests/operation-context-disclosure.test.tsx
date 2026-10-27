@@ -2,12 +2,12 @@ import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { current, deferredResponse, editor, previewReply } from "./presentation-state.fixtures";
 const canary = "PRIOR_ACTOR_PREFILL_CANARY";
 const disclosed = {
   ...current,
-  advice: { ...current.advice, acts: caseOffers(["AMEND_REGISTRATION"]) },
+  advice: { history: current.advice.history, ...caseAdvice(["AMEND_REGISTRATION"]) },
   state: {
     ...current.state,
     fields: {

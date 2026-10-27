@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { historyVariants } from "./contract-corpus.fixtures";
 import { act } from "@testing-library/react";
@@ -32,7 +32,7 @@ const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
-      acts: caseOffers([]),
+      ...caseAdvice([]),
       history: historyDetails,
     },
     state: {

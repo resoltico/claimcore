@@ -1,9 +1,9 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { it, expect } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { LifecycleStatus } from "../src/views/LifecycleStatus";
 import { fields } from "./service-ui.fixtures";
-const fullHistory = { acts: caseOffers([]), history: ["SUMMARY", "FULL"] as const };
+const fullHistory = { ...caseAdvice([]), history: ["SUMMARY", "FULL"] as const };
 it("renders active voided and erased states from the accepted case view", () => {
   const { rerender } = render(
     <LifecycleStatus
@@ -42,7 +42,7 @@ it("renders active voided and erased states from the accepted case view", () => 
         caseReference: "CASE-1",
         revision: 3,
         advice: {
-          acts: caseOffers([]),
+          ...caseAdvice([]),
           history: ["SUMMARY"],
         },
       }}

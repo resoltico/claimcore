@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -49,7 +49,7 @@ it("keeps a failed history page request-local without erasing current case data"
       caseReference: fields.caseReference,
       revision: 1,
       advice: {
-        acts: caseOffers([]),
+        ...caseAdvice([]),
         history: ["SUMMARY", "FULL"],
       },
       state: {
@@ -83,7 +83,7 @@ const readableCurrent = () =>
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
-      acts: caseOffers([]),
+      ...caseAdvice([]),
       history: ["SUMMARY", "FULL"],
     },
     state: {

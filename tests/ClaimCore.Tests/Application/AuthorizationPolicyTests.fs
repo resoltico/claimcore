@@ -347,13 +347,16 @@ let private scopedAdvice () =
             Queries.caseRecord installation human (AuthorityView.ofActor (Some authority)) record
             |> accepted
 
-        let expected, correction =
-            advice.Advice.Acts
-            |> List.pick (function
-                | CaseActOffer.Correct(expected, choices) -> Some(expected, choices)
-                | _ -> None)
+        let correction =
+            advice.Advice.Correction
+            |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
-        Expect.equal expected snapshot.Revision "Revision bound in snapshot"
+        Expect.contains advice.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
+
+        Expect.equal
+            advice.Snapshot.Revision
+            snapshot.Revision
+            "The snapshot owns the expected revision"
 
         let history =
             advice.Advice.History
@@ -419,10 +422,7 @@ let private noUsableCorrectionOffer () =
         |> accepted
 
     Expect.isFalse
-        (advice.Advice.Acts
-         |> List.exists (function
-             | CaseActOffer.Correct _ -> true
-             | _ -> false))
+        (List.contains CaseActKind.Correct advice.Advice.Acts)
         "An all-KEEP form is never offered"
 
 let private humanOnlyCapabilities () =

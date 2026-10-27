@@ -128,6 +128,11 @@ type AuthorityKind =
     | Enable
     | Disable
 
+[<RequireQualifiedAccess>]
+type ActSubject =
+    | Case
+    | Authority
+
 /// The complete act vocabulary combines the disjoint case and authority subjects.
 [<RequireQualifiedAccess>]
 type ActKind =
@@ -135,9 +140,12 @@ type ActKind =
     | Authority of AuthorityKind
 
 [<RequireQualifiedAccess>]
-type ActorEndpoint =
+type OperationEndpoint =
     | Preview
     | Execute
+
+[<RequireQualifiedAccess>]
+type QueryEndpoint =
     | CaseGet
     | CaseList
     | CaseHistory
@@ -146,6 +154,11 @@ type ActorEndpoint =
     | AuthorityList
     | AuthorityGrants
     | Context
+
+[<RequireQualifiedAccess>]
+type ActorEndpoint =
+    | Operation of OperationEndpoint
+    | Query of QueryEndpoint
 
 type RegistrationInput =
     {
@@ -529,7 +542,19 @@ module AuthorityKind =
     let parse = Vocabulary.tryParse vocabulary
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ActSubject =
+    let vocabulary =
+        Vocabulary.ofUnion<ActSubject> "subject" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActKind =
+    let subject =
+        function
+        | ActKind.Case _ -> ActSubject.Case
+        | ActKind.Authority _ -> ActSubject.Authority
+
     let vocabulary =
         [
             yield!
@@ -551,30 +576,33 @@ module ActorEndpoint =
         Vocabulary.define
             "endpoint"
             [
-                ActorEndpoint.Preview
-                ActorEndpoint.Execute
-                ActorEndpoint.CaseGet
-                ActorEndpoint.CaseList
-                ActorEndpoint.CaseHistory
-                ActorEndpoint.Observe
-                ActorEndpoint.Resolve
-                ActorEndpoint.AuthorityList
-                ActorEndpoint.AuthorityGrants
-                ActorEndpoint.Context
+                (ActorEndpoint.Operation OperationEndpoint.Preview)
+                (ActorEndpoint.Operation OperationEndpoint.Execute)
+                (ActorEndpoint.Query QueryEndpoint.CaseGet)
+                (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryEndpoint.CaseHistory)
+                (ActorEndpoint.Query QueryEndpoint.Observe)
+                (ActorEndpoint.Query QueryEndpoint.Resolve)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityList)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
+                (ActorEndpoint.Query QueryEndpoint.Context)
             ]
             (function
-             | ActorEndpoint.Preview -> "operation.preview"
-             | ActorEndpoint.Execute -> "operation.execute"
-             | ActorEndpoint.CaseGet -> "case.get"
-             | ActorEndpoint.CaseList -> "case.list"
-             | ActorEndpoint.CaseHistory -> "case.history"
-             | ActorEndpoint.Observe -> "operation.observe"
-             | ActorEndpoint.Resolve -> "operation.resolve"
-             | ActorEndpoint.AuthorityList -> "authority.list"
-             | ActorEndpoint.AuthorityGrants -> "authority.grants"
-             | ActorEndpoint.Context -> "context")
+             | (ActorEndpoint.Operation OperationEndpoint.Preview) -> "operation.preview"
+             | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
+             | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
+             | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
+             | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
+             | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
+             | (ActorEndpoint.Query QueryEndpoint.Context) -> "context")
 
     let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
 
 /// Accepted facts share the authored group types; a decision is complete or absent.
 type CaseFields =
@@ -720,7 +748,7 @@ type ReadInput =
 
 type ReadDeclaration =
     {
-        Endpoint: ActorEndpoint
+        Endpoint: QueryEndpoint
         Inputs: ReadInput list
     }
 
@@ -823,35 +851,35 @@ module Record =
     let reads =
         [
             {
-                Endpoint = ActorEndpoint.CaseGet
+                Endpoint = QueryEndpoint.CaseGet
                 Inputs = [ ReadInput.CaseOperand ]
             }
             {
-                Endpoint = ActorEndpoint.CaseList
+                Endpoint = QueryEndpoint.CaseList
                 Inputs = [ ReadInput.Page ]
             }
             {
-                Endpoint = ActorEndpoint.CaseHistory
+                Endpoint = QueryEndpoint.CaseHistory
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
             }
             {
-                Endpoint = ActorEndpoint.Observe
+                Endpoint = QueryEndpoint.Observe
                 Inputs = [ ReadInput.OperationOperand ]
             }
             {
-                Endpoint = ActorEndpoint.Resolve
+                Endpoint = QueryEndpoint.Resolve
                 Inputs = [ ReadInput.OperationOperand ]
             }
             {
-                Endpoint = ActorEndpoint.AuthorityList
+                Endpoint = QueryEndpoint.AuthorityList
                 Inputs = [ ReadInput.Page ]
             }
             {
-                Endpoint = ActorEndpoint.AuthorityGrants
+                Endpoint = QueryEndpoint.AuthorityGrants
                 Inputs = [ ReadInput.ActorOperand; ReadInput.Page ]
             }
             {
-                Endpoint = ActorEndpoint.Context
+                Endpoint = QueryEndpoint.Context
                 Inputs = []
             }
         ]

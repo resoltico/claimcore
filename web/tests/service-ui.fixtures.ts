@@ -29,7 +29,7 @@ export const context = {
   ...runtime,
   capabilities: ["REGISTER"],
   views: ["CASES", "AUTHORITY", "OPERATIONS"],
-  offers: [{ kind: "OPEN", expectedRevision: 0 }],
+  offers: [{ kind: "OPEN" }],
 };
 
 export const unavailable = {

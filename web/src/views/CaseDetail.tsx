@@ -7,7 +7,7 @@ import { isCurrentCase } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
-import { isCaseAct, offerAct, type ActKind } from "../operation/metadata";
+import { isCaseAct, type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
@@ -34,23 +34,20 @@ const AvailableActs = ({
     <section aria-labelledby="acts-title">
       <h2 id="acts-title">{p.text("label.availableActs")}</h2>
       <div className="actions">
-        {current.advice.acts
-          .map(offerAct)
-          .filter(isCaseAct)
-          .map((act) => (
-            <Button
-              key={act}
-              onPress={() => {
-                onAct(act);
-              }}
-              aria-label={p.text("ui.actDescription", {
-                label: p.actLabel(act),
-                meaning: p.actMeaning(act),
-              })}
-            >
-              {p.actLabel(act)}
-            </Button>
-          ))}
+        {current.advice.acts.filter(isCaseAct).map((act) => (
+          <Button
+            key={act}
+            onPress={() => {
+              onAct(act);
+            }}
+            aria-label={p.text("ui.actDescription", {
+              label: p.actLabel(act),
+              meaning: p.actMeaning(act),
+            })}
+          >
+            {p.actLabel(act)}
+          </Button>
+        ))}
       </div>
     </section>
   );

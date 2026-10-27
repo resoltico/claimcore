@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/service";
@@ -8,7 +8,7 @@ const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["CLOSE"]),
+    ...caseAdvice(["CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
   state: {

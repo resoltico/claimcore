@@ -25,16 +25,21 @@ type ServiceReply =
         match this with
         | ServiceReply.Session _ -> EndpointId.Host HostEndpoint.Session
         | ServiceReply.Logout _ -> EndpointId.Host HostEndpoint.Logout
-        | ServiceReply.Preview _ -> EndpointId.Actor ActorEndpoint.Preview
-        | ServiceReply.Execute _ -> EndpointId.Actor ActorEndpoint.Execute
-        | ServiceReply.CaseGet _ -> EndpointId.Actor ActorEndpoint.CaseGet
-        | ServiceReply.CaseList _ -> EndpointId.Actor ActorEndpoint.CaseList
-        | ServiceReply.CaseHistory _ -> EndpointId.Actor ActorEndpoint.CaseHistory
-        | ServiceReply.Observe _ -> EndpointId.Actor ActorEndpoint.Observe
-        | ServiceReply.Resolve _ -> EndpointId.Actor ActorEndpoint.Resolve
-        | ServiceReply.AuthorityList _ -> EndpointId.Actor ActorEndpoint.AuthorityList
-        | ServiceReply.AuthorityGrants _ -> EndpointId.Actor ActorEndpoint.AuthorityGrants
-        | ServiceReply.Context _ -> EndpointId.Actor ActorEndpoint.Context
+        | ServiceReply.Preview _ ->
+            EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
+        | ServiceReply.Execute _ ->
+            EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
+        | ServiceReply.CaseGet _ -> EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet)
+        | ServiceReply.CaseList _ -> EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList)
+        | ServiceReply.CaseHistory _ ->
+            EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseHistory)
+        | ServiceReply.Observe _ -> EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe)
+        | ServiceReply.Resolve _ -> EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve)
+        | ServiceReply.AuthorityList _ ->
+            EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList)
+        | ServiceReply.AuthorityGrants _ ->
+            EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
+        | ServiceReply.Context _ -> EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context)
 
 module ServiceReply =
     let json =
@@ -57,18 +62,26 @@ module ServiceReply =
 
     let private actor actor value =
         match actor with
-        | ActorEndpoint.Preview -> decode value Api.operationPreview.Output ServiceReply.Preview
-        | ActorEndpoint.Execute -> decode value Api.operationExecute.Output ServiceReply.Execute
-        | ActorEndpoint.CaseGet -> decode value Api.caseGet.Output ServiceReply.CaseGet
-        | ActorEndpoint.CaseList -> decode value Api.caseList.Output ServiceReply.CaseList
-        | ActorEndpoint.CaseHistory -> decode value Api.caseHistory.Output ServiceReply.CaseHistory
-        | ActorEndpoint.Observe -> decode value Api.operationObserve.Output ServiceReply.Observe
-        | ActorEndpoint.Resolve -> decode value Api.operationResolve.Output ServiceReply.Resolve
-        | ActorEndpoint.AuthorityList ->
+        | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
+            decode value Api.operationPreview.Output ServiceReply.Preview
+        | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
+            decode value Api.operationExecute.Output ServiceReply.Execute
+        | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
+            decode value Api.caseGet.Output ServiceReply.CaseGet
+        | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
+            decode value Api.caseList.Output ServiceReply.CaseList
+        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
+            decode value Api.caseHistory.Output ServiceReply.CaseHistory
+        | (ActorEndpoint.Query QueryEndpoint.Observe) ->
+            decode value Api.operationObserve.Output ServiceReply.Observe
+        | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
+            decode value Api.operationResolve.Output ServiceReply.Resolve
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             decode value Api.authorityList.Output ServiceReply.AuthorityList
-        | ActorEndpoint.AuthorityGrants ->
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
             decode value Api.authorityGrants.Output ServiceReply.AuthorityGrants
-        | ActorEndpoint.Context -> decode value Api.context.Output ServiceReply.Context
+        | (ActorEndpoint.Query QueryEndpoint.Context) ->
+            decode value Api.context.Output ServiceReply.Context
 
     let read (endpoint: ClaimCore.Protocol.Route) value =
         match endpoint.Id with

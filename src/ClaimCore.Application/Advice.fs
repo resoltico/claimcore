@@ -35,36 +35,33 @@ module internal Advice =
             else
                 None)
 
-    let private actOffer principal actor resource accepted revision kind =
-        match kind with
-        | CaseActKind.Correct ->
-            let choices = correctionChoices principal actor resource accepted
-
-            if usable choices then
-                Some(CaseActOffer.Correct(revision, choices))
-            else
-                None
-        | _ -> Some(CaseActOffer.Act(kind, revision))
-
     let caseRecord installationId principal actor (record: StoredCase) =
         CaseExecution.current installationId record
         |> Result.map (fun accepted ->
             let resource = ResourceScope.Case record.CaseId
 
-            let acts =
+            let eligible =
                 Case.eligibleActs accepted
                 |> List.filter (Authority.canAdvertise principal actor resource)
-                |> List.choose (
-                    actOffer principal actor resource accepted record.Snapshot.Revision
-                )
+
+            let correction =
+                if List.contains CaseActKind.Correct eligible then
+                    let choices = correctionChoices principal actor resource accepted
+                    if usable choices then Some choices else None
+                else
+                    None
+
+            let acts =
+                eligible
+                |> List.filter (fun kind -> kind <> CaseActKind.Correct || correction.IsSome)
+
+            let advice =
+                CaseAdvice.create acts correction (history principal actor resource)
+                |> Result.defaultWith invalidOp
 
             {
                 Snapshot = record.Snapshot
-                Advice =
-                    {
-                        Acts = acts
-                        History = history principal actor resource
-                    }
+                Advice = advice
             })
 
     let installationOffers principal actor =

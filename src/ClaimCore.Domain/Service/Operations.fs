@@ -1,13 +1,6 @@
 namespace ClaimCore.Domain
 
 
-module OperationSubjects =
-    [<Literal>]
-    let Case = "CASE"
-
-    [<Literal>]
-    let Authority = "AUTHORITY"
-
 [<RequireQualifiedAccess>]
 type OperationInput =
     | Case of UnvalidatedCaseRequest

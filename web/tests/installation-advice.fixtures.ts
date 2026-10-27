@@ -3,6 +3,4 @@ type Act = "REGISTER" | "GRANT" | "REVOKE" | "ENABLE" | "DISABLE";
 export const installationOffers = (
   acts: ReadonlyArray<Act | "OPEN">,
 ): ReadonlyArray<InstallationOffer> =>
-  acts.map((act) =>
-    act === "OPEN" ? { kind: "OPEN", expectedRevision: 0 } : { kind: "AUTHORITY_ACT", act },
-  );
+  acts.map((act) => (act === "OPEN" ? { kind: "OPEN" } : { kind: "AUTHORITY_ACT", act }));

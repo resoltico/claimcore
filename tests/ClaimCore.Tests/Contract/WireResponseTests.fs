@@ -88,13 +88,13 @@ let private malformed () =
             "Host phases form a closed vocabulary"
 
     let ordinary =
-        """{"act":"CLOSE","expectedRevision":1,"correction":{"registration":[],"decision":[],"payment":[]}}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[]}"""
 
-    let missing = """{"act":"CORRECT","expectedRevision":1}"""
+    let missing = """{"acts":["CORRECT"],"history":[]}"""
 
     for raw in [ ordinary; missing ] do
         Expect.isError
-            (Codec.decode 4096 ResponseCodecs.caseActOffer (bytes raw))
+            (Codec.decode 4096 ResponseCodecs.caseAdvice (bytes raw))
             "Correction advice is conditional"
 
     Expect.isError
@@ -151,7 +151,7 @@ let private frames () =
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "ReceiptSubject", "kind", 2; "CaseActOffer", "kind", 2 ] do
+    for name, property, count in [ "ReceiptSubject", "kind", 2 ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 

@@ -61,10 +61,7 @@ module internal TextReply =
                 + ":")
                :: rows (Some group)))
 
-    let private offerAct =
-        function
-        | CaseActOffer.Act(act, _) -> CaseActKind.token act
-        | CaseActOffer.Correct _ -> CaseActKind.token CaseActKind.Correct
+    let private offerAct = fun act -> CaseActKind.token act
 
     let private caseLines language (value: CaseReadModel) =
         [

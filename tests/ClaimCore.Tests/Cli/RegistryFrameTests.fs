@@ -119,7 +119,7 @@ let private byteBoundaries () =
 
 let private reply result delivery =
     {
-        Endpoint = Some(EndpointId.Actor ActorEndpoint.Execute)
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
         OperationId = Some id
         Delivery = delivery
         Result = result
@@ -227,7 +227,9 @@ let private refusingFrames () =
             "Unknown, extra and duplicate frame members refuse."
 
     Expect.isError
-        (ServiceReply.read (Api.forActor ActorEndpoint.Execute) (JsonValue.Object []))
+        (ServiceReply.read
+            (Api.forActor (ActorEndpoint.Operation OperationEndpoint.Execute))
+            (JsonValue.Object []))
         "A malformed raw reply cannot construct a typed value."
 
     let typed =
@@ -240,7 +242,7 @@ let private refusingFrames () =
 
     let invalid =
         { reply (FrameResult.Reply typed) DeliveryState.Delivered with
-            Endpoint = Some(EndpointId.Actor ActorEndpoint.Context)
+            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
         }
 
     Expect.throws

@@ -1,4 +1,3 @@
-import { offerAct } from "../operation/metadata";
 import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
@@ -30,7 +29,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
       />
     );
   }
-  const offered = props.current?.advice.acts.map(offerAct) ?? [props.initialAct];
+  const offered = props.current?.advice.acts ?? [props.initialAct];
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
       <h2 id="operation-title">{p.actLabel(String(model.values["act.kind"]))}</h2>

@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -30,7 +30,7 @@ const disclosedCurrent = {
   ...current,
   advice: {
     ...current.advice,
-    acts: caseOffers(["AMEND_REGISTRATION"]),
+    ...caseAdvice(["AMEND_REGISTRATION"]),
   },
   state: {
     ...current.state,

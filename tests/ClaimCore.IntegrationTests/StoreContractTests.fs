@@ -571,13 +571,12 @@ let private checkScopedAdvice (actor: ServiceContext) reference =
                 [ HistoryDetail.Summary; HistoryDetail.Full ]
                 "Case-scoped full history is advised"
 
-            let expected, correction =
-                value.Advice.Acts
-                |> List.pick (function
-                    | CaseActOffer.Correct(expected, choices) -> Some(expected, choices)
-                    | _ -> None)
+            let correction =
+                value.Advice.Correction
+                |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
-            Expect.equal expected 2L "Advice binds the actual revision"
+            Expect.contains value.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
+            Expect.equal value.Snapshot.Revision 2L "The snapshot owns the expected revision"
 
             Expect.equal
                 correction.Payment
@@ -643,10 +642,7 @@ let private refusedAdvice fixture (actor: ServiceContext) pending =
                 "Fresh advice reflects revoked full history"
 
             Expect.isFalse
-                (value.Advice.Acts
-                 |> List.exists (function
-                     | CaseActOffer.Correct _ -> true
-                     | _ -> false))
+                (List.contains CaseActKind.Correct value.Advice.Acts)
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 

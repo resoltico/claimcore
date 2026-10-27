@@ -101,11 +101,7 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ]
+            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
           }
         }
       },
@@ -1048,8 +1044,7 @@
             "timeZone": "x",
             "offers": [
               {
-                "kind": "OPEN",
-                "expectedRevision": 0
+                "kind": "OPEN"
               },
               {
                 "kind": "AUTHORITY_ACT",
@@ -1084,11 +1079,7 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ]
+            "views": ["CASES", "AUTHORITY", "OPERATIONS"]
           }
         }
       }
@@ -1108,86 +1099,25 @@
             },
             "advice": {
               "acts": [
-                {
-                  "kind": "ACT",
-                  "act": "OPEN",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "AMEND_REGISTRATION",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "CORRECT",
-                  "expectedRevision": 1,
-                  "correction": {
-                    "registration": [
-                      "KEEP",
-                      "REPLACE"
-                    ],
-                    "decision": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ],
-                    "payment": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ]
-                  }
-                },
-                {
-                  "kind": "ACT",
-                  "act": "DECIDE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "WITHDRAW_DECISION",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "RECORD_PAYMENT",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "CLEAR_PAYMENT",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "CLOSE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "REOPEN",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "VOID",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "REINSTATE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "ERASE",
-                  "expectedRevision": 1
-                }
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ]
+              "history": ["SUMMARY", "FULL"],
+              "correction": {
+                "registration": ["KEEP", "REPLACE"],
+                "decision": ["KEEP", "REPLACE", "CLEAR"],
+                "payment": ["KEEP", "REPLACE", "CLEAR"]
+              }
             }
           }
         }
@@ -1208,86 +1138,25 @@
             },
             "advice": {
               "acts": [
-                {
-                  "kind": "ACT",
-                  "act": "OPEN",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "AMEND_REGISTRATION",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "CORRECT",
-                  "expectedRevision": 1,
-                  "correction": {
-                    "registration": [
-                      "KEEP",
-                      "REPLACE"
-                    ],
-                    "decision": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ],
-                    "payment": [
-                      "KEEP",
-                      "REPLACE",
-                      "CLEAR"
-                    ]
-                  }
-                },
-                {
-                  "kind": "ACT",
-                  "act": "DECIDE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "WITHDRAW_DECISION",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "RECORD_PAYMENT",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "CLEAR_PAYMENT",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "CLOSE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "REOPEN",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "VOID",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "REINSTATE",
-                  "expectedRevision": 1
-                },
-                {
-                  "kind": "ACT",
-                  "act": "ERASE",
-                  "expectedRevision": 1
-                }
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ]
+              "history": ["SUMMARY", "FULL"],
+              "correction": {
+                "registration": ["KEEP", "REPLACE"],
+                "decision": ["KEEP", "REPLACE", "CLEAR"],
+                "payment": ["KEEP", "REPLACE", "CLEAR"]
+              }
             }
           }
         }
@@ -1329,8 +1198,7 @@
             "nextCursor": "x",
             "offers": [
               {
-                "kind": "OPEN",
-                "expectedRevision": 0
+                "kind": "OPEN"
               },
               {
                 "kind": "AUTHORITY_ACT",

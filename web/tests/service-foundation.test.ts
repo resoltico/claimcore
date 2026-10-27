@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../src/api/service";
 import { initialOperationValues, assembleOperation } from "../src/operation/operationForm";
@@ -17,7 +17,7 @@ describe("core act metadata", () => {
       caseReference: fields.caseReference,
       revision: 1,
       advice: {
-        acts: caseOffers([]),
+        ...caseAdvice([]),
         history: ["SUMMARY", "FULL"] as const,
       },
       state: {

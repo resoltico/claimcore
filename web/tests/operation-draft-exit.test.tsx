@@ -1,4 +1,4 @@
-import { caseOffers } from "./case-advice.fixtures";
+import { caseAdvice } from "./case-advice.fixtures";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -10,7 +10,7 @@ const current: CurrentCase = {
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
-    acts: caseOffers(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
+    ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
     history: ["SUMMARY", "FULL"],
   },
   state: {
