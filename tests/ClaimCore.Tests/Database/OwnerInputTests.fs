@@ -93,7 +93,7 @@ let private replies () =
 
     Expect.equal
         (Codec.decode 10000 Replies.codec bytes)
-        (Ok(Reply.Rejected reason))
+        (Ok(Reply.Operation(Outcome.Rejected reason)))
         "The local codec reads its own complete reply"
 
     let bytes, code =
@@ -113,7 +113,7 @@ let private usageAndExits () =
         | Error usage -> usage
         | Ok _ -> failtest "A missing zone must produce usage"
 
-    Expect.equal usage.Issue UsageIssue.ArgumentsInvalid "Typed grammar error"
+    Expect.equal usage.Issue (UsageError.MissingOperand "TIME_ZONE") "Typed grammar error"
     let bytes, code = Replies.usage usage
     use document = JsonDocument.Parse(bytes: byte array)
     Expect.equal code 2 "Usage is a definite refusal"

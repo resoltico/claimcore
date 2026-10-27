@@ -210,6 +210,18 @@
           "FSharp.Core": "[10.1.403, )"
         }
       },
+      "claimcore-database": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.13.0, )",
+          "ClaimCore.Domain": "[0.13.0, )",
+          "ClaimCore.HostSecurity": "[0.13.0, )",
+          "ClaimCore.Json": "[0.13.0, )",
+          "ClaimCore.Postgres": "[0.13.0, )",
+          "ClaimCore.Protocol": "[0.13.0, )",
+          "FSharp.Core": "[10.1.403, )"
+        }
+      },
       "claimcore-server": {
         "type": "Project",
         "dependencies": {
@@ -276,7 +288,8 @@
           "ClaimCore.Json": "[0.13.0, )",
           "ClaimCore.Protocol": "[0.13.0, )",
           "FSharp.Core": "[10.1.403, )",
-          "claimcore": "[0.13.0, )"
+          "claimcore": "[0.13.0, )",
+          "claimcore-database": "[0.13.0, )"
         }
       },
       "claimcore.recordformat": {

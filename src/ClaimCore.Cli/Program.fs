@@ -31,7 +31,7 @@ let private writeDiscovery output errors language command response =
     | Some bytes ->
         writeBytes output bytes
         ExitCode.value ExitCode.Success
-    | None -> unsupported errors language [ command ] CliUsageIssue.Selector
+    | None -> unsupported errors language [ command ] (UsageError.UnknownCommand(command, []))
 
 let private discovery output errors =
     function
@@ -51,7 +51,7 @@ let private discovery output errors =
         |> writeDiscovery output errors language "describe"
     | CliInvocation.Schema selection ->
         Discovery.schema selection |> writeDiscovery output errors "en" "schema"
-    | _ -> unsupported errors "en" [] CliUsageIssue.Invocation
+    | _ -> unsupported errors "en" [] (UsageError.NotApplicable("arguments", "command"))
 
 let private remote input output errors session language render =
     use processor = new RemoteFrameProcessor(input, output, errors, language, render)

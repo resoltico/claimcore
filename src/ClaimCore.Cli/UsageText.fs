@@ -12,6 +12,12 @@ module UsageText =
     let private suggestedCommandText command suggestions =
         if List.isEmpty suggestions then "" else command
 
+    let private choice language flag value allowed =
+        if List.isEmpty allowed then
+            message language (CliMessage.InvalidValue(flag, value))
+        else
+            message language (CliMessage.InvalidChoice(flag, value, String.concat "|" allowed))
+
     let private line language =
         function
         | UsageError.UnknownCommand(command, suggestions) ->
@@ -25,18 +31,17 @@ module UsageText =
         | UsageError.MissingOption flag -> message language (CliMessage.MissingOption flag)
         | UsageError.MissingOperand operand -> message language (CliMessage.MissingOperand operand)
         | UsageError.ExtraOperand operand -> message language (CliMessage.ExtraOperand operand)
-        | UsageError.InvalidInteger(flag, value) ->
+        | UsageError.InvalidValue(flag, value) ->
             message language (CliMessage.InvalidInteger(flag, value))
-        | UsageError.InvalidChoice(flag, value, []) ->
-            message language (CliMessage.InvalidValue(flag, value))
-        | UsageError.InvalidChoice(flag, value, allowed) ->
-            message language (CliMessage.InvalidChoice(flag, value, String.concat "|" allowed))
+        | UsageError.InvalidChoice(flag, value, allowed) -> choice language flag value allowed
         | UsageError.NotApplicable(flag, because) ->
             message language (CliMessage.NotApplicable(flag, because))
         | UsageError.DuplicateOption flag -> message language (CliMessage.DuplicateOption flag)
         | UsageError.MissingValue flag -> message language (CliMessage.MissingValue flag)
         | UsageError.RequestTooLarge maximum ->
             message language (CliMessage.RequestTooLarge(string maximum))
+
+        | UsageError.UnknownTopic _ -> message language CliMessage.UnknownHelpTopic
 
     let render language arguments errors =
         let matched =
@@ -74,11 +79,13 @@ module UsageText =
 
         let problem =
             match command, issue with
-            | Some CliCommand.Help, CliUsageIssue.Topic -> CliMessage.UnknownHelpTopic
+            | Some CliCommand.Help, UsageError.UnknownTopic _ -> CliMessage.UnknownHelpTopic
             | Some CliCommand.Help, _ -> CliMessage.InvalidHelpOptions
-            | Some CliCommand.Describe, CliUsageIssue.Selector -> CliMessage.InvalidDescribeSelector
+            | Some CliCommand.Describe, UsageError.UnknownCommand _ ->
+                CliMessage.InvalidDescribeSelector
             | Some CliCommand.Describe, _ -> CliMessage.InvalidDescribeOptions
-            | Some CliCommand.Schema, CliUsageIssue.Selector -> CliMessage.InvalidSchemaSelector
+            | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
+                CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
             | Some CliCommand.Version, _ -> CliMessage.InvalidVersionOptions
             | _ -> CliMessage.InvalidInvocation commandText

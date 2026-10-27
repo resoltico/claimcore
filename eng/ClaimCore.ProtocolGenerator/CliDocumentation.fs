@@ -148,9 +148,9 @@ module CliDocumentation =
                     + " | "
                     + exitMeaning code
                     + " | "
-                    + supported (ExitCode.cli code)
+                    + supported (List.contains code CliIdentity.supportedExitCodes)
                     + " | "
-                    + supported (ExitCode.database code)
+                    + supported (List.contains code ClaimCore.Database.Command.supportedExitCodes)
                     + " |")
             ""
             yield! OperationCatalog.all |> List.collect describe

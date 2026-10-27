@@ -11,13 +11,15 @@ module Discovery =
     let versionJson () =
         let identity = BuildIdentity.current
 
-        JsonSerializer.SerializeToUtf8Bytes
-            {|
-                product = identity.Product
-                version = identity.Version
-                assemblyVersion = identity.AssemblyVersion
-                fileVersion = identity.FileVersion
-            |}
+        Codec.encode
+            VersionFrame.codec
+            {
+                Product = identity.Product
+                Version = identity.Version
+                AssemblyVersion = identity.AssemblyVersion
+                FileVersion = identity.FileVersion
+            }
+
 
     let private selected =
         function

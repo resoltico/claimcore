@@ -34,6 +34,15 @@ module Command =
     [<Literal>]
     let ProgramName = "claimcore-database"
 
+    let supportedExitCodes =
+        [
+            ExitCode.Success
+            ExitCode.Rejected
+            ExitCode.Failed
+            ExitCode.OutcomeUnknown
+            ExitCode.Diverged
+        ]
+
     let name =
         function
         | Initialize _ -> CommandName.Initialize
@@ -82,18 +91,6 @@ module CommandName =
             " "
             (Command.ProgramName :: token name :: (arguments name |> List.map argument))
 
-[<RequireQualifiedAccess>]
-type UsageIssue =
-    | UnknownCommand
-    | ArgumentsInvalid
-    | CheckpointInvalid
-
-type UsageError =
-    {
-        Issue: UsageIssue
-        Command: CommandName option
-    }
-
 module Inputs =
     let private expected (text: string) =
         let parts = text.Split(':')
@@ -118,12 +115,13 @@ module Inputs =
         if List.isEmpty arguments then
             Ok command
         else
-            Error UsageIssue.ArgumentsInvalid
+            Error(UsageError.NotApplicable("arguments", "command"))
 
     let private initialize arguments =
         match arguments with
         | [ zone ] -> Ok(Initialize zone)
-        | _ -> Error UsageIssue.ArgumentsInvalid
+        | [] -> Error(UsageError.MissingOperand "TIME_ZONE")
+        | _ -> Error(UsageError.NotApplicable("arguments", "initialize"))
 
     let private verify arguments =
         match arguments with
@@ -131,8 +129,8 @@ module Inputs =
         | [ "--expect"; value ] ->
             expected value
             |> Option.map (Some >> Verify >> Ok)
-            |> Option.defaultValue (Error UsageIssue.CheckpointInvalid)
-        | _ -> Error UsageIssue.ArgumentsInvalid
+            |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
+        | _ -> Error(UsageError.NotApplicable("arguments", "command"))
 
     let private parse name arguments =
         match name with
@@ -151,12 +149,16 @@ module Inputs =
             | None ->
                 Error
                     {
-                        Issue = UsageIssue.UnknownCommand
-                        Command = None
+                        Issue = UsageError.UnknownCommand(first, [])
+                        Usage = CommandName.all |> List.map CommandName.synopsis
                     }
             | Some name ->
                 parse name rest
-                |> Result.mapError (fun issue -> { Issue = issue; Command = Some name })
+                |> Result.mapError (fun issue ->
+                    {
+                        Issue = issue
+                        Usage = [ CommandName.synopsis name ]
+                    })
 
     let private bytes setting maximum =
         Environment.GetEnvironmentVariable setting
@@ -199,8 +201,3 @@ module Inputs =
             decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module UsageIssue =
-    let vocabulary =
-        Vocabulary.ofUnion<UsageIssue> "usage" TokenCasing.ScreamingSnake None
