@@ -1,11 +1,12 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 
 open ClaimCore.Json
 
 open System.Net.Http
-open ClaimCore.Contract.Protocol
 
 [<RequireQualifiedAccess>]
 type EndpointEffect =

@@ -3,6 +3,8 @@ namespace ClaimCore.Tests.Architecture.NegativeFixtures
 open ClaimCore.Contract
 
 open System
+open System.Threading.Tasks
+open ClaimCore.Contract.Protocol
 
 type PostgresReference =
     static member Target() = typeof<ClaimCore.Postgres.IRuntime>
@@ -51,3 +53,81 @@ type FileReaderCall =
 type WireCodecCall =
     static member Read() =
         ClaimCore.Contract.Protocol.RequestCodecs.caseRequest.Schema
+
+/// Distinct names let controls select compiler-generated bodies as well as declaring types.
+type AmbientShapes =
+    static member AmbientDirect() = DateTimeOffset.UtcNow
+
+type AmbientTaskShape =
+    static member AmbientTask() =
+        task {
+            do! Task.Yield()
+            return DateTimeOffset.UtcNow
+        }
+
+type AmbientAsyncShape =
+    static member AmbientAsync() =
+        async {
+            do! Async.Sleep 0
+            return DateTimeOffset.UtcNow
+        }
+
+type AmbientClosureShape =
+    static member AmbientClosure() =
+        List.map (fun (_: int) -> DateTimeOffset.UtcNow) [ 1 ]
+
+type AmbientTaskClosureShape =
+    static member AmbientTaskClosure() =
+        List.map (fun (_: int) -> task { return DateTimeOffset.UtcNow }) [ 1 ]
+
+type PostgresShapes =
+    static member PostgresDirect() = typeof<ClaimCore.Postgres.IRuntime>
+
+type PostgresTaskShape =
+    static member PostgresTask() =
+        task {
+            do! Task.Yield()
+            return typeof<ClaimCore.Postgres.IRuntime>
+        }
+
+type DurableShapes =
+    static member DurableDirect() = ReceiptCodecs.receipt.Schema
+
+type DurableTaskShape =
+    static member DurableTask() =
+        task {
+            do! Task.Yield()
+            return ReceiptCodecs.receipt.Schema
+        }
+
+type SerializerShapes =
+    static member SerializerDirect() =
+        System.Text.Json.JsonSerializer.Serialize("control")
+
+type SerializerTaskShape =
+    static member SerializerTask() =
+        task {
+            do! Task.Yield()
+            return System.Text.Json.JsonSerializer.Serialize("control")
+        }
+
+type ApplicationShapes =
+    static member ApplicationDirect() = ReplyCodecs.execute.Schema
+
+type ApplicationTaskShape =
+    static member ApplicationTask() =
+        task {
+            do! Task.Yield()
+            return ReplyCodecs.execute.Schema
+        }
+
+type DomainShapes =
+    static member DomainDirect() =
+        typeof<ClaimCore.RecordFormat.DecodeProblem>
+
+type DomainTaskShape =
+    static member DomainTask() =
+        task {
+            do! Task.Yield()
+            return typeof<ClaimCore.RecordFormat.DecodeProblem>
+        }

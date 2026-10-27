@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OperationCatalogTests
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.IO
 open System.Text.Json

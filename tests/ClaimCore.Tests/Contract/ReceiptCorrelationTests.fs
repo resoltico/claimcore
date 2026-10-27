@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ReceiptCorrelationTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open System

@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.Collections.Generic
 open System.Globalization

@@ -76,34 +76,72 @@ let private forbiddenCalls =
                 )
         )
 
-let rule name (subjects: IObjectProvider<IType>) =
+[<RequireQualifiedAccess>]
+type ArchitectureRule =
+    | Pure
+    | Postgres
+    | Durable
+    | Serializer
+    | ApplicationProtocol
+    | DomainBoundary
+
+let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
+    if provider.GetObjects architecture |> Seq.isEmpty then
+        invalidOp (name + ": no forbidden targets matched")
+
+    provider
+
+let rule architecture name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
 
+    let targets label (provider: IObjectProvider<IType>) =
+        nonEmptyTargets architecture label provider
+
+    let protocol () =
+        Types().That().ResideInNamespaceOrBelow("ClaimCore.Contract.Protocol")
+        |> targets "wire namespace"
+
     match name with
-    | "pure" -> clauses.NotCallAny(forbiddenCalls) :> IArchRule
-    | "postgres" ->
-        clauses.NotDependOnAny(Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres"))
+    | ArchitectureRule.Pure ->
+        nonEmptyTargets architecture "filesystem types" fileTypes |> ignore
+        nonEmptyTargets architecture "random types" randomTypes |> ignore
+        nonEmptyTargets architecture "network types" networkTypes |> ignore
+        clauses.NotCallAny(nonEmptyTargets architecture "ambient calls" forbiddenCalls) :> IArchRule
+    | ArchitectureRule.Postgres ->
+        clauses.NotDependOnAny(
+            Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
+            |> targets "Postgres"
+        )
         :> IArchRule
-    | "durable" ->
+    | ArchitectureRule.Durable
+    | ArchitectureRule.ApplicationProtocol -> clauses.NotDependOnAny(protocol ()) :> IArchRule
+    | ArchitectureRule.Serializer ->
+        clauses.NotDependOnAny(
+            Types().That().HaveFullName("System.Text.Json.JsonSerializer")
+            |> targets "JsonSerializer"
+        )
+        :> IArchRule
+    | ArchitectureRule.DomainBoundary ->
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .HaveFullNameMatching(
-                    @"^ClaimCore\.Contract\.Protocol\.(RequestCodecs|ResponseCodecs|ReceiptCodecs|ReplyCodecs)(\+|$)"
-                )
+                .ResideInAssembly(Assembly.Load "ClaimCore.Contract")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.Application")
+                .Or()
+                .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
+            |> targets "Domain boundary"
         )
         :> IArchRule
-    | "serializer" ->
-        clauses.NotDependOnAny(Types().That().HaveFullName("System.Text.Json.JsonSerializer"))
-        :> IArchRule
-    | _ -> invalidArg "name" ("Unknown architecture rule " + name)
 
-let check architecture name project (subjects: IObjectProvider<IType>) =
-    if subjects.GetObjects architecture |> Seq.isEmpty then
-        invalidOp (project + " " + name + ": no compiled subjects matched")
+// Product subjects must be assembly-scoped: F# task/async/closure bodies live under
+// <StartupCode$...>, outside the declaring module's type and namespace.
+let subjects (assembly: System.Reflection.Assembly) =
+    Types().That().ResideInAssembly assembly
 
-    let policy = rule name subjects
+let check architecture name project selected =
+    let policy = rule architecture name selected
 
     if not (policy.HasNoViolations architecture) then
         let details = policy.Evaluate architecture |> Seq.map string |> String.concat "\n"
-        invalidOp (project + " " + name + ": " + details)
+        invalidOp (project + " " + string name + ": " + details)

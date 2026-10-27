@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliCharacterWarningTests
 
+open ClaimCore.Contract.Protocol
+
 open System.IO
 open System.Text
 open System.Text.Json

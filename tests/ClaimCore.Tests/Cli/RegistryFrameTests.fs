@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RegistryFrameTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Cli
 
 open System

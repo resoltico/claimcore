@@ -1,5 +1,7 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.Threading
 open System.Threading.Tasks

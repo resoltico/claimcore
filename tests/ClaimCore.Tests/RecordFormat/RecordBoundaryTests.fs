@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RecordBoundaryTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract

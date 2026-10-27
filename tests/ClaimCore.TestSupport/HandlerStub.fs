@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.HandlerStub
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Contract
 
 open System

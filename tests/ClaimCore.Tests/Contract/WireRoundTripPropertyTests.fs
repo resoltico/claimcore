@@ -521,7 +521,7 @@ let private actorProperty response actor =
     | ActorEndpoint.AuthorityGrants -> endpointProperty response Api.authorityGrants
     | ActorEndpoint.Context -> endpointProperty response Api.context
 
-let private propertyFor response (route: ClaimCore.Contract.Route) =
+let private propertyFor response (route: ClaimCore.Contract.Protocol.Route) =
     match route.Id with
     | EndpointId.Host HostEndpoint.Session -> endpointProperty response Api.session
     | EndpointId.Host HostEndpoint.Logout -> endpointProperty response Api.logout

@@ -78,7 +78,7 @@ module ContractDiscovery =
                |> String.concat "")
 
     let private openapi () =
-        WireWriter.indentedBytes ClaimCore.Contract.OpenApi.document
+        WireWriter.indentedBytes ClaimCore.Contract.Protocol.OpenApi.document
 
     let catalogue () =
         let endpoints =

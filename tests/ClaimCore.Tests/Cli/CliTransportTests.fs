@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliTransportTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json

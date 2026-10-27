@@ -1,5 +1,7 @@
 module ClaimCore.Tests.EndpointRegistryTests
 
+open ClaimCore.Contract.Protocol
+
 open System
 open System.Text
 open System.Security.Cryptography

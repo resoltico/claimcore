@@ -113,7 +113,7 @@ module TypeScript =
 
     let source identity =
         let definitions =
-            ClaimCore.Contract.OpenApi.definitions
+            ClaimCore.Contract.Protocol.OpenApi.definitions
             |> Map.toList
             |> List.map (fun (name, schema) ->
                 "export type " + identifier name + " = " + value schema + ";")

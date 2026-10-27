@@ -1,5 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
+open ClaimCore.Contract.Protocol
+
 open System.Text.Json
 open ClaimCore.Contract
 open ClaimCore.Json
@@ -165,7 +167,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         |> List.map (fun status ->
             string status
             + ":"
-            + check (ClaimCore.Contract.HostFailureCodecs.responseSchema status))
+            + check (ClaimCore.Contract.Protocol.HostFailureCodecs.responseSchema status))
         |> String.concat ","
         |> fun fields -> "{" + fields + "}"
 

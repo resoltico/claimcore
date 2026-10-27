@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliDiagnosticTextTests
 
+open ClaimCore.Contract.Protocol
+
 open System.Text
 open Expecto
 open ClaimCore.Contract

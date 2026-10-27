@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open ClaimCore.TestSupport

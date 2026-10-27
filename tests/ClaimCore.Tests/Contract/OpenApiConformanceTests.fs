@@ -14,7 +14,7 @@ open ClaimCore.Contract.Protocol
 open ClaimCore.TestSupport
 
 let private emitted () =
-    ClaimCore.Contract.OpenApi.document
+    ClaimCore.Contract.Protocol.OpenApi.document
     |> WireWriter.bytes
     |> Encoding.UTF8.GetString
 

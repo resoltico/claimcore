@@ -29,7 +29,7 @@ let private page entries =
 
 let private validator () =
     let document =
-        ClaimCore.Contract.OpenApi.document
+        ClaimCore.Contract.Protocol.OpenApi.document
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
         |> JsonNode.Parse

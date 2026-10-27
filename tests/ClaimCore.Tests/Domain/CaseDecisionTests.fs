@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseDecisionTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open System

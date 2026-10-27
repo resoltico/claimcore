@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.Contract
 open ClaimCore.Domain
 open ClaimCore.Json
@@ -69,7 +71,7 @@ module ServiceReply =
             decode value Api.authorityGrants.Output ServiceReply.AuthorityGrants
         | ActorEndpoint.Context -> decode value Api.context.Output ServiceReply.Context
 
-    let read (endpoint: ClaimCore.Contract.Route) value =
+    let read (endpoint: ClaimCore.Contract.Protocol.Route) value =
         match endpoint.Id with
         | EndpointId.Host HostEndpoint.Session ->
             decode value Api.session.Output ServiceReply.Session

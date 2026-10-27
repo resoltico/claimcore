@@ -1,4 +1,6 @@
-namespace ClaimCore.Contract
+namespace ClaimCore.Contract.Protocol
+
+open ClaimCore.Contract
 
 open ClaimCore.Domain
 

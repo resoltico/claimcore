@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 
+open ClaimCore.Contract.Protocol
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Contract

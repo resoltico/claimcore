@@ -27,23 +27,24 @@ Self-contained, trimmed and single-file publication need separate qualification.
 
 ## Project boundaries
 
-| Project | Responsibility | Direct dependencies |
-| --- | --- | --- |
-| Json | Strict JSON values, writers, codecs and schemas | None |
-| Domain | Value modules, declaration, accepted state, acts, refusals and transitions | Json |
-| Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages | Domain, Json |
-| RecordFormat | Durable byte grammars | Domain, Json |
-| Application | Authorization, use cases, bound routes and verification | Domain, RecordFormat, Contract, Json |
-| Postgres | Transaction primitives, projections and installation administration | Application, Domain, RecordFormat, Contract, Json |
-| HostSecurity | Private files, HTTPS origins and TLS purposes | None |
-| Web | Authentication, request gates, runtime leases and route serving | Application, Postgres, Contract, Domain, HostSecurity, Json |
-| CLI | HTTPS, command grammar, typed replies and frames | Contract, Domain, HostSecurity, Json |
-| Database | Owner administration | Application, Postgres, Contract, Domain, HostSecurity, Json |
+| Project | Responsibility |
+| --- | --- |
+| Json | Strict JSON values, writers, codecs and schemas |
+| Domain | Value modules, declaration, accepted state, acts, refusals and transitions |
+| Contract | Derived wire codecs, endpoint descriptions, catalog, OpenAPI and messages |
+| RecordFormat | Durable byte grammars |
+| Application | Authorization, use cases, bound routes and verification |
+| Postgres | Transaction primitives, projections and installation administration |
+| HostSecurity | Private files, HTTPS origins and TLS purposes |
+| Web | Authentication, request gates, runtime leases and route serving |
+| CLI | HTTPS, command grammar, typed replies and frames |
+| Database | Owner administration |
 
 Postgres retains its Contract edge because owner-administration outcomes contain `CoreFault`. Its transaction
 modules contain SQL and primitives; Application composes case/authority work, reads and fencing.
 RecordFormat has no Contract dependency. The published CLI may contain pure Domain and excludes Application
 and Postgres. [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) verify these boundaries.
+[ProjectReferences.fs](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the allowed direct project edges.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
 [typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.

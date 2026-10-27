@@ -105,7 +105,7 @@ type FrameReply =
 type Invocation =
     private
         {
-            Target: ClaimCore.Contract.Route
+            Target: ClaimCore.Contract.Protocol.Route
             Input: JsonValue
             Bytes: byte array
         }
