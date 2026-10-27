@@ -51,18 +51,8 @@ module CatalogValidation =
             then
                 matches key Set.empty
 
-        for definition in (DiagnosticCodecs.definitions @ DiagnosticCodecs.violationDefinitions) do
-            matches
-                ("diagnostic." + definition.Id)
-                (definition.Parameters |> List.map _.Name |> Set.ofList)
-
-        for definition in DiagnosticCodecs.faultDefinitions do
-            matches
-                ("fault." + definition.Id)
-                (definition.Parameters |> List.map _.Name |> Set.ofList)
-
-        for failure in HostFailureReason.all do
-            matches ("host." + HostFailureReason.code failure) Set.empty
+        for KeyValue(_, entry) in DiagnosticCode.all do
+            matches entry.MessageKey (entry.Parameters |> List.map _.Name |> Set.ofList)
 
     let validateReferences owner keys references =
         let unused = Set.difference keys references

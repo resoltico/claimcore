@@ -323,7 +323,7 @@ module internal TextReply =
                 |> List.map (fun (name, value) -> name, number (int64 value))
                 |> Map.ofList
 
-            MessageCatalogs.render language ("diagnostic." + code) arguments
+            MessageCatalogs.render language (DiagnosticCode.key code) arguments
 
         let messages =
             match refusal with
@@ -367,7 +367,7 @@ module internal TextReply =
         let code = CoreFault.token fault
 
         [
-            label language ("fault." + code)
+            label language (DiagnosticCode.key code)
             line language (CliMessages.key CliMessage.CodeLabel) code
             line
                 language
@@ -453,7 +453,9 @@ module internal TextReply =
         | FrameResult.Reply reply -> replyLines language request reply
         | FrameResult.HostFailure failure ->
             [
-                label language ("host." + Vocabulary.token HostFailureCode.vocabulary failure.Code)
+                label
+                    language
+                    (DiagnosticCode.key (Vocabulary.token HostFailureCode.vocabulary failure.Code))
                 line
                     language
                     (CliMessages.key CliMessage.CodeLabel)

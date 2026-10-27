@@ -37,6 +37,7 @@
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="HostFailures.fs" />
+    <Compile Include="DiagnosticCode.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />

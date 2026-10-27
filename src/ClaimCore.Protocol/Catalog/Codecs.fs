@@ -336,7 +336,7 @@ module CatalogCodecs =
     type private EntryWire =
         {
             Endpoint: string
-            Subject: string
+            Subject: CatalogSubject
             Kind: string
             LabelId: string
             MeaningId: string
@@ -358,7 +358,7 @@ module CatalogCodecs =
                 Constants = constants
             })
         |> field "endpoint" _.Endpoint text
-        |> field "subject" _.Subject text
+        |> field "subject" _.Subject (VocabularyCodec.create CatalogSubject.vocabulary)
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text

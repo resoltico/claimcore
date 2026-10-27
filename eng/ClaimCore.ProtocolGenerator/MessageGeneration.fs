@@ -14,30 +14,28 @@ module MessageGeneration =
         WireWriter.bytes value |> Encoding.UTF8.GetString
 
     let private requirements =
-        [
-            for family, definitions in
-                [
-                    "diagnostic",
-                    (DiagnosticCodecs.definitions @ DiagnosticCodecs.violationDefinitions)
-                    "fault", DiagnosticCodecs.faultDefinitions
-                ] do
-                for definition in definitions do
-                    let parameters =
-                        definition.Parameters
-                        |> List.map (fun parameter ->
-                            parameter.Name,
-                            JsonValue.Object
-                                [
-                                    "minimum", JsonValue.Integer(int64 parameter.Minimum)
-                                    "maximum", JsonValue.Integer(int64 parameter.Maximum)
-                                ])
-
-                    yield family + "." + definition.Id, JsonValue.Object parameters
-            for failure in HostFailureReason.all do
-                yield "host." + HostFailureReason.code failure, JsonValue.Object []
-        ]
+        DiagnosticCode.all
+        |> Map.toList
+        |> List.map (fun (_, entry) ->
+            entry.MessageKey,
+            JsonValue.Object(
+                entry.Parameters
+                |> List.map (fun parameter ->
+                    parameter.Name,
+                    JsonValue.Object
+                        [
+                            "minimum", JsonValue.Integer(int64 parameter.Minimum)
+                            "maximum", JsonValue.Integer(int64 parameter.Maximum)
+                        ])
+            ))
         |> Map.ofList
         |> Map.toList
+        |> JsonValue.Object
+
+    let private diagnosticKeys =
+        DiagnosticCode.all
+        |> Map.toList
+        |> List.map (fun (code, entry) -> code, JsonValue.String entry.MessageKey)
         |> JsonValue.Object
 
     let private generate importPath includeMetadata (catalogs: Map<string, Map<string, Template>>) =
@@ -139,6 +137,7 @@ module MessageGeneration =
                 "export const termKeys = " + json termKeys + " as const;"
                 "export const fieldGuidance = " + json fieldGuidance + " as const;"
                 "export const diagnosticParameters = " + json requirements + " as const;"
+                "export const diagnosticMessageKeys = " + json diagnosticKeys + " as const;"
                 "export const correctionTargets = " + json corrections + " as const;"
         ]
         |> String.concat "\n"

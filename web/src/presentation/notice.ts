@@ -1,7 +1,7 @@
 import type { Notice } from "../protocol/notices";
-import { diagnosticParameters as requirements } from "@contracts/messages";
+import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
 import { exactInteger } from "./format";
-import { renderKey, renderCatalogKey, translate } from "./messages";
+import { renderKey, translate } from "./messages";
 import type { MessageKey } from "./types";
 import type { Preferences } from "./preferences";
 
@@ -11,6 +11,8 @@ const limits: Readonly<
     Readonly<Record<string, { minimum?: number; maximum?: number; enum?: ReadonlyArray<string> }>>
   >
 > = requirements;
+const isDiagnosticCode = (code: string): code is keyof typeof diagnosticMessageKeys =>
+  Object.hasOwn(diagnosticMessageKeys, code);
 const contextFields = new Set([
   "code",
   "action",
@@ -24,10 +26,9 @@ const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
 ): string => {
-  const keys = ["diagnostic", "fault", "host"]
-    .map((family) => `${family}.${diagnostic.code}`)
-    .filter((key) => Object.hasOwn(limits, key));
-  const messageKey = keys.length === 1 ? keys[0] : undefined;
+  const messageKey = isDiagnosticCode(diagnostic.code)
+    ? diagnosticMessageKeys[diagnostic.code]
+    : undefined;
   const expected = messageKey === undefined ? undefined : limits[messageKey];
   const supplied: Readonly<Record<string, unknown>> =
     diagnostic.code === "INVALID_INPUT" && "issues" in diagnostic
@@ -58,7 +59,7 @@ const diagnosticText = (
       typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
     ]),
   );
-  return renderCatalogKey(preferences, messageKey, parameters);
+  return renderKey(preferences, messageKey, parameters);
 };
 export const renderNotice = (preferences: Preferences, notice: Notice): string => {
   switch (notice.kind) {

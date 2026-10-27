@@ -50,6 +50,18 @@ type CatalogInput =
     }
 
 [<RequireQualifiedAccess>]
+type CatalogSubject =
+    | Case
+    | Authority
+    | Operation
+    | Context
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CatalogSubject =
+    let vocabulary =
+        Vocabulary.ofUnion<CatalogSubject> "catalogSubject" TokenCasing.ScreamingSnake None
+
+[<RequireQualifiedAccess>]
 type CatalogOperation =
     | Act of ActKind
     | Query of QueryEndpoint
@@ -66,13 +78,15 @@ type CatalogOperation =
 
     member this.Subject =
         match this with
-        | CatalogOperation.Act act -> ActKind.subject act |> ActSubject.token
+        | CatalogOperation.Act(ActKind.Case _)
         | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseHistory) ->
-            ActSubject.token ActSubject.Case
+            CatalogSubject.Case
+        | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants) ->
-            ActSubject.token ActSubject.Authority
-        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) -> "OPERATION"
-        | CatalogOperation.Query QueryEndpoint.Context -> "CONTEXT"
+            CatalogSubject.Authority
+        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) ->
+            CatalogSubject.Operation
+        | CatalogOperation.Query QueryEndpoint.Context -> CatalogSubject.Context
 
 type CatalogEntry =
     {

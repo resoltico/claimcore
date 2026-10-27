@@ -108,6 +108,7 @@
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />
     <Compile Include="Contract/InputDiagnosticTests.fs" />
+    <Compile Include="Contract/DiagnosticRegistryTests.fs" />
     <Compile Include="Cli/StandardSinkTests.fs" />
     <Compile Include="Support/DocumentationChecks.fs" />
     <Compile Include="Support/DocumentationTests.fs" />
