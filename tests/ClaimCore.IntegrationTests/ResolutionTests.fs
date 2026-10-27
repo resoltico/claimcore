@@ -249,7 +249,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
         Expect.equal
             nil
             (Outcome.Rejected(
-                Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+                Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired)
             ))
             "Nil identity is invalid"
     }

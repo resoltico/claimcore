@@ -58,6 +58,12 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
 
         for entry in (nonNull value) :?> IEnumerable do
             collect seeds context item entry
+    elif kind = typeof<InputIssues> then
+        collect
+            seeds
+            (context + ".Issues")
+            typeof<InputIssue list>
+            (InputIssues.toList (unbox<InputIssues> value) |> box)
     elif kind = typeof<PrincipalKey> then
         let input = PrincipalKey.toInput (unbox<PrincipalKey> value)
         collect seeds (context + ".Principal") typeof<PrincipalInput> (box input)
@@ -512,6 +518,14 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                     Gen.constant None
 
             return CaseAdvice.create acts correction history |> Result.defaultWith invalidOp |> box
+        }
+    elif kind = typeof<InputIssues> then
+        gen {
+            let! size = Gen.int32 (Range.constant 1 DiagnosticCodecs.MaximumInputIssues)
+            let! seed = choose source (context + ".Issues") typeof<InputIssue>
+            let item = fresh response source (context + ".Issues") typeof<InputIssue> seed
+            let! items = Gen.list (Range.singleton size) item
+            return items |> List.map unbox<InputIssue> |> InputIssues.ofList |> Option.get |> box
         }
     elif FSharpType.IsRecord kind then
         freshRecord response source context kind value

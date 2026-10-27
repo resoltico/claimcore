@@ -81,6 +81,7 @@
   "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "Šai lomai vajadzīga cilvēka identitāte.",
   "diagnostic.IDEMPOTENCY_CONFLICT": "Šis operācijas ID pieder citam komandas saturam. Neizmantojiet to atkārtoti.",
   "diagnostic.INVALID_CURSOR": "Lapas turpinājums vairs nav derīgs. Pārlādējiet sarakstu no sākuma.",
+  "diagnostic.INVALID_INPUT": "Ievades kļūdu skaits: {issueCount}.",
   "diagnostic.LAST_OWNER": "Jāpaliek vismaz vienam aktīvam īpašniekam ar cilvēka identitāti.",
   "diagnostic.MALFORMED_UNICODE": "Nederīgs Unicode nav atļauts.",
   "diagnostic.NOT_VOIDED": "Šī lieta nav anulēta.",

@@ -255,12 +255,12 @@ let private diagnostics () =
 
 let private actionExpectations =
     [
-        (Refusal.InvalidInput(InputTarget.Reason, Violation.TextRequired)),
+        (Refusal.invalidInput (InputTarget.Reason, Violation.TextRequired)),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "reason",
         None
-        Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50),
+        Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange 50),
         RecommendedAction.CorrectInput,
         "CORRECT_INPUT",
         Some "limit",
@@ -324,13 +324,37 @@ let private actionTokens () =
 
         Expect.equal (data.GetProperty("action").GetString()) expected "Literal wire guidance"
 
-        let mutable encodedTarget = Unchecked.defaultof<JsonElement>
-        let hasTarget = data.TryGetProperty("target", &encodedTarget)
-        Expect.equal hasTarget field.IsSome "Only applicable target metadata is serialized"
+        match refusal with
+        | Refusal.InvalidInput issues ->
+            Expect.isFalse
+                (data.TryGetProperty("target") |> fst)
+                "An aggregate never guesses a top-level target"
 
-        field
-        |> Option.iter (fun target ->
-            Expect.equal (encodedTarget.GetString()) target "Literal target")
+            let encodedIssues = data.GetProperty("issues").EnumerateArray() |> Seq.toList
+
+            Expect.equal
+                encodedIssues.Length
+                (InputIssues.toList issues |> List.length)
+                "Every issue survives"
+
+            field
+            |> Option.iter (fun target ->
+                Expect.equal
+                    (encodedIssues.Head.GetProperty("field").GetString())
+                    target
+                    "The issue retains its own field")
+        | _ ->
+            let mutable encodedTarget = Unchecked.defaultof<JsonElement>
+            let hasTarget = data.TryGetProperty("target", &encodedTarget)
+
+            Expect.equal
+                hasTarget
+                field.IsSome
+                "Only applicable non-input target metadata is serialized"
+
+            field
+            |> Option.iter (fun target ->
+                Expect.equal (encodedTarget.GetString()) target "Literal target")
 
         let mutable encodedRevision = Unchecked.defaultof<JsonElement>
         let hasRevision = data.TryGetProperty("actualRevision", &encodedRevision)
@@ -340,7 +364,6 @@ let private actionTokens () =
         |> Option.iter (fun revision ->
             Expect.equal (encodedRevision.GetInt64()) revision "Literal revision")
 
-        Expect.equal refusal.Field field "Field metadata is retained"
         Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
 
 let private rejectFrames () =

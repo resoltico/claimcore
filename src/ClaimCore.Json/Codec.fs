@@ -24,6 +24,24 @@ type Schema =
     | OneOf of variants: Schema list * discriminator: (string * (string * string) list) option
     | Ref of string
 
+module Schema =
+    /// Distinct string literals are disjoint, so their oneOf is exactly one enum.
+    let tryLiteralSet variants =
+        let values =
+            variants
+            |> List.choose (function
+                | Schema.Const value -> Some value
+                | _ -> None)
+
+        if
+            values.Length > 1
+            && values.Length = List.length variants
+            && List.distinct values = values
+        then
+            Some values
+        else
+            None
+
 /// Named schema meaning is shared by codecs, OpenAPI and CLI framing.
 module SchemaDefinitions =
     let merge (left: Map<string, Schema>) (right: Map<string, Schema>) =
@@ -804,6 +822,15 @@ module Codec =
         | Schema.Boolean -> WriterProfile.writeMember writer "type" "boolean"
         | Schema.Null -> WriterProfile.writeMember writer "type" "null"
         | Schema.Const value -> WriterProfile.writeMember writer "const" value
+        | Schema.OneOf(variants, None) when Schema.tryLiteralSet variants |> Option.isSome ->
+            writer.WritePropertyName "enum"
+            writer.WriteStartArray()
+
+            Schema.tryLiteralSet variants
+            |> Option.get
+            |> List.iter (WriterProfile.writeString writer)
+
+            writer.WriteEndArray()
         | Schema.OneOf(variants, discriminator) -> unionSchema prefix writer variants discriminator
         | Schema.Ref name -> WriterProfile.writeMember writer "$ref" (prefix + name)
 

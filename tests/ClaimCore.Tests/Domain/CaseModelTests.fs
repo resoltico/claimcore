@@ -281,7 +281,7 @@ let private identifiers =
                     ((CaseReference.parse
                       >> Result.map ignore
                       >> Result.mapError (fun violation ->
-                          Refusal.InvalidInput(
+                          Refusal.invalidInput (
                               InputTarget.Field BusinessField.CaseReference,
                               violation
                           )))
@@ -293,7 +293,7 @@ let private identifiers =
                     ((CaseReference.parse
                       >> Result.map ignore
                       >> Result.mapError (fun violation ->
-                          Refusal.InvalidInput(
+                          Refusal.invalidInput (
                               InputTarget.Field BusinessField.CaseReference,
                               violation
                           )))

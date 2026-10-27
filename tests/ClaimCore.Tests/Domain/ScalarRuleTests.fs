@@ -203,7 +203,7 @@ let grammarDiagnostics =
 
             Expect.equal
                 (CaseFixtures.validate (candidate invalid))
-                (Error(Refusal.InvalidInput(target, expected)))
+                (Error(Refusal.invalidInput (target, expected)))
                 "The request parser retains the target and value-module diagnostic"
 
             Expect.isOk (CaseFixtures.validate (candidate valid)) "Valid control is admitted"

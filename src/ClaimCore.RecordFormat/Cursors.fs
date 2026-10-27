@@ -63,7 +63,7 @@ module Cursors =
         (CaseReference.parse
          >> Result.map ignore
          >> Result.mapError (fun violation ->
-             Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+             Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation)))
             value
         |> Result.isOk
         && CaseReference.key value = value

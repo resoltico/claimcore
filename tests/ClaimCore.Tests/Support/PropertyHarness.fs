@@ -50,6 +50,7 @@ let private propertyNames =
             "durable record byte decoder"
             "case act slots"
             "authority act slots"
+            "input issue subsets"
         ]
 
 let private fixedBaseSeed = 0x434C41494D434F52UL

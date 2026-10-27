@@ -19,7 +19,7 @@ let private frame refusal =
     }
 
 let private assertTarget target identity violation code parameters =
-    let refusal = Refusal.InvalidInput(target, violation)
+    let refusal = Refusal.invalidInput (target, violation)
     let source = Frames.encode (frame refusal)
     let original = Array.copy source
 
@@ -164,3 +164,38 @@ let tests =
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget Refusal.ResourceUnavailable None "RESOURCE_UNAVAILABLE")
         ]
+
+[<Tests>]
+let accumulated =
+    testCase "CLI prints every input issue in list order in every language" (fun () ->
+        let values =
+            [
+                {
+                    Target = InputTarget.Field BusinessField.ClaimantName
+                    Violation = Violation.TextRequired
+                }
+                {
+                    Target = InputTarget.Field BusinessField.InsurerName
+                    Violation = Violation.TextRequired
+                }
+            ]
+
+        let refusal = values |> InputIssues.ofList |> Option.get |> Refusal.InvalidInput
+
+        for language in LocalizationPolicy.languages do
+            let lines =
+                TextReply.bytes language (frame refusal)
+                |> Encoding.UTF8.GetString
+                |> fun text -> text.Split('\n')
+
+            let message = MessageCatalogs.render language "diagnostic.TEXT_REQUIRED" Map.empty
+
+            for index, field in
+                [ BusinessField.ClaimantName; BusinessField.InsurerName ] |> List.indexed do
+                let label =
+                    MessageCatalogs.render language (FieldPresentation.labelId field) Map.empty
+
+                Expect.equal
+                    lines[index]
+                    (label + ": " + message)
+                    "Each issue has its own localized line")

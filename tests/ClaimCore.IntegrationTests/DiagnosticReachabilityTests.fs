@@ -51,38 +51,32 @@ let private baseline =
          use document = JsonDocument.Parse(System.IO.File.ReadAllBytes path)
 
          document.RootElement.GetProperty("observations").EnumerateArray()
-         |> Seq.map (fun row ->
-             (row.GetProperty("code").GetString() |> nonNull,
-              row.GetProperty("target").GetString() |> Option.ofObj),
-             (row.GetProperty("action").GetString() |> nonNull))
+         |> Seq.collect (fun row ->
+             let code = row.GetProperty("code").GetString() |> nonNull
+             let action = row.GetProperty("action").GetString() |> nonNull
+
+             if code = "INVALID_INPUT" then
+                 seq {
+                     yield (code, None), action
+
+                     for issue in row.GetProperty("issues").EnumerateArray() do
+                         yield
+                             (issue.GetProperty("code").GetString() |> nonNull,
+                              Some(issue.GetProperty("field").GetString() |> nonNull)),
+                             action
+                 }
+             else
+                 Seq.singleton (
+                     (code, row.GetProperty("target").GetString() |> Option.ofObj),
+                     action
+                 ))
          |> Map.ofSeq)
 
-let private baselinePolicy code (reason: Refusal) =
-    match Map.tryFind (code, reason.Field) baseline.Value with
-    | None when code = "OPERATION_RESOLVED" ->
-        Expect.equal
-            reason.Action
-            RecommendedAction.ReadCurrent
-            "Resolve requires a new operation after reading current state"
-
-        Expect.equal reason.Field (Some "operationId") "The resolved identity is targeted"
-    | Some action ->
-        Expect.equal (string reason.Action) action "Captured baseline action is preserved."
+let private baselinePolicy code target action =
+    match Map.tryFind (code, target) baseline.Value with
+    | Some expected -> Expect.equal (string action) expected "Captured repair action is preserved."
     | None ->
-        Expect.contains
-            [ Some "principal.issuer"; Some "principal.subject" ]
-            reason.Field
-            "Only principal targets extend the captured baseline."
-
-        Expect.contains
-            [ "TEXT_REQUIRED"; "PRINCIPAL_FORMAT" ]
-            code
-            "Only principal admission extends the captured baseline."
-
-        Expect.equal
-            reason.Action
-            RecommendedAction.CorrectInput
-            "Principal admission is repairable input."
+        failtestf "Request diagnostic is absent from the independent baseline: %s %A" code target
 
 let private diagnostic reason =
     let identifier = DiagnosticCodecs.code reason
@@ -109,8 +103,26 @@ let private diagnostic reason =
         (identifier)
         "The public diagnostic token agrees with the request-producing Application refusal"
 
-    baselinePolicy identifier reason
-    identifier, reason.Field
+    match reason with
+    | Refusal.InvalidInput issues ->
+        baselinePolicy "INVALID_INPUT" None RecommendedAction.CorrectInput
+
+        ("INVALID_INPUT", None)
+        :: (InputIssues.toList issues
+            |> List.map (fun issue ->
+                let code, _ = DiagnosticCodecs.describeIssue issue
+                let target = Some(InputTarget.token issue.Target)
+                baselinePolicy code target RecommendedAction.CorrectInput
+                code, target))
+    | reason ->
+        let target =
+            match reason with
+            | Refusal.InvalidCursor -> Some(InputTarget.token InputTarget.Cursor)
+            | Refusal.OperationResolved -> Some(InputTarget.token InputTarget.OperationId)
+            | _ -> None
+
+        baselinePolicy identifier target reason.Action
+        [ identifier, target ]
 
 let private refused (reply: ExecuteReply) =
     match reply.Outcome with
@@ -444,14 +456,20 @@ let private completeVocabulary () =
             stateScenarios () |> List.map stateEvidence |> Task.WhenAll |> Async.AwaitTask
 
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
-        let evidence = scalar @ List.ofArray states @ boundaries
+
+        let evidence =
+            scalar @ List.ofArray states @ boundaries |> List.collect (fun items -> items)
+
         let identifiers = evidence |> List.map fst |> Set.ofList
 
         let baselineCodes = baseline.Value.Keys |> Seq.map fst |> Set.ofSeq
 
         Expect.equal
-            (Set.ofList DiagnosticCodecs.codes)
-            (baselineCodes |> Set.add "PRINCIPAL_FORMAT" |> Set.add "OPERATION_RESOLVED")
+            (Set.ofList (
+                DiagnosticCodecs.codes
+                @ (DiagnosticCodecs.violationDefinitions |> List.map _.Id)
+            ))
+            baselineCodes
             "The codec preserves captured refusal semantics and includes principal and role admission."
 
         let produced = Set.ofList evidence
@@ -462,7 +480,10 @@ let private completeVocabulary () =
                 "Captured code/target witnesses missing: %A"
                 (Set.difference (baseline.Value.Keys |> Set.ofSeq) produced))
 
-        let expected = DiagnosticCodecs.codes |> Set.ofList
+        let expected =
+            DiagnosticCodecs.codes
+            @ (DiagnosticCodecs.violationDefinitions |> List.map _.Id)
+            |> Set.ofList
 
         Expect.isEmpty
             (Set.difference expected identifiers |> Set.toList)
@@ -521,7 +542,7 @@ let private missingCasePrivacy () =
                 execute actor (actRequest (100 + index) "MISSING" 1L act) |> Async.AwaitTask
 
             Expect.equal
-                (refused outcome |> fst)
+                (refused outcome |> List.head |> fst)
                 "RESOURCE_UNAVAILABLE"
                 "Missing case stays private"
 

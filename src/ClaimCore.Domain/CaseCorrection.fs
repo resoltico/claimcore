@@ -52,6 +52,24 @@ module internal CaseCorrections =
                 Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
+    /// A valid proposed state can be checked independently of acknowledgement input flags.
+    let proposed facts progress (correction: ValidCorrection) =
+        result {
+            let facts =
+                match correction.Registration with
+                | Amendment.Keep -> facts
+                | Amendment.Replace replacement -> replacement
+
+            let! decision = decisionChoice progress correction.Decision
+            let! payment = paymentChoice progress correction.Payment
+
+            let! next =
+                PaymentProgress.fromGroups decision payment
+                |> Result.mapError (fun () -> Refusal.DecisionRequired)
+
+            return facts, next
+        }
+
     let apply facts progress (correction: ValidCorrection) =
         result {
             let nextFacts =

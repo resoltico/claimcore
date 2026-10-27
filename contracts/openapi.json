@@ -1676,37 +1676,17 @@
           "capabilities": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "READ_CASE"
-                },
-                {
-                  "const": "READ_HISTORY"
-                },
-                {
-                  "const": "READ_HISTORY_FULL"
-                },
-                {
-                  "const": "REGISTER"
-                },
-                {
-                  "const": "DECIDE"
-                },
-                {
-                  "const": "RECORD_PAYMENT"
-                },
-                {
-                  "const": "CLOSE"
-                },
-                {
-                  "const": "STEWARD"
-                },
-                {
-                  "const": "MANAGE_AUTHORITY"
-                },
-                {
-                  "const": "READ_AUTHORITY"
-                }
+              "enum": [
+                "READ_CASE",
+                "READ_HISTORY",
+                "READ_HISTORY_FULL",
+                "REGISTER",
+                "DECIDE",
+                "RECORD_PAYMENT",
+                "CLOSE",
+                "STEWARD",
+                "MANAGE_AUTHORITY",
+                "READ_AUTHORITY"
               ]
             },
             "minItems": 0,
@@ -1715,16 +1695,10 @@
           "views": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "CASES"
-                },
-                {
-                  "const": "AUTHORITY"
-                },
-                {
-                  "const": "OPERATIONS"
-                }
+              "enum": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
               ]
             },
             "minItems": 0,
@@ -1940,28 +1914,14 @@
             "const": "GRANT"
           },
           "role": {
-            "oneOf": [
-              {
-                "const": "OWNER"
-              },
-              {
-                "const": "CASE_READER"
-              },
-              {
-                "const": "CASE_REGISTRAR"
-              },
-              {
-                "const": "CASE_HANDLER"
-              },
-              {
-                "const": "PAYMENT_RECORDER"
-              },
-              {
-                "const": "DATA_STEWARD"
-              },
-              {
-                "const": "AUDITOR"
-              }
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
             ]
           },
           "scope": {
@@ -1994,28 +1954,14 @@
             "const": "REVOKE"
           },
           "role": {
-            "oneOf": [
-              {
-                "const": "OWNER"
-              },
-              {
-                "const": "CASE_READER"
-              },
-              {
-                "const": "CASE_REGISTRAR"
-              },
-              {
-                "const": "CASE_HANDLER"
-              },
-              {
-                "const": "PAYMENT_RECORDER"
-              },
-              {
-                "const": "DATA_STEWARD"
-              },
-              {
-                "const": "AUDITOR"
-              }
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
             ]
           },
           "scope": {
@@ -2033,28 +1979,14 @@
         "additionalProperties": false,
         "properties": {
           "role": {
-            "oneOf": [
-              {
-                "const": "OWNER"
-              },
-              {
-                "const": "CASE_READER"
-              },
-              {
-                "const": "CASE_REGISTRAR"
-              },
-              {
-                "const": "CASE_HANDLER"
-              },
-              {
-                "const": "PAYMENT_RECORDER"
-              },
-              {
-                "const": "DATA_STEWARD"
-              },
-              {
-                "const": "AUDITOR"
-              }
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
             ]
           },
           "scope": {
@@ -2323,43 +2255,19 @@
           "acts": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "OPEN"
-                },
-                {
-                  "const": "AMEND_REGISTRATION"
-                },
-                {
-                  "const": "CORRECT"
-                },
-                {
-                  "const": "DECIDE"
-                },
-                {
-                  "const": "WITHDRAW_DECISION"
-                },
-                {
-                  "const": "RECORD_PAYMENT"
-                },
-                {
-                  "const": "CLEAR_PAYMENT"
-                },
-                {
-                  "const": "CLOSE"
-                },
-                {
-                  "const": "REOPEN"
-                },
-                {
-                  "const": "VOID"
-                },
-                {
-                  "const": "REINSTATE"
-                },
-                {
-                  "const": "ERASE"
-                }
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
               ]
             },
             "minItems": 0,
@@ -2371,13 +2279,9 @@
           "history": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "SUMMARY"
-                },
-                {
-                  "const": "FULL"
-                }
+              "enum": [
+                "SUMMARY",
+                "FULL"
               ]
             },
             "minItems": 0,
@@ -2400,13 +2304,9 @@
             "maxLength": 80
           },
           "status": {
-            "oneOf": [
-              {
-                "const": "OPENED"
-              },
-              {
-                "const": "CLOSED"
-              }
+            "enum": [
+              "OPENED",
+              "CLOSED"
             ]
           },
           "registration": {
@@ -2773,43 +2673,19 @@
             "maximum": 9007199254740991
           },
           "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "CORRECT"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
+            "enum": [
+              "OPEN",
+              "AMEND_REGISTRATION",
+              "CORRECT",
+              "DECIDE",
+              "WITHDRAW_DECISION",
+              "RECORD_PAYMENT",
+              "CLEAR_PAYMENT",
+              "CLOSE",
+              "REOPEN",
+              "VOID",
+              "REINSTATE",
+              "ERASE"
             ]
           },
           "snapshot": {
@@ -2968,13 +2844,9 @@
             "const": "ACTIVE"
           },
           "status": {
-            "oneOf": [
-              {
-                "const": "OPENED"
-              },
-              {
-                "const": "CLOSED"
-              }
+            "enum": [
+              "OPENED",
+              "CLOSED"
             ]
           }
         },
@@ -3003,13 +2875,9 @@
             "const": "VOIDED"
           },
           "status": {
-            "oneOf": [
-              {
-                "const": "OPENED"
-              },
-              {
-                "const": "CLOSED"
-              }
+            "enum": [
+              "OPENED",
+              "CLOSED"
             ]
           }
         },
@@ -3102,43 +2970,19 @@
             "maximum": 9007199254740991
           },
           "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "CORRECT"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
+            "enum": [
+              "OPEN",
+              "AMEND_REGISTRATION",
+              "CORRECT",
+              "DECIDE",
+              "WITHDRAW_DECISION",
+              "RECORD_PAYMENT",
+              "CLEAR_PAYMENT",
+              "CLOSE",
+              "REOPEN",
+              "VOID",
+              "REINSTATE",
+              "ERASE"
             ]
           },
           "recordedAt": {
@@ -3269,13 +3113,9 @@
           "registration": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "KEEP"
-                },
-                {
-                  "const": "REPLACE"
-                }
+              "enum": [
+                "KEEP",
+                "REPLACE"
               ]
             },
             "minItems": 0,
@@ -3284,16 +3124,10 @@
           "decision": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "KEEP"
-                },
-                {
-                  "const": "REPLACE"
-                },
-                {
-                  "const": "CLEAR"
-                }
+              "enum": [
+                "KEEP",
+                "REPLACE",
+                "CLEAR"
               ]
             },
             "minItems": 0,
@@ -3302,16 +3136,10 @@
           "payment": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "const": "KEEP"
-                },
-                {
-                  "const": "REPLACE"
-                },
-                {
-                  "const": "CLEAR"
-                }
+              "enum": [
+                "KEEP",
+                "REPLACE",
+                "CLEAR"
               ]
             },
             "minItems": 0,
@@ -3408,16 +3236,7 @@
       "Diagnostic": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Diagnostic.TEXT_REQUIRED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.TOO_LONG"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.DECIMAL_FORMAT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.PAGE_LIMIT_RANGE"
+            "$ref": "#/components/schemas/Diagnostic.INVALID_INPUT"
           },
           {
             "$ref": "#/components/schemas/Diagnostic.REVISION_CONFLICT"
@@ -3438,25 +3257,7 @@
         "discriminator": {
           "propertyName": "code",
           "mapping": {
-            "TEXT_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "MALFORMED_UNICODE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "SURROUNDING_WHITESPACE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "CONTROL_CHARACTERS": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "FORMATTING_CHARACTER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "REFERENCE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "COUNTRY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "PRINCIPAL_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "CALENDAR_DATE_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "CHRONOLOGICAL_ORDER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "FUTURE_DATE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "CURRENCY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "OPERATION_ID_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "EXPECTED_REVISION_RANGE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "TOO_LONG": "#/components/schemas/Diagnostic.TOO_LONG",
-            "DECIMAL_FORMAT": "#/components/schemas/Diagnostic.DECIMAL_FORMAT",
-            "PAGE_LIMIT_RANGE": "#/components/schemas/Diagnostic.PAGE_LIMIT_RANGE",
+            "INVALID_INPUT": "#/components/schemas/Diagnostic.INVALID_INPUT",
             "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
             "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "CASE_ERASED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
@@ -3491,73 +3292,29 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "oneOf": [
-              {
-                "const": "CASE_ALREADY_EXISTS"
-              },
-              {
-                "const": "CASE_ERASED"
-              },
-              {
-                "const": "CASE_VOIDED"
-              },
-              {
-                "const": "ALREADY_VOIDED"
-              },
-              {
-                "const": "NOT_VOIDED"
-              },
-              {
-                "const": "CASE_CLOSED"
-              },
-              {
-                "const": "ALREADY_CLOSED"
-              },
-              {
-                "const": "ALREADY_OPENED"
-              },
-              {
-                "const": "AMENDMENT_REQUIRES_UNDECIDED"
-              },
-              {
-                "const": "CORRECTION_NO_CHANGES"
-              },
-              {
-                "const": "CORRECTION_REQUIRES_EXISTING_VALUE"
-              },
-              {
-                "const": "DECISION_REQUIRED"
-              },
-              {
-                "const": "PAYMENT_ALREADY_RECORDED"
-              },
-              {
-                "const": "PAYMENT_NOT_RECORDED"
-              },
-              {
-                "const": "DECISION_ALREADY_PAID"
-              },
-              {
-                "const": "ZERO_DECISION_CANNOT_BE_PAID"
-              },
-              {
-                "const": "RESOURCE_UNAVAILABLE"
-              },
-              {
-                "const": "ACT_NOT_PERMITTED"
-              },
-              {
-                "const": "LAST_OWNER"
-              },
-              {
-                "const": "ACTOR_ALREADY_REGISTERED"
-              },
-              {
-                "const": "ACTOR_UNKNOWN"
-              },
-              {
-                "const": "HUMAN_PRINCIPAL_REQUIRED"
-              }
+            "enum": [
+              "CASE_ALREADY_EXISTS",
+              "CASE_ERASED",
+              "CASE_VOIDED",
+              "ALREADY_VOIDED",
+              "NOT_VOIDED",
+              "CASE_CLOSED",
+              "ALREADY_CLOSED",
+              "ALREADY_OPENED",
+              "AMENDMENT_REQUIRES_UNDECIDED",
+              "CORRECTION_NO_CHANGES",
+              "CORRECTION_REQUIRES_EXISTING_VALUE",
+              "DECISION_REQUIRED",
+              "PAYMENT_ALREADY_RECORDED",
+              "PAYMENT_NOT_RECORDED",
+              "DECISION_ALREADY_PAID",
+              "ZERO_DECISION_CANNOT_BE_PAID",
+              "RESOURCE_UNAVAILABLE",
+              "ACT_NOT_PERMITTED",
+              "LAST_OWNER",
+              "ACTOR_ALREADY_REGISTERED",
+              "ACTOR_UNKNOWN",
+              "HUMAN_PRINCIPAL_REQUIRED"
             ]
           },
           "action": {
@@ -3567,38 +3324,6 @@
         "required": [
           "code",
           "action"
-        ]
-      },
-      "Diagnostic.DECIMAL_FORMAT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "DECIMAL_FORMAT"
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "target": {
-            "$ref": "#/components/schemas/InputTarget"
-          },
-          "maximumIntegerDigits": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          },
-          "maximumFractionalDigits": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2147483647
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target",
-          "maximumIntegerDigits",
-          "maximumFractionalDigits"
         ]
       },
       "Diagnostic.IDEMPOTENCY_CONFLICT": {
@@ -3637,6 +3362,31 @@
           "target"
         ]
       },
+      "Diagnostic.INVALID_INPUT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "INVALID_INPUT"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InputIssue"
+            },
+            "minItems": 1,
+            "maxItems": 17
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "issues"
+        ]
+      },
       "Diagnostic.OPERATION_RESOLVED": {
         "type": "object",
         "additionalProperties": false,
@@ -3655,32 +3405,6 @@
           "code",
           "action",
           "target"
-        ]
-      },
-      "Diagnostic.PAGE_LIMIT_RANGE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "PAGE_LIMIT_RANGE"
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "target": {
-            "$ref": "#/components/schemas/InputTarget"
-          },
-          "maximumPageSize": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target",
-          "maximumPageSize"
         ]
       },
       "Diagnostic.REVISION_CONFLICT": {
@@ -3703,101 +3427,6 @@
           "code",
           "action",
           "actualRevision"
-        ]
-      },
-      "Diagnostic.TEXT_REQUIRED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "oneOf": [
-              {
-                "const": "TEXT_REQUIRED"
-              },
-              {
-                "const": "MALFORMED_UNICODE"
-              },
-              {
-                "const": "SURROUNDING_WHITESPACE"
-              },
-              {
-                "const": "CONTROL_CHARACTERS"
-              },
-              {
-                "const": "FORMATTING_CHARACTER"
-              },
-              {
-                "const": "REFERENCE_FORMAT"
-              },
-              {
-                "const": "COUNTRY_FORMAT"
-              },
-              {
-                "const": "PRINCIPAL_FORMAT"
-              },
-              {
-                "const": "CALENDAR_DATE_REQUIRED"
-              },
-              {
-                "const": "CHRONOLOGICAL_ORDER"
-              },
-              {
-                "const": "FUTURE_DATE"
-              },
-              {
-                "const": "CURRENCY_FORMAT"
-              },
-              {
-                "const": "OPERATION_ID_REQUIRED"
-              },
-              {
-                "const": "EXPECTED_REVISION_RANGE"
-              },
-              {
-                "const": "PAYMENT_CLEAR_REQUIRED"
-              },
-              {
-                "const": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-              }
-            ]
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "target": {
-            "$ref": "#/components/schemas/InputTarget"
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target"
-        ]
-      },
-      "Diagnostic.TOO_LONG": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "TOO_LONG"
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "target": {
-            "$ref": "#/components/schemas/InputTarget"
-          },
-          "maximumCharacters": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2147483647
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target",
-          "maximumCharacters"
         ]
       },
       "Empty": {
@@ -3956,19 +3585,11 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "oneOf": [
-              {
-                "const": "CORE_INTERNAL_ERROR"
-              },
-              {
-                "const": "CORE_STORE_INTEGRITY_ERROR"
-              },
-              {
-                "const": "CORE_SCHEMA_MISMATCH"
-              },
-              {
-                "const": "CORE_OPERATION_CONTENT_CONFLICT"
-              }
+            "enum": [
+              "CORE_INTERNAL_ERROR",
+              "CORE_STORE_INTEGRITY_ERROR",
+              "CORE_SCHEMA_MISMATCH",
+              "CORE_OPERATION_CONTENT_CONFLICT"
             ]
           },
           "action": {
@@ -4001,46 +3622,20 @@
         "additionalProperties": false,
         "properties": {
           "field": {
-            "oneOf": [
-              {
-                "const": "incidentDate"
-              },
-              {
-                "const": "incidentNotificationDate"
-              },
-              {
-                "const": "incidentCountry"
-              },
-              {
-                "const": "claimantName"
-              },
-              {
-                "const": "insurerName"
-              },
-              {
-                "const": "claimedAmount"
-              },
-              {
-                "const": "claimedCurrency"
-              },
-              {
-                "const": "caseReference"
-              },
-              {
-                "const": "paymentDecisionDate"
-              },
-              {
-                "const": "payableAmount"
-              },
-              {
-                "const": "payableCurrency"
-              },
-              {
-                "const": "paymentDate"
-              },
-              {
-                "const": "status"
-              }
+            "enum": [
+              "incidentDate",
+              "incidentNotificationDate",
+              "incidentCountry",
+              "claimantName",
+              "insurerName",
+              "claimedAmount",
+              "claimedCurrency",
+              "caseReference",
+              "paymentDecisionDate",
+              "payableAmount",
+              "payableCurrency",
+              "paymentDate",
+              "status"
             ]
           },
           "before": {
@@ -4393,13 +3988,9 @@
             "type": "string"
           },
           "detail": {
-            "oneOf": [
-              {
-                "const": "SUMMARY"
-              },
-              {
-                "const": "FULL"
-              }
+            "enum": [
+              "SUMMARY",
+              "FULL"
             ]
           },
           "cursor": {
@@ -4663,74 +4254,175 @@
           }
         ]
       },
-      "InputTarget": {
+      "InputIssue": {
         "oneOf": [
           {
-            "const": "incidentDate"
+            "$ref": "#/components/schemas/InputIssue.TEXT_REQUIRED"
           },
           {
-            "const": "incidentNotificationDate"
+            "$ref": "#/components/schemas/InputIssue.TOO_LONG"
           },
           {
-            "const": "incidentCountry"
+            "$ref": "#/components/schemas/InputIssue.DECIMAL_FORMAT"
           },
           {
-            "const": "claimantName"
-          },
-          {
-            "const": "insurerName"
-          },
-          {
-            "const": "claimedAmount"
-          },
-          {
-            "const": "claimedCurrency"
-          },
-          {
-            "const": "caseReference"
-          },
-          {
-            "const": "paymentDecisionDate"
-          },
-          {
-            "const": "payableAmount"
-          },
-          {
-            "const": "payableCurrency"
-          },
-          {
-            "const": "paymentDate"
-          },
-          {
-            "const": "payment"
-          },
-          {
-            "const": "operationId"
-          },
-          {
-            "const": "expectedRevision"
-          },
-          {
-            "const": "reason"
-          },
-          {
-            "const": "principal.kind"
-          },
-          {
-            "const": "principal.issuer"
-          },
-          {
-            "const": "principal.subject"
-          },
-          {
-            "const": "role"
-          },
-          {
-            "const": "limit"
-          },
-          {
-            "const": "cursor"
+            "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
+        ],
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "TEXT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "MALFORMED_UNICODE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "SURROUNDING_WHITESPACE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CONTROL_CHARACTERS": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "FORMATTING_CHARACTER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "REFERENCE_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "COUNTRY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CALENDAR_DATE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CHRONOLOGICAL_ORDER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "FUTURE_DATE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CURRENCY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "OPERATION_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "EXPECTED_REVISION_RANGE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
+            "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
+            "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
+          }
+        }
+      },
+      "InputIssue.DECIMAL_FORMAT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "DECIMAL_FORMAT"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumIntegerDigits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "maximumFractionalDigits": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumIntegerDigits",
+          "maximumFractionalDigits"
+        ]
+      },
+      "InputIssue.PAGE_LIMIT_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "PAGE_LIMIT_RANGE"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumPageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumPageSize"
+        ]
+      },
+      "InputIssue.TEXT_REQUIRED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "TEXT_REQUIRED",
+              "MALFORMED_UNICODE",
+              "SURROUNDING_WHITESPACE",
+              "CONTROL_CHARACTERS",
+              "FORMATTING_CHARACTER",
+              "REFERENCE_FORMAT",
+              "COUNTRY_FORMAT",
+              "PRINCIPAL_FORMAT",
+              "CALENDAR_DATE_REQUIRED",
+              "CHRONOLOGICAL_ORDER",
+              "FUTURE_DATE",
+              "CURRENCY_FORMAT",
+              "OPERATION_ID_REQUIRED",
+              "EXPECTED_REVISION_RANGE",
+              "PAYMENT_CLEAR_REQUIRED",
+              "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+            ]
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          }
+        },
+        "required": [
+          "code",
+          "field"
+        ]
+      },
+      "InputIssue.TOO_LONG": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "TOO_LONG"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "maximumCharacters": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumCharacters"
+        ]
+      },
+      "InputTarget": {
+        "enum": [
+          "incidentDate",
+          "incidentNotificationDate",
+          "incidentCountry",
+          "claimantName",
+          "insurerName",
+          "claimedAmount",
+          "claimedCurrency",
+          "caseReference",
+          "paymentDecisionDate",
+          "payableAmount",
+          "payableCurrency",
+          "paymentDate",
+          "payment",
+          "operationId",
+          "expectedRevision",
+          "reason",
+          "principal.kind",
+          "principal.issuer",
+          "principal.subject",
+          "role",
+          "limit",
+          "cursor"
         ]
       },
       "InstallationOffer": {
@@ -4758,22 +4450,12 @@
             "const": "AUTHORITY_ACT"
           },
           "act": {
-            "oneOf": [
-              {
-                "const": "REGISTER"
-              },
-              {
-                "const": "GRANT"
-              },
-              {
-                "const": "REVOKE"
-              },
-              {
-                "const": "ENABLE"
-              },
-              {
-                "const": "DISABLE"
-              }
+            "enum": [
+              "REGISTER",
+              "GRANT",
+              "REVOKE",
+              "ENABLE",
+              "DISABLE"
             ]
           }
         },
@@ -5431,13 +5113,9 @@
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "oneOf": [
-              {
-                "const": "HUMAN"
-              },
-              {
-                "const": "SERVICE"
-              }
+            "enum": [
+              "HUMAN",
+              "SERVICE"
             ]
           },
           "issuer": {
@@ -5481,25 +5159,13 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "act": {
-            "oneOf": [
-              {
-                "const": "PROVISION_OWNER"
-              },
-              {
-                "const": "REGISTER"
-              },
-              {
-                "const": "GRANT"
-              },
-              {
-                "const": "REVOKE"
-              },
-              {
-                "const": "ENABLE"
-              },
-              {
-                "const": "DISABLE"
-              }
+            "enum": [
+              "PROVISION_OWNER",
+              "REGISTER",
+              "GRANT",
+              "REVOKE",
+              "ENABLE",
+              "DISABLE"
             ]
           }
         },
@@ -5528,43 +5194,19 @@
             "maximum": 9007199254740991
           },
           "act": {
-            "oneOf": [
-              {
-                "const": "OPEN"
-              },
-              {
-                "const": "AMEND_REGISTRATION"
-              },
-              {
-                "const": "CORRECT"
-              },
-              {
-                "const": "DECIDE"
-              },
-              {
-                "const": "WITHDRAW_DECISION"
-              },
-              {
-                "const": "RECORD_PAYMENT"
-              },
-              {
-                "const": "CLEAR_PAYMENT"
-              },
-              {
-                "const": "CLOSE"
-              },
-              {
-                "const": "REOPEN"
-              },
-              {
-                "const": "VOID"
-              },
-              {
-                "const": "REINSTATE"
-              },
-              {
-                "const": "ERASE"
-              }
+            "enum": [
+              "OPEN",
+              "AMEND_REGISTRATION",
+              "CORRECT",
+              "DECIDE",
+              "WITHDRAW_DECISION",
+              "RECORD_PAYMENT",
+              "CLEAR_PAYMENT",
+              "CLOSE",
+              "REOPEN",
+              "VOID",
+              "REINSTATE",
+              "ERASE"
             ]
           },
           "snapshot": {

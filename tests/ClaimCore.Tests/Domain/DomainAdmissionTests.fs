@@ -68,7 +68,7 @@ let private payload =
         Expect.equal
             rejected
             (Error(
-                Refusal.InvalidInput(
+                Refusal.invalidInput (
                     (InputTarget.Field BusinessField.PaymentDecisionDate),
                     Violation.CalendarDateRequired
                 )

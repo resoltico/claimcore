@@ -2,7 +2,7 @@ import type { OperationReceipt, OperationReview } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
 import type { FormValues } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
-import { refusalPath } from "./operationForm";
+import { inputErrors, type FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
   id: string;
   token: string;
@@ -83,7 +83,7 @@ export type OperationState = {
   operation: OperationPhase;
   effects: ReadonlyArray<OperationEffect>;
   notice: Notice | null;
-  fieldError: string | null;
+  fieldErrors: FieldErrors;
   pendingDiscard: string | null;
 };
 export type OperationAction =
@@ -211,7 +211,7 @@ const edit = (
       operationId: source === null ? state.values["operationId"]! : action.id,
     },
     notice: null,
-    fieldError: null,
+    fieldErrors: {},
   };
 };
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
@@ -269,7 +269,7 @@ const preview = (
         effect: action.identity,
       },
       notice: null,
-      fieldError: null,
+      fieldErrors: {},
     },
     {
       kind: "PREVIEW",
@@ -349,7 +349,7 @@ const refuse = (
     ...state,
     operation,
     notice: action.notice,
-    fieldError: refusalPath(action.target, state.values),
+    fieldErrors: inputErrors(action.notice, action.target, state.values),
     disclosureRefused: action.disclosure,
   };
   return action.disclosure && action.identity !== undefined

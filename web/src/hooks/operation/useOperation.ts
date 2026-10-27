@@ -53,7 +53,7 @@ const fresh = (options: Options, kind = options.kind): OperationState => {
     },
     effects: [],
     notice: null,
-    fieldError: null,
+    fieldErrors: {},
     pendingDiscard: null,
   };
 };

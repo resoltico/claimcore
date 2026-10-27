@@ -86,9 +86,9 @@ it("readonly preview failure stays editable and cannot submit", async () => {
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
     response("operation.preview", "REJECTED", {
-      code: "TEXT_REQUIRED",
+      code: "INVALID_INPUT",
       action: "CORRECT_INPUT",
-      target: "caseReference",
+      issues: [{ field: "caseReference", code: "TEXT_REQUIRED" }],
     }),
   );
   render(editor({ current: null, initialAct: "OPEN" }));

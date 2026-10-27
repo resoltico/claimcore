@@ -81,6 +81,7 @@
   "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "This role requires a human principal.",
   "diagnostic.IDEMPOTENCY_CONFLICT": "This operation ID belongs to different act content. Do not reuse it.",
   "diagnostic.INVALID_CURSOR": "Use one pagination cursor returned by ClaimCore.",
+  "diagnostic.INVALID_INPUT": "Input problems: {issueCount}.",
   "diagnostic.LAST_OWNER": "At least one enabled human owner is required.",
   "diagnostic.MALFORMED_UNICODE": "Malformed Unicode is not accepted.",
   "diagnostic.NOT_VOIDED": "This case is not voided.",

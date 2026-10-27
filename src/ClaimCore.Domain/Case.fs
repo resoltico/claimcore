@@ -40,8 +40,9 @@ module private BusinessState =
     let private retained value =
         value
         |> Result.mapError (function
-            | Refusal.InvalidInput(field, violation) ->
-                RecordViolation.InvalidScalar(field, violation)
+            | Refusal.InvalidInput issues ->
+                let issue = InputIssues.head issues
+                RecordViolation.InvalidScalar(issue.Target, issue.Violation)
             | _ -> RecordViolation.InvalidProgress)
 
     let restore (accepted: CaseFields) =
@@ -61,18 +62,18 @@ module private BusinessState =
     let openCase (today: DateOnly) (facts: Registration) =
         result {
             do!
-                Validation.notFuture
-                    (InputTarget.Field BusinessField.IncidentDate)
-                    today
-                    facts.IncidentDate
-
-            do!
-                Validation.notFuture
-                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                    today
-                    facts.IncidentNotificationDate
-
-            do! Validation.assertedText None facts
+                Admission.collect
+                    [
+                        Validation.notFuture
+                            (InputTarget.Field BusinessField.IncidentDate)
+                            today
+                            facts.IncidentDate
+                        Validation.notFuture
+                            (InputTarget.Field BusinessField.IncidentNotificationDate)
+                            today
+                            facts.IncidentNotificationDate
+                        Validation.assertedText None facts
+                    ]
 
             return
                 {

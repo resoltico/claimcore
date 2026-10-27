@@ -26,13 +26,16 @@ module internal Queries =
 
     let private invalidLimit () =
         Outcome.Rejected(
-            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Paging.MaximumPageSize)
+            Refusal.invalidInput (
+                InputTarget.Limit,
+                Violation.PageLimitRange Paging.MaximumPageSize
+            )
         )
 
     let private parseReference value =
         CaseReference.parse value
         |> Result.mapError (fun violation ->
-            Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation))
+            Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
 
     let private currentActor principal actor =
         if Authority.validActor principal actor then
@@ -340,7 +343,10 @@ module internal Queries =
             if operation = Guid.Empty then
                 return
                     Outcome.Rejected(
-                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+                        Refusal.invalidInput (
+                            InputTarget.OperationId,
+                            Violation.OperationIdRequired
+                        )
                     )
             else
                 let! result =

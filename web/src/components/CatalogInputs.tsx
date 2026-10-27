@@ -14,8 +14,7 @@ type Props = {
   values: FormValues;
   current: CurrentCase | null;
   disabled: boolean;
-  errorPath: string | null;
-  errorNotice: Notice | null;
+  fieldErrors: Readonly<Record<string, Notice>>;
   onChange: (path: string, value: string | boolean) => void;
 };
 const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<string> => {
@@ -32,7 +31,7 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
     : input.kind.options.filter((mode) => group.some((value) => value === mode));
 };
 const inputError = (input: CatalogInput, props: Props) =>
-  props.errorPath === bindingPath(input) ? props.errorNotice : null;
+  props.fieldErrors[bindingPath(input)] ?? null;
 const descriptionIds = (input: CatalogInput, error: Notice | null) =>
   [
     input.meaningId === null ? null : `${input.identity}-meaning`,
@@ -74,7 +73,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
           }
           disabled={props.disabled}
           value={String(props.values[path] ?? "")}
-          aria-invalid={props.errorPath === path || undefined}
+          aria-invalid={props.fieldErrors[path] !== undefined || undefined}
           aria-describedby={descriptionIds(input, error)}
           onChange={(event) => {
             props.onChange(path, event.target.value);
@@ -128,7 +127,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         dir="auto"
         value={String(props.values[path] ?? "")}
         disabled={props.disabled}
-        aria-invalid={props.errorPath === path || undefined}
+        aria-invalid={props.fieldErrors[path] !== undefined || undefined}
         aria-describedby={descriptionIds(input, error)}
         onChange={(event) => {
           props.onChange(path, event.target.value);
@@ -152,7 +151,7 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
             name={path}
             disabled={props.disabled}
             checked={props.values[path] === true}
-            aria-invalid={props.errorPath === path || undefined}
+            aria-invalid={props.fieldErrors[path] !== undefined || undefined}
             aria-describedby={descriptionIds(input, error)}
             onChange={(event) => {
               props.onChange(path, event.target.checked);

@@ -81,6 +81,7 @@
   "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "يتطلب هذا الدور هوية شخص.",
   "diagnostic.IDEMPOTENCY_CONFLICT": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
   "diagnostic.INVALID_CURSOR": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
+  "diagnostic.INVALID_INPUT": "عدد مشكلات الإدخال: {issueCount}.",
   "diagnostic.LAST_OWNER": "يجب أن يبقى مالك بشري واحد مفعّل على الأقل.",
   "diagnostic.MALFORMED_UNICODE": "لا يُقبل Unicode غير السليم.",
   "diagnostic.NOT_VOIDED": "هذا الملف غير ملغى.",

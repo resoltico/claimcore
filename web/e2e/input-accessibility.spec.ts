@@ -14,7 +14,11 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
   if (!isResponse("operation.preview", value) || value.outcome.kind !== "REJECTED") {
     throw new Error("Expected authoritative input refusal.");
   }
-  expect(value.outcome.data).toMatchObject({ target, code, action: "CORRECT_INPUT" });
+  expect(value.outcome.data).toEqual({
+    code: "INVALID_INPUT",
+    action: "CORRECT_INPUT",
+    issues: [{ field: target, code }],
+  });
   await expect(control).toBeFocused();
   await expect(control).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByRole("dialog")).toHaveCount(0);

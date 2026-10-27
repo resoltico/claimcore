@@ -19,7 +19,7 @@ export const initial = (): OperationState => ({
   operation: { kind: "EDITING", exposed: null },
   effects: [],
   notice: null,
-  fieldError: null,
+  fieldErrors: {},
   pendingDiscard: null,
 });
 export const begin = (state = initial()) =>

@@ -49,7 +49,7 @@ module ContractDiscovery =
         let keys =
             [
                 yield!
-                    DiagnosticCodecs.definitions
+                    (DiagnosticCodecs.definitions @ DiagnosticCodecs.violationDefinitions)
                     |> List.map (fun definition -> "diagnostic." + definition.Id)
                 yield!
                     DiagnosticCodecs.faultDefinitions

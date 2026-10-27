@@ -317,23 +317,46 @@ module internal TextReply =
         ContractDiscovery.inputLabel (InteractionInput.Target target)
 
     let private refusalLines language refusal =
-        let code, parameters = DiagnosticCodecs.describe refusal
+        let render code parameters =
+            let arguments =
+                parameters
+                |> List.map (fun (name, value) -> name, number (int64 value))
+                |> Map.ofList
 
-        let arguments =
-            parameters
-            |> List.map (fun (name, value) -> name, number (int64 value))
-            |> Map.ofList
+            MessageCatalogs.render language ("diagnostic." + code) arguments
 
-        let message = MessageCatalogs.render language ("diagnostic." + code) arguments
+        let messages =
+            match refusal with
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.map (fun issue ->
+                    let code, parameters = DiagnosticCodecs.describeIssue issue
 
-        let message =
-            match Refusals.target refusal with
-            | None -> message
-            | Some target -> label language (diagnosticTargetIdentity target) + ": " + message
+                    label language (diagnosticTargetIdentity issue.Target)
+                    + ": "
+                    + render code parameters)
+            | refusal ->
+                let code, parameters = DiagnosticCodecs.describe refusal
+                let message = render code parameters
 
-        [
-            message
-            line language (CliMessages.key CliMessage.CodeLabel) code
+                match refusal with
+                | Refusal.InvalidCursor ->
+                    [
+                        label language (diagnosticTargetIdentity InputTarget.Cursor)
+                        + ": "
+                        + message
+                    ]
+                | Refusal.OperationResolved ->
+                    [
+                        label language (diagnosticTargetIdentity InputTarget.OperationId)
+                        + ": "
+                        + message
+                    ]
+                | _ -> [ message ]
+
+        messages
+        @ [
+            line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)

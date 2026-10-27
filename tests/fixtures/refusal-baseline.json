@@ -1,5 +1,5 @@
 {
-  "source": "Hand-authored refusal actions and targets for the derived vocabulary.",
+  "source": "Hand-authored refusal actions and input-issue field/code witnesses; INVALID_INPUT envelopes preserve each independent expected violation.",
   "observations": [
     {
       "code": "RESOURCE_UNAVAILABLE",
@@ -92,14 +92,24 @@
       "target": null
     },
     {
-      "code": "EXPECTED_REVISION_RANGE",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "expectedRevision"
+      "issues": [
+        {
+          "field": "expectedRevision",
+          "code": "EXPECTED_REVISION_RANGE"
+        }
+      ]
     },
     {
-      "code": "OPERATION_ID_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "operationId"
+      "issues": [
+        {
+          "field": "operationId",
+          "code": "OPERATION_ID_REQUIRED"
+        }
+      ]
     },
     {
       "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -112,14 +122,24 @@
       "target": null
     },
     {
-      "code": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "payment"
+      "issues": [
+        {
+          "field": "payment",
+          "code": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "PAYMENT_CLEAR_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "payment"
+      "issues": [
+        {
+          "field": "payment",
+          "code": "PAYMENT_CLEAR_REQUIRED"
+        }
+      ]
     },
     {
       "code": "HUMAN_PRINCIPAL_REQUIRED",
@@ -127,99 +147,198 @@
       "target": null
     },
     {
-      "code": "CALENDAR_DATE_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "incidentDate"
+      "issues": [
+        {
+          "field": "incidentDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "CALENDAR_DATE_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "incidentNotificationDate"
+      "issues": [
+        {
+          "field": "incidentNotificationDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "CALENDAR_DATE_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "paymentDate"
+      "issues": [
+        {
+          "field": "paymentDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "CALENDAR_DATE_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "paymentDecisionDate"
+      "issues": [
+        {
+          "field": "paymentDecisionDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "REFERENCE_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "caseReference"
+      "issues": [
+        {
+          "field": "caseReference",
+          "code": "REFERENCE_FORMAT"
+        }
+      ]
     },
     {
-      "code": "CONTROL_CHARACTERS",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "CONTROL_CHARACTERS"
+        }
+      ]
     },
     {
-      "code": "COUNTRY_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "incidentCountry"
+      "issues": [
+        {
+          "field": "incidentCountry",
+          "code": "COUNTRY_FORMAT"
+        }
+      ]
     },
     {
-      "code": "CURRENCY_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimedCurrency"
+      "issues": [
+        {
+          "field": "claimedCurrency",
+          "code": "CURRENCY_FORMAT"
+        }
+      ]
     },
     {
-      "code": "CURRENCY_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "payableCurrency"
+      "issues": [
+        {
+          "field": "payableCurrency",
+          "code": "CURRENCY_FORMAT"
+        }
+      ]
     },
     {
-      "code": "CHRONOLOGICAL_ORDER",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "incidentNotificationDate"
+      "issues": [
+        {
+          "field": "incidentNotificationDate",
+          "code": "CHRONOLOGICAL_ORDER"
+        }
+      ]
     },
     {
-      "code": "DECIMAL_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimedAmount"
+      "issues": [
+        {
+          "field": "claimedAmount",
+          "code": "DECIMAL_FORMAT"
+        }
+      ]
     },
     {
-      "code": "DECIMAL_FORMAT",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "payableAmount"
+      "issues": [
+        {
+          "field": "payableAmount",
+          "code": "DECIMAL_FORMAT"
+        }
+      ]
     },
     {
-      "code": "FUTURE_DATE",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "incidentDate"
+      "issues": [
+        {
+          "field": "incidentDate",
+          "code": "FUTURE_DATE"
+        },
+        {
+          "field": "incidentNotificationDate",
+          "code": "FUTURE_DATE"
+        }
+      ]
     },
     {
-      "code": "MALFORMED_UNICODE",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "MALFORMED_UNICODE"
+        }
+      ]
     },
     {
-      "code": "SURROUNDING_WHITESPACE",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "SURROUNDING_WHITESPACE"
+        }
+      ]
     },
     {
-      "code": "TEXT_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "TEXT_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "insurerName"
+      "issues": [
+        {
+          "field": "insurerName",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "TEXT_REQUIRED",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "reason"
+      "issues": [
+        {
+          "field": "reason",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
     },
     {
-      "code": "TOO_LONG",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "TOO_LONG"
+        }
+      ]
     },
     {
       "code": "LAST_OWNER",
@@ -242,14 +361,69 @@
       "target": "cursor"
     },
     {
-      "code": "PAGE_LIMIT_RANGE",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "limit"
+      "issues": [
+        {
+          "field": "limit",
+          "code": "PAGE_LIMIT_RANGE"
+        }
+      ]
     },
     {
-      "code": "FORMATTING_CHARACTER",
+      "code": "INVALID_INPUT",
       "action": "CorrectInput",
-      "target": "claimantName"
+      "issues": [
+        {
+          "field": "claimantName",
+          "code": "FORMATTING_CHARACTER"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "principal.issuer",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "principal.issuer",
+          "code": "PRINCIPAL_FORMAT"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "principal.subject",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "principal.subject",
+          "code": "PRINCIPAL_FORMAT"
+        }
+      ]
+    },
+    {
+      "code": "OPERATION_RESOLVED",
+      "action": "ReadCurrent",
+      "target": "operationId"
     }
   ]
 }

@@ -185,69 +185,59 @@ module Authority =
         else
             None
 
+    let private operationIdentity operationId =
+        if operationId = Guid.Empty then
+            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
+        else
+            Ok()
+
+    let private scopeReference =
+        function
+        | AuthorityAct.Grant {
+                                 Scope = GrantTarget.CaseReference reference
+                             }
+        | AuthorityAct.Revoke {
+                                  Scope = GrantTarget.CaseReference reference
+                              } ->
+            CaseReference.parse reference
+            |> Result.map ignore
+            |> Result.mapError (fun violation ->
+                Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
+        | _ -> Ok()
+
     let private command operationId target act =
-        result {
-            if operationId = Guid.Empty then
-                return!
-                    Error(
-                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
-                    )
-            else
-                let reference =
-                    match act with
-                    | AuthorityAct.Grant {
-                                             Role = _
-                                             Scope = GrantTarget.CaseReference reference
-                                         }
-                    | AuthorityAct.Revoke {
-                                              Role = _
-                                              Scope = GrantTarget.CaseReference reference
-                                          } -> Some reference
-                    | _ -> None
-
-                do!
-                    reference
-                    |> Option.map (
-                        CaseReference.parse
-                        >> Result.map ignore
-                        >> Result.mapError (fun violation ->
-                            Refusal.InvalidInput(
-                                InputTarget.Field BusinessField.CaseReference,
-                                violation
-                            ))
-                    )
-                    |> Option.defaultValue (Ok())
-
-                return
-                    {
-                        Id = operationId
-                        Principal = target
-                        Action = act
-                    }
-        }
+        Admission.map2
+            (fun () () ->
+                {
+                    Id = operationId
+                    Principal = target
+                    Action = act
+                })
+            (operationIdentity operationId)
+            (scopeReference act)
 
     /// Restores structurally parsed permanent inputs without current authorization decisions.
     let restore operationId target (act: ValidAuthorityAct) = command operationId target act
 
     let parse (request: AuthorityRequest) =
-        result {
-            let! target =
-                PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
-
-            let grant (value: AuthoredGrant) =
-                Ok
+        match request.Act with
+        | AuthorityAct.ProvisionOwner -> Error Refusal.ActNotPermitted
+        | act ->
+            Admission.map2
+                (fun target () ->
                     {
-                        AuthoredGrant.Role = value.Role
-                        Scope = value.Scope
-                    }
-
-            let! act =
-                match request.Act with
-                | AuthorityAct.ProvisionOwner -> Error Refusal.ActNotPermitted
-                | act -> AuthorityAct.traverse grant act
-
-            return! command request.OperationId target act
-        }
+                        Id = request.OperationId
+                        Principal = target
+                        Action = act
+                    })
+                (Admission.map2
+                    (fun () target -> target)
+                    (operationIdentity request.OperationId)
+                    (PrincipalKey.ofKind
+                        request.Target.Kind
+                        request.Target.Issuer
+                        request.Target.Subject))
+                (scopeReference act)
 
     let provision operationId target =
         command operationId target AuthorityAct.ProvisionOwner

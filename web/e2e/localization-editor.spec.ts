@@ -103,10 +103,10 @@ const policyRefusal = async (page: Page, requests: string[]) => {
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
-      expect(outcome.data).toMatchObject({
-        code: "TOO_LONG",
-        target: "claimantName",
-        maximumCharacters: 200,
+      expect(outcome.data).toEqual({
+        code: "INVALID_INPUT",
+        action: "CORRECT_INPUT",
+        issues: [{ field: "claimantName", code: "TOO_LONG", maximumCharacters: 200 }],
       });
     }
     await selectLanguage(page, "lv");

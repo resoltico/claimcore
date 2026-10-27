@@ -106,9 +106,9 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
     response("operation.preview", "REJECTED", {
-      code: "TEXT_REQUIRED",
+      code: "INVALID_INPUT",
       action: "CORRECT_INPUT",
-      target: "claimantName",
+      issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
     }),
   );
   await waitFor(() => {
@@ -116,9 +116,17 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   });
   expect(name).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");
+  expect(screen.getByRole("alert")).toHaveTextContent("Ievades kļūdu skaits: 1.");
+  expect(name).toHaveAccessibleDescription(
+    "Prasījumu iesniegušās personas vārds vai uzņēmuma nosaukums.Līdz 200 rakstzīmēm. Nepieciešama netukša vērtība.",
+  );
   const alert = screen.getByRole("alert").textContent;
   await user.selectOptions(languageControl(), "en");
   expect(screen.getByRole("alert").textContent).not.toBe(alert);
-  expect(screen.getByRole("alert")).toHaveTextContent("A non-blank value is required.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Input problems: 1.");
+  expect(name).toHaveAccessibleDescription(
+    "Name of the person or company making the claim.Up to 200 characters. A non-blank value is required.",
+  );
+  expect(name).toHaveAttribute("aria-invalid", "true");
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

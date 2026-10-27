@@ -238,7 +238,10 @@ module internal Projections =
                 (CaseReference.parse
                  >> Result.map ignore
                  >> Result.mapError (fun violation ->
-                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                     Refusal.invalidInput (
+                         InputTarget.Field BusinessField.CaseReference,
+                         violation
+                     )))
                     reference
                 |> Result.isOk
                 ->

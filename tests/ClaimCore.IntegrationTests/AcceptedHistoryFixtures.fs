@@ -174,7 +174,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         Expect.equal
             changed.Outcome
             (ExecuteResult.Rejected(
-                (Refusal.InvalidInput(
+                (Refusal.invalidInput (
                     (InputTarget.Field BusinessField.ClaimantName),
                     (Violation.TooLong 200)
                 ))

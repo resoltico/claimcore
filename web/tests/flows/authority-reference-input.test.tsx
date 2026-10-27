@@ -62,9 +62,9 @@ const rejectedPreview = () =>
         outcome: {
           kind: "REJECTED",
           data: {
-            code: "REFERENCE_FORMAT",
+            code: "INVALID_INPUT",
             action: "CORRECT_INPUT",
-            target: "caseReference",
+            issues: [{ field: "caseReference", code: "REFERENCE_FORMAT" }],
           },
         },
       },

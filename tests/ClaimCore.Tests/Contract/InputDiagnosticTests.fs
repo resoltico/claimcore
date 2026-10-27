@@ -22,9 +22,28 @@ let private principal () =
                 "https://issuer.example/", "", InputTarget.PrincipalSubject, Violation.TextRequired
                 "secret-canary", "synthetic", InputTarget.PrincipalIssuer, Violation.PrincipalFormat
             ] do
+            let expected =
+                if issuer = "" && subject = "" then
+                    [
+                        {
+                            Target = InputTarget.PrincipalIssuer
+                            Violation = Violation.TextRequired
+                        }
+                        {
+                            Target = InputTarget.PrincipalSubject
+                            Violation = Violation.TextRequired
+                        }
+                    ]
+                else
+                    [ { Target = target; Violation = issue } ]
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput
+                |> Error
+
             Expect.equal
                 (PrincipalKey.ofKind kind issuer subject)
-                (Error(Refusal.InvalidInput(target, issue)))
+                expected
                 "Pure admission preserves cause without input"
 
 let private localDiagnostics () =

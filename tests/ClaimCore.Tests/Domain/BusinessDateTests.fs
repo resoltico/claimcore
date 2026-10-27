@@ -15,7 +15,7 @@ let private applyAt date act claim =
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
-        (Error(Refusal.InvalidInput(field, Violation.FutureDate)))
+        (Error(Refusal.invalidInput (field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
 
 let private amendmentRetainsDates =

@@ -51,7 +51,7 @@ module CatalogValidation =
             then
                 matches key Set.empty
 
-        for definition in DiagnosticCodecs.definitions do
+        for definition in (DiagnosticCodecs.definitions @ DiagnosticCodecs.violationDefinitions) do
             matches
                 ("diagnostic." + definition.Id)
                 (definition.Parameters |> List.map _.Name |> Set.ofList)

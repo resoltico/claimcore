@@ -7,10 +7,10 @@ import { catalogs } from "@contracts/messages";
 import { preferenceKey } from "../../src/presentation/preferences";
 import type { Notice } from "../../src/protocol/notices";
 
-const error: Notice = {
-  kind: "diagnostic",
-  diagnostic: { code: "PRINCIPAL_FORMAT", action: "CORRECT_INPUT", target: "principal.issuer" },
-};
+const error = (field: "issuer" | "subject"): Notice => ({
+  kind: "issues",
+  issues: [{ field: `principal.${field}`, code: "PRINCIPAL_FORMAT" }],
+});
 const preferences = (language: "en" | "lv" | "ar") => {
   localStorage.setItem(
     preferenceKey,
@@ -24,13 +24,15 @@ it.each(["en", "lv", "ar"] as const)(
     const user = userEvent.setup();
     const values = initialOperationValues("AUTHORITY", "REGISTER", null);
     const props = { values, current: null, disabled: false, onChange: vi.fn() };
-    const view = render(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
+    const view = render(<CatalogInputs {...props} fieldErrors={{}} />);
     for (const field of ["issuer", "subject"] as const) {
       const name = catalogs[language][`field.principal.${field}.label`];
       const input = screen.getByRole("textbox", { name });
       const meaning = catalogs[language][`field.principal.${field}.meaning`];
       expect(input).toHaveAccessibleDescription(meaning);
-      view.rerender(<CatalogInputs {...props} errorPath={`target.${field}`} errorNotice={error} />);
+      view.rerender(
+        <CatalogInputs {...props} fieldErrors={{ [`target.${field}`]: error(field) }} />,
+      );
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(
         `${meaning} ${catalogs[language]["diagnostic.PRINCIPAL_FORMAT"]}`,
@@ -38,7 +40,7 @@ it.each(["en", "lv", "ar"] as const)(
       expect(input).toHaveAttribute("aria-invalid", "true");
       await user.click(screen.getByText(name, { exact: true, selector: "label" }));
       expect(input).toHaveFocus();
-      view.rerender(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
+      view.rerender(<CatalogInputs {...props} fieldErrors={{}} />);
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(meaning);
       expect(input).not.toHaveAttribute("aria-invalid");
@@ -55,8 +57,7 @@ it.each(["en", "lv", "ar"] as const)(
         values={initialOperationValues("CASE", "CORRECT", null)}
         current={null}
         disabled={false}
-        errorPath={null}
-        errorNotice={null}
+        fieldErrors={{}}
         onChange={vi.fn()}
       />,
     );

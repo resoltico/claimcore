@@ -72,22 +72,31 @@ let private refused () =
 
 let private replies () =
     let reason =
-        Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.TooLong 512)
+        Refusal.invalidInput (InputTarget.PrincipalSubject, Violation.TooLong 512)
 
     let bytes, code = Replies.authority (ProvisionOwnerOutcome.Rejected reason)
     use document = JsonDocument.Parse(bytes: byte array)
     Expect.equal code 2 "A refusal uses the shared rejected exit"
     Expect.equal (document.RootElement.GetProperty("kind").GetString()) "REJECTED" "Literal outcome"
     let diagnostic = document.RootElement.GetProperty("diagnostic")
-    Expect.equal (diagnostic.GetProperty("code").GetString()) "TOO_LONG" "The cause is retained"
 
     Expect.equal
-        (diagnostic.GetProperty("target").GetString())
+        (diagnostic.GetProperty("code").GetString())
+        "INVALID_INPUT"
+        "The refusal envelope is retained"
+
+    let issues = diagnostic.GetProperty("issues").EnumerateArray() |> Seq.toList
+    Expect.hasLength issues 1 "Every owner input issue is retained"
+    let issue = List.head issues
+    Expect.equal (issue.GetProperty("code").GetString()) "TOO_LONG" "The cause is retained"
+
+    Expect.equal
+        (issue.GetProperty("field").GetString())
         "principal.subject"
         "The input target is retained"
 
     Expect.equal
-        (diagnostic.GetProperty("maximumCharacters").GetInt32())
+        (issue.GetProperty("maximumCharacters").GetInt32())
         512
         "Typed parameters are retained"
 

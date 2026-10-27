@@ -17,7 +17,8 @@ module MessageGeneration =
         [
             for family, definitions in
                 [
-                    "diagnostic", DiagnosticCodecs.definitions
+                    "diagnostic",
+                    (DiagnosticCodecs.definitions @ DiagnosticCodecs.violationDefinitions)
                     "fault", DiagnosticCodecs.faultDefinitions
                 ] do
                 for definition in definitions do

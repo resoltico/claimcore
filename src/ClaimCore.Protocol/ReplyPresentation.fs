@@ -44,16 +44,6 @@ module Refusals =
         | Refusal.ActorUnknown
         | Refusal.HumanPrincipalRequired -> RecommendedAction.NoneRequired
 
-    let target =
-        function
-        | Refusal.InvalidInput(target, _) -> Some target
-        | Refusal.InvalidCursor -> Some InputTarget.Cursor
-        | Refusal.OperationResolved -> Some InputTarget.OperationId
-        | _ -> None
-
-    let field refusal =
-        target refusal |> Option.map InputTarget.token
-
     let actualRevision =
         function
         | Refusal.RevisionConflict revision -> Some revision
@@ -70,7 +60,6 @@ module RecommendedAction =
 [<AutoOpen>]
 module RefusalProperties =
     type Refusal with
-        member this.Field = Refusals.field this
         member this.ActualRevision = Refusals.actualRevision this
         member this.Action = Refusals.action this
 

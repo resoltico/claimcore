@@ -293,7 +293,14 @@ let private businessFormatRefusals () =
             | Ok {
                      Outcome = ExecuteResult.Rejected value
                  } ->
-                Expect.equal value.Field (Some field) "The malformed business field is identified."
+                match value with
+                | Refusal.InvalidInput issues ->
+                    let fields =
+                        InputIssues.toList issues
+                        |> List.map (fun issue -> InputTarget.token issue.Target)
+
+                    Expect.equal fields [ field ] "The malformed business field is identified."
+                | _ -> failtest "Malformed business format must produce input issues."
             | _ -> failtest "Malformed business format must produce a typed rejection."
     }
     |> _.GetAwaiter().GetResult()

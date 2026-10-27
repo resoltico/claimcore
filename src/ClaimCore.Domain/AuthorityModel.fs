@@ -48,7 +48,7 @@ module PrincipalKey =
 
     let ofKind kind issuerValue subject =
         let issue target value =
-            Refusal.InvalidInput(
+            Refusal.invalidInput (
                 target,
                 if String.IsNullOrWhiteSpace value then
                     Violation.TextRequired
@@ -61,13 +61,25 @@ module PrincipalKey =
             | PrincipalKind.Human -> MaximumHumanSubjectCharacters
             | PrincipalKind.Service -> MaximumServiceSubjectCharacters
 
-        match isIssuer issuerValue, identifier maximum subject with
-        | false, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
-        | _, false -> Error(issue InputTarget.PrincipalSubject subject)
-        | true, true ->
-            match kind with
-            | PrincipalKind.Human -> Ok(HumanPrincipal(issuerValue, subject))
-            | PrincipalKind.Service -> Ok(ServicePrincipal(issuerValue, subject))
+        let validIssuer =
+            if isIssuer issuerValue then
+                Ok()
+            else
+                Error(issue InputTarget.PrincipalIssuer issuerValue)
+
+        let validSubject =
+            if identifier maximum subject then
+                Ok()
+            else
+                Error(issue InputTarget.PrincipalSubject subject)
+
+        Admission.map2
+            (fun () () ->
+                match kind with
+                | PrincipalKind.Human -> HumanPrincipal(issuerValue, subject)
+                | PrincipalKind.Service -> ServicePrincipal(issuerValue, subject))
+            validIssuer
+            validSubject
 
     let human issuerValue subject =
         ofKind PrincipalKind.Human issuerValue subject

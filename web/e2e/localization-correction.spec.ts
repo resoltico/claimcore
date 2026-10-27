@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import type { ServiceResponse } from "../src/protocol/types";
 import { openAuthenticated } from "./session-helpers";
 import { inputMessage } from "./input-accessibility-messages";
 import {
@@ -103,6 +104,16 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   await expect(payment).not.toHaveAttribute("aria-invalid");
   await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
 };
+const expectCorrectionIssue = (reply: ServiceResponse<"operation.preview">, code: string) => {
+  expect(reply.outcome.kind).toBe("REJECTED");
+  if (reply.outcome.kind === "REJECTED") {
+    expect(reply.outcome.data.code).toBe("INVALID_INPUT");
+    if (reply.outcome.data.code !== "INVALID_INPUT") {
+      throw new Error("Expected authoritative correction input issues.");
+    }
+    expect(reply.outcome.data.issues).toEqual([{ field: "payment", code }]);
+  }
+};
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
     for (const [registration, decision, payment, refusal] of outcomes) {
@@ -143,10 +154,7 @@ for (const status of ["CLOSED"] as const) {
             ),
           ).toBe(true);
         } else {
-          expect(captured.reply.outcome.kind).toBe("REJECTED");
-          if (captured.reply.outcome.kind === "REJECTED") {
-            expect(captured.reply.outcome.data.code).toBe(refusal);
-          }
+          expectCorrectionIssue(captured.reply, refusal);
           await expect(page.getByRole("alert")).toBeVisible();
           await expectPaymentGuidance(page, refusal);
           expect(await currentCase(page, reference)).toEqual(before);

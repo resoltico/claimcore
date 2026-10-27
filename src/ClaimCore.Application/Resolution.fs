@@ -38,7 +38,10 @@ module internal Resolution =
             if request.OperationId = Guid.Empty then
                 return
                     Outcome.Rejected(
-                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+                        Refusal.invalidInput (
+                            InputTarget.OperationId,
+                            Violation.OperationIdRequired
+                        )
                     )
             else
                 let! result =

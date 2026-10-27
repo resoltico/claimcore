@@ -123,8 +123,23 @@ let private retainedHistory (database: PostgresFixture.Database) =
             "REJECTED"
             "Changed assertion refused"
 
+        let diagnostic = refusal.GetProperty("data")
+
         Expect.equal
-            (refusal.GetProperty("data").GetProperty("code").GetString())
+            (diagnostic.GetProperty("code").GetString())
+            "INVALID_INPUT"
+            "Current input is rejected"
+
+        let issues = diagnostic.GetProperty("issues").EnumerateArray() |> Seq.toList
+        Expect.hasLength issues 1 "Only the changed assertion is invalid"
+
+        Expect.equal
+            (issues[0].GetProperty("field").GetString())
+            "claimantName"
+            "Changed assertion is identified"
+
+        Expect.equal
+            (issues[0].GetProperty("code").GetString())
             "TOO_LONG"
             "Current policy owns the refusal"
 

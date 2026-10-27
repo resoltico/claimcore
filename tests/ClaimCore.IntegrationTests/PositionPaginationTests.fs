@@ -576,7 +576,7 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
 
         Expect.equal
             invalidLimit
-            (Outcome.Rejected(Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange 50)))
+            (Outcome.Rejected(Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange 50)))
             "Public grant page is bounded"
     }
 
