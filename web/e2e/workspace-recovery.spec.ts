@@ -1,3 +1,5 @@
+import { inputMessage } from "./input-accessibility-messages";
+import { expectInputRefusal } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -43,7 +45,10 @@ test("authority input refusal preserves authored bytes and requires fresh review
     action: "CORRECT_INPUT",
     issues: [{ field: "principal.issuer", code: "TEXT_REQUIRED" }],
   });
-  await expect(page.getByRole("alert")).toContainText("A non-blank value is required.");
+  await expectInputRefusal(page, page.locator('[name="target.issuer"]'), "en", {
+    meaning: inputMessage("en", "field.principal.issuer.meaning"),
+    issue: "A non-blank value is required.",
+  });
   await expect(page.locator('[name="target.issuer"]')).toBeFocused();
   await expect(page.locator('[name="target.subject"]')).toHaveValue(/^repair-/u);
   await page.locator('[name="target.issuer"]').fill("https://issuer.example/");

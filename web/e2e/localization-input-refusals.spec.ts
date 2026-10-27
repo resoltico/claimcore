@@ -1,3 +1,4 @@
+import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
@@ -80,9 +81,10 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expectBusinessFormatRefusal(page, name, diagnostic, () =>
         page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
       );
-      await expect(page.getByRole("alert")).toContainText(
-        businessFormatRefusalText[diagnostic][language],
-      );
+      await expectInputRefusal(page, page.locator(`input[data-field-name="${name}"]`), language, {
+        meaning: issueMeanings[language][name],
+        issue: businessFormatRefusalText[diagnostic][language],
+      });
       await expect(page.locator(`input[data-field-name="${name}"]`)).toBeFocused();
       await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveAttribute(
         "aria-invalid",
