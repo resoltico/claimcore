@@ -6,8 +6,6 @@ type RecommendedAction =
     | CorrectInput
     | ReadCurrent
     | RetrySafe
-    | ReplayExact
-    | Reauthenticate
     | StopAndInvestigate
     | NoneRequired
 

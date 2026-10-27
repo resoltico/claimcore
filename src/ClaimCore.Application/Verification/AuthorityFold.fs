@@ -6,6 +6,19 @@ open System
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
+[<NoEquality; NoComparison>]
+type internal AuthorityFoldContext =
+    {
+        InstallationId: Guid
+        CaseExists: Guid -> bool
+    }
+
+type internal AuthorityFoldTarget =
+    {
+        ActorId: Guid
+        Principal: PrincipalKey
+    }
+
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
 
@@ -109,14 +122,17 @@ module internal AuthorityFold =
         }
 
     let private grant
-        installationId
-        caseExists
+        (context: AuthorityFoldContext)
         (entry: StoredEntry)
         (actor: ActorAuthority)
-        role
-        scope
+        (value: AuthoredGrant)
         active
         =
+        let installationId = context.InstallationId
+        let caseExists = context.CaseExists
+        let role = value.Role
+        let scope = value.Scope
+
         result {
             do!
                 require
@@ -143,14 +159,15 @@ module internal AuthorityFold =
         }
 
     let private action
-        installationId
-        caseExists
+        (context: AuthorityFoldContext)
         (actors: Map<Guid, ActorAuthority>)
         (entry: StoredEntry)
-        id
-        principal
+        (subject: AuthorityFoldTarget)
         request
         =
+        let id = subject.ActorId
+        let principal = subject.Principal
+
         match request.Act with
         | AuthorityAct.ProvisionOwner -> register actors entry id principal true
         | AuthorityAct.Register -> register actors entry id principal false
@@ -181,7 +198,7 @@ module internal AuthorityFold =
 
             target actors entry id principal
             |> Result.bind (fun actor ->
-                grant installationId caseExists entry actor value.Role value.Scope active
+                grant context entry actor value active
                 |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply
@@ -211,7 +228,16 @@ module internal AuthorityFold =
                 else
                     executor actors entry true true
 
-            let! next = action installationId caseExists actors entry id principal request
+            let! next =
+                action
+                    {
+                        InstallationId = installationId
+                        CaseExists = caseExists
+                    }
+                    actors
+                    entry
+                    { ActorId = id; Principal = principal }
+                    request
 
             do!
                 require

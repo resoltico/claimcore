@@ -39,8 +39,10 @@ let private serviceCases (admin: ServiceContext) principal =
                     admin
                     (id (420 + number))
                     principal
-                    Role.CaseReader
-                    (GrantTarget.CaseReference reference)
+                    {
+                        Role = Role.CaseReader
+                        Scope = (GrantTarget.CaseReference reference)
+                    }
                     true
 
             acceptedAuthority assigned

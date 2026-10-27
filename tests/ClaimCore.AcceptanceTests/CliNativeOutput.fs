@@ -30,8 +30,10 @@ let private run
             directory
             fixture.Cli
             command
-            destination
-            environment
+            {
+                Destination = destination
+                Environment = environment
+            }
             source
 
     {

@@ -17,6 +17,10 @@
     <Compile Include="Architecture/NegativeFixtures.fs" />
     <Compile Include="Architecture/OwnershipFixtures.fs" />
     <Compile Include="Architecture/CompilerModel.fs" />
+    <Compile Include="Architecture/ProductModel.fs" />
+    <Compile Include="Architecture/DeclarationFixtures.fs" />
+    <Compile Include="Architecture/ProductDeclarationTests.fs" />
+    <Compile Include="Architecture/StructuralTypeTests.fs" />
     <Compile Include="Architecture/DomainOwnershipTests.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
@@ -30,6 +34,8 @@
     <Compile Include="Contract/WireRequestTests.fs" />
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
+    <Compile Include="Contract/WireSeedCorpus.fs" />
+    <Compile Include="Contract/WireValueGenerators.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
@@ -64,12 +70,18 @@
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
     <Compile Include="Domain/CaseReferenceIdTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/StoreContractReads.fs" Link="Application/StoreContractReads.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/LedgerWriteContract.fs" Link="Application/LedgerWriteContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/CaseDisclosureContract.fs" Link="Application/CaseDisclosureContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
     <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
+    <Compile Include="Application/AuthorityPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
@@ -83,6 +95,9 @@
     <Compile Include="Contract/HttpContractBehaviorTests.fs" />
     <Compile Include="Cli/RegistryFrameTests.fs" />
     <Compile Include="Cli/FrameSchemaTests.fs" />
+    <Compile Include="Contract/ContractScenarioInputs.fs" />
+    <Compile Include="Contract/OutcomeContractScenarios.fs" />
+    <Compile Include="Contract/InputContractScenarios.fs" />
     <Compile Include="Contract/ContractTests.fs" />
     <Compile Include="Contract/PayloadBudgetTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
@@ -95,6 +110,8 @@
     <Compile Include="Cli/CliReplyFixtures.fs" />
     <Compile Include="Cli/HistoryReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
+    <Compile Include="Cli/TransportFailureScenarios.fs" />
+    <Compile Include="Cli/TransportBodyScenarios.fs" />
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
@@ -108,6 +125,7 @@
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />
     <Compile Include="Contract/InputDiagnosticTests.fs" />
+    <Compile Include="Contract/RetiredVocabularyTests.fs" />
     <Compile Include="Contract/DiagnosticRegistryTests.fs" />
     <Compile Include="Cli/StandardSinkTests.fs" />
     <Compile Include="Support/DocumentationChecks.fs" />

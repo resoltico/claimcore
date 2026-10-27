@@ -70,8 +70,8 @@ const refused = (): Extract<
   { kind: "hostFailure" }
 > => ({
   kind: "hostFailure",
-  status: 403,
-  failure: { code: "SESSION_FORBIDDEN", phase: "NOT_STARTED" },
+  status: 401,
+  failure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
 });
 const finishRead = (complete: () => void) => act(() => Promise.resolve().then(complete));
 const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({

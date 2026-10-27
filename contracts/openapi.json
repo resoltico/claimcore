@@ -1239,22 +1239,6 @@
                           "additionalProperties": false,
                           "properties": {
                             "code": {
-                              "const": "SESSION_FORBIDDEN"
-                            },
-                            "phase": {
-                              "const": "NOT_STARTED"
-                            }
-                          },
-                          "required": [
-                            "code",
-                            "phase"
-                          ]
-                        },
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
                               "const": "ANTIFORGERY_REJECTED"
                             },
                             "phase": {
@@ -4098,22 +4082,6 @@
             "properties": {
               "code": {
                 "const": "SESSION_REJECTED"
-              },
-              "phase": {
-                "const": "NOT_STARTED"
-              }
-            },
-            "required": [
-              "code",
-              "phase"
-            ]
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "code": {
-                "const": "SESSION_FORBIDDEN"
               },
               "phase": {
                 "const": "NOT_STARTED"

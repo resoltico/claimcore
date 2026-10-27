@@ -49,7 +49,15 @@ let private setup (database: PostgresFixture.Database) =
         acceptedAuthority registered
 
         let! granted =
-            grant admin (id 4) principal Role.CaseReader GrantTarget.Installation true
+            grant
+                admin
+                (id 4)
+                principal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority granted
         return admin, principal, core database.Fixture principal
@@ -63,7 +71,15 @@ let private revocation (database: PostgresFixture.Database) =
         Expect.isSome cursor "Real database issues a continuation"
 
         let! revoked =
-            grant admin (id 5) principal Role.CaseReader GrantTarget.Installation false
+            grant
+                admin
+                (id 5)
+                principal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         acceptedAuthority revoked
         let! next = (Service.list actor (query cursor 2) (token))
@@ -228,7 +244,15 @@ let private snapshot (database: PostgresFixture.Database) =
         let! admin, principal, actor = setup database
 
         let! promoted =
-            grant admin (id 30) principal Role.CaseRegistrar GrantTarget.Installation true
+            grant
+                admin
+                (id 30)
+                principal
+                {
+                    Role = Role.CaseRegistrar
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority promoted
         let! first = (Service.list actor (query None 1) (token))
@@ -259,7 +283,15 @@ let private snapshot (database: PostgresFixture.Database) =
             do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
 
             let! revoked =
-                grant admin (id 5) principal Role.CaseRegistrar GrantTarget.Installation false
+                grant
+                    admin
+                    (id 5)
+                    principal
+                    {
+                        Role = Role.CaseRegistrar
+                        Scope = GrantTarget.Installation
+                    }
+                    false
 
             acceptedAuthority revoked
 

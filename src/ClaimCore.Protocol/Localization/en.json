@@ -185,7 +185,6 @@
   "host.ORIGIN_REJECTED": "Origin was refused.",
   "host.RATE_LIMITED": "Request admission is busy.",
   "host.RESPONSE_FAILED": "The completed response could not be delivered.",
-  "host.SESSION_FORBIDDEN": "Session access was refused.",
   "host.SESSION_REJECTED": "Authentication was refused.",
   "input.actorId.label": "Actor ID",
   "input.actorId.meaning": "The registered actor whose grants are being read.",

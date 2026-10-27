@@ -7,13 +7,34 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal Persistence =
+    type private SubjectColumns =
+        {
+            Kind: string
+            Id: Guid
+            Revision: int64 option
+            Act: string
+            Date: DateOnly option
+        }
+
     let entry connection (entry: EntryDraft) token =
-        let subjectKind, subjectId, revision, act, date =
+        let subject =
             match entry.Subject with
             | EntryTarget.Authority(target, kind) ->
-                "AUTHORITY", target, None, AuthorityKind.token kind, None
+                {
+                    Kind = "AUTHORITY"
+                    Id = target
+                    Revision = None
+                    Act = AuthorityKind.token kind
+                    Date = None
+                }
             | EntryTarget.Case(id, revision, kind, date) ->
-                "CASE", id, Some revision, CaseActKind.token kind, Some date
+                {
+                    Kind = "CASE"
+                    Id = id
+                    Revision = Some revision
+                    Act = CaseActKind.token kind
+                    Date = Some date
+                }
 
         DatabaseSession.execute
             connection
@@ -23,14 +44,14 @@ module internal Persistence =
                 box entry.PreviousHash
                 box entry.EntryHash
                 box (int16 RecordVersions.LedgerEntry)
-                box subjectKind
-                box act
+                box subject.Kind
+                box subject.Act
                 box entry.OperationId
                 box entry.ActorId
                 box entry.RecordedAt
-                box subjectId
-                DatabaseSession.parameter revision
-                DatabaseSession.parameter date
+                box subject.Id
+                DatabaseSession.parameter subject.Revision
+                DatabaseSession.parameter subject.Date
                 box entry.PayloadCommitment
                 box entry.Payload
                 box entry.PayloadNonce

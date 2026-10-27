@@ -47,58 +47,62 @@ module internal CaseFold =
         | VerifiedPayload.Erased -> Ok(None, reference)
         | _ -> Error(divergence (Some sequence) VerificationFinding.PayloadFormat)
 
-    let apply histories (entry: StoredEntry) id revision act payload =
-        result {
-            let previous = Map.tryFind id histories
-            let expected = previous |> Option.map _.Revision |> Option.defaultValue 0L
+    let apply histories (entry: StoredEntry) payload =
+        match entry.Subject with
+        | EntryTarget.Authority _ ->
+            Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+        | EntryTarget.Case(id, revision, act, _) ->
+            result {
+                let previous = Map.tryFind id histories
+                let expected = previous |> Option.map _.Revision |> Option.defaultValue 0L
 
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.RevisionSequence
-                    (expected < Revision.Maximum && revision = expected + 1L)
+                do!
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.RevisionSequence
+                        (expected < Revision.Maximum && revision = expected + 1L)
 
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.HistoryStart
-                    ((previous.IsNone) = (act = CaseActKind.Open))
+                do!
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.HistoryStart
+                        ((previous.IsNone) = (act = CaseActKind.Open))
 
-            let! state = nextState entry.Sequence previous act
-            let reference = previous |> Option.bind _.Reference
-            let! snapshot, reference = snapshot entry.Sequence state reference payload
-            let first field = previous |> Option.bind field
+                let! state = nextState entry.Sequence previous act
+                let reference = previous |> Option.bind _.Reference
+                let! snapshot, reference = snapshot entry.Sequence state reference payload
+                let first field = previous |> Option.bind field
 
-            let missing =
-                if entry.Payload.IsNone then
-                    first _.MissingPayloadAt |> Option.orElse (Some entry.Sequence)
-                else
-                    first _.MissingPayloadAt
+                let missing =
+                    if entry.Payload.IsNone then
+                        first _.MissingPayloadAt |> Option.orElse (Some entry.Sequence)
+                    else
+                        first _.MissingPayloadAt
 
-            let present =
-                if entry.Payload.IsSome then
-                    first _.PresentPayloadAt |> Option.orElse (Some entry.Sequence)
-                else
-                    first _.PresentPayloadAt
+                let present =
+                    if entry.Payload.IsSome then
+                        first _.PresentPayloadAt |> Option.orElse (Some entry.Sequence)
+                    else
+                        first _.PresentPayloadAt
 
-            return
-                Map.add
-                    id
-                    {
-                        Revision = revision
-                        Snapshot = snapshot
-                        Reference = reference
-                        State = state
-                        MissingPayloadAt = missing
-                        PresentPayloadAt = present
-                        ErasedAt =
-                            if act = CaseActKind.Erase then
-                                Some entry.Sequence
-                            else
-                                None
-                    }
-                    histories
-        }
+                return
+                    Map.add
+                        id
+                        {
+                            Revision = revision
+                            Snapshot = snapshot
+                            Reference = reference
+                            State = state
+                            MissingPayloadAt = missing
+                            PresentPayloadAt = present
+                            ErasedAt =
+                                if act = CaseActKind.Erase then
+                                    Some entry.Sequence
+                                else
+                                    None
+                        }
+                        histories
+            }
 
     let erasure histories =
         histories

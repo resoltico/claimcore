@@ -1,4 +1,6 @@
-namespace ClaimCore.Protocol
+namespace ClaimCore.ProtocolGeneration
+
+open ClaimCore.Protocol
 
 open ClaimCore.Domain
 

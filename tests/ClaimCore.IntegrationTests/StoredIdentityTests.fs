@@ -55,8 +55,10 @@ let private qualify path (database: PostgresFixture.Database) =
                 actor
                 operationId
                 database.Fixture.Owner
-                Role.CaseHandler
-                GrantTarget.Installation
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         let receipt = accepted executed

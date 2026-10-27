@@ -145,9 +145,25 @@ let private caseChecks =
 
     [
         VerificationFinding.RevisionSequence,
-        fun () -> CaseFold.apply Map.empty entry id 2L opened VerifiedPayload.Erased |> unitResult
+        fun () ->
+            CaseFold.apply
+                Map.empty
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 2L, opened, DateOnly.FromDateTime instant.DateTime)
+                }
+                VerifiedPayload.Erased
+            |> unitResult
         VerificationFinding.HistoryStart,
-        fun () -> CaseFold.apply Map.empty entry id 1L closed VerifiedPayload.Erased |> unitResult
+        fun () ->
+            CaseFold.apply
+                Map.empty
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 1L, closed, DateOnly.FromDateTime instant.DateTime)
+                }
+                VerifiedPayload.Erased
+            |> unitResult
         VerificationFinding.StateSequence,
         fun () ->
             CaseFold.apply
@@ -158,10 +174,10 @@ let private caseChecks =
                             State = CaseState.Erased
                         }
                     ])
-                entry
-                id
-                2L
-                closed
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 2L, closed, DateOnly.FromDateTime instant.DateTime)
+                }
                 VerifiedPayload.Erased
             |> unitResult
         VerificationFinding.ErasureIncomplete,

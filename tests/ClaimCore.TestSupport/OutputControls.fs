@@ -48,7 +48,16 @@ let private brokenOutput = "exec 3<>\"$1\"; exec 1>\"$1\"; exec 3>&-; "
 let private brokenErrors = "exec 3<>\"$2\"; exec 2>\"$2\"; exec 3>&-; "
 
 /// Bootstrap read/write admission avoids a blocking FIFO open; close its last reader before exec.
-let run directory binary command destination environment source =
+[<NoEquality; NoComparison>]
+type Sink =
+    {
+        Destination: string
+        Environment: seq<KeyValuePair<string, string>>
+    }
+
+let run directory binary command (sink: Sink) source =
+    let destination = sink.Destination
+    let environment = sink.Environment
     Directory.CreateDirectory(directory) |> ignore
     let output = pipe directory "stdout.pipe"
     let errors = pipe directory "stderr.pipe"

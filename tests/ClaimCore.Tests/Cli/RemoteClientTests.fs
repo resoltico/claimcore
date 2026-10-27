@@ -182,7 +182,15 @@ let private tokenParts () =
     let clock = TimeProvider.System
 
     let create kind value expiry =
-        AccessTokens.fromPartsAt clock (clock.GetUtcNow()) (clock.GetTimestamp()) kind value expiry
+        AccessTokens.fromPartsAt
+            {
+                Clock = clock
+                Utc = clock.GetUtcNow()
+                Timestamp = clock.GetTimestamp()
+            }
+            kind
+            value
+            expiry
 
     for kind in [ "Bearer"; "bearer"; "BEARER"; "bEaReR" ] do
         match create kind "synthetic-token" 300 with

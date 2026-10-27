@@ -30,9 +30,7 @@ type GrantsRequest =
 
 type CaseGetRequest = { CaseReference: string }
 
-type ObserveRequest = { OperationId: Guid }
-
-type ResolveRequest = { OperationId: Guid }
+type OperationLookup = { OperationId: Guid }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HistoryDetail =

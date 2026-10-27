@@ -34,14 +34,24 @@ type AccessToken
     override _.ToString() = "<redacted access token>"
 
 module AccessTokens =
+    [<NoEquality; NoComparison>]
+    type internal Observation =
+        {
+            Clock: TimeProvider
+            Utc: DateTimeOffset
+            Timestamp: int64
+        }
+
     let internal fromPartsAt
-        clock
-        observedUtc
-        observedTimestamp
+        (observation: Observation)
         (tokenType: string | null)
         (value: string | null)
         seconds
         =
+        let clock = observation.Clock
+        let observedUtc = observation.Utc
+        let observedTimestamp = observation.Timestamp
+
         match value with
         | null -> Error AccessFailure.OidcResponseInvalid
         | value ->
@@ -79,9 +89,11 @@ module AccessTokens =
         else
             try
                 fromPartsAt
-                    clock
-                    observedUtc
-                    observedTimestamp
+                    {
+                        Clock = clock
+                        Utc = observedUtc
+                        Timestamp = observedTimestamp
+                    }
                     response.TokenType
                     response.AccessToken
                     response.ExpiresIn

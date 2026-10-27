@@ -10,6 +10,17 @@ open System
 open Expecto
 open ClaimCore.Domain
 
+[<NoEquality; NoComparison>]
+type private GrammarScenario =
+    {
+        Field: BusinessField
+        Parse: string -> Result<string, Violation>
+        WrongParser: string -> Result<string, Violation>
+        Invalid: string
+        Valid: string
+        Expected: Violation
+    }
+
 let private scalar name = FieldPresentation.descriptor name
 
 let private expectText name maximum =
@@ -162,21 +173,32 @@ let grammarDiagnostics =
         let country value =
             CountryCode.parse value |> Result.map CountryCode.format
 
-        for field, parse, wrongParser, invalid, valid, expected in
+        for scenario in
             [
-                BusinessField.CaseReference,
-                reference,
-                country,
-                "has space",
-                "UNIT-1",
-                Violation.ReferenceFormat
-                BusinessField.IncidentCountry,
-                country,
-                reference,
-                "Latvia",
-                "LV",
-                Violation.CountryFormat
+                {
+                    Field = BusinessField.CaseReference
+                    Parse = reference
+                    WrongParser = country
+                    Invalid = "has space"
+                    Valid = "UNIT-1"
+                    Expected = Violation.ReferenceFormat
+                }
+                {
+                    Field = BusinessField.IncidentCountry
+                    Parse = country
+                    WrongParser = reference
+                    Invalid = "Latvia"
+                    Valid = "LV"
+                    Expected = Violation.CountryFormat
+                }
+
             ] do
+            let field = scenario.Field
+            let parse = scenario.Parse
+            let wrongParser = scenario.WrongParser
+            let invalid = scenario.Invalid
+            let valid = scenario.Valid
+            let expected = scenario.Expected
             let target = InputTarget.Field field
 
             let check parser =

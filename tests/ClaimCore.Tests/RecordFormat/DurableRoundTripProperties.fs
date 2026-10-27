@@ -18,6 +18,18 @@ let private text =
             Gen.item [ "Žąsis"; "東京"; "😀"; "é"; "مرحبا"; "quoted\"value"; "path\\value" ]
         ]
 
+[<NoEquality; NoComparison>]
+type private PermanentValueSample =
+    {
+        OperationId: Guid
+        Reference: string
+        Revision: int64
+        Registration: RegistrationInput
+        Decision: DecisionInput
+        Payment: PaymentInput
+        Reason: string
+    }
+
 let private sample =
     gen {
         let! id = Gen.guid
@@ -74,7 +86,16 @@ let private sample =
             else
                 id
 
-        return id, reference, revision, registration, decision, payment, reason
+        return
+            {
+                OperationId = id
+                Reference = reference
+                Revision = revision
+                Registration = registration
+                Decision = decision
+                Payment = payment
+                Reason = reason
+            }
     }
 
 let private tokenAt path expected (bytes: byte array) =
@@ -197,7 +218,14 @@ let private inventories () =
 
 let private caseProperty =
     property {
-        let! id, reference, revision, registration, decision, payment, reason = sample
+        let! values = sample
+        let id = values.OperationId
+        let reference = values.Reference
+        let revision = values.Revision
+        let registration = values.Registration
+        let decision = values.Decision
+        let payment = values.Payment
+        let reason = values.Reason
 
         return
             caseActs registration decision payment reason
@@ -220,7 +248,12 @@ let private caseProperty =
 
 let private snapshotProperty =
     property {
-        let! _, reference, revision, registration, decision, payment, _ = sample
+        let! values = sample
+        let reference = values.Reference
+        let revision = values.Revision
+        let registration = values.Registration
+        let decision = values.Decision
+        let payment = values.Payment
         let reference = Inputs.reference reference
 
         return
@@ -279,7 +312,10 @@ let private grantTokens act bytes =
 
 let private authorityProperty =
     property {
-        let! id, reference, _, _, _, _, subject = sample
+        let! values = sample
+        let id = values.OperationId
+        let reference = values.Reference
+        let subject = values.Reason
 
         return
             [

@@ -97,18 +97,22 @@ let decide request view =
     CaseExecution.execute
         (services installation calendar owner)
         (ClaimCore.TestSupport.CaseFixtures.command request)
-        view.Head
-        view.IsFenced
-        view.PayloadNonce
+        {
+            Head = view.Head
+            Fenced = view.IsFenced
+            Nonce = view.PayloadNonce
+        }
         view.Read
 
 let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
     AuthorityExecution.execute
         (services installation calendar principal)
         request
-        view.Head
-        view.IsFenced
-        view.PayloadNonce
+        {
+            Head = view.Head
+            Fenced = view.IsFenced
+            Nonce = view.PayloadNonce
+        }
         view.Read
 
 let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
@@ -126,9 +130,11 @@ let provisionAuthority
     AuthorityExecution.provision
         (services installation calendar principal)
         operation
-        view.Head
-        view.IsFenced
-        view.PayloadNonce
+        {
+            Head = view.Head
+            Fenced = view.IsFenced
+            Nonce = view.PayloadNonce
+        }
         view.Read
 
 let appended =

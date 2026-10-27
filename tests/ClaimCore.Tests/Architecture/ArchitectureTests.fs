@@ -13,6 +13,16 @@ open ClaimCore.Tests.Architecture.ApiRules
 open System.Runtime.CompilerServices
 open System.Text.RegularExpressions
 
+[<NoEquality; NoComparison>]
+type private DomainTargetScenario =
+    {
+        Assembly: string
+        Direct: System.Type
+        DirectMember: string
+        Task: System.Type
+        TaskMember: string
+    }
+
 let private root = ClaimCore.TestSupport.RepositoryRoot.find ()
 
 let private projectPaths =
@@ -288,35 +298,46 @@ let private shapeControls () =
     // A label alone cannot prove coverage: each pair must violate its claimed target in isolation.
     let domainTargets =
         [
-            "ClaimCore.Json",
-            typeof<JsonFromDomain>,
-            "JsonDirect",
-            typeof<JsonFromDomainTask>,
-            "JsonTask"
-            "ClaimCore.Protocol",
-            typeof<ProtocolFromDomain>,
-            "ProtocolDirect",
-            typeof<ProtocolFromDomainTask>,
-            "ProtocolTask"
-            "ClaimCore.Application",
-            typeof<ApplicationFromDomain>,
-            "ApplicationDirect",
-            typeof<ApplicationFromDomainTask>,
-            "ApplicationTask"
-            "ClaimCore.RecordFormat",
-            typeof<RecordFormatFromDomain>,
-            "RecordDirect",
-            typeof<RecordFormatFromDomainTask>,
-            "RecordTask"
-            "ClaimCore.Postgres",
-            typeof<PostgresShapes>,
-            "PostgresDirect",
-            typeof<PostgresTaskShape>,
-            "PostgresTask"
+            {
+                Assembly = "ClaimCore.Json"
+                Direct = typeof<JsonFromDomain>
+                DirectMember = "JsonDirect"
+                Task = typeof<JsonFromDomainTask>
+                TaskMember = "JsonTask"
+            }
+            {
+                Assembly = "ClaimCore.Protocol"
+                Direct = typeof<ProtocolFromDomain>
+                DirectMember = "ProtocolDirect"
+                Task = typeof<ProtocolFromDomainTask>
+                TaskMember = "ProtocolTask"
+            }
+            {
+                Assembly = "ClaimCore.Application"
+                Direct = typeof<ApplicationFromDomain>
+                DirectMember = "ApplicationDirect"
+                Task = typeof<ApplicationFromDomainTask>
+                TaskMember = "ApplicationTask"
+            }
+            {
+                Assembly = "ClaimCore.RecordFormat"
+                Direct = typeof<RecordFormatFromDomain>
+                DirectMember = "RecordDirect"
+                Task = typeof<RecordFormatFromDomainTask>
+                TaskMember = "RecordTask"
+            }
+            {
+                Assembly = "ClaimCore.Postgres"
+                Direct = typeof<PostgresShapes>
+                DirectMember = "PostgresDirect"
+                Task = typeof<PostgresTaskShape>
+                TaskMember = "PostgresTask"
+            }
+
         ]
 
     Expect.equal
-        (domainTargets |> List.map (fun (target, _, _, _, _) -> target) |> List.sort)
+        (domainTargets |> List.map (fun target -> target.Assembly) |> List.sort)
         ([
             "ClaimCore.Json"
             "ClaimCore.Protocol"
@@ -343,7 +364,13 @@ let private shapeControls () =
                 model.Value
         )
 
-    for target, direct, directMember, task, taskMember in domainTargets do
+    for target in domainTargets do
+        let direct = target.Direct
+        let directMember = target.DirectMember
+        let task = target.Task
+        let taskMember = target.TaskMember
+        let target = target.Assembly
+
         for fixture, memberName in [ direct, directMember; task, taskMember ] do
             Expect.isTrue
                 (detectsTarget target fixture memberName)

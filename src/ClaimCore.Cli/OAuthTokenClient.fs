@@ -8,14 +8,19 @@ open System.Threading
 open Duende.IdentityModel.Client
 
 module OAuthTokenClient =
+    type internal ClientCredential =
+        { ClientId: string; SecretFile: string }
+
     let internal acquireWithClock
         (clock: TimeProvider)
         (client: HttpClient)
         (endpoint: Uri)
-        clientId
-        secretFile
+        (credential: ClientCredential)
         (cancelled: CancellationToken)
         =
+        let clientId = credential.ClientId
+        let secretFile = credential.SecretFile
+
         task {
             if endpoint.Scheme <> Uri.UriSchemeHttps then
                 return Error AccessFailure.OidcTokenEndpointInvalid
@@ -49,4 +54,12 @@ module OAuthTokenClient =
         }
 
     let acquire client endpoint clientId secretFile cancelled =
-        acquireWithClock TimeProvider.System client endpoint clientId secretFile cancelled
+        acquireWithClock
+            TimeProvider.System
+            client
+            endpoint
+            {
+                ClientId = clientId
+                SecretFile = secretFile
+            }
+            cancelled

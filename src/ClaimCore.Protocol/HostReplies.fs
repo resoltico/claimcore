@@ -10,7 +10,6 @@ type HostFailureCode =
     | MediaTypeRejected
     | BodyTooLarge
     | SessionRejected
-    | SessionForbidden
     | MethodRejected
     | AntiforgeryRejected
     | EndpointMissing

@@ -4,6 +4,10 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "${repo_root}"
 
+python3 eng/check-lint-justifications.py --controls
+python3 eng/check-lint-justifications.py src tests eng
+python3 eng/test-fsharplint-policy.py
+
 run_pattern() {
   local root="$1"
   local extension="$2"

@@ -26,8 +26,6 @@ module HostFailureReason =
             HostFailureCode.BodyTooLarge, 413, Some ExecutionPhase.NotStarted
         | HostFailureReason.SessionRejected ->
             HostFailureCode.SessionRejected, 401, Some ExecutionPhase.NotStarted
-        | HostFailureReason.SessionForbidden ->
-            HostFailureCode.SessionForbidden, 403, Some ExecutionPhase.NotStarted
         | HostFailureReason.MethodRejected ->
             HostFailureCode.MethodRejected, 405, Some ExecutionPhase.NotStarted
         | HostFailureReason.AntiforgeryRejected ->

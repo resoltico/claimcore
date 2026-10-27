@@ -53,7 +53,18 @@ let private discovery output errors =
         Discovery.schema selection |> writeDiscovery output errors "en" "schema"
     | _ -> unsupported errors "en" [] (UsageError.NotApplicable("arguments", "command"))
 
-let private remote input output errors session language render =
+[<NoEquality; NoComparison>]
+type private RemoteStreams =
+    {
+        Input: System.IO.Stream
+        Output: System.IO.Stream
+        Errors: System.IO.Stream
+    }
+
+let private remote streams session language render =
+    let input = streams.Input
+    let output = streams.Output
+    let errors = streams.Errors
     use processor = new RemoteFrameProcessor(input, output, errors, language, render)
     let stop () = Environment.Exit(processor.Interrupt())
 
@@ -103,20 +114,53 @@ let private verb output errors arguments =
                 Frames.admit prepared.Bytes
                 |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
 
-            remote input output errors false prepared.Language (fun reply ->
-                TextReply.bytesFor prepared.Language (Some invocation) reply.Frame)
+            remote
+                {
+                    Input = input
+                    Output = output
+                    Errors = errors
+                }
+                false
+                prepared.Language
+                (fun reply -> TextReply.bytesFor prepared.Language (Some invocation) reply.Frame)
         else
-            remote input output errors false prepared.Language (fun reply -> reply.Bytes)
+            remote
+                {
+                    Input = input
+                    Output = output
+                    Errors = errors
+                }
+                false
+                prepared.Language
+                (fun reply -> reply.Bytes)
 
 let private dispatch output errors argv =
     try
         match CliInvocations.admit (Array.toList argv) with
         | Ok CliInvocation.Call ->
             use input = Console.OpenStandardInput()
-            remote input output errors false "en" (fun reply -> reply.Bytes)
+
+            remote
+                {
+                    Input = input
+                    Output = output
+                    Errors = errors
+                }
+                false
+                "en"
+                (fun reply -> reply.Bytes)
         | Ok CliInvocation.Session ->
             use input = Console.OpenStandardInput()
-            remote input output errors true "en" (fun reply -> reply.Bytes)
+
+            remote
+                {
+                    Input = input
+                    Output = output
+                    Errors = errors
+                }
+                true
+                "en"
+                (fun reply -> reply.Bytes)
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue ->

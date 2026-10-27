@@ -112,9 +112,11 @@ module internal AuthorityExecution =
             OperationIdentity.decide
                 services
                 view.Actor
-                operationId
-                bytes
-                view.ExistingOperation
+                {
+                    OperationId = operationId
+                    Bytes = bytes
+                    Existing = view.ExistingOperation
+                }
                 (LedgerEntries.receipt principal view.Actor None)
 
 
@@ -167,6 +169,7 @@ module internal AuthorityExecution =
         (targetId, projection)
         =
         {
+            OperationId = command.OperationId
             ObservedAt = view.ObservedAt
             ActorId =
                 match command.Act with
@@ -194,9 +197,7 @@ module internal AuthorityExecution =
         (services: ServiceContext)
         (command: AuthorityCommand)
         admit
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         let installationId = services.InstallationId
@@ -204,43 +205,30 @@ module internal AuthorityExecution =
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
         admit bytes
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
         |> Verdict.bind (fun () -> propose installationId command view)
         |> Verdict.bind (fun proposed ->
             let plan = project command record view proposed
 
-            LedgerEnvelope.accept
-                services
-                view.Actor
-                command.OperationId
-                head
-                nonce
-                plan
-                (AuthorityRecord.encode record))
+            LedgerEnvelope.accept services view.Actor write plan (AuthorityRecord.encode record))
 
     let execute
         (services: ServiceContext)
         (command: AuthorityCommand)
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         executeRecord
             services
             command
             (fun bytes -> authorizeIdentity services command.OperationId bytes view)
-            head
-            fenced
-            nonce
+            write
             view
 
     let provision
         (services: ServiceContext)
         operationId
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         let target = services.Principal
@@ -251,10 +239,8 @@ module internal AuthorityExecution =
             executeRecord
                 services
                 command
-                (fun bytes -> provisionIdentity services operationId bytes head view)
-                head
-                fenced
-                nonce
+                (fun bytes -> provisionIdentity services operationId bytes write.Head view)
+                write
                 view
 
     let run (services: ServiceContext) (command: AuthorityCommand) token =
@@ -276,7 +262,15 @@ module internal AuthorityExecution =
                             let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
 
                             return!
-                                execute services command tx.Head fenced tx.Nonce view
+                                execute
+                                    services
+                                    command
+                                    {
+                                        Head = tx.Head
+                                        Fenced = fenced
+                                        Nonce = tx.Nonce
+                                    }
+                                    view
                                 |> ExecutionFacts.persist tx tx.ProjectAuthority
                         })
                 CancellationToken = token
@@ -297,7 +291,15 @@ module internal AuthorityExecution =
                             let! fenced = ExecutionFacts.fenced tx view.Actor operationId
 
                             return!
-                                provision services operationId tx.Head fenced tx.Nonce view
+                                provision
+                                    services
+                                    operationId
+                                    {
+                                        Head = tx.Head
+                                        Fenced = fenced
+                                        Nonce = tx.Nonce
+                                    }
+                                    view
                                 |> ExecutionFacts.persist tx tx.ProjectAuthority
                         })
                 CancellationToken = token

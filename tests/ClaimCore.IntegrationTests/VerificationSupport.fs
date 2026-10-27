@@ -90,23 +90,45 @@ let row (database: PostgresFixture.Database) sequence =
         return StoredEntries.decode database.Fixture.InstallationId (List.exactlyOne rows)
     }
 
+type private RecordedSubjectColumns =
+    {
+        Kind: string
+        Act: string
+        Id: Guid
+        Revision: int64 option
+        BusinessDate: DateOnly option
+    }
+
 let private subject =
     function
     | RecordedTarget.Case value ->
-        "CASE",
-        CaseActKind.token value.Act,
-        value.CaseId,
-        Some value.Revision,
-        Some value.BusinessDate
+        {
+            Kind = "CASE"
+            Act = CaseActKind.token value.Act
+            Id = value.CaseId
+            Revision = Some value.Revision
+            BusinessDate = Some value.BusinessDate
+        }
     | RecordedTarget.Authority value ->
-        "AUTHORITY", AuthorityKind.token value.Act, value.TargetActorId, None, None
+        {
+            Kind = "AUTHORITY"
+            Act = AuthorityKind.token value.Act
+            Id = value.TargetActorId
+            Revision = None
+            BusinessDate = None
+        }
 
 let private updateSql =
     "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata
-    let kind, act, subject, revision, date = subject metadata.Subject
+    let target = subject metadata.Subject
+    let kind = target.Kind
+    let act = target.Act
+    let subject = target.Id
+    let revision = target.Revision
+    let date = target.BusinessDate
 
     [|
         box metadata.Sequence

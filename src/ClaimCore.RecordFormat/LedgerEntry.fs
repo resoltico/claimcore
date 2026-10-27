@@ -132,13 +132,28 @@ module LedgerEntry =
 
     let requestDigest (request: byte array) = SHA256.HashData request
 
+    type private SubjectEncoding =
+        {
+            Kind: byte
+            Act: byte
+            Id: Guid
+            Revision: int64
+            Date: int
+        }
+
     let private subjectBytes =
         function
         | RecordedTarget.Authority subject ->
             if subject.TargetActorId = Guid.Empty then
                 invalidArg (nameof subject) "Invalid authority subject."
 
-            2uy, authorityCode subject.Act, subject.TargetActorId, 0L, 0
+            {
+                Kind = 2uy
+                Act = authorityCode subject.Act
+                Id = subject.TargetActorId
+                Revision = 0L
+                Date = 0
+            }
         | RecordedTarget.Case subject ->
             if
                 subject.CaseId = Guid.Empty
@@ -147,11 +162,13 @@ module LedgerEntry =
             then
                 invalidArg (nameof subject) "Invalid case ledger metadata."
 
-            1uy,
-            actCode subject.Act,
-            subject.CaseId,
-            subject.Revision,
-            subject.BusinessDate.DayNumber
+            {
+                Kind = 1uy
+                Act = actCode subject.Act
+                Id = subject.CaseId
+                Revision = subject.Revision
+                Date = subject.BusinessDate.DayNumber
+            }
 
     /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
     let preimage (metadata: LedgerMetadata) =
@@ -172,7 +189,7 @@ module LedgerEntry =
         if ticks % 10L <> 0L then
             invalidArg (nameof metadata) "Use microsecond precision."
 
-        let subjectKind, act, subjectId, revision, date = subjectBytes metadata.Subject
+        let subject = subjectBytes metadata.Subject
 
         Array.concat
             [
@@ -182,13 +199,13 @@ module LedgerEntry =
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 metadata.Sequence)
                 metadata.PreviousHash
-                [| subjectKind; act |]
+                [| subject.Kind; subject.Act |]
                 metadata.OperationId.ToByteArray(bigEndian = true)
                 metadata.ActorId.ToByteArray(bigEndian = true)
                 i64 (ticks / 10L)
-                subjectId.ToByteArray(bigEndian = true)
-                i64 revision
-                i32 date
+                subject.Id.ToByteArray(bigEndian = true)
+                i64 subject.Revision
+                i32 subject.Date
                 metadata.PayloadCommitment
             ]
 

@@ -18,6 +18,19 @@ let private refusal =
     | Verdict.Replay _ -> failtest "No characterization input has an existing operation."
     | Verdict.Fail fault -> failtestf "Unexpected characterization fault: %A" fault
 
+[<NoEquality; NoComparison>]
+type private AuthorityRefusalScenario =
+    {
+        Name: string
+        Caller: PrincipalKey * AuthorityView
+        Attempt: Attempt
+        Target: PrincipalKey * AuthorityView
+        EnabledOwners: int
+        Actors: int
+        Current: StoredCase option
+        Expected: Refusal option
+    }
+
 let private ordering () =
     let manager = owner, worker
     let missingManager = owner, AuthorityView.empty
@@ -53,221 +66,318 @@ let private ordering () =
     // Actor counts include other unloaded actors; last-owner rows target the requesting owner itself.
     let rows =
         [
-            "register missing human", manager, register, missingHuman, 2, 5, None, None
-            "register existing human",
-            manager,
-            register,
-            human,
-            2,
-            5,
-            None,
-            Some Refusal.ActorAlreadyRegistered
-            "register missing service", manager, register, missingService, 2, 5, None, None
-            "register existing service",
-            manager,
-            register,
-            serviceActor,
-            2,
-            5,
-            None,
-            Some Refusal.ActorAlreadyRegistered
-            "grant missing actor precedes role restriction",
-            manager,
-            grant Role.Owner GrantTarget.Installation,
-            missingService,
-            1,
-            5,
-            None,
-            Some Refusal.ActorUnknown
-            "revoke missing actor precedes missing case",
-            manager,
-            revoke Role.Owner caseScope,
-            missingHuman,
-            1,
-            5,
-            None,
-            Some Refusal.ActorUnknown
-            "enable missing actor",
-            manager,
-            enable,
-            missingHuman,
-            2,
-            5,
-            None,
-            Some Refusal.ActorUnknown
-            "disable missing actor",
-            manager,
-            disable,
-            missingHuman,
-            2,
-            5,
-            None,
-            Some Refusal.ActorUnknown
-            "grant human owner",
-            manager,
-            grant Role.Owner GrantTarget.Installation,
-            human,
-            2,
-            5,
-            None,
-            None
-            "grant service owner",
-            manager,
-            grant Role.Owner GrantTarget.Installation,
-            serviceActor,
-            1,
-            5,
-            None,
-            Some Refusal.HumanPrincipalRequired
-            "revoke service owner role even without a grant",
-            manager,
-            revoke Role.Owner GrantTarget.Installation,
-            serviceActor,
-            1,
-            5,
-            None,
-            Some Refusal.HumanPrincipalRequired
-            "missing case precedes human-only role",
-            manager,
-            grant Role.DataSteward caseScope,
-            serviceActor,
-            1,
-            5,
-            None,
-            Some Refusal.ResourceUnavailable
-            "resolved case still requires human steward",
-            manager,
-            grant Role.DataSteward caseScope,
-            serviceActor,
-            1,
-            5,
-            Some knownCase,
-            Some Refusal.HumanPrincipalRequired
-            "service case handler",
-            manager,
-            grant Role.CaseHandler caseScope,
-            serviceActor,
-            1,
-            5,
-            Some knownCase,
-            None
-            "last installation owner revoke",
-            manager,
-            revoke Role.Owner GrantTarget.Installation,
-            lastOwner,
-            1,
-            5,
-            None,
-            Some Refusal.LastOwner
-            "second installation owner revoke",
-            manager,
-            revoke Role.Owner GrantTarget.Installation,
-            secondOwner,
-            2,
-            5,
-            None,
-            None
-            "case grant revoke does not remove installation owner",
-            manager,
-            revoke Role.Owner caseScope,
-            lastOwner,
-            1,
-            5,
-            Some knownCase,
-            None
-            "missing case precedes last-owner restriction",
-            manager,
-            revoke Role.Owner caseScope,
-            lastOwner,
-            1,
-            5,
-            None,
-            Some Refusal.ResourceUnavailable
-            "different role revoke does not remove owner",
-            manager,
-            revoke Role.CaseReader GrantTarget.Installation,
-            lastOwner,
-            1,
-            5,
-            None,
-            None
-            "last owner disable", manager, disable, lastOwner, 1, 5, None, Some Refusal.LastOwner
-            "second owner disable", manager, disable, secondOwner, 2, 5, None, None
-            "disabled owner is not the last enabled owner",
-            manager,
-            disable,
-            disabledOwner,
-            1,
-            5,
-            None,
-            None
-            "enable already enabled", manager, enable, human, 2, 5, None, None
-            "grant human missing case",
-            manager,
-            grant Role.CaseReader caseScope,
-            human,
-            2,
-            5,
-            None,
-            Some Refusal.ResourceUnavailable
-            "provision first human owner",
-            manager,
-            Attempt.Provision,
-            missingHuman,
-            0,
-            0,
-            None,
-            None
-            "provision first service owner",
-            manager,
-            Attempt.Provision,
-            missingService,
-            0,
-            0,
-            None,
-            Some Refusal.HumanPrincipalRequired
-            "provision existing human installation",
-            manager,
-            Attempt.Provision,
-            human,
-            2,
-            5,
-            None,
-            Some Refusal.ActorAlreadyRegistered
-            "provision existing service installation identity precedes target rule",
-            manager,
-            Attempt.Provision,
-            serviceActor,
-            1,
-            5,
-            None,
-            Some Refusal.ActorAlreadyRegistered
-            "management precedes target existence",
-            missingManager,
-            grant Role.Owner caseScope,
-            missingService,
-            1,
-            5,
-            None,
-            Some Refusal.ResourceUnavailable
-            "service owner grant conveys no management",
-            serviceManager,
-            grant Role.Owner GrantTarget.Installation,
-            serviceActor,
-            1,
-            5,
-            None,
-            Some Refusal.ResourceUnavailable
+            {
+                Name = "register missing human"
+                Caller = manager
+                Attempt = register
+                Target = missingHuman
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "register existing human"
+                Caller = manager
+                Attempt = register
+                Target = human
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorAlreadyRegistered
+            }
+            {
+                Name = "register missing service"
+                Caller = manager
+                Attempt = register
+                Target = missingService
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "register existing service"
+                Caller = manager
+                Attempt = register
+                Target = serviceActor
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorAlreadyRegistered
+            }
+            {
+                Name = "grant missing actor precedes role restriction"
+                Caller = manager
+                Attempt = grant Role.Owner GrantTarget.Installation
+                Target = missingService
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorUnknown
+            }
+            {
+                Name = "revoke missing actor precedes missing case"
+                Caller = manager
+                Attempt = revoke Role.Owner caseScope
+                Target = missingHuman
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorUnknown
+            }
+            {
+                Name = "enable missing actor"
+                Caller = manager
+                Attempt = enable
+                Target = missingHuman
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorUnknown
+            }
+            {
+                Name = "disable missing actor"
+                Caller = manager
+                Attempt = disable
+                Target = missingHuman
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorUnknown
+            }
+            {
+                Name = "grant human owner"
+                Caller = manager
+                Attempt = grant Role.Owner GrantTarget.Installation
+                Target = human
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "grant service owner"
+                Caller = manager
+                Attempt = grant Role.Owner GrantTarget.Installation
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.HumanPrincipalRequired
+            }
+            {
+                Name = "revoke service owner role even without a grant"
+                Caller = manager
+                Attempt = revoke Role.Owner GrantTarget.Installation
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.HumanPrincipalRequired
+            }
+            {
+                Name = "missing case precedes human-only role"
+                Caller = manager
+                Attempt = grant Role.DataSteward caseScope
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ResourceUnavailable
+            }
+            {
+                Name = "resolved case still requires human steward"
+                Caller = manager
+                Attempt = grant Role.DataSteward caseScope
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = Some knownCase
+                Expected = Some Refusal.HumanPrincipalRequired
+            }
+            {
+                Name = "service case handler"
+                Caller = manager
+                Attempt = grant Role.CaseHandler caseScope
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = Some knownCase
+                Expected = None
+            }
+            {
+                Name = "last installation owner revoke"
+                Caller = manager
+                Attempt = revoke Role.Owner GrantTarget.Installation
+                Target = lastOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.LastOwner
+            }
+            {
+                Name = "second installation owner revoke"
+                Caller = manager
+                Attempt = revoke Role.Owner GrantTarget.Installation
+                Target = secondOwner
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "case grant revoke does not remove installation owner"
+                Caller = manager
+                Attempt = revoke Role.Owner caseScope
+                Target = lastOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = Some knownCase
+                Expected = None
+            }
+            {
+                Name = "missing case precedes last-owner restriction"
+                Caller = manager
+                Attempt = revoke Role.Owner caseScope
+                Target = lastOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ResourceUnavailable
+            }
+            {
+                Name = "different role revoke does not remove owner"
+                Caller = manager
+                Attempt = revoke Role.CaseReader GrantTarget.Installation
+                Target = lastOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "last owner disable"
+                Caller = manager
+                Attempt = disable
+                Target = lastOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.LastOwner
+            }
+            {
+                Name = "second owner disable"
+                Caller = manager
+                Attempt = disable
+                Target = secondOwner
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "disabled owner is not the last enabled owner"
+                Caller = manager
+                Attempt = disable
+                Target = disabledOwner
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "enable already enabled"
+                Caller = manager
+                Attempt = enable
+                Target = human
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "grant human missing case"
+                Caller = manager
+                Attempt = grant Role.CaseReader caseScope
+                Target = human
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ResourceUnavailable
+            }
+            {
+                Name = "provision first human owner"
+                Caller = manager
+                Attempt = Attempt.Provision
+                Target = missingHuman
+                EnabledOwners = 0
+                Actors = 0
+                Current = None
+                Expected = None
+            }
+            {
+                Name = "provision first service owner"
+                Caller = manager
+                Attempt = Attempt.Provision
+                Target = missingService
+                EnabledOwners = 0
+                Actors = 0
+                Current = None
+                Expected = Some Refusal.HumanPrincipalRequired
+            }
+            {
+                Name = "provision existing human installation"
+                Caller = manager
+                Attempt = Attempt.Provision
+                Target = human
+                EnabledOwners = 2
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorAlreadyRegistered
+            }
+            {
+                Name = "provision existing service installation identity precedes target rule"
+                Caller = manager
+                Attempt = Attempt.Provision
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ActorAlreadyRegistered
+            }
+            {
+                Name = "management precedes target existence"
+                Caller = missingManager
+                Attempt = grant Role.Owner caseScope
+                Target = missingService
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ResourceUnavailable
+            }
+            {
+                Name = "service owner grant conveys no management"
+                Caller = serviceManager
+                Attempt = grant Role.Owner GrantTarget.Installation
+                Target = serviceActor
+                EnabledOwners = 1
+                Actors = 5
+                Current = None
+                Expected = Some Refusal.ResourceUnavailable
+            }
+
         ]
 
-    for name,
-        (principal, caller),
-        attempt,
-        (targetPrincipal, target),
-        owners,
-        actors,
-        current,
-        expected in rows do
+    for scenario in rows do
+        let name = scenario.Name
+        let principal, caller = scenario.Caller
+        let attempt = scenario.Attempt
+        let targetPrincipal, target = scenario.Target
+        let owners = scenario.EnabledOwners
+        let actors = scenario.Actors
+        let current = scenario.Current
+        let expected = scenario.Expected
         let view = authorityView caller target None
 
         let facts =

@@ -93,7 +93,17 @@ let private delayedExecute (database: PostgresFixture.Database) =
 let private revokeReadRoles (actor: ServiceContext) principal =
     task {
         for operation, role in [ id 111, Role.CaseHandler; id 114, Role.PaymentRecorder ] do
-            let! reply = grant actor operation principal role GrantTarget.Installation false
+            let! reply =
+                grant
+                    actor
+                    operation
+                    principal
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    false
+
             acceptedAuthority reply
     }
 
@@ -132,8 +142,10 @@ let private receipts (database: PostgresFixture.Database) =
                 actor
                 (id 112)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         acceptedAuthority steward

@@ -10,6 +10,7 @@
     <Compile Include="CatalogRendering.fs" />
     <Compile Include="ClientValidation.fs" />
     <Compile Include="TypeScript.fs" />
+    <Compile Include="Terms.fs" />
     <Compile Include="CatalogValidation.fs" />
     <Compile Include="MessageGeneration.fs" />
     <Compile Include="CliDocumentation.fs" />

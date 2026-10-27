@@ -52,7 +52,15 @@ let createFor issuer subject =
             acceptedAuthority registered
 
             let! granted =
-                grant owner (id 21) service Role.CaseReader GrantTarget.Installation true
+                grant
+                    owner
+                    (id 21)
+                    service
+                    {
+                        Role = Role.CaseReader
+                        Scope = GrantTarget.Installation
+                    }
+                    true
 
             acceptedAuthority granted
 

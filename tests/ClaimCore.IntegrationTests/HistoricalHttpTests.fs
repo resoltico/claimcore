@@ -43,7 +43,15 @@ let private caller (database: PostgresFixture.Database) =
         acceptedAuthority registered
 
         let! granted =
-            grant owner (id 21) principal Role.CaseHandler GrantTarget.Installation true
+            grant
+                owner
+                (id 21)
+                principal
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority granted
         return core database.Fixture

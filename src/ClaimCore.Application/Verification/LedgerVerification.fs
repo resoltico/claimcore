@@ -27,9 +27,9 @@ module LedgerVerification =
                 entry
                 request
             |> Result.map (fun actors -> state.Cases, actors)
-        | EntryTarget.Case(id, revision, act, _), _ ->
+        | EntryTarget.Case(_, _, act, _), _ ->
             result {
-                let! cases = CaseFold.apply state.Cases entry id revision act payload
+                let! cases = CaseFold.apply state.Cases entry payload
 
                 let human =
                     List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]

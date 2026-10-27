@@ -30,7 +30,7 @@ module internal Resolution =
             | _ -> Verdict.Proceed owner.ActorId
         | None -> Verdict.Refuse Refusal.ResourceUnavailable
 
-    let run (services: ServiceContext) (request: ResolveRequest) token =
+    let run (services: ServiceContext) (request: OperationLookup) token =
         let store = services.Store
         let principal = services.Principal
 

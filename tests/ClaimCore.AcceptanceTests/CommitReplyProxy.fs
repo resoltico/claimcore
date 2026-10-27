@@ -110,14 +110,25 @@ let private frontend
             do! server.WriteAsync(ReadOnlyMemory bytes, token).AsTask()
     }
 
-let private backend
-    (client: NetworkStream)
-    (server: NetworkStream)
-    (transaction: Transaction)
-    (control: Control)
-    close
-    (token: CancellationToken)
-    =
+[<NoEquality; NoComparison>]
+type private BackendRelay =
+    {
+        Client: NetworkStream
+        Server: NetworkStream
+        Transaction: Transaction
+        Control: Control
+        Close: unit -> unit
+        CancellationToken: CancellationToken
+    }
+
+let private backend (relay: BackendRelay) =
+    let client = relay.Client
+    let server = relay.Server
+    let transaction = relay.Transaction
+    let control = relay.Control
+    let close = relay.Close
+    let token = relay.CancellationToken
+
     task {
         let mutable active = true
 
@@ -159,7 +170,18 @@ let private serve
                 server.Close()
 
             let upstream = frontend incoming outgoing transaction token
-            let downstream = backend incoming outgoing transaction control close token
+
+            let downstream =
+                backend
+                    {
+                        Client = incoming
+                        Server = outgoing
+                        Transaction = transaction
+                        Control = control
+                        Close = close
+                        CancellationToken = token
+                    }
+
             let! _ = Task.WhenAny(upstream, downstream)
             close ()
             let! _ = Task.WhenAll(upstream, downstream)

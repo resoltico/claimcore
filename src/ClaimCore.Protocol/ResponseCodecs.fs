@@ -11,52 +11,7 @@ module ResponseCodecs =
     open Codec
     open ResponseScalars
 
-    let private principal =
-        let maximumIssuer = PrincipalKey.MaximumIssuerCharacters
-
-        let issuerSchema =
-            Schema.String(
-                Some("^" + PrincipalKey.issuerScheme + "://[^/?#@\\s]+/[^?#\\s]*$"),
-                None,
-                Some 1,
-                Some maximumIssuer
-            )
-
-        let issuer =
-            boundedText 1 maximumIssuer |> constrained issuerSchema PrincipalKey.isIssuer
-
-        let fields kind maximumSubject =
-            record (fun issuer subject ->
-                {
-                    PrincipalInput.Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                })
-            |> field "issuer" _.Issuer issuer
-            |> field "subject" _.Subject (boundedText 1 maximumSubject)
-
-        let alternative kind maximumSubject =
-            variant
-                (Vocabulary.token PrincipalKind.vocabulary kind)
-                id
-                (fun (input: PrincipalInput) -> if input.Kind = kind then Some input else None)
-                (fields kind maximumSubject)
-
-        tagged
-            "Principal"
-            [
-                alternative PrincipalKind.Human PrincipalKey.MaximumHumanSubjectCharacters
-                alternative PrincipalKind.Service PrincipalKey.MaximumServiceSubjectCharacters
-            ]
-        |> Codec.mapResult
-            (fun path (input: PrincipalInput) ->
-                PrincipalKey.ofKind input.Kind input.Issuer input.Subject
-                |> Result.mapError (fun _ ->
-                    {
-                        Path = path
-                        Reason = "Invalid principal representation."
-                    }))
-            PrincipalKey.toInput
+    let private principal = PrincipalCodecs.key
 
     let private scope = RequestCodecs.scope
 
@@ -327,57 +282,9 @@ module ResponseCodecs =
         |> build
         |> named "ActorContext"
 
-    let position =
-        (record (fun sequence hash ->
-            {
-                Sequence = sequence
-                EntryHash = hash
-            })
-        : Fields<LedgerPosition, _>)
-        |> field "sequence" _.Sequence sequence
-        |> field
-            "entryHash"
-            _.EntryHash
-            (digest
-             |> map
-                 (Convert.FromHexString >> EntryHash.ofBytes >> Option.get)
-                 (EntryHash.toBytes >> Convert.ToHexStringLower))
-        |> build
-        |> named "Position"
-
-    let changeSummary =
-        (record (fun id position revision act at by ->
-            {
-                OperationId = id
-                Position = position
-                Revision = revision
-                Act = act
-                RecordedAt = at
-                RecordedBy = by
-            })
-        : Fields<ChangeSummary, _>)
-        |> field "operationId" _.OperationId uuid
-        |> field "position" _.Position position
-        |> field "revision" _.Revision sequence
-        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
-        |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy uuid
-        |> build
-        |> named "ChangeSummary"
-
-    let fieldChange =
-        (record (fun field before after ->
-            {
-                FieldName = field
-                Before = before
-                After = after
-            })
-        : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (VocabularyCodec.create BusinessField.vocabulary)
-        |> field "before" _.Before (nullable nonempty)
-        |> field "after" _.After (nullable nonempty)
-        |> build
-        |> named "FieldChange"
+    let position = LedgerCodecs.position
+    let changeSummary = LedgerCodecs.changeSummary
+    let fieldChange = LedgerCodecs.fieldChange
 
     let reviewFields =
         (record (fun before proposed changes context ->

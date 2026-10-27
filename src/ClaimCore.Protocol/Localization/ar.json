@@ -185,7 +185,6 @@
   "host.ORIGIN_REJECTED": "رُفض مصدر الطلب.",
   "host.RATE_LIMITED": "قبول الطلبات مشغول حاليًا.",
   "host.RESPONSE_FAILED": "تعذر تسليم استجابة العملية المكتملة.",
-  "host.SESSION_FORBIDDEN": "رُفض الوصول إلى الجلسة.",
   "host.SESSION_REJECTED": "رُفضت المصادقة.",
   "input.actorId.label": "معرّف الجهة",
   "input.actorId.meaning": "الجهة المسجلة التي تُقرأ صلاحياتها.",

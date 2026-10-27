@@ -185,7 +185,6 @@
   "host.ORIGIN_REJECTED": "Izcelsme ir atteikta.",
   "host.RATE_LIMITED": "Pieprasījumu uzņemšana ir aizņemta.",
   "host.RESPONSE_FAILED": "Pabeigtās darbības atbildi neizdevās piegādāt.",
-  "host.SESSION_FORBIDDEN": "Piekļuve sesijai ir atteikta.",
   "host.SESSION_REJECTED": "Autentifikācija ir atteikta.",
   "input.actorId.label": "Dalībnieka ID",
   "input.actorId.meaning": "Reģistrētais dalībnieks, kura pilnvaras tiek lasītas.",

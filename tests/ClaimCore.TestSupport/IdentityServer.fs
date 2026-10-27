@@ -84,8 +84,12 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
     let root = rootCertificate ()
     let key, certificate = serverCertificate root
 
-    let webSecret, serviceSecret, unscopedSecret, password, adminPassword, foreignSecret =
-        secret (), secret (), secret (), secret (), secret (), secret ()
+    let webSecret = secret ()
+    let serviceSecret = secret ()
+    let unscopedSecret = secret ()
+    let password = secret ()
+    let adminPassword = secret ()
+    let foreignSecret = secret ()
 
     let runId = Guid.NewGuid().ToString "N"
 

@@ -141,7 +141,15 @@ let private revocation (database: PostgresFixture.Database) owner principal =
                 (token))
 
         let revoke =
-            grant revoker (id 710011) principal Role.CaseHandler GrantTarget.Installation false
+            grant
+                revoker
+                (id 710011)
+                principal
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         do! Task.WhenAll(writerGate.Staged, revokeGate.Staged).WaitAsync(TimeSpan.FromSeconds 5.)
         use! holder = database.OwnerSource.OpenConnectionAsync()
@@ -163,7 +171,15 @@ let private revocation (database: PostgresFixture.Database) owner principal =
 
 
         let! restored =
-            grant owner (id 710012) principal Role.CaseHandler GrantTarget.Installation true
+            grant
+                owner
+                (id 710012)
+                principal
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority restored
 
@@ -228,8 +244,10 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                 actor
                 (id 730000)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         acceptedAuthority granted
@@ -257,8 +275,10 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                 actor
                 (id 730002)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 false
 
         acceptedAuthority revoked

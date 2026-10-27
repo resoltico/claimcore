@@ -23,7 +23,14 @@ module internal TransactionPages =
                     None
         }
 
-    let cases connection visibility actor roles forbidden after limit token =
+    let cases connection (query: CasePageQuery) token =
+        let visibility = query.Visibility
+        let actor = query.ActorId
+        let roles = query.ReadRoles
+        let forbidden = query.ForbiddenRoles
+        let after = query.AfterReference
+        let limit = query.Limit
+
         task {
             let! rows =
                 DatabaseSession.namedRows
@@ -45,7 +52,11 @@ module internal TransactionPages =
                 |> page limit (fun record -> CaseReference.identity record.Snapshot.Reference)
         }
 
-    let history connection installation id after limit token =
+    let history connection installation (query: HistoryPageQuery) token =
+        let id = query.CaseId
+        let after = query.AfterRevision
+        let limit = query.Limit
+
         task {
             let! rows =
                 DatabaseSession.rows
@@ -134,26 +145,11 @@ type private ReadTx
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
-        member _.CasePage
-            ({
-                 CasePageQuery.Visibility = visibility
-                 ActorId = actor
-                 ReadRoles = roles
-                 ForbiddenRoles = forbidden
-                 AfterReference = after
-                 Limit = limit
-             })
-            =
-            TransactionPages.cases connection visibility actor roles forbidden after limit token
+        member _.CasePage query =
+            TransactionPages.cases connection query token
 
-        member _.HistoryPage
-            ({
-                 HistoryPageQuery.CaseId = id
-                 AfterRevision = after
-                 Limit = limit
-             })
-            =
-            TransactionPages.history connection installation id after limit token
+        member _.HistoryPage query =
+            TransactionPages.history connection installation query token
 
         member _.ActorPage
             ({

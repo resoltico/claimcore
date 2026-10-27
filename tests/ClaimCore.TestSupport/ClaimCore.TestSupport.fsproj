@@ -19,6 +19,9 @@
     <Compile Include="PostgresReadiness.fs" />
     <Compile Include="Inputs.fs" />
     <Compile Include="CaseFixtures.fs" />
+    <Compile Include="MemoryStoreState.fs" />
+    <Compile Include="MemoryReadTransaction.fs" />
+    <Compile Include="MemoryWriteTransaction.fs" />
     <Compile Include="MemoryStore.fs" />
     <Compile Include="StoreFixtures.fs" />
     <Compile Include="PostgresFixture.fs" />

@@ -30,6 +30,8 @@
     <Compile Include="Catalog/Bindings.fs" />
     <Compile Include="ResponseScalars.fs" />
     <Compile Include="DiagnosticCodecs.fs" />
+    <Compile Include="Codecs/PrincipalCodecs.fs" />
+    <Compile Include="Codecs/LedgerCodecs.fs" />
     <Compile Include="ResponseCodecs.fs" />
     <Compile Include="Codecs/ReceiptCodecs.fs" />
     <Compile Include="Codecs/ReplyCodecs.fs" />
@@ -43,7 +45,6 @@
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="Catalog/Annotations.fs" />
     <Compile Include="Catalog/OperationCatalog.fs" />
-    <Compile Include="Messages/Terms.fs" />
     <Compile Include="Messages/ScalarGuidance.fs" />
     <Compile Include="Catalog/Catalog.fs" />
   </ItemGroup>

@@ -36,12 +36,24 @@ let internal inspectCase fixture principal operation reference token =
         }
     )
 
-let internal inspectTarget fixture principal operation target reference token =
+type internal AuthorityInspection =
+    {
+        OperationId: Guid
+        Target: PrincipalKey
+        CaseReference: string option
+    }
+
+let internal inspectTarget fixture principal (query: AuthorityInspection) token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
                 (fun tx ->
-                    ExecutionFacts.target (core fixture principal) tx operation target reference)
+                    ExecutionFacts.target
+                        (core fixture principal)
+                        tx
+                        query.OperationId
+                        query.Target
+                        query.CaseReference)
             CancellationToken = token
         }
     )
@@ -147,15 +159,14 @@ let internal bootstrap fixture =
         return core fixture fixture.Owner
     }
 
-let internal grant (actor: ServiceContext) operationId target role scope active =
+let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGrant) active =
     (Service.execute
         actor
         (OperationInput.Authority(
             authorityRequest
                 operationId
                 target
-                ((if active then AuthorityAct.Grant else AuthorityAct.Revoke)
-                    { Role = role; Scope = scope })
+                ((if active then AuthorityAct.Grant else AuthorityAct.Revoke) grant)
         ))
         (CancellationToken.None))
 
@@ -165,7 +176,15 @@ let internal caseWorker fixture =
 
         for operationId, role in [ id 2, Role.CaseHandler; id 900000, Role.PaymentRecorder ] do
             let! outcome =
-                grant owner operationId fixture.Owner role GrantTarget.Installation true
+                grant
+                    owner
+                    operationId
+                    fixture.Owner
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
 
             acceptedAuthority outcome
 

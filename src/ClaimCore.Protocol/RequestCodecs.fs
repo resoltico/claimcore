@@ -342,18 +342,18 @@ module RequestCodecs =
     let observeRequest =
         (read (fun operation ->
             {
-                ObserveRequest.OperationId = operation
+                OperationLookup.OperationId = operation
             })
-        : ReadFields<ObserveRequest, _>)
+        : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
         |> finishRead RequestSchemas.ObserveRequest QueryEndpoint.Observe
 
     let resolveRequest =
         (read (fun operation ->
             {
-                ResolveRequest.OperationId = operation
+                OperationLookup.OperationId = operation
             })
-        : ReadFields<ResolveRequest, _>)
+        : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
         |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
 

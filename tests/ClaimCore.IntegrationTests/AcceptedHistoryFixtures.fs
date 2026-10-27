@@ -75,15 +75,17 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let entry =
             LedgerEntries.create
-                fixture.InstallationId
-                tx.Head
-                view.ObservedAt
-                tx.Nonce
-                actor.ActorId
-                request.OperationId
-                scope
-                (CaseFixtures.encode request)
-                (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
+                {
+                    InstallationId = fixture.InstallationId
+                    Head = tx.Head
+                    Instant = view.ObservedAt
+                    Nonce = tx.Nonce
+                    ActorId = actor.ActorId
+                    OperationId = request.OperationId
+                    Subject = scope
+                    Request = CaseFixtures.encode request
+                    Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+                }
 
         let current: StoredCase = { CaseId = id; Snapshot = snapshot }
 
@@ -306,8 +308,10 @@ let private revokedFullHistory
                 actor
                 (ClaimCore.TestSupport.StoreFixtures.id 200)
                 database.Fixture.Owner
-                Role.CaseHandler
-                GrantTarget.Installation
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
                 false
 
         acceptedAuthority removed

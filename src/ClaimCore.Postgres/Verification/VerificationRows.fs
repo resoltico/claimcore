@@ -5,6 +5,15 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.VerificationChecks
 
+[<NoEquality; NoComparison>]
+type private ProjectionScan<'value, 'state> =
+    {
+        Read: Npgsql.NpgsqlDataReader -> 'value
+        Append: 'state -> 'value -> Result<'state, VerificationDivergence>
+        Initial: 'state
+        Finding: VerificationFinding
+    }
+
 module internal VerificationRows =
     let capture sequence finding read =
         try
@@ -23,17 +32,13 @@ module internal VerificationRows =
     let private fold
         connection
         sql
-        readRow
-        decode
-        append
-        initial
-        finding
+        (scan: ProjectionScan<'value, 'state>)
         (token: System.Threading.CancellationToken)
         =
         task {
             use statement = DatabaseSession.statement connection sql [||]
             use! reader = statement.ExecuteReaderAsync(token)
-            let mutable state = Ok initial
+            let mutable state = Ok scan.Initial
             let mutable reading = true
 
             while reading && Result.isOk state do
@@ -42,13 +47,11 @@ module internal VerificationRows =
                 if not found then
                     reading <- false
                 else
-                    let row = readRow reader
-
                     state <-
                         state
                         |> Result.bind (fun state ->
-                            capture None finding (fun () -> decode row)
-                            |> Result.bind (append state))
+                            capture None scan.Finding (fun () -> scan.Read reader)
+                            |> Result.bind (scan.Append state))
 
             return state
         }
@@ -59,11 +62,12 @@ module internal VerificationRows =
                 fold
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
-                    DatabaseSession.namedRow
-                    Projections.caseRow
-                    (ProjectionVerification.caseProjection installationId histories)
-                    Set.empty
-                    VerificationFinding.CaseProjection
+                    {
+                        Read = DatabaseSession.namedRow >> Projections.caseRow
+                        Append = (ProjectionVerification.caseProjection installationId histories)
+                        Initial = Set.empty
+                        Finding = VerificationFinding.CaseProjection
+                    }
                     token
 
             return seen |> Result.bind (ProjectionVerification.finishCases histories)
@@ -75,11 +79,12 @@ module internal VerificationRows =
                 fold
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
-                    DatabaseSession.row
-                    Projections.actorRow
-                    ProjectionVerification.actor
-                    Map.empty
-                    VerificationFinding.AuthorityProjection
+                    {
+                        Read = DatabaseSession.row >> Projections.actorRow
+                        Append = ProjectionVerification.actor
+                        Initial = Map.empty
+                        Finding = VerificationFinding.AuthorityProjection
+                    }
                     token
 
             match actors with
@@ -89,11 +94,12 @@ module internal VerificationRows =
                     fold
                         connection
                         "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
-                        DatabaseSession.row
-                        grant
-                        ProjectionVerification.grant
-                        actors
-                        VerificationFinding.AuthorityProjection
+                        {
+                            Read = DatabaseSession.row >> grant
+                            Append = ProjectionVerification.grant
+                            Initial = actors
+                            Finding = VerificationFinding.AuthorityProjection
+                        }
                         token
 
                 return actual |> Result.bind (ProjectionVerification.finishAuthority expected)

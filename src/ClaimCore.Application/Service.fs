@@ -215,7 +215,7 @@ module Service =
     let list = Queries.list
     let history = Queries.history
 
-    let observe services (input: ObserveRequest) ct =
+    let observe services (input: OperationLookup) ct =
         Queries.observe services input.OperationId ct
 
     let resolve = Resolution.run

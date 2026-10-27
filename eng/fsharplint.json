@@ -23,5 +23,23 @@
       "oneSpaceAllowedAfterOperator": false,
       "ignoreBlankLines": false
     }
+  },
+  "maxLinesInFile": {
+    "enabled": true,
+    "config": {
+      "maxLinesInFile": 500
+    }
+  },
+  "maxNumberOfFunctionParameters": {
+    "enabled": true,
+    "config": {
+      "maxItems": 5
+    }
+  },
+  "maxNumberOfItemsInTuple": {
+    "enabled": true,
+    "config": {
+      "maxItems": 4
+    }
   }
 }
