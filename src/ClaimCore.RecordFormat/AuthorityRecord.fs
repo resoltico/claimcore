@@ -4,58 +4,19 @@ open System
 open ClaimCore.Json
 open ClaimCore.Domain
 
-type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
-
-[<RequireQualifiedAccess>]
-type RecordedAuthorityAct =
-    | ProvisionOwner
-    | Operation of ClaimCore.Domain.AuthorityAct
-
 type AuthorityRequestRecord =
     {
         OperationId: Guid
         Target: Principal
-        Act: RecordedAuthorityAct
+        Act: AuthoredAuthorityAct
     }
 
-module RecordedAuthorityActs =
-    let kind =
-        function
-        | RecordedAuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Register -> AuthorityKind.Register
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant _) -> AuthorityKind.Grant
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke _) -> AuthorityKind.Revoke
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable -> AuthorityKind.Enable
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable -> AuthorityKind.Disable
-
-    let all = AuthorityKind.all
-
-    let token = AuthorityKind.token
-
-    let tryKind value =
-        all |> List.tryFind (token >> (=) value)
-
 module AuthorityRecord =
-    let private operationVariant source =
-
-        {
-            Tag = source.Tag
-            ReadVariant =
-                fun path value ->
-                    source.ReadVariant path value |> Result.map RecordedAuthorityAct.Operation
-            TryWrite =
-                function
-                | RecordedAuthorityAct.Operation value -> source.TryWrite value
-                | _ -> None
-            VariantSchema = source.VariantSchema
-            VariantDefinitions = source.VariantDefinitions
-        }
-
     let private act =
         Codec.tagged
             "RecordedAuthorityAct"
-            ((RecordCodecs.authorityVariants Codec.text |> List.map operationVariant)
-             @ [ Codec.unitVariant "PROVISION_OWNER" RecordedAuthorityAct.ProvisionOwner ])
+            ((RecordCodecs.authorityVariants Codec.text)
+             @ [ Codec.unitVariant "PROVISION_OWNER" AuthorityAct.ProvisionOwner ])
 
     let private fields =
         let version = int64 RecordVersions.Authority
@@ -80,12 +41,12 @@ module AuthorityRecord =
 
     let private validScope =
         function
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant {
-                                                                      Scope = GrantTarget.CaseReference reference
-                                                                  })
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke {
-                                                                       Scope = GrantTarget.CaseReference reference
-                                                                   }) ->
+        | AuthorityAct.Grant {
+                                 Scope = GrantTarget.CaseReference reference
+                             }
+        | AuthorityAct.Revoke {
+                                  Scope = GrantTarget.CaseReference reference
+                              } ->
             (CaseReference.parse
              >> Result.map ignore
              >> Result.mapError (fun violation ->

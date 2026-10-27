@@ -1,7 +1,6 @@
 namespace ClaimCore.Domain
 
 open System
-open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
 type RecordGroup =
@@ -108,51 +107,222 @@ type DecisionInput =
 
 type PaymentInput = { PaymentDate: string }
 
-[<RequireQualifiedAccess>]
-type RegistrationGroup =
-    | Keep
-    | Replace of RegistrationInput
-
-[<RequireQualifiedAccess>]
-type DecisionGroup =
-    | Keep
-    | Replace of DecisionInput
-    | Clear
-
-[<RequireQualifiedAccess>]
-type PaymentGroup =
-    | Keep
-    | Replace of PaymentInput
-    | Clear
-
-type CorrectionInput =
+/// Accepted registration values retain their validated structure.
+type Registration =
     {
-        Registration: RegistrationGroup
-        Decision: DecisionGroup
-        Payment: PaymentGroup
+        IncidentDate: CalendarDate
+        IncidentNotificationDate: CalendarDate
+        IncidentCountry: CountryCode
+        ClaimantName: PartyName
+        InsurerName: PartyName
+        ClaimedAmount: Money
+    }
+
+type Decision =
+    {
+        PaymentDecisionDate: CalendarDate
+        PayableAmount: Money
+    }
+
+type Payment = { PaymentDate: CalendarDate }
+
+[<RequireQualifiedAccess>]
+type Change<'value> =
+    | Keep
+    | Replace of 'value
+    | Clear
+
+type Correction<'registration, 'decision, 'payment> =
+    {
+        Registration: Change<'registration>
+        Decision: Change<'decision>
+        Payment: Change<'payment>
     }
 
 [<RequireQualifiedAccess>]
-type UnvalidatedCaseAct =
-    | Open of RegistrationInput
-    | AmendRegistration of RegistrationInput
-    | Correct of CorrectionInput
-    | Decide of DecisionInput
+type CaseAct<'registration, 'decision, 'payment, 'reason> =
+    | Open of 'registration
+    | AmendRegistration of 'registration
+    | Correct of Correction<'registration, 'decision, 'payment>
+    | Decide of 'decision
     | WithdrawDecision
-    | RecordPayment of PaymentInput
+    | RecordPayment of 'payment
     | ClearPayment
     | Close
     | Reopen
-    | Void of string
-    | Reinstate of string
+    | Void of 'reason
+    | Reinstate of 'reason
     | Erase
+
+type AuthoredCaseAct = CaseAct<RegistrationInput, DecisionInput, PaymentInput, string>
+type AuthoredCorrection = Correction<RegistrationInput, DecisionInput, PaymentInput>
+type ValidCaseAct = CaseAct<Registration, Decision, Payment, Reason>
+type ValidCorrection = Correction<Registration, Decision, Payment>
+
+[<RequireQualifiedAccess>]
+type ActShape =
+    | NoValues
+    | RegistrationValues
+    | DecisionValues
+    | PaymentValues
+    | ReasonText
+    | CorrectionGroups
+
+[<RequireQualifiedAccess>]
+type ActPayload<'registration, 'decision, 'payment, 'reason> =
+    | Empty
+    | Registration of 'registration
+    | Decision of 'decision
+    | Payment of 'payment
+    | Reason of 'reason
+    | Correction of Correction<'registration, 'decision, 'payment>
+
+module ActPayload =
+    let registration =
+        function
+        | ActPayload.Registration value -> Some value
+        | _ -> None
+
+    let decision =
+        function
+        | ActPayload.Decision value -> Some value
+        | _ -> None
+
+    let payment =
+        function
+        | ActPayload.Payment value -> Some value
+        | _ -> None
+
+    let reason =
+        function
+        | ActPayload.Reason value -> Some value
+        | _ -> None
+
+    let correction =
+        function
+        | ActPayload.Correction value -> Some value
+        | _ -> None
+
+module CaseAct =
+    let kind =
+        function
+        | CaseAct.Open _ -> CaseActKind.Open
+        | CaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
+        | CaseAct.Correct _ -> CaseActKind.Correct
+        | CaseAct.Decide _ -> CaseActKind.Decide
+        | CaseAct.WithdrawDecision -> CaseActKind.WithdrawDecision
+        | CaseAct.RecordPayment _ -> CaseActKind.RecordPayment
+        | CaseAct.ClearPayment -> CaseActKind.ClearPayment
+        | CaseAct.Close -> CaseActKind.Close
+        | CaseAct.Reopen -> CaseActKind.Reopen
+        | CaseAct.Void _ -> CaseActKind.Void
+        | CaseAct.Reinstate _ -> CaseActKind.Reinstate
+        | CaseAct.Erase -> CaseActKind.Erase
+
+    let private change transform =
+        function
+        | Change.Keep -> Ok Change.Keep
+        | Change.Clear -> Ok Change.Clear
+        | Change.Replace value -> transform value |> Result.map Change.Replace
+
+    let traverse registration decision payment reason =
+        function
+        | CaseAct.Open value -> registration value |> Result.map CaseAct.Open
+        | CaseAct.AmendRegistration value ->
+            registration value |> Result.map CaseAct.AmendRegistration
+        | CaseAct.Decide value -> decision value |> Result.map CaseAct.Decide
+        | CaseAct.RecordPayment value -> payment value |> Result.map CaseAct.RecordPayment
+        | CaseAct.Void value -> reason value |> Result.map CaseAct.Void
+        | CaseAct.Reinstate value -> reason value |> Result.map CaseAct.Reinstate
+        | CaseAct.Correct value ->
+            change registration value.Registration
+            |> Result.bind (fun r ->
+                change decision value.Decision
+                |> Result.bind (fun d ->
+                    change payment value.Payment
+                    |> Result.map (fun p ->
+                        CaseAct.Correct
+                            {
+                                Registration = r
+                                Decision = d
+                                Payment = p
+                            })))
+        | CaseAct.WithdrawDecision -> Ok CaseAct.WithdrawDecision
+        | CaseAct.ClearPayment -> Ok CaseAct.ClearPayment
+        | CaseAct.Close -> Ok CaseAct.Close
+        | CaseAct.Reopen -> Ok CaseAct.Reopen
+        | CaseAct.Erase -> Ok CaseAct.Erase
+
+    let map registration decision payment reason act =
+        traverse (registration >> Ok) (decision >> Ok) (payment >> Ok) (reason >> Ok) act
+        |> Result.defaultWith (fun () -> invalidOp "A total act mapping cannot fail.")
+
+    let payload =
+        function
+        | CaseAct.Open value
+        | CaseAct.AmendRegistration value -> ActPayload.Registration value
+        | CaseAct.Correct value -> ActPayload.Correction value
+        | CaseAct.Decide value -> ActPayload.Decision value
+        | CaseAct.RecordPayment value -> ActPayload.Payment value
+        | CaseAct.Void value
+        | CaseAct.Reinstate value -> ActPayload.Reason value
+        | CaseAct.WithdrawDecision
+        | CaseAct.ClearPayment
+        | CaseAct.Close
+        | CaseAct.Reopen
+        | CaseAct.Erase -> ActPayload.Empty
+
+    // Exhaustive structural reconstruction; every valid kind/payload pairing is explicit.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let ofPayload kind payload =
+        match kind, payload with
+        | CaseActKind.Open, ActPayload.Registration value -> CaseAct.Open value
+        | CaseActKind.AmendRegistration, ActPayload.Registration value ->
+            CaseAct.AmendRegistration value
+        | CaseActKind.Correct, ActPayload.Correction value -> CaseAct.Correct value
+        | CaseActKind.Decide, ActPayload.Decision value -> CaseAct.Decide value
+        | CaseActKind.RecordPayment, ActPayload.Payment value -> CaseAct.RecordPayment value
+        | CaseActKind.Void, ActPayload.Reason value -> CaseAct.Void value
+        | CaseActKind.Reinstate, ActPayload.Reason value -> CaseAct.Reinstate value
+        | CaseActKind.WithdrawDecision, ActPayload.Empty -> CaseAct.WithdrawDecision
+        | CaseActKind.ClearPayment, ActPayload.Empty -> CaseAct.ClearPayment
+        | CaseActKind.Close, ActPayload.Empty -> CaseAct.Close
+        | CaseActKind.Reopen, ActPayload.Empty -> CaseAct.Reopen
+        | CaseActKind.Erase, ActPayload.Empty -> CaseAct.Erase
+        | _ -> invalidArg (nameof payload) "The payload must match the act's declared shape."
+
+    let registration (value: Registration) : RegistrationInput =
+        {
+            IncidentDate = CalendarDate.format value.IncidentDate
+            IncidentNotificationDate = CalendarDate.format value.IncidentNotificationDate
+            IncidentCountry = CountryCode.format value.IncidentCountry
+            ClaimantName = PartyName.format value.ClaimantName
+            InsurerName = PartyName.format value.InsurerName
+            ClaimedAmount = Money.format value.ClaimedAmount
+            ClaimedCurrency = Money.currency value.ClaimedAmount
+        }
+
+    let decision (value: Decision) : DecisionInput =
+        {
+            PaymentDecisionDate = CalendarDate.format value.PaymentDecisionDate
+            PayableAmount = Money.format value.PayableAmount
+            PayableCurrency = Money.currency value.PayableAmount
+        }
+
+    let private payment (value: Payment) : PaymentInput =
+        {
+            PaymentDate = CalendarDate.format value.PaymentDate
+        }
+
+    let authored (act: ValidCaseAct) : AuthoredCaseAct =
+        map registration decision payment Reason.format act
 
 type UnvalidatedCaseRequest =
     {
         OperationId: Guid
         CaseReference: string
         ExpectedRevision: int64
-        Act: UnvalidatedCaseAct
+        Act: AuthoredCaseAct
     }
 
 /// Unvalidated subject facts; Application admits the canonical principal key.
@@ -172,21 +342,29 @@ type GrantTarget =
 type GrantChange = { Role: string; Scope: GrantTarget }
 
 [<RequireQualifiedAccess>]
-type AuthorityAct =
+type AuthorityAct<'grant> =
     | Register
-    | Grant of GrantChange
-    | Revoke of GrantChange
+    | Grant of 'grant
+    | Revoke of 'grant
     | Enable
     | Disable
+    | ProvisionOwner
+
+type AuthoredAuthorityAct = AuthorityAct<GrantChange>
 
 type AuthorityRequest =
     {
         OperationId: Guid
         Target: Principal
-        Act: AuthorityAct
+        Act: AuthoredAuthorityAct
     }
 
-module AuthorityActs =
+[<RequireQualifiedAccess>]
+type AuthorityShape =
+    | TargetOnly
+    | GrantValues
+
+module AuthorityAct =
     let kind =
         function
         | AuthorityAct.Register -> AuthorityKind.Register
@@ -194,6 +372,48 @@ module AuthorityActs =
         | AuthorityAct.Revoke _ -> AuthorityKind.Revoke
         | AuthorityAct.Enable -> AuthorityKind.Enable
         | AuthorityAct.Disable -> AuthorityKind.Disable
+        | AuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
+
+    let shape =
+        function
+        | AuthorityKind.Grant
+        | AuthorityKind.Revoke -> AuthorityShape.GrantValues
+        | AuthorityKind.Register
+        | AuthorityKind.Enable
+        | AuthorityKind.Disable
+        | AuthorityKind.ProvisionOwner -> AuthorityShape.TargetOnly
+
+    let traverse grant =
+        function
+        | AuthorityAct.Grant value -> grant value |> Result.map AuthorityAct.Grant
+        | AuthorityAct.Revoke value -> grant value |> Result.map AuthorityAct.Revoke
+        | AuthorityAct.Register -> Ok AuthorityAct.Register
+        | AuthorityAct.Enable -> Ok AuthorityAct.Enable
+        | AuthorityAct.Disable -> Ok AuthorityAct.Disable
+        | AuthorityAct.ProvisionOwner -> Ok AuthorityAct.ProvisionOwner
+
+    let map grant act =
+        traverse (grant >> Ok) act
+        |> Result.defaultWith (fun () -> invalidOp "A total authority mapping cannot fail.")
+
+    let payload =
+        function
+        | AuthorityAct.Grant grant
+        | AuthorityAct.Revoke grant -> Some grant
+        | AuthorityAct.Register
+        | AuthorityAct.Enable
+        | AuthorityAct.Disable
+        | AuthorityAct.ProvisionOwner -> None
+
+    let ofPayload kind grant =
+        match kind, grant with
+        | AuthorityKind.Grant, Some grant -> AuthorityAct.Grant grant
+        | AuthorityKind.Revoke, Some grant -> AuthorityAct.Revoke grant
+        | AuthorityKind.Register, None -> AuthorityAct.Register
+        | AuthorityKind.Enable, None -> AuthorityAct.Enable
+        | AuthorityKind.Disable, None -> AuthorityAct.Disable
+        | AuthorityKind.ProvisionOwner, None -> AuthorityAct.ProvisionOwner
+        | _ -> invalidArg (nameof grant) "The grant must match the authority act shape."
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module RecordGroup =
@@ -224,6 +444,11 @@ module CaseStatus =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
+[<RequireQualifiedAccess>]
+type RevisionInput =
+    | New
+    | Expected
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseActKind =
     let isStewardship =
@@ -243,6 +468,51 @@ module CaseActKind =
 
     let vocabulary =
         Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
+
+    let shape =
+        function
+        | CaseActKind.Open
+        | CaseActKind.AmendRegistration -> ActShape.RegistrationValues
+        | CaseActKind.Correct -> ActShape.CorrectionGroups
+        | CaseActKind.Decide -> ActShape.DecisionValues
+        | CaseActKind.RecordPayment -> ActShape.PaymentValues
+        | CaseActKind.Void
+        | CaseActKind.Reinstate -> ActShape.ReasonText
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Erase -> ActShape.NoValues
+
+    let revision =
+        function
+        | CaseActKind.Open -> RevisionInput.New
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> RevisionInput.Expected
+
+    let prefill =
+        function
+        | CaseActKind.AmendRegistration
+        | CaseActKind.Correct
+        | CaseActKind.Decide -> true
+        | CaseActKind.Open
+        | CaseActKind.WithdrawDecision
+        | CaseActKind.RecordPayment
+        | CaseActKind.ClearPayment
+        | CaseActKind.Close
+        | CaseActKind.Reopen
+        | CaseActKind.Void
+        | CaseActKind.Reinstate
+        | CaseActKind.Erase -> false
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -304,43 +574,6 @@ module ActorEndpoint =
              | ActorEndpoint.Context -> "context")
 
     let all = Vocabulary.all vocabulary
-
-module UnvalidatedCaseActs =
-    let kind =
-        function
-        | UnvalidatedCaseAct.Open _ -> CaseActKind.Open
-        | UnvalidatedCaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
-        | UnvalidatedCaseAct.Correct _ -> CaseActKind.Correct
-        | UnvalidatedCaseAct.Decide _ -> CaseActKind.Decide
-        | UnvalidatedCaseAct.WithdrawDecision -> CaseActKind.WithdrawDecision
-        | UnvalidatedCaseAct.RecordPayment _ -> CaseActKind.RecordPayment
-        | UnvalidatedCaseAct.ClearPayment -> CaseActKind.ClearPayment
-        | UnvalidatedCaseAct.Close -> CaseActKind.Close
-        | UnvalidatedCaseAct.Reopen -> CaseActKind.Reopen
-        | UnvalidatedCaseAct.Void _ -> CaseActKind.Void
-        | UnvalidatedCaseAct.Reinstate _ -> CaseActKind.Reinstate
-        | UnvalidatedCaseAct.Erase -> CaseActKind.Erase
-
-    let name act = kind act |> CaseActKind.token
-
-/// Accepted registration values retain their validated structure.
-type Registration =
-    {
-        IncidentDate: CalendarDate
-        IncidentNotificationDate: CalendarDate
-        IncidentCountry: CountryCode
-        ClaimantName: PartyName
-        InsurerName: PartyName
-        ClaimedAmount: Money
-    }
-
-type Decision =
-    {
-        PaymentDecisionDate: CalendarDate
-        PayableAmount: Money
-    }
-
-type Payment = { PaymentDate: CalendarDate }
 
 /// Accepted facts share the authored group types; a decision is complete or absent.
 type CaseFields =
@@ -439,66 +672,6 @@ type FieldDeclaration =
         RetainedOnErasure: bool
     }
 
-[<NoEquality; NoComparison>]
-type GroupDeclaration<'Record> =
-    private
-        {
-            Members: BusinessField list
-            Build: Codec<string> -> Codec<'Record>
-        }
-
-    member this.Fields = this.Members
-    member this.Codec text = this.Build text
-
-[<NoEquality; NoComparison>]
-type private GroupFields<'Record, 'Ctor> =
-    {
-        Members: BusinessField list
-        Build: Codec<string> -> Fields<'Record, 'Ctor>
-    }
-
-[<NoEquality; NoComparison>]
-type CaseValues<'Values> =
-    {
-        Create: 'Values -> UnvalidatedCaseAct
-        Extract: UnvalidatedCaseAct -> 'Values option
-        Prefill: bool
-    }
-
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
-type CasePayload =
-    | NoPayload of UnvalidatedCaseAct
-    | Registration of CaseValues<RegistrationInput>
-    | Decision of CaseValues<DecisionInput>
-    | Payment of CaseValues<PaymentInput>
-    | Reason of CaseValues<string>
-    | Correction of CaseValues<CorrectionInput>
-
-[<RequireQualifiedAccess>]
-type RevisionInput =
-    | New
-    | Expected
-
-[<NoEquality; NoComparison>]
-type CaseActDeclaration =
-    {
-        Kind: CaseActKind
-        RevisionMode: RevisionInput
-        Payload: CasePayload
-    }
-
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
-type AuthorityPayload =
-    | Target of AuthorityAct
-    | Grant of create: (GrantChange -> AuthorityAct) * extract: (AuthorityAct -> GrantChange option)
-
-[<NoEquality; NoComparison>]
-type AuthorityActDeclaration =
-    {
-        Kind: AuthorityKind
-        Payload: AuthorityPayload
-    }
-
 [<RequireQualifiedAccess>]
 type HistoryDetail =
     | Summary
@@ -548,33 +721,6 @@ type ReadDeclaration =
     {
         Endpoint: ActorEndpoint
         Inputs: ReadInput list
-    }
-
-[<NoEquality; NoComparison>]
-type ReadProfile =
-    {
-        Text: Codec<string>
-        Cursor: Codec<string>
-        Limit: Codec<int>
-        Detail: Codec<HistoryDetail>
-    }
-
-[<NoEquality; NoComparison>]
-type ReadDefinition<'Request> =
-    private
-        {
-            Info: ReadDeclaration
-            Build: ReadProfile -> Codec<'Request>
-        }
-
-    member this.Description = this.Info
-    member this.Codec profile = this.Build profile
-
-[<NoEquality; NoComparison>]
-type private ReadFields<'Request, 'Ctor> =
-    {
-        Inputs: ReadInput list
-        Build: ReadProfile -> Fields<'Request, 'Ctor>
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -631,419 +777,80 @@ module BusinessField =
     let values fields =
         Vocabulary.all vocabulary |> List.map (fun field -> field, value fields field)
 
-/// Record layout and authored payloads are declared together. Boundaries choose their text profile.
+/// Domain declarations carry structure; each boundary chooses its own names and codecs.
 module Record =
-    let private key = BusinessField.key
-    let private valueKind = BusinessField.valueKind
-
-    let private record ctor : GroupFields<'Whole, 'Ctor> =
-        {
-            Members = []
-            Build = fun _ -> Codec.record ctor
-        }
-
-    let private field
-        name
-        get
-        (fields: GroupFields<'Whole, string -> 'Rest>)
-        : GroupFields<'Whole, 'Rest> =
-        {
-            Members = fields.Members @ [ name ]
-            Build = fun text -> fields.Build text |> Codec.field (key name) get text
-        }
-
-    let private finish name (fields: GroupFields<'Whole, 'Whole>) : GroupDeclaration<'Whole> =
-        {
-            Members = fields.Members
-            Build = fun text -> fields.Build text |> Codec.build |> Codec.named name
-        }
-
-    let registration =
-        (record (fun incident notification country claimant insurer amount currency ->
-            {
-                RegistrationInput.IncidentDate = incident
-                IncidentNotificationDate = notification
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            })
-        : GroupFields<RegistrationInput, _>)
-        |> field BusinessField.IncidentDate _.IncidentDate
-        |> field BusinessField.IncidentNotificationDate _.IncidentNotificationDate
-        |> field BusinessField.IncidentCountry _.IncidentCountry
-        |> field BusinessField.ClaimantName _.ClaimantName
-        |> field BusinessField.InsurerName _.InsurerName
-        |> field BusinessField.ClaimedAmount _.ClaimedAmount
-        |> field BusinessField.ClaimedCurrency _.ClaimedCurrency
-        |> finish "Registration"
-
-    let decision =
-        (record (fun date amount currency ->
-            {
-                DecisionInput.PaymentDecisionDate = date
-                PayableAmount = amount
-                PayableCurrency = currency
-            })
-        : GroupFields<DecisionInput, _>)
-        |> field BusinessField.PaymentDecisionDate _.PaymentDecisionDate
-        |> field BusinessField.PayableAmount _.PayableAmount
-        |> field BusinessField.PayableCurrency _.PayableCurrency
-        |> finish "Decision"
-
-    let payment =
-        (record (fun date -> { PaymentInput.PaymentDate = date }): GroupFields<PaymentInput, _>)
-        |> field BusinessField.PaymentDate _.PaymentDate
-        |> finish "Payment"
-
     let fieldsOf =
         function
-        | RecordGroup.Registration -> registration.Fields
-        | RecordGroup.Decision -> decision.Fields
-        | RecordGroup.Payment -> payment.Fields
+        | RecordGroup.Registration ->
+            [
+                BusinessField.IncidentDate
+                BusinessField.IncidentNotificationDate
+                BusinessField.IncidentCountry
+                BusinessField.ClaimantName
+                BusinessField.InsurerName
+                BusinessField.ClaimedAmount
+                BusinessField.ClaimedCurrency
+            ]
+        | RecordGroup.Decision ->
+            [
+                BusinessField.PaymentDecisionDate
+                BusinessField.PayableAmount
+                BusinessField.PayableCurrency
+            ]
+        | RecordGroup.Payment -> [ BusinessField.PaymentDate ]
 
     let private declared group allowsAbsence field =
         {
             Field = field
-            Key = key field
-            Kind = valueKind field
+            Key = BusinessField.key field
+            Kind = BusinessField.valueKind field
             Group = group
             AllowsAbsence = allowsAbsence
             RetainedOnErasure = field = BusinessField.CaseReference
         }
 
     let fields =
-        (registration.Fields |> List.map (declared (Some RecordGroup.Registration) false))
+        (fieldsOf RecordGroup.Registration
+         |> List.map (declared (Some RecordGroup.Registration) false))
         @ [ declared None false BusinessField.CaseReference ]
-        @ (decision.Fields |> List.map (declared (Some RecordGroup.Decision) true))
-        @ (payment.Fields |> List.map (declared (Some RecordGroup.Payment) true))
+        @ (fieldsOf RecordGroup.Decision
+           |> List.map (declared (Some RecordGroup.Decision) true))
+        @ (fieldsOf RecordGroup.Payment
+           |> List.map (declared (Some RecordGroup.Payment) true))
         @ [ declared None false BusinessField.Status ]
-
-    let private values prefill create extract =
-        {
-            Create = create
-            Extract = extract
-            Prefill = prefill
-        }
-
-    let private existing kind payload =
-        {
-            Kind = kind
-            RevisionMode = RevisionInput.Expected
-            Payload = payload
-        }
-
-    let private unit act =
-        existing (UnvalidatedCaseActs.kind act) (CasePayload.NoPayload act)
-
-    let caseActs =
-        [
-            {
-                Kind = CaseActKind.Open
-                RevisionMode = RevisionInput.New
-                Payload =
-                    CasePayload.Registration(
-                        values false UnvalidatedCaseAct.Open (function
-                            | UnvalidatedCaseAct.Open value -> Some value
-                            | _ -> None)
-                    )
-            }
-            existing
-                CaseActKind.AmendRegistration
-                (CasePayload.Registration(
-                    values true UnvalidatedCaseAct.AmendRegistration (function
-                        | UnvalidatedCaseAct.AmendRegistration value -> Some value
-                        | _ -> None)
-                ))
-            existing
-                CaseActKind.Correct
-                (CasePayload.Correction(
-                    values true UnvalidatedCaseAct.Correct (function
-                        | UnvalidatedCaseAct.Correct value -> Some value
-                        | _ -> None)
-                ))
-            existing
-                CaseActKind.Decide
-                (CasePayload.Decision(
-                    values true UnvalidatedCaseAct.Decide (function
-                        | UnvalidatedCaseAct.Decide value -> Some value
-                        | _ -> None)
-                ))
-            unit UnvalidatedCaseAct.WithdrawDecision
-            existing
-                CaseActKind.RecordPayment
-                (CasePayload.Payment(
-                    values false UnvalidatedCaseAct.RecordPayment (function
-                        | UnvalidatedCaseAct.RecordPayment value -> Some value
-                        | _ -> None)
-                ))
-            unit UnvalidatedCaseAct.ClearPayment
-            unit UnvalidatedCaseAct.Close
-            unit UnvalidatedCaseAct.Reopen
-            existing
-                CaseActKind.Void
-                (CasePayload.Reason(
-                    values false UnvalidatedCaseAct.Void (function
-                        | UnvalidatedCaseAct.Void value -> Some value
-                        | _ -> None)
-                ))
-            existing
-                CaseActKind.Reinstate
-                (CasePayload.Reason(
-                    values false UnvalidatedCaseAct.Reinstate (function
-                        | UnvalidatedCaseAct.Reinstate value -> Some value
-                        | _ -> None)
-                ))
-            unit UnvalidatedCaseAct.Erase
-        ]
-
-    let authorityActs =
-        [
-            {
-                Kind = AuthorityKind.Register
-                Payload = AuthorityPayload.Target AuthorityAct.Register
-            }
-            {
-                Kind = AuthorityKind.Grant
-                Payload =
-                    AuthorityPayload.Grant(
-                        AuthorityAct.Grant,
-                        (function
-                        | AuthorityAct.Grant value -> Some value
-                        | _ -> None)
-                    )
-            }
-            {
-                Kind = AuthorityKind.Revoke
-                Payload =
-                    AuthorityPayload.Grant(
-                        AuthorityAct.Revoke,
-                        (function
-                        | AuthorityAct.Revoke value -> Some value
-                        | _ -> None)
-                    )
-            }
-            {
-                Kind = AuthorityKind.Enable
-                Payload = AuthorityPayload.Target AuthorityAct.Enable
-            }
-            {
-                Kind = AuthorityKind.Disable
-                Payload = AuthorityPayload.Target AuthorityAct.Disable
-            }
-        ]
-
-    let private read ctor : ReadFields<'Whole, 'Ctor> =
-        {
-            Inputs = []
-            Build = fun _ -> Codec.record ctor
-        }
-
-    let private caseOperand
-        get
-        (fields: ReadFields<'Whole, string -> 'Rest>)
-        : ReadFields<'Whole, 'Rest> =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.CaseOperand ]
-            Build =
-                fun profile ->
-                    fields.Build profile
-                    |> Codec.field (key BusinessField.CaseReference) get profile.Text
-        }
-
-    let private operationOperand
-        get
-        (fields: ReadFields<'Whole, Guid -> 'Rest>)
-        : ReadFields<'Whole, 'Rest> =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.OperationOperand ]
-            Build = fun profile -> fields.Build profile |> Codec.field "operationId" get Codec.uuid
-        }
-
-    let private actorOperand
-        get
-        (fields: ReadFields<'Whole, Guid -> 'Rest>)
-        : ReadFields<'Whole, 'Rest> =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.ActorOperand ]
-            Build = fun profile -> fields.Build profile |> Codec.field "actorId" get Codec.uuid
-        }
-
-    let private detail
-        get
-        (fields: ReadFields<'Whole, HistoryDetail -> 'Rest>)
-        : ReadFields<'Whole, 'Rest> =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.Detail ]
-            Build = fun profile -> fields.Build profile |> Codec.field "detail" get profile.Detail
-        }
-
-    let private page
-        cursor
-        limit
-        (fields: ReadFields<'Whole, string option -> int -> 'Rest>)
-        : ReadFields<'Whole, 'Rest> =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.Page ]
-            Build =
-                fun profile ->
-                    fields.Build profile
-                    |> Codec.optionalField "cursor" cursor profile.Cursor
-                    |> Codec.field "limit" limit profile.Limit
-        }
-
-    let private finishRead
-        name
-        endpoint
-        (fields: ReadFields<'Whole, 'Whole>)
-        : ReadDefinition<'Whole> =
-        {
-            Info =
-                {
-                    Endpoint = endpoint
-                    Inputs = fields.Inputs
-                }
-            Build = fun profile -> fields.Build profile |> Codec.build |> Codec.named name
-        }
-
-    let caseGet =
-        (read (fun reference ->
-            {
-                CaseGetRequest.CaseReference = reference
-            })
-        : ReadFields<CaseGetRequest, _>)
-        |> caseOperand _.CaseReference
-        |> finishRead "CaseGetRequest" ActorEndpoint.CaseGet
-
-    let caseList =
-        (read (fun cursor limit ->
-            {
-                PageRequest.AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<PageRequest, _>)
-        |> page _.AfterCursor _.Limit
-        |> finishRead "PageRequest" ActorEndpoint.CaseList
-
-    let caseHistory =
-        (read (fun reference detail cursor limit ->
-            {
-                HistoryRequest.CaseReference = reference
-                Detail = detail
-                AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<HistoryRequest, _>)
-        |> caseOperand _.CaseReference
-        |> detail _.Detail
-        |> page _.AfterCursor _.Limit
-        |> finishRead "HistoryRequest" ActorEndpoint.CaseHistory
-
-    let observe =
-        (read (fun operation ->
-            {
-                ObserveRequest.OperationId = operation
-            })
-        : ReadFields<ObserveRequest, _>)
-        |> operationOperand _.OperationId
-        |> finishRead "ObserveRequest" ActorEndpoint.Observe
-
-    let resolve =
-        (read (fun operation ->
-            {
-                ResolveRequest.OperationId = operation
-            })
-        : ReadFields<ResolveRequest, _>)
-        |> operationOperand _.OperationId
-        |> finishRead "ResolveRequest" ActorEndpoint.Resolve
-
-    let authorityList =
-        (read (fun cursor limit ->
-            {
-                PageRequest.AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<PageRequest, _>)
-        |> page _.AfterCursor _.Limit
-        |> finishRead "PageRequest" ActorEndpoint.AuthorityList
-
-    let authorityGrants =
-        (read (fun actor cursor limit ->
-            {
-                GrantsRequest.ActorId = actor
-                AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<GrantsRequest, _>)
-        |> actorOperand _.ActorId
-        |> page _.AfterCursor _.Limit
-        |> finishRead "GrantsRequest" ActorEndpoint.AuthorityGrants
-
-    let context = read () |> finishRead "Empty" ActorEndpoint.Context
 
     let reads =
         [
-            caseGet.Description
-            caseList.Description
-            caseHistory.Description
-            observe.Description
-            resolve.Description
-            authorityList.Description
-            authorityGrants.Description
-            context.Description
+            {
+                Endpoint = ActorEndpoint.CaseGet
+                Inputs = [ ReadInput.CaseOperand ]
+            }
+            {
+                Endpoint = ActorEndpoint.CaseList
+                Inputs = [ ReadInput.Page ]
+            }
+            {
+                Endpoint = ActorEndpoint.CaseHistory
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
+            }
+            {
+                Endpoint = ActorEndpoint.Observe
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
+                Endpoint = ActorEndpoint.Resolve
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
+                Endpoint = ActorEndpoint.AuthorityList
+                Inputs = [ ReadInput.Page ]
+            }
+            {
+                Endpoint = ActorEndpoint.AuthorityGrants
+                Inputs = [ ReadInput.ActorOperand; ReadInput.Page ]
+            }
+            {
+                Endpoint = ActorEndpoint.Context
+                Inputs = []
+            }
         ]
-
-    /// Both boundary profiles interpret the same typed payload constructors and group members.
-    let caseCodec text correction =
-        let registration = registration.Codec text
-        let decision = decision.Codec text
-        let payment = payment.Codec text
-
-        let values codec shape token =
-            Codec.variant
-                token
-                shape.Create
-                shape.Extract
-                (Codec.record id |> Codec.field "values" id codec)
-
-        caseActs
-        |> List.map (fun declaration ->
-            let token = CaseActKind.token declaration.Kind
-
-            match declaration.Payload with
-            | CasePayload.NoPayload act -> Codec.unitVariant token act
-            | CasePayload.Registration shape -> values registration shape token
-            | CasePayload.Decision shape -> values decision shape token
-            | CasePayload.Payment shape -> values payment shape token
-            | CasePayload.Reason shape ->
-                Codec.variant
-                    token
-                    shape.Create
-                    shape.Extract
-                    (Codec.record id |> Codec.field "reason" id text)
-            | CasePayload.Correction shape ->
-                Codec.variant
-                    token
-                    shape.Create
-                    shape.Extract
-                    (Codec.record id |> Codec.field "groups" id correction))
-        |> Codec.tagged "CaseAct"
-
-    let authorityVariants role scope =
-        let grant =
-            Codec.record (fun role scope ->
-                {
-                    GrantChange.Role = role
-                    Scope = scope
-                })
-            |> Codec.field "role" _.Role role
-            |> Codec.field "scope" _.Scope scope
-
-        authorityActs
-        |> List.map (fun declaration ->
-            let token = AuthorityKind.token declaration.Kind
-
-            match declaration.Payload with
-            | AuthorityPayload.Target act -> Codec.unitVariant token act
-            | AuthorityPayload.Grant(create, extract) -> Codec.variant token create extract grant)

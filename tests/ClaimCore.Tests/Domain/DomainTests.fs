@@ -65,7 +65,7 @@ let private registrationTests =
                     }
 
                 Expect.isTrue
-                    (CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+                    (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                      |> isInvalid)
                     "Chronology")
             testCase "future incident and notification are rejected" (fun () ->
@@ -76,7 +76,7 @@ let private registrationTests =
                     }
 
                 Expect.isTrue
-                    (CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open facts)) None
+                    (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                      |> isInvalid)
                     "Future")
         ]
@@ -128,7 +128,7 @@ let private lifecycleTests =
             testCase "unpaid and undecided case can close" (fun () ->
                 let fields =
                     (opened ()
-                     |> apply UnvalidatedCaseAct.Close
+                     |> apply AuthoredCaseAct.Close
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
@@ -155,9 +155,9 @@ let private identityAndVersionTests =
 
                 let after =
                     original
-                    |> apply UnvalidatedCaseAct.Close
+                    |> apply AuthoredCaseAct.Close
                     |> accepted
-                    |> apply UnvalidatedCaseAct.Reopen
+                    |> apply AuthoredCaseAct.Reopen
                     |> accepted
                     |> Case.snapshot
 
@@ -171,17 +171,14 @@ let private identityAndVersionTests =
                     "Technical revisions")
             testCase "stale version cannot overwrite a case" (fun () ->
                 let result =
-                    CaseFixtures.decide
-                        today
-                        (request 0L UnvalidatedCaseAct.Close)
-                        (Some(opened ()))
+                    CaseFixtures.decide today (request 0L AuthoredCaseAct.Close) (Some(opened ()))
 
                 Expect.isTrue
                     ((result |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 1L))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
-                    CaseFixtures.decide today (request 1L UnvalidatedCaseAct.Close) None
+                    CaseFixtures.decide today (request 1L AuthoredCaseAct.Close) None
                     |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.ResourceUnavailable) "Not found")
@@ -194,25 +191,25 @@ let private paymentGuardTests =
             testCase "payment requires decision" (fun () ->
                 let result =
                     opened ()
-                    |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+                    |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
                     |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.DecisionRequired) "Decision required")
             testCase "second full payment rejected" (fun () ->
                 let result =
                     paid ()
-                    |> apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-21" })
+                    |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-21" })
                     |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.PaymentAlreadyRecorded) "No instalment model")
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
                     opened ()
-                    |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" })
+                    |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
                     |> accepted
 
                 let result =
-                    apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
+                    apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.ZeroDecisionCannotBePaid) "No transfer"
@@ -229,7 +226,7 @@ let private paymentGuardTests =
 
                 let fields =
                     (opened ()
-                     |> apply (UnvalidatedCaseAct.Decide input)
+                     |> apply (AuthoredCaseAct.Decide input)
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
@@ -254,9 +251,7 @@ let private decisionEditingTests =
         [
             testCase "paid decision cannot be edited" (fun () ->
                 let result =
-                    paid ()
-                    |> apply (UnvalidatedCaseAct.Decide decision)
-                    |> Result.map Case.snapshot
+                    paid () |> apply (AuthoredCaseAct.Decide decision) |> Result.map Case.snapshot
 
                 Expect.isTrue
                     (result = Error Refusal.DecisionAlreadyPaid)
@@ -264,7 +259,7 @@ let private decisionEditingTests =
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
                     (decided ()
-                     |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "500" })
+                     |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "500" })
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
@@ -277,7 +272,7 @@ let private decisionEditingTests =
             testCase "registration amendment requires withdrawal of an existing decision" (fun () ->
                 let amendment =
                     decided ()
-                    |> apply (UnvalidatedCaseAct.AmendRegistration registration)
+                    |> apply (AuthoredCaseAct.AmendRegistration registration)
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -286,9 +281,9 @@ let private decisionEditingTests =
 
                 let fields =
                     (decided ()
-                     |> apply UnvalidatedCaseAct.WithdrawDecision
+                     |> apply AuthoredCaseAct.WithdrawDecision
                      |> accepted
-                     |> apply (UnvalidatedCaseAct.AmendRegistration registration)
+                     |> apply (AuthoredCaseAct.AmendRegistration registration)
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
@@ -307,7 +302,7 @@ let private correctionTests =
                 let before = paid ()
 
                 let after =
-                    before |> apply UnvalidatedCaseAct.ClearPayment |> accepted |> Case.snapshot
+                    before |> apply AuthoredCaseAct.ClearPayment |> accepted |> Case.snapshot
 
                 let expected =
                     { (Case.snapshot before |> viewFields) with
@@ -319,14 +314,14 @@ let private correctionTests =
                 Expect.equal after.Revision 4L "History has a new technical revision")
             testCase "clear payment without a recorded date is rejected" (fun () ->
                 let result =
-                    decided () |> apply UnvalidatedCaseAct.ClearPayment |> Result.map Case.snapshot
+                    decided () |> apply AuthoredCaseAct.ClearPayment |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.PaymentNotRecorded) "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
-                let claim = decided () |> apply UnvalidatedCaseAct.Close |> accepted
+                let claim = decided () |> apply AuthoredCaseAct.Close |> accepted
 
                 let result =
-                    apply (UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
+                    apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
                 Expect.isTrue (result = Error Refusal.CaseClosed) "Explicit reopen")

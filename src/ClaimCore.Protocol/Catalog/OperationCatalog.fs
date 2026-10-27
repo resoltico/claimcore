@@ -85,23 +85,23 @@ module OperationCatalog =
 
     [<NoEquality; NoComparison>]
     type private Declaration =
-        | Case of CaseActDeclaration
-        | Authority of AuthorityActDeclaration
+        | Case of CaseActKind
+        | Authority of AuthorityKind
         | Read of ReadDeclaration
 
     let private declarations =
-        (Record.caseActs
+        (CaseActKind.all
          |> List.map (fun declaration ->
              {
                  Endpoint = Api.operationExecute.Token
-                 Act = Some(ActKind.Case declaration.Kind)
+                 Act = Some(ActKind.Case declaration)
              },
              Case declaration))
-        @ (Record.authorityActs
+        @ ((AuthorityKind.all |> List.filter ((<>) AuthorityKind.ProvisionOwner))
            |> List.map (fun declaration ->
                {
                    Endpoint = Api.operationExecute.Token
-                   Act = Some(ActKind.Authority declaration.Kind)
+                   Act = Some(ActKind.Authority declaration)
                },
                Authority declaration))
         @ (Record.reads
@@ -283,17 +283,32 @@ module OperationCatalog =
                 ]
                 true)
 
-    let caseInputs operation (declaration: CaseActDeclaration) =
+    let caseInputs operation (declaration: CaseActKind) =
         let payload =
-            match declaration.Payload with
-            | CasePayload.NoPayload _ -> []
-            | CasePayload.Registration shape ->
-                values operation RecordGroup.Registration (actPath [ "values" ]) [] shape.Prefill
-            | CasePayload.Decision shape ->
-                values operation RecordGroup.Decision (actPath [ "values" ]) [] shape.Prefill
-            | CasePayload.Payment shape ->
-                values operation RecordGroup.Payment (actPath [ "values" ]) [] shape.Prefill
-            | CasePayload.Reason _ ->
+            match CaseActKind.shape declaration with
+            | ActShape.NoValues -> []
+            | ActShape.RegistrationValues ->
+                values
+                    operation
+                    RecordGroup.Registration
+                    (actPath [ "values" ])
+                    []
+                    (CaseActKind.prefill declaration)
+            | ActShape.DecisionValues ->
+                values
+                    operation
+                    RecordGroup.Decision
+                    (actPath [ "values" ])
+                    []
+                    (CaseActKind.prefill declaration)
+            | ActShape.PaymentValues ->
+                values
+                    operation
+                    RecordGroup.Payment
+                    (actPath [ "values" ])
+                    []
+                    (CaseActKind.prefill declaration)
+            | ActShape.ReasonText ->
                 [
                     named
                         operation
@@ -302,10 +317,10 @@ module OperationCatalog =
                         BindingKind.Text
                         true
                 ]
-            | CasePayload.Correction _ -> correction operation
+            | ActShape.CorrectionGroups -> correction operation
 
         let revision =
-            match declaration.RevisionMode with
+            match (CaseActKind.revision declaration) with
             | RevisionInput.New -> []
             | RevisionInput.Expected ->
                 [
@@ -325,7 +340,7 @@ module OperationCatalog =
                         Value = BindingValue.Text OperationSubjects.Case
                         Branches = []
                     }
-                match declaration.RevisionMode with
+                match (CaseActKind.revision declaration) with
                 | RevisionInput.New ->
                     yield
                         {
@@ -337,14 +352,14 @@ module OperationCatalog =
                 yield
                     {
                         Path = actPath [ "kind" ]
-                        Value = BindingValue.Text(CaseActKind.token declaration.Kind)
+                        Value = BindingValue.Text(CaseActKind.token declaration)
                         Branches = []
                     }
             ]
 
         operationIdentity operation :: caseOperand operation :: (revision @ payload), constants
 
-    let private authorityInputs operation (declaration: AuthorityActDeclaration) =
+    let private authorityInputs operation (declaration: AuthorityKind) =
         let target =
             [
                 named
@@ -358,9 +373,9 @@ module OperationCatalog =
             ]
 
         let grant =
-            match declaration.Payload with
-            | AuthorityPayload.Target _ -> []
-            | AuthorityPayload.Grant _ ->
+            match AuthorityAct.shape declaration with
+            | AuthorityShape.TargetOnly -> []
+            | AuthorityShape.GrantValues ->
                 let scope = actPath ("scope" :: [ "kind" ])
 
                 [
@@ -401,7 +416,7 @@ module OperationCatalog =
                 }
                 {
                     Path = actPath [ "kind" ]
-                    Value = BindingValue.Text(AuthorityKind.token declaration.Kind)
+                    Value = BindingValue.Text(AuthorityKind.token declaration)
                     Branches = []
                 }
             ]

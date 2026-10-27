@@ -14,24 +14,18 @@ module internal RequestValidation =
         Reason.parse value
         |> Result.mapError (fun violation -> Refusal.InvalidInput(InputTarget.Reason, violation))
 
-    let private act =
-        function
-        | UnvalidatedCaseAct.Open input -> Validation.registration input |> Result.map CaseAct.Open
-        | UnvalidatedCaseAct.AmendRegistration input ->
-            Validation.registration input |> Result.map CaseAct.AmendRegistration
-        | UnvalidatedCaseAct.Correct input ->
-            CaseCorrections.parse input |> Result.map CaseAct.Correct
-        | UnvalidatedCaseAct.Decide input -> Validation.decision input |> Result.map CaseAct.Decide
-        | UnvalidatedCaseAct.RecordPayment input ->
-            Validation.date BusinessField.PaymentDate input.PaymentDate
-            |> Result.map CaseAct.RecordPayment
-        | UnvalidatedCaseAct.WithdrawDecision -> Ok(CaseAct.WithdrawDecision)
-        | UnvalidatedCaseAct.ClearPayment -> Ok(CaseAct.ClearPayment)
-        | UnvalidatedCaseAct.Close -> Ok(CaseAct.Close)
-        | UnvalidatedCaseAct.Reopen -> Ok(CaseAct.Reopen)
-        | UnvalidatedCaseAct.Void input -> reason input |> Result.map CaseAct.Void
-        | UnvalidatedCaseAct.Reinstate input -> reason input |> Result.map CaseAct.Reinstate
-        | UnvalidatedCaseAct.Erase -> Ok CaseAct.Erase
+    let private act (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
+        match input with
+        | CaseAct.Correct { Registration = Change.Clear } -> Error Refusal.ActNotPermitted
+        | _ ->
+            CaseAct.traverse
+                Validation.registration
+                Validation.decision
+                (fun (input: PaymentInput) ->
+                    Validation.date BusinessField.PaymentDate input.PaymentDate
+                    |> Result.map (fun date -> { Payment.PaymentDate = date }))
+                reason
+                input
 
     let parse (request: UnvalidatedCaseRequest) =
         result {

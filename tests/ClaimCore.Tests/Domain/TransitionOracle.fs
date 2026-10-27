@@ -11,23 +11,23 @@ let private activeEligible (fields: CaseFields) =
     let paid = fields.Payment.IsSome
 
     function
-    | UnvalidatedCaseAct.Close -> true
-    | UnvalidatedCaseAct.AmendRegistration _ -> not decided
-    | UnvalidatedCaseAct.Decide _ -> not paid
-    | UnvalidatedCaseAct.WithdrawDecision -> decided && not paid
-    | UnvalidatedCaseAct.RecordPayment _ ->
+    | AuthoredCaseAct.Close -> true
+    | AuthoredCaseAct.AmendRegistration _ -> not decided
+    | AuthoredCaseAct.Decide _ -> not paid
+    | AuthoredCaseAct.WithdrawDecision -> decided && not paid
+    | AuthoredCaseAct.RecordPayment _ ->
         decided
         && not paid
         && (fields.Decision |> Option.map (fun value -> Money.value value.PayableAmount))
            <> Some 0M
-    | UnvalidatedCaseAct.ClearPayment -> paid
+    | AuthoredCaseAct.ClearPayment -> paid
     | _ -> false
 
 let private eligible (fields: CaseFields) act =
     match act with
-    | UnvalidatedCaseAct.Open _ -> false
-    | UnvalidatedCaseAct.Reopen -> fields.Status = CaseStatus.Closed
-    | UnvalidatedCaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
+    | AuthoredCaseAct.Open _ -> false
+    | AuthoredCaseAct.Reopen -> fields.Status = CaseStatus.Closed
+    | AuthoredCaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields act
 
@@ -38,14 +38,15 @@ let private registration (value: RegistrationInput) (fields: CaseFields) =
 
 let private correctedRegistration fields =
     function
-    | RegistrationGroup.Replace value -> registration value fields
-    | RegistrationGroup.Keep -> fields
+    | Change.Replace value -> registration value fields
+    | Change.Keep -> fields
+    | Change.Clear -> failwith "Registration clearing is outside the authored grammar"
 
 let private changed fields act =
     match act with
-    | UnvalidatedCaseAct.AmendRegistration value -> registration value fields
-    | UnvalidatedCaseAct.Correct value -> correctedRegistration fields value.Registration
-    | UnvalidatedCaseAct.Decide value ->
+    | AuthoredCaseAct.AmendRegistration value -> registration value fields
+    | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
+    | AuthoredCaseAct.Decide value ->
         { fields with
             Decision =
                 Some(
@@ -55,31 +56,31 @@ let private changed fields act =
                         }
                 )
         }
-    | UnvalidatedCaseAct.WithdrawDecision -> { fields with Decision = None }
-    | UnvalidatedCaseAct.RecordPayment payment ->
+    | AuthoredCaseAct.WithdrawDecision -> { fields with Decision = None }
+    | AuthoredCaseAct.RecordPayment payment ->
         { fields with
             Payment = Some(CaseFixtures.payment payment)
         }
-    | UnvalidatedCaseAct.ClearPayment -> { fields with Payment = None }
-    | UnvalidatedCaseAct.Close ->
+    | AuthoredCaseAct.ClearPayment -> { fields with Payment = None }
+    | AuthoredCaseAct.Close ->
         { fields with
             Status = CaseStatus.Closed
         }
-    | UnvalidatedCaseAct.Reopen ->
+    | AuthoredCaseAct.Reopen ->
         { fields with
             Status = CaseStatus.Opened
         }
-    | UnvalidatedCaseAct.Open _
-    | UnvalidatedCaseAct.Void _
-    | UnvalidatedCaseAct.Reinstate _
-    | UnvalidatedCaseAct.Erase -> fields
+    | AuthoredCaseAct.Open _
+    | AuthoredCaseAct.Void _
+    | AuthoredCaseAct.Reinstate _
+    | AuthoredCaseAct.Erase -> fields
 
 let private business (before: CaseSnapshot) fields stale act =
     let nextFields = changed fields act
 
     let noOpCorrection =
         match act with
-        | UnvalidatedCaseAct.Correct _ -> nextFields = fields
+        | AuthoredCaseAct.Correct _ -> nextFields = fields
         | _ -> false
 
     if stale || not (eligible fields act) || noOpCorrection then
@@ -104,12 +105,12 @@ let advance (before: CaseSnapshot) stale act =
 
         match before.State, act with
         | CaseState.Erased, _ -> None
-        | CaseState.Active(fields), UnvalidatedCaseAct.Void _ -> changed (CaseState.Voided(fields))
-        | CaseState.Voided(fields), UnvalidatedCaseAct.Reinstate _ ->
+        | CaseState.Active(fields), AuthoredCaseAct.Void _ -> changed (CaseState.Voided(fields))
+        | CaseState.Voided(fields), AuthoredCaseAct.Reinstate _ ->
             changed (CaseState.Active(fields))
-        | (CaseState.Active _ | CaseState.Voided _), UnvalidatedCaseAct.Erase ->
+        | (CaseState.Active _ | CaseState.Voided _), AuthoredCaseAct.Erase ->
             changed CaseState.Erased
-        | _, (UnvalidatedCaseAct.Void _ | UnvalidatedCaseAct.Reinstate _) -> None
+        | _, (AuthoredCaseAct.Void _ | AuthoredCaseAct.Reinstate _) -> None
         | CaseState.Active(fields), act -> business before fields stale act
         | CaseState.Voided(_), _ -> None
 

@@ -134,13 +134,8 @@ let internal grant (actor: ServiceContext) operationId target role scope active 
             authorityRequest
                 operationId
                 target
-                ((if active then
-                      AuthorityCommandAct.Grant
-                  else
-                      AuthorityCommandAct.Revoke) (
-                    role,
-                    scope
-                ))
+                ((if active then AuthorityAct.Grant else AuthorityAct.Revoke)
+                    { Role = role; Scope = scope })
         ))
         (CancellationToken.None))
 

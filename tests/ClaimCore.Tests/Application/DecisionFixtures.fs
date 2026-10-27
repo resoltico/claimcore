@@ -57,7 +57,7 @@ let head =
 let nonce = Array.init 32 (fun index -> byte (index + 1))
 
 let opening n reference =
-    request n reference 0L (UnvalidatedCaseAct.Open registration)
+    request n reference 0L (AuthoredCaseAct.Open registration)
 
 type LockedFacts<'Facts> =
     {

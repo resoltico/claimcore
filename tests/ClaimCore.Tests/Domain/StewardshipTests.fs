@@ -25,18 +25,16 @@ let private current revision state =
 
 let private transitions =
     [
-        (CaseState.Active()), UnvalidatedCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
-        (CaseState.Voided()),
-        UnvalidatedCaseAct.Void "Recorded in error",
-        Error Refusal.AlreadyVoided
+        (CaseState.Active()), AuthoredCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
+        (CaseState.Voided()), AuthoredCaseAct.Void "Recorded in error", Error Refusal.AlreadyVoided
         (CaseState.Active()),
-        UnvalidatedCaseAct.Reinstate "Reference confirmed",
+        AuthoredCaseAct.Reinstate "Reference confirmed",
         Error Refusal.NotVoided
         (CaseState.Voided()),
-        UnvalidatedCaseAct.Reinstate "Reference confirmed",
+        AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())
-        (CaseState.Active()), UnvalidatedCaseAct.Erase, Ok CaseState.Erased
-        (CaseState.Voided()), UnvalidatedCaseAct.Erase, Ok CaseState.Erased
+        (CaseState.Active()), AuthoredCaseAct.Erase, Ok CaseState.Erased
+        (CaseState.Voided()), AuthoredCaseAct.Erase, Ok CaseState.Erased
     ]
 
 let private invalidReasons =
@@ -61,7 +59,7 @@ let private revisionProperty =
         let result =
             CaseFixtures.decide
                 today
-                (request revision UnvalidatedCaseAct.Erase)
+                (request revision AuthoredCaseAct.Erase)
                 (Some(current revision state))
 
         return
@@ -100,8 +98,8 @@ let private reasonTest () =
     for reason in invalidReasons do
         for state, action in
             [
-                (CaseState.Active()), UnvalidatedCaseAct.Void reason
-                (CaseState.Voided()), UnvalidatedCaseAct.Reinstate reason
+                (CaseState.Active()), AuthoredCaseAct.Void reason
+                (CaseState.Voided()), AuthoredCaseAct.Reinstate reason
             ] do
             Expect.isError
                 (CaseFixtures.decide today (request 7L action) (Some(current 7L state)))
@@ -112,14 +110,14 @@ let private reasonBounds () =
         Expect.isOk
             (CaseFixtures.decide
                 today
-                (request 7L (UnvalidatedCaseAct.Void reason))
+                (request 7L (AuthoredCaseAct.Void reason))
                 (Some(current 7L (CaseState.Active()))))
             "Exactly 200 Unicode scalars accepted"
 
     Expect.isError
         (CaseFixtures.decide
             today
-            (request 7L (UnvalidatedCaseAct.Void(String.replicate 201 "😀")))
+            (request 7L (AuthoredCaseAct.Void(String.replicate 201 "😀")))
             (Some(current 7L (CaseState.Active()))))
         "201 Unicode scalars refuse"
 
@@ -127,7 +125,7 @@ let private staleRevision () =
     let outcome =
         CaseFixtures.decide
             today
-            (request 6L (UnvalidatedCaseAct.Void " leading"))
+            (request 6L (AuthoredCaseAct.Void " leading"))
             (Some(current 7L (CaseState.Voided())))
 
     Expect.isTrue
@@ -137,12 +135,12 @@ let private staleRevision () =
 let private vocabulary () =
     for action, expected in
         [
-            UnvalidatedCaseAct.Void "Reason", CaseActKind.Void
-            UnvalidatedCaseAct.Reinstate "Reason", CaseActKind.Reinstate
-            UnvalidatedCaseAct.Erase, CaseActKind.Erase
+            AuthoredCaseAct.Void "Reason", CaseActKind.Void
+            AuthoredCaseAct.Reinstate "Reason", CaseActKind.Reinstate
+            AuthoredCaseAct.Erase, CaseActKind.Erase
         ] do
         Expect.equal
-            (UnvalidatedCaseActs.kind (action))
+            (CaseAct.kind (action))
             expected
             "Stewardship remains distinct from business acts"
 

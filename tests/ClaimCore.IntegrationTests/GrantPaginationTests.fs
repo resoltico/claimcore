@@ -28,7 +28,7 @@ let private seedCases (admin: ServiceContext) target =
                 (Core.execute
                     admin
                     (OperationInput.Case(
-                        request (300 + n) reference 0L (UnvalidatedCaseAct.Open registration)
+                        request (300 + n) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -67,7 +67,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = (UnvalidatedCaseAct.Erase)
+                Act = (AuthoredCaseAct.Erase)
             }
 
         let! erased = (Core.execute admin (OperationInput.Case erase) (token))
@@ -86,9 +86,7 @@ let private prepare (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 200) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 200) target AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -110,9 +108,7 @@ let private prepare (database: PostgresFixture.Database) =
         let! disabled =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 603) target (AuthorityCommandAct.Disable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 603) target (AuthorityAct.Disable)))
                 (token))
 
         acceptedAuthority disabled
@@ -184,9 +180,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 620) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 620) target AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -336,9 +330,7 @@ let private changeTarget (admin: ServiceContext) =
         let! enabled =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 630) target (AuthorityCommandAct.Enable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 630) target (AuthorityAct.Enable)))
                 (token))
 
         acceptedAuthority enabled

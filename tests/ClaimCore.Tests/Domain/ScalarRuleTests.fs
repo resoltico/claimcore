@@ -105,6 +105,46 @@ let private numericAndStatusRuleTests =
         ]
 
 [<Tests>]
+let permanentBoundaries =
+    testList
+        "typed service boundaries"
+        [
+            testCase "Domain revisions agree with the exact JSON integer bound" (fun () ->
+                Expect.equal
+                    Revision.Maximum
+                    ClaimCore.Json.JsonValue.MaximumInteger
+                    "Independent owners must agree on representable revisions")
+            testCase "owner provisioning cannot enter ordinary authored admission" (fun () ->
+                let request =
+                    {
+                        AuthorityRequest.OperationId =
+                            Guid.Parse "90000000-0000-4000-8000-000000000001"
+                        Target = Inputs.principal
+                        Act = AuthorityAct.ProvisionOwner
+                    }
+
+                Expect.equal
+                    (Authority.parse request)
+                    (Error Refusal.ActNotPermitted)
+                    "Provisioning is admitted exclusively through its dedicated boundary")
+            testCase "registration clearing cannot enter permanent act parsing" (fun () ->
+                let request =
+                    Fixtures.request
+                        1L
+                        (AuthoredCaseAct.Correct
+                            {
+                                Registration = Change.Clear
+                                Decision = Change.Keep
+                                Payment = Change.Keep
+                            })
+
+                Expect.equal
+                    (Case.parse request)
+                    (Error Refusal.ActNotPermitted)
+                    "Registration remains mandatory even for directly authored typed requests")
+        ]
+
+[<Tests>]
 let tests =
     testList "scalar admission contracts" [ textAndDateRuleTests; numericAndStatusRuleTests ]
 
@@ -143,14 +183,14 @@ let grammarDiagnostics =
             check parse
 
             let candidate value =
-                let request = Fixtures.request 0L (UnvalidatedCaseAct.Open Fixtures.registration)
+                let request = Fixtures.request 0L (AuthoredCaseAct.Open Fixtures.registration)
 
                 if field = BusinessField.CaseReference then
                     { request with CaseReference = value }
                 else
                     { request with
                         Act =
-                            UnvalidatedCaseAct.Open
+                            AuthoredCaseAct.Open
                                 { Fixtures.registration with
                                     IncidentCountry = value
                                 }

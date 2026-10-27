@@ -49,7 +49,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (UnvalidatedCaseAct.Open
+            (AuthoredCaseAct.Open
                 { registration with
                     ClaimantName = claimant
                 })
@@ -149,7 +149,7 @@ let private grandfathering (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 11 "HISTORICAL-1" 1L (UnvalidatedCaseAct.AmendRegistration values)
+                    request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
                 ))
                 (token))
 
@@ -163,7 +163,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                         12
                         "HISTORICAL-1"
                         2L
-                        (UnvalidatedCaseAct.AmendRegistration
+                        (AuthoredCaseAct.AmendRegistration
                             { values with
                                 ClaimantName = name + "B"
                             })
@@ -189,9 +189,9 @@ let private appendTransitions (actor: ServiceContext) =
         for revision in 1L .. 59L do
             let act =
                 if revision % 2L = 1L then
-                    UnvalidatedCaseAct.Close
+                    AuthoredCaseAct.Close
                 else
-                    UnvalidatedCaseAct.Reopen
+                    AuthoredCaseAct.Reopen
 
             let! result =
                 (Core.execute

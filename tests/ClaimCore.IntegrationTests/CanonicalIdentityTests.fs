@@ -63,7 +63,7 @@ let private casePairs (database: PostgresFixture.Database) =
                 let left = caseInput vector "left"
 
                 match left.Act with
-                | UnvalidatedCaseAct.Open _ -> Some(vector, left, caseInput vector "right")
+                | AuthoredCaseAct.Open _ -> Some(vector, left, caseInput vector "right")
                 | _ -> None)
             |> Seq.toList
 
@@ -122,9 +122,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 901) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 901) target AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -198,9 +196,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 920) outsider AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 920) outsider AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -234,7 +230,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! erased =
             (Core.execute
                 actor
-                (OperationInput.Case(request 922 left.CaseReference 1L UnvalidatedCaseAct.Erase))
+                (OperationInput.Case(request 922 left.CaseReference 1L AuthoredCaseAct.Erase))
                 (token))
 
         accepted erased |> ignore

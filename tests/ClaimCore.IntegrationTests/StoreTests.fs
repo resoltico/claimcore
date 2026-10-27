@@ -16,9 +16,7 @@ let private serviceCases (admin: ServiceContext) principal =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 400) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 400) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -30,7 +28,7 @@ let private serviceCases (admin: ServiceContext) principal =
                 (Core.execute
                     admin
                     (OperationInput.Case(
-                        request (410 + number) reference 0L (UnvalidatedCaseAct.Open registration)
+                        request (410 + number) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 

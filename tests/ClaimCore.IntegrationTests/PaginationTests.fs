@@ -31,9 +31,7 @@ let private setup (database: PostgresFixture.Database) =
             let! result =
                 (Core.execute
                     admin
-                    (OperationInput.Case(
-                        request n reference 0L (UnvalidatedCaseAct.Open registration)
-                    ))
+                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
                     (token))
 
             accepted result |> ignore
@@ -45,9 +43,7 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 3) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -184,7 +180,7 @@ let private snapshot (database: PostgresFixture.Database) =
                 (Core.execute
                     admin
                     (OperationInput.Case(
-                        request 13 "CASE-AFTER" 0L (UnvalidatedCaseAct.Open registration)
+                        request 13 "CASE-AFTER" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 

@@ -15,7 +15,7 @@ let caseRequest =
         CaseReference = "x"
         ExpectedRevision = 0L
         Act =
-            UnvalidatedCaseAct.Open
+            AuthoredCaseAct.Open
                 { Fixtures.registration with
                     IncidentDate = "2026-01-01"
                     ClaimantName = "x"

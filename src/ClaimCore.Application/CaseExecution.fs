@@ -26,7 +26,7 @@ module internal CaseExecution =
                 Error CoreFault.StoreIntegrityError)
 
     let permission principal actor (request: CaseCommand) (record: StoredCase option) =
-        if CaseActs.kind request.Act = CaseActKind.Open then
+        if CaseAct.kind request.Act = CaseActKind.Open then
             if Authority.canAct principal actor ResourceScope.Installation request.Act then
                 Ok()
             else
@@ -101,7 +101,7 @@ module internal CaseExecution =
                 EntryTarget.Case(
                     id,
                     snapshot.Revision,
-                    CaseActs.kind request.Act,
+                    CaseAct.kind request.Act,
                     calendar.DateAt view.ObservedAt
                 )
             Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot

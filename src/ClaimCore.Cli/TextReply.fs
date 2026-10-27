@@ -216,10 +216,9 @@ module internal TextReply =
         let act =
             input
             |> Option.map (function
-                | OperationInput.Case value ->
-                    CaseActKind.token (UnvalidatedCaseActs.kind value.Act)
+                | OperationInput.Case value -> CaseActKind.token (CaseAct.kind value.Act)
                 | OperationInput.Authority value ->
-                    AuthorityKind.token (AuthorityActs.kind value.Act))
+                    AuthorityKind.token (AuthorityAct.kind value.Act))
             |> Option.defaultValue "—"
 
         let target =

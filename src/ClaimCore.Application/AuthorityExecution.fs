@@ -15,8 +15,16 @@ module internal AuthorityExecution =
             Error CoreFault.StoreIntegrityError
         else
             match command.Act, view.TargetCase with
-            | AuthorityCommandAct.Grant(_, GrantTarget.CaseReference reference), Some record
-            | AuthorityCommandAct.Revoke(_, GrantTarget.CaseReference reference), Some record ->
+            | AuthorityAct.Grant {
+                                     Role = _
+                                     Scope = GrantTarget.CaseReference reference
+                                 },
+              Some record
+            | AuthorityAct.Revoke {
+                                      Role = _
+                                      Scope = GrantTarget.CaseReference reference
+                                  },
+              Some record ->
                 CaseExecution.current installationId record
                 |> Result.bind (fun _ ->
                     if
@@ -167,9 +175,9 @@ module internal AuthorityExecution =
             ObservedAt = view.ObservedAt
             ActorId =
                 match command.Act with
-                | AuthorityCommandAct.ProvisionOwner -> targetId
+                | AuthorityAct.ProvisionOwner -> targetId
                 | _ -> LedgerEnvelope.actorId view.Actor
-            Subject = EntryTarget.Authority(targetId, RecordedAuthorityActs.kind record.Act)
+            Subject = EntryTarget.Authority(targetId, AuthorityAct.kind record.Act)
             Snapshot = Array.empty
             Current = None
             Projection = projection

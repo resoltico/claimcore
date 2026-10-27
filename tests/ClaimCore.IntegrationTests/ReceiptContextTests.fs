@@ -20,9 +20,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 3) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -39,7 +37,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         11
                         "PROBE-1"
                         1L
-                        (UnvalidatedCaseAct.AmendRegistration
+                        (AuthoredCaseAct.AmendRegistration
                             { registration with
                                 ClaimantName = "Later Party"
                             })

@@ -51,9 +51,7 @@ let private register (actor: ServiceContext) n principal =
         let! outcome =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id n) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id n) principal AuthorityAct.Register))
                 (token))
 
         acceptedAuthority outcome
@@ -139,7 +137,7 @@ let private start (database: PostgresFixture.Database) =
             |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
             |> updateCase
                 { request with
-                    Act = UnvalidatedCaseAct.Close
+                    Act = AuthoredCaseAct.Close
                 }
                 { snapshot with State = view }
 
@@ -154,7 +152,7 @@ let private stateSequence (database: PostgresFixture.Database) =
         let! closed =
             (Core.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L UnvalidatedCaseAct.Close))
+                (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
                 (token))
 
         let position = (accepted closed).Position.Sequence
@@ -169,7 +167,7 @@ let private stateSequence (database: PostgresFixture.Database) =
                 })
             |> updateCase
                 { request with
-                    Act = (UnvalidatedCaseAct.Reinstate "Confirmed")
+                    Act = (AuthoredCaseAct.Reinstate "Confirmed")
                 }
                 snapshot
 
@@ -190,7 +188,7 @@ let private erasure (database: PostgresFixture.Database) =
         let! erased =
             (Core.execute
                 actor
-                (OperationInput.Case(actRequest 11 "synthetic-a" 1L (UnvalidatedCaseAct.Erase)))
+                (OperationInput.Case(actRequest 11 "synthetic-a" 1L (AuthoredCaseAct.Erase)))
                 (token))
 
         accepted erased |> ignore
@@ -231,7 +229,7 @@ let private authority (database: PostgresFixture.Database) =
         let sequence = (accepted added).Position.Sequence
 
         let altered =
-            authorityRequest (id 20) (target "absent") (AuthorityCommandAct.Enable)
+            authorityRequest (id 20) (target "absent") (AuthorityAct.Enable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
@@ -281,7 +279,7 @@ let private human (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    actRequest 11 "synthetic-a" 1L ((UnvalidatedCaseAct.Void "Entered in error"))
+                    actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Void "Entered in error"))
                 ))
                 (token))
 
@@ -303,9 +301,7 @@ let private owner (database: PostgresFixture.Database) =
         let! changed =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 4) reader (AuthorityCommandAct.Enable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Enable)))
                 (token))
 
         do!
@@ -403,9 +399,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         let! disabled =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 4) reader (AuthorityCommandAct.Disable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Disable)))
                 (token))
 
         acceptedAuthority disabled
@@ -413,7 +407,7 @@ let private disabledExecutor (database: PostgresFixture.Database) =
         let! opened =
             (Core.execute
                 actor
-                (OperationInput.Case(request 11 "another" 0L (UnvalidatedCaseAct.Open registration)))
+                (OperationInput.Case(request 11 "another" 0L (AuthoredCaseAct.Open registration)))
                 (token))
 
         do!
@@ -442,7 +436,11 @@ let private serviceGrantTarget (database: PostgresFixture.Database) =
             authorityRequest
                 (id 4)
                 service
-                (AuthorityCommandAct.Grant(Role.Owner, GrantTarget.Installation))
+                (AuthorityAct.Grant
+                    {
+                        Role = Role.Owner
+                        Scope = GrantTarget.Installation
+                    })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
@@ -459,12 +457,12 @@ let private lastOwner (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 20) database.Fixture.Owner (AuthorityCommandAct.Enable)
+                    authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Enable)
                 ))
                 (token))
 
         let altered =
-            authorityRequest (id 20) database.Fixture.Owner (AuthorityCommandAct.Disable)
+            authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
@@ -492,7 +490,7 @@ let private permanentPolicyOnly (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "synthetic-a" 0L (UnvalidatedCaseAct.Open registration)
+                    request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -540,10 +538,11 @@ let private priorCaseRequired (database: PostgresFixture.Database) =
             authorityRequest
                 (id 900000)
                 database.Fixture.Owner
-                (AuthorityCommandAct.Grant(
-                    Role.PaymentRecorder,
-                    GrantTarget.CaseReference "synthetic-a"
-                ))
+                (AuthorityAct.Grant
+                    {
+                        AuthorityGrant.Role = Role.PaymentRecorder
+                        Scope = GrantTarget.CaseReference "synthetic-a"
+                    })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
@@ -593,9 +592,7 @@ let private malformedOptionalDate (database: PostgresFixture.Database) =
         let! decided =
             (Core.execute
                 actor
-                (OperationInput.Case(
-                    request 11 "synthetic-a" 1L (UnvalidatedCaseAct.Decide decision)
-                ))
+                (OperationInput.Case(request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)))
                 (token))
 
         accepted decided |> ignore
@@ -647,7 +644,7 @@ let private duplicateIdentity earlierFailure occurrences (database: PostgresFixt
         let! closed =
             (Core.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L UnvalidatedCaseAct.Close))
+                (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
                 (token))
 
         accepted closed |> ignore
@@ -655,7 +652,7 @@ let private duplicateIdentity earlierFailure occurrences (database: PostgresFixt
         let! reopened =
             (Core.execute
                 actor
-                (OperationInput.Case(request 12 "synthetic-a" 2L UnvalidatedCaseAct.Reopen))
+                (OperationInput.Case(request 12 "synthetic-a" 2L AuthoredCaseAct.Reopen))
                 (token))
 
         accepted reopened |> ignore

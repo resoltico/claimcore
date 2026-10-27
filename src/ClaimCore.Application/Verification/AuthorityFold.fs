@@ -8,7 +8,6 @@ open ClaimCore.Application.VerificationChecks
 
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
-    type private SharedAuthorityAct = ClaimCore.Domain.AuthorityAct
 
     let private ownerGrant: ActorGrant =
         {
@@ -153,20 +152,19 @@ module internal AuthorityFold =
         request
         =
         match request.Act with
-        | RecordedAuthorityAct.ProvisionOwner -> register actors entry id principal true
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Register) ->
-            register actors entry id principal false
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Enable ->
+        | AuthorityAct.ProvisionOwner -> register actors entry id principal true
+        | AuthorityAct.Register -> register actors entry id principal false
+        | AuthorityAct.Enable ->
             target actors entry id principal
             |> Result.map (fun actor -> Map.add id { actor with Enabled = true } actors)
-        | RecordedAuthorityAct.Operation SharedAuthorityAct.Disable ->
+        | AuthorityAct.Disable ->
             target actors entry id principal
             |> Result.map (fun actor -> Map.add id { actor with Enabled = false } actors)
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant value)
-        | RecordedAuthorityAct.Operation(SharedAuthorityAct.Revoke value) ->
+        | AuthorityAct.Grant value
+        | AuthorityAct.Revoke value ->
             let active =
                 match request.Act with
-                | RecordedAuthorityAct.Operation(SharedAuthorityAct.Grant _) -> true
+                | AuthorityAct.Grant _ -> true
                 | _ -> false
 
             target actors entry id principal
@@ -191,13 +189,12 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.PayloadFormat
-                    (request.OperationId = entry.OperationId
-                     && RecordedAuthorityActs.kind request.Act = kind)
+                    (request.OperationId = entry.OperationId && AuthorityAct.kind request.Act = kind)
 
             let! principal = principal entry request
 
             do!
-                if request.Act = RecordedAuthorityAct.ProvisionOwner then
+                if request.Act = AuthorityAct.ProvisionOwner then
                     Ok()
                 else
                     executor actors entry true true

@@ -1,5 +1,6 @@
 namespace ClaimCore.Protocol
 
+open System
 open ClaimCore.Domain
 
 open ClaimCore.Protocol
@@ -15,9 +16,50 @@ module RequestCodecs =
     let tokens values =
         values |> List.map (fun value -> value, value) |> enumeration
 
-    let registration = Record.registration.Codec text
-    let decision = Record.decision.Codec text
-    let payment = Record.payment.Codec text
+    let private inputField name get fields =
+        Codec.field (BusinessField.key name) get Codec.text fields
+
+    let registration =
+        (Codec.record (fun incident notification country claimant insurer amount currency ->
+            {
+                RegistrationInput.IncidentDate = incident
+                IncidentNotificationDate = notification
+                IncidentCountry = country
+                ClaimantName = claimant
+                InsurerName = insurer
+                ClaimedAmount = amount
+                ClaimedCurrency = currency
+            })
+        : Fields<RegistrationInput, _>)
+        |> inputField BusinessField.IncidentDate _.IncidentDate
+        |> inputField BusinessField.IncidentNotificationDate _.IncidentNotificationDate
+        |> inputField BusinessField.IncidentCountry _.IncidentCountry
+        |> inputField BusinessField.ClaimantName _.ClaimantName
+        |> inputField BusinessField.InsurerName _.InsurerName
+        |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
+        |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
+        |> Codec.build
+        |> Codec.named "Registration"
+
+    let decision =
+        (Codec.record (fun date amount currency ->
+            {
+                DecisionInput.PaymentDecisionDate = date
+                PayableAmount = amount
+                PayableCurrency = currency
+            })
+        : Fields<DecisionInput, _>)
+        |> inputField BusinessField.PaymentDecisionDate _.PaymentDecisionDate
+        |> inputField BusinessField.PayableAmount _.PayableAmount
+        |> inputField BusinessField.PayableCurrency _.PayableCurrency
+        |> Codec.build
+        |> Codec.named "Decision"
+
+    let payment =
+        (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
+        |> inputField BusinessField.PaymentDate _.PaymentDate
+        |> Codec.build
+        |> Codec.named "Payment"
 
     let private correctionVariants group variants =
         CorrectionGroupAction.forGroup group
@@ -31,14 +73,12 @@ module RequestCodecs =
             (correctionVariants
                 RecordGroup.Registration
                 [
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                        RegistrationGroup.Keep
+                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                     variant
                         (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        RegistrationGroup.Replace
+                        Change.Replace
                         (function
-                        | RegistrationGroup.Replace value -> Some value
+                        | Change.Replace value -> Some value
                         | _ -> None)
                         (record id |> field "values" id registration)
                 ])
@@ -49,19 +89,17 @@ module RequestCodecs =
             (correctionVariants
                 RecordGroup.Decision
                 [
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                        DecisionGroup.Keep
+                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                     variant
                         (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        DecisionGroup.Replace
+                        Change.Replace
                         (function
-                        | DecisionGroup.Replace value -> Some value
+                        | Change.Replace value -> Some value
                         | _ -> None)
                         (record id |> field "values" id decision)
                     unitVariant
                         (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        DecisionGroup.Clear
+                        Change.Clear
                 ])
 
     let paymentGroup =
@@ -70,36 +108,68 @@ module RequestCodecs =
             (correctionVariants
                 RecordGroup.Payment
                 [
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                        PaymentGroup.Keep
+                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                     variant
                         (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        PaymentGroup.Replace
+                        Change.Replace
                         (function
-                        | PaymentGroup.Replace value -> Some value
+                        | Change.Replace value -> Some value
                         | _ -> None)
                         (record id |> field "values" id payment)
                     unitVariant
                         (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        PaymentGroup.Clear
+                        Change.Clear
                 ])
 
     let correction =
         (record (fun v0 v1 v2 ->
             {
-                CorrectionInput.Registration = v0
+                AuthoredCorrection.Registration = v0
                 Decision = v1
                 Payment = v2
             })
-        : Fields<CorrectionInput, _>)
+        : Fields<AuthoredCorrection, _>)
         |> field "registration" _.Registration (registrationGroup)
         |> field "decision" _.Decision (decisionGroup)
         |> field "payment" _.Payment (paymentGroup)
         |> build
         |> named "Correction"
 
-    let caseAct = Record.caseCodec text correction
+    let private caseCodec registration decision payment reason correction =
+        let memberCodec name codec inject project kind =
+            variant
+                (CaseActKind.token kind)
+                (inject >> CaseAct.ofPayload kind)
+                (fun act ->
+                    if CaseAct.kind act = kind then
+                        project (CaseAct.payload act)
+                    else
+                        None)
+                (record id |> field name id codec)
+
+        CaseActKind.all
+        |> List.map (fun kind ->
+            match CaseActKind.shape kind with
+            | ActShape.NoValues ->
+                unitVariant (CaseActKind.token kind) (CaseAct.ofPayload kind ActPayload.Empty)
+            | ActShape.RegistrationValues ->
+                memberCodec
+                    "values"
+                    registration
+                    ActPayload.Registration
+                    ActPayload.registration
+                    kind
+            | ActShape.DecisionValues ->
+                memberCodec "values" decision ActPayload.Decision ActPayload.decision kind
+            | ActShape.PaymentValues ->
+                memberCodec "values" payment ActPayload.Payment ActPayload.payment kind
+            | ActShape.ReasonText ->
+                memberCodec "reason" reason ActPayload.Reason ActPayload.reason kind
+            | ActShape.CorrectionGroups ->
+                memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
+        |> tagged "CaseAct"
+
+    let caseAct = caseCodec registration decision payment text correction
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
@@ -145,8 +215,36 @@ module RequestCodecs =
                     (record id |> field (BusinessField.key BusinessField.CaseReference) id text)
             ]
 
+    let private authorityVariantsWith role scope =
+        let grant =
+            record (fun role scope ->
+                {
+                    GrantChange.Role = role
+                    Scope = scope
+                })
+            |> field "role" _.Role role
+            |> field "scope" _.Scope scope
+
+        AuthorityKind.all
+        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+        |> List.map (fun kind ->
+            let token = AuthorityKind.token kind
+
+            match AuthorityAct.shape kind with
+            | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
+            | AuthorityShape.GrantValues ->
+                variant
+                    token
+                    (Some >> AuthorityAct.ofPayload kind)
+                    (fun act ->
+                        if AuthorityAct.kind act = kind then
+                            AuthorityAct.payload act
+                        else
+                            None)
+                    grant)
+
     let authorityActWith role =
-        Record.authorityVariants role scope |> tagged "AuthorityAct"
+        authorityVariantsWith role scope |> tagged "AuthorityAct"
 
     let authorityAct = authorityActWith (tokens (Role.all |> List.map Role.token))
 
@@ -184,17 +282,119 @@ module RequestCodecs =
 
     let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
 
-    let readProfile =
+    [<NoEquality; NoComparison>]
+    type private ReadFields<'request, 'ctor> =
         {
-            ReadProfile.Text = text
-            Cursor = boundedText 1 512
-            Limit = integer 1L (int64 Paging.MaximumPageSize) |> map int int64
-            Detail = VocabularyCodec.create HistoryDetail.vocabulary
+            Inputs: ReadInput list
+            Fields: Fields<'request, 'ctor>
         }
 
-    let pageRequest = Record.caseList.Codec readProfile
-    let caseGetRequest = Record.caseGet.Codec readProfile
-    let historyRequest = Record.caseHistory.Codec readProfile
-    let grantsRequest = Record.authorityGrants.Codec readProfile
-    let observeRequest = Record.observe.Codec readProfile
-    let empty = Record.context.Codec readProfile
+    let private read ctor : ReadFields<'request, 'ctor> = { Inputs = []; Fields = record ctor }
+
+    let private caseOperand get (fields: ReadFields<'request, string -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.CaseOperand ]
+            Fields = fields.Fields |> field (BusinessField.key BusinessField.CaseReference) get text
+        }
+
+    let private operationOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.OperationOperand ]
+            Fields = fields.Fields |> field "operationId" get uuid
+        }
+
+    let private actorOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.ActorOperand ]
+            Fields = fields.Fields |> field "actorId" get uuid
+        }
+
+    let private detail get (fields: ReadFields<'request, HistoryDetail -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.Detail ]
+            Fields =
+                fields.Fields
+                |> field "detail" get (VocabularyCodec.create HistoryDetail.vocabulary)
+        }
+
+    let private page cursor limit (fields: ReadFields<'request, string option -> int -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.Page ]
+            Fields =
+                fields.Fields
+                |> optionalField "cursor" cursor (boundedText 1 512)
+                |> field "limit" limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        }
+
+    let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
+        let declaration = Record.reads |> List.find (fun value -> value.Endpoint = endpoint)
+
+        if declaration.Inputs <> fields.Inputs then
+            invalidOp "The read codec must follow its Domain input declaration."
+
+        fields.Fields |> build |> named name
+
+    let caseGetRequest =
+        (read (fun reference ->
+            {
+                CaseGetRequest.CaseReference = reference
+            })
+        : ReadFields<CaseGetRequest, _>)
+        |> caseOperand _.CaseReference
+        |> finishRead "CaseGetRequest" ActorEndpoint.CaseGet
+
+    let pageRequest =
+        (read (fun cursor limit ->
+            {
+                PageRequest.AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<PageRequest, _>)
+        |> page _.AfterCursor _.Limit
+        |> finishRead "PageRequest" ActorEndpoint.CaseList
+
+    let historyRequest =
+        (read (fun reference detail cursor limit ->
+            {
+                HistoryRequest.CaseReference = reference
+                Detail = detail
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<HistoryRequest, _>)
+        |> caseOperand _.CaseReference
+        |> detail _.Detail
+        |> page _.AfterCursor _.Limit
+        |> finishRead "HistoryRequest" ActorEndpoint.CaseHistory
+
+    let observeRequest =
+        (read (fun operation ->
+            {
+                ObserveRequest.OperationId = operation
+            })
+        : ReadFields<ObserveRequest, _>)
+        |> operationOperand _.OperationId
+        |> finishRead "ObserveRequest" ActorEndpoint.Observe
+
+    let resolveRequest =
+        (read (fun operation ->
+            {
+                ResolveRequest.OperationId = operation
+            })
+        : ReadFields<ResolveRequest, _>)
+        |> operationOperand _.OperationId
+        |> finishRead "ResolveRequest" ActorEndpoint.Resolve
+
+    let grantsRequest =
+        (read (fun actor cursor limit ->
+            {
+                GrantsRequest.ActorId = actor
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<GrantsRequest, _>)
+        |> actorOperand _.ActorId
+        |> page _.AfterCursor _.Limit
+        |> finishRead "GrantsRequest" ActorEndpoint.AuthorityGrants
+
+    let empty = read () |> finishRead "Empty" ActorEndpoint.Context

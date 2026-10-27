@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Vocabulary/Vocabulary.fs" />
     <Compile Include="Refusals/Violations.fs" />
@@ -18,7 +17,6 @@
     <Compile Include="Validation.fs" />
     <Compile Include="PaymentProgress.fs" />
     <Compile Include="CaseState.fs" />
-    <Compile Include="CaseActs.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="Transitions.fs" />

@@ -49,7 +49,7 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (UnvalidatedCaseAct.Open
+                (AuthoredCaseAct.Open
                     { Inputs.registration with
                         ClaimantName = "Synthetic claimant"
                         InsurerName = "Synthetic insurer"
@@ -86,9 +86,7 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
             ReceiptSubject.Authority
                 {
                     TargetActorId = operationId
-                    Act =
-                        ClaimCore.RecordFormat.RecordedAuthorityAct.Operation request.Act
-                        |> fun value -> ClaimCore.RecordFormat.RecordedAuthorityActs.kind value
+                    Act = request.Act |> fun value -> AuthorityAct.kind value
                 }
     }
 

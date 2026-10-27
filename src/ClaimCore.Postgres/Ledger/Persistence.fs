@@ -11,7 +11,7 @@ module internal Persistence =
         let subjectKind, subjectId, revision, act, date =
             match entry.Subject with
             | EntryTarget.Authority(target, kind) ->
-                "AUTHORITY", target, None, RecordedAuthorityActs.token kind, None
+                "AUTHORITY", target, None, AuthorityKind.token kind, None
             | EntryTarget.Case(id, revision, kind, date) ->
                 "CASE", id, Some revision, CaseActKind.token kind, Some date
 

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ActorDescriptions.fs" />
     <Compile Include="CoreModels.fs" />

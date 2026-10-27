@@ -3,8 +3,6 @@ namespace ClaimCore.Domain
 
 open System
 
-type AuthorityGrant = { Role: Role; Scope: GrantTarget }
-
 type ActorSummary =
     {
         ActorId: Guid

@@ -118,7 +118,7 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 140 "LOST-RESOLUTION" 0L (UnvalidatedCaseAct.Open registration)
+                    request 140 "LOST-RESOLUTION" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -157,7 +157,7 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request = authorityRequest (id 145) target AuthorityCommandAct.Register
+        let request = authorityRequest (id 145) target AuthorityAct.Register
 
         let! unknown =
             (Core.execute (proxyCore database source) (OperationInput.Authority request) (token))
@@ -264,7 +264,7 @@ let tests =
                                     20
                                     "synthetic-commit"
                                     0L
-                                    (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                    (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
                             let! result =
                                 (Core.execute throughProxy (OperationInput.Case operation) (token))

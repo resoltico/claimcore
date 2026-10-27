@@ -32,19 +32,17 @@ let accepted result =
     | Error _ -> failtest "Expected acceptance."
 
 let opened () =
-    CaseFixtures.decide today (request 0L (UnvalidatedCaseAct.Open registration)) None
+    CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open registration)) None
     |> accepted
 
 let apply act claim =
     CaseFixtures.decide today (request (Case.snapshot claim).Revision act) (Some claim)
 
 let decided () =
-    opened () |> apply (UnvalidatedCaseAct.Decide decision) |> accepted
+    opened () |> apply (AuthoredCaseAct.Decide decision) |> accepted
 
 let paid () =
-    decided ()
-    |> apply (UnvalidatedCaseAct.RecordPayment Inputs.payment)
-    |> accepted
+    decided () |> apply (AuthoredCaseAct.RecordPayment Inputs.payment) |> accepted
 
 let isInvalid result =
     match result with
@@ -52,7 +50,7 @@ let isInvalid result =
     | _ -> false
 
 let actRequest revision act =
-    { request revision UnvalidatedCaseAct.Close with
+    { request revision AuthoredCaseAct.Close with
         Act = act
     }
 

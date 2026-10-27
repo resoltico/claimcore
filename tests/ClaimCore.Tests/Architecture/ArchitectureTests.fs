@@ -226,6 +226,8 @@ let private shapeSubjects (fixture: System.Type) memberName =
 let private shapeControls () =
     let cases =
         [
+            ArchitectureRule.DomainJsonFree, typeof<JsonFromDomain>, [ "JsonDirect" ]
+            ArchitectureRule.DomainJsonFree, typeof<JsonFromDomainTask>, [ "JsonTask" ]
             ArchitectureRule.Pure, typeof<AmbientShapes>, [ "AmbientDirect" ]
             ArchitectureRule.Pure, typeof<AmbientTaskShape>, [ "AmbientTask" ]
             ArchitectureRule.Pure, typeof<AmbientAsyncShape>, [ "AmbientAsync" ]
@@ -341,6 +343,8 @@ let tests =
             testCase "empty forbidden target sets fail explicitly" emptyTargets
             testCase "product friendship is limited to test assemblies" productFriends
             testCase "Domain excludes outer layers" domainBoundary
+            testCase "Domain is independent of JSON" (fun () ->
+                check ArchitectureRule.DomainJsonFree (Assembly.Load "ClaimCore.Domain"))
             testCase "vocabularies belong to their value type modules" vocabularyModuleNaming
             testCase
                 "Application uses models without wire codecs or endpoint descriptions"

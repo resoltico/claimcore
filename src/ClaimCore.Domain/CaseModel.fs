@@ -1,13 +1,12 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Json
 
 open System
 
 /// Exact integer range shared by Domain revisions and interoperable JSON records.
 module SafeInteger =
     [<Literal>]
-    let Maximum = JsonValue.MaximumInteger
+    let Maximum = 9007199254740991L
 
 module Revision =
     [<Literal>]

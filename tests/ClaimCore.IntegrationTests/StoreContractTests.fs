@@ -137,7 +137,7 @@ let private genesis fixture =
 let private replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! result =
             (Core.execute actor (OperationInput.Case original) (CancellationToken.None))
@@ -157,7 +157,7 @@ let private replayAndRefusal fixture =
         let! stale =
             (Core.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 0L UnvalidatedCaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 0L AuthoredCaseAct.Close))
                 (CancellationToken.None))
 
         Expect.equal
@@ -183,7 +183,7 @@ let private replayAndRefusal fixture =
 let private lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! opened =
             (Core.execute actor (OperationInput.Case original) (CancellationToken.None))
@@ -253,7 +253,7 @@ let private caseUpdate fixture =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                    request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -262,7 +262,7 @@ let private caseUpdate fixture =
         let! closed =
             (Core.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 1L UnvalidatedCaseAct.Close))
+                (OperationInput.Case(request 11 "CONTRACT-001" 1L AuthoredCaseAct.Close))
                 (CancellationToken.None))
 
         let receipt = accepted closed
@@ -324,7 +324,7 @@ let private erasureReadback fixture (actor: ServiceContext) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "CONTRACT-001" 0L (UnvalidatedCaseAct.Open registration)
+                    request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -337,7 +337,7 @@ let private erasureReadback fixture (actor: ServiceContext) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 13 "contract-001" 0L (UnvalidatedCaseAct.Open registration)
+                    request 13 "contract-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -360,14 +360,12 @@ let private caseErasure fixture =
             let! opened =
                 (Core.execute
                     actor
-                    (OperationInput.Case(
-                        request n reference 0L (UnvalidatedCaseAct.Open registration)
-                    ))
+                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
                     (CancellationToken.None))
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L (UnvalidatedCaseAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L (AuthoredCaseAct.Erase)
 
         let! result =
             (Core.execute actor (OperationInput.Case erase) (CancellationToken.None))
@@ -400,9 +398,7 @@ let private assignedReader (actor: ServiceContext) =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 15) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 15) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -423,9 +419,7 @@ let private caseVisibility fixture =
             let! result =
                 (Core.execute
                     actor
-                    (OperationInput.Case(
-                        request n reference 0L (UnvalidatedCaseAct.Open registration)
-                    ))
+                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -465,9 +459,7 @@ let private registerReader (owner: ServiceContext) target =
         let! registered =
             (Core.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id 2) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 2) target AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -501,9 +493,7 @@ let private authorityChanges fixture =
         let! disabled =
             (Core.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id 5) target (AuthorityCommandAct.Disable)
-                ))
+                (OperationInput.Authority(authorityRequest (id 5) target (AuthorityAct.Disable)))
                 (CancellationToken.None))
 
         acceptedAuthority disabled
@@ -524,9 +514,7 @@ let private foldedOrdering fixture =
             let! result =
                 (Core.execute
                     actor
-                    (OperationInput.Case(
-                        request n reference 0L (UnvalidatedCaseAct.Open registration)
-                    ))
+                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -559,9 +547,7 @@ let private scopedHandler fixture (admin: ServiceContext) reference =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 30) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 30) target AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -607,7 +593,7 @@ let private advisedCase fixture reference =
         let! opened =
             (Core.execute
                 admin
-                (OperationInput.Case(request 20 reference 0L (UnvalidatedCaseAct.Open registration)))
+                (OperationInput.Case(request 20 reference 0L (AuthoredCaseAct.Open registration)))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -622,7 +608,7 @@ let private advisedCase fixture reference =
         let! decided =
             (Core.execute
                 admin
-                (OperationInput.Case(request 21 reference 1L (UnvalidatedCaseAct.Decide decision)))
+                (OperationInput.Case(request 21 reference 1L (AuthoredCaseAct.Decide decision)))
                 (CancellationToken.None))
 
         accepted decided |> ignore
@@ -679,18 +665,18 @@ let private revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction: CorrectionInput =
+        let correction: AuthoredCorrection =
             {
                 Registration =
-                    RegistrationGroup.Replace
+                    Change.Replace
                         { registration with
                             ClaimedAmount = "1001.0000"
                         }
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
+                Decision = Change.Keep
+                Payment = Change.Keep
             }
 
-        let pending = request 35 reference 2L (UnvalidatedCaseAct.Correct correction)
+        let pending = request 35 reference 2L (AuthoredCaseAct.Correct correction)
 
         let! preview =
             (Core.previewReply actor (OperationInput.Case pending) (CancellationToken.None))
@@ -722,9 +708,7 @@ let private scopedWorker fixture =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 20) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 20) principal AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -741,7 +725,7 @@ let private scopedWorker fixture =
                 (Core.execute
                     admin
                     (OperationInput.Case(
-                        request (100 + number) reference 0L (UnvalidatedCaseAct.Open registration)
+                        request (100 + number) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -798,7 +782,7 @@ let private scopedAuthority fixture =
         Expect.isTrue context.HasAssignedCases "EXISTS reports assigned visibility"
 
         let pending =
-            request 102 "SCOPE-1" 1L (UnvalidatedCaseAct.AmendRegistration registration)
+            request 102 "SCOPE-1" 1L (AuthoredCaseAct.AmendRegistration registration)
 
         let! conflict =
             (Core.execute
@@ -873,10 +857,14 @@ let private authorityReviewRefusals fixture =
 
         for index, act, expected in
             [
-                10, AuthorityCommandAct.Register, Refusal.ActorAlreadyRegistered
-                11, AuthorityCommandAct.Disable, Refusal.LastOwner
+                10, AuthorityAct.Register, Refusal.ActorAlreadyRegistered
+                11, AuthorityAct.Disable, Refusal.LastOwner
                 12,
-                AuthorityCommandAct.Revoke(Role.Owner, GrantTarget.Installation),
+                AuthorityAct.Revoke
+                    {
+                        AuthorityGrant.Role = Role.Owner
+                        Scope = GrantTarget.Installation
+                    },
                 Refusal.LastOwner
             ] do
             let input = authorityRequest (id index) fixture.Owner act
@@ -910,16 +898,14 @@ let private authorityReadIsNotManage fixture =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 2) auditor AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 2) auditor AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
         let! granted = grant actor (id 3) auditor Role.Auditor GrantTarget.Installation true
         acceptedAuthority granted
 
-        let input = authorityRequest (id 4) fixture.Owner (AuthorityCommandAct.Disable)
+        let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture auditor input
 
@@ -952,7 +938,7 @@ let private authorityReviewReplay fixture =
             PrincipalKey.human "https://issuer.example/" "preview-target"
             |> Result.defaultWith (string >> failtest)
 
-        let input = authorityRequest (id 2) target AuthorityCommandAct.Register
+        let input = authorityRequest (id 2) target AuthorityAct.Register
         let! before = ledgerHead fixture
         let! preview, _ = authorityReview fixture fixture.Owner input
 
@@ -987,7 +973,7 @@ let private authorityReviewReplay fixture =
             (PreviewResult.AlreadyAccepted receipt)
             "Accepted registration replays before fresh-state refusal."
 
-        let changed = authorityRequest (id 2) target (AuthorityCommandAct.Disable)
+        let changed = authorityRequest (id 2) target (AuthorityAct.Disable)
         let! conflict, _ = authorityReview fixture fixture.Owner changed
 
         Expect.equal
@@ -1004,7 +990,7 @@ let private grantReviewTarget fixture =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 10 "REVIEW-CASE" 0L (UnvalidatedCaseAct.Open registration)
+                    request 10 "REVIEW-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -1017,9 +1003,7 @@ let private grantReviewTarget fixture =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 11) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 11) target AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -1044,10 +1028,11 @@ let private grantReviewTarget fixture =
             authorityRequest
                 (id 14)
                 target
-                (AuthorityCommandAct.Revoke(
-                    Role.CaseReader,
-                    GrantTarget.CaseReference "review-case"
-                ))
+                (AuthorityAct.Revoke
+                    {
+                        AuthorityGrant.Role = Role.CaseReader
+                        Scope = GrantTarget.CaseReference "review-case"
+                    })
 
         return target, input
     }
@@ -1126,16 +1111,14 @@ let private authorityReviewRechecks fixture =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 2) other AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 2) other AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
         let! granted = grant actor (id 3) other Role.Owner GrantTarget.Installation true
         acceptedAuthority granted
 
-        let input = authorityRequest (id 4) fixture.Owner (AuthorityCommandAct.Disable)
+        let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture fixture.Owner input
         Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."

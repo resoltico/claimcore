@@ -39,10 +39,7 @@ let private authority (actor: ServiceContext) principals =
                 (Core.execute
                     actor
                     (OperationInput.Authority(
-                        authorityRequest
-                            (id (100000 + index * 20))
-                            principal
-                            AuthorityCommandAct.Register
+                        authorityRequest (id (100000 + index * 20)) principal AuthorityAct.Register
                     ))
                     (token))
 
@@ -78,7 +75,7 @@ let private openCases (actor: ServiceContext) count =
                             (1000 + index)
                             ("synthetic-growth-" + string index)
                             0L
-                            (UnvalidatedCaseAct.Open registration)
+                            (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -93,26 +90,26 @@ let private act revision =
         }
 
     match (revision - 1L) % 8L with
-    | 0L -> UnvalidatedCaseAct.AmendRegistration amended
+    | 0L -> AuthoredCaseAct.AmendRegistration amended
     | 1L ->
-        UnvalidatedCaseAct.Decide
+        AuthoredCaseAct.Decide
             {
                 PaymentDecisionDate = "2026-08-04"
                 PayableAmount = "100.00"
                 PayableCurrency = "EUR"
             }
-    | 2L -> UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
-    | 3L -> UnvalidatedCaseAct.ClearPayment
+    | 2L -> AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
+    | 3L -> AuthoredCaseAct.ClearPayment
     | 4L ->
-        UnvalidatedCaseAct.Correct
+        AuthoredCaseAct.Correct
             {
-                Registration = RegistrationGroup.Replace amended
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
+                Registration = Change.Replace amended
+                Decision = Change.Keep
+                Payment = Change.Keep
             }
-    | 5L -> UnvalidatedCaseAct.WithdrawDecision
-    | 6L -> UnvalidatedCaseAct.Close
-    | _ -> UnvalidatedCaseAct.Reopen
+    | 5L -> AuthoredCaseAct.WithdrawDecision
+    | 6L -> AuthoredCaseAct.Close
+    | _ -> AuthoredCaseAct.Reopen
 
 let private writeLane (actor: ServiceContext) workload lane =
     task {

@@ -64,27 +64,27 @@ let erased: CaseSnapshot =
     }
 
 let correction =
-    UnvalidatedCaseAct.Correct
+    AuthoredCaseAct.Correct
         {
-            Registration = RegistrationGroup.Replace(registration "Corrected claimant")
-            Decision = DecisionGroup.Keep
-            Payment = PaymentGroup.Keep
+            Registration = Change.Replace(registration "Corrected claimant")
+            Decision = Change.Keep
+            Payment = Change.Keep
         }
 
 let acts =
     [
-        "OPEN", UnvalidatedCaseAct.Open(registration "Synthetic claimant")
-        "AMEND_REGISTRATION", UnvalidatedCaseAct.AmendRegistration(registration "Amended claimant")
+        "OPEN", AuthoredCaseAct.Open(registration "Synthetic claimant")
+        "AMEND_REGISTRATION", AuthoredCaseAct.AmendRegistration(registration "Amended claimant")
         "CORRECT", correction
-        "DECIDE", UnvalidatedCaseAct.Decide(decision "60")
-        "WITHDRAW_DECISION", UnvalidatedCaseAct.WithdrawDecision
-        "RECORD_PAYMENT", UnvalidatedCaseAct.RecordPayment payment
-        "CLEAR_PAYMENT", UnvalidatedCaseAct.ClearPayment
-        "CLOSE", UnvalidatedCaseAct.Close
-        "REOPEN", UnvalidatedCaseAct.Reopen
-        "VOID", UnvalidatedCaseAct.Void "Entry error"
-        "REINSTATE", UnvalidatedCaseAct.Reinstate "Restored"
-        "ERASE", UnvalidatedCaseAct.Erase
+        "DECIDE", AuthoredCaseAct.Decide(decision "60")
+        "WITHDRAW_DECISION", AuthoredCaseAct.WithdrawDecision
+        "RECORD_PAYMENT", AuthoredCaseAct.RecordPayment payment
+        "CLEAR_PAYMENT", AuthoredCaseAct.ClearPayment
+        "CLOSE", AuthoredCaseAct.Close
+        "REOPEN", AuthoredCaseAct.Reopen
+        "VOID", AuthoredCaseAct.Void "Entry error"
+        "REINSTATE", AuthoredCaseAct.Reinstate "Restored"
+        "ERASE", AuthoredCaseAct.Erase
     ]
 
 let request act revision : UnvalidatedCaseRequest =

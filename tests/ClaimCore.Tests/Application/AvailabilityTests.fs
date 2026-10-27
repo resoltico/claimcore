@@ -11,31 +11,31 @@ let private availableActs record =
 
 let private candidates =
     [
-        UnvalidatedCaseAct.Open registration
-        UnvalidatedCaseAct.AmendRegistration registration
-        UnvalidatedCaseAct.Correct
+        AuthoredCaseAct.Open registration
+        AuthoredCaseAct.AmendRegistration registration
+        AuthoredCaseAct.Correct
             {
                 Registration =
-                    RegistrationGroup.Replace
+                    Change.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Claimant"
                         }
-                Decision = DecisionGroup.Keep
-                Payment = PaymentGroup.Keep
+                Decision = Change.Keep
+                Payment = Change.Keep
             }
-        UnvalidatedCaseAct.Decide decision
-        UnvalidatedCaseAct.WithdrawDecision
-        UnvalidatedCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        UnvalidatedCaseAct.ClearPayment
-        UnvalidatedCaseAct.Close
-        UnvalidatedCaseAct.Reopen
+        AuthoredCaseAct.Decide decision
+        AuthoredCaseAct.WithdrawDecision
+        AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        AuthoredCaseAct.ClearPayment
+        AuthoredCaseAct.Close
+        AuthoredCaseAct.Reopen
     ]
 
 let private stateActions =
     testCase "each state advertises and enforces the specified act set" (fun () ->
         let zero =
             opened ()
-            |> apply (UnvalidatedCaseAct.Decide { decision with PayableAmount = "0" })
+            |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
             |> accepted
 
         let cases =
@@ -61,10 +61,10 @@ let private stateActions =
 
                 Expect.equal
                     (Result.isOk result)
-                    (Set.contains (UnvalidatedCaseActs.name act) actions)
+                    (Set.contains (CaseActKind.token (CaseAct.kind act)) actions)
                     "No separately invented UI state machine")
 
-            let closed = apply UnvalidatedCaseAct.Close state |> accepted
+            let closed = apply AuthoredCaseAct.Close state |> accepted
 
             Expect.equal
                 (availableActs closed)
@@ -80,7 +80,7 @@ let private edgeActions =
                 Expect.contains (availableActs state) "DECIDE" "State eligibility"
 
                 let invalid =
-                    UnvalidatedCaseAct.Decide
+                    AuthoredCaseAct.Decide
                         { decision with
                             PaymentDecisionDate = "2027-01-01"
                         }

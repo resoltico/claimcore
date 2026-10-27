@@ -165,7 +165,7 @@ module LedgerEntries =
         | Ok request when
             request.OperationId = entry.OperationId
             && request.ExpectedRevision = revision - 1L
-            && CaseActs.kind request.Act = act
+            && CaseAct.kind request.Act = act
             && CaseReferenceId.encode installationId (CaseReference.format request.Reference) = id
             ->
             if act = CaseActKind.Erase then
@@ -188,7 +188,7 @@ module LedgerEntries =
         match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
         | Ok request when
             request.OperationId = entry.OperationId
-            && RecordedAuthorityActs.kind request.Act = act
+            && AuthorityAct.kind request.Act = act
             && AuthorityRequests.validRecord request
             && Array.isEmpty data.Snapshot
             ->

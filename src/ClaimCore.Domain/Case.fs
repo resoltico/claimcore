@@ -10,7 +10,7 @@ type CaseCommand =
         {
             Source: UnvalidatedCaseRequest
             ParsedReference: CaseReference
-            ParsedAct: CaseAct
+            ParsedAct: ValidCaseAct
         }
 
     member this.Authored = this.Source
@@ -90,76 +90,6 @@ module private BusinessState =
         }
 
 module Case =
-    /// Identity normalization never rewrites authored payloads or free text.
-    let private canonicalInput (command: CaseCommand) =
-        let registration (value: Registration) : RegistrationInput =
-            {
-                IncidentDate = CalendarDate.format value.IncidentDate
-                IncidentNotificationDate = CalendarDate.format value.IncidentNotificationDate
-                IncidentCountry = CountryCode.format value.IncidentCountry
-                ClaimantName = PartyName.format value.ClaimantName
-                InsurerName = PartyName.format value.InsurerName
-                ClaimedAmount = Money.format value.ClaimedAmount
-                ClaimedCurrency = Money.currency value.ClaimedAmount
-            }
-
-        let decision (value: Decision) : DecisionInput =
-            {
-                PaymentDecisionDate = CalendarDate.format value.PaymentDecisionDate
-                PayableAmount = Money.format value.PayableAmount
-                PayableCurrency = Money.currency value.PayableAmount
-            }
-
-        let registrationGroup =
-            function
-            | RegistrationChange.Keep -> RegistrationGroup.Keep
-            | RegistrationChange.Replace value -> RegistrationGroup.Replace(registration value)
-
-        let decisionGroup =
-            function
-            | DecisionChange.Keep -> DecisionGroup.Keep
-            | DecisionChange.Clear -> DecisionGroup.Clear
-            | DecisionChange.Replace value -> DecisionGroup.Replace(decision value)
-
-        let payment date : PaymentInput =
-            {
-                PaymentDate = CalendarDate.format date
-            }
-
-        let paymentGroup =
-            function
-            | PaymentChange.Keep -> PaymentGroup.Keep
-            | PaymentChange.Clear -> PaymentGroup.Clear
-            | PaymentChange.Replace value -> PaymentGroup.Replace(payment value)
-
-        let act =
-            match command.Act with
-            | CaseAct.Open value -> UnvalidatedCaseAct.Open(registration value)
-            | CaseAct.AmendRegistration value ->
-                UnvalidatedCaseAct.AmendRegistration(registration value)
-            | CaseAct.Correct value ->
-                UnvalidatedCaseAct.Correct
-                    {
-                        Registration = registrationGroup value.Registration
-                        Decision = decisionGroup value.Decision
-                        Payment = paymentGroup value.Payment
-                    }
-            | CaseAct.Decide value -> UnvalidatedCaseAct.Decide(decision value)
-            | CaseAct.WithdrawDecision -> UnvalidatedCaseAct.WithdrawDecision
-            | CaseAct.RecordPayment date -> UnvalidatedCaseAct.RecordPayment(payment date)
-            | CaseAct.ClearPayment -> UnvalidatedCaseAct.ClearPayment
-            | CaseAct.Close -> UnvalidatedCaseAct.Close
-            | CaseAct.Reopen -> UnvalidatedCaseAct.Reopen
-
-            | CaseAct.Void reason -> UnvalidatedCaseAct.Void(Reason.format reason)
-            | CaseAct.Reinstate reason -> UnvalidatedCaseAct.Reinstate(Reason.format reason)
-            | CaseAct.Erase -> UnvalidatedCaseAct.Erase
-
-        { command.Authored with
-            Act = act
-            CaseReference = CaseReference.identity command.Reference
-        }
-
     let parse request =
         RequestValidation.parse request
         |> Result.map (fun (reference, act) ->
@@ -171,7 +101,11 @@ module Case =
 
     let canonical (command: CaseCommand) =
         { command with
-            Source = canonicalInput command
+            Source =
+                { command.Authored with
+                    Act = CaseAct.authored command.Act
+                    CaseReference = CaseReference.identity command.Reference
+                }
             ParsedReference = CaseReference.canonical command.Reference
         }
 
@@ -208,7 +142,7 @@ module Case =
         }
 
     let private transition today act state =
-        Transitions.applicable state (CaseActs.kind act)
+        Transitions.applicable state (CaseAct.kind act)
         |> Result.bind (fun evidence -> Transitions.apply today evidence act)
 
     let private create today (command: CaseCommand) =

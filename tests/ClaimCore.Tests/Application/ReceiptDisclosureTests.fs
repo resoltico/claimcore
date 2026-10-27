@@ -95,7 +95,7 @@ let private foreignScope () =
         { original with
             CaseReference = CaseReference.format caseA.Snapshot.Reference
             ExpectedRevision = 1L
-            Act = UnvalidatedCaseAct.Close
+            Act = AuthoredCaseAct.Close
         }
 
     let read = (locked both (Some caseA) (Some entry)).Read
@@ -172,7 +172,7 @@ let private stewardship () =
             206
             (CaseReference.format current.Snapshot.Reference)
             1L
-            (UnvalidatedCaseAct.Void "Entered in error")
+            (AuthoredCaseAct.Void "Entered in error")
 
     let draft, projection, first =
         decide request (locked steward (Some current) None) |> appended
@@ -187,7 +187,7 @@ let private stewardship () =
             207
             (CaseReference.format current.Snapshot.Reference)
             2L
-            (UnvalidatedCaseAct.Reinstate "Confirmed")
+            (AuthoredCaseAct.Reinstate "Confirmed")
 
     let _, projection, _ =
         decide restore (locked steward (Some voided) None) |> appended

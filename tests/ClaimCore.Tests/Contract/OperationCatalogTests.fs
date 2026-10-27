@@ -75,14 +75,10 @@ let tests =
 
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
-                let original =
-                    Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Decide)
-
                 let operation = find [ "case"; "decide" ]
+                let inputs, _ = OperationCatalog.caseInputs operation CaseActKind.Decide
 
-                let check declaration =
-                    let inputs, _ = OperationCatalog.caseInputs operation declaration
-
+                let check (inputs: CatalogDerivedInput list) =
                     let date =
                         inputs
                         |> List.find (fun input ->
@@ -93,28 +89,26 @@ let tests =
                         (Some [ "decision"; "paymentDecisionDate" ])
                         "Decision values prefill from the accepted decision"
 
-                check original
+                check inputs
 
                 let wrong =
-                    match original.Payload with
-                    | CasePayload.Decision shape ->
-                        { original with
-                            Payload = CasePayload.Decision { shape with Prefill = false }
-                        }
-                    | _ -> failtest "The DECIDE declaration must carry decision values"
+                    inputs
+                    |> List.map (fun input ->
+                        { input with
+                            Binding = { input.Binding with Prefill = None }
+                        })
 
-                Expect.throws (fun () -> check wrong) "A wrong prefill declaration is detected")
+                Expect.throws (fun () -> check wrong) "A wrong prefill binding is detected")
             testCase
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
-                    let original =
-                        Record.caseActs |> List.find (fun item -> item.Kind = CaseActKind.Open)
-
                     let operation = find [ "case"; "open" ]
+                    let inputs, constants = OperationCatalog.caseInputs operation CaseActKind.Open
 
-                    let check declaration =
-                        let inputs, constants = OperationCatalog.caseInputs operation declaration
-
+                    let check
+                        (inputs: CatalogDerivedInput list)
+                        (constants: BindingAssignment list)
+                        =
                         Expect.isFalse
                             (inputs
                              |> List.exists (fun input ->
@@ -129,15 +123,14 @@ let tests =
                                  && item.Value = BindingValue.Integer 0L))
                             "Opening fixes revision zero"
 
-                    check original
+                    check inputs constants
+
+                    let wrong =
+                        constants |> List.filter (fun item -> item.Path <> [ "expectedRevision" ])
 
                     Expect.throws
-                        (fun () ->
-                            check
-                                { original with
-                                    RevisionMode = RevisionInput.Expected
-                                })
-                        "An existing-case revision declaration is detected")
+                        (fun () -> check inputs wrong)
+                        "A missing revision constant is detected")
             testCase
                 "every entry and input has authored labels and meanings in all languages"
                 (fun () ->

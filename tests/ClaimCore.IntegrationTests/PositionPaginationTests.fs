@@ -46,9 +46,7 @@ let private reader fixture (admin: ServiceContext) =
         let! registered =
             (Core.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id 20) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 20) target AuthorityAct.Register))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -147,7 +145,7 @@ let private createHistory (actor: ServiceContext) =
                 (Core.execute
                     actor
                     (OperationInput.Case(
-                        request n "HISTORY-1" revision (UnvalidatedCaseAct.AmendRegistration values)
+                        request n "HISTORY-1" revision (AuthoredCaseAct.AmendRegistration values)
                     ))
                     (CancellationToken.None))
 
@@ -164,9 +162,7 @@ let private registerActors (actor: ServiceContext) =
             let! registered =
                 (Core.execute
                     actor
-                    (OperationInput.Authority(
-                        authorityRequest (id n) target AuthorityCommandAct.Register
-                    ))
+                    (OperationInput.Authority(authorityRequest (id n) target AuthorityAct.Register))
                     (CancellationToken.None))
 
             acceptedAuthority registered
@@ -452,9 +448,9 @@ let private appendHistory (actor: ServiceContext) =
         for revision in 1L .. 52L do
             let act =
                 if revision % 2L = 1L then
-                    UnvalidatedCaseAct.Close
+                    AuthoredCaseAct.Close
                 else
-                    UnvalidatedCaseAct.Reopen
+                    AuthoredCaseAct.Reopen
 
             let! result =
                 (Core.execute

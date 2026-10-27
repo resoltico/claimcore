@@ -19,7 +19,7 @@ let private unavailable () =
 let private inputs () =
     [
         OperationInput.Case(opening 470 "BOUNDARY")
-        OperationInput.Authority(authorityRequest (id 471) other AuthorityCommandAct.Register)
+        OperationInput.Authority(authorityRequest (id 471) other AuthorityAct.Register)
     ]
 
 let private malformed () =
@@ -41,15 +41,9 @@ let private malformed () =
                         OperationId = Guid.Empty
                     }
                 OperationInput.Case(
-                    actRequest
-                        471
-                        "BOUNDARY"
-                        1L
-                        (UnvalidatedCaseAct.Void Unchecked.defaultof<string>)
+                    actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
-                OperationInput.Authority(
-                    authorityRequest Guid.Empty other AuthorityCommandAct.Register
-                )
+                OperationInput.Authority(authorityRequest Guid.Empty other AuthorityAct.Register)
             ]
 
         for input in invalid do

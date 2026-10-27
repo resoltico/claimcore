@@ -8,7 +8,7 @@ open ClaimCore.TestSupport.StoreFixtures
 
 [<RequireQualifiedAccess>]
 type private Attempt =
-    | Authored of AuthorityAct
+    | Authored of AuthoredAuthorityAct
     | Provision
 
 let private refusal =

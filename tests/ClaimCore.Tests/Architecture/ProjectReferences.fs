@@ -42,10 +42,10 @@ let read path =
 let allowed =
     [
         "ClaimCore.Json", []
-        "ClaimCore.Domain", [ "ClaimCore.Json" ]
+        "ClaimCore.Domain", []
         "ClaimCore.Protocol", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
         "ClaimCore.RecordFormat", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
-        "ClaimCore.Application", [ "ClaimCore.Domain"; "ClaimCore.RecordFormat"; "ClaimCore.Json" ]
+        "ClaimCore.Application", [ "ClaimCore.Domain"; "ClaimCore.RecordFormat" ]
         "ClaimCore.Postgres",
         [
             "ClaimCore.Application"

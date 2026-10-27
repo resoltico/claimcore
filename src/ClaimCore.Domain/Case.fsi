@@ -7,7 +7,7 @@ open System
 type CaseCommand =
     member Authored: UnvalidatedCaseRequest
     member Reference: CaseReference
-    member Act: CaseAct
+    member Act: ValidCaseAct
     member OperationId: Guid
     member ExpectedRevision: int64
 

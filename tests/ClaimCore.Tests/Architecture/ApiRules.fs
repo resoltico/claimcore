@@ -83,6 +83,7 @@ type ArchitectureRule =
     | Durable
     | Serializer
     | ApplicationProtocol
+    | DomainJsonFree
     | VocabularyModuleNaming
     | DomainBoundary
 
@@ -154,6 +155,12 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")
             |> targets "JsonSerializer"
+        )
+        :> IArchRule
+    | ArchitectureRule.DomainJsonFree ->
+        clauses.NotDependOnAny(
+            Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Json")
+            |> targets "JSON assembly"
         )
         :> IArchRule
     | ArchitectureRule.VocabularyModuleNaming ->

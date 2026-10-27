@@ -3,21 +3,15 @@ namespace ClaimCore.Domain
 open System
 open ClaimCore.Domain.ResultFlow
 
-[<RequireQualifiedAccess>]
-type AuthorityCommandAct =
-    | Register
-    | Grant of Role * GrantTarget
-    | Revoke of Role * GrantTarget
-    | Enable
-    | Disable
-    | ProvisionOwner
+type AuthorityGrant = { Role: Role; Scope: GrantTarget }
+type ValidAuthorityAct = AuthorityAct<AuthorityGrant>
 
 type AuthorityCommand =
     private
         {
             Id: Guid
             Principal: PrincipalKey
-            Action: AuthorityCommandAct
+            Action: ValidAuthorityAct
         }
 
     member this.OperationId = this.Id
@@ -162,23 +156,23 @@ module Authority =
         | (CaseAct.Correct correction) ->
             [
                 match correction.Registration with
-                | RegistrationChange.Keep -> ()
+                | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Registration
                 match correction.Decision with
-                | DecisionChange.Keep -> ()
+                | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
-                | PaymentChange.Keep -> ()
+                | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
-        | act -> ordinaryActs (CaseActs.kind act)
+        | act -> ordinaryActs (CaseAct.kind act)
 
     let canAdvertise principal actor resource kind =
         ordinaryActs kind
         |> List.exists (fun capability -> can principal actor capability resource)
 
     let canAct principal actor resource act =
-        canAdvertise principal actor resource (CaseActs.kind act)
+        canAdvertise principal actor resource (CaseAct.kind act)
         && (requiredCapabilities act
             |> List.forall (fun capability -> can principal actor capability resource))
 
@@ -202,9 +196,14 @@ module Authority =
             else
                 let reference =
                     match act with
-                    | AuthorityCommandAct.Grant(_, GrantTarget.CaseReference reference)
-                    | AuthorityCommandAct.Revoke(_, GrantTarget.CaseReference reference) ->
-                        Some reference
+                    | AuthorityAct.Grant {
+                                             Role = _
+                                             Scope = GrantTarget.CaseReference reference
+                                         }
+                    | AuthorityAct.Revoke {
+                                              Role = _
+                                              Scope = GrantTarget.CaseReference reference
+                                          } -> Some reference
                     | _ -> None
 
                 do!
@@ -233,9 +232,14 @@ module Authority =
             let! target =
                 PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject
 
-            let grant make (value: GrantChange) =
+            let grant (value: GrantChange) =
                 Role.parse value.Role
-                |> Option.map (fun role -> make (role, value.Scope) |> Ok)
+                |> Option.map (fun role ->
+                    Ok
+                        {
+                            AuthorityGrant.Role = role
+                            Scope = value.Scope
+                        })
                 |> Option.defaultValue (
                     Error(
                         Refusal.InvalidInput(
@@ -250,24 +254,21 @@ module Authority =
 
             let! act =
                 match request.Act with
-                | AuthorityAct.Register -> Ok AuthorityCommandAct.Register
-                | AuthorityAct.Grant value -> grant AuthorityCommandAct.Grant value
-                | AuthorityAct.Revoke value -> grant AuthorityCommandAct.Revoke value
-                | AuthorityAct.Enable -> Ok AuthorityCommandAct.Enable
-                | AuthorityAct.Disable -> Ok AuthorityCommandAct.Disable
+                | AuthorityAct.ProvisionOwner -> Error Refusal.ActNotPermitted
+                | act -> AuthorityAct.traverse grant act
 
             return! command request.OperationId target act
         }
 
     let provision operationId target =
-        command operationId target AuthorityCommandAct.ProvisionOwner
+        command operationId target AuthorityAct.ProvisionOwner
 
     let private owner (actor: ActorAuthority) =
         actor.Enabled
         && PrincipalKey.isHuman actor.Principal
         && List.contains
             {
-                Role = Role.Owner
+                ActorGrant.Role = Role.Owner
                 Scope = GrantScope.Installation
             }
             actor.Grants
@@ -299,27 +300,27 @@ module Authority =
 
     let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
         match command.Act, facts.TargetActor with
-        | AuthorityCommandAct.ProvisionOwner, _ when not (PrincipalKey.isHuman command.Target) ->
+        | AuthorityAct.ProvisionOwner, _ when not (PrincipalKey.isHuman command.Target) ->
             Error Refusal.HumanPrincipalRequired
-        | AuthorityCommandAct.ProvisionOwner, None when facts.ActorCount = 0 ->
+        | AuthorityAct.ProvisionOwner, None when facts.ActorCount = 0 ->
             Ok AuthorityChange.OwnerProvisioned
-        | AuthorityCommandAct.ProvisionOwner, _
-        | AuthorityCommandAct.Register, Some _ -> Error Refusal.ActorAlreadyRegistered
-        | AuthorityCommandAct.Register, None -> Ok AuthorityChange.Registered
+        | AuthorityAct.ProvisionOwner, _
+        | AuthorityAct.Register, Some _ -> Error Refusal.ActorAlreadyRegistered
+        | AuthorityAct.Register, None -> Ok AuthorityChange.Registered
         | _, None -> Error Refusal.ActorUnknown
-        | AuthorityCommandAct.Disable, Some actor when owner actor && facts.EnabledHumanOwners <= 1 ->
+        | AuthorityAct.Disable, Some actor when owner actor && facts.EnabledHumanOwners <= 1 ->
             Error Refusal.LastOwner
-        | AuthorityCommandAct.Enable, Some _ -> Ok AuthorityChange.Enabled
-        | AuthorityCommandAct.Disable, Some _ -> Ok AuthorityChange.Disabled
-        | AuthorityCommandAct.Grant(role, target), Some actor ->
+        | AuthorityAct.Enable, Some _ -> Ok AuthorityChange.Enabled
+        | AuthorityAct.Disable, Some _ -> Ok AuthorityChange.Disabled
+        | AuthorityAct.Grant { Role = role; Scope = target }, Some actor ->
             grantChange facts true role target actor
-        | AuthorityCommandAct.Revoke(role, target), Some actor ->
+        | AuthorityAct.Revoke { Role = role; Scope = target }, Some actor ->
             grantChange facts false role target actor
 
     let decide (facts: AuthorityFacts) (command: AuthorityCommand) =
         let permitted =
             match command.Act, facts.Requester.Actor with
-            | AuthorityCommandAct.ProvisionOwner, _ -> true
+            | AuthorityAct.ProvisionOwner, _ -> true
             | _, Some actor ->
                 can
                     actor.Principal

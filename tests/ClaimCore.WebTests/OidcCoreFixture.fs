@@ -45,7 +45,7 @@ let createFor issuer subject =
                 (Core.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id 20) service AuthorityCommandAct.Register
+                        authorityRequest (id 20) service AuthorityAct.Register
                     ))
                     (CancellationToken.None))
 
@@ -60,7 +60,7 @@ let createFor issuer subject =
                 (Core.execute
                     owner
                     (OperationInput.Case(
-                        request 10 "SYNTHETIC-001" 0L (UnvalidatedCaseAct.Open registration)
+                        request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 

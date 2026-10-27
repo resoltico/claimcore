@@ -150,3 +150,13 @@ module MisnamedTaskVocabulary =
             do! Task.Yield()
             return Vocabulary.all vocabulary
         }
+
+type JsonFromDomain =
+    static member JsonDirect() = ClaimCore.Json.JsonValue.Null
+
+type JsonFromDomainTask =
+    static member JsonTask() =
+        task {
+            do! Task.Yield()
+            return ClaimCore.Json.JsonValue.Null
+        }

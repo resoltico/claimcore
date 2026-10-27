@@ -54,11 +54,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
                 (Core.execute
                     owner
                     (OperationInput.Case(
-                        request
-                            n
-                            reference
-                            0L
-                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                        request n reference 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -221,7 +217,7 @@ let tests =
                                             30
                                             "synthetic-hosting"
                                             0L
-                                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                     ))
                                     (token)))
 
@@ -339,7 +335,7 @@ let tests =
                                             40
                                             "synthetic-drain"
                                             0L
-                                            (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                     ))
                                     (token)))
 

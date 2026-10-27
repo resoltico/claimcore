@@ -9,7 +9,7 @@ open ClaimCore.Json
 module ResolutionCodecs =
     open Codec
 
-    let request = Record.resolve.Codec RequestCodecs.readProfile
+    let request = RequestCodecs.resolveRequest
 
     let private data codec = record id |> field "data" id codec
 

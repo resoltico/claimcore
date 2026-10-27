@@ -70,7 +70,7 @@ let private caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L
-        Act = ClaimCore.Domain.UnvalidatedCaseAct.Open values
+        Act = ClaimCore.Domain.AuthoredCaseAct.Open values
     }
 
 let private contextCodec () =
@@ -440,12 +440,12 @@ let private retainedText () =
                 InsurerName = "Changed insurer"
             }
 
-        let reaffirm = request 1L (UnvalidatedCaseAct.AmendRegistration values)
+        let reaffirm = request 1L (AuthoredCaseAct.AmendRegistration values)
 
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Domain.UnvalidatedCaseAct.AmendRegistration values
+                Act = ClaimCore.Domain.AuthoredCaseAct.AmendRegistration values
             }
 
         Codec.decode
@@ -460,7 +460,7 @@ let private retainedText () =
         let changed =
             { reaffirm with
                 Act =
-                    (UnvalidatedCaseAct.AmendRegistration
+                    (AuthoredCaseAct.AmendRegistration
                         { values with
                             ClaimantName = name + "B"
                         })

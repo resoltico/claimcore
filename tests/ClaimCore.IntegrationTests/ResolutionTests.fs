@@ -61,7 +61,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
         do! waiters database 1L
 
         let input =
-            OperationInput.Case(request 101 "FENCED" 0L (UnvalidatedCaseAct.Open registration))
+            OperationInput.Case(request 101 "FENCED" 0L (AuthoredCaseAct.Open registration))
 
         let executing = (Core.execute actor (input) (token))
         do! waiters database 2L
@@ -99,9 +99,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! created =
             (Core.execute
                 actor
-                (OperationInput.Case(
-                    request 110 "RESOLVED" 0L (UnvalidatedCaseAct.Open registration)
-                ))
+                (OperationInput.Case(request 110 "RESOLVED" 0L (AuthoredCaseAct.Open registration)))
                 (token))
 
         let receipt = accepted created
@@ -138,7 +136,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! erased =
             (Core.execute
                 actor
-                (OperationInput.Case(request 113 "RESOLVED" 1L UnvalidatedCaseAct.Erase))
+                (OperationInput.Case(request 113 "RESOLVED" 1L AuthoredCaseAct.Erase))
                 (token))
 
         accepted erased |> ignore
@@ -164,16 +162,14 @@ let private foreign (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 120) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 120) principal AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
         let other = core database.Fixture principal
 
         let input =
-            OperationInput.Case(request 121 "FOREIGN" 0L (UnvalidatedCaseAct.Open registration))
+            OperationInput.Case(request 121 "FOREIGN" 0L (AuthoredCaseAct.Open registration))
 
         let! created = (Core.execute actor (input) (token))
         let receipt = accepted created
@@ -197,7 +193,7 @@ let private foreign (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request 122 "OTHER-FENCE" 0L (UnvalidatedCaseAct.Open registration)
+                    request 122 "OTHER-FENCE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -216,9 +212,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
         let! registered =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 120) principal AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 120) principal AuthorityAct.Register))
                 (token))
 
         acceptedAuthority registered
@@ -228,7 +222,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 123) principal (AuthorityCommandAct.Disable)
+                    authorityRequest (id 123) principal (AuthorityAct.Disable)
                 ))
                 (token))
 
@@ -264,9 +258,7 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! rejected =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 130) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 130) target AuthorityAct.Register))
                 (token))
 
         Expect.equal
@@ -277,9 +269,7 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! created =
             (Core.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id 131) target AuthorityCommandAct.Register
-                ))
+                (OperationInput.Authority(authorityRequest (id 131) target AuthorityAct.Register))
                 (token))
 
         let receipt = accepted created

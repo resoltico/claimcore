@@ -134,8 +134,7 @@ let tests =
                                                 (100 + index)
                                                 ($"synthetic-{index}")
                                                 0L
-                                                (ClaimCore.Domain.UnvalidatedCaseAct.Open
-                                                    registration)
+                                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                         ))
                                         (token))
                             |]
@@ -318,7 +317,7 @@ let tests =
                                 20
                                 "synthetic-deferred"
                                 0L
-                                (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
                         let! failed = (Core.execute actor (OperationInput.Case operation) (token))
 
@@ -383,7 +382,7 @@ let tests =
                                         20
                                         "synthetic-snapshot"
                                         0L
-                                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                                 ))
                                 (token))
 

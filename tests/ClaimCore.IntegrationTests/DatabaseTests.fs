@@ -52,11 +52,7 @@ let private populated (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request
-                        10
-                        "synthetic-a"
-                        0L
-                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                    request 10 "synthetic-a" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -66,11 +62,7 @@ let private populated (database: PostgresFixture.Database) =
             (Core.execute
                 actor
                 (OperationInput.Case(
-                    request
-                        11
-                        "synthetic-b"
-                        0L
-                        (ClaimCore.Domain.UnvalidatedCaseAct.Open registration)
+                    request 11 "synthetic-b" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -102,7 +94,7 @@ let private erasureFixture (database: PostgresFixture.Database) =
 let private erased (actor: ServiceContext) =
     task {
         let request =
-            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.UnvalidatedCaseAct.Erase)
+            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.AuthoredCaseAct.Erase)
 
         let! result = (Core.execute actor (OperationInput.Case request) (token))
 

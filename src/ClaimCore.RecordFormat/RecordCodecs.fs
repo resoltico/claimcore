@@ -1,5 +1,6 @@
 namespace ClaimCore.RecordFormat
 
+open System
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -13,22 +14,61 @@ module internal RecordCodecs =
     let tokens values =
         values |> List.map (fun value -> value, value) |> enumeration
 
-    let registration = Record.registration.Codec text
-    let decision = Record.decision.Codec text
-    let payment = Record.payment.Codec text
+    let private inputField name get fields =
+        Codec.field (BusinessField.key name) get Codec.text fields
+
+    let registration =
+        (Codec.record (fun incident notification country claimant insurer amount currency ->
+            {
+                RegistrationInput.IncidentDate = incident
+                IncidentNotificationDate = notification
+                IncidentCountry = country
+                ClaimantName = claimant
+                InsurerName = insurer
+                ClaimedAmount = amount
+                ClaimedCurrency = currency
+            })
+        : Fields<RegistrationInput, _>)
+        |> inputField BusinessField.IncidentDate _.IncidentDate
+        |> inputField BusinessField.IncidentNotificationDate _.IncidentNotificationDate
+        |> inputField BusinessField.IncidentCountry _.IncidentCountry
+        |> inputField BusinessField.ClaimantName _.ClaimantName
+        |> inputField BusinessField.InsurerName _.InsurerName
+        |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
+        |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
+        |> Codec.build
+        |> Codec.named "Registration"
+
+    let decision =
+        (Codec.record (fun date amount currency ->
+            {
+                DecisionInput.PaymentDecisionDate = date
+                PayableAmount = amount
+                PayableCurrency = currency
+            })
+        : Fields<DecisionInput, _>)
+        |> inputField BusinessField.PaymentDecisionDate _.PaymentDecisionDate
+        |> inputField BusinessField.PayableAmount _.PayableAmount
+        |> inputField BusinessField.PayableCurrency _.PayableCurrency
+        |> Codec.build
+        |> Codec.named "Decision"
+
+    let payment =
+        (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
+        |> inputField BusinessField.PaymentDate _.PaymentDate
+        |> Codec.build
+        |> Codec.named "Payment"
 
     let registrationGroup =
         tagged
             "RegistrationGroup"
             [
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                    RegistrationGroup.Keep
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
                     (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    RegistrationGroup.Replace
+                    Change.Replace
                     (function
-                    | RegistrationGroup.Replace value -> Some value
+                    | Change.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id registration)
             ]
@@ -37,55 +77,81 @@ module internal RecordCodecs =
         tagged
             "DecisionGroup"
             [
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                    DecisionGroup.Keep
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
                     (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    DecisionGroup.Replace
+                    Change.Replace
                     (function
-                    | DecisionGroup.Replace value -> Some value
+                    | Change.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id decision)
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                    DecisionGroup.Clear
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
     let paymentGroup =
         tagged
             "PaymentGroup"
             [
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                    PaymentGroup.Keep
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
                     (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    PaymentGroup.Replace
+                    Change.Replace
                     (function
-                    | PaymentGroup.Replace value -> Some value
+                    | Change.Replace value -> Some value
                     | _ -> None)
                     (record id |> field "values" id payment)
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                    PaymentGroup.Clear
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
     let correction =
         (record (fun v0 v1 v2 ->
             {
-                CorrectionInput.Registration = v0
+                AuthoredCorrection.Registration = v0
                 Decision = v1
                 Payment = v2
             })
-        : Fields<CorrectionInput, _>)
+        : Fields<AuthoredCorrection, _>)
         |> field "registration" _.Registration (registrationGroup)
         |> field "decision" _.Decision (decisionGroup)
         |> field "payment" _.Payment (paymentGroup)
         |> build
         |> named "Correction"
 
-    let caseAct = Record.caseCodec text correction
+    let private caseCodec registration decision payment reason correction =
+        let memberCodec name codec inject project kind =
+            variant
+                (CaseActKind.token kind)
+                (inject >> CaseAct.ofPayload kind)
+                (fun act ->
+                    if CaseAct.kind act = kind then
+                        project (CaseAct.payload act)
+                    else
+                        None)
+                (record id |> field name id codec)
+
+        CaseActKind.all
+        |> List.map (fun kind ->
+            match CaseActKind.shape kind with
+            | ActShape.NoValues ->
+                unitVariant (CaseActKind.token kind) (CaseAct.ofPayload kind ActPayload.Empty)
+            | ActShape.RegistrationValues ->
+                memberCodec
+                    "values"
+                    registration
+                    ActPayload.Registration
+                    ActPayload.registration
+                    kind
+            | ActShape.DecisionValues ->
+                memberCodec "values" decision ActPayload.Decision ActPayload.decision kind
+            | ActShape.PaymentValues ->
+                memberCodec "values" payment ActPayload.Payment ActPayload.payment kind
+            | ActShape.ReasonText ->
+                memberCodec "reason" reason ActPayload.Reason ActPayload.reason kind
+            | ActShape.CorrectionGroups ->
+                memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
+        |> tagged "CaseAct"
+
+    let caseAct = caseCodec registration decision payment text correction
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 () ->
@@ -129,7 +195,35 @@ module internal RecordCodecs =
                     (record id |> field "caseReference" id text)
             ]
 
-    let authorityVariants role = Record.authorityVariants role scope
+    let private authorityVariantsWith role scope =
+        let grant =
+            record (fun role scope ->
+                {
+                    GrantChange.Role = role
+                    Scope = scope
+                })
+            |> field "role" _.Role role
+            |> field "scope" _.Scope scope
+
+        AuthorityKind.all
+        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+        |> List.map (fun kind ->
+            let token = AuthorityKind.token kind
+
+            match AuthorityAct.shape kind with
+            | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
+            | AuthorityShape.GrantValues ->
+                variant
+                    token
+                    (Some >> AuthorityAct.ofPayload kind)
+                    (fun act ->
+                        if AuthorityAct.kind act = kind then
+                            AuthorityAct.payload act
+                        else
+                            None)
+                    grant)
+
+    let authorityVariants role = authorityVariantsWith role scope
 
     let caseOperation =
         let version = int64 RecordVersions.CaseRequest

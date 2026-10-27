@@ -99,7 +99,7 @@ let private amountProperty =
         let candidate =
             request
                 0L
-                (UnvalidatedCaseAct.Open
+                (AuthoredCaseAct.Open
                     { registration with
                         ClaimedAmount = sample.Raw
                     })
@@ -160,7 +160,7 @@ let private validateText target value =
             }
         | Reference -> registration
 
-    let candidate = request 0L (UnvalidatedCaseAct.Open facts)
+    let candidate = request 0L (AuthoredCaseAct.Open facts)
 
     let candidate =
         if target = Reference then

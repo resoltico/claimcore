@@ -21,8 +21,12 @@ let private lastOwner () =
 
     for act in
         [
-            AuthorityCommandAct.Disable
-            AuthorityCommandAct.Revoke(Role.Owner, GrantTarget.Installation)
+            AuthorityAct.Disable
+            AuthorityAct.Revoke
+                {
+                    AuthorityGrant.Role = Role.Owner
+                    Scope = GrantTarget.Installation
+                }
         ] do
         let request = admitted 100 owner act
 
@@ -36,7 +40,14 @@ let private humanOnly () =
 
     for role in [ Role.Owner; Role.DataSteward ] do
         let request =
-            admitted 101 service (AuthorityCommandAct.Grant(role, GrantTarget.Installation))
+            admitted
+                101
+                service
+                (AuthorityAct.Grant
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    })
 
         Expect.equal
             (executeAuthority installation owner request (authorityView worker target None))
@@ -61,7 +72,7 @@ let private humanOnly () =
         "Bootstrap also requires a human"
 
 let private replay () =
-    let request = admitted 103 other AuthorityCommandAct.Register
+    let request = admitted 103 other AuthorityAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     let entry, receipt =
@@ -81,7 +92,7 @@ let private replay () =
         "Executor target and position survive replay"
 
     let changed =
-        AuthorityRequests.input request.OperationId request.Target AuthorityCommandAct.Disable
+        AuthorityRequests.input request.OperationId request.Target AuthorityAct.Disable
         |> Result.bind Authority.parse
         |> Result.defaultWith (string >> failtest)
 
@@ -137,7 +148,7 @@ let private provision () =
         "Bootstrap exact replay is idempotent"
 
 let private reviewAndFences () =
-    let request = admitted 105 other AuthorityCommandAct.Register
+    let request = admitted 105 other AuthorityAct.Register
     let view = authorityView worker AuthorityView.empty None
 
     match AuthorityExecution.review installation owner request view.Read with

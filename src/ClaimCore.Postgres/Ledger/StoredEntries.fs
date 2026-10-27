@@ -30,7 +30,7 @@ module internal StoredEntries =
                 raise (RecordCorruptException "Invalid authority ledger shape.")
 
             let kind =
-                RecordedAuthorityActs.tryKind act
+                AuthorityKind.parse act
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 

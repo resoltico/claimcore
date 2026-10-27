@@ -210,7 +210,7 @@ let private authorityChecks =
                 {
                     OperationId = id
                     Target = PrincipalKey.describe human
-                    Act = RecordedAuthorityAct.Operation(ClaimCore.Domain.AuthorityAct.Register)
+                    Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
             AuthorityFold.apply
@@ -239,7 +239,7 @@ let private duplicatePrecedence () =
                         {
                             OperationId = id
                             Target = PrincipalKey.describe human
-                            Act = RecordedAuthorityAct.ProvisionOwner
+                            Act = AuthorityAct.ProvisionOwner
                         }
                 Snapshot = Array.empty
             }
