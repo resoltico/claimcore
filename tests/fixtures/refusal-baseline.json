@@ -2,16 +2,6 @@
   "source": "Hand-authored refusal actions and targets for the derived vocabulary.",
   "observations": [
     {
-      "code": "ROLE_FORMAT",
-      "action": "CorrectInput",
-      "target": "role"
-    },
-    {
-      "code": "TEXT_REQUIRED",
-      "action": "CorrectInput",
-      "target": "role"
-    },
-    {
       "code": "RESOURCE_UNAVAILABLE",
       "action": "NoneRequired",
       "target": null

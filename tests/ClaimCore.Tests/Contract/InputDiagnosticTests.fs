@@ -11,9 +11,9 @@ open ClaimCore.Domain
 open ClaimCore.Application
 
 let private principal () =
-    for kind in [ PrincipalKind.humanToken; PrincipalKind.serviceToken ] do
+    for kind in [ PrincipalKind.Human; PrincipalKind.Service ] do
         Expect.isOk
-            (PrincipalKey.admit kind "https://issuer.example/" "synthetic")
+            (PrincipalKey.ofKind kind "https://issuer.example/" "synthetic")
             "Valid authored principal"
 
         for issuer, subject, target, issue in
@@ -23,7 +23,7 @@ let private principal () =
                 "secret-canary", "synthetic", InputTarget.PrincipalIssuer, Violation.PrincipalFormat
             ] do
             Expect.equal
-                (PrincipalKey.admit kind issuer subject)
+                (PrincipalKey.ofKind kind issuer subject)
                 (Error(Refusal.InvalidInput(target, issue)))
                 "Pure admission preserves cause without input"
 

@@ -209,7 +209,7 @@ let private authorityChecks =
             let request: AuthorityRequestRecord =
                 {
                     OperationId = id
-                    Target = PrincipalKey.describe human
+                    Target = PrincipalKey.toInput human
                     Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
@@ -238,7 +238,7 @@ let private duplicatePrecedence () =
                     AuthorityRecord.encode
                         {
                             OperationId = id
-                            Target = PrincipalKey.describe human
+                            Target = PrincipalKey.toInput human
                             Act = AuthorityAct.ProvisionOwner
                         }
                 Snapshot = Array.empty

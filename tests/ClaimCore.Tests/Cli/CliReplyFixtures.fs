@@ -27,7 +27,7 @@ let authorityRequest =
         OperationId = id
         Target =
             {
-                Kind = "HUMAN"
+                Kind = PrincipalKind.Human
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic"
             }
@@ -175,7 +175,12 @@ let private grants =
         Actor =
             {
                 ActorId = id
-                Principal = authorityRequest.Target
+                Principal =
+                    PrincipalKey.ofKind
+                        authorityRequest.Target.Kind
+                        authorityRequest.Target.Issuer
+                        authorityRequest.Target.Subject
+                    |> Result.defaultWith (string >> failwith)
                 Enabled = true
             }
         Items = []

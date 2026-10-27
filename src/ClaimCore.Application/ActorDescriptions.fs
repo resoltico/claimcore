@@ -6,6 +6,6 @@ module internal Actor =
     let describe (actor: Actor) : ActorSummary =
         {
             ActorId = actor.ActorId
-            Principal = PrincipalKey.describe actor.Principal
+            Principal = actor.Principal
             Enabled = actor.Enabled
         }

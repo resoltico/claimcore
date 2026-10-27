@@ -72,7 +72,10 @@ module DiagnosticCodecs =
         let inputFields =
             record id
             |> actionField RecommendedAction.CorrectInput
-            |> field "target" id (enumeration InputTarget.all |> named "InputTarget")
+            |> field
+                "target"
+                id
+                (VocabularyCodec.create InputTarget.vocabulary |> named "InputTarget")
 
         (violationVariants
          |> List.map (

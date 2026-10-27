@@ -82,6 +82,7 @@ type ArchitectureRule =
     | Postgres
     | DurableNames
     | Serializer
+    | ClosedVocabularyCodecs
     | ServiceModelWithoutProtocol
     | ServiceSurface
     | DomainJsonFree
@@ -178,6 +179,36 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         :> IArchRule
     | ArchitectureRule.ServiceModelWithoutProtocol ->
         clauses.NotDependOnAny(protocol ()) :> IArchRule
+    | ArchitectureRule.ClosedVocabularyCodecs ->
+        let enumeration =
+            MethodMembers()
+                .That()
+                .HaveFullNameMatching(@"::enumeration\(")
+                .And()
+                .AreDeclaredIn(Types().That().HaveFullName("ClaimCore.Json.Codec"))
+            |> nonEmptyTargets architecture "codec enumeration"
+
+        enumeration |> ignore
+
+        clauses.FollowCustomCondition(
+            System.Func<IType, bool>(fun candidate ->
+                candidate.FullName = "ClaimCore.Protocol.VocabularyCodec"
+                || (candidate.Dependencies
+                    |> Seq.forall (fun dependency ->
+                        match dependency with
+                        | :? ArchUnitNET.Domain.Dependencies.IMemberMemberDependency as call ->
+                            call.TargetMember.DeclaringType.FullName <> "ClaimCore.Json.Codec"
+                            || not (
+                                call.TargetMember.FullName.Contains(
+                                    "::enumeration(",
+                                    System.StringComparison.Ordinal
+                                )
+                            )
+                        | _ -> true))),
+            "construct closed enums through VocabularyCodec",
+            "Only VocabularyCodec may call the generic enumeration constructor"
+        )
+        :> IArchRule
     | ArchitectureRule.Serializer ->
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")

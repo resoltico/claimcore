@@ -79,12 +79,12 @@ module internal Persistence =
         }
 
     let private register connection id principal token =
-        let kind, issuer, subject = PrincipalKey.storageParts principal
+        let kind, issuer, subject = PrincipalKey.parts principal
 
         DatabaseSession.execute
             connection
             "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
-            [| box id; box kind; box issuer; box subject |]
+            [| box id; box (DurableNames.principalKind kind); box issuer; box subject |]
             token
 
     let authority connection projection token =

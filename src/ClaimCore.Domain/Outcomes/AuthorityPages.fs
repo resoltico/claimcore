@@ -6,7 +6,7 @@ open System
 type ActorSummary =
     {
         ActorId: Guid
-        Principal: Principal
+        Principal: PrincipalKey
         Enabled: bool
     }
 

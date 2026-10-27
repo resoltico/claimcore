@@ -95,7 +95,6 @@
   "diagnostic.REFERENCE_FORMAT": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
   "diagnostic.RESOURCE_UNAVAILABLE": "هذا المورد غير متاح.",
   "diagnostic.REVISION_CONFLICT": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",
-  "diagnostic.ROLE_FORMAT": "اختر دورًا معرّفًا.",
   "diagnostic.SURROUNDING_WHITESPACE": "لا تُقبل المسافات في بداية القيمة أو نهايتها.",
   "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
   "diagnostic.TOO_LONG": "يجب ألا تتجاوز القيمة {maximumCharacters} محارف Unicode.",

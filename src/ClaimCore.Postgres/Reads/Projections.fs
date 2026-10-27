@@ -128,7 +128,7 @@ module internal Projections =
         }
 
     let private role row =
-        Role.parse (required<string> 0 row)
+        DurableNames.tryRole (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -141,7 +141,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            Role.parse role
+                            DurableNames.tryRole role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -165,14 +165,14 @@ module internal Projections =
 
     let actor connection principal (caseIds: Guid list) token =
         task {
-            let kind, issuer, subject = PrincipalKey.storageParts principal
+            let kind, issuer, subject = PrincipalKey.parts principal
 
             let! rows =
                 DatabaseSession.rows
                     connection
                     "SELECT a.actor_id,a.enabled,g.role,g.case_id FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
                     [|
-                        box kind
+                        box (DurableNames.principalKind kind)
                         box issuer
                         box subject
                         box (caseIds |> List.distinct |> List.toArray)
@@ -216,7 +216,10 @@ module internal Projections =
         {
             ActorId = required 0 row
             Principal =
-                PrincipalKey.fromStorage (required 1 row) (required 2 row) (required 3 row)
+                (DurableNames.tryPrincipalKind (required 1 row)
+                 |> Option.defaultWith (fun () ->
+                     raise (RecordCorruptException "Invalid stored principal kind.")))
+                |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)
                 |> parsed
             Enabled = required 4 row
         }

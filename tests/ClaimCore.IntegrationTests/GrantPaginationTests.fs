@@ -101,9 +101,7 @@ let private prepare (database: PostgresFixture.Database) =
         let! actors = (Service.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
 
         let actorId =
-            (page actors).Items
-            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
-            |> _.ActorId
+            (page actors).Items |> List.find (fun a -> a.Principal = target) |> _.ActorId
 
         let! disabled =
             (Service.execute

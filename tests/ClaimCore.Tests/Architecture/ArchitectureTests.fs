@@ -453,4 +453,7 @@ let tests =
                 "published client closure rejects compiled server dependencies"
                 publishedClosure
             testCase "JSON, Contract and RecordFormat avoid JsonSerializer" serializer
+            testCase "closed wire vocabularies use the typed codec adapter" (fun () ->
+                check ArchitectureRule.ClosedVocabularyCodecs (Assembly.Load "ClaimCore.Protocol")
+                rejects ArchitectureRule.ClosedVocabularyCodecs typeof<DirectEnumeration>)
         ]

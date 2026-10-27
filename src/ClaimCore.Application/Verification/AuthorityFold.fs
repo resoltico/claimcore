@@ -44,7 +44,7 @@ module internal AuthorityFold =
         }
 
     let private principal (entry: StoredEntry) (request: AuthorityRequestRecord) =
-        PrincipalKey.fromStorage request.Target.Kind request.Target.Issuer request.Target.Subject
+        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
         |> Result.mapError (fun _ ->
             divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
@@ -115,9 +115,6 @@ module internal AuthorityFold =
         active
         =
         result {
-            let! role =
-                Role.parse role |> known (Some entry.Sequence) VerificationFinding.PayloadFormat
-
             do!
                 require
                     (Some entry.Sequence)

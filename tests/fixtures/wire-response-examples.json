@@ -2,7 +2,22 @@
   "source": "Hand-authored synthetic boundary examples for the current closed wire grammar.",
   "cases": [
     {
-      "name": "role-admission-refusal",
+      "name": "role-target-diagnostic-shape",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "TEXT_REQUIRED",
+            "action": "CORRECT_INPUT",
+            "target": "role"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "removed-role-diagnostic-refused",
       "endpoint": "context",
       "value": {
         "outcome": {
@@ -14,7 +29,7 @@
           }
         }
       },
-      "valid": true
+      "valid": false
     },
     {
       "name": "diagnostic-inapplicable-revision-refused",
@@ -837,7 +852,7 @@
               "actorId": "10000000-0000-4000-8000-000000000001",
               "principal": {
                 "kind": "HUMAN",
-                "issuer": "x",
+                "issuer": "https://issuer.example/",
                 "subject": "x"
               },
               "enabled": false
@@ -1143,7 +1158,7 @@
               "actorId": "10000000-0000-4000-8000-000000000001",
               "principal": {
                 "kind": "HUMAN",
-                "issuer": "x",
+                "issuer": "https://issuer.example/",
                 "subject": "x"
               },
               "enabled": false
@@ -1217,7 +1232,7 @@
                 "actorId": "10000000-0000-4000-8000-000000000001",
                 "principal": {
                   "kind": "HUMAN",
-                  "issuer": "x",
+                  "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
                 "enabled": false
@@ -1226,7 +1241,7 @@
                 "actorId": "10000000-0000-4000-8000-000000000001",
                 "principal": {
                   "kind": "SERVICE",
-                  "issuer": "x",
+                  "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
                 "enabled": false
@@ -2846,6 +2861,29 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "reply-principal-issuer-format-refused",
+      "endpoint": "authority.grants",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "actor": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "principal": {
+                "kind": "HUMAN",
+                "issuer": "x",
+                "subject": "x"
+              },
+              "enabled": false
+            },
+            "items": [],
+            "nextCursor": "x"
+          }
+        }
+      },
+      "valid": false
     }
   ]
 }

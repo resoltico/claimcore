@@ -136,7 +136,7 @@ let private authority () =
             request.Act
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
-                    Role = "CASE_HANDLER"
+                    Role = Role.CaseHandler
                     Scope = GrantTarget.CaseReference "Demo-0001"
                 })
             "Independent grant meaning"

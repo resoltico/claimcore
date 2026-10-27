@@ -73,7 +73,7 @@ let private ordering () =
             Some Refusal.ActorAlreadyRegistered
             "grant missing actor precedes role restriction",
             manager,
-            grant "OWNER" GrantTarget.Installation,
+            grant Role.Owner GrantTarget.Installation,
             missingService,
             1,
             5,
@@ -81,7 +81,7 @@ let private ordering () =
             Some Refusal.ActorUnknown
             "revoke missing actor precedes missing case",
             manager,
-            revoke "OWNER" caseScope,
+            revoke Role.Owner caseScope,
             missingHuman,
             1,
             5,
@@ -105,7 +105,7 @@ let private ordering () =
             Some Refusal.ActorUnknown
             "grant human owner",
             manager,
-            grant "OWNER" GrantTarget.Installation,
+            grant Role.Owner GrantTarget.Installation,
             human,
             2,
             5,
@@ -113,7 +113,7 @@ let private ordering () =
             None
             "grant service owner",
             manager,
-            grant "OWNER" GrantTarget.Installation,
+            grant Role.Owner GrantTarget.Installation,
             serviceActor,
             1,
             5,
@@ -121,7 +121,7 @@ let private ordering () =
             Some Refusal.HumanPrincipalRequired
             "revoke service owner role even without a grant",
             manager,
-            revoke "OWNER" GrantTarget.Installation,
+            revoke Role.Owner GrantTarget.Installation,
             serviceActor,
             1,
             5,
@@ -129,7 +129,7 @@ let private ordering () =
             Some Refusal.HumanPrincipalRequired
             "missing case precedes human-only role",
             manager,
-            grant "DATA_STEWARD" caseScope,
+            grant Role.DataSteward caseScope,
             serviceActor,
             1,
             5,
@@ -137,7 +137,7 @@ let private ordering () =
             Some Refusal.ResourceUnavailable
             "resolved case still requires human steward",
             manager,
-            grant "DATA_STEWARD" caseScope,
+            grant Role.DataSteward caseScope,
             serviceActor,
             1,
             5,
@@ -145,7 +145,7 @@ let private ordering () =
             Some Refusal.HumanPrincipalRequired
             "service case handler",
             manager,
-            grant "CASE_HANDLER" caseScope,
+            grant Role.CaseHandler caseScope,
             serviceActor,
             1,
             5,
@@ -153,7 +153,7 @@ let private ordering () =
             None
             "last installation owner revoke",
             manager,
-            revoke "OWNER" GrantTarget.Installation,
+            revoke Role.Owner GrantTarget.Installation,
             lastOwner,
             1,
             5,
@@ -161,7 +161,7 @@ let private ordering () =
             Some Refusal.LastOwner
             "second installation owner revoke",
             manager,
-            revoke "OWNER" GrantTarget.Installation,
+            revoke Role.Owner GrantTarget.Installation,
             secondOwner,
             2,
             5,
@@ -169,7 +169,7 @@ let private ordering () =
             None
             "case grant revoke does not remove installation owner",
             manager,
-            revoke "OWNER" caseScope,
+            revoke Role.Owner caseScope,
             lastOwner,
             1,
             5,
@@ -177,7 +177,7 @@ let private ordering () =
             None
             "missing case precedes last-owner restriction",
             manager,
-            revoke "OWNER" caseScope,
+            revoke Role.Owner caseScope,
             lastOwner,
             1,
             5,
@@ -185,7 +185,7 @@ let private ordering () =
             Some Refusal.ResourceUnavailable
             "different role revoke does not remove owner",
             manager,
-            revoke "CASE_READER" GrantTarget.Installation,
+            revoke Role.CaseReader GrantTarget.Installation,
             lastOwner,
             1,
             5,
@@ -204,7 +204,7 @@ let private ordering () =
             "enable already enabled", manager, enable, human, 2, 5, None, None
             "grant human missing case",
             manager,
-            grant "CASE_READER" caseScope,
+            grant Role.CaseReader caseScope,
             human,
             2,
             5,
@@ -244,7 +244,7 @@ let private ordering () =
             Some Refusal.ActorAlreadyRegistered
             "management precedes target existence",
             missingManager,
-            grant "OWNER" caseScope,
+            grant Role.Owner caseScope,
             missingService,
             1,
             5,
@@ -252,7 +252,7 @@ let private ordering () =
             Some Refusal.ResourceUnavailable
             "service owner grant conveys no management",
             serviceManager,
-            grant "OWNER" GrantTarget.Installation,
+            grant Role.Owner GrantTarget.Installation,
             serviceActor,
             1,
             5,
@@ -285,7 +285,7 @@ let private ordering () =
                     principal
                     {
                         OperationId = id 605
-                        Target = PrincipalKey.describe targetPrincipal
+                        Target = PrincipalKey.toInput targetPrincipal
                         Act = act
                     }
                     facts

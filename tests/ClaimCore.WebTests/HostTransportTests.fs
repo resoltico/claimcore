@@ -447,7 +447,10 @@ let private principalAdmission () =
                  } ->
                 Expect.equal
                     (Error refusal)
-                    (PrincipalKey.admit kind issuer subject)
+                    (PrincipalKey.ofKind
+                        (Vocabulary.tryParse PrincipalKind.vocabulary kind |> Option.get)
+                        issuer
+                        subject)
                     "Application preserves the authoritative identity refusal."
             | _ -> failtest "Invalid principal must receive a typed refusal."
 

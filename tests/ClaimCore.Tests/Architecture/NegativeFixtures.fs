@@ -191,3 +191,8 @@ type RecordFormatFromDomainTask =
             do! Task.Yield()
             return typeof<ClaimCore.RecordFormat.DecodeProblem>
         }
+
+/// Only the vocabulary adapter may construct a finite wire enumeration.
+type DirectEnumeration =
+    static member Read() =
+        ClaimCore.Json.Codec.enumeration [ 0, "ZERO" ]

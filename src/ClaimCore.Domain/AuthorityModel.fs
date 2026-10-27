@@ -11,18 +11,29 @@ type PrincipalKey =
     | ServicePrincipal of issuer: string * clientId: string
 
 module PrincipalKey =
-    let private issuer value =
+    [<Literal>]
+    let MaximumIssuerCharacters = 2048
+
+    [<Literal>]
+    let MaximumHumanSubjectCharacters = 512
+
+    [<Literal>]
+    let MaximumServiceSubjectCharacters = 256
+
+    let issuerScheme = Uri.UriSchemeHttps
+
+    let isIssuer value =
         try
             if
                 String.IsNullOrWhiteSpace value
-                || value.Length > 2048
+                || value.Length > MaximumIssuerCharacters
                 || not (UnicodeText.isPersisted value)
             then
                 false
             else
                 let parsed = Uri(value, UriKind.Absolute)
 
-                parsed.Scheme = Uri.UriSchemeHttps
+                parsed.Scheme = issuerScheme
                 && parsed.UserInfo = ""
                 && parsed.Query = ""
                 && parsed.Fragment = ""
@@ -35,7 +46,7 @@ module PrincipalKey =
         && value.Length <= maximum
         && UnicodeText.isPersisted value
 
-    let admit kind issuerValue subject =
+    let ofKind kind issuerValue subject =
         let issue target value =
             Refusal.InvalidInput(
                 target,
@@ -45,44 +56,39 @@ module PrincipalKey =
                     Violation.PrincipalFormat
             )
 
-        let maximum = if kind = PrincipalKind.humanToken then 512 else 256
+        let maximum =
+            match kind with
+            | PrincipalKind.Human -> MaximumHumanSubjectCharacters
+            | PrincipalKind.Service -> MaximumServiceSubjectCharacters
 
-        match issuer issuerValue, identifier maximum subject with
+        match isIssuer issuerValue, identifier maximum subject with
         | false, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
         | _, false -> Error(issue InputTarget.PrincipalSubject subject)
-        | true, true when kind = PrincipalKind.humanToken ->
-            Ok(HumanPrincipal(issuerValue, subject))
-        | true, true when kind = PrincipalKind.serviceToken ->
-            Ok(ServicePrincipal(issuerValue, subject))
-        | _ -> Error(issue InputTarget.PrincipalKind kind)
+        | true, true ->
+            match kind with
+            | PrincipalKind.Human -> Ok(HumanPrincipal(issuerValue, subject))
+            | PrincipalKind.Service -> Ok(ServicePrincipal(issuerValue, subject))
 
     let human issuerValue subject =
-        admit PrincipalKind.humanToken issuerValue subject
+        ofKind PrincipalKind.Human issuerValue subject
 
     let service issuerValue clientId =
-        admit PrincipalKind.serviceToken issuerValue clientId
+        ofKind PrincipalKind.Service issuerValue clientId
 
-    /// Private storage projection; never infer identity from email, display name or groups.
-    let storageParts =
+    /// Admitted identity parts; each boundary owns its token spellings.
+    let parts =
         function
-        | HumanPrincipal(issuerValue, subject) -> PrincipalKind.humanToken, issuerValue, subject
-        | ServicePrincipal(issuerValue, clientId) ->
-            PrincipalKind.serviceToken, issuerValue, clientId
+        | HumanPrincipal(issuerValue, subject) -> PrincipalKind.Human, issuerValue, subject
+        | ServicePrincipal(issuerValue, clientId) -> PrincipalKind.Service, issuerValue, clientId
 
-    let describe principal : Principal =
-        let kind, issuer, subject = storageParts principal
+    let toInput principal : PrincipalInput =
+        let kind, issuer, subject = parts principal
 
         {
             Kind = kind
             Issuer = issuer
             Subject = subject
         }
-
-    let fromStorage kind issuerValue stableValue =
-        match Vocabulary.tryParse PrincipalKind.vocabulary kind with
-        | Some PrincipalKind.Human -> human issuerValue stableValue
-        | Some PrincipalKind.Service -> service issuerValue stableValue
-        | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalKind, Violation.PrincipalFormat))
 
     let isHuman =
         function

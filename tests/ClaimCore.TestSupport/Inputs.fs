@@ -38,9 +38,9 @@ let correction: AuthoredCorrection =
         Payment = Change.Keep
     }
 
-let principal: Principal =
+let principal: PrincipalInput =
     {
-        Kind = "HUMAN"
+        Kind = PrincipalKind.Human
         Issuer = "https://issuer.example/"
         Subject = "synthetic-owner"
     }

@@ -9,7 +9,7 @@ open ClaimCore.Json
 module HostFailureCodecs =
     let ofReason reason =
         {
-            Code = HostFailureReason.code reason
+            Code = HostFailureReason.codeKind reason
             Phase = HostFailureReason.phase reason
         }
 
@@ -35,13 +35,11 @@ module HostFailureCodecs =
 
     let failure =
         (Codec.record (fun code phase -> { Code = code; Phase = phase }): Fields<HostFailure, _>)
+        |> Codec.field "code" _.Code (VocabularyCodec.create HostFailureCode.vocabulary)
         |> Codec.field
-            "code"
-            _.Code
-            (RequestCodecs.tokens (
-                HostFailureReason.all |> List.map HostFailureReason.code |> List.distinct
-            ))
-        |> Codec.field "phase" _.Phase (Codec.nullable (Codec.enumeration ExecutionPhase.phases))
+            "phase"
+            _.Phase
+            (Codec.nullable (VocabularyCodec.create ExecutionPhase.vocabulary))
         |> Codec.build
         |> Codec.constrained (Schema.OneOf(HostFailureReason.all |> List.map shape, None)) allowed
         |> Codec.named "HostFailure"

@@ -43,7 +43,7 @@ Business-value guidance is a typed rejection with HTTP 200; structural failures 
 Servers return codes and parameters for local rendering. Diagnostics and faults are flat code-tagged
 objects: for example `{ "code": "TOO_LONG", "action": "CORRECT_INPUT", "target": "claimantName", "maximumCharacters": 200 }`.
 Diagnostic parameters are direct object members; `actualRevision` appears only on revision conflicts.
-An invalid role yields `ROLE_FORMAT` with target `role`. Use identifiers from the generated contracts.
+Unknown role and principal-kind tokens fail structural admission. Use identifiers from the generated contracts.
 
 HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.

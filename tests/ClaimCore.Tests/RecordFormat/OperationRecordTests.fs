@@ -58,13 +58,13 @@ let private authorityProperty =
         let! role =
             Gen.item
                 [
-                    "OWNER"
-                    "CASE_READER"
-                    "CASE_REGISTRAR"
-                    "CASE_HANDLER"
-                    "PAYMENT_RECORDER"
-                    "DATA_STEWARD"
-                    "AUDITOR"
+                    Role.Owner
+                    Role.CaseReader
+                    Role.CaseRegistrar
+                    Role.CaseHandler
+                    Role.PaymentRecorder
+                    Role.DataSteward
+                    Role.Auditor
                 ]
 
         let! action =
@@ -103,7 +103,7 @@ let private decoderProperty =
             authority (
                 (ClaimCore.Domain.AuthorityAct.Grant
                     {
-                        Role = "CASE_HANDLER"
+                        Role = Role.CaseHandler
                         Scope = GrantTarget.Installation
                     })
             )
@@ -158,7 +158,7 @@ let private strictRecords () =
         authority (
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
-                    Role = "CASE_HANDLER"
+                    Role = Role.CaseHandler
                     Scope = GrantTarget.Installation
                 })
         )

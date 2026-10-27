@@ -2,6 +2,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Vocabulary/Vocabulary.fs" />
+    <Compile Include="Vocabulary/Roles.fs" />
+    <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="CaseFields.fs" />
@@ -11,8 +13,6 @@
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
-    <Compile Include="Vocabulary/Roles.fs" />
-    <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="Validation.fs" />

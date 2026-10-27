@@ -95,7 +95,6 @@
   "diagnostic.REFERENCE_FORMAT": "Use 1 to 80 printable non-space ASCII characters.",
   "diagnostic.RESOURCE_UNAVAILABLE": "The requested resource is unavailable.",
   "diagnostic.REVISION_CONFLICT": "Read the current case before making a changed request.",
-  "diagnostic.ROLE_FORMAT": "Choose a declared role.",
   "diagnostic.SURROUNDING_WHITESPACE": "Leading or trailing whitespace is not accepted.",
   "diagnostic.TEXT_REQUIRED": "A non-blank value is required.",
   "diagnostic.TOO_LONG": "The value must not exceed {maximumCharacters} Unicode characters.",

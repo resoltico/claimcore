@@ -5,7 +5,7 @@ type PrincipalKind =
     | Human
     | Service
 
-/// Stable principal-kind syntax; admission and authority remain Application policy.
+/// Closed principal kinds; Domain admits the issuer and stable identifier.
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PrincipalKind =
     let vocabulary =

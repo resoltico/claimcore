@@ -11,7 +11,53 @@ module ResponseCodecs =
     open Codec
     open ResponseScalars
 
-    let private principal = RequestCodecs.principal
+    let private principal =
+        let maximumIssuer = PrincipalKey.MaximumIssuerCharacters
+
+        let issuerSchema =
+            Schema.String(
+                Some("^" + PrincipalKey.issuerScheme + "://[^/?#@\\s]+/[^?#\\s]*$"),
+                None,
+                Some 1,
+                Some maximumIssuer
+            )
+
+        let issuer =
+            boundedText 1 maximumIssuer |> constrained issuerSchema PrincipalKey.isIssuer
+
+        let fields kind maximumSubject =
+            record (fun issuer subject ->
+                {
+                    PrincipalInput.Kind = kind
+                    Issuer = issuer
+                    Subject = subject
+                })
+            |> field "issuer" _.Issuer issuer
+            |> field "subject" _.Subject (boundedText 1 maximumSubject)
+
+        let alternative kind maximumSubject =
+            variant
+                (Vocabulary.token PrincipalKind.vocabulary kind)
+                id
+                (fun (input: PrincipalInput) -> if input.Kind = kind then Some input else None)
+                (fields kind maximumSubject)
+
+        tagged
+            "Principal"
+            [
+                alternative PrincipalKind.Human PrincipalKey.MaximumHumanSubjectCharacters
+                alternative PrincipalKind.Service PrincipalKey.MaximumServiceSubjectCharacters
+            ]
+        |> Codec.mapResult
+            (fun path (input: PrincipalInput) ->
+                PrincipalKey.ofKind input.Kind input.Issuer input.Subject
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid principal representation."
+                    }))
+            PrincipalKey.toInput
+
     let private scope = RequestCodecs.scope
 
     let private moneyProblem amountField currencyField path =
@@ -79,7 +125,7 @@ module ResponseCodecs =
             })
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference caseReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
+        |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
@@ -151,9 +197,7 @@ module ResponseCodecs =
     let private historyDetail = VocabularyCodec.create HistoryDetail.vocabulary
 
     let private authorityKind =
-        Vocabulary.entries AuthorityKind.vocabulary
-        |> List.filter (fun (value, _) -> value <> AuthorityKind.ProvisionOwner)
-        |> enumeration
+        VocabularyCodec.select ((<>) AuthorityKind.ProvisionOwner) AuthorityKind.vocabulary
 
     let private maximumInstallationOffers =
         1
@@ -181,9 +225,9 @@ module ResponseCodecs =
             _.Registration
             (list
                 2
-                (Vocabulary.entries CorrectionGroupAction.vocabulary
-                 |> List.filter (fun (value, _) -> value <> CorrectionGroupAction.Clear)
-                 |> enumeration))
+                (VocabularyCodec.select
+                    (fun value -> List.contains value Amendment.actions)
+                    CorrectionGroupAction.vocabulary))
         |> field "decision" _.Decision (list 3 correctionAction)
         |> field "payment" _.Payment (list 3 correctionAction)
         |> build
@@ -272,11 +316,7 @@ module ResponseCodecs =
         |> field
             "capabilities"
             _.Capability
-            (list
-                16
-                (enumeration (
-                    Capability.all |> List.map (fun value -> value, Capability.token value)
-                )))
+            (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
@@ -308,10 +348,7 @@ module ResponseCodecs =
         |> field "operationId" _.OperationId uuid
         |> field "position" _.Position position
         |> field "revision" _.Revision sequence
-        |> field
-            "act"
-            _.Act
-            (enumeration (CaseActKind.all |> List.map (fun act -> act, CaseActKind.token act)))
+        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy uuid
         |> build
@@ -325,7 +362,7 @@ module ResponseCodecs =
                 After = after
             })
         : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration (Vocabulary.entries BusinessField.vocabulary))
+        |> field "field" _.FieldName (VocabularyCodec.create BusinessField.vocabulary)
         |> field "before" _.Before (nullable nonempty)
         |> field "after" _.After (nullable nonempty)
         |> build
@@ -361,10 +398,7 @@ module ResponseCodecs =
 
     let authorityGrant =
         (record (fun v0 v1 -> { AuthorityGrant.Role = v0; Scope = v1 }): Fields<AuthorityGrant, _>)
-        |> field
-            "role"
-            _.Role
-            (enumeration (Role.all |> List.map (fun role -> role, Role.token role)))
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
         |> build
         |> named "AuthorityGrant"

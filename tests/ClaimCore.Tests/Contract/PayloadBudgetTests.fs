@@ -115,7 +115,7 @@ let private authorityFixture () =
     let actor: ActorSummary =
         {
             ActorId = id
-            Principal = PrincipalKey.describe principal
+            Principal = principal
             Enabled = false
         }
 

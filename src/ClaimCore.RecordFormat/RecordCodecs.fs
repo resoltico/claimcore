@@ -14,9 +14,6 @@ module internal RecordCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let tokens values =
-        values |> List.map (fun value -> value, value) |> enumeration
-
     let private inputField name get fields =
         Codec.field (DurableNames.field name) get Codec.text fields
 
@@ -161,12 +158,12 @@ module internal RecordCodecs =
     let principal =
         (record (fun v0 v1 v2 ->
             {
-                Principal.Kind = v0
+                PrincipalInput.Kind = v0
                 Issuer = v1
                 Subject = v2
             })
-        : Fields<Principal, _>)
-        |> field DurableNames.Kind _.Kind (tokens DurableNames.principalKinds)
+        : Fields<PrincipalInput, _>)
+        |> field DurableNames.Kind _.Kind (enumeration DurableNames.principalKindEntries)
         |> field DurableNames.Issuer _.Issuer (text)
         |> field DurableNames.Subject _.Subject (text)
         |> build
@@ -205,6 +202,7 @@ module internal RecordCodecs =
             | AuthorityActSlot.Bare act -> unitVariant token act
             | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
+    let role = enumeration DurableNames.roleEntries
     let authorityVariants role = authorityVariantsWith role scope
 
     let caseOperation =

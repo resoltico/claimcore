@@ -110,7 +110,8 @@ let private caseActs registration decision payment reason =
         AuthoredCaseAct.Erase, "ERASE"
     ]
 
-let private principalKinds = [ "HUMAN"; "SERVICE" ]
+let private principalKinds =
+    [ PrincipalKind.Human, "HUMAN"; PrincipalKind.Service, "SERVICE" ]
 
 let private statuses = [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
@@ -137,7 +138,7 @@ let private authorityActs reference =
         yield AuthorityAct.Register, "REGISTER"
         yield AuthorityAct.Enable, "ENABLE"
         yield AuthorityAct.Disable, "DISABLE"
-        for _, role in roles do
+        for role, _ in roles do
             for scope, _ in scopes reference do
                 let grant =
                     {
@@ -167,7 +168,12 @@ let private inventories () =
         "Status inventory"
 
     Expect.equal statuses.Length 2 "Both statuses occur every trial"
-    Expect.equal (Set.ofList principalKinds) (Set.ofList PrincipalKind.all) "Principal inventory"
+
+    Expect.equal
+        (principalKinds |> List.map fst |> Set.ofList)
+        (Vocabulary.all PrincipalKind.vocabulary |> Set.ofList)
+        "Principal inventory"
+
     Expect.equal (roles |> List.map fst |> Set.ofList) (Set.ofList Role.all) "Role inventory"
     Expect.equal roles.Length 7 "Every role occurs every trial"
 
@@ -264,7 +270,10 @@ let private grantTokens act bytes =
             | GrantTarget.Installation -> "INSTALLATION"
             | GrantTarget.CaseReference _ -> "CASE"
 
-        tokenAt [ "act"; "role" ] grant.Role bytes
+        tokenAt
+            [ "act"; "role" ]
+            (roles |> List.find (fun (role, _) -> role = grant.Role) |> snd)
+            bytes
         && tokenAt [ "act"; "scope"; "kind" ] scope bytes
     | _ -> true
 
@@ -278,11 +287,11 @@ let private authorityProperty =
                     // Provisioning is human-only; every other durable shape preserves both principal kinds.
                     let kinds =
                         if token = "PROVISION_OWNER" then
-                            [ "HUMAN" ]
+                            [ PrincipalKind.Human, "HUMAN" ]
                         else
                             principalKinds
 
-                    for kind in kinds do
+                    for kind, kindToken in kinds do
                         let expected: AuthorityRequestRecord =
                             {
                                 OperationId = id
@@ -300,7 +309,7 @@ let private authorityProperty =
                         yield
                             AuthorityRecord.decode Int32.MaxValue bytes = Ok expected
                             && tokenAt [ "act"; "kind" ] token bytes
-                            && tokenAt [ "target"; "kind" ] kind bytes
+                            && tokenAt [ "target"; "kind" ] kindToken bytes
                             && grantTokens act bytes
             ]
             |> List.forall (fun value -> value)

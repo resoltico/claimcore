@@ -30,7 +30,7 @@ let private accepted () =
     Expect.isTrue (PrincipalKey.isHuman principal) "The format denotes a human owner"
 
     Expect.equal
-        (PrincipalKey.describe principal).Subject
+        (PrincipalKey.toInput principal).Subject
         "human-owner"
         "Immutable identity retained"
 

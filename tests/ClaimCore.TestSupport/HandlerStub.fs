@@ -259,7 +259,7 @@ type Stub() =
                             Actor =
                                 {
                                     ActorId = request.ActorId
-                                    Principal = PrincipalKey.describe principal
+                                    Principal = principal
                                     Enabled = false
                                 }
                             Items = []

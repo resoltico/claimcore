@@ -16,9 +16,7 @@ module internal TextReply =
         label language (Vocabulary.messageKey vocabulary value "label")
 
     let private principalKind language value =
-        Vocabulary.tryParse PrincipalKind.vocabulary value
-        |> Option.map (term language PrincipalKind.vocabulary)
-        |> Option.defaultValue value
+        term language PrincipalKind.vocabulary value
 
     let private line language key value = label language key + ": " + value
 
@@ -186,13 +184,15 @@ module internal TextReply =
         String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 
     let private actorRow language (actor: ActorSummary) =
+        let kind, issuer, subject = PrincipalKey.parts actor.Principal
+
         String.concat
             "  "
             [
                 id actor.ActorId
-                principalKind language actor.Principal.Kind
-                actor.Principal.Issuer
-                actor.Principal.Subject
+                principalKind language kind
+                issuer
+                subject
                 boolean actor.Enabled
             ]
 
@@ -248,14 +248,13 @@ module internal TextReply =
             | OperationReview.Authority value ->
                 let principal =
                     match input with
-                    | Some(OperationInput.Authority value) -> Some value.Target
-                    | _ -> value.Target |> Option.map _.Principal
+                    | Some(OperationInput.Authority value) ->
+                        Some(value.Target.Kind, value.Target.Issuer, value.Target.Subject)
+                    | _ -> value.Target |> Option.map (_.Principal >> PrincipalKey.parts)
 
                 match principal with
-                | Some value ->
-                    String.concat
-                        " "
-                        [ principalKind language value.Kind; value.Issuer; value.Subject ]
+                | Some(kind, issuer, subject) ->
+                    String.concat " " [ principalKind language kind; issuer; subject ]
                 | None -> "— — —"
 
         act + " " + target
@@ -428,8 +427,11 @@ module internal TextReply =
         | FrameResult.Reply reply -> replyLines language request reply
         | FrameResult.HostFailure failure ->
             [
-                label language ("host." + failure.Code)
-                line language "cli.text.code" failure.Code
+                label language ("host." + Vocabulary.token HostFailureCode.vocabulary failure.Code)
+                line
+                    language
+                    "cli.text.code"
+                    (Vocabulary.token HostFailureCode.vocabulary failure.Code)
             ]
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
             let setting = InputDiagnostics.settingName setting

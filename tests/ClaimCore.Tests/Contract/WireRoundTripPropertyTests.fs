@@ -58,6 +58,9 @@ let rec private collect (seeds: Seeds) context (kind: Type) (value: obj | null) 
 
         for entry in (nonNull value) :?> IEnumerable do
             collect seeds context item entry
+    elif kind = typeof<PrincipalKey> then
+        let input = PrincipalKey.toInput (unbox<PrincipalKey> value)
+        collect seeds (context + ".Principal") typeof<PrincipalInput> (box input)
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
         collect seeds (context + ".CaseAdvice.Acts") typeof<CaseActKind list> (box advice.Acts)
@@ -407,6 +410,22 @@ let private domainValue (kind: Type) =
         Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
     elif kind = typeof<PartyName> then
         Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<PrincipalKey> then
+        Some(
+            gen {
+                let! id = guid
+                let! human = Gen.bool
+                let kind = if human then PrincipalKind.Human else PrincipalKind.Service
+
+                return
+                    PrincipalKey.ofKind
+                        kind
+                        ("https://issuer-" + id.ToString("N") + ".example/")
+                        (id.ToString("N"))
+                    |> Result.defaultWith (string >> invalidOp)
+                    |> box
+            }
+        )
     elif kind = typeof<Money> then
         Some(
             gen {

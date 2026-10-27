@@ -95,7 +95,6 @@
   "diagnostic.REFERENCE_FORMAT": "Izmantojiet no 1 līdz 80 drukājamām ASCII rakstzīmēm bez atstarpēm.",
   "diagnostic.RESOURCE_UNAVAILABLE": "Šis resurss nav pieejams.",
   "diagnostic.REVISION_CONFLICT": "Pirms mainīta pieprasījuma veidošanas nolasiet pašreizējo lietu.",
-  "diagnostic.ROLE_FORMAT": "Izvēlieties deklarētu lomu.",
   "diagnostic.SURROUNDING_WHITESPACE": "Atstarpes vērtības sākumā vai beigās nav atļautas.",
   "diagnostic.TEXT_REQUIRED": "Nepieciešama netukša vērtība.",
   "diagnostic.TOO_LONG": "Vērtība nedrīkst pārsniegt {maximumCharacters} Unicode rakstzīmes.",

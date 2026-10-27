@@ -14,7 +14,7 @@ module internal VerificationRows =
 
     let private grant row =
         let role =
-            Role.parse (DatabaseSession.value<string> 1 row)
+            ClaimCore.RecordFormat.DurableNames.tryRole (DatabaseSession.value<string> 1 row)
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid projected role."))
 

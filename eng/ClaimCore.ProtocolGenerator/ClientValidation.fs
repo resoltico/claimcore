@@ -11,6 +11,31 @@ module ClientValidation =
     let private quote (text: string) = JsonSerializer.Serialize text
     let private identifier (name: string) = name.Replace('.', '_')
 
+    let private regexLiteral (pattern: string) =
+        let output = System.Text.StringBuilder()
+        let mutable inClass = false
+        let mutable escaped = false
+
+        for character in pattern do
+            if escaped then
+                output.Append(character) |> ignore
+                escaped <- false
+            else
+                match character with
+                | '\\' ->
+                    output.Append(character) |> ignore
+                    escaped <- true
+                | '[' ->
+                    output.Append(character) |> ignore
+                    inClass <- true
+                | ']' ->
+                    output.Append(character) |> ignore
+                    inClass <- false
+                | '/' when not inClass -> output.Append("\\/") |> ignore
+                | _ -> output.Append(character) |> ignore
+
+        "/" + output.ToString() + "/u"
+
     let private runtime =
         """
 export type WireIssue = ReadonlyArray<string>;
@@ -113,10 +138,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         then
             invalidOp "The client emitter does not support this string format."
 
-        let pattern =
-            pattern
-            |> Option.map (fun value -> "/" + value.Replace("/", "\\/") + "/u")
-            |> Option.defaultValue "null"
+        let pattern = pattern |> Option.map regexLiteral |> Option.defaultValue "null"
 
         "wireString("
         + optionNumber minimum

@@ -28,7 +28,7 @@ module AuthorityRequests =
         AuthorityAct.map
             (fun (grant: AuthorityGrant) ->
                 {
-                    GrantChange.Role = Role.token grant.Role
+                    GrantChange.Role = grant.Role
                     Scope = grant.Scope
                 })
             act
@@ -43,7 +43,7 @@ module AuthorityRequests =
             Ok
                 {
                     OperationId = operationId
-                    Target = PrincipalKey.describe target
+                    Target = PrincipalKey.toInput target
                     Act = authored act
                 }
 

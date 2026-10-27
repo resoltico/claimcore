@@ -233,27 +233,14 @@ module Authority =
     let parse (request: AuthorityRequest) =
         result {
             let! target =
-                PrincipalKey.admit request.Target.Kind request.Target.Issuer request.Target.Subject
+                PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
 
             let grant (value: GrantChange) =
-                Role.parse value.Role
-                |> Option.map (fun role ->
-                    Ok
-                        {
-                            AuthorityGrant.Role = role
-                            Scope = value.Scope
-                        })
-                |> Option.defaultValue (
-                    Error(
-                        Refusal.InvalidInput(
-                            InputTarget.Role,
-                            if String.IsNullOrWhiteSpace value.Role then
-                                Violation.TextRequired
-                            else
-                                Violation.RoleFormat
-                        )
-                    )
-                )
+                Ok
+                    {
+                        AuthorityGrant.Role = value.Role
+                        Scope = value.Scope
+                    }
 
             let! act =
                 match request.Act with

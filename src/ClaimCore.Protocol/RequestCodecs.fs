@@ -13,9 +13,6 @@ module RequestCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let tokens values =
-        values |> List.map (fun value -> value, value) |> enumeration
-
     let private inputField name get fields =
         Codec.field (BusinessField.key name) get Codec.text fields
 
@@ -164,16 +161,16 @@ module RequestCodecs =
     let principal =
         (record (fun v0 v1 v2 ->
             {
-                Principal.Kind = v0
+                PrincipalInput.Kind = v0
                 Issuer = v1
                 Subject = v2
             })
-        : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens PrincipalKind.all)
+        : Fields<PrincipalInput, _>)
+        |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
         |> field "issuer" _.Issuer (text)
         |> field "subject" _.Subject (text)
         |> build
-        |> named "Principal"
+        |> named "PrincipalInput"
 
     let scope =
         tagged
@@ -211,7 +208,7 @@ module RequestCodecs =
     let authorityActWith role =
         authorityVariantsWith role scope |> tagged "AuthorityAct"
 
-    let authorityAct = authorityActWith (tokens (Role.all |> List.map Role.token))
+    let authorityAct = authorityActWith (VocabularyCodec.create Role.vocabulary)
 
     let authorityRequestFields =
         (record (fun v0 v1 v2 ->

@@ -156,7 +156,11 @@ let private results () =
     for phase in [ Some ExecutionPhase.NotStarted; Some ExecutionPhase.StartedUnconfirmed ] do
         frameRoundTrip (
             reply
-                (FrameResult.HostFailure { Code = "INTERNAL"; Phase = phase })
+                (FrameResult.HostFailure
+                    {
+                        Code = HostFailureCode.Internal
+                        Phase = phase
+                    })
                 DeliveryState.Uncertain
         )
 

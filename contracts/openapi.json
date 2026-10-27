@@ -3446,7 +3446,6 @@
             "REFERENCE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
-            "ROLE_FORMAT": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "CALENDAR_DATE_REQUIRED": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "CHRONOLOGICAL_ORDER": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
             "FUTURE_DATE": "#/components/schemas/Diagnostic.TEXT_REQUIRED",
@@ -3735,9 +3734,6 @@
               },
               {
                 "const": "PRINCIPAL_FORMAT"
-              },
-              {
-                "const": "ROLE_FORMAT"
               },
               {
                 "const": "CALENDAR_DATE_REQUIRED"
@@ -5049,7 +5045,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "target": {
-            "$ref": "#/components/schemas/Principal"
+            "$ref": "#/components/schemas/PrincipalInput"
           },
           "act": {
             "$ref": "#/components/schemas/AuthorityAct"
@@ -5364,6 +5360,73 @@
         ]
       },
       "Principal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Principal.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/Principal.SERVICE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "HUMAN": "#/components/schemas/Principal.HUMAN",
+            "SERVICE": "#/components/schemas/Principal.SERVICE"
+          }
+        }
+      },
+      "Principal.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "HUMAN"
+          },
+          "issuer": {
+            "type": "string",
+            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "kind",
+          "issuer",
+          "subject"
+        ]
+      },
+      "Principal.SERVICE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SERVICE"
+          },
+          "issuer": {
+            "type": "string",
+            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "kind",
+          "issuer",
+          "subject"
+        ]
+      },
+      "PrincipalInput": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

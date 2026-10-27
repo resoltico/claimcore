@@ -396,7 +396,7 @@ let private principalEvidence (actor: ServiceContext) =
                     OperationId = id (60 + index)
                     Target =
                         {
-                            Kind = PrincipalKind.humanToken
+                            Kind = PrincipalKind.Human
                             Issuer = issuer
                             Subject = subject
                         }
@@ -405,22 +405,6 @@ let private principalEvidence (actor: ServiceContext) =
 
             let! outcome = (Service.execute actor (OperationInput.Authority request) (ct))
 
-            evidence.Add(refused outcome)
-
-        for index, role in List.indexed [ ""; "UNDECLARED_ROLE" ] do
-            let request: ClaimCore.Domain.AuthorityRequest =
-                {
-                    OperationId = id (64 + index)
-                    Target = PrincipalKey.describe actor.Principal
-                    Act =
-                        AuthorityAct.Grant
-                            {
-                                Role = role
-                                Scope = GrantTarget.Installation
-                            }
-                }
-
-            let! outcome = Service.execute actor (OperationInput.Authority request) ct
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence
@@ -493,12 +477,18 @@ let private completeVocabulary () =
         let fields = evidence |> List.choose snd |> Set.ofList
 
         let expectedFields =
-            (InputTarget.all |> List.map snd) @ [ "limit"; "cursor" ] |> Set.ofList
+            // Closed kind/role enums are admitted by the protocol, not refused by Application.
+            (InputTarget.all
+             |> List.filter (fun (target, _) ->
+                 target <> InputTarget.Role && target <> InputTarget.PrincipalKind)
+             |> List.map snd)
+            @ [ "limit"; "cursor" ]
+            |> Set.ofList
 
         Expect.equal
             fields
             expectedFields
-            "Every public field token has an Application request witness"
+            "Every business-refusable field has an Application request witness"
     }
 
 let private missingCasePrivacy () =

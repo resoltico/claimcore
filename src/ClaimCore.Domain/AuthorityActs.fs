@@ -12,9 +12,9 @@ type AuthorityKind =
     | Disable
 
 /// Unvalidated subject facts; Application admits the canonical principal key.
-type Principal =
+type PrincipalInput =
     {
-        Kind: string
+        Kind: PrincipalKind
         Issuer: string
         Subject: string
     }
@@ -24,7 +24,7 @@ type GrantTarget =
     | Installation
     | CaseReference of string
 
-type GrantChange = { Role: string; Scope: GrantTarget }
+type GrantChange = { Role: Role; Scope: GrantTarget }
 
 [<RequireQualifiedAccess>]
 type AuthorityAct<'grant> =
@@ -40,7 +40,7 @@ type AuthoredAuthorityAct = AuthorityAct<GrantChange>
 type AuthorityRequest =
     {
         OperationId: Guid
-        Target: Principal
+        Target: PrincipalInput
         Act: AuthoredAuthorityAct
     }
 
