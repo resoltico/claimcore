@@ -3,7 +3,6 @@ module ClaimCore.AcceptanceTests.CliUsageTests
 open System
 open System.IO
 open System.Text
-open System.Text.Json
 open System.Collections.Generic
 open Expecto
 open ClaimCore.Contract
@@ -122,14 +121,92 @@ let private examples =
         }
     ]
 
-let private frozen (rows: JsonElement) language key values =
-    let row =
-        rows.EnumerateArray()
-        |> Seq.find (fun row ->
-            row.GetProperty("language").GetString() = language
-            && row.GetProperty("key").GetString() = "cli.usage." + key)
+let private samples =
+    [
+        "en",
+        [
+            "unknownCommand", "Unknown command: «command»."
+            "unknownOption", "Unknown option: «flag»."
+            "suggestion", "Did you mean «suggestion»?"
+            "missingOption", "Missing option: «flag»."
+            "missingOperand", "Missing operand: «operand»."
+            "extraOperand", "Unexpected operand: «operand»."
+            "invalidInteger", "Invalid whole-number value «value» for «flag»."
+            "invalidChoice", "Invalid value «value» for «flag»; expected «allowed»."
+            "notApplicable", "«flag» does not apply with «because»."
+            "duplicateOption", "Option supplied more than once: «flag»."
+            "missingValue", "Missing value for «flag»."
+            "helpTopic", "Unknown help topic."
+            "helpOptions",
+            "Help accepts one topic and one supported language; --format is not available."
+            "describeSelector",
+            "Unknown operation to describe. Omit the selector to list operations."
+            "describeOptions",
+            "Invalid describe options. Use --format text|json; --language is available only with text output."
+            "schemaSelector",
+            "Unknown schema selection. Use a schema name or an endpoint followed by request or response."
+            "schemaOptions", "Schema accepts a name or an endpoint and direction, without options."
+            "versionOptions", "Version accepts only --json."
+            "invocation",
+            "Invalid invocation of «command». This command accepts no options or operands."
+        ]
+        "lv",
+        [
+            "unknownCommand", "Nezināma komanda: «command»."
+            "unknownOption", "Nezināma opcija: «flag»."
+            "suggestion", "Vai bija domāts «suggestion»?"
+            "missingOption", "Trūkst opcijas: «flag»."
+            "missingOperand", "Trūkst argumenta: «operand»."
+            "extraOperand", "Negaidīts arguments: «operand»."
+            "invalidInteger", "Nederīga vesela skaitļa vērtība «value» opcijai «flag»."
+            "invalidChoice", "Nederīga vērtība «value» opcijai «flag»; jābūt «allowed»."
+            "notApplicable", "«flag» nav piemērojams kopā ar «because»."
+            "duplicateOption", "Opcija norādīta vairākas reizes: «flag»."
+            "missingValue", "Trūkst vērtības opcijai «flag»."
+            "helpTopic", "Nezināma palīdzības tēma."
+            "helpOptions",
+            "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams."
+            "describeSelector",
+            "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības."
+            "describeOptions",
+            "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei."
+            "schemaSelector",
+            "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response."
+            "schemaOptions", "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām."
+            "versionOptions", "Version pieņem tikai --json."
+            "invocation", "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus."
+        ]
+        "ar",
+        [
+            "unknownCommand", "أمر غير معروف: «command»."
+            "unknownOption", "خيار غير معروف: «flag»."
+            "suggestion", "هل تقصد «suggestion»؟"
+            "missingOption", "الخيار مفقود: «flag»."
+            "missingOperand", "المعامل مفقود: «operand»."
+            "extraOperand", "معامل غير متوقع: «operand»."
+            "invalidInteger", "قيمة عدد صحيح غير صالحة «value» للخيار «flag»."
+            "invalidChoice", "قيمة غير صالحة «value» للخيار «flag»؛ المتوقع «allowed»."
+            "notApplicable", "لا ينطبق «flag» مع «because»."
+            "duplicateOption", "تم تقديم الخيار أكثر من مرة: «flag»."
+            "missingValue", "قيمة الخيار «flag» مفقودة."
+            "helpTopic", "موضوع المساعدة غير معروف."
+            "helpOptions", "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح."
+            "describeSelector", "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات."
+            "describeOptions",
+            "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط."
+            "schemaSelector",
+            "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response."
+            "schemaOptions", "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات."
+            "versionOptions", "يقبل version الخيار --json فقط."
+            "invocation", "استدعاء «command» غير صالح. لا يقبل هذا الأمر خيارات أو معاملات."
+        ]
+    ]
+    |> List.map (fun (language, entries) -> language, Map.ofList entries)
+    |> Map.ofList
 
-    (row.GetProperty("expected").GetString() |> nonNull, values)
+// Literal expectations for these published-process scenarios; no renderer generates them.
+let private expected language key values =
+    (samples[language][key], values)
     ||> List.fold (fun text (name, value) -> text.Replace("«" + name + "»", value))
 
 let private qualify example () =
@@ -139,11 +216,6 @@ let private qualify example () =
     try
         let root = RepositoryRoot.find ()
         let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
-
-        use expected =
-            JsonDocument.Parse(
-                File.ReadAllBytes(Path.Combine(root, "tests/fixtures/rendered-messages.json"))
-            )
 
         for language in LocalizationPolicy.languages do
             let result =
@@ -160,14 +232,14 @@ let private qualify example () =
 
             Expect.stringContains
                 text
-                (frozen expected.RootElement language example.Message example.Values)
-                "The specific localized error agrees with independent frozen text"
+                (expected language example.Message example.Values)
+                "The specific localized error agrees with independent literal text"
 
             example.Suggestion
             |> Option.iter (fun suggestion ->
                 Expect.stringContains
                     text
-                    (frozen expected.RootElement language "suggestion" [ "suggestion", suggestion ])
+                    (expected language "suggestion" [ "suggestion", suggestion ])
                     "Relevant spelling suggestion")
 
             let lines = text.TrimEnd().Split('\n')
@@ -217,11 +289,6 @@ let private qualifyHost (arguments, key, syntax) () =
         let root = RepositoryRoot.find ()
         let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
 
-        use expected =
-            JsonDocument.Parse(
-                File.ReadAllBytes(Path.Combine(root, "tests/fixtures/rendered-messages.json"))
-            )
-
         for language in
             (if key = "schemaSelector" then
                  [ "en" ]
@@ -248,10 +315,7 @@ let private qualifyHost (arguments, key, syntax) () =
                 else
                     []
 
-            Expect.stringContains
-                text
-                (frozen expected.RootElement language key values)
-                "Specific localized problem"
+            Expect.stringContains text (expected language key values) "Specific localized problem"
 
             Expect.stringContains text ("claimcore " + syntax) "Correct host-owned syntax"
             Expect.isLessThanOrEqual (text.TrimEnd().Split('\n').Length) 3 "Concise host guidance"

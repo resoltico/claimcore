@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.npm \
     test "$(node --version)" = "v$(cat .node-version)" \
     && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && npm --prefix web ci
-COPY tests/fixtures/message-template-vectors.json tests/fixtures/rendered-messages.json ./tests/fixtures/
+COPY tests/fixtures/message-template-vectors.json ./tests/fixtures/
 COPY contracts ./contracts
 COPY src/ClaimCore.Contract/Localization ./src/ClaimCore.Contract/Localization
 COPY web ./web

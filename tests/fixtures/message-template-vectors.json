@@ -1,5 +1,7 @@
 {
   "accepted": [
+    { "source": "Reference {value}.", "arguments": { "value": "\u2068A-12\u2069" }, "expected": "Reference \u2068A-12\u2069." },
+    { "source": "قبل: {value}", "arguments": { "value": "A-12" }, "expected": "قبل: A-12" },
     { "source": "Accepted.", "arguments": {}, "expected": "Accepted." },
     { "source": "Whitespace { name }.", "arguments": { "name": "Ada" }, "expected": "Whitespace Ada." },
     { "source": "Hello {name}.", "arguments": { "name": "Ada" }, "expected": "Hello Ada." },
@@ -12,6 +14,13 @@
     { "source": "'{unterminated", "arguments": {}, "expected": "{unterminated" },
     { "source": "{value}", "arguments": { "value": "{name} '<script>'" }, "expected": "{name} '<script>'" },
     { "source": "إجراء {name}\nDarbība {name}", "arguments": { "name": "synthetic" }, "expected": "إجراء synthetic\nDarbība synthetic" }
+  ],
+  "presentation": [
+    { "language": "ar", "key": "ui.before", "arguments": { "value": "A-12" }, "expected": "قبل: \u2068A-12\u2069" },
+    { "language": "ar", "key": "ui.reference", "arguments": { "label": "مرجع", "reference": "{raw} 'A'" }, "expected": "\u2068مرجع\u2069: \u2068{raw} 'A'\u2069" },
+    { "language": "lv", "key": "ui.before", "arguments": { "value": "EXACT" }, "expected": "Pirms: EXACT" },
+    { "language": "en-XA", "key": "ui.before", "arguments": { "value": "EXACT-A" }, "expected": "⟦Bëëföörëë: EXACT-A⟧" },
+    { "language": "en-XA", "key": "ui.reference", "arguments": { "label": "EXACT-A", "reference": "EXACT-B" }, "expected": "⟦EXACT-A: EXACT-B⟧" }
   ],
   "rejected": [
     "", "   ", "{", "}", "{name", "{0}", "{a_b}", "{constructor}", "{toString}",

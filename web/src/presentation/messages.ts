@@ -10,13 +10,12 @@ import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
 const chrome: Readonly<Record<string, Readonly<Record<string, string>>>> = chromeCatalogs;
-export const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> =
-  Object.fromEntries(
-    Object.entries(coreCatalogs).map(([language, core]) => [
-      language,
-      { ...core, ...chrome[language] },
-    ]),
-  );
+const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = Object.fromEntries(
+  Object.entries(coreCatalogs).map(([language, core]) => [
+    language,
+    { ...core, ...chrome[language] },
+  ]),
+);
 export const messageShapes = { ...coreShapes, ...chromeShapes };
 const shapes: Readonly<Record<string, Readonly<Record<string, string>>>> = messageShapes;
 const cache = new Map<string, ReadonlyArray<TemplatePart>>();

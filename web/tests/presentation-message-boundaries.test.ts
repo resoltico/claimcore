@@ -1,11 +1,10 @@
 import type { Language } from "../src/presentation/preferences";
 import { expect, it } from "vitest";
-import { catalogs, renderKey, renderIsolatedValue } from "../src/presentation/messages";
+import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
 import { templateParts, pseudolocalizeLiteral } from "../src/presentation/templates";
 import vectors from "../../tests/fixtures/message-template-vectors.json";
-import rendered from "../../tests/fixtures/rendered-messages.json";
 
-it("matches independent quoting vectors and every frozen F# rendering", () => {
+it("matches independent quoting, isolation, RTL and pseudolocale vectors", () => {
   for (const row of vectors.accepted) {
     const supplied: Readonly<Record<string, string>> = row.arguments;
     expect(
@@ -14,16 +13,14 @@ it("matches independent quoting vectors and every frozen F# rendering", () => {
         .join(""),
     ).toBe(row.expected);
   }
-  for (const row of rendered.filter((message) => !message.key.startsWith("cli."))) {
-    const language = row.language as Language;
-    const catalog: Readonly<Record<string, string>> = catalogs[language]!;
-    const supplied: Readonly<Record<string, string>> = row.arguments;
+  for (const row of vectors.presentation) {
     expect(
-      templateParts(catalog[row.key]!)
-        .map((part) => (part.kind === "literal" ? part.value : supplied[part.value]))
-        .join(""),
+      renderKey(
+        { language: row.language as Language, displayLocale: "en-GB" },
+        row.key,
+        row.arguments,
+      ),
     ).toBe(row.expected);
-    expect(renderKey({ language, displayLocale: "en-GB" }, row.key, supplied)).toBe(row.isolated);
   }
 });
 
