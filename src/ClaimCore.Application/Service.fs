@@ -72,7 +72,7 @@ module Service =
             let previous = businessFields before
             let next = businessFields (Some after)
 
-            Record.fields
+            CaseFields.declarations
             |> List.choose (fun field ->
                 let before = Map.tryFind field.Field previous |> Option.flatten
                 let after = Map.tryFind field.Field next |> Option.flatten

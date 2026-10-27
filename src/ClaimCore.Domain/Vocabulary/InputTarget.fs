@@ -3,7 +3,7 @@ namespace ClaimCore.Domain
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InputTarget =
     let private definitions =
-        (Record.fields
+        (CaseFields.declarations
          |> List.filter (fun row -> row.Field <> BusinessField.Status)
          |> List.map (fun row -> InputTarget.Field row.Field, row.Key))
         @ [

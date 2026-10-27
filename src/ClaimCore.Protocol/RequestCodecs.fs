@@ -330,7 +330,8 @@ module RequestCodecs =
         }
 
     let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
-        let declaration = Record.reads |> List.find (fun value -> value.Endpoint = endpoint)
+        let declaration =
+            ReadCatalog.declarations |> List.find (fun value -> value.Endpoint = endpoint)
 
         if declaration.Inputs <> fields.Inputs then
             invalidOp "The read codec must follow its Domain input declaration."

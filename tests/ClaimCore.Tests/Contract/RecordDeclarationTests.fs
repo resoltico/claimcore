@@ -12,7 +12,9 @@ open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
-    Record.fields |> List.filter (fun row -> row.Group = group) |> List.map _.Key
+    CaseFields.declarations
+    |> List.filter (fun row -> row.Group = group)
+    |> List.map _.Key
 
 let rec private members definitions =
     function
@@ -61,7 +63,7 @@ let private codecs () =
     Expect.notEqual renamed expected "A renamed group is detectable"
 
 let private domain () =
-    let fields = Record.fields |> List.map _.Field
+    let fields = CaseFields.declarations |> List.map _.Field
     Expect.equal (Set.ofList fields |> Set.count) fields.Length "No repeated field rows"
 
     Expect.equal
@@ -73,7 +75,8 @@ let private domain () =
          |> Set.ofArray)
         "Every business field has a table row"
 
-    let retained = Record.fields |> List.filter _.RetainedOnErasure |> List.map _.Field
+    let retained =
+        CaseFields.declarations |> List.filter _.RetainedOnErasure |> List.map _.Field
 
     Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
@@ -91,7 +94,7 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        Record.fields
+        CaseFields.declarations
         |> List.filter (fun row -> row.Group = Some group)
         |> List.map _.Field
 
@@ -138,7 +141,7 @@ let private locales () =
         use document =
             JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
 
-        for row in Record.fields do
+        for row in CaseFields.declarations do
             for key in
                 [ FieldPresentation.labelId row.Field; FieldPresentation.meaningId row.Field ] do
                 Expect.isTrue

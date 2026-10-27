@@ -342,7 +342,7 @@ module ResponseCodecs =
         : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list Record.fields.Length fieldChange)
+        |> field "changes" _.Changes (list CaseFields.declarations.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
     let actorSummary =

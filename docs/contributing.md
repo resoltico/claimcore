@@ -41,7 +41,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Database | Owner administration |
 
 Domain has no project dependencies. Protocol and RecordFormat build codecs over Domain structure using
-Json; Application uses Domain and RecordFormat. Postgres implements Application ports using Domain,
+Json; Application uses Domain and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
 RecordFormat and Json. Application and Postgres have no Protocol reference. Web and Database use the
 Application Service and port surface; the published CLI contains Domain, Protocol, Json and HostSecurity,
 with Application and Postgres excluded. The
@@ -56,12 +56,12 @@ to tests only.
 
 A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
 on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
-wire-facing names. [Domain service models](../src/ClaimCore.Domain/Service/) own typed outcomes;
+wire-facing names. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
-[typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.
+[typed declaration](../src/ClaimCore.Domain/CaseFields.fs). Named projection columns derive from that declaration.
 Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
 [Route.bind](../src/ClaimCore.Web/Routes.fs).
 Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/Vocabulary.fs) mechanism.

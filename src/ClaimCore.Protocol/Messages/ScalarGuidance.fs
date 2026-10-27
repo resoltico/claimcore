@@ -78,7 +78,7 @@ module ScalarGuidance =
             [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
 
     let all =
-        (Record.fields
+        (CaseFields.declarations
          |> List.choose (fun field ->
              forField field.Field |> Option.map (fun guidance -> field.Key, guidance)))
         @ [ "reason", forReason ]

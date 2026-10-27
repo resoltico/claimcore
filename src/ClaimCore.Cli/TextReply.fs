@@ -54,7 +54,7 @@ module internal TextReply =
 
     let private fieldLines language fields =
         let rows placement =
-            Record.fields
+            CaseFields.declarations
             |> List.filter (fun row -> row.Group = placement)
             |> List.map (fun row ->
                 line
@@ -286,7 +286,7 @@ module internal TextReply =
 
                 let after = CaseState.fields value.Proposed.State
 
-                Record.fields
+                CaseFields.declarations
                 |> List.choose (fun row ->
                     let previous =
                         before |> Option.bind (fun fields -> BusinessField.value fields row.Field)

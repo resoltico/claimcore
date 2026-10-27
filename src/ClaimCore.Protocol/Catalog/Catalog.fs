@@ -6,7 +6,7 @@ module Catalog =
     let document: CatalogDocument =
         {
             Fields =
-                Record.fields
+                CaseFields.declarations
                 |> List.map (fun row ->
                     {
                         Name = row.Field

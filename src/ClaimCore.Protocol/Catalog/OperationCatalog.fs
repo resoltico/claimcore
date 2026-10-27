@@ -71,7 +71,7 @@ module OperationCatalog =
         @ (AuthorityKind.all
            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
            |> List.map (fun kind -> CatalogOperation.Act(ActKind.Authority kind), Authority kind))
-        @ (Record.reads
+        @ (ReadCatalog.declarations
            |> List.map (fun declaration ->
                CatalogOperation.Query declaration.Endpoint, Read declaration))
 
@@ -176,7 +176,7 @@ module OperationCatalog =
         named operation TechnicalInput.OperationId [ "operationId" ] BindingKind.Text false
 
     let private values (operation: CatalogOperation) group prefix branches prefill =
-        Record.fieldsOf group
+        CaseFields.ofGroup group
         |> List.map (fun field ->
             input
                 operation
@@ -234,21 +234,21 @@ module OperationCatalog =
                     RecordGroup.Registration
                     (actPath [ "values" ])
                     []
-                    (CaseActKind.prefill declaration)
+                    (CaseActAnnotations.prefill declaration)
             | ActShape.DecisionValues ->
                 values
                     operation
                     RecordGroup.Decision
                     (actPath [ "values" ])
                     []
-                    (CaseActKind.prefill declaration)
+                    (CaseActAnnotations.prefill declaration)
             | ActShape.PaymentValues ->
                 values
                     operation
                     RecordGroup.Payment
                     (actPath [ "values" ])
                     []
-                    (CaseActKind.prefill declaration)
+                    (CaseActAnnotations.prefill declaration)
             | ActShape.ReasonText ->
                 [
                     named
@@ -261,7 +261,7 @@ module OperationCatalog =
             | ActShape.CorrectionGroups -> correction operation
 
         let revision =
-            match (CaseActKind.revision declaration) with
+            match (CaseActAnnotations.revision declaration) with
             | RevisionInput.New -> []
             | RevisionInput.Expected ->
                 [
@@ -281,7 +281,7 @@ module OperationCatalog =
                         Value = BindingValue.Text(ActSubject.token ActSubject.Case)
                         Branches = []
                     }
-                match (CaseActKind.revision declaration) with
+                match (CaseActAnnotations.revision declaration) with
                 | RevisionInput.New ->
                     yield
                         {

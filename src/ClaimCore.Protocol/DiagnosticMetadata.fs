@@ -1,4 +1,4 @@
-namespace ClaimCore.Domain
+namespace ClaimCore.Protocol
 
 type DiagnosticParameterDefinition =
     {

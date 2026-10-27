@@ -5,6 +5,11 @@
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="ExitCode.fs" />
+    <Compile Include="Catalog/Acts.fs" />
+    <Compile Include="DiagnosticMetadata.fs" />
+    <Compile Include="Api/Operations.fs" />
+    <Compile Include="Catalog/Reads.fs" />
+    <Compile Include="Catalog/Annotations.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="FieldPresentation.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />

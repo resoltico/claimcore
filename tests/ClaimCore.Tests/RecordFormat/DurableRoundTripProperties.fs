@@ -127,8 +127,8 @@ let private roles =
 
 let private scopes reference =
     [
-        ScopeKind.Installation, GrantTarget.Installation, "INSTALLATION"
-        ScopeKind.Case, GrantTarget.CaseReference reference, "CASE"
+        GrantTarget.Installation, "INSTALLATION"
+        GrantTarget.CaseReference reference, "CASE"
     ]
 
 let private authorityActs reference =
@@ -138,7 +138,7 @@ let private authorityActs reference =
         yield AuthorityAct.Enable, "ENABLE"
         yield AuthorityAct.Disable, "DISABLE"
         for _, role in roles do
-            for _, scope, _ in scopes reference do
+            for scope, _ in scopes reference do
                 let grant =
                     {
                         GrantChange.Role = role
@@ -172,9 +172,17 @@ let private inventories () =
     Expect.equal roles.Length 7 "Every role occurs every trial"
 
     Expect.equal
-        (scopes "ref" |> List.map (fun (kind, _, _) -> kind) |> Set.ofList)
-        (Set.ofList ScopeKind.all)
-        "Scope inventory"
+        (scopes "ref"
+         |> List.map (fun (scope, _) ->
+             let case, _ =
+                 Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(scope, typeof<GrantTarget>)
+
+             case.Name)
+         |> Set.ofList)
+        (Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<GrantTarget>
+         |> Array.map _.Name
+         |> Set.ofArray)
+        "The authored scope inventory covers every durable scope case"
 
     Expect.equal
         (authorityActs "ref" |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)

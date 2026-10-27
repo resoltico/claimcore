@@ -86,7 +86,7 @@ let private copySource root parent =
     directory
 
 let private changeStructuralVocabulary directory =
-    let path = Path.Combine(directory, "src/ClaimCore.Domain/Record.fs")
+    let path = Path.Combine(directory, "src/ClaimCore.Domain/CaseFields.fs")
 
     let original = File.ReadAllText path
 

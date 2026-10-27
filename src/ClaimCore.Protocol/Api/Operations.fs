@@ -1,0 +1,57 @@
+namespace ClaimCore.Protocol
+
+open ClaimCore.Domain
+
+[<RequireQualifiedAccess>]
+type OperationEndpoint =
+    | Preview
+    | Execute
+
+[<RequireQualifiedAccess>]
+type QueryEndpoint =
+    | CaseGet
+    | CaseList
+    | CaseHistory
+    | Observe
+    | Resolve
+    | AuthorityList
+    | AuthorityGrants
+    | Context
+
+[<RequireQualifiedAccess>]
+type ActorEndpoint =
+    | Operation of OperationEndpoint
+    | Query of QueryEndpoint
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ActorEndpoint =
+    let vocabulary =
+        Vocabulary.define
+            "endpoint"
+            [
+                (ActorEndpoint.Operation OperationEndpoint.Preview)
+                (ActorEndpoint.Operation OperationEndpoint.Execute)
+                (ActorEndpoint.Query QueryEndpoint.CaseGet)
+                (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryEndpoint.CaseHistory)
+                (ActorEndpoint.Query QueryEndpoint.Observe)
+                (ActorEndpoint.Query QueryEndpoint.Resolve)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityList)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
+                (ActorEndpoint.Query QueryEndpoint.Context)
+            ]
+            (function
+             | (ActorEndpoint.Operation OperationEndpoint.Preview) -> "operation.preview"
+             | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
+             | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
+             | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
+             | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
+             | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
+             | (ActorEndpoint.Query QueryEndpoint.Context) -> "context")
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
