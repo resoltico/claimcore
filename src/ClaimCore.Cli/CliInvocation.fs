@@ -63,7 +63,7 @@ module CliInvocations =
         | [] -> Ok CliDescription.Summary
         | words when
             OperationCatalog.all
-            |> List.exists (fun entry -> OperationCatalog.words entry = words)
+            |> List.exists (fun entry -> CommandGrammar.words entry = words)
             ->
             Ok(CliDescription.Operation words)
         | _ -> Error CliUsageIssue.Selector

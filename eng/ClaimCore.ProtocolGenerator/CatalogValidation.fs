@@ -33,7 +33,7 @@ module CatalogValidation =
         let scopes =
             OperationCatalog.mutations
             |> List.collect (fun operation ->
-                OperationCatalog.derive operation
+                CommandGrammar.derive operation
                 |> fst
                 |> List.collect (fun input ->
                     match input.Name, input.Atom with

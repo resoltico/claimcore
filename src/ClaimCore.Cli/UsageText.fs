@@ -42,7 +42,7 @@ module UsageText =
         let matched =
             OperationCatalog.all
             |> List.tryFind (fun entry ->
-                let words = OperationCatalog.words entry in
+                let words = CommandGrammar.words entry in
                 List.truncate words.Length arguments = words)
 
         let hints =
@@ -52,7 +52,7 @@ module UsageText =
                     message
                         language
                         (CliMessage.Synopsis(
-                            CliIdentity.programName + " " + OperationCatalog.synopsis entry
+                            CliIdentity.programName + " " + CommandGrammar.synopsis entry
                         ))
                 ]
             | None ->

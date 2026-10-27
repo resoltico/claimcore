@@ -1,5 +1,6 @@
 module ClaimCore.Tests.OperationCatalogTests
 
+open ClaimCore.Cli
 open ClaimCore.Protocol
 
 open System
@@ -13,7 +14,7 @@ open ClaimCore.TestSupport
 
 let private find words =
     OperationCatalog.all
-    |> List.find (fun entry -> OperationCatalog.words entry = words)
+    |> List.find (fun entry -> CommandGrammar.words entry = words)
 
 [<Tests>]
 let tests =
@@ -55,7 +56,7 @@ let tests =
             testCase "typed payload declarations select only their own fields" (fun () ->
                 let fields kind =
                     let operation = find [ "case"; kind ]
-                    let inputs, _ = OperationCatalog.derive operation
+                    let inputs, _ = CommandGrammar.derive operation
 
                     inputs
                     |> List.choose (fun input ->
@@ -82,7 +83,7 @@ let tests =
                 let operation = find [ "case"; "decide" ]
                 let inputs, _ = OperationCatalog.caseInputs operation CaseActKind.Decide
 
-                let check (inputs: CatalogDerivedInput list) =
+                let check (inputs: OperationInputDefinition list) =
                     let date =
                         inputs
                         |> List.find (fun input ->
@@ -110,7 +111,7 @@ let tests =
                     let inputs, constants = OperationCatalog.caseInputs operation CaseActKind.Open
 
                     let check
-                        (inputs: CatalogDerivedInput list)
+                        (inputs: OperationInputDefinition list)
                         (constants: BindingAssignment list)
                         =
                         Expect.isFalse
@@ -165,7 +166,7 @@ let tests =
                                 ] do
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->
-                let grant = OperationCatalog.synopsis (find [ "authority"; "grant" ])
+                let grant = CommandGrammar.synopsis (find [ "authority"; "grant" ])
                 Expect.stringContains grant "--principal-kind human|service" "Vocabulary choices"
 
                 Expect.stringContains
@@ -179,11 +180,11 @@ let tests =
 
                 for entry in OperationCatalog.all do
                     Expect.stringStarts
-                        (OperationCatalog.synopsis entry)
-                        (String.concat " " (OperationCatalog.words entry))
+                        (CommandGrammar.synopsis entry)
+                        (String.concat " " (CommandGrammar.words entry))
                         "Derived command words")
             testCase "correction bindings retain conditional replacement semantics" (fun () ->
-                let inputs, _ = OperationCatalog.derive (find [ "case"; "correct" ])
+                let inputs, _ = CommandGrammar.derive (find [ "case"; "correct" ])
 
                 Expect.equal
                     inputs.Length

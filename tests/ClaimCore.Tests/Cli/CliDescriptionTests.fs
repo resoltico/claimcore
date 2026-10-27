@@ -9,7 +9,7 @@ open ClaimCore.Cli
 let private descriptions () =
     for language in LocalizationPolicy.languages do
         for operation in OperationCatalog.all do
-            let selection = CliDescription.Operation(OperationCatalog.words operation)
+            let selection = CliDescription.Operation(CommandGrammar.words operation)
 
             let output =
                 Discovery.describeText language selection
@@ -18,10 +18,10 @@ let private descriptions () =
 
             Expect.stringContains
                 output
-                (OperationCatalog.synopsis operation)
+                (CommandGrammar.synopsis operation)
                 "Description uses the operation grammar"
 
-            let inputs, _ = OperationCatalog.derive operation
+            let inputs, _ = CommandGrammar.derive operation
 
             for input in inputs do
                 if input.Argument <> CatalogArgument.Implicit then

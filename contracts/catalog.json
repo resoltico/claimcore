@@ -320,7 +320,6 @@
       "labelId": "act.OPEN.label",
       "meaningId": "act.OPEN.meaning",
       "confirmationId": "act.OPEN.confirmation",
-      "synopsis": "case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -560,7 +559,6 @@
       "labelId": "act.AMEND_REGISTRATION.label",
       "meaningId": "act.AMEND_REGISTRATION.meaning",
       "confirmationId": "act.AMEND_REGISTRATION.confirmation",
-      "synopsis": "case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -835,7 +833,6 @@
       "labelId": "act.CORRECT.label",
       "meaningId": "act.CORRECT.meaning",
       "confirmationId": "act.CORRECT.confirmation",
-      "synopsis": "case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|replace [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|replace|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|clear [--payment-date VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -1432,7 +1429,6 @@
       "labelId": "act.DECIDE.label",
       "meaningId": "act.DECIDE.meaning",
       "confirmationId": "act.DECIDE.confirmation",
-      "synopsis": "case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1603,7 +1599,6 @@
       "labelId": "act.WITHDRAW_DECISION.label",
       "meaningId": "act.WITHDRAW_DECISION.meaning",
       "confirmationId": "act.WITHDRAW_DECISION.confirmation",
-      "synopsis": "case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -1696,7 +1691,6 @@
       "labelId": "act.RECORD_PAYMENT.label",
       "meaningId": "act.RECORD_PAYMENT.meaning",
       "confirmationId": "act.RECORD_PAYMENT.confirmation",
-      "synopsis": "case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1812,7 +1806,6 @@
       "labelId": "act.CLEAR_PAYMENT.label",
       "meaningId": "act.CLEAR_PAYMENT.meaning",
       "confirmationId": "act.CLEAR_PAYMENT.confirmation",
-      "synopsis": "case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -1905,7 +1898,6 @@
       "labelId": "act.CLOSE.label",
       "meaningId": "act.CLOSE.meaning",
       "confirmationId": "act.CLOSE.confirmation",
-      "synopsis": "case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -1998,7 +1990,6 @@
       "labelId": "act.REOPEN.label",
       "meaningId": "act.REOPEN.meaning",
       "confirmationId": "act.REOPEN.confirmation",
-      "synopsis": "case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2091,7 +2082,6 @@
       "labelId": "act.VOID.label",
       "meaningId": "act.VOID.meaning",
       "confirmationId": "act.VOID.confirmation",
-      "synopsis": "case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2206,7 +2196,6 @@
       "labelId": "act.REINSTATE.label",
       "meaningId": "act.REINSTATE.meaning",
       "confirmationId": "act.REINSTATE.confirmation",
-      "synopsis": "case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2321,7 +2310,6 @@
       "labelId": "act.ERASE.label",
       "meaningId": "act.ERASE.meaning",
       "confirmationId": "act.ERASE.confirmation",
-      "synopsis": "case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N",
       "inputs": [
         {
           "identity": "operationId",
@@ -2414,7 +2402,6 @@
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
       "confirmationId": "act.REGISTER.confirmation",
-      "synopsis": "authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2531,7 +2518,6 @@
       "labelId": "act.GRANT.label",
       "meaningId": "act.GRANT.meaning",
       "confirmationId": "act.GRANT.confirmation",
-      "synopsis": "authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -2736,7 +2722,6 @@
       "labelId": "act.REVOKE.label",
       "meaningId": "act.REVOKE.meaning",
       "confirmationId": "act.REVOKE.confirmation",
-      "synopsis": "authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE]",
       "inputs": [
         {
           "identity": "operationId",
@@ -2941,7 +2926,6 @@
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
       "confirmationId": "act.ENABLE.confirmation",
-      "synopsis": "authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3058,7 +3042,6 @@
       "labelId": "act.DISABLE.label",
       "meaningId": "act.DISABLE.meaning",
       "confirmationId": "act.DISABLE.confirmation",
-      "synopsis": "authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3175,7 +3158,6 @@
       "labelId": "endpoint.case.get.label",
       "meaningId": "endpoint.case.get.meaning",
       "confirmationId": null,
-      "synopsis": "case get CASE-REFERENCE",
       "inputs": [
         {
           "identity": "caseReference",
@@ -3210,7 +3192,6 @@
       "labelId": "endpoint.case.list.label",
       "meaningId": "endpoint.case.list.meaning",
       "confirmationId": null,
-      "synopsis": "case list [--cursor VALUE] [--limit N]",
       "inputs": [
         {
           "identity": "cursor",
@@ -3260,7 +3241,6 @@
       "labelId": "endpoint.case.history.label",
       "meaningId": "endpoint.case.history.meaning",
       "confirmationId": null,
-      "synopsis": "case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N]",
       "inputs": [
         {
           "identity": "caseReference",
@@ -3356,7 +3336,6 @@
       "labelId": "endpoint.operation.observe.label",
       "meaningId": "endpoint.operation.observe.meaning",
       "confirmationId": null,
-      "synopsis": "operation observe OPERATION-ID",
       "inputs": [
         {
           "identity": "operationId",
@@ -3389,7 +3368,6 @@
       "labelId": "endpoint.operation.resolve.label",
       "meaningId": "endpoint.operation.resolve.meaning",
       "confirmationId": null,
-      "synopsis": "operation resolve OPERATION-ID",
       "inputs": [
         {
           "identity": "operationId",
@@ -3422,7 +3400,6 @@
       "labelId": "endpoint.authority.list.label",
       "meaningId": "endpoint.authority.list.meaning",
       "confirmationId": null,
-      "synopsis": "authority list [--cursor VALUE] [--limit N]",
       "inputs": [
         {
           "identity": "cursor",
@@ -3472,7 +3449,6 @@
       "labelId": "endpoint.authority.grants.label",
       "meaningId": "endpoint.authority.grants.meaning",
       "confirmationId": null,
-      "synopsis": "authority grants ACTOR-ID [--cursor VALUE] [--limit N]",
       "inputs": [
         {
           "identity": "actorId",
@@ -3541,7 +3517,6 @@
       "labelId": "endpoint.context.label",
       "meaningId": "endpoint.context.meaning",
       "confirmationId": null,
-      "synopsis": "context",
       "inputs": [],
       "constants": []
     }

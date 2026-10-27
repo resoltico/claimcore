@@ -83,7 +83,7 @@ module internal TextReply =
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
                 (value.Advice.Acts
-                 |> List.map (offerAct >> OperationCatalog.kebab)
+                 |> List.map (offerAct >> CommandGrammar.kebab)
                  |> String.concat ", ")
         ]
 
@@ -103,7 +103,7 @@ module internal TextReply =
         [
             String.concat
                 " "
-                ([ outcome; OperationCatalog.kebab act; target ]
+                ([ outcome; CommandGrammar.kebab act; target ]
                  @ revision
                  @ [
                      label language (ContractDiscovery.inputLabel "operationId")
@@ -125,7 +125,7 @@ module internal TextReply =
                          "  "
                          [
                              number change.Revision
-                             OperationCatalog.kebab (CaseActKind.token change.Act)
+                             CommandGrammar.kebab (CaseActKind.token change.Act)
                              instant change.RecordedAt
                              id change.OperationId
                          ]
@@ -151,7 +151,7 @@ module internal TextReply =
                      "  "
                      [
                          revision
-                         OperationCatalog.kebab act
+                         CommandGrammar.kebab act
                          instant receipt.RecordedAt
                          id receipt.OperationId
                      ]
@@ -231,7 +231,7 @@ module internal TextReply =
                 | Some value -> String.concat " " [ value.Kind; value.Issuer; value.Subject ]
                 | None -> "— — —"
 
-        OperationCatalog.kebab act + " " + target
+        CommandGrammar.kebab act + " " + target
 
     let private authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [

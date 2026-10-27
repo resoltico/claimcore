@@ -7,7 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Json
 
 open System
-open System.Text.RegularExpressions
 
 [<RequireQualifiedAccess>]
 type TechnicalInput =
@@ -39,26 +38,10 @@ type CatalogInputName =
     | Group of RecordGroup
     | Technical of TechnicalInput
 
-[<RequireQualifiedAccess>]
-type CatalogArgument =
-    | Named
-    | Operand
-    | Implicit
-
-[<RequireQualifiedAccess>]
-type CatalogAtom =
-    | Text
-    | Integer
-    | Boolean
-    | Choice of string list
-    | Switch of off: string * on: string
-
-/// CLI argument presentation is derived alongside the published binding, never authored as a second shape.
-type CatalogDerivedInput =
+/// Typed semantic identity accompanies its published binding; renderers choose their grammar.
+type OperationInputDefinition =
     {
         Name: CatalogInputName
-        Atom: CatalogAtom
-        Argument: CatalogArgument
         Binding: CatalogInput
     }
 
@@ -114,15 +97,6 @@ module OperationCatalog =
     let confirmationId (entry: CatalogOperation) =
         entry.SelectedAct |> Option.map (fun _ -> message entry "confirmation")
 
-    let kebab (value: string) =
-        Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
-
-    let words (entry: CatalogOperation) =
-        match entry.SelectedAct with
-        | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
-        | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
-
     let private source (entry: CatalogOperation) name =
         match name with
         | CatalogInputName.Technical TechnicalInput.OperationId when entry.SelectedAct.IsSome ->
@@ -157,24 +131,13 @@ module OperationCatalog =
         name
         path
         kind
-        argument
         branches
         required
         defaultValue
         prefill
         =
-        let atom =
-            match kind with
-            | BindingKind.Text -> CatalogAtom.Text
-            | BindingKind.Integer -> CatalogAtom.Integer
-            | BindingKind.Boolean -> CatalogAtom.Boolean
-            | BindingKind.Choice values
-            | BindingKind.Group values -> CatalogAtom.Choice values
-
         {
             Name = name
-            Atom = atom
-            Argument = argument
             Binding =
                 {
                     Identity = String.concat "." path
@@ -194,16 +157,7 @@ module OperationCatalog =
         }
 
     let private named (operation: CatalogOperation) technical path kind required =
-        input
-            operation
-            (CatalogInputName.Technical technical)
-            path
-            kind
-            CatalogArgument.Named
-            []
-            required
-            None
-            None
+        input operation (CatalogInputName.Technical technical) path kind [] required None None
 
     let private caseOperand (operation: CatalogOperation) =
         let path = [ BusinessField.key BusinessField.CaseReference ]
@@ -213,7 +167,6 @@ module OperationCatalog =
             (CatalogInputName.Field BusinessField.CaseReference)
             path
             BindingKind.Text
-            CatalogArgument.Operand
             []
             true
             None
@@ -230,7 +183,6 @@ module OperationCatalog =
                 (CatalogInputName.Field field)
                 (prefix @ [ BusinessField.key field ])
                 BindingKind.Text
-                CatalogArgument.Named
                 branches
                 true
                 None
@@ -254,7 +206,6 @@ module OperationCatalog =
                     (CatalogInputName.Group group)
                     tag
                     (BindingKind.Group choices)
-                    CatalogArgument.Named
                     []
                     true
                     None
@@ -380,7 +331,6 @@ module OperationCatalog =
                         (CatalogInputName.Technical TechnicalInput.Scope)
                         scope
                         (BindingKind.Group [ "INSTALLATION"; "CASE" ])
-                        CatalogArgument.Implicit
                         []
                         false
                         None
@@ -390,7 +340,6 @@ module OperationCatalog =
                         (CatalogInputName.Field BusinessField.CaseReference)
                         (actPath ("scope" :: [ BusinessField.key BusinessField.CaseReference ]))
                         BindingKind.Text
-                        CatalogArgument.Named
                         [ { Path = scope; Value = "CASE" } ]
                         true
                         None
@@ -420,7 +369,6 @@ module OperationCatalog =
                 (CatalogInputName.Technical technical)
                 path
                 BindingKind.Text
-                CatalogArgument.Operand
                 []
                 true
                 None
@@ -444,11 +392,7 @@ module OperationCatalog =
                         (BindingKind.Choice [ off; on ])
                         false
 
-                [
-                    { binding with
-                        Atom = CatalogAtom.Switch(off, on)
-                    }
-                ]
+                [ binding ]
             | ReadInput.Page ->
                 [
                     named operation TechnicalInput.Cursor [ "cursor" ] BindingKind.Text false
@@ -457,7 +401,6 @@ module OperationCatalog =
                         (CatalogInputName.Technical TechnicalInput.Limit)
                         [ "limit" ]
                         BindingKind.Integer
-                        CatalogArgument.Named
                         []
                         false
                         (Some(BindingValue.Integer(int64 Paging.DefaultPageSize)))
@@ -486,41 +429,6 @@ module OperationCatalog =
 
     let derive (operation: CatalogOperation) = Map.find operation derived
 
-    let synopsis (operation: CatalogOperation) =
-        let placeholder =
-            function
-            | CatalogAtom.Text -> "VALUE"
-            | CatalogAtom.Integer -> "N"
-            | CatalogAtom.Boolean -> "true|false"
-            | CatalogAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
-            | CatalogAtom.Switch _ -> ""
-
-        let inputs, _ = derive operation
-
-        let arguments =
-            inputs
-            |> List.choose (fun input ->
-                match input.Argument with
-                | CatalogArgument.Implicit -> None
-                | CatalogArgument.Operand ->
-                    Some(kebab (inputKey input.Name) |> _.ToUpperInvariant())
-                | CatalogArgument.Named ->
-                    let suffix = placeholder input.Atom
-
-                    let text =
-                        "--"
-                        + kebab (inputKey input.Name)
-                        + (if suffix = "" then "" else " " + suffix)
-
-                    Some(
-                        if input.Binding.Required && input.Binding.Branches.IsEmpty then
-                            text
-                        else
-                            "[" + text + "]"
-                    ))
-
-        String.concat " " (words operation @ arguments)
-
     let entries =
         all
         |> List.map (fun operation ->
@@ -531,7 +439,6 @@ module OperationCatalog =
                 LabelId = labelId operation
                 MeaningId = meaningId operation
                 ConfirmationId = confirmationId operation
-                Synopsis = synopsis operation
                 Inputs = inputs |> List.map _.Binding
                 Constants = constants
             })

@@ -25,7 +25,7 @@ module Discovery =
         | CliDescription.Operation words ->
             Catalog.document.Entries
             |> List.tryFind (fun entry ->
-                OperationCatalog.words (OperationCatalog.operation entry) = words)
+                CommandGrammar.words (OperationCatalog.operation entry) = words)
             |> Option.map List.singleton
 
     let describe selector =
@@ -45,7 +45,7 @@ module Discovery =
             operations
             |> List.map (fun entry ->
                 let operation = OperationCatalog.operation entry
-                let inputs, _ = OperationCatalog.derive operation
+                let inputs, _ = CommandGrammar.derive operation
 
                 let message key =
                     MessageCatalogs.render language key Map.empty
@@ -53,7 +53,7 @@ module Discovery =
                 [
                     message (OperationCatalog.labelId operation)
                     message (OperationCatalog.meaningId operation)
-                    CliIdentity.programName + " " + OperationCatalog.synopsis operation
+                    CliIdentity.programName + " " + CommandGrammar.synopsis operation
                 ]
                 @ (inputs
                    |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
@@ -62,7 +62,7 @@ module Discovery =
                            match input.Atom with
                            | CatalogAtom.Choice values ->
                                " ["
-                               + (values |> List.map OperationCatalog.kebab |> String.concat "|")
+                               + (values |> List.map CommandGrammar.kebab |> String.concat "|")
                                + "]"
                            | _ -> ""
 

@@ -7,7 +7,7 @@ open ClaimCore.Cli
 
 module CliDocumentation =
     let private argument (input: CatalogDerivedInput) =
-        let name = OperationCatalog.inputKey input.Name |> OperationCatalog.kebab
+        let name = OperationCatalog.inputKey input.Name |> CommandGrammar.kebab
 
         match input.Argument with
         | CatalogArgument.Named -> "--" + name
@@ -34,17 +34,17 @@ module CliDocumentation =
             text.Replace("|", "\\|").Replace("\n", " ")
 
         let describe operation =
-            let inputs, _ = OperationCatalog.derive operation
+            let inputs, _ = CommandGrammar.derive operation
 
             [
-                "## " + (OperationCatalog.words operation |> String.concat " ")
+                "## " + (CommandGrammar.words operation |> String.concat " ")
                 ""
                 message (OperationCatalog.labelId operation)
                 ""
                 message (OperationCatalog.meaningId operation)
                 ""
                 "```sh"
-                "claimcore " + OperationCatalog.synopsis operation
+                "claimcore " + CommandGrammar.synopsis operation
                 "```"
                 ""
                 "| Input | Meaning | Choices | Default |"
@@ -56,7 +56,7 @@ module CliDocumentation =
                         let choices =
                             match input.Atom with
                             | CatalogAtom.Choice choices ->
-                                choices |> List.map OperationCatalog.kebab |> String.concat ", "
+                                choices |> List.map CommandGrammar.kebab |> String.concat ", "
                             | _ -> ""
 
                         let defaultValue =

@@ -22,14 +22,14 @@ let private description cli language arguments =
 let private selectedInputs cli =
     for language in LocalizationPolicy.languages do
         for operation in OperationCatalog.all do
-            let output = description cli language (OperationCatalog.words operation)
+            let output = description cli language (CommandGrammar.words operation)
 
             Expect.stringContains
                 output
-                (OperationCatalog.synopsis operation)
+                (CommandGrammar.synopsis operation)
                 "Published grammar matches the catalog"
 
-            let inputs, _ = OperationCatalog.derive operation
+            let inputs, _ = CommandGrammar.derive operation
 
             for input in inputs do
                 if input.Argument <> CatalogArgument.Implicit then

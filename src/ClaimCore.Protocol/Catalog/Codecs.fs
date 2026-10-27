@@ -339,13 +339,12 @@ module CatalogCodecs =
             LabelId: string
             MeaningId: string
             ConfirmationId: string option
-            Synopsis: string
             Inputs: CatalogInput list
             Constants: BindingAssignment list
         }
 
     let entry =
-        record (fun endpoint subject kind label meaning confirmation synopsis inputs constants ->
+        record (fun endpoint subject kind label meaning confirmation inputs constants ->
             {
                 EntryWire.Endpoint = endpoint
                 Subject = subject
@@ -353,7 +352,6 @@ module CatalogCodecs =
                 LabelId = label
                 MeaningId = meaning
                 ConfirmationId = confirmation
-                Synopsis = synopsis
                 Inputs = inputs
                 Constants = constants
             })
@@ -363,7 +361,6 @@ module CatalogCodecs =
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text
         |> field "confirmationId" _.ConfirmationId (nullable text)
-        |> field "synopsis" _.Synopsis text
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
@@ -392,7 +389,6 @@ module CatalogCodecs =
                             LabelId = wire.LabelId
                             MeaningId = wire.MeaningId
                             ConfirmationId = wire.ConfirmationId
-                            Synopsis = wire.Synopsis
                             Inputs = wire.Inputs
                             Constants = wire.Constants
                         }
@@ -410,7 +406,6 @@ module CatalogCodecs =
                     LabelId = value.LabelId
                     MeaningId = value.MeaningId
                     ConfirmationId = value.ConfirmationId
-                    Synopsis = value.Synopsis
                     Inputs = value.Inputs
                     Constants = value.Constants
                 })

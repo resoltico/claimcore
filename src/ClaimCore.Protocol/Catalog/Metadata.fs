@@ -79,7 +79,6 @@ type CatalogEntry =
         LabelId: string
         MeaningId: string
         ConfirmationId: string option
-        Synopsis: string
         Kind: CatalogOperation
         Inputs: CatalogInput list
         Constants: BindingAssignment list

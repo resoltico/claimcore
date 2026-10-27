@@ -102,7 +102,8 @@ module internal MessageCatalogs =
         | HelpTopic.Overview -> overview language
         | HelpTopic.Verbs ->
             Catalog.document.Entries
-            |> List.map (fun entry -> CliIdentity.programName + " " + entry.Synopsis)
+            |> List.map (fun entry ->
+                CliIdentity.programName + " " + CommandGrammar.synopsis entry.Kind)
             |> String.concat "\n"
             |> fun value -> value + "\n"
 
