@@ -57,6 +57,53 @@ let private applicationExamples () =
         Api.id endpoint <> "session" && Api.id endpoint <> "session.logout")
     |> Seq.toList
 
+// This is a server invariant, asserted independently from any client admission helper.
+let private assertServerIdentity endpoint input reply =
+    let memberValue name value =
+        JsonValue.tryMember name value
+        |> Option.defaultWith (fun () -> failtestf "Missing identity member %s" name)
+
+    let guid name value =
+        match memberValue name value with
+        | JsonValue.String text -> Guid.Parse text
+        | _ -> failtest "Expected a GUID identity"
+
+    let outcome = memberValue "outcome" reply
+    let kind = memberValue "kind" outcome
+
+    let receiptIdentity expected =
+        let receipt = memberValue "data" outcome
+
+        Expect.equal
+            (guid "operationId" receipt)
+            expected
+            "Receipt retains the requested operation id"
+
+    match Api.identity endpoint with
+    | EndpointId.Actor ActorEndpoint.Preview
+    | EndpointId.Actor ActorEndpoint.Execute ->
+        let expected = guid "operationId" input
+
+        Expect.equal
+            (guid "operationId" reply)
+            expected
+            "Reply echoes the requested operation id as data"
+
+        if kind = JsonValue.String "ACCEPTED" || kind = JsonValue.String "ALREADY_ACCEPTED" then
+            receiptIdentity expected
+    | EndpointId.Actor ActorEndpoint.Observe when kind = JsonValue.String "SUCCEEDED" ->
+        receiptIdentity (guid "operationId" input)
+    | EndpointId.Actor ActorEndpoint.Resolve when kind = JsonValue.String "ACCEPTED" ->
+        receiptIdentity (guid "operationId" input)
+    | EndpointId.Actor ActorEndpoint.AuthorityGrants when kind = JsonValue.String "SUCCEEDED" ->
+        let actor = memberValue "data" outcome |> memberValue "actor"
+
+        Expect.equal
+            (guid "actorId" actor)
+            (guid "actorId" input)
+            "Grant page retains its requested actor"
+    | _ -> ()
+
 let private mappedExamples () =
     async {
         let! _, fixture = fixture () |> Async.AwaitTask
@@ -82,9 +129,7 @@ let private mappedExamples () =
 
             Api.admitOutput endpoint reply |> admitted |> ignore
 
-            Expect.isTrue
-                (ClaimCore.Contract.Correlation.matches endpoint input reply)
-                "Application replies preserve typed request correlation."
+            assertServerIdentity endpoint input reply
     }
 
 let private cancellationPolicy () =
@@ -129,7 +174,7 @@ let tests =
         "typed protocol mapping"
         [
             testCaseAsync
-                "all published request examples cross Application and return correlated typed replies"
+                "all published request examples cross the service and preserve server identity"
                 (mappedExamples ())
             testCaseAsync
                 "preview cancellation and an uncancelled mutation retain their completion paths"

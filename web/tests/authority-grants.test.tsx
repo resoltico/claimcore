@@ -7,7 +7,6 @@ import { AuthorityPanel } from "../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../src/api/service";
 import { wireReply } from "./contract-corpus.fixtures";
-import { response } from "./service-ui.fixtures";
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
 const actor = (actorId: string, prefix = "header") => ({
@@ -142,18 +141,6 @@ it("keeps only the same actor's page on a transient error and follows server con
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await screen.findByText("All grants returned for this review are shown.");
   expect(request.mock.calls.map((call) => call[1])).toEqual([null, "next", "next"]);
-});
-it("rejects a schema-valid wrong-target page at the real generated service boundary as a read failure", async () => {
-  const reply = grants(second);
-  if (reply.kind !== "outcome") {
-    throw new Error("Synthetic page absent.");
-  }
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(response("authority.grants", "SUCCEEDED", reply.value.outcome.data)),
-  );
-  const result = await service.authorityGrants(first, null, "token");
-  expect(result.kind).toBe("deliveryFailure");
 });
 
 const prepare = async () => {

@@ -142,7 +142,7 @@ let private exactResolution fixture source operationId =
     Expect.equal
         (field "delivery" replay)
         "DELIVERED"
-        "Exact correlated replay resolves uncertainty"
+        "Exact replay acceptance resolves uncertainty"
 
     use document = JsonDocument.Parse(ReadOnlyMemory(source: byte array))
 

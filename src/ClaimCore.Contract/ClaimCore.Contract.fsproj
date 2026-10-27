@@ -33,7 +33,6 @@
     <Compile Include="Catalog/Metadata.fs" />
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
-    <Compile Include="Api/Correlation.fs" />
     <Compile Include="HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />

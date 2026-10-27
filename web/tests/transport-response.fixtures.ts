@@ -82,7 +82,7 @@ const envelope = (endpoint: string, kind: string, original: unknown) => {
     outcome: { kind, data },
   };
 };
-/** Synthetic replies are correlated with the bytes handed to the mocked platform transport. */
+/** Synthetic server replies are built from the bytes handed to the mocked platform transport. */
 export const transportResponse = (
   endpoint: string,
   kind: string,

@@ -14,7 +14,3 @@ let endpointId name =
     Api.tryFind name
     |> Option.map _.Id
     |> Option.defaultWith (fun () -> failtestf "Unknown fixture endpoint: %s" name)
-
-let correlates endpoint input output =
-    ServiceReply.read endpoint output
-    |> Result.exists (ServiceReply.correlates input)

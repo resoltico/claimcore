@@ -77,27 +77,3 @@ module ServiceReply =
             decode value Api.session.Output ServiceReply.Session
         | EndpointId.Host HostEndpoint.Logout -> decode value Api.logout.Output ServiceReply.Logout
         | EndpointId.Actor endpoint -> actor endpoint value
-
-    let private check input (codec: Codec<'Request>) correlate reply =
-        codec.Read "$" input |> Result.exists (fun request -> correlate request reply)
-
-    /// Reply admission already established its shape; correlation keeps that decoded value.
-    let correlates input =
-        function
-        | ServiceReply.Preview(_, reply) ->
-            check input Api.operationPreview.Input Correlation.preview reply
-        | ServiceReply.Execute(_, reply) ->
-            check input Api.operationExecute.Input Correlation.execute reply
-        | ServiceReply.Resolve(_, reply) ->
-            check input Api.operationResolve.Input Correlation.resolve reply
-        | ServiceReply.Observe(_, reply) ->
-            check input Api.operationObserve.Input Correlation.observe reply
-        | ServiceReply.AuthorityGrants(_, reply) ->
-            check input Api.authorityGrants.Input Correlation.grants reply
-        | ServiceReply.Session _
-        | ServiceReply.Logout _
-        | ServiceReply.CaseGet _
-        | ServiceReply.CaseList _
-        | ServiceReply.CaseHistory _
-        | ServiceReply.AuthorityList _
-        | ServiceReply.Context _ -> true

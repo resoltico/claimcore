@@ -51,11 +51,7 @@ let result invocation body =
     StrictJson.read Limits.MaximumResponseBytes body
     |> Result.bind (fun reply ->
         ServiceReply.read (frameEndpoint invocation) reply
-        |> Result.bind (fun decoded ->
-            if ServiceReply.correlates (Frames.input invocation) decoded then
-                Ok(ServiceReply.json decoded)
-            else
-                Error { Path = "$"; Reason = "CORRELATION" }))
+        |> Result.map ServiceReply.json)
 
 let replyJson (encoded: byte array) =
     let encoded = encoded |> Array.takeWhile ((<>) (byte '\n'))
