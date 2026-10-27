@@ -4,10 +4,11 @@ import type { MessageKey } from "../src/presentation/types";
 // Handwritten accessible-label and guidance expectations, independent of the browser renderer.
 const samples: Record<keyof typeof catalogs, Readonly<Record<string, string>>> = {
   en: {
-    "input.issuer.label": "Identity issuer",
-    "input.issuer.meaning": "The exact HTTPS issuer of the target principal.",
-    "input.subject.label": "Subject or client ID",
-    "input.subject.meaning": "The immutable subject or client ID of the target principal.",
+    "field.principal.issuer.label": "Identity issuer",
+    "field.principal.issuer.meaning": "The exact HTTPS issuer of the target principal.",
+    "field.principal.subject.label": "Subject or client ID",
+    "field.principal.subject.meaning":
+      "The immutable subject or client ID of the target principal.",
     "diagnostic.PRINCIPAL_FORMAT":
       "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
     "diagnostic.TEXT_REQUIRED": "A non-blank value is required.",
@@ -24,10 +25,11 @@ const samples: Record<keyof typeof catalogs, Readonly<Record<string, string>>> =
       "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money.",
   },
   lv: {
-    "input.issuer.label": "Identitātes izdevējs",
-    "input.issuer.meaning": "Precīzs mērķa identitātes HTTPS izdevējs.",
-    "input.subject.label": "Subjekta vai klienta ID",
-    "input.subject.meaning": "Mērķa identitātes nemainīgais subjekta vai klienta identifikators.",
+    "field.principal.issuer.label": "Identitātes izdevējs",
+    "field.principal.issuer.meaning": "Precīzs mērķa identitātes HTTPS izdevējs.",
+    "field.principal.subject.label": "Subjekta vai klienta ID",
+    "field.principal.subject.meaning":
+      "Mērķa identitātes nemainīgais subjekta vai klienta identifikators.",
     "diagnostic.PRINCIPAL_FORMAT":
       "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
     "diagnostic.TEXT_REQUIRED": "Nepieciešama netukša vērtība.",
@@ -44,10 +46,10 @@ const samples: Record<keyof typeof catalogs, Readonly<Record<string, string>>> =
       "Saglabāt pašreizējo maksājuma datumu, aizstāt to vai dzēst reģistrēto datumu. Datuma dzēšana neatmaksā naudu.",
   },
   ar: {
-    "input.issuer.label": "مُصدر الهوية",
-    "input.issuer.meaning": "مُصدر HTTPS المطابق لهوية الجهة المستهدفة.",
-    "input.subject.label": "معرّف المستخدم أو العميل",
-    "input.subject.meaning": "معرّف الموضوع أو العميل الثابت لهوية الجهة المستهدفة.",
+    "field.principal.issuer.label": "مُصدر الهوية",
+    "field.principal.issuer.meaning": "مُصدر HTTPS المطابق لهوية الجهة المستهدفة.",
+    "field.principal.subject.label": "معرّف المستخدم أو العميل",
+    "field.principal.subject.meaning": "معرّف الموضوع أو العميل الثابت لهوية الجهة المستهدفة.",
     "diagnostic.PRINCIPAL_FORMAT":
       "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",

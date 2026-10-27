@@ -2460,6 +2460,21 @@
       }
     },
     {
+      "name": "principal-kind-admission-refusal",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "PRINCIPAL_FORMAT",
+            "action": "CORRECT_INPUT",
+            "target": "principal.kind"
+          }
+        }
+      }
+    },
+    {
       "name": "session-rejected",
       "endpoint": "session",
       "valid": true,

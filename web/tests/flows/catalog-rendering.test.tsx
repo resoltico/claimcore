@@ -267,10 +267,16 @@ const assertAuthoredCase = (request: CaseInput) => {
       break;
   }
 };
+const assertInputMetadata = () => {
+  expect(
+    productMetadata.catalog.inputFields.some(({ name }) => name === "target" || name === "act"),
+  ).toBe(false);
+};
 it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
   async (act) => {
     expect(acts).toHaveLength(12);
+    assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));
     render(

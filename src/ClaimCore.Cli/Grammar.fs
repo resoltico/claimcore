@@ -32,10 +32,10 @@ type PreparedVerb =
 
 module Grammar =
     let private flag name =
-        "--" + CommandGrammar.kebab (OperationCatalog.inputKey name)
+        "--" + CommandGrammar.kebab (CommandGrammar.inputName name)
 
     let private operand name =
-        CommandGrammar.kebab (OperationCatalog.inputKey name) |> _.ToUpperInvariant()
+        CommandGrammar.kebab (CommandGrammar.inputName name) |> _.ToUpperInvariant()
 
     let private distance (left: string) (right: string) =
         let costs = Array2D.zeroCreate<int> (left.Length + 1) (right.Length + 1)

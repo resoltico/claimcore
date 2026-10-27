@@ -30,6 +30,7 @@ type InputTarget =
     | ExpectedRevision
     | Group of RecordGroup
     | Reason
+    | PrincipalKind
     | PrincipalIssuer
     | PrincipalSubject
     | Role

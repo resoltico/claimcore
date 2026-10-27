@@ -13,6 +13,7 @@
     <Compile Include="Catalog/Annotations.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="FieldPresentation.fs" />
+    <Compile Include="Catalog/InteractionInput.fs" />
     <Compile Include="Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
     <Compile Include="Vocabulary/ProtocolFailures.fs" />

@@ -73,13 +73,13 @@ const rejectedPreview = () =>
 const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale: Locale) => {
   await user.type(
     screen.getByRole("textbox", {
-      name: locale.authority["input.issuer.label"],
+      name: locale.authority["field.principal.issuer.label"],
     }),
     "https://synthetic.example/",
   );
   await user.type(
     screen.getByRole("textbox", {
-      name: locale.authority["input.subject.label"],
+      name: locale.authority["field.principal.subject.label"],
     }),
     "synthetic-target",
   );

@@ -597,14 +597,12 @@ let private closedUnionCoverage (source: Seeds) =
                             FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
                         |> Set.ofSeq
 
-                    // RecordGroup is shared with corrections; diagnostic targets admit
-                    // only Payment. Registration cannot clear, and owner provisioning
-                    // has a dedicated host boundary. These cases are not wire alternatives.
+                    // Diagnostic groups admit only Payment. Owner provisioning has its own
+                    // host boundary; neither is a general request-codec alternative.
                     let cases =
                         FSharpType.GetUnionCases kind
                         |> Array.filter (fun case ->
                             (kind <> typeof<RecordGroup> || case.Name = "Payment")
-                            && (kind <> typeof<Change<RegistrationInput>> || case.Name <> "Clear")
                             && (kind <> typeof<AuthoredAuthorityAct>
                                 || case.Name <> "ProvisionOwner"))
 

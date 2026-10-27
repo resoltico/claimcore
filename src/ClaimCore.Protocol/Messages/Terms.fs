@@ -33,6 +33,32 @@ module Terms =
                     token, Vocabulary.messageKey vocabulary value "label")
         }
 
+    let private fieldTerms =
+        let fields = rendered BusinessField.vocabulary
+
+        let technical =
+            InteractionInput.technical
+            |> List.choose (function
+                | InteractionInput.Target target ->
+                    Some(
+                        InputTarget.token target,
+                        InteractionInput.messageKey (InteractionInput.Target target) "label"
+                    )
+                | _ -> None)
+
+        { fields with
+            Labels = fields.Labels @ technical
+        }
+
+    let private interactionTerms =
+        {
+            Name = InteractionInput.vocabularyName
+            Labels =
+                InteractionInput.extras
+                |> List.map (fun input ->
+                    InteractionInput.key input, InteractionInput.messageKey input "label")
+        }
+
     let all =
         [
             rendered CaseStatus.vocabulary
@@ -44,8 +70,8 @@ module Terms =
             rendered ActKind.vocabulary
             rendered HistoryDetail.vocabulary
             rendered ActSubject.vocabulary
-            rendered BusinessField.vocabulary
+            fieldTerms
             rendered RecordGroup.vocabulary
-            rendered TechnicalInput.vocabulary
+            interactionTerms
         ]
         |> validateRegistry

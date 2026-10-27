@@ -24,6 +24,11 @@ the vocabulary name. Scalar guidance comes from core messages and Domain-owned b
 metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
+Field and technical-target labels use `field.*`; group labels use `group.*`. Scope, actor-ID and
+history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`. Principal input
+identities are `principal.kind`, `principal.issuer` and `principal.subject`; their wire paths remain
+`target.kind`, `target.issuer` and `target.subject`. CLI grammar owns the flag spellings.
+
 ## HTTPS contract
 
 Session bootstrap uses GET; other endpoints use POST `/api/<endpoint>`, retaining literal dots in the name.

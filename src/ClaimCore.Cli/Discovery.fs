@@ -68,8 +68,9 @@ module Discovery =
 
                        let guidance =
                            match input.Name with
-                           | CatalogInputName.Field field -> ScalarGuidance.forField field
-                           | CatalogInputName.Technical TechnicalInput.Reason ->
+                           | InteractionInput.Target(InputTarget.Field field) ->
+                               ScalarGuidance.forField field
+                           | (InteractionInput.Target InputTarget.Reason) ->
                                Some ScalarGuidance.forReason
                            | _ -> None
 

@@ -67,14 +67,14 @@ let private dates () =
 let private principalAndPayment () =
     assertTarget
         InputTarget.PrincipalIssuer
-        "input.issuer.label"
+        "field.principal.issuer.label"
         Violation.PrincipalFormat
         "PRINCIPAL_FORMAT"
         []
 
     assertTarget
         InputTarget.PrincipalSubject
-        "input.subject.label"
+        "field.principal.subject.label"
         Violation.TextRequired
         "TEXT_REQUIRED"
         []
@@ -89,23 +89,23 @@ let private principalAndPayment () =
 let private remainingTargets () =
     assertTarget
         InputTarget.OperationId
-        "input.operationId.label"
+        "field.operationId.label"
         Violation.OperationIdRequired
         "OPERATION_ID_REQUIRED"
         []
 
     assertTarget
         InputTarget.ExpectedRevision
-        "input.expectedRevision.label"
+        "field.expectedRevision.label"
         Violation.ExpectedRevisionRange
         "EXPECTED_REVISION_RANGE"
         []
 
-    assertTarget InputTarget.Reason "input.reason.label" Violation.TextRequired "TEXT_REQUIRED" []
+    assertTarget InputTarget.Reason "field.reason.label" Violation.TextRequired "TEXT_REQUIRED" []
 
     assertTarget
         InputTarget.Limit
-        "input.limit.label"
+        "field.limit.label"
         (Violation.PageLimitRange 50)
         "PAGE_LIMIT_RANGE"
         [ "maximumPageSize", "50" ]
@@ -159,7 +159,7 @@ let tests =
             testCase "cursor uses a localized identity" (fun () ->
                 assertOptionalTarget
                     Refusal.InvalidCursor
-                    (Some "input.cursor.label")
+                    (Some "field.cursor.label")
                     "INVALID_CURSOR")
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget Refusal.ResourceUnavailable None "RESOURCE_UNAVAILABLE")

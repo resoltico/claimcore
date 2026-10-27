@@ -223,6 +223,7 @@ let private arguments project =
                 if
                     (argument.EndsWith(".fs", StringComparison.Ordinal)
                      || argument.EndsWith(".fsi", StringComparison.Ordinal))
+                    && not (argument.StartsWith("-", StringComparison.Ordinal))
                     && not (Path.IsPathRooted argument)
                 then
                     Path.Combine(Path.GetDirectoryName project |> nonNull, argument)

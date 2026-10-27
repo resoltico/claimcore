@@ -8,56 +8,16 @@ open ClaimCore.Json
 
 open System
 
-[<RequireQualifiedAccess>]
-type TechnicalInput =
-    | OperationId
-    | ExpectedRevision
-    | PrincipalKind
-    | Issuer
-    | Subject
-    | Role
-    | Scope
-    | Target
-    | Act
-    | ActorId
-    | Cursor
-    | Limit
-    | Full
-    | Reason
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module TechnicalInput =
-    let vocabulary =
-        Vocabulary.ofUnion<TechnicalInput> "input" TokenCasing.CamelCase None
-
-    let token = Vocabulary.token vocabulary
-
-[<RequireQualifiedAccess>]
-type CatalogInputName =
-    | Field of BusinessField
-    | Group of RecordGroup
-    | Technical of TechnicalInput
-
 /// Typed semantic identity accompanies its published binding; renderers choose their grammar.
 type OperationInputDefinition =
     {
-        Name: CatalogInputName
+        Name: InteractionInput
         Binding: CatalogInput
     }
 
 module OperationCatalog =
-    let inputKey =
-        function
-        | CatalogInputName.Field field -> BusinessField.key field
-        | CatalogInputName.Group group -> RecordGroup.token group
-        | CatalogInputName.Technical input -> TechnicalInput.token input
-
-    let inputMessage name part =
-        match name with
-        | CatalogInputName.Field field -> Vocabulary.messageKey BusinessField.vocabulary field part
-        | CatalogInputName.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group part
-        | CatalogInputName.Technical input ->
-            Vocabulary.messageKey TechnicalInput.vocabulary input part
+    let inputKey = InteractionInput.key
+    let inputMessage = InteractionInput.messageKey
 
     [<NoEquality; NoComparison>]
     type private Declaration =
@@ -99,30 +59,17 @@ module OperationCatalog =
 
     let private source (entry: CatalogOperation) name =
         match name with
-        | CatalogInputName.Technical TechnicalInput.OperationId when entry.SelectedAct.IsSome ->
+        | (InteractionInput.Target InputTarget.OperationId) when entry.SelectedAct.IsSome ->
             InputSource.OperationIdentity
-        | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> InputSource.ExpectedRevision
+        | (InteractionInput.Target InputTarget.ExpectedRevision) -> InputSource.ExpectedRevision
         | _ -> InputSource.Authored
 
     let private targetFor =
         function
-        | CatalogInputName.Field field -> Some(InputTarget.Field field)
-        | CatalogInputName.Technical TechnicalInput.Reason -> Some InputTarget.Reason
-        | CatalogInputName.Technical TechnicalInput.Role -> Some InputTarget.Role
+        | InteractionInput.Target(InputTarget.Field field) -> Some(InputTarget.Field field)
+        | (InteractionInput.Target InputTarget.Reason) -> Some InputTarget.Reason
+        | (InteractionInput.Target InputTarget.Role) -> Some InputTarget.Role
         | _ -> None
-
-    let private diagnostics =
-        function
-        | CatalogInputName.Field field -> [ BusinessField.key field ]
-        | CatalogInputName.Group group -> [ RecordGroup.token group ]
-        | CatalogInputName.Technical TechnicalInput.OperationId -> [ "operationId" ]
-        | CatalogInputName.Technical TechnicalInput.ExpectedRevision -> [ "expectedRevision" ]
-        | CatalogInputName.Technical TechnicalInput.Issuer -> [ "principal.issuer" ]
-        | CatalogInputName.Technical TechnicalInput.Subject -> [ "principal.subject" ]
-        | CatalogInputName.Technical TechnicalInput.Reason -> [ "reason" ]
-        | CatalogInputName.Technical TechnicalInput.Role -> [ "role" ]
-        | _ -> []
-
 
     let private actPath tail = "act" :: tail
 
@@ -151,20 +98,23 @@ module OperationCatalog =
                     Prefill = prefill
                     Required = required
                     Default = defaultValue
-                    DiagnosticTargets = diagnostics name
+                    DiagnosticTargets =
+                        match name with
+                        | InteractionInput.Target target -> [ InputTarget.token target ]
+                        | _ -> []
                     Source = source operation name
                 }
         }
 
     let private named (operation: CatalogOperation) technical path kind required =
-        input operation (CatalogInputName.Technical technical) path kind [] required None None
+        input operation technical path kind [] required None None
 
     let private caseOperand (operation: CatalogOperation) =
         let path = [ BusinessField.key BusinessField.CaseReference ]
 
         input
             operation
-            (CatalogInputName.Field BusinessField.CaseReference)
+            (InteractionInput.Target(InputTarget.Field BusinessField.CaseReference))
             path
             BindingKind.Text
             []
@@ -173,14 +123,19 @@ module OperationCatalog =
             (Some path)
 
     let private operationIdentity (operation: CatalogOperation) =
-        named operation TechnicalInput.OperationId [ "operationId" ] BindingKind.Text false
+        named
+            operation
+            (InteractionInput.Target InputTarget.OperationId)
+            [ "operationId" ]
+            BindingKind.Text
+            false
 
     let private values (operation: CatalogOperation) group prefix branches prefill =
         CaseFields.ofGroup group
         |> List.map (fun field ->
             input
                 operation
-                (CatalogInputName.Field field)
+                (InteractionInput.Target(InputTarget.Field field))
                 (prefix @ [ BusinessField.key field ])
                 BindingKind.Text
                 branches
@@ -207,7 +162,7 @@ module OperationCatalog =
             let selector =
                 input
                     operation
-                    (CatalogInputName.Group group)
+                    (InteractionInput.Target(InputTarget.Group group))
                     tag
                     (BindingKind.Group choices)
                     []
@@ -257,7 +212,7 @@ module OperationCatalog =
                 [
                     named
                         operation
-                        TechnicalInput.Reason
+                        (InteractionInput.Target InputTarget.Reason)
                         (actPath [ "reason" ])
                         BindingKind.Text
                         true
@@ -271,7 +226,7 @@ module OperationCatalog =
                 [
                     named
                         operation
-                        TechnicalInput.ExpectedRevision
+                        (InteractionInput.Target InputTarget.ExpectedRevision)
                         [ "expectedRevision" ]
                         BindingKind.Integer
                         true
@@ -309,12 +264,22 @@ module OperationCatalog =
             [
                 named
                     operation
-                    TechnicalInput.PrincipalKind
+                    (InteractionInput.Target InputTarget.PrincipalKind)
                     [ "target"; "kind" ]
                     (BindingKind.Choice PrincipalKind.all)
                     true
-                named operation TechnicalInput.Issuer [ "target"; "issuer" ] BindingKind.Text true
-                named operation TechnicalInput.Subject [ "target"; "subject" ] BindingKind.Text true
+                named
+                    operation
+                    (InteractionInput.Target InputTarget.PrincipalIssuer)
+                    [ "target"; "issuer" ]
+                    BindingKind.Text
+                    true
+                named
+                    operation
+                    (InteractionInput.Target InputTarget.PrincipalSubject)
+                    [ "target"; "subject" ]
+                    BindingKind.Text
+                    true
             ]
 
         let grant =
@@ -326,13 +291,13 @@ module OperationCatalog =
                 [
                     named
                         operation
-                        TechnicalInput.Role
+                        (InteractionInput.Target InputTarget.Role)
                         (actPath [ "role" ])
                         (BindingKind.Choice(Role.all |> List.map Role.token))
                         true
                     input
                         operation
-                        (CatalogInputName.Technical TechnicalInput.Scope)
+                        (InteractionInput.Scope)
                         scope
                         (BindingKind.Group(ScopeKind.all |> List.map ScopeKind.token))
                         []
@@ -341,7 +306,7 @@ module OperationCatalog =
                         None
                     input
                         operation
-                        (CatalogInputName.Field BusinessField.CaseReference)
+                        (InteractionInput.Target(InputTarget.Field BusinessField.CaseReference))
                         (actPath ("scope" :: [ BusinessField.key BusinessField.CaseReference ]))
                         BindingKind.Text
                         [ { Path = scope; Value = "CASE" } ]
@@ -368,21 +333,14 @@ module OperationCatalog =
 
     let private readInputs (operation: CatalogOperation) (declaration: ReadDeclaration) =
         let operand technical path =
-            input
-                operation
-                (CatalogInputName.Technical technical)
-                path
-                BindingKind.Text
-                []
-                true
-                None
-                None
+            input operation technical path BindingKind.Text [] true None None
 
         declaration.Inputs
         |> List.collect (function
             | ReadInput.CaseOperand -> [ caseOperand operation ]
-            | ReadInput.OperationOperand -> [ operand TechnicalInput.OperationId [ "operationId" ] ]
-            | ReadInput.ActorOperand -> [ operand TechnicalInput.ActorId [ "actorId" ] ]
+            | ReadInput.OperationOperand ->
+                [ operand (InteractionInput.Target InputTarget.OperationId) [ "operationId" ] ]
+            | ReadInput.ActorOperand -> [ operand InteractionInput.ActorId [ "actorId" ] ]
             | ReadInput.Detail ->
                 let off, on =
                     Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Summary,
@@ -391,7 +349,7 @@ module OperationCatalog =
                 let binding =
                     named
                         operation
-                        TechnicalInput.Full
+                        InteractionInput.Detail
                         [ "detail" ]
                         (BindingKind.Choice [ off; on ])
                         false
@@ -399,10 +357,15 @@ module OperationCatalog =
                 [ binding ]
             | ReadInput.Page ->
                 [
-                    named operation TechnicalInput.Cursor [ "cursor" ] BindingKind.Text false
+                    named
+                        operation
+                        (InteractionInput.Target InputTarget.Cursor)
+                        [ "cursor" ]
+                        BindingKind.Text
+                        false
                     input
                         operation
-                        (CatalogInputName.Technical TechnicalInput.Limit)
+                        ((InteractionInput.Target InputTarget.Limit))
                         [ "limit" ]
                         BindingKind.Integer
                         []

@@ -35,27 +35,31 @@ for (const language of ["en", "lv", "ar"] as const) {
     await issuer.fill("http://invalid.example/");
     await subject.fill(source.ownerSubject);
     await previewRefusal(page, issuer, "principal.issuer", "PRINCIPAL_FORMAT");
-    await expect(issuer).toHaveAccessibleName(inputMessage(language, "input.issuer.label"));
+    await expect(issuer).toHaveAccessibleName(
+      inputMessage(language, "field.principal.issuer.label"),
+    );
     await expect(issuer).toHaveAccessibleDescription(
-      `${inputMessage(language, "input.issuer.meaning")} ${inputMessage(language, "diagnostic.PRINCIPAL_FORMAT")}`,
+      `${inputMessage(language, "field.principal.issuer.meaning")} ${inputMessage(language, "diagnostic.PRINCIPAL_FORMAT")}`,
     );
     await issuer.fill(source.issuer);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
     await expect(issuer).toHaveAccessibleDescription(
-      inputMessage(language, "input.issuer.meaning"),
+      inputMessage(language, "field.principal.issuer.meaning"),
     );
     await issuer.press("Tab");
     await expect(subject).toBeFocused();
     await subject.fill("");
     await previewRefusal(page, subject, "principal.subject", "TEXT_REQUIRED");
-    await expect(subject).toHaveAccessibleName(inputMessage(language, "input.subject.label"));
+    await expect(subject).toHaveAccessibleName(
+      inputMessage(language, "field.principal.subject.label"),
+    );
     await expect(subject).toHaveAccessibleDescription(
-      `${inputMessage(language, "input.subject.meaning")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+      `${inputMessage(language, "field.principal.subject.meaning")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
     );
     await subject.fill(source.ownerSubject);
     await expect(subject).not.toHaveAttribute("aria-invalid");
     await expect(subject).toHaveAccessibleDescription(
-      inputMessage(language, "input.subject.meaning"),
+      inputMessage(language, "field.principal.subject.meaning"),
     );
   });
   test(`case-scoped grant and revoke references retain shared hints and refusal focus in ${language}`, async ({

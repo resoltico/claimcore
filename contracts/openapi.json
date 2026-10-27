@@ -4706,16 +4706,19 @@
             "const": "paymentDate"
           },
           {
+            "const": "payment"
+          },
+          {
             "const": "operationId"
           },
           {
             "const": "expectedRevision"
           },
           {
-            "const": "payment"
+            "const": "reason"
           },
           {
-            "const": "reason"
+            "const": "principal.kind"
           },
           {
             "const": "principal.issuer"

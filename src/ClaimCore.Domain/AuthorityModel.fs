@@ -54,7 +54,7 @@ module PrincipalKey =
             Ok(HumanPrincipal(issuerValue, subject))
         | true, true when kind = PrincipalKind.serviceToken ->
             Ok(ServicePrincipal(issuerValue, subject))
-        | _ -> Error(issue InputTarget.PrincipalSubject kind)
+        | _ -> Error(issue InputTarget.PrincipalKind kind)
 
     let human issuerValue subject =
         admit PrincipalKind.humanToken issuerValue subject
@@ -82,7 +82,7 @@ module PrincipalKey =
         match Vocabulary.tryParse PrincipalKind.vocabulary kind with
         | Some PrincipalKind.Human -> human issuerValue stableValue
         | Some PrincipalKind.Service -> service issuerValue stableValue
-        | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.PrincipalFormat))
+        | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalKind, Violation.PrincipalFormat))
 
     let isHuman =
         function

@@ -20,10 +20,8 @@ module ContractDiscovery =
 
     let entries () = OperationCatalog.entries
 
-    let inputLabel name =
-        Catalog.document.InputFields
-        |> List.find (fun input -> input.Name = name)
-        |> _.LabelId
+    let inputLabel (input: InteractionInput) =
+        InteractionInput.messageKey input "label"
 
     let helpTopic language topic =
         MessageCatalogs.help language topic

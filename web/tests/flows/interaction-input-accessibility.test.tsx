@@ -26,9 +26,9 @@ it.each(["en", "lv", "ar"] as const)(
     const props = { values, current: null, disabled: false, onChange: vi.fn() };
     const view = render(<CatalogInputs {...props} errorPath={null} errorNotice={null} />);
     for (const field of ["issuer", "subject"] as const) {
-      const name = catalogs[language][`input.${field}.label`];
+      const name = catalogs[language][`field.principal.${field}.label`];
       const input = screen.getByRole("textbox", { name });
-      const meaning = catalogs[language][`input.${field}.meaning`];
+      const meaning = catalogs[language][`field.principal.${field}.meaning`];
       expect(input).toHaveAccessibleDescription(meaning);
       view.rerender(<CatalogInputs {...props} errorPath={`target.${field}`} errorNotice={error} />);
       expect(input).toHaveAccessibleName(name);

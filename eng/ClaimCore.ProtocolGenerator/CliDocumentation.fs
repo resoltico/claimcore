@@ -7,7 +7,7 @@ open ClaimCore.Cli
 
 module CliDocumentation =
     let private argument (input: CatalogDerivedInput) =
-        let name = OperationCatalog.inputKey input.Name |> CommandGrammar.kebab
+        let name = CommandGrammar.inputName input.Name |> CommandGrammar.kebab
 
         match input.Argument with
         | CatalogArgument.Named -> "--" + name
@@ -36,8 +36,8 @@ module CliDocumentation =
         let scalarGuidance (input: CatalogDerivedInput) =
             let guidance =
                 match input.Name with
-                | CatalogInputName.Field field -> ScalarGuidance.forField field
-                | CatalogInputName.Technical TechnicalInput.Reason -> Some ScalarGuidance.forReason
+                | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
+                | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
                 | _ -> None
 
             guidance

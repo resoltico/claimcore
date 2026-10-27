@@ -97,6 +97,7 @@ module DurableNames =
         | InputTarget.OperationId -> "operationId"
         | InputTarget.ExpectedRevision -> "expectedRevision"
         | InputTarget.Reason -> "reason"
+        | InputTarget.PrincipalKind -> "principal.kind"
         | InputTarget.PrincipalIssuer -> "principal.issuer"
         | InputTarget.PrincipalSubject -> "principal.subject"
         | InputTarget.Role -> "role"

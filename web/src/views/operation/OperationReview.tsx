@@ -52,7 +52,7 @@ const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }
       {grants.map((grant) => (
         <li key={JSON.stringify(grant)}>
           <dl>
-            <dt>{p.text("input.role.label")}</dt>
+            <dt>{p.text("field.role.label")}</dt>
             <dd>
               <span>{p.term("role", grant.role)}</span>
             </dd>

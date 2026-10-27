@@ -64,7 +64,7 @@ let private producerMutations () =
             "act.OPEN.label"
             "act.OPEN.meaning"
             "act.OPEN.confirmation"
-            "input.principalKind.label"
+            "field.principal.kind.label"
             "group.registration.meaning"
         ] do
         Expect.throws

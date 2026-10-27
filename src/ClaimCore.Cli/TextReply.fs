@@ -121,7 +121,11 @@ module internal TextReply =
                 ([ outcome; act; target ]
                  @ revision
                  @ [
-                     label language (ContractDiscovery.inputLabel "operationId")
+                     label
+                         language
+                         (ContractDiscovery.inputLabel (
+                             InteractionInput.Target InputTarget.OperationId
+                         ))
                      id receipt.OperationId
                  ])
         ]
@@ -310,19 +314,8 @@ module internal TextReply =
             (reviewIdentity language request review)
         :: changes
 
-    let private diagnosticTargetIdentity =
-        function
-        | InputTarget.Field field -> FieldPresentation.labelId field
-        | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
-        | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
-        | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
-        | InputTarget.Reason ->
-            OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
-        | InputTarget.PrincipalIssuer -> ContractDiscovery.inputLabel "issuer"
-        | InputTarget.PrincipalSubject -> ContractDiscovery.inputLabel "subject"
-        | InputTarget.Limit -> "input.limit.label"
-        | InputTarget.Cursor -> "input.cursor.label"
-        | InputTarget.Role -> "input.role.label"
+    let private diagnosticTargetIdentity target =
+        ContractDiscovery.inputLabel (InteractionInput.Target target)
 
     let private refusalLines language refusal =
         let code, parameters = DiagnosticCodecs.describe refusal

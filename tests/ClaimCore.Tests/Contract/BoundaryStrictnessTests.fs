@@ -59,7 +59,7 @@ let private cliStrictness () =
             CommandGrammar.derive operation
             |> fst
             |> List.map (fun input ->
-                "--" + CommandGrammar.kebab (OperationCatalog.inputKey input.Name)))
+                "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)))
         |> fun flags ->
             Set.ofList (
                 flags

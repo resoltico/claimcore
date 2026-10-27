@@ -30,6 +30,7 @@
     <Compile Include="Contract/WireResponseTests.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
+    <Compile Include="Domain/InputIdentityTests.fs" />
     <Compile Include="Domain/ActSlotProperties.fs" />
     <Compile Include="Domain/ScalarPropertyTests.fs" />
     <Compile Include="Domain/TransitionOracle.fs" />

@@ -567,13 +567,42 @@ let private authorityFieldPresentation () =
 
     Expect.equal
         (Set.ofList names)
-        (Vocabulary.tokens TechnicalInput.vocabulary |> Set.ofList)
+        (Set.ofList
+            [
+                "operationId"
+                "expectedRevision"
+                "principal.kind"
+                "principal.issuer"
+                "principal.subject"
+                "reason"
+                "role"
+                "cursor"
+                "limit"
+                "scope"
+                "actorId"
+                "detail"
+            ])
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do
         let name = field.GetProperty("name").GetString() |> nonNull
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
-        Expect.equal labelId ("input." + name + ".label") "Stable message identifier"
+
+        let identity =
+            InteractionInput.technical
+            |> List.find (fun input -> InteractionInput.key input = name)
+
+        let prefix =
+            match identity with
+            | InteractionInput.Target _ -> "field."
+            | InteractionInput.Scope
+            | InteractionInput.ActorId
+            | InteractionInput.Detail -> "input."
+
+        Expect.equal
+            labelId
+            (prefix + name + ".label")
+            "The input owner determines its message namespace"
 
         Expect.isFalse
             (field.TryGetProperty "label" |> fst)
