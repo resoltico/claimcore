@@ -40,7 +40,6 @@
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSql" />

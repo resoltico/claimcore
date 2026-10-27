@@ -109,7 +109,6 @@
     <PackageReference Include="TngTech.ArchUnitNET" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
-    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Hedgehog" />
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="JsonSchema.Net" />

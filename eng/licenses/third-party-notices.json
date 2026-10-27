@@ -5,32 +5,32 @@
     {
       "file": "Microsoft-MIT.txt",
       "sha256": "480d420fd388a3ce0cecb73d79aee3f02f70fee060e95f4727b1335feff33201",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/e34a38d2ae1fc26406a317517196e55c68ff83ab/src/fsharp/License.txt"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/5a2162bea6845eabc1fc721624a43568c65db3b1/src/fsharp/License.txt"
     },
     {
       "file": "IdentityModel-MIT.txt",
       "sha256": "cba03f5387b05405e56b688376421acae396136af4b5116738dc6e5160f87ddd",
-      "source": "https://raw.githubusercontent.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/ee19952f21d5c170a778bdca901b67076a1cd8f8/LICENSE.txt"
+      "source": "https://raw.githubusercontent.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/8b16f418b3d587416d293e9ba34c5d310781cdb3/LICENSE.txt"
     },
     {
       "file": "DotNet-Foundation-MIT.txt",
       "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/95017c711e6afc1085133d440e42b4bd78155701/src/runtime/LICENSE.TXT"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/runtime/LICENSE.TXT"
     },
     {
       "file": "AspNetCore-NOTICES.txt",
       "sha256": "52af3d603b6d069e635f8afd08ec44ec01559255b5f3afd161ae9e6fe7e7aa54",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/95017c711e6afc1085133d440e42b4bd78155701/src/aspnetcore/THIRD-PARTY-NOTICES.txt"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/aspnetcore/THIRD-PARTY-NOTICES.txt"
     },
     {
       "file": "Runtime-NOTICES.txt",
       "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/44525024595742ebe09023abe709df51de65009b/src/runtime/THIRD-PARTY-NOTICES.TXT"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/runtime/THIRD-PARTY-NOTICES.TXT"
     },
     {
       "file": "SDK-Host-NOTICES.txt",
       "sha256": "2dc8f8c5a39401e928b5784ab564eb8b3ceb99ead3df8f260e0cab7e0bbecc7a",
-      "source": "https://dotnet.microsoft.com/download/dotnet/10.0 (SDK 10.0.402 distribution root ThirdPartyNotices.txt; exact installed distribution bytes retained separately)"
+      "source": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-osx-arm64.tar.gz (SHA-512-verified SDK distribution root ThirdPartyNotices.txt)"
     },
     {
       "file": "PostgreSQL-NPGSQL.txt",
@@ -72,7 +72,7 @@
     },
     {
       "id": "FSharp.Core",
-      "version": "10.1.402",
+      "version": "10.1.403",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt"
@@ -93,12 +93,12 @@
         "resources:zh-Hant/FSharp.Core.resources.dll",
         "runtime:FSharp.Core.dll"
       ],
-      "packageRevision": "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e",
-      "licenseRevision": "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e"
+      "packageRevision": "5a2162bea6845eabc1fc721624a43568c65db3b1",
+      "licenseRevision": "5a2162bea6845eabc1fc721624a43568c65db3b1"
     },
     {
       "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
-      "version": "10.0.13",
+      "version": "10.0.14",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -108,12 +108,12 @@
       "assets": [
         "runtime:Microsoft.AspNetCore.Authentication.JwtBearer.dll"
       ],
-      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
-      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
+      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
     },
     {
       "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
-      "version": "10.0.13",
+      "version": "10.0.14",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -123,12 +123,12 @@
       "assets": [
         "runtime:Microsoft.AspNetCore.Authentication.OpenIdConnect.dll"
       ],
-      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
-      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
+      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
     },
     {
       "id": "Microsoft.Bcl.Cryptography",
-      "version": "10.0.2",
+      "version": "10.0.14",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -138,12 +138,12 @@
       "assets": [
         "runtime:Microsoft.Bcl.Cryptography.dll"
       ],
-      "packageRevision": "44525024595742ebe09023abe709df51de65009b",
-      "licenseRevision": "44525024595742ebe09023abe709df51de65009b"
+      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
+      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
     },
     {
       "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
-      "version": "10.0.0",
+      "version": "10.0.14",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -153,27 +153,12 @@
       "assets": [
         "runtime:Microsoft.Extensions.DependencyInjection.Abstractions.dll"
       ],
-      "packageRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa",
-      "licenseRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa"
-    },
-    {
-      "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
-      "version": "10.0.13",
-      "repository": "https://github.com/dotnet/dotnet",
-      "texts": [
-        "Microsoft-MIT.txt",
-        "DotNet-Foundation-MIT.txt",
-        "Runtime-NOTICES.txt"
-      ],
-      "assets": [
-        "runtime:Microsoft.Extensions.DependencyInjection.Abstractions.dll"
-      ],
-      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
-      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
+      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
     },
     {
       "id": "Microsoft.Extensions.Logging.Abstractions",
-      "version": "10.0.0",
+      "version": "10.0.14",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -183,27 +168,12 @@
       "assets": [
         "runtime:Microsoft.Extensions.Logging.Abstractions.dll"
       ],
-      "packageRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa",
-      "licenseRevision": "b0f34d51fccc69fd334253924abd8d6853fad7aa"
-    },
-    {
-      "id": "Microsoft.Extensions.Logging.Abstractions",
-      "version": "10.0.13",
-      "repository": "https://github.com/dotnet/dotnet",
-      "texts": [
-        "Microsoft-MIT.txt",
-        "DotNet-Foundation-MIT.txt",
-        "Runtime-NOTICES.txt"
-      ],
-      "assets": [
-        "runtime:Microsoft.Extensions.Logging.Abstractions.dll"
-      ],
-      "packageRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
-      "licenseRevision": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699"
+      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
+      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
     },
     {
       "id": "Microsoft.IdentityModel.Abstractions",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -211,12 +181,12 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.Abstractions.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Microsoft.IdentityModel.JsonWebTokens",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -224,12 +194,12 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.JsonWebTokens.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Microsoft.IdentityModel.Logging",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -237,12 +207,12 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.Logging.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -250,12 +220,12 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.Protocols.OpenIdConnect.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Microsoft.IdentityModel.Protocols",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -263,12 +233,12 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.Protocols.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Microsoft.IdentityModel.Tokens",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -276,8 +246,8 @@
       "assets": [
         "runtime:Microsoft.IdentityModel.Tokens.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     },
     {
       "id": "Npgsql",
@@ -294,7 +264,7 @@
     },
     {
       "id": "System.IdentityModel.Tokens.Jwt",
-      "version": "8.19.2",
+      "version": "8.23.0",
       "repository": "https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet",
       "texts": [
         "IdentityModel-MIT.txt"
@@ -302,8 +272,8 @@
       "assets": [
         "runtime:System.IdentityModel.Tokens.Jwt.dll"
       ],
-      "packageRevision": "25d90ed3f48854036d444541a049089ccd198707",
-      "licenseRevision": "ee19952f21d5c170a778bdca901b67076a1cd8f8"
+      "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
+      "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
     }
   ],
   "host": {

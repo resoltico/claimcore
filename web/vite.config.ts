@@ -44,11 +44,5 @@ export default {
     allowOnly: false,
     retry: 0,
     reporters: ["default", new RequiredTestReporter()],
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json-summary"],
-      reportsDirectory: "../artifacts/frontend/coverage",
-      include: ["src/**/*.{ts,tsx}"],
-    },
   },
 } satisfies UserConfig & { test: InlineConfig };

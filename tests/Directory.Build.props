@@ -1,7 +1,7 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
   <!-- Every Expecto test project on the Microsoft Testing Platform shares these settings; a project
-       names only its own sources, references and optional coverage package. -->
+       names only its own sources and references. -->
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
     <OutputType>Exe</OutputType>
     <IsTestProject>true</IsTestProject>
