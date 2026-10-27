@@ -28,8 +28,7 @@ let private fields length : CaseFields =
                     InsurerName = String(char 1, length)
                     ClaimedAmount = "999999999999999999.9999"
                 }
-        Decision = None
-        Payment = None
+        Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
     }
 
 let private snapshot length : CaseSnapshot =
@@ -45,7 +44,11 @@ let private receipt disclosure : OperationReceipt =
         Position =
             {
                 Sequence = maximum
-                EntryHash = String('a', 64)
+                EntryHash =
+                    (String('a', 64)
+                     |> System.Convert.FromHexString
+                     |> EntryHash.ofBytes
+                     |> Option.get)
             }
         RecordedAt = instant
         RecordedBy = id
@@ -112,14 +115,14 @@ let private authorityFixture () =
         PrincipalKey.human (prefix + String('+', 2048 - prefix.Length)) (String(char 1, 512))
         |> Result.defaultWith (string >> failwith)
 
-    let actor: ActorSummary =
+    let actor: Actor =
         {
             ActorId = id
             Principal = principal
             Enabled = false
         }
 
-    let grant: AuthorityGrant =
+    let grant: AuthoredGrant =
         {
             Role = Role.PaymentRecorder
             Scope = GrantTarget.CaseReference reference

@@ -46,8 +46,7 @@ let snapshot =
                         InsurerName = "x"
                         ClaimedAmount = "0"
                     }
-            Decision = None
-            Payment = None
+            Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
         }
 
     {
@@ -62,7 +61,11 @@ let receipt =
         Position =
             {
                 Sequence = 1L
-                EntryHash = String.replicate 64 "0"
+                EntryHash =
+                    (String.replicate 64 "0"
+                     |> System.Convert.FromHexString
+                     |> EntryHash.ofBytes
+                     |> Option.get)
             }
         Subject =
             ReceiptSubject.Case

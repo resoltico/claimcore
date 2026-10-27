@@ -26,9 +26,12 @@ module ProjectionVerification =
 
             let actor: ActorAuthority =
                 {
-                    ActorId = id
-                    Principal = principal
-                    Enabled = row.Enabled
+                    Actor =
+                        {
+                            ActorId = id
+                            Principal = principal
+                            Enabled = row.Enabled
+                        }
                     Grants = []
                 }
 
@@ -41,9 +44,7 @@ module ProjectionVerification =
                 Map.tryFind id actors |> known None VerificationFinding.AuthorityProjection
 
             let scope =
-                caseId
-                |> Option.map GrantScope.Case
-                |> Option.defaultValue GrantScope.Installation
+                caseId |> Option.map Scope.Case |> Option.defaultValue Scope.Installation
 
             let grant: ActorGrant = { Role = role; Scope = scope }
 
@@ -51,7 +52,7 @@ module ProjectionVerification =
                 require
                     None
                     VerificationFinding.AuthorityProjection
-                    (not (List.contains grant actor.Grants) && scope <> GrantScope.Case Guid.Empty)
+                    (not (List.contains grant actor.Grants) && scope <> Scope.Case Guid.Empty)
 
             return
                 Map.add

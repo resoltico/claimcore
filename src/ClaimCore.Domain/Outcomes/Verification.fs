@@ -3,20 +3,6 @@ namespace ClaimCore.Domain
 
 open System
 
-/// A position independently retained by an operator or returned in an accepted receipt.
-type ExpectedPosition =
-    {
-        Sequence: int64
-        EntryHash: byte array
-    }
-
-module ExpectedPositions =
-    let isValid (position: ExpectedPosition) =
-        position.Sequence >= 0L
-        && position.Sequence <= SafeInteger.Maximum
-        && not (obj.ReferenceEquals(position.EntryHash, null))
-        && position.EntryHash.Length = 32
-
 [<RequireQualifiedAccess>]
 type VerificationFinding =
     | Link

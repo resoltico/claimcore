@@ -62,7 +62,10 @@ module internal CaseCorrections =
             let! nextDecision = decisionChoice progress correction.Decision
             let! nextPayment = paymentChoice progress correction.Payment
             do! paidAcknowledgement progress correction
-            let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
+
+            let! nextProgress =
+                PaymentProgress.fromGroups nextDecision nextPayment
+                |> Result.mapError (fun () -> Refusal.DecisionRequired)
 
             if nextFacts = facts && nextProgress = progress then
                 return! Error Refusal.CorrectionNoChanges

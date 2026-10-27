@@ -21,9 +21,12 @@ let private otherCaseId = Guid.Parse "c0000000-0000-4000-8000-000000000002"
 
 let private actor principal grants : ActorAuthority =
     {
-        ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-        Principal = principal
-        Enabled = true
+        Actor =
+            {
+                ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
+                Principal = principal
+                Enabled = true
+            }
         Grants = grants
     }
 
@@ -82,9 +85,9 @@ let private expectedPermission role capabilities principal grant resource capabi
 
     let scope =
         match grant, resource with
-        | GrantScope.Installation, ResourceScope.Installation -> true
-        | GrantScope.Installation, ResourceScope.Case id -> id <> Guid.Empty && not installationOnly
-        | GrantScope.Case granted, ResourceScope.Case requested ->
+        | Scope.Installation, Scope.Installation -> true
+        | Scope.Installation, Scope.Case id -> id <> Guid.Empty && not installationOnly
+        | Scope.Case granted, Scope.Case requested ->
             granted = requested && requested <> Guid.Empty && not installationOnly
         | _ -> false
 
@@ -108,15 +111,15 @@ let private matrix () =
         Expect.equal (Role.parse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
-            for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
+            for scope in [ Scope.Installation; Scope.Case caseId ] do
                 let current = actor principal [ { Role = role; Scope = scope } ]
 
                 for resource in
                     [
-                        ResourceScope.Installation
-                        ResourceScope.Case caseId
-                        ResourceScope.Case otherCaseId
-                        ResourceScope.Case Guid.Empty
+                        Scope.Installation
+                        Scope.Case caseId
+                        Scope.Case otherCaseId
+                        Scope.Case Guid.Empty
                     ] do
                     for capability in allCapabilities do
                         let expected =
@@ -147,27 +150,39 @@ let private invalidActors () =
             [
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantScope.Installation
+                    Scope = Scope.Installation
                 }
             ]
 
     for invalid in
         [
-            { current with ActorId = Guid.Empty }
+            { current with
+                Actor =
+                    { current.Actor with
+                        ActorId = Guid.Empty
+                    }
+            }
             { current with Grants = [] }
-            { current with Enabled = false }
-            { current with Principal = service }
+            { current with
+                Actor = { current.Actor with Enabled = false }
+            }
+            { current with
+                Actor =
+                    { current.Actor with
+                        Principal = service
+                    }
+            }
         ] do
         Expect.isFalse
             (Authority.can
                 human
                 (AuthorityView.ofActor (Some invalid))
                 Capability.ReadCase
-                (ResourceScope.Case caseId))
+                (Scope.Case caseId))
             "Invalid actor grants no rights"
 
     Expect.isFalse
-        (Authority.can human AuthorityView.empty Capability.ReadCase (ResourceScope.Case caseId))
+        (Authority.can human AuthorityView.empty Capability.ReadCase (Scope.Case caseId))
         "Absent actor grants no rights"
 
     let scoped =
@@ -176,7 +191,7 @@ let private invalidActors () =
             [
                 {
                     Role = Role.Auditor
-                    Scope = GrantScope.Case caseId
+                    Scope = Scope.Case caseId
                 }
             ]
 
@@ -185,7 +200,7 @@ let private invalidActors () =
             human
             (AuthorityView.ofActor (Some scoped))
             Capability.ReadAuthority
-            ResourceScope.Installation)
+            Scope.Installation)
         "Case-scoped audit does not enumerate the installation"
 
     invalidPrincipals ()
@@ -281,7 +296,7 @@ let private reaffirmations () =
             [
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantScope.Installation
+                    Scope = Scope.Installation
                 }
             ]
 
@@ -297,7 +312,7 @@ let private reaffirmations () =
         (Authority.canAct
             human
             (AuthorityView.ofActor (Some handler))
-            (ResourceScope.Case caseId)
+            (Scope.Case caseId)
             (CaseFixtures.act paymentReaffirmation))
         "An unchanged payment assertion still requires payment authority"
 
@@ -339,7 +354,7 @@ let private scopedAdvice () =
                 [
                     {
                         Role = role
-                        Scope = GrantScope.Case target
+                        Scope = Scope.Case target
                     }
                 ]
 
@@ -416,7 +431,7 @@ let private noUsableCorrectionOffer () =
             [
                 {
                     Role = Role.PaymentRecorder
-                    Scope = GrantScope.Case target
+                    Scope = Scope.Case target
                 }
             ]
 

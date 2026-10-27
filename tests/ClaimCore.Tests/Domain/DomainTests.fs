@@ -306,7 +306,10 @@ let private correctionTests =
 
                 let expected =
                     { (Case.snapshot before |> viewFields) with
-                        Payment = None
+                        Progress =
+                            PaymentProgress.Decided(
+                                Option.get (Case.snapshot before |> viewFields).Decision
+                            )
                     }
 
                 Expect.isTrue ((viewFields after) = expected) "Only requested payment date cleared"

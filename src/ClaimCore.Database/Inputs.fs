@@ -16,7 +16,7 @@ open ClaimCore.HostSecurity
 type Command =
     | Initialize of string
     | ProvisionOwner
-    | Verify of ExpectedPosition option
+    | Verify of LedgerPosition option
     | Head
     | Help
     | Version
@@ -108,16 +108,9 @@ module Inputs =
             && parts[1]
                |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
         then
-            let position: ExpectedPosition =
-                {
-                    Sequence = sequence
-                    EntryHash = Convert.FromHexString(parts[1])
-                }
-
-            if ExpectedPositions.isValid position then
-                Some position
-            else
-                None
+            Convert.FromHexString(parts[1])
+            |> EntryHash.ofBytes
+            |> Option.bind (LedgerPosition.create sequence)
         else
             None
 

@@ -41,25 +41,24 @@ module internal AuthorityExecution =
             view.Target.Actor
             |> Option.map (fun actor ->
                 {
-                    ActorId = actor.ActorId
-                    Principal = actor.Principal
-                    Enabled = actor.Enabled
+                    Actor =
+                        {
+                            ActorId = actor.ActorId
+                            Principal = actor.Principal
+                            Enabled = actor.Enabled
+                        }
                     Grants =
                         (view.Target.Installation
                          |> List.map (fun role ->
                              {
                                  Role = role
-                                 Scope = GrantScope.Installation
+                                 Scope = Scope.Installation
                              }))
                         @ (view.Target.Cases
                            |> Map.toList
                            |> List.collect (fun (id, roles) ->
                                roles
-                               |> List.map (fun role ->
-                                   {
-                                       Role = role
-                                       Scope = GrantScope.Case id
-                                   })))
+                               |> List.map (fun role -> { Role = role; Scope = Scope.Case id })))
                 })
 
         {
@@ -73,8 +72,8 @@ module internal AuthorityExecution =
     let private projection (command: AuthorityCommand) (view: AuthorityExecutionFacts) change =
         let scope =
             function
-            | GrantScope.Installation -> None
-            | GrantScope.Case id -> Some id
+            | Scope.Installation -> None
+            | Scope.Case id -> Some id
 
         match change, view.Target.Actor with
         | AuthorityChange.Registered, _ ->
@@ -106,13 +105,7 @@ module internal AuthorityExecution =
         let principal = services.Principal
 
         if
-            not (
-                Authority.can
-                    principal
-                    view.Actor
-                    Capability.ManageAuthority
-                    ResourceScope.Installation
-            )
+            not (Authority.can principal view.Actor Capability.ManageAuthority Scope.Installation)
         then
             Verdict.Refuse Refusal.ResourceUnavailable
         else
@@ -140,7 +133,7 @@ module internal AuthorityExecution =
         (services: ServiceContext)
         operationId
         bytes
-        (head: LedgerHead)
+        (head: LedgerPosition)
         (view: AuthorityExecutionFacts)
         =
         let installationId = services.InstallationId

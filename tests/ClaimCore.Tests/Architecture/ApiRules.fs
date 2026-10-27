@@ -227,7 +227,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                 "RuntimeOpenFault"
                 "StoreFailure"
                 "Verdict"
-                "LedgerHead"
+                "LedgerPosition"
                 "StoredCase"
                 "EntryTarget"
                 "StoredEntry"

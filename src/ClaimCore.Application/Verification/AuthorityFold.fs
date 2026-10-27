@@ -12,7 +12,7 @@ module internal AuthorityFold =
     let private ownerGrant: ActorGrant =
         {
             Role = Role.Owner
-            Scope = GrantScope.Installation
+            Scope = Scope.Installation
         }
 
     let private owner (actor: ActorAuthority) =
@@ -96,9 +96,12 @@ module internal AuthorityFold =
 
             let actor =
                 {
-                    ActorId = id
-                    Principal = principal
-                    Enabled = true
+                    Actor =
+                        {
+                            ActorId = id
+                            Principal = principal
+                            Enabled = true
+                        }
                     Grants = if provision then [ ownerGrant ] else []
                 }
 
@@ -123,12 +126,12 @@ module internal AuthorityFold =
 
             let! scope =
                 match scope with
-                | GrantTarget.Installation -> Ok GrantScope.Installation
+                | GrantTarget.Installation -> Ok Scope.Installation
                 | GrantTarget.CaseReference reference ->
                     let id = CaseReferenceId.encode installationId reference
 
                     require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
-                    |> Result.map (fun () -> GrantScope.Case id)
+                    |> Result.map (fun () -> Scope.Case id)
 
             let grant: ActorGrant = { Role = role; Scope = scope }
             let grants = actor.Grants |> List.filter ((<>) grant)
@@ -153,10 +156,22 @@ module internal AuthorityFold =
         | AuthorityAct.Register -> register actors entry id principal false
         | AuthorityAct.Enable ->
             target actors entry id principal
-            |> Result.map (fun actor -> Map.add id { actor with Enabled = true } actors)
+            |> Result.map (fun actor ->
+                Map.add
+                    id
+                    { actor with
+                        Actor = { actor.Actor with Enabled = true }
+                    }
+                    actors)
         | AuthorityAct.Disable ->
             target actors entry id principal
-            |> Result.map (fun actor -> Map.add id { actor with Enabled = false } actors)
+            |> Result.map (fun actor ->
+                Map.add
+                    id
+                    { actor with
+                        Actor = { actor.Actor with Enabled = false }
+                    }
+                    actors)
         | AuthorityAct.Grant value
         | AuthorityAct.Revoke value ->
             let active =

@@ -298,8 +298,8 @@ let tests =
 
                         let expected =
                             {
-                                ExpectedPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = Convert.FromHexString receipt.Position.EntryHash
+                                LedgerPosition.Sequence = receipt.Position.Sequence
+                                EntryHash = receipt.Position.EntryHash
                             }
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
@@ -309,7 +309,7 @@ let tests =
                                 database.OwnerSource
                                 (Some
                                     { expected with
-                                        EntryHash = Array.zeroCreate 32
+                                        EntryHash = EntryHash.zero
                                     })
                                 token
 
@@ -395,8 +395,8 @@ let tests =
 
                         let expected =
                             {
-                                ExpectedPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = Convert.FromHexString receipt.Position.EntryHash
+                                LedgerPosition.Sequence = receipt.Position.Sequence
+                                EntryHash = receipt.Position.EntryHash
                             }
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
@@ -512,8 +512,8 @@ let tests =
 
                         let expected =
                             {
-                                ExpectedPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = Convert.FromHexString receipt.Position.EntryHash
+                                LedgerPosition.Sequence = receipt.Position.Sequence
+                                EntryHash = receipt.Position.EntryHash
                             }
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token

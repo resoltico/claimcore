@@ -120,7 +120,7 @@ let private genesis fixture =
                                 Expect.equal tx.Head.Sequence 0L "Genesis head"
 
                                 Expect.isTrue
-                                    (tx.Head.EntryHash = Array.zeroCreate 32)
+                                    (tx.Head.EntryHash = EntryHash.zero)
                                     "Zero previous hash"
 
                                 Expect.isNone view.Actor.Actor "No actor before provisioning"
@@ -240,7 +240,7 @@ let private lockedView fixture =
                                     "Current head"
 
                                 Expect.equal
-                                    (Convert.ToHexStringLower tx.Head.EntryHash)
+                                    tx.Head.EntryHash
                                     first.Position.EntryHash
                                     "Previous accepted link"
 
@@ -893,7 +893,7 @@ let private authorityReviewRefusals fixture =
                 12,
                 AuthorityAct.Revoke
                     {
-                        AuthorityGrant.Role = Role.Owner
+                        AuthoredGrant.Role = Role.Owner
                         Scope = GrantTarget.Installation
                     },
                 Refusal.LastOwner
@@ -941,7 +941,7 @@ let private authorityReadIsNotManage fixture =
         let! preview, view = authorityReview fixture auditor input
 
         Expect.isTrue
-            (Authority.can auditor view.Actor Capability.ReadAuthority ResourceScope.Installation)
+            (Authority.can auditor view.Actor Capability.ReadAuthority Scope.Installation)
             "The rejecting control really has authority read."
 
         Expect.equal
@@ -1061,7 +1061,7 @@ let private grantReviewTarget fixture =
                 target
                 (AuthorityAct.Revoke
                     {
-                        AuthorityGrant.Role = Role.CaseReader
+                        AuthoredGrant.Role = Role.CaseReader
                         Scope = GrantTarget.CaseReference "review-case"
                     })
 

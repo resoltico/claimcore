@@ -114,7 +114,7 @@ module internal Queries =
                     Capability =
                         Capability.all
                         |> List.filter (fun capability ->
-                            Authority.can principal actor capability ResourceScope.Installation)
+                            Authority.can principal actor capability Scope.Installation)
                 }
 
     let context (services: ServiceContext) token =
@@ -382,9 +382,7 @@ module internal Queries =
         }
 
     let selectActors principal (request: PageRequest) actor =
-        if
-            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
-        then
+        if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
             Error Refusal.ResourceUnavailable
         else
             currentActor principal actor
@@ -430,9 +428,8 @@ module internal Queries =
                                                 return
                                                     ReadReply.Succeeded
                                                         {
-                                                            ActorReviewPage.Items =
-                                                                page.Items
-                                                                |> List.map Actor.describe
+                                                            ActorReviewPage.Items = page.Items
+
                                                             NextCursor =
                                                                 page.Next
                                                                 |> Option.map Cursors.encodeActors
@@ -451,9 +448,7 @@ module internal Queries =
         (actor: AuthorityView)
         (target: Actor option)
         =
-        if
-            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
-        then
+        if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
             Error Refusal.ResourceUnavailable
         else
             match currentActor principal actor, target with
@@ -513,8 +508,7 @@ module internal Queries =
                                                     return
                                                         ReadReply.Succeeded
                                                             {
-                                                                AuthorityGrantPage.Actor =
-                                                                    Actor.describe target
+                                                                AuthorityGrantPage.Actor = target
                                                                 Items = page.Items
                                                                 NextCursor =
                                                                     page.Next

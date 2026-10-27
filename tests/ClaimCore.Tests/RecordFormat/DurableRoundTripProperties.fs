@@ -142,7 +142,7 @@ let private authorityActs reference =
             for scope, _ in scopes reference do
                 let grant =
                     {
-                        GrantChange.Role = role
+                        AuthoredGrant.Role = role
                         Scope = scope
                     }
 
@@ -238,8 +238,8 @@ let private snapshotProperty =
                                 CaseReference = reference
                                 Status = status
                                 Registration = Inputs.admittedRegistration registration
-                                Decision = decision
-                                Payment = payment
+                                Progress =
+                                    ClaimCore.TestSupport.CaseFixtures.progress (decision) (payment)
                             }
 
                         for state, lifecycle in

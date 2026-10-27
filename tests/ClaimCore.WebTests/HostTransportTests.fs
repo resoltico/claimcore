@@ -350,7 +350,7 @@ let private completionFailure () =
         task {
             let invalid =
                 { receipt operationId "WEB-001" with
-                    Position = { position with EntryHash = "invalid" }
+                    RecordedBy = Guid.Empty
                 }
 
             host.HandlerStub.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)

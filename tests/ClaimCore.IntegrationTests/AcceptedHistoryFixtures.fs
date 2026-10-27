@@ -33,8 +33,7 @@ let private snapshot (reference: string) claimant : CaseSnapshot =
                                 InsurerName = registration.InsurerName
                                 ClaimedAmount = "1000"
                             }
-                    Decision = None
-                    Payment = None
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
     }

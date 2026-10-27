@@ -410,6 +410,19 @@ let private domainValue (kind: Type) =
         Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
     elif kind = typeof<PartyName> then
         Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<EntryHash> then
+        Some(
+            gen {
+                let! first = guid
+                let! second = guid
+
+                return
+                    Array.append (first.ToByteArray()) (second.ToByteArray())
+                    |> EntryHash.ofBytes
+                    |> Option.get
+                    |> box
+            }
+        )
     elif kind = typeof<PrincipalKey> then
         Some(
             gen {
@@ -621,7 +634,10 @@ let private closedUnionCoverage (source: Seeds) =
                     let cases =
                         FSharpType.GetUnionCases kind
                         |> Array.filter (fun case ->
-                            (kind <> typeof<RecordGroup> || case.Name = "Payment")
+                            // PaymentProgress is encoded as nullable members, not wire tags; its three
+                            // representations have an independent boundary test.
+                            kind <> typeof<PaymentProgress>
+                            && (kind <> typeof<RecordGroup> || case.Name = "Payment")
                             && (kind <> typeof<AuthoredAuthorityAct>
                                 || case.Name <> "ProvisionOwner"))
 

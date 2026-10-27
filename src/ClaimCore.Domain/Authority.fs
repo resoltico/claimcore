@@ -3,8 +3,7 @@ namespace ClaimCore.Domain
 open System
 open ClaimCore.Domain.ResultFlow
 
-type AuthorityGrant = { Role: Role; Scope: GrantTarget }
-type ValidAuthorityAct = AuthorityAct<AuthorityGrant>
+type ValidAuthorityAct = AuthorityAct<AuthoredGrant>
 
 type AuthorityCommand =
     private
@@ -22,8 +21,8 @@ type AuthorityCommand =
 type AuthorityChange =
     | Registered
     | OwnerProvisioned
-    | Granted of Role * GrantScope
-    | Revoked of Role * GrantScope
+    | Granted of Role * Scope
+    | Revoked of Role * Scope
     | Enabled
     | Disabled
 
@@ -109,8 +108,8 @@ module Authority =
     let can principal (view: AuthorityView) capability resource =
         let scoped =
             match resource with
-            | ResourceScope.Installation -> Some view.Installation
-            | ResourceScope.Case id when
+            | Scope.Installation -> Some view.Installation
+            | Scope.Case id when
                 id <> Guid.Empty
                 && capability <> Capability.ManageAuthority
                 && capability <> Capability.ReadAuthority
@@ -179,7 +178,7 @@ module Authority =
     let visibility principal (view: AuthorityView) =
         if not (validActor principal view) then
             None
-        elif can principal view Capability.ReadCase ResourceScope.Installation then
+        elif can principal view Capability.ReadCase Scope.Installation then
             Some CaseVisibility.Every
         elif view.HasAssignedCases then
             Some CaseVisibility.Assigned
@@ -235,10 +234,10 @@ module Authority =
             let! target =
                 PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
 
-            let grant (value: GrantChange) =
+            let grant (value: AuthoredGrant) =
                 Ok
                     {
-                        AuthorityGrant.Role = value.Role
+                        AuthoredGrant.Role = value.Role
                         Scope = value.Scope
                     }
 
@@ -259,15 +258,15 @@ module Authority =
         && List.contains
             {
                 ActorGrant.Role = Role.Owner
-                Scope = GrantScope.Installation
+                Scope = Scope.Installation
             }
             actor.Grants
 
     let private grantChange (facts: AuthorityFacts) active role target (actor: ActorAuthority) =
         let scope =
             match target, facts.TargetCaseId with
-            | GrantTarget.Installation, _ -> Ok GrantScope.Installation
-            | GrantTarget.CaseReference _, Some id -> Ok(GrantScope.Case id)
+            | GrantTarget.Installation, _ -> Ok Scope.Installation
+            | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
             | _ -> Error Refusal.ResourceUnavailable
 
         scope
@@ -277,7 +276,7 @@ module Authority =
             elif
                 not active
                 && role = Role.Owner
-                && scope = GrantScope.Installation
+                && scope = Scope.Installation
                 && owner actor
                 && facts.EnabledHumanOwners <= 1
             then
@@ -312,11 +311,7 @@ module Authority =
             match command.Act, facts.Requester.Actor with
             | AuthorityAct.ProvisionOwner, _ -> true
             | _, Some actor ->
-                can
-                    actor.Principal
-                    facts.Requester
-                    Capability.ManageAuthority
-                    ResourceScope.Installation
+                can actor.Principal facts.Requester Capability.ManageAuthority Scope.Installation
             | _, None -> false
 
         if permitted then

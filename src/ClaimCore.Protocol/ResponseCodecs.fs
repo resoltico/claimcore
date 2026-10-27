@@ -116,20 +116,25 @@ module ResponseCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            {
-                CaseFields.CaseReference = reference
-                Status = status
-                Registration = registration
-                Decision = decision
-                Payment = payment
-            })
+            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            |> Result.map (fun progress ->
+                {
+                    CaseFields.CaseReference = reference
+                    Status = status
+                    Registration = registration
+                    Progress = progress
+                }))
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference caseReference
         |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
-        |> build
+        |> buildResult (fun path () ->
+            {
+                Path = path + ".payment"
+                Reason = "Payment requires a decision."
+            })
         |> named "CaseFields"
 
     let private stateCodec name fields =
@@ -330,7 +335,13 @@ module ResponseCodecs =
             })
         : Fields<LedgerPosition, _>)
         |> field "sequence" _.Sequence sequence
-        |> field "entryHash" _.EntryHash digest
+        |> field
+            "entryHash"
+            _.EntryHash
+            (digest
+             |> map
+                 (Convert.FromHexString >> EntryHash.ofBytes >> Option.get)
+                 (EntryHash.toBytes >> Convert.ToHexStringLower))
         |> build
         |> named "Position"
 
@@ -385,11 +396,11 @@ module ResponseCodecs =
     let actorSummary =
         (record (fun v0 v1 v2 ->
             {
-                ActorSummary.ActorId = v0
+                Actor.ActorId = v0
                 Principal = v1
                 Enabled = v2
             })
-        : Fields<ActorSummary, _>)
+        : Fields<Actor, _>)
         |> field "actorId" _.ActorId (uuid)
         |> field "principal" _.Principal (principal)
         |> field "enabled" _.Enabled (boolean)
@@ -397,7 +408,7 @@ module ResponseCodecs =
         |> named "ActorSummary"
 
     let authorityGrant =
-        (record (fun v0 v1 -> { AuthorityGrant.Role = v0; Scope = v1 }): Fields<AuthorityGrant, _>)
+        (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
         |> build

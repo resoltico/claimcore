@@ -91,15 +91,46 @@ module CaseStatus =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
+[<RequireQualifiedAccess>]
+type PaymentProgress =
+    | Undecided
+    | Decided of decision: Decision
+    | Paid of decision: Decision * paidDate: CalendarDate
+
+/// Complete groups are retained as typed state; no paid state can omit its decision.
+module PaymentProgress =
+    let decision =
+        function
+        | PaymentProgress.Undecided -> None
+        | PaymentProgress.Decided value
+        | PaymentProgress.Paid(value, _) -> Some value
+
+    let paymentDate =
+        function
+        | PaymentProgress.Paid(_, date) -> Some date
+        | _ -> None
+
+    let fromGroups decision payment =
+        match decision, payment with
+        | None, None -> Ok PaymentProgress.Undecided
+        | None, Some _ -> Error()
+        | Some value, None -> Ok(PaymentProgress.Decided value)
+        | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
+
 /// Accepted facts share the authored group types; a decision is complete or absent.
 type CaseFields =
     {
         CaseReference: CaseReference
         Status: CaseStatus
         Registration: Registration
-        Decision: Decision option
-        Payment: Payment option
+        Progress: PaymentProgress
     }
+
+    member this.Decision = PaymentProgress.decision this.Progress
+
+    member this.Payment =
+        PaymentProgress.paymentDate this.Progress
+        |> Option.map (fun date -> { PaymentDate = date })
 
 [<RequireQualifiedAccess>]
 type Lifecycle =

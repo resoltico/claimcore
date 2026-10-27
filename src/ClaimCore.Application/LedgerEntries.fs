@@ -26,10 +26,9 @@ module LedgerEntries =
         not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
 
     let position sequence (hash: byte array) : LedgerPosition =
-        {
-            Sequence = sequence
-            EntryHash = Convert.ToHexStringLower hash
-        }
+        EntryHash.ofBytes hash
+        |> Option.bind (LedgerPosition.create sequence)
+        |> Option.defaultWith (fun () -> invalidArg (nameof hash) "Invalid ledger position.")
 
     let internal stored (entry: EntryDraft) : StoredEntry =
         {
@@ -59,7 +58,7 @@ module LedgerEntries =
 
     let internal create
         installationId
-        (head: LedgerHead)
+        (head: LedgerPosition)
         instant
         nonce
         actorId
@@ -88,7 +87,7 @@ module LedgerEntries =
             {
                 InstallationId = installationId
                 Sequence = sequence
-                PreviousHash = head.EntryHash
+                PreviousHash = EntryHash.toBytes head.EntryHash
                 OperationId = operationId
                 ActorId = actorId
                 RecordedAt = instant
@@ -98,7 +97,7 @@ module LedgerEntries =
 
         {
             Sequence = sequence
-            PreviousHash = Array.copy head.EntryHash
+            PreviousHash = EntryHash.toBytes head.EntryHash
             EntryHash = LedgerEntry.hash metadata
             OperationId = operationId
             ActorId = actorId
@@ -130,9 +129,9 @@ module LedgerEntries =
     let internal canObserve principal actor =
         function
         | EntryTarget.Case(id, _, _, _) ->
-            Authority.can principal actor Capability.ReadHistory (ResourceScope.Case id)
+            Authority.can principal actor Capability.ReadHistory (Scope.Case id)
         | EntryTarget.Authority _ ->
-            Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation
+            Authority.can principal actor Capability.ReadAuthority Scope.Installation
 
     let private validMetadata (entry: StoredEntry) =
         let subject =
@@ -240,9 +239,9 @@ module LedgerEntries =
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
     let private disclosure principal actor id currentRevision revision snapshot =
         if
-            Authority.can principal actor Capability.ReadHistoryFull (ResourceScope.Case id)
+            Authority.can principal actor Capability.ReadHistoryFull (Scope.Case id)
             || (currentRevision = revision
-                && Authority.can principal actor Capability.ReadCase (ResourceScope.Case id))
+                && Authority.can principal actor Capability.ReadCase (Scope.Case id))
         then
             SnapshotDisclosure.Disclosed snapshot
         else

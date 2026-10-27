@@ -87,9 +87,9 @@ module AuthorityRecord =
         |> Result.bind (fun principal ->
             let act =
                 AuthorityAct.map
-                    (fun (value: GrantChange) ->
+                    (fun (value: AuthoredGrant) ->
                         {
-                            AuthorityGrant.Role = value.Role
+                            AuthoredGrant.Role = value.Role
                             Scope = value.Scope
                         })
                     request.Act
@@ -114,9 +114,9 @@ module AuthorityRecord =
                 }
             Act =
                 AuthorityAct.map
-                    (fun (grant: AuthorityGrant) ->
+                    (fun (grant: AuthoredGrant) ->
                         {
-                            GrantChange.Role = grant.Role
+                            AuthoredGrant.Role = grant.Role
                             Scope = grant.Scope
                         })
                     command.Act

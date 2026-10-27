@@ -22,9 +22,12 @@ let private service =
 
 let private actor principal grants : ActorAuthority =
     {
-        ActorId = id
-        Principal = principal
-        Enabled = true
+        Actor =
+            {
+                ActorId = id
+                Principal = principal
+                Enabled = true
+            }
         Grants = grants
     }
 
@@ -34,7 +37,7 @@ let private owner =
         [
             {
                 Role = Role.Owner
-                Scope = GrantScope.Installation
+                Scope = Scope.Installation
             }
         ]
 
@@ -90,7 +93,8 @@ let private history: CaseHistory =
 
 let private ledgerChecks =
     [
-        VerificationFinding.Link, fun () -> LedgerVerification.link state 2L state.Head.EntryHash
+        VerificationFinding.Link,
+        fun () -> LedgerVerification.link state 2L (EntryHash.toBytes state.Head.EntryHash)
         VerificationFinding.EntryHash,
         fun () ->
             let entry, metadata = row [| 1uy |]
@@ -128,7 +132,7 @@ let private ledgerChecks =
                 (Some
                     {
                         Sequence = 1L
-                        EntryHash = Array.zeroCreate 32
+                        EntryHash = EntryHash.zero
                     })
                 state
             |> unitResult
@@ -289,7 +293,7 @@ let private invalidProjectionRows () =
                 [
                     {
                         Role = Role.CaseReader
-                        Scope = GrantScope.Installation
+                        Scope = Scope.Installation
                     }
                 ]
         }

@@ -187,7 +187,7 @@ module internal RecordCodecs =
         let grant =
             record (fun role scope ->
                 {
-                    GrantChange.Role = role
+                    AuthoredGrant.Role = role
                     Scope = scope
                 })
             |> field DurableNames.Role _.Role role
@@ -293,20 +293,25 @@ module internal RecordCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            {
-                CaseFields.CaseReference = reference
-                Status = status
-                Registration = registration
-                Decision = decision
-                Payment = payment
-            })
+            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            |> Result.map (fun progress ->
+                {
+                    CaseFields.CaseReference = reference
+                    Status = status
+                    Registration = registration
+                    Progress = progress
+                }))
         : Fields<CaseFields, _>)
         |> field DurableNames.CaseReference _.CaseReference acceptedReference
         |> field DurableNames.Status _.Status (enumeration (DurableNames.statusEntries))
         |> field DurableNames.Registration _.Registration acceptedRegistration
         |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
         |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
-        |> build
+        |> buildResult (fun path () ->
+            {
+                Path = path + ".payment"
+                Reason = "Payment requires a decision."
+            })
 
     let liveState =
         let fields = record id |> field DurableNames.Fields id caseFields

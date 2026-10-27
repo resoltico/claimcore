@@ -41,7 +41,7 @@ module internal Advice =
 
         CaseExecution.current installationId record
         |> Result.map (fun accepted ->
-            let resource = ResourceScope.Case record.CaseId
+            let resource = Scope.Case record.CaseId
 
             let eligible =
                 Case.eligibleActs accepted
@@ -69,9 +69,9 @@ module internal Advice =
 
     let installationOffers principal actor =
         [
-            if can principal actor Capability.Register ResourceScope.Installation then
+            if can principal actor Capability.Register Scope.Installation then
                 yield InstallationOffer.Open
-            if can principal actor Capability.ManageAuthority ResourceScope.Installation then
+            if can principal actor Capability.ManageAuthority Scope.Installation then
                 for kind in AuthorityKind.all do
                     if kind <> AuthorityKind.ProvisionOwner then
                         yield InstallationOffer.AuthorityAct kind
@@ -80,8 +80,7 @@ module internal Advice =
     let views principal actor =
         let cases = Authority.visibility principal actor |> Option.isSome
 
-        let authority =
-            can principal actor Capability.ReadAuthority ResourceScope.Installation
+        let authority = can principal actor Capability.ReadAuthority Scope.Installation
 
         [
             if cases then

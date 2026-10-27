@@ -93,8 +93,7 @@ let private expectedFields (fields: CaseFields) registrationChanged decisionMode
 
     { fields with
         Registration = registration
-        Decision = decision
-        Payment = payment
+        Progress = ClaimCore.TestSupport.CaseFixtures.progress decision payment
     }
 
 let private checkChoice

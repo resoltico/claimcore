@@ -173,7 +173,7 @@ module internal TextReply =
                  :: (fields |> List.map ((+) "  "))))
         @ nextLines language page.NextCursor
 
-    let private grantRow language (grant: AuthorityGrant) =
+    let private grantRow language (grant: AuthoredGrant) =
         let scope, reference =
             match grant.Scope with
             | GrantTarget.Installation ->
@@ -183,7 +183,7 @@ module internal TextReply =
 
         String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 
-    let private actorRow language (actor: ActorSummary) =
+    let private actorRow language (actor: Actor) =
         let kind, issuer, subject = PrincipalKey.parts actor.Principal
 
         String.concat

@@ -94,7 +94,11 @@ let private receipt =
         Position =
             {
                 Sequence = 1L
-                EntryHash = String.replicate 64 "a"
+                EntryHash =
+                    (String.replicate 64 "a"
+                     |> System.Convert.FromHexString
+                     |> EntryHash.ofBytes
+                     |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = id

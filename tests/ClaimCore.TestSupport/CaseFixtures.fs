@@ -38,3 +38,11 @@ let act value =
             Act = value
         }
     |> _.Act
+
+/// Fixture construction is independent of the product's group admission function.
+let progress decision payment =
+    match decision, payment with
+    | None, None -> PaymentProgress.Undecided
+    | Some value, None -> PaymentProgress.Decided value
+    | Some value, Some paid -> PaymentProgress.Paid(value, paid.PaymentDate)
+    | None, Some _ -> failtest "A fixture cannot represent payment without a decision."

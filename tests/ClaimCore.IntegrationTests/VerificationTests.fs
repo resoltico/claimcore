@@ -351,10 +351,10 @@ let private expected (database: PostgresFixture.Database) =
         let! _ = populated database
         let! position = verified database
 
-        let checkpoint: ExpectedPosition =
+        let checkpoint: LedgerPosition =
             {
                 Sequence = position.Sequence
-                EntryHash = Array.zeroCreate 32
+                EntryHash = EntryHash.zero
             }
 
         let! result = Verification.verify database.OwnerSource (Some checkpoint) token
@@ -540,7 +540,7 @@ let private priorCaseRequired (database: PostgresFixture.Database) =
                 database.Fixture.Owner
                 (AuthorityAct.Grant
                     {
-                        AuthorityGrant.Role = Role.PaymentRecorder
+                        AuthoredGrant.Role = Role.PaymentRecorder
                         Scope = GrantTarget.CaseReference "synthetic-a"
                     })
             |> Authority.parse

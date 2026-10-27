@@ -23,7 +23,10 @@ let private id = Guid.Parse "20000000-0000-4000-8000-000000000001"
 let private digest = String.replicate 64 "a"
 
 let private position: ClaimCore.Domain.LedgerPosition =
-    { Sequence = 1L; EntryHash = digest }
+    {
+        Sequence = 1L
+        EntryHash = (Convert.FromHexString digest |> EntryHash.ofBytes |> Option.get)
+    }
 
 let private receipt: ClaimCore.Domain.OperationReceipt =
     {

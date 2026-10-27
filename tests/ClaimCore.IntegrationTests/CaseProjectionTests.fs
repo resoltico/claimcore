@@ -25,8 +25,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = CaseFixtures.registration Inputs.registration
-                    Decision = None
-                    Payment = None
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
     }
@@ -192,17 +191,17 @@ let private projectionFields: CaseFields =
                     InsurerName = "Synthetic insurer"
                     ClaimedAmount = "1234.5678"
                 }
-        Decision =
-            Some
-                {
-                    Decision.PaymentDecisionDate = CaseFixtures.date "2026-08-04"
-                    PayableAmount = CaseFixtures.money "987.6543" "USD"
-                }
-        Payment =
-            Some
-                {
-                    PaymentDate = CaseFixtures.date "2026-08-05"
-                }
+        Progress =
+            ClaimCore.TestSupport.CaseFixtures.progress
+                (Some
+                    {
+                        Decision.PaymentDecisionDate = CaseFixtures.date "2026-08-04"
+                        PayableAmount = CaseFixtures.money "987.6543" "USD"
+                    })
+                (Some
+                    {
+                        PaymentDate = CaseFixtures.date "2026-08-05"
+                    })
     }
 
 

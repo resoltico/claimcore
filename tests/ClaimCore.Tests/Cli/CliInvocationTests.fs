@@ -333,7 +333,7 @@ let private authorityPreviewInvocation verb =
 
 
 let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter =
-    let grants present : AuthorityGrant list =
+    let grants present : AuthoredGrant list =
         if present then
             [
                 {

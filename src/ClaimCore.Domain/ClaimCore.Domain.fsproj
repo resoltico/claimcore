@@ -15,8 +15,8 @@
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
+    <Compile Include="LedgerPosition.fs" />
     <Compile Include="Validation.fs" />
-    <Compile Include="PaymentProgress.fs" />
     <Compile Include="CaseState.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />

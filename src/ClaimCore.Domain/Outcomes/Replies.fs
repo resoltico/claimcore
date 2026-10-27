@@ -6,12 +6,12 @@ open System
 type AuthorityState =
     {
         Enabled: bool
-        Grants: AuthorityGrant list
+        Grants: AuthoredGrant list
     }
 
 type AuthorityReview =
     {
-        Target: ActorSummary option
+        Target: Actor option
         Before: AuthorityState
         After: AuthorityState
     }

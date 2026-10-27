@@ -8,7 +8,7 @@ module internal CaseExecution =
     let authorize principal actor capability (record: StoredCase option) =
         record
         |> Option.exists (fun value ->
-            Authority.can principal actor capability (ResourceScope.Case value.CaseId))
+            Authority.can principal actor capability (Scope.Case value.CaseId))
 
     let current installationId (record: StoredCase) =
         Case.ofAccepted record.Snapshot
@@ -27,19 +27,17 @@ module internal CaseExecution =
 
     let permission principal actor (request: CaseCommand) (record: StoredCase option) =
         if CaseAct.kind request.Act = CaseActKind.Open then
-            if Authority.canAct principal actor ResourceScope.Installation request.Act then
+            if Authority.canAct principal actor Scope.Installation request.Act then
                 Ok()
             else
                 Error Refusal.ResourceUnavailable
         else
             match record with
             | None -> Error Refusal.ResourceUnavailable
-            | Some value when
-                Authority.canAct principal actor (ResourceScope.Case value.CaseId) request.Act
-                ->
+            | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) request.Act ->
                 Ok()
             | Some value when
-                Authority.can principal actor Capability.ReadCase (ResourceScope.Case value.CaseId)
+                Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable

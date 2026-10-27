@@ -73,10 +73,10 @@ module internal Projections =
                             (field<string> BusinessField.ClaimedCurrency row)
                         |> parsed
                 }
-            Decision = decision
-            Payment =
-                optionalDate BusinessField.PaymentDate row
-                |> Option.map (fun date -> { PaymentDate = date })
+            Progress =
+                PaymentProgress.fromGroups decision (optionalDate BusinessField.PaymentDate row)
+                |> Result.defaultWith (fun () ->
+                    raise (RecordCorruptException "Payment lacks a decision."))
         }
 
     let caseRow (row: Map<string, obj>) : StoredCase =
@@ -149,15 +149,18 @@ module internal Projections =
                             Role = role
                             Scope =
                                 optional<Guid> 3 row
-                                |> Option.map GrantScope.Case
-                                |> Option.defaultValue GrantScope.Installation
+                                |> Option.map Scope.Case
+                                |> Option.defaultValue Scope.Installation
                         }))
 
             let stored: ActorAuthority =
                 {
-                    ActorId = required 0 first
-                    Principal = principal
-                    Enabled = required 1 first
+                    Actor =
+                        {
+                            ActorId = required 0 first
+                            Principal = principal
+                            Enabled = required 1 first
+                        }
                     Grants = grants
                 }
 
@@ -224,7 +227,7 @@ module internal Projections =
             Enabled = required 4 row
         }
 
-    let grantRow row : AuthorityGrant * GrantPosition =
+    let grantRow row : AuthoredGrant * GrantPosition =
         let role = role row
         let caseId = optional<Guid> 2 row
 

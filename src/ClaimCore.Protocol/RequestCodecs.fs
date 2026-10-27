@@ -190,7 +190,7 @@ module RequestCodecs =
         let grant =
             record (fun role scope ->
                 {
-                    GrantChange.Role = role
+                    AuthoredGrant.Role = role
                     Scope = scope
                 })
             |> field "role" _.Role role

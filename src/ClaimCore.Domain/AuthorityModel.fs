@@ -97,19 +97,11 @@ module PrincipalKey =
 
 
 [<RequireQualifiedAccess>]
-type GrantScope =
+type Scope =
     | Installation
     | Case of Guid
 
-type ActorGrant = { Role: Role; Scope: GrantScope }
-
-type ActorAuthority =
-    {
-        ActorId: Guid
-        Principal: PrincipalKey
-        Enabled: bool
-        Grants: ActorGrant list
-    }
+type ActorGrant = Grant<Scope>
 
 type Actor =
     {
@@ -117,6 +109,16 @@ type Actor =
         Principal: PrincipalKey
         Enabled: bool
     }
+
+type ActorAuthority =
+    {
+        Actor: Actor
+        Grants: ActorGrant list
+    }
+
+    member this.ActorId = this.Actor.ActorId
+    member this.Principal = this.Actor.Principal
+    member this.Enabled = this.Actor.Enabled
 
 /// Only roles that can influence this decision are loaded. Operation identity may add a second case.
 type AuthorityView =
@@ -143,7 +145,7 @@ module AuthorityView =
             let installation =
                 actor.Grants
                 |> List.choose (fun grant ->
-                    if grant.Scope = GrantScope.Installation then
+                    if grant.Scope = Scope.Installation then
                         Some grant.Role
                     else
                         None)
@@ -152,29 +154,18 @@ module AuthorityView =
                 actor.Grants
                 |> List.choose (fun grant ->
                     match grant.Scope with
-                    | GrantScope.Case id -> Some(id, grant.Role)
+                    | Scope.Case id -> Some(id, grant.Role)
                     | _ -> None)
                 |> List.groupBy fst
                 |> List.map (fun (id, grants) -> id, grants |> List.map snd)
                 |> Map.ofList
 
             {
-                Actor =
-                    Some
-                        {
-                            ActorId = actor.ActorId
-                            Principal = actor.Principal
-                            Enabled = actor.Enabled
-                        }
+                Actor = Some actor.Actor
                 Installation = installation
                 Cases = cases
                 HasAssignedCases = false
             }
-
-[<RequireQualifiedAccess>]
-type ResourceScope =
-    | Installation
-    | Case of Guid
 
 [<RequireQualifiedAccess>]
 type CaseVisibility =

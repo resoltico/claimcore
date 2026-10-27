@@ -34,10 +34,7 @@ module private BusinessState =
             CaseReference = reference
             Status = claim.Status
             Registration = claim.Facts
-            Decision = PaymentProgress.decision claim.Progress
-            Payment =
-                PaymentProgress.paymentDate claim.Progress
-                |> Option.map (fun date -> { PaymentDate = date })
+            Progress = claim.Progress
         }
 
     let private retained value =
@@ -49,11 +46,7 @@ module private BusinessState =
 
     let restore (accepted: CaseFields) =
         result {
-            let! progress =
-                PaymentProgress.fromGroups
-                    accepted.Decision
-                    (accepted.Payment |> Option.map _.PaymentDate)
-                |> retained
+            let progress = accepted.Progress
 
             do! StateValidation.progress accepted.Registration progress |> retained
 

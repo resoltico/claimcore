@@ -339,7 +339,7 @@ let private kindRoundTrips () =
 
     let grant =
         {
-            GrantChange.Role = Role.CaseReader
+            AuthoredGrant.Role = Role.CaseReader
             Scope = GrantTarget.Installation
         }
 

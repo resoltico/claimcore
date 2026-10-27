@@ -24,7 +24,9 @@ type GrantTarget =
     | Installation
     | CaseReference of string
 
-type GrantChange = { Role: Role; Scope: GrantTarget }
+type Grant<'scope> = { Role: Role; Scope: 'scope }
+
+type AuthoredGrant = Grant<GrantTarget>
 
 [<RequireQualifiedAccess>]
 type AuthorityAct<'grant> =
@@ -35,7 +37,7 @@ type AuthorityAct<'grant> =
     | Disable
     | ProvisionOwner
 
-type AuthoredAuthorityAct = AuthorityAct<GrantChange>
+type AuthoredAuthorityAct = AuthorityAct<AuthoredGrant>
 
 type AuthorityRequest =
     {

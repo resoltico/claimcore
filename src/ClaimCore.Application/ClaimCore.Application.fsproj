@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="ActorDescriptions.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />

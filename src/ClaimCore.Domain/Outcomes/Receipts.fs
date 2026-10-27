@@ -3,7 +3,6 @@ namespace ClaimCore.Domain
 
 open System
 
-type LedgerPosition = { Sequence: int64; EntryHash: string }
 
 [<RequireQualifiedAccess>]
 type SnapshotDisclosure =

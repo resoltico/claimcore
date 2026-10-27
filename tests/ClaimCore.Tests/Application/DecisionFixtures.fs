@@ -63,7 +63,7 @@ let worker =
 let head =
     {
         Sequence = 3L
-        EntryHash = Array.zeroCreate<byte> 32
+        EntryHash = EntryHash.zero
     }
 
 let nonce = Array.init 32 (fun index -> byte (index + 1))
@@ -73,7 +73,7 @@ let opening n reference =
 
 type LockedFacts<'Facts> =
     {
-        Head: LedgerHead
+        Head: LedgerPosition
         PayloadNonce: byte array
         IsFenced: bool
         Read: 'Facts

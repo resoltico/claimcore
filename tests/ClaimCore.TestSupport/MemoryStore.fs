@@ -11,7 +11,7 @@ open ClaimCore.Domain
 
 type private State =
     {
-        Head: LedgerHead
+        Head: LedgerPosition
         Entries: Map<Guid, StoredEntry>
         Cases: Map<Guid, StoredCase>
         Actors: Map<Guid, Actor>
@@ -64,9 +64,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                 actor
                 |> Option.map (fun actor ->
                     {
-                        ActorAuthority.ActorId = actor.ActorId
-                        Principal = actor.Principal
-                        Enabled = actor.Enabled
+                        ActorAuthority.Actor = actor
                         Grants =
                             state.Grants
                             |> Seq.choose (fun (id, role, scope) ->
@@ -76,8 +74,8 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
                                             ActorGrant.Role = role
                                             Scope =
                                                 scope
-                                                |> Option.map GrantScope.Case
-                                                |> Option.defaultValue GrantScope.Installation
+                                                |> Option.map Scope.Case
+                                                |> Option.defaultValue Scope.Installation
                                         }
                                 else
                                     None)
@@ -277,7 +275,7 @@ type private Reader(get: unit -> State, observed, read: unit -> unit) =
 
                             Some(
                                 {
-                                    AuthorityGrant.Role = role
+                                    AuthoredGrant.Role = role
                                     Scope = target
                                 },
                                 position
@@ -317,7 +315,7 @@ type private Writer(get, set, observed, head, nonce, read) =
 
             if
                 draft.Sequence <> state.Head.Sequence + 1L
-                || draft.PreviousHash <> state.Head.EntryHash
+                || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
                 || Map.containsKey draft.OperationId state.Entries
             then
                 invalidOp "An append must extend the owned head with a fresh operation."
@@ -327,7 +325,7 @@ type private Writer(get, set, observed, head, nonce, read) =
                     Head =
                         {
                             Sequence = draft.Sequence
-                            EntryHash = Array.copy draft.EntryHash
+                            EntryHash = EntryHash.ofBytes draft.EntryHash |> Option.get
                         }
                     Entries =
                         Map.add
@@ -456,7 +454,7 @@ type Store(observed: DateTimeOffset) =
             Head =
                 {
                     Sequence = 0L
-                    EntryHash = Array.zeroCreate 32
+                    EntryHash = EntryHash.zero
                 }
             Entries = Map.empty
             Cases = Map.empty
