@@ -10,6 +10,7 @@ Implemented release summaries are recorded here, with changes awaiting release u
 - Authority admission belongs to Domain; invalid roles return ROLE_FORMAT at role. Public Application Service and ports replace Application routes and handlers.
 - CLI authority input uses --principal-kind instead of --kind. Generated command synopses, help topics and both executables' exits are in the [CLI reference](docs/cli.md).
 - Client reply correlation checks are removed; clients trust schema-admitted HTTPS replies. Keep the exact frame and use resubmission or final resolution for uncertain delivery.
+- Database help/version replies use HELP/VERSION kind tags; help exitCodes is a list of code/number entries. Update scripts consuming these machine replies.
 - Database replies retain diagnostic and fault details; invalid command grammar returns USAGE_ERROR with applicable syntax. Both executables share one exit-code table.
 - Remove REVISION_EXHAUSTED and LEDGER_SEQUENCE_EXHAUSTED; catalog message keys change from label.read.<endpoint>.* to endpoint.<endpoint>.*.
 - Twelve flat case acts and one typed record declaration drive inputs, catalog metadata and projections; internal APIs change. Durable byte codes remain unchanged; record format numbers stay 1.
