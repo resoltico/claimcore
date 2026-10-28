@@ -3,17 +3,44 @@ module ClaimCore.TestSupport.Inputs
 open ClaimCore.Domain
 open ClaimCore.Application
 open Expecto
+open ClaimCore.Protocol
+open ClaimCore.Json
 
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
+let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
+    let samples =
+        Map.ofList
+            [
+                "DATE", "2026-08-01"
+                "COUNTRY", "LV"
+                "NAME", "Synthetic Party"
+                "AMOUNT", "1000.00"
+                "CURRENCY", "EUR"
+            ]
+
+    Inventory.fields group
+    |> List.map (fun field ->
+        let key = field.GetProperty("key").GetString() |> nonNull
+        let kind = field.GetProperty("kind").GetString() |> nonNull
+
+        key,
+        ClaimCore.Json.JsonValue.String(
+            Map.tryFind key overrides |> Option.defaultValue samples[kind]
+        ))
+    |> ClaimCore.Json.JsonValue.Object
+    |> codec.Read "$"
+    |> Result.defaultWith (fun problem -> failtestf "Input inventory does not admit: %A" problem)
+
 let registration: RegistrationInput =
-    {
-        IncidentDate = "2026-08-01"
-        IncidentNotificationDate = "2026-08-03"
-        IncidentCountry = "LV"
-        ClaimantName = "Synthetic Party"
-        InsurerName = "Synthetic Insurer"
-        ClaimedAmount = "1000.00"
-        ClaimedCurrency = "EUR"
+    groupInput
+        ClaimCore.Protocol.RequestCodecs.registration
+        "registration"
+        (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
+
+let exampleRegistration =
+    { registration with
+        ClaimantName = "Example Claimant Ltd"
+        InsurerName = "Example Alleged Insurer"
     }
 
 let registrationOn incident notification =
@@ -23,13 +50,16 @@ let registrationOn incident notification =
     }
 
 let decision: DecisionInput =
-    {
-        PaymentDecisionDate = "2026-08-15"
-        PayableAmount = "750.00"
-        PayableCurrency = "EUR"
-    }
+    groupInput
+        ClaimCore.Protocol.RequestCodecs.decision
+        "decision"
+        (Map.ofList [ "paymentDecisionDate", "2026-08-15"; "payableAmount", "750.00" ])
 
-let payment: PaymentInput = { PaymentDate = "2026-08-20" }
+let payment: PaymentInput =
+    groupInput
+        ClaimCore.Protocol.RequestCodecs.payment
+        "payment"
+        (Map.ofList [ "paymentDate", "2026-08-20" ])
 
 let correction: AuthoredCorrection =
     {
@@ -78,3 +108,60 @@ let admittedPayment (input: PaymentInput) : Payment =
 let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
     AuthorityRequests.input operationId target act
     |> Result.defaultWith (fun _ -> failtest "Owner provisioning is not an authored test input.")
+
+/// Inventory supplies the alternatives and expected tokens; codecs construct inputs only.
+let caseActs registration decision payment reason =
+    let groups =
+        JsonValue.Object
+            [
+                "registration",
+                JsonValue.Object
+                    [
+                        "kind", JsonValue.String "REPLACE"
+                        "values", RequestCodecs.registration.Write registration
+                    ]
+                "decision",
+                JsonValue.Object
+                    [
+                        "kind", JsonValue.String "REPLACE"
+                        "values", RequestCodecs.decision.Write decision
+                    ]
+                "payment",
+                JsonValue.Object
+                    [
+                        "kind", JsonValue.String "REPLACE"
+                        "values", RequestCodecs.payment.Write payment
+                    ]
+            ]
+
+    Inventory.rows "caseActs"
+    |> List.map (fun row ->
+        let token = row.GetProperty("token").GetString() |> nonNull
+        let payload = row.GetProperty("payload").GetString() |> nonNull
+
+        let members =
+            match payload with
+            | "BARE" -> []
+            | "REGISTRATION" -> [ "values", RequestCodecs.registration.Write registration ]
+            | "DECISION" -> [ "values", RequestCodecs.decision.Write decision ]
+            | "PAYMENT" -> [ "values", RequestCodecs.payment.Write payment ]
+            | "REASON" -> [ "reason", JsonValue.String reason ]
+            | "CORRECTION" -> [ "groups", groups ]
+            | _ -> failtestf "Unknown authored payload: %s" payload
+
+        let act =
+            JsonValue.Object(("kind", JsonValue.String token) :: members)
+            |> RequestCodecs.caseAct.Read "$"
+            |> Result.defaultWith (fun problem -> failtestf "Inventory act refused: %A" problem)
+
+        act, token)
+
+let authorityActs grants =
+    Inventory.tokens "authorityActs"
+    |> List.collect (fun token ->
+        let kind = AuthorityKind.parse token |> Option.get
+
+        match AuthorityAct.slot kind with
+        | AuthorityActSlot.Bare act -> [ act, token ]
+        | AuthorityActSlot.Grant(inject, _) ->
+            grants |> List.map (fun grant -> inject grant, token))

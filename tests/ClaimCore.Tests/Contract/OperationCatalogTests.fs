@@ -28,10 +28,8 @@ let tests =
                     |> List.map ActKind.token
 
                 let expected =
-                    (CaseActKind.all |> List.map CaseActKind.token)
-                    @ (AuthorityKind.all
-                       |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-                       |> List.map AuthorityKind.token)
+                    Inventory.tokens "caseActs"
+                    @ (Inventory.tokens "authorityActs" |> List.filter ((<>) "PROVISION_OWNER"))
 
                 Expect.equal
                     (Set.ofList actual)
@@ -41,9 +39,8 @@ let tests =
                 Expect.equal actual.Length (List.distinct actual).Length "No duplicate act entry")
             testCase "actor endpoints are represented including derived preview" (fun () ->
                 let expected =
-                    Api.all
-                    |> List.map Api.id
-                    |> List.filter (fun id -> id <> Api.session.Token && id <> Api.logout.Token)
+                    Inventory.tokens "endpoints"
+                    |> List.filter (fun id -> id <> "session" && id <> "session.logout")
                     |> Set.ofList
 
                 let actual =
@@ -69,15 +66,7 @@ let tests =
 
                 Expect.equal
                     (fields "open")
-                    [
-                        "incidentDate"
-                        "incidentNotificationDate"
-                        "incidentCountry"
-                        "claimantName"
-                        "insurerName"
-                        "claimedAmount"
-                        "claimedCurrency"
-                    ]
+                    (Inventory.fieldKeys "registration")
                     "Opening is the registration group"
 
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
@@ -189,8 +178,8 @@ let tests =
 
                 Expect.equal
                     inputs.Length
-                    17
-                    "Three control inputs and the three correction groups"
+                    (3 + 3 + Inventory.fieldCount - 2)
+                    "Three control inputs, group selectors and the inventoried group fields"
 
                 let payment =
                     inputs
@@ -209,7 +198,28 @@ let tests =
                     "Payment date exists only for REPLACE")
             testCase "the published catalog contains all entries with their synopses" (fun () ->
                 let value = Catalog.document
-                Expect.equal value.Entries.Length 25 "Mutations and reads"
+
+                let mutationCount =
+                    (Inventory.tokens "caseActs").Length
+                    + (Inventory.tokens "authorityActs").Length
+                    - 1
+
+                let readCount =
+                    Inventory.tokens "endpoints"
+                    |> List.filter (fun token ->
+                        not (
+                            List.contains
+                                token
+                                [
+                                    "session"
+                                    "session.logout"
+                                    "operation.preview"
+                                    "operation.execute"
+                                ]
+                        ))
+                    |> List.length
+
+                Expect.equal value.Entries.Length (mutationCount + readCount) "Mutations and reads"
 
                 Expect.equal
                     (Codec.encode CatalogCodecs.codec value

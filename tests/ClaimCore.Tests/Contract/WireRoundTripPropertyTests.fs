@@ -132,6 +132,18 @@ let tests =
     testList
         "typed Wire property round trips"
         [
+            testCase "authored seed corpus admits every endpoint and direction" (fun () ->
+                let source = seeds.Value
+
+                Expect.equal
+                    (source.Requests |> Map.keys |> Set.ofSeq)
+                    (Inventory.tokens "endpoints" |> Set.ofList)
+                    "Every inventoried endpoint has authored request seeds"
+
+                Expect.equal
+                    (source.Replies |> Map.keys |> Set.ofSeq)
+                    (Inventory.tokens "endpoints" |> Set.ofList)
+                    "Every inventoried endpoint has authored reply seeds")
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
             for endpoint in Api.all do
                 testCase (Api.id endpoint + " request DTO property") (fun () ->

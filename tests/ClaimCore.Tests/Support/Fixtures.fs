@@ -10,11 +10,7 @@ open ClaimCore.Domain
 
 let today = DateOnly(2026, 9, 7)
 
-let registration =
-    { Inputs.registration with
-        ClaimantName = "Example Claimant Ltd"
-        InsurerName = "Example Alleged Insurer"
-    }
+let registration = Inputs.exampleRegistration
 
 let decision = Inputs.decision
 

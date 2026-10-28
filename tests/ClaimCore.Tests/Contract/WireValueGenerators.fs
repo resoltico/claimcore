@@ -221,7 +221,7 @@ let internal listBounds (path: string) =
         Map.ofList
             [
                 "AuthorityState.Grants", 1
-                "CaseAdvice.Acts", 12
+                "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2
                 "ActorContext.Capability", 10
@@ -230,7 +230,7 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 3
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
-                "AdvisoryReview.Changes", 13
+                "AdvisoryReview.Changes", Inventory.fieldCount
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50

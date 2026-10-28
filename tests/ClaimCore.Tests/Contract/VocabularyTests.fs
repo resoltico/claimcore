@@ -1,6 +1,7 @@
 module ClaimCore.Tests.VocabularyTests
 
 open System
+open ClaimCore.TestSupport
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -125,9 +126,9 @@ let tests =
                         "Ambiguous case")
             testCase "explicit vocabularies still reject missing act cases" (fun () ->
                 Expect.equal
-                    (Vocabulary.all CaseActKind.vocabulary |> List.length)
-                    12
-                    "All twelve nullary acts are declared"
+                    (Vocabulary.tokens CaseActKind.vocabulary)
+                    (Inventory.tokens "caseActs")
+                    "All inventoried nullary acts are declared"
 
                 Expect.throwsT<ArgumentException>
                     (fun () ->
@@ -138,8 +139,8 @@ let tests =
 
                 Expect.equal
                     (List.length tokens)
-                    18
-                    "Twelve case and six authority acts, including owner provisioning"
+                    ((Inventory.tokens "caseActs" @ Inventory.tokens "authorityActs").Length)
+                    "Inventoried case and authority acts, including owner provisioning"
 
                 Expect.equal (List.distinct tokens) tokens "Scopes have no ambiguous act spelling"
 

@@ -1,14 +1,22 @@
 import type { Principal, Registration } from "@contracts/client";
 
+import { inventory } from "./inventory";
+
 // Build inputs only. Expected outputs and oracle values must stay literal.
+const samples: Record<string, string> = {
+  DATE: "2026-09-01",
+  COUNTRY: "LV",
+  NAME: "Synthetic claimant",
+  AMOUNT: "12.34",
+  CURRENCY: "EUR",
+};
+
 export const registration = (changes: Partial<Registration> = {}): Registration => ({
-  incidentDate: "2026-09-01",
+  ...(Object.fromEntries(
+    inventory.groups.registration.map(({ key, kind }) => [key, samples[kind]]),
+  ) as Registration),
   incidentNotificationDate: "2026-09-02",
-  incidentCountry: "LV",
-  claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
-  claimedAmount: "12.34",
-  claimedCurrency: "EUR",
   ...changes,
 });
 

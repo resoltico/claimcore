@@ -103,7 +103,9 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
 let internal admitted =
     function
     | Ok value -> value
-    | Error _ -> failtest "The authored positive seed corpus must admit completely."
+    | Error _ ->
+        failtest
+            "The authored positive seed corpus must admit completely; see test: authored seed corpus admits every endpoint and direction."
 
 let internal examples filename =
     let path = Path.Combine(RepositoryRoot.find (), "tests/fixtures", filename)

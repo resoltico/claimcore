@@ -1,3 +1,4 @@
+import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -17,13 +18,7 @@ const startPseudo = async (page: Page) => {
   await page.locator('section[aria-labelledby="case-list-title"] .section-heading button').click();
   const values = {
     caseReference: `PSEUDO-${randomUUID()}`,
-    incidentDate: "2026-09-01",
-    incidentNotificationDate: "2026-09-02",
-    incidentCountry: "LV",
-    claimantName: "A\u0308 العربية\u200D",
-    insurerName: "Synthetic insurer",
-    claimedAmount: "1.0000",
-    claimedCurrency: "EUR",
+    ...registration({ claimantName: "A\u0308 العربية\u200D", claimedAmount: "1.0000" }),
   };
   for (const [name, value] of Object.entries(values)) {
     await page.locator(`input[data-field-name="${name}"]`).fill(value);

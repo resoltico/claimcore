@@ -14,7 +14,11 @@ let private oracle () =
         Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "tests/fixtures/cli-frames.tsv")
 
     let rows = File.ReadAllLines path
-    Expect.equal rows.Length 30 "All captured invocations remain exercised"
+
+    Expect.equal
+        rows.Length
+        ClaimCore.TestSupport.Inventory.cliFrameCount
+        "All captured invocations remain exercised"
 
     for row in rows do
         let cells = row.Split('\t', 2)

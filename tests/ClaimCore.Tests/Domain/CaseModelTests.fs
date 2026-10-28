@@ -146,8 +146,8 @@ let private stateExpectations =
     ]
 
 let private matrix =
-    testCase "independent state table governs all twelve acts and advertisements" (fun () ->
-        Expect.equal acts.Length 12 "Complete act vocabulary"
+    testCase "independent state table governs all inventoried acts and advertisements" (fun () ->
+        Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Complete act vocabulary"
 
         for _, view, expected in stateExpectations do
             let current = view |> Option.map (retained 1L)

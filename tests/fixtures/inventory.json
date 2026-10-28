@@ -1,0 +1,319 @@
+{
+  "$comment": "Hand-authored independent inventory. Never generate this file from product declarations. Builders use its fields; expectations use its declared tokens and effects.",
+  "groups": {
+    "registration": [
+      {
+        "key": "incidentDate",
+        "kind": "DATE"
+      },
+      {
+        "key": "incidentNotificationDate",
+        "kind": "DATE"
+      },
+      {
+        "key": "incidentCountry",
+        "kind": "COUNTRY"
+      },
+      {
+        "key": "claimantName",
+        "kind": "NAME"
+      },
+      {
+        "key": "insurerName",
+        "kind": "NAME"
+      },
+      {
+        "key": "claimedAmount",
+        "kind": "AMOUNT"
+      },
+      {
+        "key": "claimedCurrency",
+        "kind": "CURRENCY"
+      }
+    ],
+    "decision": [
+      {
+        "key": "paymentDecisionDate",
+        "kind": "DATE"
+      },
+      {
+        "key": "payableAmount",
+        "kind": "AMOUNT"
+      },
+      {
+        "key": "payableCurrency",
+        "kind": "CURRENCY"
+      }
+    ],
+    "payment": [
+      {
+        "key": "paymentDate",
+        "kind": "DATE"
+      }
+    ]
+  },
+  "specialFields": [
+    {
+      "key": "caseReference",
+      "kind": "REFERENCE"
+    },
+    {
+      "key": "status",
+      "kind": "STATUS"
+    }
+  ],
+  "caseActs": [
+    {
+      "token": "OPEN",
+      "family": "BUSINESS",
+      "payload": "REGISTRATION"
+    },
+    {
+      "token": "AMEND_REGISTRATION",
+      "family": "BUSINESS",
+      "payload": "REGISTRATION"
+    },
+    {
+      "token": "CORRECT",
+      "family": "BUSINESS",
+      "payload": "CORRECTION"
+    },
+    {
+      "token": "DECIDE",
+      "family": "BUSINESS",
+      "payload": "DECISION"
+    },
+    {
+      "token": "WITHDRAW_DECISION",
+      "family": "BUSINESS",
+      "payload": "BARE"
+    },
+    {
+      "token": "RECORD_PAYMENT",
+      "family": "BUSINESS",
+      "payload": "PAYMENT"
+    },
+    {
+      "token": "CLEAR_PAYMENT",
+      "family": "BUSINESS",
+      "payload": "BARE"
+    },
+    {
+      "token": "CLOSE",
+      "family": "BUSINESS",
+      "payload": "BARE"
+    },
+    {
+      "token": "REOPEN",
+      "family": "BUSINESS",
+      "payload": "BARE"
+    },
+    {
+      "token": "VOID",
+      "family": "STEWARDSHIP",
+      "payload": "REASON"
+    },
+    {
+      "token": "REINSTATE",
+      "family": "STEWARDSHIP",
+      "payload": "REASON"
+    },
+    {
+      "token": "ERASE",
+      "family": "STEWARDSHIP",
+      "payload": "BARE"
+    }
+  ],
+  "authorityActs": [
+    {
+      "token": "PROVISION_OWNER",
+      "payload": "BARE"
+    },
+    {
+      "token": "REGISTER",
+      "payload": "BARE"
+    },
+    {
+      "token": "GRANT",
+      "payload": "GRANT"
+    },
+    {
+      "token": "REVOKE",
+      "payload": "GRANT"
+    },
+    {
+      "token": "ENABLE",
+      "payload": "BARE"
+    },
+    {
+      "token": "DISABLE",
+      "payload": "BARE"
+    }
+  ],
+  "roles": [
+    {
+      "token": "OWNER",
+      "capabilities": ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+      "humanOnly": true
+    },
+    {
+      "token": "CASE_READER",
+      "capabilities": ["READ_CASE", "READ_HISTORY"],
+      "humanOnly": false
+    },
+    {
+      "token": "CASE_REGISTRAR",
+      "capabilities": ["READ_CASE", "READ_HISTORY", "REGISTER"],
+      "humanOnly": false
+    },
+    {
+      "token": "CASE_HANDLER",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "READ_HISTORY_FULL",
+        "REGISTER",
+        "DECIDE",
+        "CLOSE"
+      ],
+      "humanOnly": false
+    },
+    {
+      "token": "PAYMENT_RECORDER",
+      "capabilities": ["READ_CASE", "READ_HISTORY", "RECORD_PAYMENT"],
+      "humanOnly": false
+    },
+    {
+      "token": "DATA_STEWARD",
+      "capabilities": ["READ_CASE", "READ_HISTORY", "STEWARD"],
+      "humanOnly": true
+    },
+    {
+      "token": "AUDITOR",
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "READ_HISTORY_FULL",
+        "READ_AUTHORITY"
+      ],
+      "humanOnly": false
+    }
+  ],
+  "principalKinds": ["HUMAN", "SERVICE"],
+  "endpoints": [
+    {
+      "token": "session",
+      "method": "GET",
+      "effect": "Read"
+    },
+    {
+      "token": "session.logout",
+      "method": "POST",
+      "effect": "OperationalWrite"
+    },
+    {
+      "token": "context",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "case.get",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "case.list",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "case.history",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "operation.preview",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "operation.execute",
+      "method": "POST",
+      "effect": "LedgerExecution"
+    },
+    {
+      "token": "operation.observe",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "operation.resolve",
+      "method": "POST",
+      "effect": "OperationalWrite"
+    },
+    {
+      "token": "authority.list",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "authority.grants",
+      "method": "POST",
+      "effect": "Read"
+    }
+  ],
+  "refusalCodes": [
+    "RESOURCE_UNAVAILABLE",
+    "ACTOR_ALREADY_REGISTERED",
+    "ACTOR_UNKNOWN",
+    "ACT_NOT_PERMITTED",
+    "ALREADY_VOIDED",
+    "ALREADY_CLOSED",
+    "CASE_ALREADY_EXISTS",
+    "ALREADY_OPENED",
+    "AMENDMENT_REQUIRES_UNDECIDED",
+    "CASE_CLOSED",
+    "CASE_ERASED",
+    "CASE_VOIDED",
+    "CORRECTION_NO_CHANGES",
+    "CORRECTION_REQUIRES_EXISTING_VALUE",
+    "DECISION_ALREADY_PAID",
+    "DECISION_REQUIRED",
+    "HUMAN_PRINCIPAL_REQUIRED",
+    "IDEMPOTENCY_CONFLICT",
+    "INVALID_CURSOR",
+    "INVALID_INPUT",
+    "LAST_OWNER",
+    "NOT_VOIDED",
+    "OPERATION_RESOLVED",
+    "PAYMENT_ALREADY_RECORDED",
+    "PAYMENT_NOT_RECORDED",
+    "REVISION_CONFLICT",
+    "ZERO_DECISION_CANNOT_BE_PAID"
+  ],
+  "technicalInputs": [
+    "operationId",
+    "expectedRevision",
+    "principal.kind",
+    "principal.issuer",
+    "principal.subject",
+    "reason",
+    "role",
+    "cursor",
+    "limit",
+    "scope",
+    "actorId",
+    "detail"
+  ],
+  "cliFrameCount": 30,
+  "readInputs": {
+    "case.get": ["caseReference"],
+    "case.list": ["limit", "cursor"],
+    "case.history": ["caseReference", "detail", "limit", "cursor"],
+    "operation.observe": ["operationId"],
+    "operation.resolve": ["operationId"],
+    "authority.list": ["limit", "cursor"],
+    "authority.grants": ["actorId", "limit", "cursor"],
+    "context": []
+  }
+}

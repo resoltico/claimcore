@@ -1,3 +1,4 @@
+import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
@@ -18,15 +19,7 @@ type SeedStep = Readonly<{
   fields: CaseFields;
 }>;
 
-const setupRegistration = {
-  incidentDate: "2026-09-01",
-  incidentNotificationDate: "2026-09-02",
-  incidentCountry: "LV",
-  claimantName: "Synthetic claimant",
-  insurerName: "Synthetic insurer",
-  claimedAmount: "1200.50",
-  claimedCurrency: "EUR",
-};
+const setupRegistration = registration({ claimedAmount: "1200.50" });
 
 const setupDecision = {
   paymentDecisionDate: "2026-09-03",

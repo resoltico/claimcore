@@ -1,6 +1,7 @@
 module ClaimCore.Tests.ActSlotProperties
 
 open Expecto
+open ClaimCore.TestSupport
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Domain
@@ -8,21 +9,10 @@ open ClaimCore.Tests.PropertyHarness
 
 let private values = Gen.int32 (Range.constant -1_000_000 1_000_000)
 
-let private caseActs value correction =
-    [
-        CaseAct.Open value
-        CaseAct.AmendRegistration value
-        CaseAct.Correct correction
-        CaseAct.Decide value
-        CaseAct.WithdrawDecision
-        CaseAct.RecordPayment value
-        CaseAct.ClearPayment
-        CaseAct.Close
-        CaseAct.Reopen
-        CaseAct.Void value
-        CaseAct.Reinstate value
-        CaseAct.Erase
-    ]
+let private caseActs value =
+    Inputs.caseActs Inputs.registration Inputs.decision Inputs.payment "reason"
+    |> List.map (fun (act, _) ->
+        CaseAct.map (fun _ -> value) (fun _ -> value) (fun _ -> value) (fun _ -> value) act)
 
 let private caseRoundTrip expected kind (inject, project) candidates =
     project (inject expected) = Some expected
@@ -42,7 +32,7 @@ let private caseProperty =
                 Payment = Change.Clear
             }
 
-        let candidates = caseActs value correction
+        let candidates = caseActs value
 
         return
             CaseActKind.all
@@ -62,15 +52,7 @@ let private authorityProperty =
     property {
         let! value = values
 
-        let candidates =
-            [
-                AuthorityAct.ProvisionOwner
-                AuthorityAct.Register
-                AuthorityAct.Grant value
-                AuthorityAct.Revoke(value + 1)
-                AuthorityAct.Enable
-                AuthorityAct.Disable
-            ]
+        let candidates = Inputs.authorityActs [ value; value + 1 ] |> List.map fst
 
         return
             AuthorityKind.all

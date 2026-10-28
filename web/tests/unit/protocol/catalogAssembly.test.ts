@@ -1,3 +1,4 @@
+import { inventory } from "../../support/inventory";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
@@ -5,11 +6,11 @@ import { productMetadata } from "../../../src/protocol/productMetadata";
 import { assembleCatalogInput, atPath } from "../../../src/protocol/catalogAssembly";
 import type { FormValues } from "../../../src/protocol/forms";
 
-it("assembles all thirty captured frames including reads and selected correction branches", () => {
+it("assembles all inventoried captured frames including reads and selected correction branches", () => {
   const rows = readFileSync(resolve("../tests/fixtures/cli-frames.tsv"), "utf8")
     .trimEnd()
     .split("\n");
-  expect(rows).toHaveLength(30);
+  expect(rows).toHaveLength(inventory.cliFrameCount);
   for (const row of rows) {
     const [arguments_, expectedJson] = row.split("\t");
     const expected = JSON.parse(expectedJson!) as {

@@ -1,3 +1,4 @@
+import { businessFieldCount } from "../support/inventory";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useSession } from "../../src/hooks/useSession";
@@ -21,7 +22,7 @@ it("admits matching public session metadata without protected definition access"
     "contractIdentity",
     "productVersion",
   ]);
-  expect(productMetadata.catalog.fields).toHaveLength(13);
+  expect(productMetadata.catalog.fields).toHaveLength(businessFieldCount);
   expect(productMetadata.productVersion).not.toBe("");
 });
 

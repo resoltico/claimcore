@@ -1,3 +1,4 @@
+import { businessFieldCount } from "../tests/support/inventory";
 import { expect, type Page } from "@playwright/test";
 
 import { isResponse } from "../src/protocol/client";
@@ -56,7 +57,9 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
-  await expect(page.locator("section.receipt section.case-fields dl > div")).toHaveCount(13);
+  await expect(page.locator("section.receipt section.case-fields dl > div")).toHaveCount(
+    businessFieldCount,
+  );
   await progress("accepted-receipt");
 };
 
@@ -142,6 +145,8 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await submit(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await progress("open-detail");
-  await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(13);
+  await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(
+    businessFieldCount,
+  );
   return identity;
 };

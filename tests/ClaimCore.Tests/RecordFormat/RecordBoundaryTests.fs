@@ -296,27 +296,7 @@ let private independentNames () =
         "Oversized encoding is an internal fault"
 
 let private kindRoundTrips () =
-    let cases: (AuthoredCaseAct * string) list =
-        [
-            AuthoredCaseAct.Open registration, "OPEN"
-            AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
-            AuthoredCaseAct.Correct
-                {
-                    Registration = Amendment.Keep
-                    Decision = Change.Keep
-                    Payment = Change.Keep
-                },
-            "CORRECT"
-            AuthoredCaseAct.Decide Fixtures.decision, "DECIDE"
-            AuthoredCaseAct.WithdrawDecision, "WITHDRAW_DECISION"
-            AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, "RECORD_PAYMENT"
-            AuthoredCaseAct.ClearPayment, "CLEAR_PAYMENT"
-            AuthoredCaseAct.Close, "CLOSE"
-            AuthoredCaseAct.Reopen, "REOPEN"
-            AuthoredCaseAct.Void "boundary", "VOID"
-            AuthoredCaseAct.Reinstate "boundary", "REINSTATE"
-            AuthoredCaseAct.Erase, "ERASE"
-        ]
+    let cases = Inputs.caseActs registration Fixtures.decision Inputs.payment "boundary"
 
     Expect.equal
         (cases |> List.map (fst >> CaseAct.kind) |> Set.ofList)
@@ -343,15 +323,7 @@ let private kindRoundTrips () =
             Scope = GrantTarget.Installation
         }
 
-    let acts: (AuthoredAuthorityAct * string) list =
-        [
-            AuthoredAuthorityAct.ProvisionOwner, "PROVISION_OWNER"
-            AuthoredAuthorityAct.Register, "REGISTER"
-            AuthoredAuthorityAct.Grant grant, "GRANT"
-            AuthoredAuthorityAct.Revoke grant, "REVOKE"
-            AuthoredAuthorityAct.Enable, "ENABLE"
-            AuthoredAuthorityAct.Disable, "DISABLE"
-        ]
+    let acts = Inputs.authorityActs [ grant ]
 
     Expect.equal
         (acts |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)

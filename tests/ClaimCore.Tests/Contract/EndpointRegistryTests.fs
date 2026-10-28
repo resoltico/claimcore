@@ -27,6 +27,12 @@ let private roundTrip codec value =
         (Ok value)
         "The shared model crosses its codec unchanged."
 
+let rec private inputMembers definitions =
+    function
+    | Schema.Ref name -> inputMembers definitions (Map.find name definitions)
+    | Schema.Object(members, _) -> members |> List.map fst |> Set.ofList
+    | _ -> failtest "Inventoried read inputs require an object schema."
+
 let private registry () =
     let rows =
         Api.all
@@ -34,40 +40,27 @@ let private registry () =
 
 
     let expected =
-        [
-            "session"
-            "session.logout"
-            "context"
-            "case.get"
-            "case.list"
-            "case.history"
-            "operation.preview"
-            "operation.execute"
-            "operation.observe"
-            "operation.resolve"
-            "authority.list"
-            "authority.grants"
-        ]
+        Inventory.rows "endpoints"
+        |> List.map (fun row ->
+            row.GetProperty("token").GetString() |> nonNull,
+            row.GetProperty("method").GetString() |> nonNull,
+            row.GetProperty("effect").GetString() |> nonNull)
 
     Expect.equal
-        (rows |> List.map (fun (id, _, _) -> id) |> List.sort)
+        (rows
+         |> List.map (fun (token, method, effect) -> token, method, string effect)
+         |> List.sort)
         (List.sort expected)
-        "The registry contains each adopted endpoint exactly once."
+        "The registry contains exactly the independently inventoried methods and effects."
 
-    for endpoint, method, effect in rows do
-        Expect.equal
-            method
-            (if endpoint = "session" then "GET" else "POST")
-            "Transport method is explicit."
+    for KeyValue(token, expected) in Inventory.readInputs do
+        let route = Api.tryFind token |> Option.get
 
         Expect.equal
-            effect
-            (match endpoint with
-             | "operation.execute" -> EndpointEffect.LedgerExecution
-             | "operation.resolve"
-             | "session.logout" -> EndpointEffect.OperationalWrite
-             | _ -> EndpointEffect.Read)
-            "Operational writes and ledger execution have distinct delivery effects."
+            (inputMembers route.InputDefinitions route.InputSchema)
+            expected
+            ("Read input inventory: " + token)
+
 
 let private readReplies () =
     let codec = ReplyCodecs.readReply "BooleanReply" Codec.boolean
@@ -229,7 +222,7 @@ let tests =
     testList
         "typed endpoint registry"
         [
-            testCase "the twelve endpoints own method and mutation classification" registry
+            testCase "inventoried endpoints own method and mutation classification" registry
             testCase "one read envelope carries success, refusal and fault" readReplies
             testCase "preview and execution share receipt and refusal models" mutationReplies
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity

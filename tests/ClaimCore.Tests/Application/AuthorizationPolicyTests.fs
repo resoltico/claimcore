@@ -13,7 +13,7 @@ open ClaimCore.Tests.AuthorityPolicyInputs
 
 
 let private matrix () =
-    Expect.equal Role.all.Length 7 "Seven roles"
+    Expect.equal (Role.all |> List.map Role.token) (Inventory.tokens "roles") "Inventoried roles"
 
     Expect.isTrue
         (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
@@ -380,14 +380,11 @@ let private humanOnlyCapabilities () =
         Role.all
         |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
 
-    Expect.equal
-        (derived Authority.policy)
-        [ Role.Owner; Role.DataSteward ]
-        "Current human-only roles"
+    Expect.equal (derived Authority.policy) humanRoles "Current human-only roles"
 
     Expect.equal
         (Role.all |> List.filter Authority.humanOnlyRole)
-        [ Role.Owner; Role.DataSteward ]
+        humanRoles
         "Production roles derive from capabilities"
 
     let withSteward role =
@@ -400,7 +397,8 @@ let private humanOnlyCapabilities () =
 
     Expect.equal
         (derived withSteward)
-        [ Role.Owner; Role.CaseReader; Role.DataSteward ]
+        (Role.all
+         |> List.filter (fun role -> role = Role.CaseReader || List.contains role humanRoles))
         "Negative control: granting Steward changes the principal restriction"
 
 [<Tests>]
