@@ -134,8 +134,7 @@ module internal DatabaseSession =
         parsedCalendarDate (value<string> index row)
 
 
-    let recordedInstant index row =
-        let text = value<string> index row
+    let private recordedText text =
         let format = JsonFormats.InstantFormat + " 'AD'"
 
         match
@@ -148,6 +147,11 @@ module internal DatabaseSession =
         with
         | true, parsed when parsed.ToString(format, CultureInfo.InvariantCulture) = text -> parsed
         | _ -> raise (RecordCorruptException "Invalid stored ledger instant.")
+
+    let recordedInstant index row = recordedText (value<string> index row)
+
+    let namedRecordedInstant name row =
+        recordedText (namedValue<string> name row)
 
     let transaction (source: NpgsqlDataSource) isolation token action =
         task {

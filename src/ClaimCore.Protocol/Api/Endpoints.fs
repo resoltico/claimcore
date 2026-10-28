@@ -150,7 +150,7 @@ module Api =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
             HttpMethod.Post
-            RequestCodecs.pageRequest
+            RequestCodecs.caseListRequest
             (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
 
     let caseHistory =

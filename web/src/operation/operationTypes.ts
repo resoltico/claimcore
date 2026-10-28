@@ -1,7 +1,7 @@
 import type { OperationReceipt, OperationReview } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
 import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
-import type { FormValues } from "../protocol/forms";
+import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
@@ -97,7 +97,7 @@ export type OperationAction =
   | {
       type: "EDIT";
       path: string;
-      value: string | boolean;
+      value: FormValue;
       id: string;
     }
   | {

@@ -18,25 +18,52 @@ module internal TextGenericReply =
         |> Option.map (label language)
         |> Option.defaultValue name
 
-    let rec private resolve definitions value =
+    let rec private unwrapped definitions =
         function
-        | Schema.Ref name -> resolve definitions value (Map.find name definitions)
-        | Schema.Vocabulary(_, schema) -> resolve definitions value schema
-        | Schema.OneOf(variants, _) ->
-            let matches =
-                function
-                | Schema.Object(fields, _) ->
-                    fields
-                    |> List.forall (fun (name, schema) ->
-                        match schema with
-                        | Schema.Const token ->
-                            JsonValue.tryMember name value = Some(JsonValue.String token)
-                        | _ -> true)
-                | Schema.Null -> value = JsonValue.Null
-                | _ -> true
+        | Schema.Ref name -> unwrapped definitions (Map.find name definitions)
+        | Schema.Vocabulary(_, schema) -> unwrapped definitions schema
+        | schema -> schema
 
+    let private objectMatches fields optional actual =
+        let declared = fields |> List.map fst
+
+        actual |> List.forall (fun (name, _) -> List.contains name declared)
+        && (fields
+            |> List.forall (fun (name, schema) ->
+                match schema with
+                | Schema.Const token ->
+                    List.tryFind (fst >> (=) name) actual = Some(name, JsonValue.String token)
+                | _ -> List.contains name optional || actual |> List.exists (fst >> (=) name)))
+
+    let rec private matches definitions value schema =
+        match unwrapped definitions schema, value with
+        | Schema.Object(fields, optional), JsonValue.Object actual ->
+            objectMatches fields optional actual
+        | Schema.Array _, JsonValue.Array _ -> true
+        | Schema.String _, JsonValue.String _ -> true
+        | Schema.Integer _, JsonValue.Integer _ -> true
+        | Schema.Boolean, JsonValue.Boolean _ -> true
+        | Schema.Null, JsonValue.Null -> true
+        | Schema.Const expected, JsonValue.String actual -> expected = actual
+        | Schema.OneOf(variants, _), _ -> variants |> List.exists (matches definitions value)
+        | _ -> false
+
+    let rec private resolve definitions value schema =
+        match unwrapped definitions schema with
+        | Schema.OneOf(_, Some(discriminator, mapping)) ->
+            let selected =
+                JsonValue.tryMember discriminator value
+                |> Option.bind (function
+                    | JsonValue.String token ->
+                        mapping |> List.tryFind (fst >> (=) token) |> Option.map (snd >> Schema.Ref)
+                    | _ -> None)
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Admitted output requires a declared discriminator.")
+
+            resolve definitions value selected
+        | Schema.OneOf(variants, None) ->
             variants
-            |> List.tryFind matches
+            |> List.tryFind (matches definitions value)
             |> Option.defaultWith (fun () ->
                 invalidOp "Admitted output requires a matching schema.")
             |> resolve definitions value

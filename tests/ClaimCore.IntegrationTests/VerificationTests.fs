@@ -28,8 +28,11 @@ let tests =
                     testCaseAsync
                         ($"duplicate identity with {occurrences} occurrences and corruption {earlier}")
                         (run (duplicateIdentity earlier occurrences))
-            testCase "all seventeen finding identifiers are explicitly covered" (fun () ->
-                Expect.equal findingCases.Length 17 "Closed finding vocabulary"
+            testCase "all inventoried finding identifiers are explicitly covered" (fun () ->
+                Expect.equal
+                    (findingCases |> List.map (fst >> VerificationFinding.token) |> Set.ofList)
+                    (Inventory.tokens "verificationFindings" |> Set.ofList)
+                    "Closed independent finding inventory"
 
                 Expect.equal
                     (findingCases |> List.map fst |> Set.ofList)

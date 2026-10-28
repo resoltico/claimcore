@@ -76,22 +76,30 @@ type internal Writer(inputs: WriteInputs) =
 
             let cases =
                 match projection with
-                | CaseProjection.Insert(id, snapshot)
-                | CaseProjection.Update(id, snapshot) ->
+                | CaseProjection.Insert(id, snapshot, index)
+                | CaseProjection.Update(id, snapshot, index) ->
                     Map.add
                         id
                         {
                             CaseId = id
                             Snapshot = snapshot
+                            Index = index
                             SnapshotBytes = CaseRecord.encodeSnapshot snapshot
                         }
                         state.Cases
-                | CaseProjection.Erase(id, revision) ->
+                | CaseProjection.Erase(id, revision, changedAt) ->
                     Map.add
                         id
                         {
                             CaseId = id
                             SnapshotBytes = Array.empty
+                            Index =
+                                {
+                                    Status = None
+                                    Progress = None
+                                    SearchText = None
+                                    ChangedAt = changedAt
+                                }
                             Snapshot =
                                 { state.Cases[id].Snapshot with
                                     Revision = revision
@@ -102,7 +110,7 @@ type internal Writer(inputs: WriteInputs) =
 
             let entries =
                 match projection with
-                | CaseProjection.Erase(id, _) ->
+                | CaseProjection.Erase(id, _, _) ->
                     state.Entries
                     |> Map.map (fun _ entry ->
                         match entry.Subject with

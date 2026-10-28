@@ -38,6 +38,7 @@ module CliDocumentation =
                 match input.Name with
                 | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
                 | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
+                | (InteractionInput.Target InputTarget.Text) -> Some ScalarGuidance.forSearchText
                 | _ -> None
 
             guidance
@@ -75,6 +76,7 @@ module CliDocumentation =
                     |> List.map (fun input ->
                         let choices =
                             match input.Atom with
+                            | CatalogAtom.Choices choices
                             | CatalogAtom.Choice choices ->
                                 choices |> List.map CommandGrammar.kebab |> String.concat ", "
                             | _ -> ""
@@ -113,6 +115,10 @@ module CliDocumentation =
             "A synopsis shows required inputs and brackets optional inputs. Choices use lowercase kebab spelling; exact uppercase wire tokens are also accepted. Mutation operations generate an operation ID when omitted. Keep that ID and the exact prepared frame for retries."
             ""
             "Use `--dry-run` to print the prepared JSON frame without authentication. This checks protocol shape and byte limits; domain admission, authorization and current revision are checked by the service. Use `--preview` with a case or authority act to request a review without recording it."
+            ""
+            "Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling."
+            ""
+            "Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--order reference|recent` selects the page order. A continuation cursor is bound to those filters and order."
             ""
             "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values."
             ""

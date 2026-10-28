@@ -923,6 +923,31 @@
           "kind": "ENABLE"
         }
       }
+    },
+    {
+      "id": "case.list-request-facets",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 2,
+        "lifecycle": [
+          "ACTIVE",
+          "VOIDED",
+          "ERASED"
+        ],
+        "status": [
+          "OPENED",
+          "CLOSED"
+        ],
+        "progress": [
+          "UNDECIDED",
+          "DECIDED",
+          "PAID"
+        ],
+        "text": "Rīga",
+        "order": "RECENT"
+      }
     }
   ]
 }

@@ -371,6 +371,13 @@ let internal expected (database: PostgresFixture.Database) =
             "External checkpoint differs"
     }
 
+let private indexFinding expected statement database =
+    task {
+        let! _ = populated database
+        do! sql database statement [||]
+        do! finding expected database
+    }
+
 let internal findingCases =
     [
         VerificationFinding.Link, link
@@ -387,6 +394,22 @@ let internal findingCases =
         VerificationFinding.HumanRequired, human
         VerificationFinding.OwnerRequired, owner
         VerificationFinding.CaseProjection, caseProjection
+        VerificationFinding.CaseStatusProjection,
+        indexFinding
+            VerificationFinding.CaseStatusProjection
+            "UPDATE claimcore.cases SET status='CLOSED'"
+        VerificationFinding.CaseProgressProjection,
+        indexFinding
+            VerificationFinding.CaseProgressProjection
+            "UPDATE claimcore.cases SET progress='PAID'"
+        VerificationFinding.CaseChangedAtProjection,
+        indexFinding
+            VerificationFinding.CaseChangedAtProjection
+            "UPDATE claimcore.cases SET changed_at=changed_at+interval '1 second'"
+        VerificationFinding.CaseSearchProjection,
+        indexFinding
+            VerificationFinding.CaseSearchProjection
+            "UPDATE claimcore.cases SET search_text='tampered'"
         VerificationFinding.AuthorityProjection, authorityProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected

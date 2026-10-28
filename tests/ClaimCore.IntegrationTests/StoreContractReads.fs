@@ -85,7 +85,8 @@ let internal casePage fixture principal visibility after limit =
                                     ActorId = actor.Actor.Value.ActorId
                                     ReadRoles = Authority.readRoles principal
                                     ForbiddenRoles = Authority.invalidRoles principal
-                                    AfterReference = after
+                                    AfterPosition = after
+                                    Filter = CaseListFilter.empty<CaseSearchText>
                                     Limit = limit
                                 }
                             )

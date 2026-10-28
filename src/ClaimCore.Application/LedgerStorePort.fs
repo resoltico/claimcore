@@ -16,11 +16,31 @@ type StoreFailure =
     | Cancelled
     | CommitOutcomeUnknown
 
+type CaseIndex =
+    {
+        Status: CaseStatus option
+        Progress: CaseProgress option
+        ChangedAt: DateTimeOffset
+        SearchText: string option
+    }
+
+module CaseIndex =
+    let create changedAt (snapshot: CaseSnapshot) =
+        let fields = CaseState.fields snapshot.State
+
+        {
+            Status = fields |> Option.map _.Status
+            Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
+            ChangedAt = changedAt
+            SearchText = fields |> Option.map CaseSearch.text
+        }
+
 type StoredCase =
     {
         CaseId: CaseId
         Snapshot: CaseSnapshot
         SnapshotBytes: byte array
+        Index: CaseIndex
     }
 
 [<RequireQualifiedAccess>]
@@ -43,9 +63,9 @@ type StoredEntry =
 
 [<RequireQualifiedAccess>]
 type CaseProjection =
-    | Insert of caseId: CaseId * snapshot: CaseSnapshot
-    | Update of caseId: CaseId * snapshot: CaseSnapshot
-    | Erase of caseId: CaseId * revision: Revision
+    | Insert of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
+    | Update of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
+    | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
 
 type EntryDraft =
     {
@@ -81,7 +101,8 @@ type CasePageQuery =
         ActorId: ActorId
         ReadRoles: Role list
         ForbiddenRoles: Role list
-        AfterReference: string option
+        Filter: CaseListFilter<CaseSearchText>
+        AfterPosition: CaseListPosition option
         Limit: int
     }
 
@@ -124,7 +145,7 @@ type IReadTx =
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindEntry: OperationId -> Task<StoredEntry option>
 
-    abstract CasePage: CasePageQuery -> Task<Page<StoredCase, string>>
+    abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
 
     abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>

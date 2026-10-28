@@ -31,8 +31,7 @@ module LedgerVerification =
             result {
                 let! cases = CaseFold.apply state.Cases entry payload
 
-                let human =
-                    List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
+                let human = (CaseActKind.describe act).Family = ActFamily.Stewardship
 
                 do! AuthorityFold.executor state.Actors entry human false
                 return cases, state.Actors

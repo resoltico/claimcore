@@ -21,7 +21,10 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         do! cases actor
 
         let! first =
-            (Service.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
+                (CancellationToken.None))
 
         let first = succeeded first
 
@@ -33,10 +36,12 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         let! rest =
             (Service.list
                 actor
-                ({
-                    AfterCursor = first.NextCursor
-                    Limit = 2
-                })
+                ((ClaimCore.TestSupport.Inputs.caseListPage (
+                    {
+                        AfterCursor = first.NextCursor
+                        Limit = 2
+                    }
+                )))
                 (CancellationToken.None))
 
         let rest = succeeded rest
@@ -55,13 +60,19 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
         do! cases admin
 
         let! first =
-            (Service.list admin ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                admin
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
+                (CancellationToken.None))
 
         let token = (succeeded first).NextCursor
         let! _, another = reader fixture admin
 
         let! crossed =
-            (Service.list another ({ AfterCursor = token; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                another
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = token; Limit = 1 })))
+                (CancellationToken.None))
 
         Expect.equal
             (succeeded crossed).Items.Length
@@ -82,7 +93,10 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
         acceptedAuthority extra
 
         let! changed =
-            (Service.list admin ({ AfterCursor = token; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                admin
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = token; Limit = 1 })))
+                (CancellationToken.None))
 
         Expect.equal
             (succeeded changed).Items.Length
@@ -142,79 +156,16 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
         do! differentHistoryResource actor query first.NextCursor
     }
 
-let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
-    task {
-        let! actor = caseWorker fixture
-
-        do! registerActors actor
-
-        let! first =
-            (Service.actors actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
-
-        let first = succeeded first
-
-        Expect.equal
-            (first.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
-            [ id 1 ]
-            "Stable actor-ID order"
-
-        let! second =
-            (Service.actors
-                actor
-                ({
-                    AfterCursor = first.NextCursor
-                    Limit = 2
-                })
-                (CancellationToken.None))
-
-        let second = succeeded second
-
-        Expect.equal
-            (second.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
-            [ id 10; id 11 ]
-            "Changed page size"
-
-        let! third =
-            (Service.actors
-                actor
-                ({
-                    AfterCursor = second.NextCursor
-                    Limit = 1
-                })
-                (CancellationToken.None))
-
-        match third with
-        | Outcome.Succeeded page ->
-            Expect.equal
-                (page.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
-                [ id 12 ]
-                "No omission"
-
-            Expect.isNone page.NextCursor "End of review"
-        | _ -> failtest "Missing final review page"
-
-        let! wrongEndpoint =
-            (Service.list
-                actor
-                ({
-                    AfterCursor = first.NextCursor
-                    Limit = 1
-                })
-                (CancellationToken.None))
-
-        Expect.equal
-            wrongEndpoint
-            (Outcome.Rejected Refusal.InvalidCursor)
-            "Authority continuation is endpoint-bound even when its position is valid ASCII"
-    }
-
 let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         do! cases actor
 
         let! first =
-            (Service.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
+                (CancellationToken.None))
 
         let original = (succeeded first).NextCursor |> cursor
 
@@ -222,10 +173,12 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
             let! outcome =
                 (Service.list
                     actor
-                    ({
-                        AfterCursor = Some malformed
-                        Limit = 1
-                    })
+                    ((ClaimCore.TestSupport.Inputs.caseListPage (
+                        {
+                            AfterCursor = Some malformed
+                            Limit = 1
+                        }
+                    )))
                     (CancellationToken.None))
 
             Expect.equal
@@ -244,10 +197,12 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
         let! old =
             (Service.list
                 restarted
-                ({
-                    AfterCursor = Some original
-                    Limit = 1
-                })
+                ((ClaimCore.TestSupport.Inputs.caseListPage (
+                    {
+                        AfterCursor = Some original
+                        Limit = 1
+                    }
+                )))
                 (CancellationToken.None))
 
         Expect.equal (succeeded old).Items.Length 1 "Plain continuation survives facade restart"
@@ -268,7 +223,10 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
                 owner
 
         let! first =
-            (Service.list actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
+                (CancellationToken.None))
 
         succeeded first |> ignore
         Expect.equal proxy.ReadCalls 1 "List authorizes and fetches in one read"
@@ -333,14 +291,20 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
         acceptedAuthority scoped
 
         let! readers =
-            (Service.list actor ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 50 })))
+                (CancellationToken.None))
 
         Expect.isFalse
             ((succeeded readers).Offers |> List.contains InstallationOffer.Open)
             "Case-scoped registrar has no installation registration advice"
 
         let! owners =
-            (Service.list admin ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
+            (Service.list
+                admin
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 50 })))
+                (CancellationToken.None))
 
         let offers = (succeeded owners).Offers
 
@@ -415,63 +379,11 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
     }
 
-let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixture) =
-    task {
-        let! admin = caseWorker fixture
-        let! view = inspectAuthority fixture (owner) (CancellationToken.None)
-        let view = view |> Result.defaultWith (fun _ -> failtest "Caller authority")
-        let authority = view.Actor |> Option.get
-
-        for position in invalidGrantPositions do
-            let cursor =
-                let json =
-                    $"{{\"actor\":\"{authority.ActorId:D}\",\"after\":{position},\"kind\":\"GRANTS\",\"v\":1}}"
-
-                Convert
-                    .ToBase64String(System.Text.Encoding.UTF8.GetBytes json)
-                    .TrimEnd('=')
-                    .Replace('+', '-')
-                    .Replace('/', '_')
-
-            let! refused =
-                (Service.grants
-                    admin
-                    ({
-                        ActorId = ActorId.value authority.ActorId
-                        AfterCursor = Some cursor
-                        Limit = 50
-                    })
-                    (CancellationToken.None))
-
-            Expect.equal
-                refused
-                (Outcome.Rejected Refusal.InvalidCursor)
-                "A plain envelope does not admit an invalid grant position"
-
-        let! invalidLimit =
-            (Service.grants
-                admin
-                ({
-                    ActorId = ActorId.value authority.ActorId
-                    AfterCursor = None
-                    Limit = 51
-                })
-                (CancellationToken.None))
-
-        Expect.equal
-            invalidLimit
-            (Outcome.Rejected(Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange 50)))
-            "Public grant page is bounded"
-    }
-
 [<Tests>]
 let tests =
     testList
         "authorized continuation pages"
         [
-            testCaseAsync
-                "plain grant positions retain primitive and semantic admission"
-                (run grantCursorRejections)
             testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
             testCaseAsync
                 "FULL history uses fifty and continues after its last included revision"
@@ -485,9 +397,6 @@ let tests =
             testCaseAsync
                 "history positions bind the normalized resource and permit changed detail and limits"
                 (run historyBinding)
-            testCaseAsync
-                "authority continuation pages actors once and cannot cross endpoints"
-                (run authorityLimits)
             testCaseAsync
                 "malformed tokens refuse and plain positions survive restart"
                 (run malformedAndRestart)

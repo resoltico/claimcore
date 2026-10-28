@@ -42,20 +42,10 @@ let registration: RegistrationInput =
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
 let registrationFrom values =
-    RegistrationInput.create values |> accepted
+    RegistrationInput.replace values registration |> accepted
 
 let registrationWith changes value =
     RegistrationInput.replace changes value |> accepted
-
-let decisionFrom values = DecisionInput.create values |> accepted
-
-let decisionWith changes value =
-    DecisionInput.replace changes value |> accepted
-
-let paymentFrom values = PaymentInput.create values |> accepted
-
-let paymentWith changes value =
-    PaymentInput.replace changes value |> accepted
 
 let exampleRegistration =
     registrationWith
@@ -84,6 +74,24 @@ let payment: PaymentInput =
         ClaimCore.Protocol.RequestCodecs.payment
         "payment"
         (Map.ofList [ "paymentDate", "2026-08-20" ])
+
+let decisionFrom values =
+    DecisionInput.replace values decision |> accepted
+
+let decisionWith changes value =
+    DecisionInput.replace changes value |> accepted
+
+let paymentFrom values =
+    PaymentInput.replace values payment |> accepted
+
+let paymentWith changes value =
+    PaymentInput.replace changes value |> accepted
+
+let caseListPage page =
+    {
+        CaseListRequest.Page = page
+        Filter = CaseListFilter.empty<string>
+    }
 
 let correction: AuthoredCorrection =
     {
@@ -123,17 +131,20 @@ let admittedDecision input =
 let admittedPayment input =
     admitGroup (PaymentInput.values input) Payment.create
 
-let registrationStateFrom values = Registration.create values |> accepted
+let registrationStateFrom values =
+    Registration.replace values (admittedRegistration registration) |> accepted
 
 let registrationStateWith changes value =
     Registration.replace changes value |> accepted
 
-let decisionStateFrom values = Decision.create values |> accepted
+let decisionStateFrom values =
+    Decision.replace values (admittedDecision decision) |> accepted
 
 let decisionStateWith changes value =
     Decision.replace changes value |> accepted
 
-let paymentStateFrom values = Payment.create values |> accepted
+let paymentStateFrom values =
+    Payment.replace values (admittedPayment payment) |> accepted
 
 let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
     AuthorityRequests.input operationId target act

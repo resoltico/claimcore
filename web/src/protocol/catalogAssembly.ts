@@ -34,6 +34,14 @@ const assign = (
   }
   target[path.at(-1)!] = value;
 };
+const emptyInput = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  value === "" ||
+  (Array.isArray(value) && value.length === 0);
+const implicitChoice = (input: CatalogInput, value: unknown): boolean =>
+  input.kind.kind === "CHOICE" && value === input.default;
+
 export const assembleCatalogInput = (
   entry: CatalogEntry,
   values: FormValues,
@@ -44,7 +52,8 @@ export const assembleCatalogInput = (
   }
   for (const input of entry.inputs.filter((item) => applies(item, values))) {
     const value = values[bindingPath(input)] ?? input.default;
-    if ((value === undefined || value === null || value === "") && !input.required) {
+    // Optional finite choices use their implicit wire default; integer page bounds remain explicit.
+    if (!input.required && (emptyInput(value) || implicitChoice(input, value))) {
       continue;
     }
     assign(root, input.path, input.kind.kind === "INTEGER" ? Number(value) : (value ?? ""));

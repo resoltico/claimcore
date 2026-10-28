@@ -1,7 +1,7 @@
 import { isTerm, isVocabulary } from "../presentation/terms";
 import type { CatalogEntry } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
-import type { FormValues } from "../protocol/forms";
+import type { FormValues, FormValue } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { renderCatalogKey } from "../presentation/messages";
@@ -16,7 +16,7 @@ type Props = {
   current: CurrentCase | null;
   disabled: boolean;
   fieldErrors: Readonly<Record<string, Notice>>;
-  onChange: (path: string, value: string | boolean) => void;
+  onChange: (path: string, value: FormValue) => void;
 };
 const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<string> => {
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
@@ -138,10 +138,52 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     </div>
   );
 };
+const ChoiceSetInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
+  const p = usePresentation();
+  const path = bindingPath(input);
+  const error = inputError(input, props);
+  const value = props.values[path];
+  const selected = typeof value === "object" ? value : [];
+  if (input.kind.kind !== "CHOICES") {
+    return null;
+  }
+  const { vocabulary, options } = input.kind;
+  return (
+    <fieldset aria-describedby={descriptionIds(input, error)}>
+      <legend>{renderCatalogKey(p, input.labelId)}</legend>
+      {options.map((option) => (
+        <label key={option}>
+          <input
+            type="checkbox"
+            name={path}
+            value={option}
+            disabled={props.disabled}
+            checked={selected.includes(option)}
+            onChange={(event) => {
+              props.onChange(
+                path,
+                event.target.checked
+                  ? [...selected, option]
+                  : selected.filter((choice) => choice !== option),
+              );
+            }}
+          />
+          {isVocabulary(vocabulary) && isTerm(vocabulary, option)
+            ? p.term(vocabulary, option)
+            : option}
+        </label>
+      ))}
+      <InputDescription input={input} error={error} />
+    </fieldset>
+  );
+};
 const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const error = inputError(input, props);
+  if (input.kind.kind === "CHOICES") {
+    return <ChoiceSetInput input={input} {...props} />;
+  }
   if (input.kind.kind === "BOOLEAN") {
     return (
       <div>

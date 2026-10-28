@@ -71,6 +71,8 @@ module Terms =
             rendered ScopeKind.vocabulary
             rendered ActKind.vocabulary
             rendered HistoryDetail.vocabulary
+            rendered CaseListOrder.vocabulary
+            rendered CaseProgress.vocabulary
             rendered ActSubject.vocabulary
             fieldTerms
             rendered RecordGroup.vocabulary

@@ -48,7 +48,7 @@ let private serviceCases (admin: ServiceContext) principal =
             acceptedAuthority assigned
     }
 
-let private serviceScopeCorruption () =
+let private serviceScopeCorruption installationRead =
     async {
         let! database = PostgresFixture.create () |> Async.AwaitTask
 
@@ -59,6 +59,22 @@ let private serviceScopeCorruption () =
 
             let! admin = caseWorker database.Fixture |> Async.AwaitTask
             do! serviceCases admin principal |> Async.AwaitTask
+
+            if installationRead then
+                let! granted =
+                    grant
+                        admin
+                        (id 430)
+                        principal
+                        {
+                            Role = Role.CaseReader
+                            Scope = GrantTarget.Installation
+                        }
+                        true
+                    |> Async.AwaitTask
+
+                acceptedAuthority granted
+
 
             use! connection =
                 database.OwnerSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask
@@ -89,7 +105,10 @@ let private serviceScopeCorruption () =
                 "Loaded human-only corruption refuses the scoped view"
 
             let! visible =
-                (Service.list service ({ AfterCursor = None; Limit = 50 }) (CancellationToken.None))
+                (Service.list
+                    service
+                    ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 50 })))
+                    (CancellationToken.None))
                 |> Async.AwaitTask
 
             match visible with
@@ -99,7 +118,7 @@ let private serviceScopeCorruption () =
                      |> List.map (fun (summary: CaseSummary) ->
                          CaseReference.format summary.Reference))
                     [ "SERVICE-2" ]
-                    "Assigned SQL cannot disclose through a corrupt human-only row"
+                    "List authorization cannot disclose through a corrupt human-only row"
             | _ -> failtest "Valid independent case must remain readable"
         finally
             database.Fixture.Dispose()
@@ -112,6 +131,9 @@ let tests =
         [
             ClaimCore.TestSupport.StoreContractTests.tests PostgresFixture.fixture
             testCaseAsync
+                "installation-wide service reads exclude human-only corruption in that scope"
+                (serviceScopeCorruption true)
+            testCaseAsync
                 "assigned service reads exclude human-only corruption in that scope"
-                (serviceScopeCorruption ())
+                (serviceScopeCorruption false)
         ]

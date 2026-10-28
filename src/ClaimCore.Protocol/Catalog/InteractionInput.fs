@@ -9,6 +9,10 @@ type InteractionInput =
     | Scope
     | ActorId
     | Detail
+    | Lifecycle
+    | Status
+    | Progress
+    | Order
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InteractionInput =
@@ -20,6 +24,10 @@ module InteractionInput =
         | InteractionInput.Scope -> "scope"
         | InteractionInput.ActorId -> "actorId"
         | InteractionInput.Detail -> "detail"
+        | InteractionInput.Lifecycle -> "lifecycle"
+        | InteractionInput.Status -> "status"
+        | InteractionInput.Progress -> "progress"
+        | InteractionInput.Order -> "order"
 
     let messageKey input part =
         match input with
@@ -30,7 +38,11 @@ module InteractionInput =
         | InteractionInput.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
         | InteractionInput.Scope
         | InteractionInput.ActorId
-        | InteractionInput.Detail -> vocabularyName + "." + key input + "." + part
+        | InteractionInput.Detail
+        | InteractionInput.Lifecycle
+        | InteractionInput.Status
+        | InteractionInput.Progress
+        | InteractionInput.Order -> vocabularyName + "." + key input + "." + part
 
     let extras =
         FSharpType.GetUnionCases typeof<InteractionInput>

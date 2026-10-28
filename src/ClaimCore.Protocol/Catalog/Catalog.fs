@@ -26,6 +26,14 @@ module Catalog =
                         Scalar =
                             if input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.Text then
+                                Some(
+                                    ScalarRule.Text
+                                        { PartyName.descriptor with
+                                            MaximumCharacters =
+                                                Some CaseSearchText.MaximumCharacters
+                                        }
+                                )
                             else
                                 None
                     })

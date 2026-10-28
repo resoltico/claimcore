@@ -249,15 +249,30 @@ CREATE TABLE claimcore.cases (
     state text NOT NULL CHECK (state IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
     snapshot bytea,
+    status text CHECK (status ~ '^[A-Z][A-Z_]{0,39}$'),
+    progress text CHECK (progress ~ '^[A-Z][A-Z_]{0,39}$'),
+    changed_at timestamptz NOT NULL CHECK (
+        changed_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z'
+                       AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
+    ),
+    search_text text CHECK (search_text IS NULL OR octet_length(search_text) BETWEEN 1 AND 1048576),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]{1,80}$'),
-    CONSTRAINT erased_shape CHECK ((state = 'ERASED') = (snapshot IS NULL)),
+    CONSTRAINT erased_shape CHECK (
+        ((state = 'ERASED') = (snapshot IS NULL))
+        AND ((state = 'ERASED') = (status IS NULL))
+        AND ((state = 'ERASED') = (progress IS NULL))
+        AND ((state = 'ERASED') = (search_text IS NULL))
+    ),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
 -- One case per reference regardless of ASCII letter case; also the list order and keyset.
 CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference COLLATE "C"));
+
+CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
+CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
 
 CREATE TABLE claimcore.actors (
     -- The operation ID of the authority entry that registered the actor.

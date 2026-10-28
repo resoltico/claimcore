@@ -4,6 +4,8 @@ open Microsoft.FSharp.Reflection
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InputTarget =
+    // A total table maps each closed input target to its boundary identity.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let token =
         function
         | InputTarget.Field field -> BusinessField.key field
@@ -17,6 +19,7 @@ module InputTarget =
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
+        | InputTarget.Text -> "text"
 
     let private values =
         let technical =

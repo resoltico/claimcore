@@ -116,6 +116,12 @@ module Bindings =
             | _ -> refuse ("branch discriminator disagrees with its declared token: " + target)
         | _ -> refuse ("tagged branch is not an object: " + target)
 
+    let rec private finiteChoices definitions =
+        function
+        | Schema.Ref name -> definition definitions name |> finiteChoices definitions
+        | Schema.Vocabulary(name, Schema.OneOf(cases, None)) -> name, enumTokens cases
+        | _ -> refuse "array input requires a finite declared vocabulary"
+
     let walk definitions selections schema =
         let rec visit (position: Position) schema =
             match schema with
@@ -140,7 +146,9 @@ module Bindings =
             | Schema.Integer _ -> [ input position BindingKind.Integer schema ]
             | Schema.Boolean -> [ input position BindingKind.Boolean schema ]
             | Schema.Const token -> [ constant position (BindingValue.Text token) ]
-            | Schema.Array _
+            | Schema.Array(items, _, _) ->
+                let name, choices = finiteChoices definitions items
+                [ input position (BindingKind.Choices(name, choices)) schema ]
             | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
 
         and objects position properties optional =
@@ -263,6 +271,7 @@ module Bindings =
         | InteractionInput.Target(InputTarget.Field field) -> Some(InputTarget.Field field)
         | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
         | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
+        | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
         | _ -> None
 
     let private authoredRequired input annotation =

@@ -265,7 +265,11 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Target _ -> "field."
             | InteractionInput.Scope
             | InteractionInput.ActorId
-            | InteractionInput.Detail -> "input."
+            | InteractionInput.Detail
+            | InteractionInput.Lifecycle
+            | InteractionInput.Status
+            | InteractionInput.Progress
+            | InteractionInput.Order -> "input."
 
         Expect.equal
             labelId

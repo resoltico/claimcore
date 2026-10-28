@@ -452,7 +452,10 @@ module ResponseCodecs =
             })
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
-        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "CasesPage"

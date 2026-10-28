@@ -31,6 +31,7 @@
     <Compile Include="Database/OwnerInputTests.fs" />
     <Compile Include="Contract/VocabularyTests.fs" />
     <Compile Include="Contract/WireCodecTests.fs" />
+    <Compile Include="Contract/FlatGroupCodecTests.fs" />
     <Compile Include="Contract/WireRequestTests.fs" />
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
@@ -53,6 +54,7 @@
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
+    <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
@@ -83,6 +85,7 @@
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
+    <Compile Include="Application/WorklistAuthorizationTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Application/AuthorityPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
@@ -111,6 +114,7 @@
     <Compile Include="Cli/RemoteTlsTests.fs" />
     <Compile Include="Cli/TokenLifetimeTests.fs" />
     <Compile Include="Cli/CliReplyFixtures.fs" />
+    <Compile Include="Cli/GenericReplyTests.fs" />
     <Compile Include="Cli/HistoryReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
@@ -124,6 +128,7 @@
     <Compile Include="Cli/ConfigurationHelpTests.fs" />
     <Compile Include="Cli/CliDescriptionTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
+    <Compile Include="Cli/WorklistGrammarTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

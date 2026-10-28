@@ -107,6 +107,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = CaseIndex.create entry.RecordedAt snapshot
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
 
@@ -116,7 +117,11 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
-        Verdict.Proceed(entry, CaseProjection.Insert(id, snapshot), receipt)
+        Verdict.Proceed(
+            entry,
+            CaseProjection.Insert(id, snapshot, CaseIndex.create entry.RecordedAt snapshot),
+            receipt
+        )
 
     task {
         let! result =

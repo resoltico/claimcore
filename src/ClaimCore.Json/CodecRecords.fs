@@ -88,6 +88,32 @@ module internal CodecRecords =
             Definitions = fields.PropertyDefinitions
         }
 
+    /// Compose independently meaningful input groups in one closed wire object.
+    let flatten
+        get
+        (part: Fields<'Part, 'Part>)
+        (fields: Fields<'Whole, 'Part -> 'Rest>)
+        : Fields<'Whole, 'Rest> =
+        let repeated =
+            Set.intersect
+                (fields.Properties |> List.map fst |> Set.ofList)
+                (part.Properties |> List.map fst |> Set.ofList)
+
+        if not repeated.IsEmpty then
+            invalidArg (nameof part) "Flattened object members must be disjoint."
+
+        {
+            ReadFields =
+                fun path value ->
+                    fields.ReadFields path value
+                    |> Result.bind (fun apply -> part.ReadFields path value |> Result.map apply)
+            WriteFields = fun value -> fields.WriteFields value @ part.WriteFields(get value)
+            Properties = fields.Properties @ part.Properties
+            PropertyDefinitions =
+                SchemaDefinitions.merge fields.PropertyDefinitions part.PropertyDefinitions
+            OptionalMembers = fields.OptionalMembers @ part.OptionalMembers
+        }
+
     /// A closed object whose declared members share a value representation and retain typed keys.
     let fieldMap (members: ('Key * string * Codec<'Value>) list) : Codec<Map<'Key, 'Value>> =
         let add (fields: Fields<Map<'Key, 'Value>, Map<'Key, 'Value>>) (key, name, codec) =

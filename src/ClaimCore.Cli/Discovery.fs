@@ -62,6 +62,7 @@ module Discovery =
                    |> List.map (fun input ->
                        let allowed =
                            match input.Atom with
+                           | CatalogAtom.Choices values
                            | CatalogAtom.Choice values ->
                                " ["
                                + (values |> List.map CommandGrammar.kebab |> String.concat "|")
@@ -74,6 +75,8 @@ module Discovery =
                                ScalarGuidance.forField field
                            | (InteractionInput.Target InputTarget.Reason) ->
                                Some ScalarGuidance.forReason
+                           | (InteractionInput.Target InputTarget.Text) ->
+                               Some ScalarGuidance.forSearchText
                            | _ -> None
 
                        let hint =

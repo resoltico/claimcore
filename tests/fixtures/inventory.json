@@ -153,17 +153,27 @@
   "roles": [
     {
       "token": "OWNER",
-      "capabilities": ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+      "capabilities": [
+        "MANAGE_AUTHORITY",
+        "READ_AUTHORITY"
+      ],
       "humanOnly": true
     },
     {
       "token": "CASE_READER",
-      "capabilities": ["READ_CASE", "READ_HISTORY"],
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY"
+      ],
       "humanOnly": false
     },
     {
       "token": "CASE_REGISTRAR",
-      "capabilities": ["READ_CASE", "READ_HISTORY", "REGISTER"],
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "REGISTER"
+      ],
       "humanOnly": false
     },
     {
@@ -180,12 +190,20 @@
     },
     {
       "token": "PAYMENT_RECORDER",
-      "capabilities": ["READ_CASE", "READ_HISTORY", "RECORD_PAYMENT"],
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "RECORD_PAYMENT"
+      ],
       "humanOnly": false
     },
     {
       "token": "DATA_STEWARD",
-      "capabilities": ["READ_CASE", "READ_HISTORY", "STEWARD"],
+      "capabilities": [
+        "READ_CASE",
+        "READ_HISTORY",
+        "STEWARD"
+      ],
       "humanOnly": true
     },
     {
@@ -199,7 +217,10 @@
       "humanOnly": false
     }
   ],
-  "principalKinds": ["HUMAN", "SERVICE"],
+  "principalKinds": [
+    "HUMAN",
+    "SERVICE"
+  ],
   "endpoints": [
     {
       "token": "session",
@@ -303,17 +324,105 @@
     "limit",
     "scope",
     "actorId",
-    "detail"
+    "detail",
+    "text",
+    "lifecycle",
+    "status",
+    "progress",
+    "order"
   ],
   "cliFrameCount": 30,
   "readInputs": {
-    "case.get": ["caseReference"],
-    "case.list": ["limit", "cursor"],
-    "case.history": ["caseReference", "detail", "limit", "cursor"],
-    "operation.observe": ["operationId"],
-    "operation.resolve": ["operationId"],
-    "authority.list": ["limit", "cursor"],
-    "authority.grants": ["actorId", "limit", "cursor"],
+    "case.get": [
+      "caseReference"
+    ],
+    "case.list": [
+      "cursor",
+      "limit",
+      "lifecycle",
+      "status",
+      "progress",
+      "text",
+      "order"
+    ],
+    "case.history": [
+      "caseReference",
+      "detail",
+      "limit",
+      "cursor"
+    ],
+    "operation.observe": [
+      "operationId"
+    ],
+    "operation.resolve": [
+      "operationId"
+    ],
+    "authority.list": [
+      "limit",
+      "cursor"
+    ],
+    "authority.grants": [
+      "actorId",
+      "limit",
+      "cursor"
+    ],
     "context": []
-  }
+  },
+  "caseLifecycles": [
+    "ACTIVE",
+    "VOIDED",
+    "ERASED"
+  ],
+  "caseStatuses": [
+    "OPENED",
+    "CLOSED"
+  ],
+  "caseProgress": [
+    "UNDECIDED",
+    "DECIDED",
+    "PAID"
+  ],
+  "caseOrders": [
+    "REFERENCE",
+    "RECENT"
+  ],
+  "verificationFindings": [
+    "LINK",
+    "ENTRY_HASH",
+    "COMMITMENT",
+    "PAYLOAD_FORMAT",
+    "REVISION_SEQUENCE",
+    "HISTORY_START",
+    "STATE_SEQUENCE",
+    "ERASURE_INCOMPLETE",
+    "PAYLOAD_WITHOUT_ERASURE",
+    "AUTHORITY_FOLD",
+    "ACTOR_NOT_ENABLED",
+    "HUMAN_REQUIRED",
+    "OWNER_REQUIRED",
+    "CASE_PROJECTION",
+    "CASE_STATUS_PROJECTION",
+    "CASE_PROGRESS_PROJECTION",
+    "CASE_CHANGED_AT_PROJECTION",
+    "CASE_SEARCH_PROJECTION",
+    "AUTHORITY_PROJECTION",
+    "HEAD",
+    "EXPECTED_POSITION"
+  ],
+  "renderedVocabularies": [
+    "status",
+    "lifecycle",
+    "role",
+    "principalKind",
+    "correction",
+    "scope",
+    "act",
+    "historyDetail",
+    "subject",
+    "field",
+    "group",
+    "input",
+    "caseOrder",
+    "progress"
+  ]
 }

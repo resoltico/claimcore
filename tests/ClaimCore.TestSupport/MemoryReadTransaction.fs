@@ -103,52 +103,75 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 |> Seq.length
             )
 
-        member _.CasePage
-            ({
-                 CasePageQuery.Visibility = visibility
-                 ActorId = actor
-                 ReadRoles = roles
-                 ForbiddenRoles = forbidden
-                 AfterReference = after
-                 Limit = limit
-             })
-            =
+        member _.CasePage(query: CasePageQuery) =
             read ()
             let state = get ()
+
+            let reference (record: StoredCase) =
+                CaseReference.identity record.Snapshot.Reference
+
+            let compareRows (left: StoredCase) (right: StoredCase) =
+                let time =
+                    if query.Filter.Order = CaseListOrder.Recent then
+                        compare right.Index.ChangedAt left.Index.ChangedAt
+                    else
+                        0
+
+                if time <> 0 then
+                    time
+                else
+                    StringComparer.Ordinal.Compare(reference left, reference right)
+
+            let after (record: StoredCase) =
+                match query.AfterPosition with
+                | None -> true
+                | Some(CaseListPosition.Reference value) ->
+                    StringComparer.Ordinal.Compare(reference record, value) > 0
+                | Some(CaseListPosition.Recent(time, value)) ->
+                    record.Index.ChangedAt < time
+                    || (record.Index.ChangedAt = time
+                        && StringComparer.Ordinal.Compare(reference record, value) > 0)
+
+            let visible (record: StoredCase) =
+                (query.Visibility = CaseVisibility.Every
+                 || (state.Grants
+                     |> Seq.exists (fun (id, role, scope) ->
+                         id = query.ActorId
+                         && scope = Some record.CaseId
+                         && List.contains role query.ReadRoles)))
+                && not (
+                    state.Grants
+                    |> Seq.exists (fun (id, role, scope) ->
+                        id = query.ActorId
+                        && scope = Some record.CaseId
+                        && List.contains role query.ForbiddenRoles)
+                )
 
             let rows =
                 state.Cases
                 |> Map.values
                 |> Seq.filter (fun record ->
-                    let key = CaseReference.identity record.Snapshot.Reference
-
-                    (after
-                     |> Option.forall (fun after -> StringComparer.Ordinal.Compare(key, after) > 0))
-                    && (visibility = CaseVisibility.Every
-                        || (state.Grants
-                            |> Seq.exists (fun (id, role, scope) ->
-                                id = actor
-                                && scope = Some record.CaseId
-                                && List.contains role roles)
-                            && not (
-                                state.Grants
-                                |> Seq.exists (fun (id, role, scope) ->
-                                    id = actor
-                                    && scope = Some record.CaseId
-                                    && List.contains role forbidden)
-                            ))))
-                |> Seq.sortWith (fun a b ->
-                    StringComparer.Ordinal.Compare(
-                        CaseReference.identity a.Snapshot.Reference,
-                        CaseReference.identity b.Snapshot.Reference
-                    ))
+                    visible record
+                    && after record
+                    && CaseListFilter.matches
+                        query.Filter
+                        (CaseState.lifecycle record.Snapshot.State)
+                        record.Index.Status
+                        record.Index.Progress
+                        record.Index.SearchText)
+                |> Seq.sortWith compareRows
+                |> Seq.map (readCase installationId)
                 |> Seq.toList
 
             Task.FromResult(
                 page
-                    limit
-                    (fun record -> CaseReference.identity record.Snapshot.Reference)
-                    (rows |> List.map (readCase installationId))
+                    query.Limit
+                    (fun record ->
+                        CaseListPosition.create
+                            query.Filter.Order
+                            record.Index.ChangedAt
+                            (CaseReference.format record.Snapshot.Reference))
+                    rows
             )
 
         member _.HistoryPage

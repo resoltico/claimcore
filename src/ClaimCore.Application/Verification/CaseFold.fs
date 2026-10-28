@@ -8,6 +8,7 @@ open ClaimCore.Application.VerificationChecks
 type CaseHistory =
     {
         Revision: Revision
+        ChangedAt: DateTimeOffset
         Snapshot: CaseSnapshot option
         Reference: CaseReference option
         State: CaseState<unit>
@@ -93,6 +94,7 @@ module internal CaseFold =
                         id
                         {
                             Revision = revision
+                            ChangedAt = entry.RecordedAt
                             Snapshot = snapshot
                             Reference = reference
                             State = state
@@ -152,11 +154,3 @@ module internal CaseFold =
                     && CaseState.map ignore record.Snapshot.State = history.State
 
             identity && record.Snapshot.Revision = history.Revision && state
-
-    let projection installationId histories (cases: StoredCase list) =
-        require
-            None
-            VerificationFinding.CaseProjection
-            (cases.Length = Map.count histories
-             && (cases |> List.distinctBy _.CaseId |> List.length) = cases.Length
-             && List.forall (matchesProjection installationId histories) cases)

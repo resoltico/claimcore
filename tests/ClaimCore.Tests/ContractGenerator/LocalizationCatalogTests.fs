@@ -1,6 +1,7 @@
 module ClaimCore.Tests.LocalizationCatalogTests
 
 open Expecto
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Protocol
 open ClaimCore.ProtocolGeneration
@@ -188,22 +189,7 @@ let rendererOwnership =
 [<Tests>]
 let termRegistry =
     testCase "rendered vocabularies have distinct names and qualified token keys" (fun () ->
-        let expected =
-            set
-                [
-                    "status"
-                    "lifecycle"
-                    "role"
-                    "principalKind"
-                    "correction"
-                    "scope"
-                    "act"
-                    "historyDetail"
-                    "subject"
-                    "field"
-                    "group"
-                    "input"
-                ]
+        let expected = Inventory.tokens "renderedVocabularies" |> Set.ofList
 
         Expect.equal
             (Terms.all |> List.map _.Name |> Set.ofList)
@@ -262,3 +248,18 @@ let unreferencedChrome =
             Expect.throws
                 (fun () -> CatalogValidation.validateCatalogs bad |> ignore)
                 "The unused-key negative control is detected")
+
+[<Tests>]
+let unknownMessageFamily =
+    testCase "message-family ownership rejects an unregistered core namespace" (fun () ->
+        let good = AuthoredMessages.all ()
+        CatalogValidation.validateCatalogs good |> ignore
+
+        let bad =
+            good
+            |> Map.map (fun _ entries ->
+                ("unregisteredFamily.control", "Independent unknown-family control") :: entries)
+
+        Expect.throws
+            (fun () -> CatalogValidation.validateCatalogs bad |> ignore)
+            "A core family must have an actual registered owner")

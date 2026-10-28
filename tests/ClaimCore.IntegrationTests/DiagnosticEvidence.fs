@@ -125,12 +125,35 @@ let internal stateEvidence (setup, final) =
 let internal queryEvidence actor =
     task {
         let! limit =
-            (Service.list (actor: ServiceContext) ({ AfterCursor = None; Limit = 0 }) (ct))
+            (Service.list
+                (actor: ServiceContext)
+                ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 0 })))
+                (ct))
 
-        let! cursor = (Service.list actor ({ AfterCursor = Some "bad"; Limit = 1 }) (ct))
+        let! cursor =
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage (
+                    { AfterCursor = Some "bad"; Limit = 1 }
+                )))
+                (ct))
 
         let! missing = (Service.get actor ({ CaseReference = "MISSING" }) (ct))
-        return [ queryRefused limit; queryRefused cursor; queryRefused missing ]
+        let evidence = ResizeArray<_>()
+
+        for raw in [ ""; "x\u0000y"; " x"; "x\u0001y"; "x\u200by"; String('x', 101) ] do
+            let request =
+                {
+                    Page = { AfterCursor = None; Limit = 1 }
+                    Filter = CaseListFilter.create [] [] [] (Some raw) CaseListOrder.Reference
+                }
+
+            let! reply = Service.list actor request ct
+            evidence.Add(queryRefused reply)
+
+        return
+            [ queryRefused limit; queryRefused cursor; queryRefused missing ]
+            @ List.ofSeq evidence
     }
 
 let internal authorityEvidence actor =

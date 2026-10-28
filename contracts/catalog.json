@@ -269,6 +269,19 @@
       "scalar": null
     },
     {
+      "name": "text",
+      "labelId": "field.text.label",
+      "meaningId": "field.text.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 100
+      }
+    },
+    {
       "name": "scope",
       "labelId": "input.scope.label",
       "meaningId": "input.scope.meaning",
@@ -284,6 +297,30 @@
       "name": "detail",
       "labelId": "input.detail.label",
       "meaningId": "input.detail.meaning",
+      "scalar": null
+    },
+    {
+      "name": "lifecycle",
+      "labelId": "input.lifecycle.label",
+      "meaningId": "input.lifecycle.meaning",
+      "scalar": null
+    },
+    {
+      "name": "status",
+      "labelId": "input.status.label",
+      "meaningId": "input.status.meaning",
+      "scalar": null
+    },
+    {
+      "name": "progress",
+      "labelId": "input.progress.label",
+      "meaningId": "input.progress.meaning",
+      "scalar": null
+    },
+    {
+      "name": "order",
+      "labelId": "input.order.label",
+      "meaningId": "input.order.meaning",
       "scalar": null
     }
   ],
@@ -3377,6 +3414,130 @@
           "diagnosticTargets": [
             "limit"
           ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "lifecycle",
+          "field": null,
+          "path": [
+            "lifecycle"
+          ],
+          "kind": {
+            "kind": "CHOICES",
+            "vocabulary": "lifecycle",
+            "options": [
+              "ACTIVE",
+              "VOIDED",
+              "ERASED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.lifecycle.label",
+          "meaningId": "input.lifecycle.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "status",
+          "field": null,
+          "path": [
+            "status"
+          ],
+          "kind": {
+            "kind": "CHOICES",
+            "vocabulary": "status",
+            "options": [
+              "OPENED",
+              "CLOSED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.status.label",
+          "meaningId": "input.status.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "progress",
+          "field": null,
+          "path": [
+            "progress"
+          ],
+          "kind": {
+            "kind": "CHOICES",
+            "vocabulary": "progress",
+            "options": [
+              "UNDECIDED",
+              "DECIDED",
+              "PAID"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.progress.label",
+          "meaningId": "input.progress.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "text",
+          "field": "text",
+          "path": [
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.text.label",
+          "meaningId": "field.text.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "text"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "order",
+          "field": null,
+          "path": [
+            "order"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "caseOrder",
+            "options": [
+              "REFERENCE",
+              "RECENT"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.order.label",
+          "meaningId": "input.order.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": false,
+          "default": "REFERENCE",
+          "diagnosticTargets": [],
           "source": "AUTHORED"
         }
       ],

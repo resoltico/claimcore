@@ -99,22 +99,28 @@ module internal Queries =
             return readResult result
         }
 
-    let selectCases principal (request: PageRequest) actor =
+    let selectCases principal (request: CaseListRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
-                cursor Cursors.decodeCases request.AfterCursor
-                |> Result.map (fun after ->
-                    {
-                        Visibility = visibility
-                        ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
-                        ReadRoles = Authority.readRoles principal
-                        ForbiddenRoles = Authority.invalidRoles principal
-                        Limit = request.Limit
-                        AfterReference = after
-                    }))
+                CaseListFilter.admit request.Filter
+                |> Result.mapError (fun violation ->
+                    Refusal.invalidInput (InputTarget.Text, violation))
+                |> Result.bind (fun filter ->
+                    cursor (Cursors.decodeCases filter) request.Page.AfterCursor
+                    |> Result.map (fun after ->
+                        {
+                            Visibility = visibility
+                            ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
+                            ReadRoles = Authority.readRoles principal
+                            ForbiddenRoles = Authority.invalidRoles principal
+                            Limit = request.Page.Limit
+                            Filter = filter
+                            AfterPosition = after
+                        })))
+
 
     let private summary installation record =
         CaseExecution.current installation record
@@ -126,13 +132,13 @@ module internal Queries =
                     CaseState.map (fun (fields: CaseFields) -> fields.Status) record.Snapshot.State
             })
 
-    let list (services: ServiceContext) (request: PageRequest) token =
+    let list (services: ServiceContext) (request: CaseListRequest) token =
         let store = services.Store
         let installation = services.InstallationId
         let principal = services.Principal
 
         task {
-            if not (validLimit request.Limit) then
+            if not (validLimit request.Page.Limit) then
                 return invalidLimit ()
             else
                 let! result =
@@ -170,7 +176,10 @@ module internal Queries =
                                                                     actor
                                                             NextCursor =
                                                                 page.Next
-                                                                |> Option.map Cursors.encodeCases
+                                                                |> Option.map (
+                                                                    Cursors.encodeCases
+                                                                        selection.Filter
+                                                                )
                                                         })
                                                     |> succeeded
                                     })

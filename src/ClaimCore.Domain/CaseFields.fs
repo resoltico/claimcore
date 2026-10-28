@@ -36,6 +36,7 @@ type InputTarget =
     | Role
     | Limit
     | Cursor
+    | Text
 
 [<NoEquality; NoComparison>]
 type FieldDescriptor =

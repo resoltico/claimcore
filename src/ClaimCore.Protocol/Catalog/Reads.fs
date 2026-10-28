@@ -9,6 +9,7 @@ type ReadInput =
     | ActorOperand
     | Page
     | Detail
+    | Worklist
 
 type ReadDeclaration =
     {
@@ -26,7 +27,7 @@ module ReadCatalog =
             }
             {
                 Endpoint = QueryEndpoint.CaseList
-                Inputs = [ ReadInput.Page ]
+                Inputs = [ ReadInput.Page; ReadInput.Worklist ]
             }
             {
                 Endpoint = QueryEndpoint.CaseHistory

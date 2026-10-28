@@ -19,6 +19,10 @@ type VerificationFinding =
     | HumanRequired
     | OwnerRequired
     | CaseProjection
+    | CaseStatusProjection
+    | CaseProgressProjection
+    | CaseChangedAtProjection
+    | CaseSearchProjection
     | AuthorityProjection
     | Head
     | ExpectedPosition

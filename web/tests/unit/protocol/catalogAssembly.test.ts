@@ -44,5 +44,32 @@ it("assembles all inventoried captured frames including reads and selected corre
 it("omits absent optional read inputs and uses catalog defaults", () => {
   const entry = productMetadata.catalog.entries.find((item) => item.endpoint === "case.list")!;
   expect(assembleCatalogInput(entry, {})).toEqual({ limit: 50 });
-  expect(assembleCatalogInput(entry, { cursor: "", limit: "5" })).toEqual({ limit: 5 });
+  expect(assembleCatalogInput(entry, { cursor: "", limit: "5" })).toEqual({
+    limit: 5,
+  });
+});
+
+it("assembles finite worklist sets and omits empty optional sets", () => {
+  const entry = productMetadata.catalog.entries.find((item) => item.endpoint === "case.list")!;
+  expect(
+    assembleCatalogInput(entry, {
+      lifecycle: ["ACTIVE", "VOIDED"],
+      status: ["OPENED"],
+      progress: ["DECIDED"],
+      text: "Rīga",
+      order: "RECENT",
+    }),
+  ).toEqual({
+    limit: 50,
+    lifecycle: ["ACTIVE", "VOIDED"],
+    status: ["OPENED"],
+    progress: ["DECIDED"],
+    text: "Rīga",
+    order: "RECENT",
+  });
+  expect(assembleCatalogInput(entry, { lifecycle: [], status: [], progress: [] })).toEqual({
+    limit: 50,
+  });
+  expect(assembleCatalogInput(entry, { order: "REFERENCE" })).toEqual({ limit: 50 });
+  expect(assembleCatalogInput(entry, { order: "RECENT" })).toEqual({ limit: 50, order: "RECENT" });
 });

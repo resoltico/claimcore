@@ -110,13 +110,13 @@ SELECT count(*) = 1 AS authority_payload_kept FROM claimcore.ledger
 \endif
 
 -- Snapshot projection invariants ---------------------------------------------------------------
-INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01');
+INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic');
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01')$s$, '23505');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23505');
 SELECT pg_temp.expect('reference with a space refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01')$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01')$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23514');
 SELECT pg_temp.expect('erased projection with snapshot refused',
     $s$UPDATE claimcore.cases SET state='ERASED'$s$, '23514');
 SELECT pg_temp.expect('live projection without snapshot refused',
@@ -127,7 +127,7 @@ SELECT pg_temp.expect('oversized snapshot refused',
     $s$UPDATE claimcore.cases SET snapshot=decode(repeat('00',32769),'hex')$s$, '23514');
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
-UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL WHERE case_id=:case1;
+UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,changed_at=TIMESTAMPTZ '2026-09-02T00:00:00Z' WHERE case_id=:case1;
 SELECT snapshot IS NULL AND case_reference='Demo-0001' AND revision=3 AND state='ERASED' AS erased_projection FROM claimcore.cases WHERE case_id=:case1 \gset
 \if :erased_projection
 \echo PASS erased projection keeps only reference, revision and state

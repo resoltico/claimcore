@@ -268,17 +268,24 @@ module RequestCodecs =
                 |> field WireMembers.Detail get (VocabularyCodec.create HistoryDetail.vocabulary)
         }
 
-    let private page cursor limit (fields: ReadFields<'request, string option -> int -> 'rest>) =
+    let private pageWith
+        maximum
+        cursor
+        limit
+        (fields: ReadFields<'request, string option -> int -> 'rest>)
+        =
         {
             Inputs = fields.Inputs @ [ ReadInput.Page ]
             Fields =
                 fields.Fields
-                |> optionalField WireMembers.Cursor cursor (boundedText 1 512)
+                |> optionalField WireMembers.Cursor cursor (boundedText 1 maximum)
                 |> field
                     WireMembers.Limit
                     limit
                     (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
+
+    let private page cursor limit fields = pageWith 512 cursor limit fields
 
     let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
         let declaration =
@@ -298,7 +305,7 @@ module RequestCodecs =
         |> caseOperand _.CaseReference
         |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
-    let pageRequest =
+    let private pageFields =
         (read (fun cursor limit ->
             {
                 PageRequest.AfterCursor = cursor
@@ -306,7 +313,67 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.PageRequest QueryEndpoint.CaseList
+
+    let pageRequest =
+        pageFields |> finishRead RequestSchemas.PageRequest QueryEndpoint.AuthorityList
+
+    let private optionalChoices name get vocabulary fields =
+        fields
+        |> optionalField
+            name
+            (get
+             >> function
+                 | [] -> None
+                 | values -> Some values)
+            (list (Vocabulary.all vocabulary |> List.length) (VocabularyCodec.create vocabulary))
+
+    let private filterFields =
+        (record (fun lifecycles statuses progress text order ->
+            CaseListFilter.create
+                (defaultArg lifecycles [])
+                (defaultArg statuses [])
+                (defaultArg progress [])
+                text
+                (defaultArg order CaseListOrder.Reference))
+        : Fields<CaseListFilter<string>, _>)
+        |> optionalChoices "lifecycle" _.Lifecycles Lifecycle.vocabulary
+        |> optionalChoices "status" _.Statuses CaseStatus.vocabulary
+        |> optionalChoices "progress" _.Progress CaseProgress.vocabulary
+        |> optionalField "text" _.Text text
+        |> optionalField
+            "order"
+            (fun value ->
+                if value.Order = CaseListOrder.Reference then
+                    None
+                else
+                    Some value.Order)
+            (VocabularyCodec.create CaseListOrder.vocabulary)
+
+    let caseListRequest =
+        let paging =
+            (read (fun cursor limit ->
+                {
+                    PageRequest.AfterCursor = cursor
+                    Limit = limit
+                })
+            : ReadFields<PageRequest, _>)
+            |> pageWith Paging.MaximumCaseCursorCharacters _.AfterCursor _.Limit
+
+        let fields =
+            (record (fun page filter ->
+                {
+                    CaseListRequest.Page = page
+                    Filter = filter
+                })
+            : Fields<CaseListRequest, _>)
+            |> flatten _.Page paging.Fields
+            |> flatten _.Filter filterFields
+
+        {
+            Inputs = paging.Inputs @ [ ReadInput.Worklist ]
+            Fields = fields
+        }
+        |> finishRead RequestSchemas.CaseListRequest QueryEndpoint.CaseList
 
     let historyRequest =
         (read (fun reference detail cursor limit ->

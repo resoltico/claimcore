@@ -198,10 +198,11 @@ let private stewardship () =
 
     let voided =
         match projection with
-        | CaseProjection.Update(id, snapshot) ->
+        | CaseProjection.Update(id, snapshot, index) ->
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = index
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
         | _ -> failtest "Update"
@@ -218,10 +219,11 @@ let private stewardship () =
 
     let restored =
         match projection with
-        | CaseProjection.Update(id, snapshot) ->
+        | CaseProjection.Update(id, snapshot, index) ->
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = index
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
         | _ -> failtest "Update"

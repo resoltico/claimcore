@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="DurableNames.fs" />
+    <Compile Include="RecordedInstant.fs" />
     <Compile Include="Cursors.fs" />
     <Compile Include="RecordLimits.fs" />
     <Compile Include="Versions.fs" />

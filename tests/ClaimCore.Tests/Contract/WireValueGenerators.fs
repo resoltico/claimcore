@@ -32,6 +32,9 @@ let internal listBounds (path: string) =
     let maximum =
         Map.ofList
             [
+                "CaseListFilter`1.Lifecycles", (Inventory.tokens "caseLifecycles").Length
+                "CaseListFilter`1.Statuses", (Inventory.tokens "caseStatuses").Length
+                "CaseListFilter`1.Progress", (Inventory.tokens "caseProgress").Length
                 "AuthorityState.Grants", 1
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2

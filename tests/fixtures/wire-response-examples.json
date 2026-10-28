@@ -3084,6 +3084,26 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case.list-search-input-issues",
+      "endpoint": "case.list",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "text",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

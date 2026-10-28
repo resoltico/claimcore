@@ -11,7 +11,7 @@ import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
-import type { FormValues } from "../../protocol/forms";
+import type { FormValues, FormValue } from "../../protocol/forms";
 import {
   initialOperationValues,
   assembleOperation,
@@ -258,7 +258,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
     view.phase === "ACCEPTED" ||
     state.target !== targetKey(options);
   return {
-    edit: (path: string, value: string | boolean) => {
+    edit: (path: string, value: FormValue) => {
       if (!blocked) {
         dispatch({
           type: "EDIT",

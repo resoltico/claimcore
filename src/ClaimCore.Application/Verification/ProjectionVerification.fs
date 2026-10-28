@@ -72,19 +72,62 @@ module ProjectionVerification =
                     { actor with Grants = [] } = { current with Grants = [] }
                     && Set.ofList actor.Grants = Set.ofList current.Grants))
 
-    let cases installationId histories projections =
-        CaseFold.projection installationId histories projections
-
     let caseProjection installationId histories seen (record: StoredCase) =
-        require
-            None
-            VerificationFinding.CaseProjection
-            (not (Set.contains record.CaseId seen)
-             && CaseFold.matchesProjection installationId histories record)
-        |> Result.map (fun () -> Set.add record.CaseId seen)
+        result {
+            do!
+                require
+                    None
+                    VerificationFinding.CaseProjection
+                    (not (Set.contains record.CaseId seen)
+                     && CaseFold.matchesProjection installationId histories record)
+
+            let! history =
+                Map.tryFind record.CaseId histories
+                |> known None VerificationFinding.CaseProjection
+
+            let expected = CaseIndex.create history.ChangedAt record.Snapshot
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseStatusProjection
+                    (record.Index.Status = expected.Status)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseProgressProjection
+                    (record.Index.Progress = expected.Progress)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseChangedAtProjection
+                    (record.Index.ChangedAt = expected.ChangedAt)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseSearchProjection
+                    (record.Index.SearchText = expected.SearchText)
+
+            return Set.add record.CaseId seen
+        }
 
     let finishCases histories seen =
         require None VerificationFinding.CaseProjection (Map.count histories = Set.count seen)
+
+    let cases installationId histories (projections: StoredCase list) =
+        require None VerificationFinding.CaseProjection (projections.Length = Map.count histories)
+        |> Result.bind (fun () ->
+            projections
+            |> List.fold
+                (fun state record ->
+                    state
+                    |> Result.bind (fun seen ->
+                        caseProjection installationId histories seen record))
+                (Ok Set.empty))
+        |> Result.bind (finishCases histories)
 
     let finishAuthority expected actual =
         require None VerificationFinding.AuthorityProjection (matching expected actual)

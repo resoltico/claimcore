@@ -516,7 +516,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PageRequest"
+                "$ref": "#/components/schemas/CaseListRequest"
               }
             }
           }
@@ -2431,6 +2431,69 @@
           "caseReference"
         ]
       },
+      "CaseListRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "lifecycle": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ACTIVE",
+                "VOIDED",
+                "ERASED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "status": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPENED",
+                "CLOSED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
+          },
+          "progress": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "UNDECIDED",
+                "DECIDED",
+                "PAID"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "text": {
+            "type": "string"
+          },
+          "order": {
+            "enum": [
+              "REFERENCE",
+              "RECENT"
+            ]
+          }
+        },
+        "required": [
+          "limit"
+        ]
+      },
       "CasePageReply": {
         "type": "object",
         "additionalProperties": false,
@@ -2916,7 +2979,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 512
+                "maxLength": 16384
               },
               {
                 "type": "null"
@@ -4390,7 +4453,8 @@
           "principal.subject",
           "role",
           "limit",
-          "cursor"
+          "cursor",
+          "text"
         ]
       },
       "InstallationOffer": {
