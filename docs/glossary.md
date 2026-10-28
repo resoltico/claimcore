@@ -46,14 +46,16 @@ unknown commit/delivery is not a known failure. `Verdict` remains the internal d
 
 ## Input issues
 
-A nonempty ordered collection of field-specific violations from independent checks in the same admission
-phase. The wire carries `INVALID_INPUT.issues`; the CLI and browser present every issue. Parsing and
-state/today admission stay sequential, and transition refusals stay single.
+A nonempty ordered collection of targeted violations from independent checks in one admission phase.
+Targets include business fields, identity inputs and correction groups; one target may have several
+distinct issues. The wire carries `INVALID_INPUT.issues`; the CLI and browser present every issue.
+Current-state and business-date admission follow parsing. A non-input refusal reports one state or
+transition cause.
 
 ## Payment progress
 
 Undecided, Decided or Paid, with a decision included in every Paid value. `CaseFields.Progress` is the
-stored in-memory authority; separate decision/payment wire members are boundary projections.
+accepted payment state in memory; separate decision/payment wire members are boundary projections.
 
 ## Ledger position
 
@@ -68,7 +70,7 @@ from this evidence. Authorization and validation of the supplied values remain s
 ## Entry target
 
 The case or authority object named by an accepted ledger entry. Application calls this `EntryTarget`;
-the durable metadata grammar calls it `RecordedTarget`. The wire member `subject` keeps its meaning.
+the durable metadata grammar calls it `RecordedTarget`. The wire member is `subject`.
 
 ## Route
 

@@ -10,7 +10,9 @@ Human operations default to text. Add `--format json` for structured output or `
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
 
-## Offline commands
+## Discovery and frame commands
+
+Help, version, describe and schema commands work offline. Call and session dispatch frames through the configured HTTPS service and authentication mode.
 
 - `claimcore help [topic] [--language en|lv|ar]`
 - `claimcore version [--json]`

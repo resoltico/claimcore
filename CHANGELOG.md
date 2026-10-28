@@ -29,7 +29,6 @@ Implemented release summaries are recorded here, with changes awaiting release u
 - F# and TypeScript product/test files have 500-line limits. Functions allow five parameters and F# tuples four items; complexity remains capped at 12 without new suppressions.
 - Remove unused .NET and browser coverage tooling. Locked dependency audits, meaningful properties, handwritten vectors and complete stage discovery remain required.
 - Browser production builds compile app sources and omit OpenAPI from the bundle. Browser unit paths mirror source; lint policy is split by responsibility.
-- Command syntax, localized guidance, help topics and both executables’ exits are in the [CLI reference](docs/cli.md).
 
 ## [0.12.0] - 2026-10-26
 

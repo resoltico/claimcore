@@ -42,10 +42,11 @@ closed; malformed UTF-8, duplicate decoded members, unsafe numbers and excessive
 Business-value guidance is a typed rejection with HTTP 200; structural failures use host responses.
 Servers return codes and parameters for local rendering. Input refusals use a nonempty issues array,
 for example `{ "code": "INVALID_INPUT", "action": "CORRECT_INPUT", "issues": [{ "field": "claimantName", "code": "TOO_LONG", "maximumCharacters": 200 }] }`.
-The array is bounded by the largest declared act input count. Issues follow catalog
-input order. Permanent parsing, cross-field checks whose operands parsed, and admission against current
-state/today remain sequential phases; state/transition refusals remain single. Render every issue rather
-than retrying one field at a time. Other diagnostics/faults retain their flat code-tagged shape;
+The array is bounded by the largest declared act input count. Issues follow catalog input order, and one
+input may have several distinct issues. Independent checks accumulate within each phase. Cross-field
+checks require parsed operands; current-state and business-date admission require a parsed request and
+the authoritative state. A non-input refusal reports one state or transition cause. Render every issue
+rather than retrying one field at a time. Other diagnostics/faults retain their flat code-tagged shape;
 `actualRevision` appears only for revision conflicts. Unknown role/principal-kind tokens are structural
 protocol faults and cannot enter Domain as invalid enum values.
 
@@ -65,14 +66,15 @@ catalog and OpenAPI. See [generation](contributing.md#generated-contracts) when 
 
 The command-line tools share version/help codecs and one typed usage-error vocabulary. Each executable
 owns its supported exit-code subset. Database `USAGE_ERROR.issue` is a structured issue with applicable
-syntax in `usage`; scripts must read the issue kind and its declared fields. HELP and VERSION use kind tags; numeric
-exits remain stable. Execute `OUTCOME_UNKNOWN` is a distinct outcome with exit 4; preserve its exact retry
-frame and use final resolution rather than treating it as a known failure.
+syntax in `usage`; scripts must read the issue kind and its declared fields. HELP and VERSION use kind tags.
+The [exit-code reference](cli.md#exit-codes) lists the numeric codes supported by each executable.
+Execute `OUTCOME_UNKNOWN` is a distinct outcome with exit 4; preserve its exact retry frame and use final
+resolution rather than treating it as a known failure.
 
 ## CLI use
 
-Run the apphost beside a matching `claimcore.dll`, or put that publish directory on `PATH`. Offline `help`,
-`help configuration`, `help call` and `help delivery` need no credentials. For example:
+Keep the complete CLI publish directory together and run its apphost, or add that directory to `PATH`.
+Offline `help`, `help configuration`, `help call` and `help delivery` need no credentials. For example:
 
 ```sh
 claimcore case open DEMO-0001 --incident-date 2026-09-01 --incident-notification-date 2026-09-02 \

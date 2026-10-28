@@ -134,7 +134,9 @@ the implementation. Keep those source cases independent of production codecs and
 
 ## Browser boundaries and lint
 
-[oxlint.config.ts](../web/oxlint.config.ts) is the single browser policy. Maintained import rules separate
+[oxlint.config.ts](../web/oxlint.config.ts) composes the browser policy with
+[typed presentation rules](../web/typed-presentation-lint.config.ts) and
+[transport boundary rules](../web/browser-transport-lint.config.ts). Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
 manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
@@ -144,8 +146,8 @@ actual platform declarations. The app-only build references the strict protocol 
 are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
 Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenarios live under
 `web/tests/flows`, with fixtures and setup under `web/tests/support`. `npm run lint` rejects unit paths
-without a matching source module. The lint configuration omits root category defaults while preserving
-explicit override policy; review the complete `oxlint --print-config` output when changing it.
+without a matching source module. Categories, explicit rules and overrides together define the effective
+policy; review the complete `oxlint --print-config` output when changing it.
 
 Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
 tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
@@ -161,8 +163,15 @@ bash eng/verify.sh --fast
 bash eng/verify.sh
 ```
 
-The first command is an iteration scope. The second is the complete required gate. Named stages share
-restore/build work, execute in order and stop at failure:
+The first command is an iteration scope. The second runs all default stages. Before the first acceptance
+run, and after changing the Playwright version, install the locked engines and system dependencies:
+
+```sh
+bash eng/verify.sh browsers
+```
+
+The `browsers` stage may require administrator access on Linux. Named stages share restore/build work,
+execute in order and stop at failure:
 
 | Stage | Scope |
 | --- | --- |
@@ -178,11 +187,13 @@ restore/build work, execute in order and stop at failure:
 
 Pure tests run in Debug without optimization for visible compiled negative controls; production is built
 in Release. Shared store-contract scenarios run against both the memory double and PostgreSQL. Native
-projects use automatic nonempty discovery and explicit stage assignment. Focused, filtered, skipped, pending
-or retried tests do not qualify a change. The postgres/growth stage split is defined by the gate itself.
+projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
+skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
+PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 
-Default acceptance runs complete Chromium, Firefox and WebKit suites, with zero retries. Engine/smoke selectors
-are iteration scopes and label their incomplete evidence. Native report directories under
+Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
+engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
+mode explicitly reports incomplete qualification. Native report directories under
 `artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
 
