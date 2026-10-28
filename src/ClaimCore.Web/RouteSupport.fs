@@ -17,7 +17,7 @@ module internal RouteSupport =
 
     let hostFailure context reason =
         HttpHeaders.noStore context
-        RequestLog.outcome "HOST_FAILURE" context
+        RequestLog.hostFailure context
         WebWire.hostFailure reason
 
     let gateFailure context =
@@ -49,7 +49,7 @@ module internal RouteSupport =
         let outcome = JsonValue.tryMember "outcome" value
         let tag = ReplyKind.token reply.Class.Kind
 
-        RequestLog.outcome tag context
+        RequestLog.reply reply.Class context
 
         if tag = "ACCEPTED" then
             outcome

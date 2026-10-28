@@ -20,14 +20,14 @@ type DatabaseSuccess =
     | Head of LedgerPosition
     | Accepted of OwnerAcceptance
     | AlreadyAccepted of OwnerAcceptance
-    | Verified of LedgerPosition
+    | Verified of LedgerPosition * elapsedMilliseconds: int64
 
 [<RequireQualifiedAccess; NoComparison>]
 type Reply =
     | Operation of Outcome<DatabaseSuccess>
     | Cancelled
     | OutcomeUnknown of OperationId option
-    | Diverged of VerificationDivergence
+    | Diverged of VerificationDivergence * elapsedMilliseconds: int64
     | Usage of UsageFrame
     | Help of HelpFrame
     | Version of VersionFrame
@@ -47,6 +47,28 @@ module Replies =
         |> field "targetActorId" _.TargetActorId ResponseScalars.actorId
         |> field "position" _.Position ResponseCodecs.position
 
+    // An administrative head may be genesis; accepted receipts still require a positive sequence.
+    let private administrativePosition =
+        (record (fun sequence hash ->
+            {
+                LedgerPosition.Sequence = sequence
+                EntryHash = hash
+            })
+        : Fields<LedgerPosition, _>)
+        |> field
+            "sequence"
+            _.Sequence
+            (integer 0L SafeInteger.Maximum
+             |> map (Sequence.create >> Option.get) Sequence.value)
+        |> field
+            "entryHash"
+            _.EntryHash
+            (ResponseScalars.digest
+             |> map
+                 (Convert.FromHexString >> EntryHash.ofBytes >> Option.get)
+                 (EntryHash.toBytes >> Convert.ToHexStringLower))
+        |> build
+
     let private successVariants =
         [
             variant
@@ -62,7 +84,7 @@ module Replies =
                 (function
                 | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) -> Some position
                 | _ -> None)
-                (record id |> field "position" id ResponseCodecs.position)
+                (record id |> field "position" id administrativePosition)
             variant
                 "ACCEPTED"
                 (DatabaseSuccess.Accepted >> Outcome.Succeeded >> Reply.Operation)
@@ -82,10 +104,12 @@ module Replies =
                 "VERIFIED"
                 (DatabaseSuccess.Verified >> Outcome.Succeeded >> Reply.Operation)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified position)) ->
-                    Some position
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified(position, elapsed))) ->
+                    Some(position, elapsed)
                 | _ -> None)
-                (record id |> field "position" id ResponseCodecs.position)
+                (record (fun position elapsed -> position, elapsed)
+                 |> field "position" fst administrativePosition
+                 |> field "elapsedMilliseconds" snd (integer 0L SafeInteger.Maximum))
         ]
 
     let private operationVariants =
@@ -116,22 +140,24 @@ module Replies =
                 "DIVERGED"
                 Reply.Diverged
                 (function
-                | Reply.Diverged finding -> Some finding
+                | Reply.Diverged(finding, elapsed) -> Some(finding, elapsed)
                 | _ -> None)
-                ((record (fun sequence finding ->
+                ((record (fun sequence finding elapsed ->
                     {
                         VerificationDivergence.Sequence = sequence
                         Finding = finding
-                    })
-                 : Fields<VerificationDivergence, _>)
+                    },
+                    elapsed)
+                 : Fields<VerificationDivergence * int64, _>)
                  |> field
                      "sequence"
-                     _.Sequence
+                     (fst >> _.Sequence)
                      (nullable (
                          integer 0L SafeInteger.Maximum
                          |> map (Sequence.create >> Option.get) Sequence.value
                      ))
-                 |> field "finding" _.Finding (enumeration VerificationFinding.all))
+                 |> field "finding" (fst >> _.Finding) (enumeration VerificationFinding.all)
+                 |> field "elapsedMilliseconds" snd (integer 0L SafeInteger.Maximum))
         ]
 
     let private discoveryVariants =
@@ -214,11 +240,11 @@ module Replies =
         | ProvisionOwnerOutcome.Cancelled -> encode Reply.Cancelled
         | ProvisionOwnerOutcome.OutcomeUnknown operation -> unknown (Some operation)
 
-    let verification =
+    let verification elapsed =
         function
         | VerificationResult.Verified position ->
-            encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified position)))
-        | VerificationResult.Diverged finding -> encode (Reply.Diverged finding)
+            encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified(position, elapsed))))
+        | VerificationResult.Diverged finding -> encode (Reply.Diverged(finding, elapsed))
 
     let usage error = encode (Reply.Usage error)
 

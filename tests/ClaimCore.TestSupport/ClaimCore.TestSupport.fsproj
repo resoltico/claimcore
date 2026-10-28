@@ -17,6 +17,7 @@
     <Compile Include="FixtureDisposal.fs" />
     <Compile Include="PostgresBaseline.fs" />
     <Compile Include="PostgresReadiness.fs" />
+    <Compile Include="SessionResults.fs" />
     <Compile Include="Inventory.fs" />
     <Compile Include="Inputs.fs" />
     <Compile Include="CaseFixtures.fs" />
@@ -33,6 +34,8 @@
     <Compile Include="ProbeHttpsFixture.fs" />
     <Compile Include="HandlerStub.fs" />
     <Compile Include="TestServerFixture.fs" />
+    <Compile Include="MetricObservations.fs" />
+    <Compile Include="MetricsAcceptance.fs" />
     <Compile Include="TestGuards.fs" />
   </ItemGroup>
   <ItemGroup>

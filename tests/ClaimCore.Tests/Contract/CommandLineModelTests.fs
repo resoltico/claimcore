@@ -60,7 +60,7 @@ let tests =
                         DatabaseSuccess.Head position
                         DatabaseSuccess.Accepted accepted
                         DatabaseSuccess.AlreadyAccepted accepted
-                        DatabaseSuccess.Verified position
+                        DatabaseSuccess.Verified(position, 12L)
                     ]
 
                 let replies =
@@ -70,11 +70,13 @@ let tests =
                         Reply.Operation(Outcome.Failed CoreFault.StoreUnavailable)
                         Reply.Cancelled
                         Reply.OutcomeUnknown None
-                        Reply.Diverged
+                        Reply.Diverged(
                             {
                                 Sequence = None
                                 Finding = VerificationFinding.Head
-                            }
+                            },
+                            12L
+                        )
                         Reply.Usage
                             {
                                 Issue = UsageError.MissingOperand "TIME_ZONE"

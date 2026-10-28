@@ -60,7 +60,7 @@ let private closedAdmission (runtime: ClaimCore.Web.Composition.IRuntime) key =
         let mutable rejected = false
 
         try
-            let! _ = runtime.Sessions.Retrieve(key, token)
+            let! _ = (runtime.Sessions.Retrieve(key, token) |> SessionResults.value)
             ()
         with :? InvalidOperationException ->
             rejected <- true
@@ -73,7 +73,8 @@ let run (database: PostgresFixture.Database) =
         let storage = SessionStore(database.RuntimeSource) :> ISessionStore
 
         let create () =
-            storage.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+            (storage.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+             |> SessionResults.value)
 
         let! first = create ()
         let! second = create ()
@@ -89,9 +90,9 @@ let run (database: PostgresFixture.Database) =
                 [| box first |]
                 token
 
-        let locked = runtime.Sessions.Retrieve(first, token)
+        let locked = (runtime.Sessions.Retrieve(first, token) |> SessionResults.value)
         do! waitForRow database application
-        let queued = runtime.Sessions.Retrieve(second, token)
+        let queued = (runtime.Sessions.Retrieve(second, token) |> SessionResults.value)
         Expect.isFalse queued.IsCompleted "A second leased session waits for the pool"
         let! bound = runtime.Shutdown(TimeSpan.Zero)
 

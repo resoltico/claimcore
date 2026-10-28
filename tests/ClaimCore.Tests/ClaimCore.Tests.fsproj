@@ -28,6 +28,7 @@
     <Compile Include="Json/CodecDefinitionTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
+    <Compile Include="Contract/DatabaseTimingTests.fs" />
     <Compile Include="Database/OwnerInputTests.fs" />
     <Compile Include="Contract/VocabularyTests.fs" />
     <Compile Include="Contract/WireCodecTests.fs" />

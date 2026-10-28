@@ -123,6 +123,43 @@ results; provider failures remain failures. Checkpoint sequences are canonical n
 and hashes are lowercase hexadecimal. A checkpoint must belong to the verified chain; the ledger may extend
 beyond it. The same-snapshot duplicate prepass can sort/spill, and folded resource state grows with cardinality.
 
+## Monitoring
+
+The server publishes the `ClaimCore` meter through `System.Diagnostics.Metrics`. Find its process with
+`dotnet-counters ps`, then run:
+
+```sh
+dotnet-counters monitor --process-id PID --counters ClaimCore
+```
+
+Run the tool as the server's operating-system user. See the
+[dotnet-counters reference](https://learn.microsoft.com/en/dotnet/core/diagnostics/dotnet-counters).
+Counters restart with the process; they are operational observations, not a ledger inventory.
+
+| Instrument | Unit | Tags |
+| --- | --- | --- |
+| `claimcore.requests` | count | `endpoint`, `result` |
+| `claimcore.request.duration` | seconds | `endpoint` |
+| `claimcore.ledger.append.duration` | seconds | — |
+| `claimcore.ledger.head_wait.duration` | seconds | — |
+| `claimcore.sessions.started` | count | — |
+| `claimcore.sessions.ended` | count | `reason` |
+
+Endpoint values are registered endpoint IDs or `unknown`. Results are `succeeded`, `refused`, `failed`
+and `host_failure`; `failed` includes uncertain execution outcomes. Session-end reasons are `logout`,
+`expired` and `invalid`. Missing keys do not count as ended sessions. Expiration cleanup contributes its
+committed deletion count. Starts carry no ending reason. Tags contain no actor, operation, case or business
+value. Ledger histograms measure append attempts and the database head-lock call, including failed waits.
+
+For export, configure a .NET runtime metrics agent to subscribe to `ClaimCore` and send observations to your
+OpenTelemetry-compatible collector. OpenTelemetry .NET automatic instrumentation supports
+`OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES=ClaimCore`; follow its
+[configuration guide](https://opentelemetry.io/docs/zero-code/dotnet/configuration/) for agent installation
+and exporter settings. ClaimCore adds no exporter dependency.
+
+`claimcore-database verify` includes `elapsedMilliseconds` in its `VERIFIED` and `DIVERGED` results. This is
+elapsed verification time, measured by that invocation, and does not establish a response-time guarantee.
+
 ## Identity and hosting
 
 Configure the HTTPS origin, OIDC issuer/audience and key-ring directory as described by

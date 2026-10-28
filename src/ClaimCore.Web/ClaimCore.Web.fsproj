@@ -25,6 +25,7 @@
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="TlsCertificate.fs" />
     <Compile Include="WebBinding.fs" />
+    <Compile Include="Metrics.fs" />
     <Compile Include="Security.fs" />
     <Compile Include="SessionKeys.fs" />
     <Compile Include="Configuration.fs" />

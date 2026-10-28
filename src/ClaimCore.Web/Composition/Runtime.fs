@@ -52,8 +52,8 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
             member _.Renew(key, payload, token) =
                 sessionAction (fun store -> store.Renew(key, payload, token))
 
-            member _.Remove(key, token) =
-                sessionAction (fun store -> store.Remove(key, token))
+            member _.Remove(key, reason, token) =
+                sessionAction (fun store -> store.Remove(key, reason, token))
         }
 
     interface IRuntime with

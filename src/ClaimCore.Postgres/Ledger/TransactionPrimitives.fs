@@ -275,7 +275,15 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
             }
 
         member _.Append entry =
-            task { let! _ = Persistence.entry connection entry token in return () }
+            task {
+                let started = System.Diagnostics.Stopwatch.GetTimestamp()
+
+                try
+                    let! _ = Persistence.entry connection entry token
+                    return ()
+                finally
+                    Service.recordAppend (System.Diagnostics.Stopwatch.GetElapsedTime started)
+            }
 
         member _.ProjectCase projection =
             Persistence.case connection projection token

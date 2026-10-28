@@ -63,7 +63,10 @@ type internal OidcTicketStore
             let expiry = ticket.Properties.ExpiresUtc |> Option.ofNullable
 
             try
-                return! storage.Create(payload, expiry, idle, absolute, token)
+                let! changes = storage.Create(payload, expiry, idle, absolute, token)
+                let key = WebMetrics.sessionChanges changes
+                WebMetrics.sessionStarted ()
+                return key
             with _ ->
                 unavailable ()
                 return raise (InvalidOperationException "OIDC session storage unavailable.")
@@ -72,7 +75,8 @@ type internal OidcTicketStore
     let renew key ticket token =
         task {
             try
-                do! storage.Renew(key, protect ticket, token)
+                let! changes = storage.Renew(key, protect ticket, token)
+                WebMetrics.sessionChanges changes
             with _ ->
                 unavailable ()
                 return raise (InvalidOperationException "OIDC session storage unavailable.")
@@ -81,7 +85,8 @@ type internal OidcTicketStore
     let retrieve key token : Task<AuthenticationTicket | null> =
         task {
             try
-                let! stored = storage.Retrieve(key, token)
+                let! changes = storage.Retrieve(key, token)
+                let stored = WebMetrics.sessionChanges changes
 
                 match stored with
                 | None -> return null
@@ -90,7 +95,8 @@ type internal OidcTicketStore
                         match decode bytes with
                         | Some ticket -> return (ticket: AuthenticationTicket | null)
                         | None ->
-                            do! storage.Remove(key, token)
+                            let! changes = storage.Remove(key, SessionEndReason.Invalid, token)
+                            WebMetrics.sessionChanges changes
                             unreadable ()
                             return null
                     with
@@ -100,7 +106,8 @@ type internal OidcTicketStore
                     | :? FormatException
                     | :? OverflowException
                     | :? ArgumentException ->
-                        do! storage.Remove(key, token)
+                        let! changes = storage.Remove(key, SessionEndReason.Invalid, token)
+                        WebMetrics.sessionChanges changes
                         unreadable ()
                         return null
             with _ ->
@@ -111,7 +118,8 @@ type internal OidcTicketStore
     let remove key token =
         task {
             try
-                do! storage.Remove(key, token)
+                let! changes = storage.Remove(key, SessionEndReason.Logout, token)
+                WebMetrics.sessionChanges changes
             with _ ->
                 unavailable ()
                 return raise (InvalidOperationException "OIDC session storage unavailable.")

@@ -28,22 +28,28 @@ let private adapter storage provider =
 let private awaited () =
     task {
         let pending =
-            TaskCompletionSource<byte array option>(
+            TaskCompletionSource<SessionChanges<byte array option>>(
                 TaskCreationOptions.RunContinuationsAsynchronously
             )
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _) = Task.FromResult "synthetic-key"
+                member _.Create(_, _, _, _, _) =
+                    Task.FromResult(SessionChanges.unchanged "synthetic-key")
+
                 member _.Retrieve(_, _) = pending.Task
-                member _.Renew(_, _, _) = Task.FromResult()
-                member _.Remove(_, _) = Task.FromResult()
+
+                member _.Renew(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
+
+                member _.Remove(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
             }
 
         let store = adapter storage (EphemeralDataProtectionProvider())
         let retrieval = store.RetrieveAsync "synthetic-key"
         Expect.isFalse retrieval.IsCompleted "Retrieval awaits actual storage completion"
-        pending.SetResult None
+        pending.SetResult(SessionChanges.unchanged None)
         let! found = retrieval
         Expect.isNull found "Missing session refuses authentication"
     }
@@ -57,14 +63,17 @@ let private protectionFailures () =
             { new ISessionStore with
                 member _.Create(bytes, _, _, _, _) =
                     payload <- bytes
-                    Task.FromResult "synthetic-key"
+                    Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
-                member _.Retrieve(_, _) = Task.FromResult(Some payload)
-                member _.Renew(_, _, _) = Task.FromResult()
+                member _.Retrieve(_, _) =
+                    Task.FromResult(SessionChanges.unchanged (Some payload))
 
-                member _.Remove(_, _) =
+                member _.Renew(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
+
+                member _.Remove(_, _, _) =
                     removed <- true
-                    Task.FromResult()
+                    Task.FromResult(SessionChanges.unchanged ())
             }
 
         let diagnostics = ResizeArray<string>()
@@ -114,11 +123,16 @@ let private keyContinuity () =
                 { new ISessionStore with
                     member _.Create(bytes, _, _, _, _) =
                         payload <- bytes
-                        Task.FromResult "synthetic-key"
+                        Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
-                    member _.Retrieve(_, _) = Task.FromResult(Some payload)
-                    member _.Renew(_, _, _) = Task.FromResult()
-                    member _.Remove(_, _) = Task.FromResult()
+                    member _.Retrieve(_, _) =
+                        Task.FromResult(SessionChanges.unchanged (Some payload))
+
+                    member _.Renew(_, _, _) =
+                        Task.FromResult(SessionChanges.unchanged ())
+
+                    member _.Remove(_, _, _) =
+                        Task.FromResult(SessionChanges.unchanged ())
                 }
 
             let first = adapter storage (DataProtectionProvider.Create(DirectoryInfo path))
@@ -135,16 +149,24 @@ let private storageFailure () =
         let storage =
             { new ISessionStore with
                 member _.Create(_, _, _, _, _) =
-                    Task.FromException<string>(IOException "Synthetic database failure")
+                    Task.FromException<SessionChanges<string>>(
+                        IOException "Synthetic database failure"
+                    )
 
                 member _.Retrieve(_, _) =
-                    Task.FromException<byte array option>(IOException "Synthetic database failure")
+                    Task.FromException<SessionChanges<byte array option>>(
+                        IOException "Synthetic database failure"
+                    )
 
                 member _.Renew(_, _, _) =
-                    Task.FromException<unit>(IOException "Synthetic database failure")
+                    Task.FromException<SessionChanges<unit>>(
+                        IOException "Synthetic database failure"
+                    )
 
-                member _.Remove(_, _) =
-                    Task.FromException<unit>(IOException "Synthetic database failure")
+                member _.Remove(_, _, _) =
+                    Task.FromException<SessionChanges<unit>>(
+                        IOException "Synthetic database failure"
+                    )
             }
 
         let diagnostics = ResizeArray<string>()
@@ -174,17 +196,21 @@ let private requestAbort () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _) = Task.FromResult "synthetic"
+                member _.Create(_, _, _, _, _) =
+                    Task.FromResult(SessionChanges.unchanged "synthetic")
 
                 member _.Retrieve(_, token) =
                     task {
                         observed <- token
                         do! Task.Delay(Timeout.Infinite, token)
-                        return None
+                        return SessionChanges.unchanged None
                     }
 
-                member _.Renew(_, _, _) = Task.FromResult()
-                member _.Remove(_, _) = Task.FromResult()
+                member _.Renew(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
+
+                member _.Remove(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
             }
 
         let store = adapter storage (EphemeralDataProtectionProvider())

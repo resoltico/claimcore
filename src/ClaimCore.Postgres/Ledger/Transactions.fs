@@ -35,12 +35,20 @@ module internal Transactions =
 
     let head connection token =
         task {
+            let started = System.Diagnostics.Stopwatch.GetTimestamp()
+
             let! rows =
-                DatabaseSession.rows
-                    connection
-                    "SELECT sequence,entry_hash,observed_at FROM claimcore.lock_ledger_head()"
-                    [||]
-                    token
+                task {
+                    try
+                        return!
+                            DatabaseSession.rows
+                                connection
+                                "SELECT sequence,entry_hash,observed_at FROM claimcore.lock_ledger_head()"
+                                [||]
+                                token
+                    finally
+                        Service.recordHeadWait (System.Diagnostics.Stopwatch.GetElapsedTime started)
+                }
 
             match rows with
             | [ row ] ->
