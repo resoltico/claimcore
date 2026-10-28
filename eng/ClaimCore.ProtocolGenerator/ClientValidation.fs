@@ -109,6 +109,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
     let rec private check =
         function
         | Schema.Ref name -> "check_" + identifier name
+        | Schema.Vocabulary(_, schema) -> check schema
         | Schema.Null -> "wireNull"
         | Schema.Boolean -> "wireBoolean"
         | Schema.Const value -> "wireConstant(" + quote value + ")"

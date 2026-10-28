@@ -12,7 +12,11 @@ import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
 import type { FormValues } from "../../protocol/forms";
-import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
+import {
+  initialOperationValues,
+  assembleOperation,
+  operationEntry,
+} from "../../operation/operationForm";
 import {
   operationReducer,
   operationView,
@@ -38,6 +42,7 @@ const fresh = (options: Options, kind = options.kind): OperationState => {
   const values = initialOperationValues(options.subject, kind, options.current);
   return {
     target: targetKey(options),
+    entry: { subject: options.subject, kind },
     context: {
       token: options.token,
       target: targetKey(options),
@@ -220,7 +225,10 @@ const previewDraft = (
       view.prepared ??
       prepareRequest(
         "operation.execute",
-        buildRequest("operation.execute", assembleOperation(state.values)),
+        buildRequest(
+          "operation.execute",
+          assembleOperation(operationEntry(state.entry), state.values),
+        ),
       );
     dispatch({
       type: "PREVIEW",

@@ -53,9 +53,7 @@ module internal CodecSchema =
             writer.WriteEndObject()
             writer.WriteEndObject())
 
-    and writeSchema (prefix: string) (writer: Utf8JsonWriter) schema =
-        writer.WriteStartObject()
-
+    and private schemaFields (prefix: string) (writer: Utf8JsonWriter) schema =
         match schema with
         | Schema.Object(properties, optionalMembers) ->
             objectSchema prefix writer properties optionalMembers
@@ -94,4 +92,9 @@ module internal CodecSchema =
         | Schema.OneOf(variants, discriminator) -> unionSchema prefix writer variants discriminator
         | Schema.Ref name -> WriterProfile.writeMember writer "$ref" (prefix + name)
 
+        | Schema.Vocabulary(_, schema) -> schemaFields prefix writer schema
+
+    and writeSchema prefix (writer: Utf8JsonWriter) schema =
+        writer.WriteStartObject()
+        schemaFields prefix writer schema
         writer.WriteEndObject()

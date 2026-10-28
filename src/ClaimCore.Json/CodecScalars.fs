@@ -68,6 +68,12 @@ module internal CodecScalars =
             Definitions = Map.add name codec.Schema codec.Definitions
         }
 
+    /// Semantic vocabulary identity accompanies structure without changing its wire grammar.
+    let vocabulary name (codec: Codec<'T>) =
+        { codec with
+            Schema = Schema.Vocabulary(name, codec.Schema)
+        }
+
     let uuid: Codec<Guid> =
         {
             Read =

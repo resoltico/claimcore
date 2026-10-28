@@ -244,17 +244,24 @@ module CatalogCodecs =
         |> build
 
     let private assignment =
-        (record (fun path value branches ->
+        (record (fun path value branches vocabulary ->
             {
                 BindingAssignment.Path = path
                 Value = value
                 Branches = branches
+                Vocabulary = vocabulary
             })
         : Fields<BindingAssignment, _>)
         |> field "path" _.Path (many text)
         |> field "value" _.Value bindingValue
         |> field "branches" _.Branches (many condition)
+        |> field "vocabulary" _.Vocabulary (nullable text)
         |> build
+
+    let private enumerationKindFields =
+        record (fun vocabulary options -> vocabulary, options)
+        |> field "vocabulary" fst text
+        |> field "options" snd (many text)
 
     let private bindingKind =
         tagged
@@ -267,16 +274,16 @@ module CatalogCodecs =
                     "CHOICE"
                     BindingKind.Choice
                     (function
-                    | BindingKind.Choice value -> Some value
+                    | BindingKind.Choice(vocabulary, options) -> Some(vocabulary, options)
                     | _ -> None)
-                    (record id |> field "options" id (many text))
+                    enumerationKindFields
                 variant
                     "GROUP"
                     BindingKind.Group
                     (function
-                    | BindingKind.Group value -> Some value
+                    | BindingKind.Group(vocabulary, options) -> Some(vocabulary, options)
                     | _ -> None)
-                    (record id |> field "options" id (many text))
+                    enumerationKindFields
             ]
 
     let private inputSource = InputSource.vocabulary |> VocabularyCodec.create
@@ -288,6 +295,7 @@ module CatalogCodecs =
                 field
                 path
                 kind
+                adviceGroup
                 branches
                 label
                 meaning
@@ -302,6 +310,7 @@ module CatalogCodecs =
                     Field = field
                     Path = path
                     Kind = kind
+                    AdviceGroup = adviceGroup
                     Branches = branches
                     LabelId = label
                     MeaningId = meaning
@@ -316,6 +325,10 @@ module CatalogCodecs =
         |> field "field" _.Field (nullable inputTarget)
         |> field "path" _.Path (many text)
         |> field "kind" _.Kind bindingKind
+        |> field
+            "adviceGroup"
+            _.AdviceGroup
+            (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> field "branches" _.Branches (many condition)
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId (nullable text)

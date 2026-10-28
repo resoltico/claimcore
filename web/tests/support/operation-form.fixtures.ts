@@ -1,7 +1,11 @@
 import type { CurrentCase } from "../../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseAdvice } from "./case-advice.fixtures";
-import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import {
+  initialOperationValues,
+  assembleOperation,
+  operationEntry,
+} from "../../src/operation/operationForm";
 import { type FormValues } from "../../src/protocol/forms";
 import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
@@ -23,7 +27,10 @@ export const current: CurrentCase = {
   },
 };
 export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current, firstId);
-export const requestFor = (values: FormValues) =>
-  buildRequest("operation.execute", assembleOperation(values));
+export const requestFor = (values: FormValues, kind = "CLOSE") =>
+  buildRequest(
+    "operation.execute",
+    assembleOperation(operationEntry({ subject: "CASE", kind }), values),
+  );
 export const preparedFor = (kind = "CLOSE") =>
-  prepareRequest("operation.execute", requestFor(valuesFor(kind)));
+  prepareRequest("operation.execute", requestFor(valuesFor(kind), kind));

@@ -18,10 +18,10 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
   return offered.length < 2 ? null : (
     <label>
-      {p.text(model.values["kind"] === "CASE" ? "ui.act" : "ui.authorityAction")}
+      {p.text(model.entry.subject === "CASE" ? "ui.act" : "ui.authorityAction")}
       <select
         id="act-picker"
-        value={String(model.values["act.kind"])}
+        value={model.entry.kind}
         disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
         onChange={(event) => {
           onAct(event.target.value);
@@ -29,7 +29,7 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
       >
         {offered.map((kind) => (
           <option key={kind} value={kind}>
-            {model.values["kind"] === "CASE" ? p.actLabel(kind) : p.authorityLabel(kind)}
+            {model.entry.subject === "CASE" ? p.actLabel(kind) : p.authorityLabel(kind)}
           </option>
         ))}
       </select>
@@ -38,8 +38,8 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
 };
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
-  const allowed = offered.includes(String(model.values["act.kind"]));
-  const act = operationEntry(model.values);
+  const allowed = offered.includes(model.entry.kind);
+  const act = operationEntry(model.entry);
   return (
     <>
       {" "}
@@ -54,17 +54,12 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           />
         </p>
       )}
-      {act.inputs.some(
-        (input) =>
-          input.kind.kind === "GROUP" &&
-          input.diagnosticTargets.some((target) =>
-            ["registration", "decision", "payment"].includes(target),
-          ),
-      ) ? (
+      {act.inputs.some((input) => input.kind.kind === "GROUP" && input.adviceGroup !== null) ? (
         <p>{p.text("ui.correctionHint")}</p>
       ) : null}
       {offered.length === 0 ? null : (
         <CatalogInputs
+          entry={act}
           current={current}
           values={model.values}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
@@ -111,7 +106,7 @@ export const OperationForm = (props: OperationFormProps) => {
     ].find((item) => item.name === Object.keys(model.fieldErrors)[0]);
     (input ?? form.current?.querySelector<HTMLElement>("[data-error-summary]"))?.focus();
   }, [model.fieldErrors, model.notice]);
-  const allowed = offered.includes(String(model.values["act.kind"]));
+  const allowed = offered.includes(model.entry.kind);
   return (
     <form
       ref={form}

@@ -1,5 +1,6 @@
 import type { OperationReceipt, OperationReview } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
+import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
 import type { FormValues } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { FieldErrors } from "./inputErrors";
@@ -70,6 +71,7 @@ export type OperationEffect =
       notice: Notice;
     };
 export type OperationState = {
+  entry: CatalogEntryIdentity;
   target: string;
   context: {
     token: string;

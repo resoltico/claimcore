@@ -251,7 +251,7 @@ module Grammar =
             if applies item.Binding.Branches then
                 let value =
                     match item.Binding.Kind with
-                    | BindingKind.Group choices when item.Argument = CatalogArgument.Implicit ->
+                    | BindingKind.Group(_, choices) when item.Argument = CatalogArgument.Implicit ->
                         let supplied choice =
                             derived
                             |> List.exists (fun child ->
@@ -266,7 +266,7 @@ module Grammar =
                         |> Option.defaultValue choices.Head
                         |> JsonValue.String
                         |> Some
-                    | BindingKind.Group choices ->
+                    | BindingKind.Group(_, choices) ->
                         match input item with
                         | Some(JsonValue.String value) -> Some(JsonValue.String value)
                         | _ -> Some(JsonValue.String choices.Head)

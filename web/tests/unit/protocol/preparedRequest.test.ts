@@ -11,7 +11,7 @@ it("detaches replacement values and preserves decimal spelling after authoring c
     "act.groups.registration.values.claimantName": "Before",
     "act.groups.registration.values.claimedAmount": "1.0000",
   };
-  const request = requestFor(values);
+  const request = requestFor(values, "CORRECT");
   const prepared = prepareRequest("operation.execute", request);
   Object.assign(values, { "act.groups.registration.values.claimantName": "After" });
   if (

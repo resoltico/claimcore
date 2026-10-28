@@ -16,6 +16,7 @@ type BindingAssignment =
         Path: string list
         Value: BindingValue
         Branches: BindingCondition list
+        Vocabulary: string option
     }
 
 [<RequireQualifiedAccess>]
@@ -23,8 +24,17 @@ type BindingKind =
     | Text
     | Integer
     | Boolean
-    | Choice of string list
-    | Group of string list
+    | Choice of vocabulary: string * options: string list
+    | Group of vocabulary: string * options: string list
+
+module BindingKind =
+    let vocabulary =
+        function
+        | BindingKind.Choice(name, _)
+        | BindingKind.Group(name, _) -> Some name
+        | BindingKind.Text
+        | BindingKind.Integer
+        | BindingKind.Boolean -> None
 
 [<RequireQualifiedAccess>]
 type InputSource =
@@ -38,6 +48,7 @@ type CatalogInput =
         Field: InputTarget option
         Path: string list
         Kind: BindingKind
+        AdviceGroup: RecordGroup option
         Branches: BindingCondition list
         LabelId: string
         MeaningId: string option

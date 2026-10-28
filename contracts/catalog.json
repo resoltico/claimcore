@@ -319,6 +319,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -340,6 +341,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -365,6 +367,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentDate.label",
           "meaningId": "field.incidentDate.meaning",
@@ -388,6 +391,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentNotificationDate.label",
           "meaningId": "field.incidentNotificationDate.meaning",
@@ -411,6 +415,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentCountry.label",
           "meaningId": "field.incidentCountry.meaning",
@@ -434,6 +439,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimantName.label",
           "meaningId": "field.claimantName.meaning",
@@ -457,6 +463,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.insurerName.label",
           "meaningId": "field.insurerName.meaning",
@@ -480,6 +487,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimedAmount.label",
           "meaningId": "field.claimedAmount.meaning",
@@ -503,6 +511,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimedCurrency.label",
           "meaningId": "field.claimedCurrency.meaning",
@@ -522,14 +531,16 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
             "expectedRevision"
           ],
           "value": 0,
-          "branches": []
+          "branches": [],
+          "vocabulary": null
         },
         {
           "path": [
@@ -537,7 +548,8 @@
             "kind"
           ],
           "value": "OPEN",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -558,6 +570,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -579,6 +592,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -602,6 +616,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -625,6 +640,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentDate.label",
           "meaningId": "field.incidentDate.meaning",
@@ -651,6 +667,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentNotificationDate.label",
           "meaningId": "field.incidentNotificationDate.meaning",
@@ -677,6 +694,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.incidentCountry.label",
           "meaningId": "field.incidentCountry.meaning",
@@ -703,6 +721,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimantName.label",
           "meaningId": "field.claimantName.meaning",
@@ -729,6 +748,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.insurerName.label",
           "meaningId": "field.insurerName.meaning",
@@ -755,6 +775,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimedAmount.label",
           "meaningId": "field.claimedAmount.meaning",
@@ -781,6 +802,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.claimedCurrency.label",
           "meaningId": "field.claimedCurrency.meaning",
@@ -803,7 +825,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -811,7 +834,8 @@
             "kind"
           ],
           "value": "AMEND_REGISTRATION",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -832,6 +856,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -853,6 +878,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -876,6 +902,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -899,11 +926,13 @@
           ],
           "kind": {
             "kind": "GROUP",
+            "vocabulary": "correction",
             "options": [
               "KEEP",
               "REPLACE"
             ]
           },
+          "adviceGroup": "registration",
           "branches": [],
           "labelId": "group.registration.label",
           "meaningId": "group.registration.meaning",
@@ -929,6 +958,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -967,6 +997,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1005,6 +1036,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1043,6 +1075,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1081,6 +1114,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1119,6 +1153,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1157,6 +1192,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1193,12 +1229,14 @@
           ],
           "kind": {
             "kind": "GROUP",
+            "vocabulary": "correction",
             "options": [
               "KEEP",
               "REPLACE",
               "CLEAR"
             ]
           },
+          "adviceGroup": "decision",
           "branches": [],
           "labelId": "group.decision.label",
           "meaningId": "group.decision.meaning",
@@ -1224,6 +1262,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1262,6 +1301,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1300,6 +1340,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1336,12 +1377,14 @@
           ],
           "kind": {
             "kind": "GROUP",
+            "vocabulary": "correction",
             "options": [
               "KEEP",
               "REPLACE",
               "CLEAR"
             ]
           },
+          "adviceGroup": "payment",
           "branches": [],
           "labelId": "group.payment.label",
           "meaningId": "group.payment.meaning",
@@ -1367,6 +1410,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -1399,7 +1443,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1407,7 +1452,8 @@
             "kind"
           ],
           "value": "CORRECT",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1428,6 +1474,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -1449,6 +1496,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -1472,6 +1520,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -1495,6 +1544,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.paymentDecisionDate.label",
           "meaningId": "field.paymentDecisionDate.meaning",
@@ -1521,6 +1571,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.payableAmount.label",
           "meaningId": "field.payableAmount.meaning",
@@ -1547,6 +1598,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.payableCurrency.label",
           "meaningId": "field.payableCurrency.meaning",
@@ -1569,7 +1621,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1577,7 +1630,8 @@
             "kind"
           ],
           "value": "DECIDE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1598,6 +1652,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -1619,6 +1674,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -1642,6 +1698,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -1661,7 +1718,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1669,7 +1727,8 @@
             "kind"
           ],
           "value": "WITHDRAW_DECISION",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1690,6 +1749,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -1711,6 +1771,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -1734,6 +1795,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -1757,6 +1819,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.paymentDate.label",
           "meaningId": "field.paymentDate.meaning",
@@ -1776,7 +1839,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1784,7 +1848,8 @@
             "kind"
           ],
           "value": "RECORD_PAYMENT",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1805,6 +1870,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -1826,6 +1892,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -1849,6 +1916,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -1868,7 +1936,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1876,7 +1945,8 @@
             "kind"
           ],
           "value": "CLEAR_PAYMENT",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1897,6 +1967,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -1918,6 +1989,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -1941,6 +2013,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -1960,7 +2033,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -1968,7 +2042,8 @@
             "kind"
           ],
           "value": "CLOSE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -1989,6 +2064,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2010,6 +2086,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -2033,6 +2110,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -2052,7 +2130,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2060,7 +2139,8 @@
             "kind"
           ],
           "value": "REOPEN",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2081,6 +2161,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2102,6 +2183,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -2125,6 +2207,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -2147,6 +2230,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.reason.label",
           "meaningId": "field.reason.meaning",
@@ -2166,7 +2250,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2174,7 +2259,8 @@
             "kind"
           ],
           "value": "VOID",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2195,6 +2281,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2216,6 +2303,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -2239,6 +2327,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -2261,6 +2350,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.reason.label",
           "meaningId": "field.reason.meaning",
@@ -2280,7 +2370,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2288,7 +2379,8 @@
             "kind"
           ],
           "value": "REINSTATE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2309,6 +2401,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2330,6 +2423,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -2353,6 +2447,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.expectedRevision.label",
           "meaningId": "field.expectedRevision.meaning",
@@ -2372,7 +2467,8 @@
             "kind"
           ],
           "value": "CASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2380,7 +2476,8 @@
             "kind"
           ],
           "value": "ERASE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2401,6 +2498,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2422,11 +2520,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "principalKind",
             "options": [
               "HUMAN",
               "SERVICE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.kind.label",
           "meaningId": "field.principal.kind.meaning",
@@ -2449,6 +2549,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.issuer.label",
           "meaningId": "field.principal.issuer.meaning",
@@ -2471,6 +2572,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.subject.label",
           "meaningId": "field.principal.subject.meaning",
@@ -2490,7 +2592,8 @@
             "kind"
           ],
           "value": "AUTHORITY",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2498,7 +2601,8 @@
             "kind"
           ],
           "value": "REGISTER",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2519,6 +2623,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2540,11 +2645,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "principalKind",
             "options": [
               "HUMAN",
               "SERVICE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.kind.label",
           "meaningId": "field.principal.kind.meaning",
@@ -2567,6 +2674,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.issuer.label",
           "meaningId": "field.principal.issuer.meaning",
@@ -2589,6 +2697,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.subject.label",
           "meaningId": "field.principal.subject.meaning",
@@ -2610,6 +2719,7 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "role",
             "options": [
               "OWNER",
               "CASE_READER",
@@ -2620,6 +2730,7 @@
               "AUDITOR"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.role.label",
           "meaningId": "field.role.meaning",
@@ -2642,11 +2753,13 @@
           ],
           "kind": {
             "kind": "GROUP",
+            "vocabulary": "scope",
             "options": [
               "INSTALLATION",
               "CASE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "input.scope.label",
           "meaningId": "input.scope.meaning",
@@ -2668,6 +2781,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -2696,7 +2810,8 @@
             "kind"
           ],
           "value": "AUTHORITY",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2704,7 +2819,8 @@
             "kind"
           ],
           "value": "GRANT",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2725,6 +2841,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2746,11 +2863,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "principalKind",
             "options": [
               "HUMAN",
               "SERVICE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.kind.label",
           "meaningId": "field.principal.kind.meaning",
@@ -2773,6 +2892,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.issuer.label",
           "meaningId": "field.principal.issuer.meaning",
@@ -2795,6 +2915,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.subject.label",
           "meaningId": "field.principal.subject.meaning",
@@ -2816,6 +2937,7 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "role",
             "options": [
               "OWNER",
               "CASE_READER",
@@ -2826,6 +2948,7 @@
               "AUDITOR"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.role.label",
           "meaningId": "field.role.meaning",
@@ -2848,11 +2971,13 @@
           ],
           "kind": {
             "kind": "GROUP",
+            "vocabulary": "scope",
             "options": [
               "INSTALLATION",
               "CASE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "input.scope.label",
           "meaningId": "input.scope.meaning",
@@ -2874,6 +2999,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [
             {
               "path": [
@@ -2902,7 +3028,8 @@
             "kind"
           ],
           "value": "AUTHORITY",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -2910,7 +3037,8 @@
             "kind"
           ],
           "value": "REVOKE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -2931,6 +3059,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -2952,11 +3081,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "principalKind",
             "options": [
               "HUMAN",
               "SERVICE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.kind.label",
           "meaningId": "field.principal.kind.meaning",
@@ -2979,6 +3110,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.issuer.label",
           "meaningId": "field.principal.issuer.meaning",
@@ -3001,6 +3133,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.subject.label",
           "meaningId": "field.principal.subject.meaning",
@@ -3020,7 +3153,8 @@
             "kind"
           ],
           "value": "AUTHORITY",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -3028,7 +3162,8 @@
             "kind"
           ],
           "value": "ENABLE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -3049,6 +3184,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -3070,11 +3206,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "principalKind",
             "options": [
               "HUMAN",
               "SERVICE"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.kind.label",
           "meaningId": "field.principal.kind.meaning",
@@ -3097,6 +3235,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.issuer.label",
           "meaningId": "field.principal.issuer.meaning",
@@ -3119,6 +3258,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.principal.subject.label",
           "meaningId": "field.principal.subject.meaning",
@@ -3138,7 +3278,8 @@
             "kind"
           ],
           "value": "AUTHORITY",
-          "branches": []
+          "branches": [],
+          "vocabulary": "subject"
         },
         {
           "path": [
@@ -3146,7 +3287,8 @@
             "kind"
           ],
           "value": "DISABLE",
-          "branches": []
+          "branches": [],
+          "vocabulary": "act"
         }
       ]
     },
@@ -3167,6 +3309,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -3201,6 +3344,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.cursor.label",
           "meaningId": "field.cursor.meaning",
@@ -3222,6 +3366,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.limit.label",
           "meaningId": "field.limit.meaning",
@@ -3254,6 +3399,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
@@ -3276,11 +3422,13 @@
           ],
           "kind": {
             "kind": "CHOICE",
+            "vocabulary": "historyDetail",
             "options": [
               "SUMMARY",
               "FULL"
             ]
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "input.detail.label",
           "meaningId": "input.detail.meaning",
@@ -3300,6 +3448,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.cursor.label",
           "meaningId": "field.cursor.meaning",
@@ -3321,6 +3470,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.limit.label",
           "meaningId": "field.limit.meaning",
@@ -3353,6 +3503,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -3385,6 +3536,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.operationId.label",
           "meaningId": "field.operationId.meaning",
@@ -3417,6 +3569,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.cursor.label",
           "meaningId": "field.cursor.meaning",
@@ -3438,6 +3591,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.limit.label",
           "meaningId": "field.limit.meaning",
@@ -3470,6 +3624,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "input.actorId.label",
           "meaningId": "input.actorId.meaning",
@@ -3489,6 +3644,7 @@
           "kind": {
             "kind": "TEXT"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.cursor.label",
           "meaningId": "field.cursor.meaning",
@@ -3510,6 +3666,7 @@
           "kind": {
             "kind": "INTEGER"
           },
+          "adviceGroup": null,
           "branches": [],
           "labelId": "field.limit.label",
           "meaningId": "field.limit.meaning",

@@ -1,3 +1,4 @@
+import { operationEntry } from "./operationForm";
 import { inputErrors } from "./inputErrors";
 import {
   operationSource,
@@ -200,7 +201,12 @@ const refuse = (
     ...state,
     operation,
     notice: action.notice,
-    fieldErrors: inputErrors(action.notice, action.target, state.values),
+    fieldErrors: inputErrors(
+      action.notice,
+      action.target,
+      operationEntry(state.entry),
+      state.values,
+    ),
     disclosureRefused: action.disclosure,
   };
   return action.disclosure && action.identity !== undefined

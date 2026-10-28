@@ -10,8 +10,9 @@ open ClaimCore.Json
 module RequestCodecs =
     open Codec
 
-    let private tagged name variants =
+    let private tagged vocabulary name variants =
         Codec.taggedOn WireMembers.Kind name variants
+        |> Codec.vocabulary (Vocabulary.name vocabulary)
 
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
@@ -63,6 +64,7 @@ module RequestCodecs =
 
     let registrationGroup =
         tagged
+            CorrectionGroupAction.vocabulary
             RequestSchemas.RegistrationGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Amendment.Keep
@@ -77,6 +79,7 @@ module RequestCodecs =
 
     let decisionGroup =
         tagged
+            CorrectionGroupAction.vocabulary
             RequestSchemas.DecisionGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
@@ -92,6 +95,7 @@ module RequestCodecs =
 
     let paymentGroup =
         tagged
+            CorrectionGroupAction.vocabulary
             RequestSchemas.PaymentGroup
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
@@ -139,7 +143,7 @@ module RequestCodecs =
                 memberCodec WireMembers.Reason reason (inject, project)
             | CaseActSlot.Correction(inject, project) ->
                 memberCodec WireMembers.Groups correction (inject, project))
-        |> tagged RequestSchemas.CaseAct
+        |> tagged CaseActKind.vocabulary RequestSchemas.CaseAct
 
     let caseActWithNames names =
         caseCodec names (registration, decision, payment) (text, correction)
@@ -178,6 +182,7 @@ module RequestCodecs =
 
     let scope =
         tagged
+            ScopeKind.vocabulary
             RequestSchemas.Scope
             [
                 unitVariant (ScopeKind.token ScopeKind.Installation) GrantTarget.Installation
@@ -210,7 +215,8 @@ module RequestCodecs =
             | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
     let authorityActWith role =
-        authorityVariantsWith role scope |> tagged RequestSchemas.AuthorityAct
+        authorityVariantsWith role scope
+        |> tagged AuthorityKind.vocabulary RequestSchemas.AuthorityAct
 
     let authorityAct = authorityActWith (VocabularyCodec.create Role.vocabulary)
 
@@ -248,7 +254,7 @@ module RequestCodecs =
             authorityRequestFields
 
     let operationInput =
-        tagged RequestSchemas.OperationInput [ caseVariant; authorityVariant ]
+        tagged ActSubject.vocabulary RequestSchemas.OperationInput [ caseVariant; authorityVariant ]
 
     [<NoEquality; NoComparison>]
     type private ReadFields<'request, 'ctor> =

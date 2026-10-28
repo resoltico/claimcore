@@ -50,6 +50,53 @@ let tests =
                 Expect.isTrue
                     inputs.Head.Binding.Required
                     "Required is structural absent interaction policy")
+            testCase
+                "finite choices derive vocabulary from the codec and refuse missing identities"
+                (fun () ->
+                    let field codec =
+                        Codec.record id |> Codec.field "unfamiliar" id codec |> Codec.build
+
+                    let described = field (VocabularyCodec.create Role.vocabulary)
+
+                    match Bindings.walk described.Definitions Map.empty described.Schema with
+                    | [ BindingNode.Input input ] ->
+                        match input.Kind with
+                        | BindingKind.Choice(name, choices) ->
+                            Expect.equal
+                                name
+                                "role"
+                                "The codec carries its Domain vocabulary identity"
+
+                            Expect.contains choices "CASE_READER" "The actual options are retained"
+
+                            Expect.equal
+                                input.Path
+                                [ "unfamiliar" ]
+                                "Vocabulary does not depend on a known path"
+                        | _ -> failtest "Expected a finite choice"
+                    | _ -> failtest "Expected one described input"
+
+                    let unlabelled = field (Codec.enumeration [ 1, "ONE"; 2, "TWO" ])
+
+                    Expect.throws
+                        (fun () ->
+                            Bindings.walk unlabelled.Definitions Map.empty unlabelled.Schema
+                            |> ignore)
+                        "An unlabelled enumeration cannot become a catalog choice"
+
+                    let tagged =
+                        Codec.tagged
+                            "Unlabelled"
+                            [ Codec.unitVariant "ONE" 1; Codec.unitVariant "TWO" 2 ]
+
+                    Expect.throws
+                        (fun () ->
+                            Bindings.walk
+                                tagged.Definitions
+                                (Map.ofList [ "Unlabelled", "ONE" ])
+                                tagged.Schema
+                            |> ignore)
+                        "Selecting a branch cannot hide its missing vocabulary")
             testCase "an unannotated authored input fails derivation" (fun () ->
                 Expect.throws
                     (fun () -> Bindings.bind Map.empty (nodes ()) |> ignore)
@@ -74,12 +121,23 @@ let tests =
                             Schema.Object([ "kind", Schema.Const "ALLOWED"; "value", scalar ], [])
                         ]
 
+                let allowed =
+                    Bindings.walk
+                        definitions
+                        (Map.ofList [ "Input", "ALLOWED" ])
+                        (Schema.Vocabulary("synthetic", Schema.Ref "Input"))
+
+                Expect.hasLength
+                    allowed
+                    2
+                    "The declared branch admits with vocabulary and its scalar"
+
                 Expect.throws
                     (fun () ->
                         Bindings.walk
                             definitions
                             (Map.ofList [ "Input", "UNDECLARED" ])
-                            (Schema.Ref "Input")
+                            (Schema.Vocabulary("synthetic", Schema.Ref "Input"))
                         |> ignore)
                     "Branch selection must use a token declared by the codec")
             testCase "a fixed value is checked against the codec integer bounds" (fun () ->

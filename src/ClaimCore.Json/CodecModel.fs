@@ -23,6 +23,7 @@ type Schema =
     | Const of string
     | OneOf of variants: Schema list * discriminator: (string * (string * string) list) option
     | Ref of string
+    | Vocabulary of name: string * shape: Schema
 
 module Schema =
     /// Distinct string literals are disjoint, so their oneOf is exactly one enum.

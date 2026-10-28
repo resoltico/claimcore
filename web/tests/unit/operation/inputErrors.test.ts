@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { inputErrors } from "../../../src/operation/inputErrors";
-import { initialOperationValues } from "../../../src/operation/operationForm";
+import { initialOperationValues, operationEntry } from "../../../src/operation/operationForm";
 import type { Notice } from "../../../src/protocol/notices";
 
 it("maps every issue through catalog diagnostics in their original order", () => {
@@ -16,7 +16,12 @@ it("maps every issue through catalog diagnostics in their original order", () =>
     },
   };
   const values = initialOperationValues("CASE", "OPEN", null);
-  const errors = inputErrors(notice, null, values);
+  const errors = inputErrors(
+    notice,
+    null,
+    operationEntry({ subject: "CASE", kind: "OPEN" }),
+    values,
+  );
   expect(Object.keys(errors)).toEqual(["act.values.incidentDate", "act.values.claimantName"]);
   expect(errors["act.values.incidentDate"]).toEqual({
     kind: "issues",
@@ -31,7 +36,14 @@ it("maps every issue through catalog diagnostics in their original order", () =>
 it("keeps a protocol fault single without deriving a business issue", () => {
   const notice: Notice = { kind: "local", reason: "invalidInput" };
   const values = initialOperationValues("CASE", "OPEN", null);
-  expect(inputErrors(notice, "act.values.incidentDate", values)).toEqual({
+  expect(
+    inputErrors(
+      notice,
+      "act.values.incidentDate",
+      operationEntry({ subject: "CASE", kind: "OPEN" }),
+      values,
+    ),
+  ).toEqual({
     "act.values.incidentDate": notice,
   });
 });

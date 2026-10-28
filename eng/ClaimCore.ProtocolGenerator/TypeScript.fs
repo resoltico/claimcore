@@ -12,20 +12,24 @@ module TypeScript =
     let private quote (value: string) = JsonSerializer.Serialize value
     let private identifier (value: string) = value.Replace('.', '_')
 
-    let rec private value =
-        function
-        | Schema.Object([], _) -> "Readonly<Record<string, never>>"
-        | Schema.Object(properties, optional) ->
+    let private objectType encode properties optional =
+        if List.isEmpty properties then
+            "Readonly<Record<string, never>>"
+        else
             properties
             |> List.map (fun (name, schema) ->
                 "readonly "
                 + quote name
                 + (if List.contains name optional then "?" else "")
                 + ": "
-                + value schema
+                + encode schema
                 + ";")
             |> String.concat " "
             |> fun fields -> "{ " + fields + " }"
+
+    let rec private value =
+        function
+        | Schema.Object(properties, optional) -> objectType value properties optional
         | Schema.Array(item, _, _) -> "ReadonlyArray<" + value item + ">"
         | Schema.String _ -> "string"
         | Schema.Integer(minimum, maximum) -> if minimum = maximum then string minimum else "number"
@@ -34,6 +38,7 @@ module TypeScript =
         | Schema.Const token -> quote token
         | Schema.OneOf(variants, _) -> variants |> List.map value |> String.concat " | "
         | Schema.Ref name -> identifier name
+        | Schema.Vocabulary(_, schema) -> value schema
 
     let private endpointMap name response =
         Api.all
