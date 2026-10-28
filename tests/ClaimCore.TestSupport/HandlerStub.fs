@@ -55,12 +55,15 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (AuthoredCaseAct.Open
-                    { Inputs.registration with
-                        ClaimantName = "Synthetic claimant"
-                        InsurerName = "Synthetic insurer"
-                        ClaimedAmount = "1.00"
-                    })
+                (AuthoredCaseAct.Open(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [
+                            BusinessField.ClaimantName, ("Synthetic claimant")
+                            BusinessField.InsurerName, ("Synthetic insurer")
+                            BusinessField.ClaimedAmount, ("1.00")
+                        ]
+                        (Inputs.registration)
+                ))
         }
 
     CaseFixtures.decide (DateOnly(2026, 10, 13)) request None

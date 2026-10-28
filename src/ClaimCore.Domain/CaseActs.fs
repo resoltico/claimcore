@@ -344,28 +344,9 @@ module CaseAct =
                     Payment = Change.Keep
                 }
 
-    let registration (value: Registration) : RegistrationInput =
-        {
-            IncidentDate = CalendarDate.format value.IncidentDate
-            IncidentNotificationDate = CalendarDate.format value.IncidentNotificationDate
-            IncidentCountry = CountryCode.format value.IncidentCountry
-            ClaimantName = PartyName.format value.ClaimantName
-            InsurerName = PartyName.format value.InsurerName
-            ClaimedAmount = Money.format value.ClaimedAmount
-            ClaimedCurrency = Money.currency value.ClaimedAmount
-        }
-
-    let decision (value: Decision) : DecisionInput =
-        {
-            PaymentDecisionDate = CalendarDate.format value.PaymentDecisionDate
-            PayableAmount = Money.format value.PayableAmount
-            PayableCurrency = Money.currency value.PayableAmount
-        }
-
-    let private payment (value: Payment) : PaymentInput =
-        {
-            PaymentDate = CalendarDate.format value.PaymentDate
-        }
+    let registration = Registration.authored
+    let decision = Decision.authored
+    let private payment = Payment.authored
 
     let authored (act: ValidCaseAct) : AuthoredCaseAct =
         map registration decision payment Reason.format act

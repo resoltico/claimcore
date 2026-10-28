@@ -17,9 +17,9 @@ let private correct registration decision payment =
         }
 
 let private changedRegistration =
-    { registration with
-        ClaimantName = "Corrected Synthetic Claimant"
-    }
+    (ClaimCore.TestSupport.Inputs.registrationWith
+        [ BusinessField.ClaimantName, ("Corrected Synthetic Claimant") ]
+        (registration))
 
 let private paidCorrectionTests =
     testList
@@ -31,11 +31,15 @@ let private paidCorrectionTests =
                 let act =
                     correct
                         (Amendment.Replace changedRegistration)
-                        (Change.Replace
-                            { decision with
-                                PayableAmount = "650.00"
-                            })
-                        (Change.Replace { PaymentDate = "2026-08-21" })
+                        (Change.Replace(
+                            ClaimCore.TestSupport.Inputs.decisionWith
+                                [ BusinessField.PayableAmount, ("650.00") ]
+                                (decision)
+                        ))
+                        (Change.Replace(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-21") ]
+                        ))
 
                 let after = before |> apply act |> accepted |> Case.snapshot
 
@@ -52,19 +56,24 @@ let private paidCorrectionTests =
                     "Case target is retained"
 
                 Expect.equal
-                    (PartyName.format (viewFields after).Registration.ClaimantName)
-                    changedRegistration.ClaimantName
+                    (PartyName.format (
+                        Registration.value
+                            BusinessField.ClaimantName
+                            ((viewFields after).Registration)
+                        |> FieldValue.name
+                    ))
+                    (RegistrationInput.value BusinessField.ClaimantName (changedRegistration))
                     "Registration replaced"
 
                 Expect.equal
                     ((viewFields after).Decision
-                     |> Option.map (fun value -> Money.format value.PayableAmount))
+                     |> Option.map (fun value -> Money.format (Decision.payable (value))))
                     (Some "650")
                     "Decision replaced"
 
                 Expect.equal
                     ((viewFields after).Payment
-                     |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                     |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                     (Some "2026-08-21")
                     "Payment reaffirmed")
             testCase "paid decision replacement requires explicit payment action" (fun () ->
@@ -73,7 +82,11 @@ let private paidCorrectionTests =
                 let act =
                     correct
                         Amendment.Keep
-                        (Change.Replace { decision with PayableAmount = "650" })
+                        (Change.Replace(
+                            ClaimCore.TestSupport.Inputs.decisionWith
+                                [ BusinessField.PayableAmount, ("650") ]
+                                (decision)
+                        ))
                         Change.Keep
 
                 Expect.isError (before |> apply act) "Paid decision is not silently reused")
@@ -106,8 +119,13 @@ let private closedCorrectionTests =
                     "Correction does not reopen"
 
                 Expect.equal
-                    (PartyName.format (viewFields after).Registration.ClaimantName)
-                    changedRegistration.ClaimantName
+                    (PartyName.format (
+                        Registration.value
+                            BusinessField.ClaimantName
+                            ((viewFields after).Registration)
+                        |> FieldValue.name
+                    ))
+                    (RegistrationInput.value BusinessField.ClaimantName (changedRegistration))
                     "Fact corrected")
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->
                 let before = paid ()
@@ -134,7 +152,10 @@ let private closedCorrectionTests =
                             correct
                                 Amendment.Keep
                                 (Change.Replace decision)
-                                (Change.Replace { PaymentDate = "2026-08-20" })
+                                (Change.Replace(
+                                    ClaimCore.TestSupport.Inputs.paymentFrom
+                                        [ BusinessField.PaymentDate, ("2026-08-20") ]
+                                ))
                         )
 
                     Expect.equal
@@ -161,11 +182,14 @@ let private validationTests =
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =
                     correct
-                        (Amendment.Replace
-                            { changedRegistration with
-                                IncidentDate = "2026-09-08"
-                                IncidentNotificationDate = "2026-09-08"
-                            })
+                        (Amendment.Replace(
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [
+                                    BusinessField.IncidentDate, ("2026-09-08")
+                                    BusinessField.IncidentNotificationDate, ("2026-09-08")
+                                ]
+                                (changedRegistration)
+                        ))
                         Change.Keep
                         Change.Keep
 

@@ -13,20 +13,20 @@ module internal StateValidation =
                 [
                     Validation.onOrBefore
                         (InputTarget.Field BusinessField.PaymentDecisionDate)
-                        facts.IncidentNotificationDate
-                        decision.PaymentDecisionDate
+                        (Registration.incidentNotificationDate (facts))
+                        (Decision.date (decision))
                     match PaymentProgress.paymentDate value with
                     | None -> Ok()
                     | Some paid ->
                         Validation.onOrBefore
                             (InputTarget.Field BusinessField.PaymentDate)
-                            decision.PaymentDecisionDate
+                            (Decision.date (decision))
                             paid
                 ]
             |> Result.bind (fun () ->
                 if
                     (PaymentProgress.paymentDate value).IsSome
-                    && Money.value decision.PayableAmount = 0M
+                    && Money.value (Decision.payable (decision)) = 0M
                 then
                     Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid)
                 else
@@ -37,54 +37,29 @@ module internal StateValidation =
         (before: Claim option)
         (facts: Registration, decision: Decision option, payment)
         =
-        let assertedDate field previous candidate =
-            match candidate with
-            | None -> Ok()
-            | Some date when previous = Some date -> Ok()
-            | Some date -> Validation.notFuture (InputTarget.Field field) today date
-
-        let assertedName field previous candidate =
-            if previous = Some candidate then
-                Ok()
-            else
-                PartyName.admit candidate
-                |> Result.map ignore
-                |> Result.mapError (fun violation ->
-                    Refusal.invalidInput (InputTarget.Field field, violation))
+        let previous =
+            before
+            |> Option.map (fun claim ->
+                CaseFields.groupValues
+                    claim.Facts
+                    (PaymentProgress.decision claim.Progress)
+                    (PaymentProgress.paymentDate claim.Progress)
+                |> Map.ofList)
+            |> Option.defaultValue Map.empty
 
         Admission.collect
             [
-                // An incomplete correction is refused by its acknowledgement/change checks.
-                // Its independently asserted values must still contribute input issues.
                 match PaymentProgress.fromGroups decision payment with
                 | Ok proposed -> progress facts proposed
                 | Error() -> Ok()
-                assertedDate
-                    BusinessField.IncidentDate
-                    (before |> Option.map _.Facts.IncidentDate)
-                    (Some facts.IncidentDate)
-                assertedDate
-                    BusinessField.IncidentNotificationDate
-                    (before |> Option.map _.Facts.IncidentNotificationDate)
-                    (Some facts.IncidentNotificationDate)
-                assertedDate
-                    BusinessField.PaymentDecisionDate
-                    (before
-                     |> Option.bind (fun claim -> PaymentProgress.decision claim.Progress)
-                     |> Option.map _.PaymentDecisionDate)
-                    (decision |> Option.map _.PaymentDecisionDate)
-                assertedDate
-                    BusinessField.PaymentDate
-                    (before |> Option.bind (fun claim -> PaymentProgress.paymentDate claim.Progress))
-                    payment
-                assertedName
-                    BusinessField.ClaimantName
-                    (before |> Option.map _.Facts.ClaimantName)
-                    facts.ClaimantName
-                assertedName
-                    BusinessField.InsurerName
-                    (before |> Option.map _.Facts.InsurerName)
-                    facts.InsurerName
+                for field, value in CaseFields.groupValues facts decision payment do
+                    if Map.tryFind field previous = Some value then
+                        Ok()
+                    else
+                        FieldValue.admit today value
+                        |> Result.map ignore
+                        |> Result.mapError (fun violation ->
+                            Refusal.invalidInput (InputTarget.Field field, violation))
             ]
 
     let admit today before (after: Claim) =

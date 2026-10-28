@@ -79,9 +79,9 @@ let internal createHistory (actor: ServiceContext) =
 
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
-                { registration with
-                    ClaimantName = "Party " + string n
-                }
+                (ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimantName, ("Party " + string n) ]
+                    (registration))
 
             let! amended =
                 (Service.execute

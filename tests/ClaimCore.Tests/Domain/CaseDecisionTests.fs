@@ -29,10 +29,11 @@ let private replay () =
             }
             { request with
                 Act =
-                    AuthoredCaseAct.Open
-                        { registration with
-                            ClaimedAmount = "1000"
-                        }
+                    AuthoredCaseAct.Open(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimedAmount, ("1000") ]
+                            (registration)
+                    )
             }
         ] do
         Expect.equal

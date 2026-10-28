@@ -6,8 +6,11 @@
     <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
+    <Compile Include="MoneyValues.fs" />
+    <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
     <Compile Include="CaseFields.fs" />
+    <Compile Include="CaseStateModel.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
     <Compile Include="AuthorityActs.fs" />

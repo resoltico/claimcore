@@ -37,49 +37,22 @@ type InputTarget =
     | Limit
     | Cursor
 
-type RegistrationInput =
+[<NoEquality; NoComparison>]
+type FieldDescriptor =
     {
-        IncidentDate: string
-        IncidentNotificationDate: string
-        IncidentCountry: string
-        ClaimantName: string
-        InsurerName: string
-        ClaimedAmount: string
-        ClaimedCurrency: string
+        Field: BusinessField
+        Key: string
+        Kind: FieldValueKind
+        Group: RecordGroup option
+        AllowsAbsence: bool
+        IsAuthored: bool
+        Searchable: bool
+        Pairs: BusinessField option
     }
-
-type DecisionInput =
-    {
-        PaymentDecisionDate: string
-        PayableAmount: string
-        PayableCurrency: string
-    }
-
-type PaymentInput = { PaymentDate: string }
-
-/// Accepted registration values retain their validated structure.
-type Registration =
-    {
-        IncidentDate: CalendarDate
-        IncidentNotificationDate: CalendarDate
-        IncidentCountry: CountryCode
-        ClaimantName: PartyName
-        InsurerName: PartyName
-        ClaimedAmount: Money
-    }
-
-type Decision =
-    {
-        PaymentDecisionDate: CalendarDate
-        PayableAmount: Money
-    }
-
-type Payment = { PaymentDate: CalendarDate }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module RecordGroup =
     let vocabulary = Vocabulary.ofUnion<RecordGroup> "group" TokenCasing.CamelCase None
-
     let token = Vocabulary.token vocabulary
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -91,136 +64,6 @@ module CaseStatus =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-[<RequireQualifiedAccess>]
-type PaymentProgress =
-    | Undecided
-    | Decided of decision: Decision
-    | Paid of decision: Decision * paidDate: CalendarDate
-
-/// Complete groups are retained as typed state; no paid state can omit its decision.
-module PaymentProgress =
-    let decision =
-        function
-        | PaymentProgress.Undecided -> None
-        | PaymentProgress.Decided value
-        | PaymentProgress.Paid(value, _) -> Some value
-
-    let paymentDate =
-        function
-        | PaymentProgress.Paid(_, date) -> Some date
-        | _ -> None
-
-    let fromGroups decision payment =
-        match decision, payment with
-        | None, None -> Ok PaymentProgress.Undecided
-        | None, Some _ -> Error()
-        | Some value, None -> Ok(PaymentProgress.Decided value)
-        | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
-
-/// Accepted facts share the authored group types; a decision is complete or absent.
-type CaseFields =
-    {
-        CaseReference: CaseReference
-        Status: CaseStatus
-        Registration: Registration
-        Progress: PaymentProgress
-    }
-
-    member this.Decision = PaymentProgress.decision this.Progress
-
-    member this.Payment =
-        PaymentProgress.paymentDate this.Progress
-        |> Option.map (fun date -> { PaymentDate = date })
-
-[<RequireQualifiedAccess>]
-type Lifecycle =
-    | Active
-    | Voided
-    | Erased
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Lifecycle =
-    let vocabulary =
-        Vocabulary.ofUnion<Lifecycle> "lifecycle" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-
-/// Lifecycle is independent of the payload carried by a full view or summary.
-[<RequireQualifiedAccess>]
-type CaseState<'fields> =
-    | Active of 'fields
-    | Voided of 'fields
-    | Erased
-
-module CaseState =
-    let map mapping =
-        function
-        | CaseState.Active fields -> CaseState.Active(mapping fields)
-        | CaseState.Voided fields -> CaseState.Voided(mapping fields)
-        | CaseState.Erased -> CaseState.Erased
-
-    let fields =
-        function
-        | CaseState.Active fields
-        | CaseState.Voided fields -> Some fields
-        | CaseState.Erased -> None
-
-    let lifecycle =
-        function
-        | CaseState.Active _ -> Lifecycle.Active
-        | CaseState.Voided _ -> Lifecycle.Voided
-        | CaseState.Erased -> Lifecycle.Erased
-
-    let token state = lifecycle state |> Lifecycle.token
-
-/// A disclosure cannot carry an erased state.
-[<RequireQualifiedAccess>]
-type LiveCase =
-    | Active of CaseFields
-    | Voided of CaseFields
-
-module LiveCase =
-    let toState =
-        function
-        | LiveCase.Active fields -> CaseState.Active fields
-        | LiveCase.Voided fields -> CaseState.Voided fields
-
-    let ofState =
-        function
-        | CaseState.Active fields -> Some(LiveCase.Active fields)
-        | CaseState.Voided fields -> Some(LiveCase.Voided fields)
-        | CaseState.Erased -> None
-
-type CaseSnapshot =
-    {
-        Reference: CaseReference
-        Revision: Revision
-        State: CaseState<CaseFields>
-    }
-
-[<RequireQualifiedAccess>]
-type FieldValueKind =
-    | CalendarDate
-    | Country
-    | PartyName
-    | Amount
-    | Currency
-    | Reference
-    | Status
-
-[<NoEquality; NoComparison>]
-type FieldDescriptor =
-    {
-        Field: BusinessField
-        Key: string
-        Kind: FieldValueKind
-        Group: RecordGroup option
-        AllowsAbsence: bool
-        IsAuthored: bool
-        Value: CaseFields -> string option
-    }
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module BusinessField =
     let vocabulary =
@@ -228,113 +71,308 @@ module BusinessField =
 
     let key = Vocabulary.token vocabulary
 
-    let private descriptor field kind group allowsAbsence value =
+    let private descriptor field kind group searchable pairs =
         {
             Field = field
             Key = key field
             Kind = kind
             Group = group
-            AllowsAbsence = allowsAbsence
+            AllowsAbsence = group.IsSome && group <> Some RecordGroup.Registration
             IsAuthored = field <> BusinessField.Status
-            Value = value
+            Searchable = searchable
+            Pairs = pairs
         }
-
-
-    // This exhaustive description owns each field's structure and projection.
+    // One exhaustive table owns field structure, searchability and amount/currency relationships.
     // fsharplint:disable-next-line CyclomaticComplexity
     let describe field =
         match field with
-        | BusinessField.CaseReference ->
-            descriptor field FieldValueKind.Reference None false (fun fields ->
-                Some(CaseReference.format fields.CaseReference))
-        | BusinessField.Status ->
-            descriptor field FieldValueKind.Status None false (fun fields ->
-                Some(CaseStatus.token fields.Status))
         | BusinessField.IncidentDate ->
-            descriptor
-                field
-                FieldValueKind.CalendarDate
-                (Some RecordGroup.Registration)
-                false
-                (fun fields -> Some(CalendarDate.format fields.Registration.IncidentDate))
+            descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
         | BusinessField.IncidentNotificationDate ->
-            descriptor
-                field
-                FieldValueKind.CalendarDate
-                (Some RecordGroup.Registration)
-                false
-                (fun fields ->
-                    Some(CalendarDate.format fields.Registration.IncidentNotificationDate))
+            descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
         | BusinessField.IncidentCountry ->
-            descriptor
-                field
-                FieldValueKind.Country
-                (Some RecordGroup.Registration)
-                false
-                (fun fields -> Some(CountryCode.format fields.Registration.IncidentCountry))
+            descriptor field FieldValueKind.Country (Some RecordGroup.Registration) false None
         | BusinessField.ClaimantName ->
-            descriptor
-                field
-                FieldValueKind.PartyName
-                (Some RecordGroup.Registration)
-                false
-                (fun fields -> Some(PartyName.format fields.Registration.ClaimantName))
+            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None
         | BusinessField.InsurerName ->
-            descriptor
-                field
-                FieldValueKind.PartyName
-                (Some RecordGroup.Registration)
-                false
-                (fun fields -> Some(PartyName.format fields.Registration.InsurerName))
+            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None
         | BusinessField.ClaimedAmount ->
             descriptor
                 field
                 FieldValueKind.Amount
                 (Some RecordGroup.Registration)
                 false
-                (fun fields -> Some(Money.format fields.Registration.ClaimedAmount))
+                (Some BusinessField.ClaimedCurrency)
         | BusinessField.ClaimedCurrency ->
-            descriptor
-                field
-                FieldValueKind.Currency
-                (Some RecordGroup.Registration)
-                false
-                (fun fields -> Some(Money.currency fields.Registration.ClaimedAmount))
+            descriptor field FieldValueKind.Currency (Some RecordGroup.Registration) false None
+        | BusinessField.CaseReference -> descriptor field FieldValueKind.Reference None true None
         | BusinessField.PaymentDecisionDate ->
-            descriptor
-                field
-                FieldValueKind.CalendarDate
-                (Some RecordGroup.Decision)
-                true
-                (fun fields ->
-                    fields.Decision
-                    |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+            descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Decision) false None
         | BusinessField.PayableAmount ->
-            descriptor field FieldValueKind.Amount (Some RecordGroup.Decision) true (fun fields ->
-                fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
-        | BusinessField.PayableCurrency ->
-            descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) true (fun fields ->
-                fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount))
-        | BusinessField.PaymentDate ->
             descriptor
                 field
-                FieldValueKind.CalendarDate
-                (Some RecordGroup.Payment)
-                true
-                (fun fields ->
-                    fields.Payment
-                    |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                FieldValueKind.Amount
+                (Some RecordGroup.Decision)
+                false
+                (Some BusinessField.PayableCurrency)
+        | BusinessField.PayableCurrency ->
+            descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) false None
+        | BusinessField.PaymentDate ->
+            descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
+        | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
 
-    let values fields =
-        Vocabulary.all vocabulary
-        |> List.map (fun field -> field, (describe field).Value fields)
-
-/// Domain declarations carry structure; each boundary chooses its own names and codecs.
-module CaseFields =
-    let declarations =
-        Vocabulary.all BusinessField.vocabulary |> List.map BusinessField.describe
+    let declarations = Vocabulary.all vocabulary |> List.map describe
 
     let ofGroup group =
         declarations
-        |> List.filter (fun row -> row.Group = Some group)
+        |> List.filter (fun field -> field.Group = Some group)
         |> List.map _.Field
+
+type GroupValues<'stage> = private GroupValues of RecordGroup * Map<BusinessField, 'stage>
+
+module GroupValues =
+    let private create group members =
+        let expected = BusinessField.ofGroup group
+        let supplied = members |> List.map fst
+
+        if
+            List.length supplied <> List.length expected
+            || Set.ofList supplied <> Set.ofList expected
+        then
+            Error "A group must contain each declared field exactly once."
+        else
+            Ok(GroupValues(group, Map.ofList members))
+
+    let items (GroupValues(group, values)) =
+        BusinessField.ofGroup group |> List.map (fun field -> field, values[field])
+
+    let get field (GroupValues(_, values)) = values[field]
+    let raw field values = get field values |> Authored.format
+
+    let money field values =
+        let currency =
+            (BusinessField.describe field).Pairs
+            |> Option.defaultWith (fun () -> invalidOp "An amount must declare its currency pair.")
+
+        Money.create
+            (get field values |> FieldValue.amount)
+            (get currency values |> FieldValue.currency)
+
+    let createAuthored group members =
+        members
+        |> List.map (fun (field, value) -> field, Authored.create value)
+        |> create group
+
+    let createAdmitted group members =
+        if
+            members
+            |> List.exists (fun (field, value) ->
+                FieldValue.kind value <> (BusinessField.describe field).Kind)
+        then
+            Error "A field's value must have its declared kind."
+        else
+            create group members
+
+    let parse values =
+        items values
+        |> List.map (fun (field, value) ->
+            field, FieldValue.parse (BusinessField.describe field).Kind (Authored.format value))
+
+    let errors parsed =
+        parsed
+        |> List.choose (fun (field, result) ->
+            match result with
+            | Ok _ -> None
+            | Error problem -> Some(field, problem))
+
+    let admitted parsed =
+        parsed
+        |> List.map (fun (field, result) ->
+            field,
+            Result.defaultWith
+                (fun _ -> invalidOp "Parsing must succeed before constructing admitted values.")
+                result)
+
+    let merge replacements members =
+        List.fold
+            (fun values (field, value) -> Map.add field value values)
+            (Map.ofList members)
+            replacements
+        |> Map.toList
+
+type RegistrationInput = private RegistrationInput of GroupValues<Authored>
+
+type Registration = private Registration of GroupValues<Admitted>
+
+module RegistrationInput =
+    let value field (RegistrationInput values) = GroupValues.raw field values
+
+    let create members =
+        GroupValues.createAuthored RecordGroup.Registration members
+        |> Result.map RegistrationInput
+
+    let values (RegistrationInput values) =
+        GroupValues.items values
+        |> List.map (fun (field, value) -> field, Authored.format value)
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let parsed (RegistrationInput values) = GroupValues.parse values
+
+module Registration =
+    let value field (Registration values) = GroupValues.get field values
+
+    let incidentDate record =
+        value BusinessField.IncidentDate record |> FieldValue.date
+
+    let incidentNotificationDate record =
+        value BusinessField.IncidentNotificationDate record |> FieldValue.date
+
+    let claimed (Registration values) =
+        GroupValues.money BusinessField.ClaimedAmount values
+
+
+    let create members =
+        GroupValues.createAdmitted RecordGroup.Registration members
+        |> Result.map Registration
+
+    let values (Registration values) = GroupValues.items values
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let authored value =
+        values value
+        |> List.map (fun (field, value) -> field, FieldValue.format value)
+        |> RegistrationInput.create
+        |> Result.defaultWith invalidOp
+
+    let private order parsed =
+        let date field =
+            parsed
+            |> List.find (fst >> (=) field)
+            |> snd
+            |> Result.toOption
+            |> Option.map FieldValue.date
+
+        match date BusinessField.IncidentDate, date BusinessField.IncidentNotificationDate with
+        | Some incident, Some notification when incident > notification ->
+            [ BusinessField.IncidentNotificationDate, Violation.ChronologicalOrder ]
+        | _ -> []
+
+    let parse input =
+        let parsed = RegistrationInput.parsed input
+        let errors = GroupValues.errors parsed @ order parsed
+
+        if List.isEmpty errors then
+            GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
+        else
+            Error(List.sortBy fst errors)
+
+type DecisionInput = private DecisionInput of GroupValues<Authored>
+
+type Decision = private Decision of GroupValues<Admitted>
+
+module DecisionInput =
+    let value field (DecisionInput values) = GroupValues.raw field values
+
+    let create members =
+        GroupValues.createAuthored RecordGroup.Decision members
+        |> Result.map DecisionInput
+
+    let values (DecisionInput values) =
+        GroupValues.items values
+        |> List.map (fun (field, value) -> field, Authored.format value)
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let parsed (DecisionInput values) = GroupValues.parse values
+
+module Decision =
+    let value field (Decision values) = GroupValues.get field values
+
+    let date record =
+        value BusinessField.PaymentDecisionDate record |> FieldValue.date
+
+    let payable (Decision values) =
+        GroupValues.money BusinessField.PayableAmount values
+
+
+    let create members =
+        GroupValues.createAdmitted RecordGroup.Decision members |> Result.map Decision
+
+    let values (Decision values) = GroupValues.items values
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let authored value =
+        values value
+        |> List.map (fun (field, value) -> field, FieldValue.format value)
+        |> DecisionInput.create
+        |> Result.defaultWith invalidOp
+
+    let parse input =
+        let parsed = DecisionInput.parsed input
+        let errors = GroupValues.errors parsed
+
+        if List.isEmpty errors then
+            GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
+        else
+            Error(List.sortBy fst errors)
+
+type PaymentInput = private PaymentInput of GroupValues<Authored>
+
+type Payment = private Payment of GroupValues<Admitted>
+
+module PaymentInput =
+    let value field (PaymentInput values) = GroupValues.raw field values
+
+    let create members =
+        GroupValues.createAuthored RecordGroup.Payment members
+        |> Result.map PaymentInput
+
+    let values (PaymentInput values) =
+        GroupValues.items values
+        |> List.map (fun (field, value) -> field, Authored.format value)
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let parsed (PaymentInput values) = GroupValues.parse values
+
+module Payment =
+    let value field (Payment values) = GroupValues.get field values
+
+    let date record =
+        value BusinessField.PaymentDate record |> FieldValue.date
+
+
+    let create members =
+        GroupValues.createAdmitted RecordGroup.Payment members |> Result.map Payment
+
+    let values (Payment values) = GroupValues.items values
+
+    let replace members value =
+        GroupValues.merge members (values value) |> create
+
+    let authored value =
+        values value
+        |> List.map (fun (field, value) -> field, FieldValue.format value)
+        |> PaymentInput.create
+        |> Result.defaultWith invalidOp
+
+    let parse input =
+        let parsed = PaymentInput.parsed input
+        let errors = GroupValues.errors parsed
+
+        if List.isEmpty errors then
+            GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
+        else
+            Error(List.sortBy fst errors)
+
+    let onDate date =
+        create [ BusinessField.PaymentDate, Admitted.Date date ]
+        |> Result.defaultWith invalidOp

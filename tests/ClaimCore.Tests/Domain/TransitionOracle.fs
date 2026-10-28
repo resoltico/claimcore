@@ -18,7 +18,8 @@ let private activeEligible (fields: CaseFields) =
     | AuthoredCaseAct.RecordPayment _ ->
         decided
         && not paid
-        && (fields.Decision |> Option.map (fun value -> Money.value value.PayableAmount))
+        && (fields.Decision
+            |> Option.map (fun value -> Money.value (Decision.payable (value))))
            <> Some 0M
     | (AuthoredCaseAct.Bare BareAct.ClearPayment) -> paid
     | _ -> false
@@ -33,7 +34,12 @@ let private eligible (fields: CaseFields) act =
 
 let private registration (value: RegistrationInput) (fields: CaseFields) =
     { fields with
-        Registration = CaseFixtures.registration { value with ClaimedAmount = "1000" }
+        Registration =
+            CaseFixtures.registration (
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimedAmount, ("1000") ]
+                    (value)
+            )
     }
 
 let private correctedRegistration fields =
@@ -49,10 +55,19 @@ let private changed fields act =
         { fields with
             Progress =
                 PaymentProgress.Decided(
-                    CaseFixtures.decision
-                        { value with
-                            PayableAmount = if value.PayableAmount = "0" then "0" else "750"
-                        }
+                    CaseFixtures.decision (
+                        ClaimCore.TestSupport.Inputs.decisionWith
+                            [
+                                BusinessField.PayableAmount,
+                                (if
+                                     (DecisionInput.value BusinessField.PayableAmount (value)) = "0"
+                                 then
+                                     "0"
+                                 else
+                                     "750")
+                            ]
+                            (value)
+                    )
                 )
         }
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) ->
@@ -64,7 +79,7 @@ let private changed fields act =
             Progress =
                 PaymentProgress.Paid(
                     Option.get fields.Decision,
-                    (CaseFixtures.payment payment).PaymentDate
+                    (Payment.date (CaseFixtures.payment payment))
                 )
         }
     | (AuthoredCaseAct.Bare BareAct.ClearPayment) ->

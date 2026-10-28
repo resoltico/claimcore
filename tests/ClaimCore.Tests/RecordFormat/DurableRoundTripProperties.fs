@@ -58,27 +58,28 @@ let private sample =
             + fraction.ToString("D4", CultureInfo.InvariantCulture)
 
         let registration: RegistrationInput =
-            {
-                IncidentDate = date 0
-                IncidentNotificationDate = date gap
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            }
+            (ClaimCore.TestSupport.Inputs.registrationFrom
+                [
+                    BusinessField.IncidentDate, (date 0)
+                    BusinessField.IncidentNotificationDate, (date gap)
+                    BusinessField.IncidentCountry, (country)
+                    BusinessField.ClaimantName, (claimant)
+                    BusinessField.InsurerName, (insurer)
+                    BusinessField.ClaimedAmount, (amount)
+                    BusinessField.ClaimedCurrency, (currency)
+                ])
 
         let decision: DecisionInput =
-            {
-                PaymentDecisionDate = date (gap + decisionGap)
-                PayableAmount = amount
-                PayableCurrency = currency
-            }
+            (ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, (date (gap + decisionGap))
+                    BusinessField.PayableAmount, (amount)
+                    BusinessField.PayableCurrency, (currency)
+                ])
 
         let payment: PaymentInput =
-            {
-                PaymentDate = date (gap + decisionGap + paymentGap)
-            }
+            (ClaimCore.TestSupport.Inputs.paymentFrom
+                [ BusinessField.PaymentDate, (date (gap + decisionGap + paymentGap)) ])
 
         let id =
             if id = Guid.Empty then

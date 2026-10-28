@@ -22,12 +22,15 @@ let private fields length : CaseFields =
         CaseReference = CaseFixtures.reference reference
         Status = CaseStatus.Closed
         Registration =
-            CaseFixtures.registration
-                { Inputs.registration with
-                    ClaimantName = String(char 1, length)
-                    InsurerName = String(char 1, length)
-                    ClaimedAmount = "999999999999999999.9999"
-                }
+            CaseFixtures.registration (
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [
+                        BusinessField.ClaimantName, (String(char 1, length))
+                        BusinessField.InsurerName, (String(char 1, length))
+                        BusinessField.ClaimedAmount, ("999999999999999999.9999")
+                    ]
+                    (Inputs.registration)
+            )
         Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
     }
 

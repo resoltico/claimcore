@@ -132,11 +132,12 @@ let internal advisedCase fixture reference =
         accepted opened |> ignore
 
         let decision =
-            {
-                PaymentDecisionDate = "2026-08-15"
-                PayableAmount = "750.0000"
-                PayableCurrency = "EUR"
-            }
+            (ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-15")
+                    BusinessField.PayableAmount, ("750.0000")
+                    BusinessField.PayableCurrency, ("EUR")
+                ])
 
         let! decided =
             (Service.execute
@@ -201,10 +202,11 @@ let internal revokedAdvice fixture =
         let correction: AuthoredCorrection =
             {
                 Registration =
-                    Amendment.Replace
-                        { registration with
-                            ClaimedAmount = "1001.0000"
-                        }
+                    Amendment.Replace(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimedAmount, ("1001.0000") ]
+                            (registration)
+                    )
                 Decision = Change.Keep
                 Payment = Change.Keep
             }

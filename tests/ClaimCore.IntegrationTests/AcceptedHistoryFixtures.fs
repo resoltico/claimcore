@@ -25,14 +25,24 @@ let private snapshot (reference: string) claimant : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
-                        CaseFixtures.registration
-                            { (Inputs.registrationOn
-                                  registration.IncidentDate
-                                  registration.IncidentNotificationDate) with
-                                ClaimantName = claimant
-                                InsurerName = registration.InsurerName
-                                ClaimedAmount = "1000"
-                            }
+                        CaseFixtures.registration (
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [
+                                    BusinessField.ClaimantName, (claimant)
+                                    BusinessField.InsurerName,
+                                    ((RegistrationInput.value
+                                        BusinessField.InsurerName
+                                        (registration)))
+                                    BusinessField.ClaimedAmount, ("1000")
+                                ]
+                                ((Inputs.registrationOn
+                                    (RegistrationInput.value
+                                        BusinessField.IncidentDate
+                                        (registration))
+                                    (RegistrationInput.value
+                                        BusinessField.IncidentNotificationDate
+                                        (registration))))
+                        )
                     Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
@@ -48,10 +58,11 @@ let internal seed (database: PostgresFixture.Database) claimant =
             10
             "HISTORICAL-1"
             0L
-            (AuthoredCaseAct.Open
-                { registration with
-                    ClaimantName = claimant
-                })
+            (AuthoredCaseAct.Open(
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimantName, (claimant) ]
+                    (registration)
+            ))
 
     let snapshot = snapshot request.CaseReference claimant
 
@@ -147,16 +158,21 @@ let private grandfathering (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format fields.Registration.ClaimantName)
+                (PartyName.format (
+                    Registration.value BusinessField.ClaimantName (fields.Registration)
+                    |> FieldValue.name
+                ))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
 
         let values =
-            { registration with
-                ClaimantName = name
-                InsurerName = "Corrected Insurer"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [
+                    BusinessField.ClaimantName, (name)
+                    BusinessField.InsurerName, ("Corrected Insurer")
+                ]
+                (registration))
 
         let! reaffirm =
             (Service.execute
@@ -176,10 +192,11 @@ let private grandfathering (database: PostgresFixture.Database) =
                         12
                         "HISTORICAL-1"
                         2L
-                        (AuthoredCaseAct.AmendRegistration
-                            { values with
-                                ClaimantName = name + "B"
-                            })
+                        (AuthoredCaseAct.AmendRegistration(
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimantName, (name + "B") ]
+                                (values)
+                        ))
                 ))
                 (token))
 
@@ -225,7 +242,10 @@ let private assertRetained name entries =
                                                                    }
                                  } ->
             Expect.equal
-                (PartyName.format fields.Registration.ClaimantName)
+                (PartyName.format (
+                    Registration.value BusinessField.ClaimantName (fields.Registration)
+                    |> FieldValue.name
+                ))
                 name
                 "Accepted history is never re-admitted or truncated"
         | _ -> failtest "Expected disclosed retained fields"

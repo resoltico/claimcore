@@ -60,7 +60,7 @@ module Service =
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> BusinessField.values fields |> Map.ofList
+               } -> CaseFields.values fields |> Map.ofList
         | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =

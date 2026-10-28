@@ -139,10 +139,13 @@ let private replacement () =
                                                                 Registration = Amendment.Replace value
                                                             }
                           } ->
-        Expect.equal value.ClaimedAmount "1.0000" "Authored amount spelling is preserved"
+        Expect.equal
+            (RegistrationInput.value BusinessField.ClaimedAmount (value))
+            "1.0000"
+            "Authored amount spelling is preserved"
 
         Expect.equal
-            value.ClaimantName
+            (RegistrationInput.value BusinessField.ClaimantName (value))
             "Synthetic claimant"
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"

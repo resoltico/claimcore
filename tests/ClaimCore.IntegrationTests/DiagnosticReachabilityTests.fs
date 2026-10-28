@@ -16,6 +16,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 open ClaimCore.IntegrationTests.DiagnosticWitnesses
+open ClaimCore.IntegrationTests.DiagnosticEvidence
 
 
 let private completeVocabulary () =

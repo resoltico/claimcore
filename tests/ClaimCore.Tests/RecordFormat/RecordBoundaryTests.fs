@@ -67,9 +67,9 @@ let private textFormats () =
     let oldFields =
         { viewFields original with
             Registration =
-                { (viewFields original).Registration with
-                    ClaimantName = CaseFixtures.name "A‮B"
-                }
+                (ClaimCore.TestSupport.Inputs.registrationStateWith
+                    [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name "A‮B") ]
+                    ((viewFields original).Registration))
         }
 
     let snapshot =
@@ -85,10 +85,17 @@ let private textFormats () =
     let reaffirm =
         request
             1L
-            (AuthoredCaseAct.AmendRegistration
-                { registration with
-                    ClaimantName = PartyName.format oldFields.Registration.ClaimantName
-                })
+            (AuthoredCaseAct.AmendRegistration(
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [
+                        BusinessField.ClaimantName,
+                        (PartyName.format (
+                            Registration.value BusinessField.ClaimantName (oldFields.Registration)
+                            |> FieldValue.name
+                        ))
+                    ]
+                    (registration)
+            ))
 
     Expect.equal
         (RequestRecord.decode 65536 (CaseFixtures.encode reaffirm))

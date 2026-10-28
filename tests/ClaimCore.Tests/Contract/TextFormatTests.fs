@@ -29,10 +29,9 @@ let private restored (name: string) =
 
 let private format name =
     let input =
-        { registration with
-            ClaimantName = name
-            InsurerName = name
-        }
+        (ClaimCore.TestSupport.Inputs.registrationWith
+            [ BusinessField.ClaimantName, (name); BusinessField.InsurerName, (name) ]
+            (registration))
 
     CaseFixtures.validate (request 0L (AuthoredCaseAct.Open input))
 
@@ -57,16 +56,18 @@ let private admissionInsideFormat () =
     let name = String.replicate 200 "😀"
 
     let input =
-        { registration with
-            ClaimantName = name
-            InsurerName = name
-        }
+        (ClaimCore.TestSupport.Inputs.registrationWith
+            [ BusinessField.ClaimantName, (name); BusinessField.InsurerName, (name) ]
+            (registration))
 
     Expect.isOk
         (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open input)) None)
         "800 UTF-8 bytes admit"
 
-    let input = { input with ClaimantName = name + "😀" }
+    let input =
+        (ClaimCore.TestSupport.Inputs.registrationWith
+            [ BusinessField.ClaimantName, (name + "😀") ]
+            (input))
 
     Expect.isOk
         (CaseFixtures.validate (request 0L (AuthoredCaseAct.Open input)))

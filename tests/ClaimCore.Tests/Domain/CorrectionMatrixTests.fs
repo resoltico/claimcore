@@ -9,7 +9,11 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private decisionWith amount =
-    AuthoredCaseAct.Decide { decision with PayableAmount = amount }
+    AuthoredCaseAct.Decide(
+        ClaimCore.TestSupport.Inputs.decisionWith
+            [ BusinessField.PayableAmount, (amount) ]
+            (decision)
+    )
 
 let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
@@ -21,21 +25,25 @@ let private states () =
 let private registrationChoices =
     [
         Amendment.Keep, false
-        Amendment.Replace
-            { registration with
-                ClaimantName = "Synthetic matrix party"
-            },
+        Amendment.Replace(
+            ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, ("Synthetic matrix party") ]
+                (registration)
+        ),
         true
     ]
 
 let private decisionChoices =
     [
         Change.Keep, "KEEP"
-        Change.Replace
-            { decision with
-                PayableAmount = "650.0000"
-                PayableCurrency = "USD"
-            },
+        Change.Replace(
+            ClaimCore.TestSupport.Inputs.decisionWith
+                [
+                    BusinessField.PayableAmount, ("650.0000")
+                    BusinessField.PayableCurrency, ("USD")
+                ]
+                (decision)
+        ),
         "REPLACE"
         Change.Clear, "CLEAR"
     ]
@@ -43,10 +51,9 @@ let private decisionChoices =
 let private paymentChoices =
     [
         Change.Keep, "KEEP"
-        Change.Replace
-            {
-                PaymentInput.PaymentDate = "2026-08-21"
-            },
+        Change.Replace(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-21") ]
+        ),
         "REPLACE"
         Change.Clear, "CLEAR"
     ]
@@ -65,30 +72,39 @@ let private permitted (fields: CaseFields) registrationChanged decisionMode paym
 let private expectedFields (fields: CaseFields) registrationChanged decisionMode paymentMode =
     let registration =
         if registrationChanged then
-            { fields.Registration with
-                ClaimantName = CaseFixtures.name "Synthetic matrix party"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationStateWith
+                [
+                    BusinessField.ClaimantName,
+                    Admitted.Name(CaseFixtures.name "Synthetic matrix party")
+                ]
+                (fields.Registration))
         else
             fields.Registration
 
     let decision =
         match decisionMode with
         | "REPLACE" ->
-            Some
-                {
-                    PaymentDecisionDate = CaseFixtures.date "2026-08-15"
-                    PayableAmount = CaseFixtures.money "650" "USD"
-                }
+            Some(
+                ClaimCore.TestSupport.Inputs.decisionStateFrom
+                    [
+                        BusinessField.PaymentDecisionDate,
+                        Admitted.Date(CaseFixtures.date "2026-08-15")
+                        BusinessField.PayableAmount,
+                        Admitted.Amount(Money.amount (CaseFixtures.money "650" "USD"))
+                        BusinessField.PayableCurrency,
+                        Admitted.Currency(Money.currencyValue (CaseFixtures.money "650" "USD"))
+                    ]
+            )
         | "CLEAR" -> None
         | _ -> fields.Decision
 
     let payment =
         match paymentMode with
         | "REPLACE" ->
-            Some
-                {
-                    Payment.PaymentDate = CaseFixtures.date "2026-08-21"
-                }
+            Some(
+                ClaimCore.TestSupport.Inputs.paymentStateFrom
+                    [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-21") ]
+            )
         | "CLEAR" -> None
         | _ -> fields.Payment
 
@@ -154,8 +170,17 @@ let private zeroPaid =
             AuthoredCaseAct.Correct
                 {
                     Registration = Amendment.Keep
-                    Decision = Change.Replace { decision with PayableAmount = "0" }
-                    Payment = Change.Replace { PaymentDate = "2026-08-20" }
+                    Decision =
+                        Change.Replace(
+                            ClaimCore.TestSupport.Inputs.decisionWith
+                                [ BusinessField.PayableAmount, ("0") ]
+                                (decision)
+                        )
+                    Payment =
+                        Change.Replace(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        )
                 }
 
         Expect.equal
@@ -173,7 +198,7 @@ let private zeroPaid =
 
         Expect.isTrue
             (((viewFields after).Decision
-              |> Option.map (fun value -> Money.format value.PayableAmount))
+              |> Option.map (fun value -> Money.format (Decision.payable (value))))
                 =
                 Some "0"
              && (viewFields after).Payment.IsNone)

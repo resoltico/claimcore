@@ -16,24 +16,32 @@ type private Step = { Act: AuthoredCaseAct; Stale: bool }
 let private businessActs =
     [
         AuthoredCaseAct.Open registration
-        AuthoredCaseAct.AmendRegistration
-            { registration with
-                ClaimantName = "Amended Synthetic Name"
-            }
+        AuthoredCaseAct.AmendRegistration(
+            ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, ("Amended Synthetic Name") ]
+                (registration)
+        )
         AuthoredCaseAct.Correct
             {
                 Registration =
-                    Amendment.Replace
-                        { registration with
-                            ClaimantName = "Corrected Synthetic Name"
-                        }
+                    Amendment.Replace(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, ("Corrected Synthetic Name") ]
+                            (registration)
+                    )
                 Decision = Change.Keep
                 Payment = Change.Keep
             }
         AuthoredCaseAct.Decide decision
-        AuthoredCaseAct.Decide { decision with PayableAmount = "0" }
+        AuthoredCaseAct.Decide(
+            ClaimCore.TestSupport.Inputs.decisionWith
+                [ BusinessField.PayableAmount, ("0") ]
+                (decision)
+        )
         (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
+        )
         (AuthoredCaseAct.Bare BareAct.ClearPayment)
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Reopen)
@@ -63,12 +71,15 @@ let private initial: CaseSnapshot =
                     CaseReference = CaseFixtures.reference "UNIT-001"
                     Status = CaseStatus.Opened
                     Registration =
-                        CaseFixtures.registration
-                            { Inputs.registration with
-                                ClaimantName = "Example Claimant Ltd"
-                                InsurerName = "Example Alleged Insurer"
-                                ClaimedAmount = "1000"
-                            }
+                        CaseFixtures.registration (
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [
+                                    BusinessField.ClaimantName, ("Example Claimant Ltd")
+                                    BusinessField.InsurerName, ("Example Alleged Insurer")
+                                    BusinessField.ClaimedAmount, ("1000")
+                                ]
+                                (Inputs.registration)
+                        )
                     Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
@@ -103,7 +114,9 @@ let private checkSequence steps =
 let private acceptingPath =
     [
         AuthoredCaseAct.Decide decision
-        AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
+        )
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Reopen)
         (AuthoredCaseAct.Bare BareAct.ClearPayment)
@@ -144,7 +157,10 @@ let private negativeControls () =
         TransitionOracle.advance
             decided
             false
-            ((AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }))
+            ((AuthoredCaseAct.RecordPayment(
+                ClaimCore.TestSupport.Inputs.paymentFrom
+                    [ BusinessField.PaymentDate, ("2026-08-20") ]
+            )))
         |> Option.get
 
     let closed =
@@ -207,7 +223,13 @@ let private reach state =
     | OpenDecided -> decided ()
     | OpenZeroDecision ->
         opened ()
-        |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
+        |> apply (
+            AuthoredCaseAct.Decide(
+                ClaimCore.TestSupport.Inputs.decisionWith
+                    [ BusinessField.PayableAmount, ("0") ]
+                    (decision)
+            )
+        )
         |> accepted
     | OpenPaid -> paid ()
     | ClosedUndecided -> opened () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted

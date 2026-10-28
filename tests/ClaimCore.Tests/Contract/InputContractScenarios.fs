@@ -97,9 +97,9 @@ let internal retainedText () =
         let fields =
             { viewFields original with
                 Registration =
-                    { (viewFields original).Registration with
-                        ClaimantName = CaseFixtures.name name
-                    }
+                    (ClaimCore.TestSupport.Inputs.registrationStateWith
+                        [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name name) ]
+                        ((viewFields original).Registration))
             }
 
         let snapshot =
@@ -120,10 +120,12 @@ let internal retainedText () =
         |> ignore
 
         let values =
-            { registration with
-                ClaimantName = name
-                InsurerName = "Changed insurer"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [
+                    BusinessField.ClaimantName, (name)
+                    BusinessField.InsurerName, ("Changed insurer")
+                ]
+                (registration))
 
         let reaffirm = request 1L (AuthoredCaseAct.AmendRegistration values)
 
@@ -145,10 +147,11 @@ let internal retainedText () =
         let changed =
             { reaffirm with
                 Act =
-                    (AuthoredCaseAct.AmendRegistration
-                        { values with
-                            ClaimantName = name + "B"
-                        })
+                    (AuthoredCaseAct.AmendRegistration(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, (name + "B") ]
+                            (values)
+                    ))
             }
 
         Expect.isError

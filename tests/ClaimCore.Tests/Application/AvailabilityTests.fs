@@ -16,16 +16,19 @@ let private candidates =
         AuthoredCaseAct.Correct
             {
                 Registration =
-                    Amendment.Replace
-                        { registration with
-                            ClaimantName = "Corrected Synthetic Claimant"
-                        }
+                    Amendment.Replace(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, ("Corrected Synthetic Claimant") ]
+                            (registration)
+                    )
                 Decision = Change.Keep
                 Payment = Change.Keep
             }
         AuthoredCaseAct.Decide decision
         (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
+        AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
+        )
         (AuthoredCaseAct.Bare BareAct.ClearPayment)
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Reopen)
@@ -35,7 +38,13 @@ let private stateActions =
     testCase "each state advertises and enforces the specified act set" (fun () ->
         let zero =
             opened ()
-            |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
+            |> apply (
+                AuthoredCaseAct.Decide(
+                    ClaimCore.TestSupport.Inputs.decisionWith
+                        [ BusinessField.PayableAmount, ("0") ]
+                        (decision)
+                )
+            )
             |> accepted
 
         let cases =
@@ -80,10 +89,11 @@ let private edgeActions =
                 Expect.contains (availableActs state) "DECIDE" "State eligibility"
 
                 let invalid =
-                    AuthoredCaseAct.Decide
-                        { decision with
-                            PaymentDecisionDate = "2027-01-01"
-                        }
+                    AuthoredCaseAct.Decide(
+                        ClaimCore.TestSupport.Inputs.decisionWith
+                            [ BusinessField.PaymentDecisionDate, ("2027-01-01") ]
+                            (decision)
+                    )
 
                 Expect.isTrue
                     (apply invalid state |> isInvalid)

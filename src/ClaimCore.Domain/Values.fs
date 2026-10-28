@@ -82,7 +82,7 @@ module UnicodeText =
     let isPersisted (value: string) =
         isInterchange value && not (value.Contains '\u0000')
 
-module private ScalarText =
+module internal ScalarText =
     let matches grammar (value: string) =
         Regex.IsMatch(
             value,
@@ -213,6 +213,7 @@ module CountryCode =
     let parse value =
         ScalarText.token Grammar Violation.CountryFormat value |> Result.map CountryCode
 
+    let admit (value: CountryCode) = Ok value
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type PartyName = private PartyName of string
@@ -246,111 +247,6 @@ module Reason =
 
     let admit (Reason value) =
         PartyName.admit value |> Result.map Reason
-
-[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
-type Money = private Money of decimal * string
-
-
-type MoneyDescriptor =
-    {
-        Amount: AmountScalarRule
-        Currency: CurrencyScalarRule
-    }
-
-[<RequireQualifiedAccess>]
-type MoneyViolation =
-    | Amount of Violation
-    | Currency of Violation
-
-module Money =
-    let value (Money(amount, _)) = amount
-
-    [<Literal>]
-    let MaximumIntegerDigits = 18
-
-    [<Literal>]
-    let MaximumFractionalDigits = 4
-
-    [<Literal>]
-    let CurrencyCharacters = 3
-
-    let private amountGrammar =
-        "(0|[1-9][0-9]{0,"
-        + (MaximumIntegerDigits - 1).ToString(CultureInfo.InvariantCulture)
-        + "})(\\.[0-9]{1,"
-        + MaximumFractionalDigits.ToString(CultureInfo.InvariantCulture)
-        + "})?"
-
-    let private currencyGrammar =
-        "[A-Z]{" + CurrencyCharacters.ToString(CultureInfo.InvariantCulture) + "}"
-
-    let descriptor =
-        {
-            Amount =
-                {
-                    Text = ScalarText.descriptor (Some amountGrammar) None
-                    Grammar = amountGrammar
-                    MaximumIntegerDigits = MaximumIntegerDigits
-                    MaximumFractionalDigits = MaximumFractionalDigits
-                }
-            Currency =
-                {
-                    Text = ScalarText.descriptor (Some currencyGrammar) None
-                    Grammar = currencyGrammar
-                    ExactCharacters = CurrencyCharacters
-                }
-        }
-
-    let private amount value =
-        if String.IsNullOrEmpty value || not (ScalarText.matches amountGrammar value) then
-            None
-        else
-            match
-                Decimal.TryParse(
-                    value,
-                    NumberStyles.AllowDecimalPoint,
-                    CultureInfo.InvariantCulture
-                )
-            with
-            | true, parsed -> Some parsed
-            | false, _ -> None
-
-    let private amountText (value: decimal) =
-        value.ToString("0.####", CultureInfo.InvariantCulture)
-
-    let format (Money(value, _)) = amountText value
-    let currency (Money(_, value)) = value
-
-    let parseAll rawAmount rawCurrency =
-        let parsedAmount =
-            ScalarText.parse None 0 rawAmount
-            |> Result.bind (fun value ->
-                amount value
-                |> Option.map Ok
-                |> Option.defaultValue (
-                    Error(Violation.DecimalFormat(MaximumIntegerDigits, MaximumFractionalDigits))
-                ))
-            |> Result.mapError MoneyViolation.Amount
-
-        let parsedCurrency =
-            ScalarText.parse None 0 rawCurrency
-            |> Result.bind (fun value ->
-                if ScalarText.matches currencyGrammar value then
-                    Ok value
-                else
-                    Error Violation.CurrencyFormat)
-            |> Result.mapError MoneyViolation.Currency
-
-        match parsedAmount, parsedCurrency with
-        | Ok amount, Ok currency -> Ok(Money(amount, currency))
-        | Error amount, Error currency -> Error [ amount; currency ]
-        | Error error, _
-        | _, Error error -> Error [ error ]
-
-    /// Retained scalar decoding reports one fixed problem; authored admission uses every field issue.
-    let parse rawAmount rawCurrency =
-        parseAll rawAmount rawCurrency |> Result.mapError List.head
-
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CaseReference = private CaseReference of authored: string * key: string

@@ -131,7 +131,11 @@ let private caseActCapabilities () =
             AuthoredCaseAct.AmendRegistration registration, Capability.Register
             AuthoredCaseAct.Decide decision, Capability.Decide
             (AuthoredCaseAct.Bare BareAct.WithdrawDecision), Capability.Decide
-            AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
+            AuthoredCaseAct.RecordPayment(
+                ClaimCore.TestSupport.Inputs.paymentFrom
+                    [ BusinessField.PaymentDate, ("2026-08-20") ]
+            ),
+            Capability.RecordPayment
             (AuthoredCaseAct.Bare BareAct.ClearPayment), Capability.RecordPayment
             (AuthoredCaseAct.Bare BareAct.Close), Capability.Close
             (AuthoredCaseAct.Bare BareAct.Reopen), Capability.Close
@@ -176,7 +180,10 @@ let private replacementCorrection
                  Change.Keep)
         Payment =
             (if paymentChanged then
-                 Change.Replace { PaymentDate = "2026-08-20" }
+                 Change.Replace(
+                     ClaimCore.TestSupport.Inputs.paymentFrom
+                         [ BusinessField.PaymentDate, ("2026-08-20") ]
+                 )
              else
                  Change.Keep)
     }
@@ -224,7 +231,11 @@ let private reaffirmations () =
             {
                 Registration = Amendment.Keep
                 Decision = Change.Keep
-                Payment = Change.Replace { PaymentDate = "2026-08-20" }
+                Payment =
+                    Change.Replace(
+                        ClaimCore.TestSupport.Inputs.paymentFrom
+                            [ BusinessField.PaymentDate, ("2026-08-20") ]
+                    )
             })
 
     Expect.isFalse

@@ -35,6 +35,8 @@
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
     <Compile Include="Contract/WireSeedCorpus.fs" />
+    <Compile Include="Contract/WireScalarGenerators.fs" />
+    <Compile Include="Contract/WireGroupGenerators.fs" />
     <Compile Include="Contract/WireValueGenerators.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
@@ -50,6 +52,7 @@
     <Compile Include="Domain/TransitionCharacterizationTests.fs" />
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
+    <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />

@@ -6,6 +6,10 @@ open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Json
 
+let private accepted result =
+    result
+    |> Result.defaultWith (fun _ -> failtest "The fixture requires a permanently valid value.")
+
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
     let samples =
@@ -37,17 +41,37 @@ let registration: RegistrationInput =
         "registration"
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
+let registrationFrom values =
+    RegistrationInput.create values |> accepted
+
+let registrationWith changes value =
+    RegistrationInput.replace changes value |> accepted
+
+let decisionFrom values = DecisionInput.create values |> accepted
+
+let decisionWith changes value =
+    DecisionInput.replace changes value |> accepted
+
+let paymentFrom values = PaymentInput.create values |> accepted
+
+let paymentWith changes value =
+    PaymentInput.replace changes value |> accepted
+
 let exampleRegistration =
-    { registration with
-        ClaimantName = "Example Claimant Ltd"
-        InsurerName = "Example Alleged Insurer"
-    }
+    registrationWith
+        [
+            BusinessField.ClaimantName, "Example Claimant Ltd"
+            BusinessField.InsurerName, "Example Alleged Insurer"
+        ]
+        registration
 
 let registrationOn incident notification =
-    { registration with
-        IncidentDate = incident
-        IncidentNotificationDate = notification
-    }
+    registrationWith
+        [
+            BusinessField.IncidentDate, incident
+            BusinessField.IncidentNotificationDate, notification
+        ]
+        registration
 
 let decision: DecisionInput =
     groupInput
@@ -75,35 +99,41 @@ let principal: PrincipalInput =
         Subject = "synthetic-owner"
     }
 
-let private accepted result =
-    result
-    |> Result.defaultWith (fun _ -> failtest "The fixture requires a permanently valid value.")
-
 let date value = CalendarDate.parse value |> accepted
 let country value = CountryCode.parse value |> accepted
 let name value = PartyName.parse value |> accepted
 let reference value = CaseReference.parse value |> accepted
-let money amount currency = Money.parse amount currency |> accepted
 
-let admittedRegistration (input: RegistrationInput) : Registration =
-    {
-        IncidentDate = date input.IncidentDate
-        IncidentNotificationDate = date input.IncidentNotificationDate
-        IncidentCountry = country input.IncidentCountry
-        ClaimantName = name input.ClaimantName
-        InsurerName = name input.InsurerName
-        ClaimedAmount = money input.ClaimedAmount input.ClaimedCurrency
-    }
+let money amount currency =
+    Money.create (Amount.parse amount |> accepted) (Currency.parse currency |> accepted)
 
-let admittedDecision (input: DecisionInput) : Decision =
-    {
-        PaymentDecisionDate = date input.PaymentDecisionDate
-        PayableAmount = money input.PayableAmount input.PayableCurrency
-    }
+let private admitGroup values create =
+    values
+    |> List.map (fun (field, value) ->
+        field, FieldValue.parse (BusinessField.describe field).Kind value |> accepted)
+    |> create
+    |> accepted
 
-let admittedPayment (input: PaymentInput) : Payment =
-    { PaymentDate = date input.PaymentDate }
+let admittedRegistration input =
+    admitGroup (RegistrationInput.values input) Registration.create
 
+let admittedDecision input =
+    admitGroup (DecisionInput.values input) Decision.create
+
+let admittedPayment input =
+    admitGroup (PaymentInput.values input) Payment.create
+
+let registrationStateFrom values = Registration.create values |> accepted
+
+let registrationStateWith changes value =
+    Registration.replace changes value |> accepted
+
+let decisionStateFrom values = Decision.create values |> accepted
+
+let decisionStateWith changes value =
+    Decision.replace changes value |> accepted
+
+let paymentStateFrom values = Payment.create values |> accepted
 
 let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
     AuthorityRequests.input operationId target act

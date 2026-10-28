@@ -155,15 +155,6 @@ module DurableNames =
     let CaseReference = "caseReference"
 
     [<Literal>]
-    let ClaimantName = "claimantName"
-
-    [<Literal>]
-    let ClaimedAmount = "claimedAmount"
-
-    [<Literal>]
-    let ClaimedCurrency = "claimedCurrency"
-
-    [<Literal>]
     let Decision = "decision"
 
     [<Literal>]
@@ -179,18 +170,6 @@ module DurableNames =
     let Groups = "groups"
 
     [<Literal>]
-    let IncidentCountry = "incidentCountry"
-
-    [<Literal>]
-    let IncidentDate = "incidentDate"
-
-    [<Literal>]
-    let IncidentNotificationDate = "incidentNotificationDate"
-
-    [<Literal>]
-    let InsurerName = "insurerName"
-
-    [<Literal>]
     let Issuer = "issuer"
 
     [<Literal>]
@@ -200,22 +179,10 @@ module DurableNames =
     let OperationId = "operationId"
 
     [<Literal>]
-    let PayableAmount = "payableAmount"
-
-    [<Literal>]
-    let PayableCurrency = "payableCurrency"
-
-    [<Literal>]
     let PayloadCommitment = "payloadCommitment"
 
     [<Literal>]
     let Payment = "payment"
-
-    [<Literal>]
-    let PaymentDate = "paymentDate"
-
-    [<Literal>]
-    let PaymentDecisionDate = "paymentDecisionDate"
 
     [<Literal>]
     let PreviousHash = "previousHash"

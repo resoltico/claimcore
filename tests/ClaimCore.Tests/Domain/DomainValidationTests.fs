@@ -20,23 +20,34 @@ let private chronologyTests =
                 Expect.isTrue
                     (opened ()
                      |> apply (
-                         AuthoredCaseAct.Decide
-                             { decision with
-                                 PaymentDecisionDate = "2026-08-02"
-                             }
+                         AuthoredCaseAct.Decide(
+                             ClaimCore.TestSupport.Inputs.decisionWith
+                                 [ BusinessField.PaymentDecisionDate, ("2026-08-02") ]
+                                 (decision)
+                         )
                      )
                      |> isInvalid)
                     "Chronology")
             testCase "payment before decision is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-14" })
+                     |> apply (
+                         AuthoredCaseAct.RecordPayment(
+                             ClaimCore.TestSupport.Inputs.paymentFrom
+                                 [ BusinessField.PaymentDate, ("2026-08-14") ]
+                         )
+                     )
                      |> isInvalid)
                     "Chronology")
             testCase "future payment is rejected" (fun () ->
                 Expect.isTrue
                     (decided ()
-                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-09-08" })
+                     |> apply (
+                         AuthoredCaseAct.RecordPayment(
+                             ClaimCore.TestSupport.Inputs.paymentFrom
+                                 [ BusinessField.PaymentDate, ("2026-09-08") ]
+                         )
+                     )
                      |> isInvalid)
                     "No future payment recorded as done")
         ]
@@ -122,16 +133,19 @@ let private precisionAndRoundTripTests =
                 let maximum = "999999999999999999.9999"
 
                 let facts =
-                    { registration with
-                        ClaimedAmount = maximum
-                    }
+                    (ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimedAmount, (maximum) ]
+                        (registration))
 
                 let claim =
                     CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
                     |> accepted
 
                 Expect.isTrue
-                    (Money.format (Case.snapshot claim |> viewFields).Registration.ClaimedAmount =
+                    (Money.format (
+                        Registration.claimed ((Case.snapshot claim |> viewFields).Registration)
+                    )
+                        =
                         maximum)
                     "No rounding")
             testCase "all supported state views rehydrate" (fun () ->
@@ -171,9 +185,9 @@ let private decimalGrammarTests =
                 |> List.indexed do
                 testCase $"invalid decimal case {index + 1:D2}" (fun () ->
                     let facts =
-                        { registration with
-                            ClaimedAmount = value
-                        }
+                        (ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimedAmount, (value) ]
+                            (registration))
 
                     Expect.isTrue
                         (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -189,9 +203,9 @@ let private dateGrammarTests =
                 [ "2026-02-30"; "2026-8-01"; "01/08/2026"; "+10000-01-01" ] |> List.indexed do
                 testCase $"invalid date case {index + 1:D2}" (fun () ->
                     let facts =
-                        { registration with
-                            IncidentDate = value
-                        }
+                        (ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.IncidentDate, (value) ]
+                            (registration))
 
                     Expect.isTrue
                         (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -206,9 +220,9 @@ let private currencyGrammarTests =
             for index, value in [ ""; " EUR"; "eur"; "EURO"; "€"; "EUR\n" ] |> List.indexed do
                 testCase $"invalid currency case {index + 1:D2}" (fun () ->
                     let facts =
-                        { registration with
-                            ClaimedCurrency = value
-                        }
+                        (ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimedCurrency, (value) ]
+                            (registration))
 
                     Expect.isTrue
                         (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -219,9 +233,9 @@ let private currencyGrammarTests =
 let private authoredUnicodeRoundTrip () =
     for value in [ "نام‌خانوادگی"; "اسم‍"; "é"; "A️" ] do
         let facts =
-            { registration with
-                ClaimantName = value
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, (value) ]
+                (registration))
 
         let claim =
             CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -230,7 +244,10 @@ let private authoredUnicodeRoundTrip () =
         let snapshot = Case.snapshot claim
 
         Expect.equal
-            (PartyName.format (viewFields snapshot).Registration.ClaimantName)
+            (PartyName.format (
+                Registration.value BusinessField.ClaimantName ((viewFields snapshot).Registration)
+                |> FieldValue.name
+            ))
             value
             "Authored scalar content remains exact."
 

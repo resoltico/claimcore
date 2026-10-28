@@ -17,16 +17,23 @@ let private snapshots =
 
         let current = viewFields original
         let decision = Option.get current.Decision
-        let payment = (Option.get current.Payment).PaymentDate
+        let payment = (Payment.date (Option.get current.Payment))
 
         let variants =
             [
                 { current with
                     Progress =
                         PaymentProgress.Paid(
-                            { decision with
-                                PayableAmount = CaseFixtures.money "0" "EUR"
-                            },
+                            (ClaimCore.TestSupport.Inputs.decisionStateWith
+                                [
+                                    BusinessField.PayableAmount,
+                                    Admitted.Amount(Money.amount (CaseFixtures.money "0" "EUR"))
+                                    BusinessField.PayableCurrency,
+                                    Admitted.Currency(
+                                        Money.currencyValue (CaseFixtures.money "0" "EUR")
+                                    )
+                                ]
+                                (decision)),
                             payment
                         )
                 },
@@ -34,9 +41,12 @@ let private snapshots =
                 { current with
                     Progress =
                         PaymentProgress.Paid(
-                            { decision with
-                                PaymentDecisionDate = CaseFixtures.date "2026-08-02"
-                            },
+                            (ClaimCore.TestSupport.Inputs.decisionStateWith
+                                [
+                                    BusinessField.PaymentDecisionDate,
+                                    Admitted.Date(CaseFixtures.date "2026-08-02")
+                                ]
+                                (decision)),
                             payment
                         )
                 },
@@ -57,10 +67,11 @@ let private snapshots =
 let private payload =
     testCase "malformed payload admission precedes stale revision and eligibility" (fun () ->
         let malformed =
-            AuthoredCaseAct.Decide
-                { decision with
-                    PaymentDecisionDate = "not-a-date"
-                }
+            AuthoredCaseAct.Decide(
+                ClaimCore.TestSupport.Inputs.decisionWith
+                    [ BusinessField.PaymentDecisionDate, ("not-a-date") ]
+                    (decision)
+            )
 
         let rejected =
             CaseFixtures.decide today (request 0L malformed) (Some(paid ()))

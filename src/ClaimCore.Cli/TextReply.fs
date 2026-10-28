@@ -62,7 +62,7 @@ module internal TextReply =
                         (if row.Field = BusinessField.Status then
                              Some(term language CaseStatus.vocabulary fields.Status)
                          else
-                             row.Value fields)))
+                             CaseFields.value row.Field fields)))
 
         rows None
         @ (Vocabulary.all RecordGroup.vocabulary
@@ -297,9 +297,11 @@ module internal TextReply =
 
                 CaseFields.declarations
                 |> List.choose (fun row ->
-                    let previous = before |> Option.bind (fun fields -> row.Value fields)
+                    let previous =
+                        before |> Option.bind (fun fields -> CaseFields.value row.Field fields)
 
-                    let next = after |> Option.bind (fun fields -> row.Value fields)
+                    let next =
+                        after |> Option.bind (fun fields -> CaseFields.value row.Field fields)
 
                     if previous = next then
                         None

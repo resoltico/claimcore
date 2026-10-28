@@ -17,50 +17,27 @@ module RequestCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let private inputField name get fields =
-        Codec.field (BusinessField.key name) get Codec.text fields
+    let private inputGroup group create values =
+        CaseFields.ofGroup group
+        |> List.map (fun field -> field, BusinessField.key field, Codec.text)
+        |> Codec.fieldMap
+        |> Codec.mapResult
+            (fun path fields ->
+                create (Map.toList fields)
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> Map.ofList)
 
     let registration =
-        (Codec.record (fun incident notification country claimant insurer amount currency ->
-            {
-                RegistrationInput.IncidentDate = incident
-                IncidentNotificationDate = notification
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            })
-        : Fields<RegistrationInput, _>)
-        |> inputField BusinessField.IncidentDate _.IncidentDate
-        |> inputField BusinessField.IncidentNotificationDate _.IncidentNotificationDate
-        |> inputField BusinessField.IncidentCountry _.IncidentCountry
-        |> inputField BusinessField.ClaimantName _.ClaimantName
-        |> inputField BusinessField.InsurerName _.InsurerName
-        |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
-        |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
-        |> Codec.build
-        |> Codec.named RequestSchemas.Registration
+        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
+        |> Codec.named "Registration"
 
     let decision =
-        (Codec.record (fun date amount currency ->
-            {
-                DecisionInput.PaymentDecisionDate = date
-                PayableAmount = amount
-                PayableCurrency = currency
-            })
-        : Fields<DecisionInput, _>)
-        |> inputField BusinessField.PaymentDecisionDate _.PaymentDecisionDate
-        |> inputField BusinessField.PayableAmount _.PayableAmount
-        |> inputField BusinessField.PayableCurrency _.PayableCurrency
-        |> Codec.build
-        |> Codec.named RequestSchemas.Decision
+        inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
+        |> Codec.named "Decision"
 
     let payment =
-        (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
-        |> inputField BusinessField.PaymentDate _.PaymentDate
-        |> Codec.build
-        |> Codec.named RequestSchemas.Payment
+        inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
+        |> Codec.named "Payment"
 
     let registrationGroup =
         tagged

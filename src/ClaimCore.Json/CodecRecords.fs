@@ -88,6 +88,25 @@ module internal CodecRecords =
             Definitions = fields.PropertyDefinitions
         }
 
+    /// A closed object whose declared members share a value representation and retain typed keys.
+    let fieldMap (members: ('Key * string * Codec<'Value>) list) : Codec<Map<'Key, 'Value>> =
+        let add (fields: Fields<Map<'Key, 'Value>, Map<'Key, 'Value>>) (key, name, codec) =
+            let applying: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
+                {
+                    ReadFields =
+                        fun path value ->
+                            fields.ReadFields path value
+                            |> Result.map (fun values item -> Map.add key item values)
+                    WriteFields = fields.WriteFields
+                    Properties = fields.Properties
+                    PropertyDefinitions = fields.PropertyDefinitions
+                    OptionalMembers = fields.OptionalMembers
+                }
+
+            field name (Map.find key) codec applying
+
+        members |> List.fold add (record Map.empty) |> build
+
     /// A record constructor may validate relationships between separately encoded members.
     let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
         {

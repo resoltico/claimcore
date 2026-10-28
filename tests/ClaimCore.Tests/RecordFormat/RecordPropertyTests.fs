@@ -29,12 +29,14 @@ let private registrationGenerator =
         let! amount = Gen.uint32 (Range.constant 0u 1_000_000u)
 
         return
-            { Inputs.registration with
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount.ToString(CultureInfo.InvariantCulture)
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [
+                    BusinessField.IncidentCountry, (country)
+                    BusinessField.ClaimantName, (claimant)
+                    BusinessField.InsurerName, (insurer)
+                    BusinessField.ClaimedAmount, (amount.ToString(CultureInfo.InvariantCulture))
+                ]
+                (Inputs.registration))
     }
 
 let private actsGenerator =
@@ -43,11 +45,12 @@ let private actsGenerator =
         let! payable = Gen.uint32 (Range.constant 0u 1_000_000u)
 
         let decision =
-            {
-                DecisionInput.PaymentDecisionDate = "2026-08-15"
-                PayableAmount = payable.ToString(CultureInfo.InvariantCulture)
-                PayableCurrency = "USD"
-            }
+            (ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-15")
+                    BusinessField.PayableAmount, (payable.ToString(CultureInfo.InvariantCulture))
+                    BusinessField.PayableCurrency, ("USD")
+                ])
 
         let corrections =
             [ Amendment.Keep; Amendment.Replace registration ]
@@ -56,10 +59,10 @@ let private actsGenerator =
                 |> List.collect (fun decision ->
                     [
                         Change.Keep
-                        Change.Replace
-                            {
-                                PaymentInput.PaymentDate = "2026-08-20"
-                            }
+                        Change.Replace(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        )
                         Change.Clear
                     ]
                     |> List.map (fun payment ->
@@ -76,10 +79,10 @@ let private actsGenerator =
                 AuthoredCaseAct.AmendRegistration registration
                 AuthoredCaseAct.Decide decision
                 (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-                AuthoredCaseAct.RecordPayment
-                    {
-                        PaymentInput.PaymentDate = "2026-08-20"
-                    }
+                AuthoredCaseAct.RecordPayment(
+                    ClaimCore.TestSupport.Inputs.paymentFrom
+                        [ BusinessField.PaymentDate, ("2026-08-20") ]
+                )
                 (AuthoredCaseAct.Bare BareAct.ClearPayment)
                 (AuthoredCaseAct.Bare BareAct.Close)
                 (AuthoredCaseAct.Bare BareAct.Reopen)

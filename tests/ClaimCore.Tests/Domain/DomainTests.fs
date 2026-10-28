@@ -28,46 +28,59 @@ let private registrationTests =
                     Expect.equal (viewFields view).Status CaseStatus.Opened "Only requested status"
 
                     Expect.isTrue
-                        (CalendarDate.format
-                            (viewFields view).Registration.IncidentNotificationDate
+                        (CalendarDate.format (
+                            Registration.incidentNotificationDate ((viewFields view).Registration)
+                        )
                             =
                             "2026-08-03")
                         "This handler's notification date"
 
                     Expect.isTrue
-                        (PartyName.format (viewFields view).Registration.ClaimantName =
-                            registration.ClaimantName)
+                        (PartyName.format (
+                            Registration.value
+                                BusinessField.ClaimantName
+                                ((viewFields view).Registration)
+                            |> FieldValue.name
+                        )
+                            =
+                            (RegistrationInput.value BusinessField.ClaimantName (registration)))
                         "A company name is not split"
 
                     Expect.isTrue
-                        (PartyName.format (viewFields view).Registration.InsurerName =
-                            registration.InsurerName)
+                        (PartyName.format (
+                            Registration.value
+                                BusinessField.InsurerName
+                                ((viewFields view).Registration)
+                            |> FieldValue.name
+                        )
+                            =
+                            (RegistrationInput.value BusinessField.InsurerName (registration)))
                         "No liability inference"
 
                     Expect.isNone
                         ((viewFields view).Decision
-                         |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+                         |> Option.map (fun value -> CalendarDate.format (Decision.date (value))))
                         "No invented decision date"
 
                     Expect.isNone
                         ((viewFields view).Decision
-                         |> Option.map (fun value -> Money.format value.PayableAmount))
+                         |> Option.map (fun value -> Money.format (Decision.payable (value))))
                         "No invented payable amount"
 
                     Expect.isNone
                         ((viewFields view).Decision
-                         |> Option.map (fun value -> Money.currency value.PayableAmount))
+                         |> Option.map (fun value -> Money.currency (Decision.payable (value))))
                         "No invented payable currency"
 
                     Expect.isNone
                         ((viewFields view).Payment
-                         |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                         |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                         "No invented payment")
             testCase "notification before incident is rejected" (fun () ->
                 let facts =
-                    { registration with
-                        IncidentNotificationDate = "2026-07-31"
-                    }
+                    (ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.IncidentNotificationDate, ("2026-07-31") ]
+                        (registration))
 
                 Expect.isTrue
                     (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -75,10 +88,12 @@ let private registrationTests =
                     "Chronology")
             testCase "future incident and notification are rejected" (fun () ->
                 let facts =
-                    { registration with
-                        IncidentDate = "2027-01-01"
-                        IncidentNotificationDate = "2027-01-02"
-                    }
+                    (ClaimCore.TestSupport.Inputs.registrationWith
+                        [
+                            BusinessField.IncidentDate, ("2027-01-01")
+                            BusinessField.IncidentNotificationDate, ("2027-01-02")
+                        ]
+                        (registration))
 
                 Expect.isTrue
                     (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
@@ -95,27 +110,28 @@ let private lifecycleTests =
 
                 Expect.isTrue
                     ((fields.Decision
-                      |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+                      |> Option.map (fun value -> CalendarDate.format (Decision.date (value))))
                         =
                         Some "2026-08-15")
                     "Decided on"
 
                 Expect.isTrue
-                    ((fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
+                    ((fields.Decision
+                      |> Option.map (fun value -> Money.format (Decision.payable (value))))
                         =
                         Some "750")
                     "Exact decimal"
 
                 Expect.isTrue
                     ((fields.Decision
-                      |> Option.map (fun value -> Money.currency value.PayableAmount))
+                      |> Option.map (fun value -> Money.currency (Decision.payable (value))))
                         =
                         Some "EUR")
                     "Decided currency"
 
                 Expect.isNone
                     (fields.Payment
-                     |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                     |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                     "Still unpaid"
 
                 Expect.equal fields.Status CaseStatus.Opened "Still open")
@@ -124,7 +140,7 @@ let private lifecycleTests =
 
                 Expect.isTrue
                     ((fields.Payment
-                      |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                      |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                         =
                         Some "2026-08-20")
                     "Recorded date"
@@ -142,12 +158,12 @@ let private lifecycleTests =
 
                 Expect.isNone
                     (fields.Decision
-                     |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+                     |> Option.map (fun value -> CalendarDate.format (Decision.date (value))))
                     "No inferred decision"
 
                 Expect.isNone
                     (fields.Payment
-                     |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+                     |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                     "No inferred payment")
         ]
 
@@ -205,7 +221,12 @@ let private paymentGuardTests =
             testCase "payment requires decision" (fun () ->
                 let result =
                     opened ()
-                    |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+                    |> apply (
+                        AuthoredCaseAct.RecordPayment(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        )
+                    )
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -214,7 +235,12 @@ let private paymentGuardTests =
             testCase "second full payment rejected" (fun () ->
                 let result =
                     paid ()
-                    |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-21" })
+                    |> apply (
+                        AuthoredCaseAct.RecordPayment(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-21") ]
+                        )
+                    )
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -223,11 +249,22 @@ let private paymentGuardTests =
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
                     opened ()
-                    |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
+                    |> apply (
+                        AuthoredCaseAct.Decide(
+                            ClaimCore.TestSupport.Inputs.decisionWith
+                                [ BusinessField.PayableAmount, ("0") ]
+                                (decision)
+                        )
+                    )
                     |> accepted
 
                 let result =
-                    apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
+                    apply
+                        (AuthoredCaseAct.RecordPayment(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        ))
+                        claim
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -239,10 +276,12 @@ let private paymentGuardTests =
                     "Advisory actions agree")
             testCase "payable can exceed claim and have a different currency" (fun () ->
                 let input =
-                    { decision with
-                        PayableAmount = "2500.01"
-                        PayableCurrency = "USD"
-                    }
+                    (ClaimCore.TestSupport.Inputs.decisionWith
+                        [
+                            BusinessField.PayableAmount, ("2500.01")
+                            BusinessField.PayableCurrency, ("USD")
+                        ]
+                        (decision))
 
                 let fields =
                     (opened ()
@@ -252,14 +291,15 @@ let private paymentGuardTests =
                      |> viewFields)
 
                 Expect.isTrue
-                    ((fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
+                    ((fields.Decision
+                      |> Option.map (fun value -> Money.format (Decision.payable (value))))
                         =
                         Some "2500.01")
                     "No invented coverage cap"
 
                 Expect.isTrue
                     ((fields.Decision
-                      |> Option.map (fun value -> Money.currency value.PayableAmount))
+                      |> Option.map (fun value -> Money.currency (Decision.payable (value))))
                         =
                         Some "USD")
                     "No invented currency conversion")
@@ -279,13 +319,20 @@ let private decisionEditingTests =
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
                     (decided ()
-                     |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "500" })
+                     |> apply (
+                         AuthoredCaseAct.Decide(
+                             ClaimCore.TestSupport.Inputs.decisionWith
+                                 [ BusinessField.PayableAmount, ("500") ]
+                                 (decision)
+                         )
+                     )
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
 
                 Expect.isTrue
-                    ((fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
+                    ((fields.Decision
+                      |> Option.map (fun value -> Money.format (Decision.payable (value))))
                         =
                         Some "500")
                     "Explicit replacement")
@@ -310,7 +357,7 @@ let private decisionEditingTests =
 
                 Expect.isNone
                     (fields.Decision
-                     |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+                     |> Option.map (fun value -> CalendarDate.format (Decision.date (value))))
                     "Decision withdrawn")
         ]
 
@@ -354,7 +401,12 @@ let private correctionTests =
                 let claim = decided () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
 
                 let result =
-                    apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
+                    apply
+                        (AuthoredCaseAct.RecordPayment(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        ))
+                        claim
                     |> Result.map Case.snapshot
 
                 Expect.isTrue

@@ -28,6 +28,7 @@
     <Compile Include="PositionPaginationTests.fs" />
     <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="DiagnosticWitnesses.fs" />
+    <Compile Include="DiagnosticEvidence.fs" />
     <Compile Include="DiagnosticReachabilityTests.fs" />
     <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />

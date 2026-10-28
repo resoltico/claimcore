@@ -91,20 +91,25 @@ let internal openCases (actor: ServiceContext) count =
 
 let internal act revision =
     let amended =
-        { registration with
-            ClaimantName = "Synthetic revision " + string revision
-        }
+        (ClaimCore.TestSupport.Inputs.registrationWith
+            [ BusinessField.ClaimantName, ("Synthetic revision " + string revision) ]
+            (registration))
 
     match (revision - 1L) % 8L with
     | 0L -> AuthoredCaseAct.AmendRegistration amended
     | 1L ->
-        AuthoredCaseAct.Decide
-            {
-                PaymentDecisionDate = "2026-08-04"
-                PayableAmount = "100.00"
-                PayableCurrency = "EUR"
-            }
-    | 2L -> AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
+        AuthoredCaseAct.Decide(
+            ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-04")
+                    BusinessField.PayableAmount, ("100.00")
+                    BusinessField.PayableCurrency, ("EUR")
+                ]
+        )
+    | 2L ->
+        AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-05") ]
+        )
     | 3L -> (AuthoredCaseAct.Bare BareAct.ClearPayment)
     | 4L ->
         AuthoredCaseAct.Correct

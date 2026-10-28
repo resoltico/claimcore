@@ -56,11 +56,14 @@ let private requests () =
         match first.Authored.Act with
         | (AuthoredCaseAct.Open registration) ->
             Expect.equal
-                registration.ClaimantName
+                (RegistrationInput.value BusinessField.ClaimantName (registration))
                 "Rīgas Tulkojumu Birojs SIA"
                 "Independent Latvian text"
 
-            Expect.equal registration.InsurerName "شركة التأمين المثال" "Independent Arabic text"
+            Expect.equal
+                (RegistrationInput.value BusinessField.InsurerName (registration))
+                "شركة التأمين المثال"
+                "Independent Arabic text"
         | _ -> failtest "Expected the independent OPEN meaning")
 
 let private snapshot () =
@@ -74,17 +77,20 @@ let private snapshot () =
         match observed.State with
         | CaseState.Active(fields) ->
             Expect.equal
-                (Money.format fields.Registration.ClaimedAmount)
+                (Money.format (Registration.claimed (fields.Registration)))
                 "1000"
                 "Canonical monetary spelling"
 
             Expect.equal
-                (CountryCode.format fields.Registration.IncidentCountry)
+                (CountryCode.format (
+                    Registration.value BusinessField.IncidentCountry (fields.Registration)
+                    |> FieldValue.country
+                ))
                 "LV"
                 "Country syntax"
 
             Expect.isNone
-                (fields.Decision |> Option.map _.PaymentDecisionDate)
+                (fields.Decision |> Option.map Decision.date)
                 "Independent undecided state"
         | _ -> failtest "Expected ACTIVE live snapshot"
 
@@ -251,10 +257,11 @@ let private malformedIdentity () =
         let request =
             Fixtures.request
                 0L
-                (AuthoredCaseAct.Open
-                    { Fixtures.registration with
-                        ClaimedAmount = amount
-                    })
+                (AuthoredCaseAct.Open(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimedAmount, (amount) ]
+                        (Fixtures.registration)
+                ))
 
         let wire = ClaimCore.Protocol.RequestCodecs.caseRequest.Write request
 

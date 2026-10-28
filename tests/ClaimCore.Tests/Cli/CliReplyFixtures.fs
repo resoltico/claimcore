@@ -27,12 +27,15 @@ let snapshot =
             CaseReference = CaseFixtures.reference "x"
             Status = CaseStatus.Opened
             Registration =
-                CaseFixtures.registration
-                    { (Inputs.registrationOn "2026-01-01" "2026-01-01") with
-                        ClaimantName = "x"
-                        InsurerName = "x"
-                        ClaimedAmount = "0"
-                    }
+                CaseFixtures.registration (
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [
+                            BusinessField.ClaimantName, ("x")
+                            BusinessField.InsurerName, ("x")
+                            BusinessField.ClaimedAmount, ("0")
+                        ]
+                        ((Inputs.registrationOn "2026-01-01" "2026-01-01"))
+                )
             Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
         }
 

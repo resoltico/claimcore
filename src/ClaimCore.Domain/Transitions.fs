@@ -49,7 +49,7 @@ module internal Transitions =
         match claim.Progress with
         | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
         | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
-        | PaymentProgress.Decided decision when Money.value decision.PayableAmount = 0M ->
+        | PaymentProgress.Decided decision when Money.value (Decision.payable (decision)) = 0M ->
             Error CaseRefusal.ZeroDecisionCannotBePaid
         | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision, payment))
 
@@ -157,7 +157,7 @@ module internal Transitions =
                 claim
                 (Ok
                     { claim with
-                        Progress = PaymentProgress.Paid(decision, payment.PaymentDate)
+                        Progress = PaymentProgress.Paid(decision, (Payment.date (payment)))
                     })
         | Applicable.Unpaying(claim, decision) ->
             businessChange
