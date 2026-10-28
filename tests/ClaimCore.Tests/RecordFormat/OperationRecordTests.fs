@@ -38,7 +38,7 @@ let private stewardshipProperty =
                 [
                     AuthoredCaseAct.Void reason
                     AuthoredCaseAct.Reinstate reason
-                    AuthoredCaseAct.Erase
+                    (AuthoredCaseAct.Bare BareAct.Erase)
                 ]
 
         let request = steward action
@@ -130,7 +130,9 @@ let private decoderProperty =
 
 let private strictRecords () =
     let canonical =
-        steward AuthoredCaseAct.Erase |> CaseFixtures.encode |> Encoding.UTF8.GetString
+        steward (AuthoredCaseAct.Bare BareAct.Erase)
+        |> CaseFixtures.encode
+        |> Encoding.UTF8.GetString
 
     let variants =
         [
@@ -189,7 +191,7 @@ let tests =
                     "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":1,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
-                    (steward AuthoredCaseAct.Erase
+                    (steward (AuthoredCaseAct.Bare BareAct.Erase)
                      |> CaseFixtures.encode
                      |> Encoding.UTF8.GetString)
                     expected
@@ -210,7 +212,7 @@ let tests =
                 PropertyHarness.run "authority durable record" authorityProperty)
             testCase "strict record decoders reject hostile shapes" strictRecords
             testCase "record limits and malformed bytes are refused" (fun () ->
-                let encoded = steward AuthoredCaseAct.Erase |> CaseFixtures.encode
+                let encoded = steward (AuthoredCaseAct.Bare BareAct.Erase) |> CaseFixtures.encode
 
                 Expect.isError
                     (RequestRecord.decode (encoded.Length - 1) encoded)

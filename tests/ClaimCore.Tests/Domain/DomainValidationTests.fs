@@ -140,7 +140,7 @@ let private precisionAndRoundTripTests =
                         opened ()
                         decided ()
                         paid ()
-                        opened () |> apply AuthoredCaseAct.Close |> accepted
+                        opened () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
                     ] do
                     let view = Case.snapshot state
 

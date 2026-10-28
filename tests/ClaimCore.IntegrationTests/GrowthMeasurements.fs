@@ -105,7 +105,7 @@ let internal act revision =
                 PayableCurrency = "EUR"
             }
     | 2L -> AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
-    | 3L -> AuthoredCaseAct.ClearPayment
+    | 3L -> (AuthoredCaseAct.Bare BareAct.ClearPayment)
     | 4L ->
         AuthoredCaseAct.Correct
             {
@@ -113,9 +113,9 @@ let internal act revision =
                 Decision = Change.Keep
                 Payment = Change.Keep
             }
-    | 5L -> AuthoredCaseAct.WithdrawDecision
-    | 6L -> AuthoredCaseAct.Close
-    | _ -> AuthoredCaseAct.Reopen
+    | 5L -> (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
+    | 6L -> (AuthoredCaseAct.Bare BareAct.Close)
+    | _ -> (AuthoredCaseAct.Bare BareAct.Reopen)
 
 let internal writeLane (actor: ServiceContext) workload lane =
     task {

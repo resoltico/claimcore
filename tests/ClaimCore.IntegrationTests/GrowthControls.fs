@@ -59,8 +59,8 @@ let private sameCase database (actor: ServiceContext) =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                AuthoredCaseAct.Reopen
-            | _ -> AuthoredCaseAct.Close
+                (AuthoredCaseAct.Bare BareAct.Reopen)
+            | _ -> (AuthoredCaseAct.Bare BareAct.Close)
 
         let! replies =
             Task.WhenAll
@@ -129,8 +129,8 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             | (CaseState.Active(fields) | CaseState.Voided(fields)) when
                 fields.Status = CaseStatus.Closed
                 ->
-                AuthoredCaseAct.Reopen
-            | _ -> AuthoredCaseAct.Close
+                (AuthoredCaseAct.Bare BareAct.Reopen)
+            | _ -> (AuthoredCaseAct.Bare BareAct.Close)
 
         let write =
             (Service.execute
@@ -205,9 +205,9 @@ let private longCase database (actor: ServiceContext) =
         for index in 0..999 do
             let act =
                 if closed then
-                    AuthoredCaseAct.Reopen
+                    (AuthoredCaseAct.Bare BareAct.Reopen)
                 else
-                    AuthoredCaseAct.Close
+                    (AuthoredCaseAct.Bare BareAct.Close)
 
             let! reply =
                 (Service.execute
@@ -266,7 +266,7 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                         730001
                         (CaseReference.format snapshot.Reference)
                         (Revision.value snapshot.Revision)
-                        AuthoredCaseAct.Erase
+                        (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 (token))
 

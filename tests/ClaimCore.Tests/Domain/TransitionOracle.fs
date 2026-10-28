@@ -11,22 +11,22 @@ let private activeEligible (fields: CaseFields) =
     let paid = fields.Payment.IsSome
 
     function
-    | AuthoredCaseAct.Close -> true
+    | (AuthoredCaseAct.Bare BareAct.Close) -> true
     | AuthoredCaseAct.AmendRegistration _ -> not decided
     | AuthoredCaseAct.Decide _ -> not paid
-    | AuthoredCaseAct.WithdrawDecision -> decided && not paid
+    | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) -> decided && not paid
     | AuthoredCaseAct.RecordPayment _ ->
         decided
         && not paid
         && (fields.Decision |> Option.map (fun value -> Money.value value.PayableAmount))
            <> Some 0M
-    | AuthoredCaseAct.ClearPayment -> paid
+    | (AuthoredCaseAct.Bare BareAct.ClearPayment) -> paid
     | _ -> false
 
 let private eligible (fields: CaseFields) act =
     match act with
     | AuthoredCaseAct.Open _ -> false
-    | AuthoredCaseAct.Reopen -> fields.Status = CaseStatus.Closed
+    | (AuthoredCaseAct.Bare BareAct.Reopen) -> fields.Status = CaseStatus.Closed
     | AuthoredCaseAct.Correct _ -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields act
@@ -55,7 +55,7 @@ let private changed fields act =
                         }
                 )
         }
-    | AuthoredCaseAct.WithdrawDecision ->
+    | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) ->
         { fields with
             Progress = PaymentProgress.Undecided
         }
@@ -67,22 +67,22 @@ let private changed fields act =
                     (CaseFixtures.payment payment).PaymentDate
                 )
         }
-    | AuthoredCaseAct.ClearPayment ->
+    | (AuthoredCaseAct.Bare BareAct.ClearPayment) ->
         { fields with
             Progress = PaymentProgress.Decided(Option.get fields.Decision)
         }
-    | AuthoredCaseAct.Close ->
+    | (AuthoredCaseAct.Bare BareAct.Close) ->
         { fields with
             Status = CaseStatus.Closed
         }
-    | AuthoredCaseAct.Reopen ->
+    | (AuthoredCaseAct.Bare BareAct.Reopen) ->
         { fields with
             Status = CaseStatus.Opened
         }
     | AuthoredCaseAct.Open _
     | AuthoredCaseAct.Void _
     | AuthoredCaseAct.Reinstate _
-    | AuthoredCaseAct.Erase -> fields
+    | (AuthoredCaseAct.Bare BareAct.Erase) -> fields
 
 let private business (before: CaseSnapshot) fields stale act =
     if stale || not (eligible fields act) then
@@ -120,7 +120,7 @@ let advance (before: CaseSnapshot) stale act =
         | CaseState.Active(fields), AuthoredCaseAct.Void _ -> changed (CaseState.Voided(fields))
         | CaseState.Voided(fields), AuthoredCaseAct.Reinstate _ ->
             changed (CaseState.Active(fields))
-        | (CaseState.Active _ | CaseState.Voided _), AuthoredCaseAct.Erase ->
+        | (CaseState.Active _ | CaseState.Voided _), (AuthoredCaseAct.Bare BareAct.Erase) ->
             changed CaseState.Erased
         | _, (AuthoredCaseAct.Void _ | AuthoredCaseAct.Reinstate _) -> None
         | CaseState.Active(fields), act -> business before fields stale act

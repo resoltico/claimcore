@@ -49,7 +49,7 @@ let isInvalid result =
     | _ -> false
 
 let actRequest revision act =
-    { request revision AuthoredCaseAct.Close with
+    { request revision (AuthoredCaseAct.Bare BareAct.Close) with
         Act = act
     }
 

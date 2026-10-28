@@ -32,11 +32,11 @@ let private businessActs =
             }
         AuthoredCaseAct.Decide decision
         AuthoredCaseAct.Decide { decision with PayableAmount = "0" }
-        AuthoredCaseAct.WithdrawDecision
+        (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        AuthoredCaseAct.ClearPayment
-        AuthoredCaseAct.Close
-        AuthoredCaseAct.Reopen
+        (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        (AuthoredCaseAct.Bare BareAct.Close)
+        (AuthoredCaseAct.Bare BareAct.Reopen)
     ]
 
 let private acts =
@@ -44,7 +44,7 @@ let private acts =
     @ [
         AuthoredCaseAct.Void "Entry error"
         AuthoredCaseAct.Reinstate "Entry confirmed"
-        AuthoredCaseAct.Erase
+        (AuthoredCaseAct.Bare BareAct.Erase)
     ]
 
 let private stepGenerator =
@@ -104,23 +104,23 @@ let private acceptingPath =
     [
         AuthoredCaseAct.Decide decision
         AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        AuthoredCaseAct.Close
-        AuthoredCaseAct.Reopen
-        AuthoredCaseAct.ClearPayment
-        AuthoredCaseAct.WithdrawDecision
+        (AuthoredCaseAct.Bare BareAct.Close)
+        (AuthoredCaseAct.Bare BareAct.Reopen)
+        (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         AuthoredCaseAct.AmendRegistration registration
-        AuthoredCaseAct.Close
-        AuthoredCaseAct.Close
-        AuthoredCaseAct.Reopen
+        (AuthoredCaseAct.Bare BareAct.Close)
+        (AuthoredCaseAct.Bare BareAct.Close)
+        (AuthoredCaseAct.Bare BareAct.Reopen)
     ]
     |> List.map (fun act -> { Act = act; Stale = false })
     |> fun steps ->
         let tail =
             [
                 AuthoredCaseAct.Void "Entry error"
-                AuthoredCaseAct.Close
+                (AuthoredCaseAct.Bare BareAct.Close)
                 AuthoredCaseAct.Reinstate "Entry confirmed"
-                AuthoredCaseAct.Erase
+                (AuthoredCaseAct.Bare BareAct.Erase)
                 AuthoredCaseAct.Open registration
             ]
 
@@ -148,7 +148,8 @@ let private negativeControls () =
         |> Option.get
 
     let closed =
-        TransitionOracle.advance paid false (AuthoredCaseAct.Close) |> Option.get
+        TransitionOracle.advance paid false ((AuthoredCaseAct.Bare BareAct.Close))
+        |> Option.get
 
     let controls =
         [
@@ -209,9 +210,9 @@ let private reach state =
         |> apply (AuthoredCaseAct.Decide { decision with PayableAmount = "0" })
         |> accepted
     | OpenPaid -> paid ()
-    | ClosedUndecided -> opened () |> apply AuthoredCaseAct.Close |> accepted
-    | ClosedDecided -> decided () |> apply AuthoredCaseAct.Close |> accepted
-    | ClosedPaid -> paid () |> apply AuthoredCaseAct.Close |> accepted
+    | ClosedUndecided -> opened () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
+    | ClosedDecided -> decided () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
+    | ClosedPaid -> paid () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
     | Voided ->
         CaseFixtures.decide
             today
@@ -219,7 +220,10 @@ let private reach state =
             (Some(opened ()))
         |> accepted
     | Erased ->
-        CaseFixtures.decide today (actRequest 1L (AuthoredCaseAct.Erase)) (Some(opened ()))
+        CaseFixtures.decide
+            today
+            (actRequest 1L ((AuthoredCaseAct.Bare BareAct.Erase)))
+            (Some(opened ()))
         |> accepted
 
 let private expectedBusiness =

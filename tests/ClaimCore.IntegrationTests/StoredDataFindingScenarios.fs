@@ -115,7 +115,9 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
+                (OperationInput.Case(
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
                 (token))
 
         accepted closed |> ignore
@@ -123,7 +125,9 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! reopened =
             (Service.execute
                 actor
-                (OperationInput.Case(request 12 "synthetic-a" 2L AuthoredCaseAct.Reopen))
+                (OperationInput.Case(
+                    request 12 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Reopen)
+                ))
                 (token))
 
         accepted reopened |> ignore

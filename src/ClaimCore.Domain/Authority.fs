@@ -132,20 +132,10 @@ module Authority =
 
     let private correctionCapabilities = correctionGroups |> List.map snd
 
-    let private ordinaryActs =
-        function
-        | CaseActKind.Open
-        | CaseActKind.AmendRegistration -> [ Capability.Register ]
-        | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision -> [ Capability.Decide ]
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment -> [ Capability.RecordPayment ]
-        | CaseActKind.Close
-        | CaseActKind.Reopen -> [ Capability.Close ]
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> [ Capability.Steward ]
-        | CaseActKind.Correct -> correctionCapabilities
+    let private capabilities kind =
+        match (CaseActKind.describe kind).Capabilities with
+        | ActCapabilities.Required values -> values
+        | ActCapabilities.CorrectionGroups -> correctionCapabilities
 
     /// Reaffirmation is still a requested replacement and requires its group's capability.
     let requiredCapabilities =
@@ -162,10 +152,10 @@ module Authority =
                 | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
-        | act -> ordinaryActs (CaseAct.kind act)
+        | act -> capabilities (CaseAct.kind act)
 
     let canAdvertise principal actor resource kind =
-        ordinaryActs kind
+        capabilities kind
         |> List.exists (fun capability -> can principal actor capability resource)
 
     let canAct principal actor resource act =

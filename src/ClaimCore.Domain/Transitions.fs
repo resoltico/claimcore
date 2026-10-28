@@ -74,35 +74,47 @@ module internal Transitions =
         | CaseStatus.Closed -> Ok(Applicable.Reopening claim)
         | CaseStatus.Opened -> Error CaseRefusal.AlreadyOpened
 
-    let private active claim =
+    let private activeBusiness claim =
         function
         | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
         | CaseAct.AmendRegistration facts -> whenOpened (amend facts) claim
         | CaseAct.Correct correction -> correct correction claim
         | CaseAct.Decide decision -> whenOpened (decide decision) claim
-        | CaseAct.WithdrawDecision -> whenOpened withdraw claim
+        | CaseAct.Bare BareAct.WithdrawDecision -> whenOpened withdraw claim
         | CaseAct.RecordPayment payment -> whenOpened (pay payment) claim
-        | CaseAct.ClearPayment -> whenOpened unpay claim
-        | CaseAct.Close -> close claim
-        | CaseAct.Reopen -> reopen claim
+        | CaseAct.Bare BareAct.ClearPayment -> whenOpened unpay claim
+        | CaseAct.Bare BareAct.Close -> close claim
+        | CaseAct.Bare BareAct.Reopen -> reopen claim
+        | _ -> invalidOp "A stewardship act cannot enter business rules."
+
+    let private activeStewardship claim =
+        function
         | CaseAct.Void reason -> Ok(Applicable.Voiding(claim, reason))
         | CaseAct.Reinstate _ -> Error CaseRefusal.NotVoided
-        | CaseAct.Erase -> Ok Applicable.Erasing
+        | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
+        | _ -> invalidOp "A business act cannot enter stewardship rules."
 
-    let private voided claim =
+    let private active claim act =
+        match (CaseActKind.describe (CaseAct.kind act)).Family with
+        | ActFamily.Business -> activeBusiness claim act
+        | ActFamily.Stewardship -> activeStewardship claim act
+
+    let private voidedBusiness =
         function
         | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
+        | _ -> Error CaseRefusal.CaseVoided
+
+    let private voidedStewardship claim =
+        function
         | CaseAct.Void _ -> Error CaseRefusal.AlreadyVoided
         | CaseAct.Reinstate reason -> Ok(Applicable.Reinstating(claim, reason))
-        | CaseAct.Erase -> Ok Applicable.Erasing
-        | CaseAct.AmendRegistration _
-        | CaseAct.Correct _
-        | CaseAct.Decide _
-        | CaseAct.WithdrawDecision
-        | CaseAct.RecordPayment _
-        | CaseAct.ClearPayment
-        | CaseAct.Close
-        | CaseAct.Reopen -> Error CaseRefusal.CaseVoided
+        | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
+        | _ -> invalidOp "A business act cannot enter stewardship rules."
+
+    let private voided claim act =
+        match (CaseActKind.describe (CaseAct.kind act)).Family with
+        | ActFamily.Business -> voidedBusiness act
+        | ActFamily.Stewardship -> voidedStewardship claim act
 
     let applicable state act =
         match state with

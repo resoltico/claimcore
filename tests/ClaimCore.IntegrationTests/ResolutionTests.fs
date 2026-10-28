@@ -153,7 +153,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(request 113 "RESOLVED" 1L AuthoredCaseAct.Erase))
+                (OperationInput.Case(request 113 "RESOLVED" 1L (AuthoredCaseAct.Bare BareAct.Erase)))
                 (token))
 
         accepted erased |> ignore

@@ -96,8 +96,7 @@ let internal erasureFixture (database: PostgresFixture.Database) =
 
 let internal erased (actor: ServiceContext) =
     task {
-        let request =
-            actRequest 13 "synthetic-a" 1L (ClaimCore.Domain.AuthoredCaseAct.Erase)
+        let request = actRequest 13 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
         let! result = (Service.execute actor (OperationInput.Case request) (token))
 

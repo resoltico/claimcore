@@ -161,7 +161,7 @@ let authorityActs grants =
     |> List.collect (fun token ->
         let kind = AuthorityKind.parse token |> Option.get
 
-        match AuthorityAct.slot kind with
+        match AuthorityKind.describe kind with
         | AuthorityActSlot.Bare act -> [ act, token ]
         | AuthorityActSlot.Grant(inject, _) ->
             grants |> List.map (fun grant -> inject grant, token))

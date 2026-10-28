@@ -75,14 +75,14 @@ let private actsGenerator =
                 AuthoredCaseAct.Open registration
                 AuthoredCaseAct.AmendRegistration registration
                 AuthoredCaseAct.Decide decision
-                AuthoredCaseAct.WithdrawDecision
+                (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
                 AuthoredCaseAct.RecordPayment
                     {
                         PaymentInput.PaymentDate = "2026-08-20"
                     }
-                AuthoredCaseAct.ClearPayment
-                AuthoredCaseAct.Close
-                AuthoredCaseAct.Reopen
+                (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                (AuthoredCaseAct.Bare BareAct.Close)
+                (AuthoredCaseAct.Bare BareAct.Reopen)
             ]
             @ corrections
     }
@@ -190,8 +190,8 @@ let private identityChanges (request: UnvalidatedCaseRequest) =
 
     let differentAct =
         match request.Act with
-        | AuthoredCaseAct.Close -> AuthoredCaseAct.Reopen
-        | _ -> AuthoredCaseAct.Close
+        | (AuthoredCaseAct.Bare BareAct.Close) -> (AuthoredCaseAct.Bare BareAct.Reopen)
+        | _ -> (AuthoredCaseAct.Bare BareAct.Close)
 
     let changed =
         [

@@ -100,14 +100,14 @@ let private acts =
                 PayableAmount = "750"
                 PayableCurrency = "EUR"
             })
-        CaseActKind.WithdrawDecision, AuthoredCaseAct.WithdrawDecision
+        CaseActKind.WithdrawDecision, (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         CaseActKind.RecordPayment, (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
-        CaseActKind.ClearPayment, AuthoredCaseAct.ClearPayment
-        CaseActKind.Close, AuthoredCaseAct.Close
-        CaseActKind.Reopen, AuthoredCaseAct.Reopen
+        CaseActKind.ClearPayment, (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        CaseActKind.Close, (AuthoredCaseAct.Bare BareAct.Close)
+        CaseActKind.Reopen, (AuthoredCaseAct.Bare BareAct.Reopen)
         CaseActKind.Void, (AuthoredCaseAct.Void "Entry error")
         CaseActKind.Reinstate, (AuthoredCaseAct.Reinstate "Entry confirmed")
-        CaseActKind.Erase, AuthoredCaseAct.Erase
+        CaseActKind.Erase, (AuthoredCaseAct.Bare BareAct.Erase)
     ]
 
 let private stateExpectations =
@@ -265,11 +265,13 @@ let private revisionBounds =
     testCase "expected revisions retain their permanent exact-integer format bound" (fun () ->
         for value in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError
-                (CaseFixtures.validate (request value (AuthoredCaseAct.Erase)))
+                (CaseFixtures.validate (request value ((AuthoredCaseAct.Bare BareAct.Erase))))
                 "Expected revision bounds"
 
         Expect.isOk
-            (CaseFixtures.validate (request Revision.Maximum (AuthoredCaseAct.Erase)))
+            (CaseFixtures.validate (
+                request Revision.Maximum ((AuthoredCaseAct.Bare BareAct.Erase))
+            ))
             "Expected M is valid syntax")
 
 let private identifiers =
@@ -304,7 +306,7 @@ let private identifiers =
             let current = retained 1L (live CaseStatus.Opened false false)
 
             let recased =
-                { request 1L (AuthoredCaseAct.Close) with
+                { request 1L ((AuthoredCaseAct.Bare BareAct.Close)) with
                     CaseReference = "DEMO-1"
                 }
 

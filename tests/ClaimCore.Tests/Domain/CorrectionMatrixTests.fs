@@ -15,7 +15,8 @@ let private states () =
     let zero = opened () |> apply (decisionWith "0") |> accepted
 
     [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim -> [ claim; claim |> apply AuthoredCaseAct.Close |> accepted ])
+    |> List.collect (fun claim ->
+        [ claim; claim |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted ])
 
 let private registrationChoices =
     [

@@ -57,7 +57,7 @@ let private authorityProperty =
         return
             AuthorityKind.all
             |> List.forall (fun kind ->
-                match (AuthorityAct.slot kind: AuthorityActSlot<int>) with
+                match (AuthorityKind.describe kind: AuthorityActSlot<int>) with
                 | AuthorityActSlot.Bare act ->
                     AuthorityAct.kind act = kind && List.contains act candidates
                 | AuthorityActSlot.Grant(inject, project) ->
@@ -68,11 +68,50 @@ let private authorityProperty =
                         |> List.forall (project >> Option.isNone)))
     }
 
+let private descriptions () =
+    for row in Inventory.rows "caseActs" do
+        let token = row.GetProperty("token").GetString() |> nonNull
+        let kind = CaseActKind.parse token |> Option.get
+        let description = CaseActKind.describe kind
+
+        let family =
+            match description.Family with
+            | ActFamily.Business -> "BUSINESS"
+            | ActFamily.Stewardship -> "STEWARDSHIP"
+
+        let payload =
+            match description.Payload with
+            | ActPayload.Bare _ -> "BARE"
+            | ActPayload.Registration -> "REGISTRATION"
+            | ActPayload.Decision -> "DECISION"
+            | ActPayload.Payment -> "PAYMENT"
+            | ActPayload.Reason -> "REASON"
+            | ActPayload.Correction -> "CORRECTION"
+
+        Expect.equal
+            family
+            (row.GetProperty("family").GetString() |> nonNull)
+            "Independent act family"
+
+        Expect.equal
+            payload
+            (row.GetProperty("payload").GetString() |> nonNull)
+            "Independent act payload"
+
+        Expect.equal
+            description.Revision
+            (if token = "OPEN" then
+                 RevisionInput.New
+             else
+                 RevisionInput.Expected)
+            "Only opening creates a new case"
+
 [<Tests>]
 let tests =
     testList
         "typed act slots"
         [
+            testCase "descriptions agree with the independent act inventory" descriptions
             testCase "case act slots round trip and reject other kinds" (fun () ->
                 run "case act slots" caseProperty)
             testCase "authority act slots round trip and reject other kinds" (fun () ->

@@ -3,42 +3,9 @@ namespace ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Json
 
-[<RequireQualifiedAccess>]
-type RevisionInput =
-    | New
-    | Expected
-
-
 module CaseActAnnotations =
-    let revision kind =
-        match kind with
-        | CaseActKind.Open -> RevisionInput.New
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> RevisionInput.Expected
-
-    let prefill kind =
-        match kind with
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide -> true
-        | CaseActKind.Open
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> false
+    let prefill =
+        set [ CaseActKind.AmendRegistration; CaseActKind.Correct; CaseActKind.Decide ]
 
 /// Meaning attaches to named codec members; structural paths and alternatives belong to the schema.
 module CatalogAnnotations =
@@ -75,7 +42,7 @@ module CatalogAnnotations =
     let private revision (operation: CatalogOperation) =
         let fixedValue =
             match operation.SelectedAct with
-            | Some(ActKind.Case kind) when CaseActAnnotations.revision kind = RevisionInput.New ->
+            | Some(ActKind.Case kind) when (CaseActKind.describe kind).Revision = RevisionInput.New ->
                 Some(BindingValue.Integer 0L)
             | _ -> None
 
@@ -87,7 +54,7 @@ module CatalogAnnotations =
     let private business group value (operation: CatalogOperation) =
         let prefill =
             match operation.SelectedAct with
-            | Some(ActKind.Case kind) when CaseActAnnotations.prefill kind ->
+            | Some(ActKind.Case kind) when Set.contains kind CaseActAnnotations.prefill ->
                 Some [ RecordGroup.token group; BusinessField.key value ]
             | _ -> None
 

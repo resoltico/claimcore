@@ -78,14 +78,14 @@ let acts =
         "AMEND_REGISTRATION", AuthoredCaseAct.AmendRegistration(registration "Amended claimant")
         "CORRECT", correction
         "DECIDE", AuthoredCaseAct.Decide(decision "60")
-        "WITHDRAW_DECISION", AuthoredCaseAct.WithdrawDecision
+        "WITHDRAW_DECISION", (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         "RECORD_PAYMENT", AuthoredCaseAct.RecordPayment payment
-        "CLEAR_PAYMENT", AuthoredCaseAct.ClearPayment
-        "CLOSE", AuthoredCaseAct.Close
-        "REOPEN", AuthoredCaseAct.Reopen
+        "CLEAR_PAYMENT", (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        "CLOSE", (AuthoredCaseAct.Bare BareAct.Close)
+        "REOPEN", (AuthoredCaseAct.Bare BareAct.Reopen)
         "VOID", AuthoredCaseAct.Void "Entry error"
         "REINSTATE", AuthoredCaseAct.Reinstate "Restored"
-        "ERASE", AuthoredCaseAct.Erase
+        "ERASE", (AuthoredCaseAct.Bare BareAct.Erase)
     ]
 
 let request act revision : UnvalidatedCaseRequest =

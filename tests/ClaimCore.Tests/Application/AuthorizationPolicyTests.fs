@@ -124,20 +124,20 @@ let private invalidActors () =
 
     invalidPrincipals ()
 
-let private ordinaryActs () =
+let private caseActCapabilities () =
     let cases =
         [
             AuthoredCaseAct.Open registration, Capability.Register
             AuthoredCaseAct.AmendRegistration registration, Capability.Register
             AuthoredCaseAct.Decide decision, Capability.Decide
-            AuthoredCaseAct.WithdrawDecision, Capability.Decide
+            (AuthoredCaseAct.Bare BareAct.WithdrawDecision), Capability.Decide
             AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
-            AuthoredCaseAct.ClearPayment, Capability.RecordPayment
-            AuthoredCaseAct.Close, Capability.Close
-            AuthoredCaseAct.Reopen, Capability.Close
+            (AuthoredCaseAct.Bare BareAct.ClearPayment), Capability.RecordPayment
+            (AuthoredCaseAct.Bare BareAct.Close), Capability.Close
+            (AuthoredCaseAct.Bare BareAct.Reopen), Capability.Close
             AuthoredCaseAct.Void "Reason", Capability.Steward
             AuthoredCaseAct.Reinstate "Reason", Capability.Steward
-            AuthoredCaseAct.Erase, Capability.Steward
+            (AuthoredCaseAct.Bare BareAct.Erase), Capability.Steward
         ]
 
     for act, capability in cases do
@@ -340,7 +340,11 @@ let private absentCorrectionValues () =
 let private noUsableCorrectionOffer () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
 
-    let snapshot = opened () |> apply AuthoredCaseAct.Close |> accepted |> Case.snapshot
+    let snapshot =
+        opened ()
+        |> apply (AuthoredCaseAct.Bare BareAct.Close)
+        |> accepted
+        |> Case.snapshot
 
     let target =
         ClaimCore.RecordFormat.CaseReferenceId.encode
@@ -417,7 +421,7 @@ let tests =
                 invalidActors
             testCase
                 "ordinary business and stewardship acts have independent required capabilities"
-                ordinaryActs
+                caseActCapabilities
             testCase
                 "correction group choices require every selected capability including reaffirmation"
                 corrections

@@ -109,7 +109,9 @@ let internal replayAndRefusal fixture =
         let! stale =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 0L AuthoredCaseAct.Close))
+                (OperationInput.Case(
+                    request 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
                 (CancellationToken.None))
 
         Expect.equal
@@ -226,7 +228,9 @@ let internal caseUpdate fixture =
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "CONTRACT-001" 1L AuthoredCaseAct.Close))
+                (OperationInput.Case(
+                    request 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
                 (CancellationToken.None))
 
         let receipt = accepted closed

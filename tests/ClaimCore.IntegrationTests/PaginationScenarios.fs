@@ -137,9 +137,9 @@ let internal appendHistory (actor: ServiceContext) =
         for revision in 1L .. 52L do
             let act =
                 if revision % 2L = 1L then
-                    AuthoredCaseAct.Close
+                    (AuthoredCaseAct.Bare BareAct.Close)
                 else
-                    AuthoredCaseAct.Reopen
+                    (AuthoredCaseAct.Bare BareAct.Reopen)
 
             let! result =
                 (Service.execute

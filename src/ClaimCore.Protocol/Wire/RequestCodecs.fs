@@ -210,7 +210,7 @@ module RequestCodecs =
         |> List.map (fun kind ->
             let token = AuthorityKind.token kind
 
-            match AuthorityAct.slot kind with
+            match AuthorityKind.describe kind with
             | AuthorityActSlot.Bare act -> unitVariant token act
             | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 

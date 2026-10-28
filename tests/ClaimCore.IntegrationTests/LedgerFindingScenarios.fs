@@ -102,7 +102,7 @@ let internal start (database: PostgresFixture.Database) =
             |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
             |> updateCase
                 { request with
-                    Act = AuthoredCaseAct.Close
+                    Act = (AuthoredCaseAct.Bare BareAct.Close)
                 }
                 { snapshot with State = view }
 
@@ -117,7 +117,9 @@ let internal stateSequence (database: PostgresFixture.Database) =
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
+                (OperationInput.Case(
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
                 (token))
 
         let position = (accepted closed).Position.Sequence
@@ -161,7 +163,9 @@ let internal erasure (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(actRequest 11 "synthetic-a" 1L (AuthoredCaseAct.Erase)))
+                (OperationInput.Case(
+                    actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
+                ))
                 (token))
 
         accepted erased |> ignore

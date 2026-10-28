@@ -133,7 +133,7 @@ let private lifecycleTests =
             testCase "unpaid and undecided case can close" (fun () ->
                 let fields =
                     (opened ()
-                     |> apply AuthoredCaseAct.Close
+                     |> apply (AuthoredCaseAct.Bare BareAct.Close)
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)
@@ -160,9 +160,9 @@ let private identityAndVersionTests =
 
                 let after =
                     original
-                    |> apply AuthoredCaseAct.Close
+                    |> apply (AuthoredCaseAct.Bare BareAct.Close)
                     |> accepted
-                    |> apply AuthoredCaseAct.Reopen
+                    |> apply (AuthoredCaseAct.Bare BareAct.Reopen)
                     |> accepted
                     |> Case.snapshot
 
@@ -176,7 +176,10 @@ let private identityAndVersionTests =
                     "Technical revisions")
             testCase "stale version cannot overwrite a case" (fun () ->
                 let result =
-                    CaseFixtures.decide today (request 0L AuthoredCaseAct.Close) (Some(opened ()))
+                    CaseFixtures.decide
+                        today
+                        (request 0L (AuthoredCaseAct.Bare BareAct.Close))
+                        (Some(opened ()))
 
                 Expect.isTrue
                     ((result |> Result.map Case.snapshot) =
@@ -184,7 +187,10 @@ let private identityAndVersionTests =
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
-                    CaseFixtures.decide today (request 1L AuthoredCaseAct.Close) None
+                    CaseFixtures.decide
+                        today
+                        (request 1L (AuthoredCaseAct.Bare BareAct.Close))
+                        None
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -295,7 +301,7 @@ let private decisionEditingTests =
 
                 let fields =
                     (decided ()
-                     |> apply AuthoredCaseAct.WithdrawDecision
+                     |> apply (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
                      |> accepted
                      |> apply (AuthoredCaseAct.AmendRegistration registration)
                      |> accepted
@@ -316,7 +322,10 @@ let private correctionTests =
                 let before = paid ()
 
                 let after =
-                    before |> apply AuthoredCaseAct.ClearPayment |> accepted |> Case.snapshot
+                    before
+                    |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                    |> accepted
+                    |> Case.snapshot
 
                 let expected =
                     { (Case.snapshot before |> viewFields) with
@@ -334,13 +343,15 @@ let private correctionTests =
                     "History has a new technical revision")
             testCase "clear payment without a recorded date is rejected" (fun () ->
                 let result =
-                    decided () |> apply AuthoredCaseAct.ClearPayment |> Result.map Case.snapshot
+                    decided ()
+                    |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                    |> Result.map Case.snapshot
 
                 Expect.isTrue
                     (result = Error(Refusal.Case CaseRefusal.PaymentNotRecorded))
                     "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
-                let claim = decided () |> apply AuthoredCaseAct.Close |> accepted
+                let claim = decided () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
 
                 let result =
                     apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim

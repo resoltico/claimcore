@@ -136,7 +136,11 @@ let private reviewAndTime () =
         "An earlier preview cannot authorize opening after another acceptance"
 
     let stale =
-        actRequest 15 (CaseReference.format current.Snapshot.Reference) 0L AuthoredCaseAct.Close
+        actRequest
+            15
+            (CaseReference.format current.Snapshot.Reference)
+            0L
+            (AuthoredCaseAct.Bare BareAct.Close)
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
@@ -165,7 +169,7 @@ let private integrityAndPrivacy () =
         { original with
             CaseReference = (CaseReference.format readable.Snapshot.Reference)
             ExpectedRevision = 1L
-            Act = AuthoredCaseAct.Close
+            Act = (AuthoredCaseAct.Bare BareAct.Close)
         }
 
     Expect.equal
@@ -213,7 +217,7 @@ let private boundsAndFence () =
                 21
                 (CaseReference.format current.Snapshot.Reference)
                 Revision.Maximum
-                AuthoredCaseAct.Close)
+                (AuthoredCaseAct.Bare BareAct.Close))
             (locked worker (Some maxRevision) None))
         (Verdict.Fail CoreFault.InternalError)
         "A format-valid record at the bound yields CORE_INTERNAL_ERROR"

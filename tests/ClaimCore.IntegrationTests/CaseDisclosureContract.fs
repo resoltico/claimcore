@@ -100,7 +100,7 @@ let internal caseErasure fixture =
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L (AuthoredCaseAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
 
         let! result =
             (Service.execute actor (OperationInput.Case erase) (CancellationToken.None))

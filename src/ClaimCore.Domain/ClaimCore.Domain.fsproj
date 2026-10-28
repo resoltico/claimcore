@@ -8,13 +8,13 @@
     <Compile Include="Values.fs" />
     <Compile Include="Identifiers.fs" />
     <Compile Include="CaseFields.fs" />
+    <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="Reads.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
-    <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="LedgerPosition.fs" />

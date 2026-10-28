@@ -24,11 +24,11 @@ let private candidates =
                 Payment = Change.Keep
             }
         AuthoredCaseAct.Decide decision
-        AuthoredCaseAct.WithdrawDecision
+        (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }
-        AuthoredCaseAct.ClearPayment
-        AuthoredCaseAct.Close
-        AuthoredCaseAct.Reopen
+        (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        (AuthoredCaseAct.Bare BareAct.Close)
+        (AuthoredCaseAct.Bare BareAct.Reopen)
     ]
 
 let private stateActions =
@@ -64,7 +64,7 @@ let private stateActions =
                     (Set.contains (CaseActKind.token (CaseAct.kind act)) actions)
                     "No separately invented UI state machine")
 
-            let closed = apply AuthoredCaseAct.Close state |> accepted
+            let closed = apply (AuthoredCaseAct.Bare BareAct.Close) state |> accepted
 
             Expect.equal
                 (availableActs closed)

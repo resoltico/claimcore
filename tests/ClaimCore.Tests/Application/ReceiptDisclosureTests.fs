@@ -103,7 +103,7 @@ let private foreignScope () =
         { original with
             CaseReference = CaseReference.format caseA.Snapshot.Reference
             ExpectedRevision = 1L
-            Act = AuthoredCaseAct.Close
+            Act = (AuthoredCaseAct.Bare BareAct.Close)
         }
 
     let read = (locked both (Some caseA) (Some entry)).Read

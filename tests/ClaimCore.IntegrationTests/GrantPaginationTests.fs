@@ -71,7 +71,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 OperationId = id 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
-                Act = (AuthoredCaseAct.Erase)
+                Act = ((AuthoredCaseAct.Bare BareAct.Erase))
             }
 
         let! erased = (Service.execute admin (OperationInput.Case erase) (token))

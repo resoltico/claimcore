@@ -90,7 +90,7 @@ let private closedCorrectionTests =
         "closed correction"
         [
             testCase "closed cases may correct facts while retaining CLOSED status" (fun () ->
-                let closed = paid () |> apply AuthoredCaseAct.Close |> accepted
+                let closed = paid () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
 
                 let after =
                     closed

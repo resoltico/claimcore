@@ -408,7 +408,7 @@ let private roundTrips database =
                     },
                 "ACTIVE"
                 12, 2L, AuthoredCaseAct.Void "Synthetic correction", "VOIDED"
-                13, 3L, AuthoredCaseAct.Erase, "ERASED"
+                13, 3L, (AuthoredCaseAct.Bare BareAct.Erase), "ERASED"
             ] do
             let! result =
                 Service.execute

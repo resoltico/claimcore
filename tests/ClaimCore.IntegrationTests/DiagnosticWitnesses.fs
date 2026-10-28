@@ -39,7 +39,7 @@ let internal payment =
     (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
 
 let internal decided = (AuthoredCaseAct.Decide decision)
-let internal closed = AuthoredCaseAct.Close
+let internal closed = (AuthoredCaseAct.Bare BareAct.Close)
 let internal voided = (AuthoredCaseAct.Void "Synthetic reason")
 
 let internal baseline =
@@ -274,8 +274,8 @@ let internal scalarEvidence () =
 let internal stateScenarios () =
     [
         [], (AuthoredCaseAct.Open registration)
-        [], AuthoredCaseAct.Reopen
-        [ closed ], AuthoredCaseAct.Close
+        [], (AuthoredCaseAct.Bare BareAct.Reopen)
+        [ closed ], (AuthoredCaseAct.Bare BareAct.Close)
         [ closed ], decided
         [ decided ], (AuthoredCaseAct.AmendRegistration registration)
         [ decided ],
@@ -285,14 +285,14 @@ let internal stateScenarios () =
             }
         [], correction { keep with Decision = Change.Clear }
         [], payment
-        [], AuthoredCaseAct.ClearPayment
+        [], (AuthoredCaseAct.Bare BareAct.ClearPayment)
         [ decided; payment ], payment
-        [ decided; payment ], AuthoredCaseAct.WithdrawDecision
+        [ decided; payment ], (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         [ (AuthoredCaseAct.Decide { decision with PayableAmount = "0" }) ], payment
         [ voided ], closed
         [ voided ], voided
         [], (AuthoredCaseAct.Reinstate "Synthetic reason")
-        [ AuthoredCaseAct.Erase ], closed
+        [ (AuthoredCaseAct.Bare BareAct.Erase) ], closed
         [ decided; payment ], correction { keep with Decision = Change.Clear }
         [ decided; payment ],
         correction
@@ -388,7 +388,9 @@ let internal identityEvidence actor =
         let! opening = execute actor pending
         accepted opening |> ignore
         let! conflict = execute actor { pending with ExpectedRevision = 1L }
-        let! revision = execute actor (request 11 "REACH-1" 0L AuthoredCaseAct.Close)
+
+        let! revision =
+            execute actor (request 11 "REACH-1" 0L (AuthoredCaseAct.Bare BareAct.Close))
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
@@ -461,7 +463,9 @@ let internal boundaryEvidence () =
         let! identity, reader = identityEvidence actor
 
         let! denied =
-            execute (core fixture reader) (request 37 "REACH-1" 1L AuthoredCaseAct.Close)
+            execute
+                (core fixture reader)
+                (request 37 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
@@ -470,6 +474,9 @@ let internal boundaryEvidence () =
         let! resolved = (Service.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Resolve installs a fence"
-        let! fenced = execute actor (request 42 "REACH-1" 1L AuthoredCaseAct.Close)
+
+        let! fenced =
+            execute actor (request 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+
         return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
     }

@@ -67,7 +67,7 @@ module Service =
         match act with
         | CaseAct.Void _
         | CaseAct.Reinstate _
-        | CaseAct.Erase -> []
+        | (CaseAct.Bare BareAct.Erase) -> []
         | _ ->
             let previous = businessFields before
             let next = businessFields (Some after)

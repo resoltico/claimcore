@@ -163,13 +163,13 @@ let private envelope () =
         "Durable format is not a wire member"
 
     let authored =
-        { request 1L AuthoredCaseAct.Close with
+        { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
             CaseReference = "unit-001"
         }
 
     Expect.isTrue
         (CaseFixtures.encode authored
-         <> CaseFixtures.encode (request 1L AuthoredCaseAct.Close))
+         <> CaseFixtures.encode (request 1L (AuthoredCaseAct.Bare BareAct.Close)))
         "Canonical request identity preserves authored reference case"
 
 let private culture () =

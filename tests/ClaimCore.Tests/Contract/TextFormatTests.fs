@@ -79,7 +79,7 @@ let private admissionInsideFormat () =
 let private stewardshipBoundaries () =
     for act in [ AuthoredCaseAct.Void; AuthoredCaseAct.Reinstate ] do
         let proposed value =
-            { request 1L AuthoredCaseAct.Close with
+            { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
                 Act = (act value)
             }
 

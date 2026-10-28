@@ -224,7 +224,10 @@ policy; review the complete `oxlint --print-config` output when changing it.
 
 Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
 tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
-Each FSharpLint suppression needs a preceding justification comment; new suppressions do not qualify a split.
+Only a total table may suppress `CyclomaticComplexity`: its body is one exhaustive match from a closed
+union to values, with no nested branching. Put a concrete reason comment immediately before
+`// fsharplint:disable-next-line CyclomaticComplexity`. Rule bodies meet complexity 12 by splitting
+responsibilities; this exception does not apply to them. Other lint suppressions remain prohibited.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.

@@ -138,7 +138,7 @@ let private initialDecisionIsBounded =
 let private withdrawnDateIsAbsent =
     testCase "withdrawing a decision removes its date reaffirmation authority" (fun () ->
         decided ()
-        |> apply AuthoredCaseAct.WithdrawDecision
+        |> apply (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         |> accepted
         |> applyAt (DateOnly(2026, 8, 10)) (AuthoredCaseAct.Decide decision)
         |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
@@ -146,7 +146,7 @@ let private withdrawnDateIsAbsent =
 let private clearedPaymentDateIsAbsent =
     testCase "clearing payment removes its date reaffirmation authority" (fun () ->
         paid ()
-        |> apply AuthoredCaseAct.ClearPayment
+        |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
         |> accepted
         |> applyAt
             (DateOnly(2026, 8, 16))
@@ -155,7 +155,7 @@ let private clearedPaymentDateIsAbsent =
 
 let private closedCorrectionRetainsDates =
     testCase "a closed paid correction reaffirms accepted dates after rollback" (fun () ->
-        let before = paid () |> apply AuthoredCaseAct.Close |> accepted
+        let before = paid () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
 
         let act =
             AuthoredCaseAct.Correct

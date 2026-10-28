@@ -53,17 +53,16 @@ type AuthorityActSlot<'grant> =
         inject: ('grant -> AuthorityAct<'grant>) *
         project: (AuthorityAct<'grant> -> 'grant option)
 
-module AuthorityAct =
-    let kind =
-        function
-        | AuthorityAct.Register -> AuthorityKind.Register
-        | AuthorityAct.Grant _ -> AuthorityKind.Grant
-        | AuthorityAct.Revoke _ -> AuthorityKind.Revoke
-        | AuthorityAct.Enable -> AuthorityKind.Enable
-        | AuthorityAct.Disable -> AuthorityKind.Disable
-        | AuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module AuthorityKind =
+    let vocabulary =
+        Vocabulary.ofUnion<AuthorityKind> "act" TokenCasing.ScreamingSnake None
 
-    let slot<'grant> kind : AuthorityActSlot<'grant> =
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+    let describe<'grant> kind : AuthorityActSlot<'grant> =
         match kind with
         | AuthorityKind.ProvisionOwner -> AuthorityActSlot.Bare AuthorityAct.ProvisionOwner
         | AuthorityKind.Register -> AuthorityActSlot.Bare AuthorityAct.Register
@@ -84,6 +83,19 @@ module AuthorityAct =
         | AuthorityKind.Enable -> AuthorityActSlot.Bare AuthorityAct.Enable
         | AuthorityKind.Disable -> AuthorityActSlot.Bare AuthorityAct.Disable
 
+module AuthorityAct =
+    // Permanent adapters use act structure without depending on the wire-vocabulary module.
+    let slot<'grant> kind : AuthorityActSlot<'grant> = AuthorityKind.describe kind
+
+    let kind =
+        function
+        | AuthorityAct.Register -> AuthorityKind.Register
+        | AuthorityAct.Grant _ -> AuthorityKind.Grant
+        | AuthorityAct.Revoke _ -> AuthorityKind.Revoke
+        | AuthorityAct.Enable -> AuthorityKind.Enable
+        | AuthorityAct.Disable -> AuthorityKind.Disable
+        | AuthorityAct.ProvisionOwner -> AuthorityKind.ProvisionOwner
+
     let traverse grant =
         function
         | AuthorityAct.Grant value -> grant value |> Result.map AuthorityAct.Grant
@@ -96,12 +108,3 @@ module AuthorityAct =
     let map grant act =
         traverse (grant >> Ok) act
         |> Result.defaultWith (fun () -> invalidOp "A total authority mapping cannot fail.")
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module AuthorityKind =
-    let vocabulary =
-        Vocabulary.ofUnion<AuthorityKind> "act" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary
