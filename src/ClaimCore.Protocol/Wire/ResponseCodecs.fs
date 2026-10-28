@@ -41,14 +41,27 @@ module ResponseCodecs =
                     ClaimedAmount = money
                 }))
         : Fields<Registration, _>)
-        |> field "incidentDate" _.IncidentDate calendarDate
-        |> field "incidentNotificationDate" _.IncidentNotificationDate calendarDate
-        |> field "incidentCountry" _.IncidentCountry countryCode
-        |> field "claimantName" _.ClaimantName partyName
-        |> field "insurerName" _.InsurerName partyName
-        |> field "claimedAmount" (fun value -> Money.format value.ClaimedAmount) amount
-        |> field "claimedCurrency" (fun value -> Money.currency value.ClaimedAmount) currency
-        |> buildResult (moneyProblem "claimedAmount" "claimedCurrency")
+        |> field (BusinessField.key BusinessField.IncidentDate) _.IncidentDate calendarDate
+        |> field
+            (BusinessField.key BusinessField.IncidentNotificationDate)
+            _.IncidentNotificationDate
+            calendarDate
+        |> field (BusinessField.key BusinessField.IncidentCountry) _.IncidentCountry countryCode
+        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
+        |> field (BusinessField.key BusinessField.InsurerName) _.InsurerName partyName
+        |> field
+            (BusinessField.key BusinessField.ClaimedAmount)
+            (fun value -> Money.format value.ClaimedAmount)
+            amount
+        |> field
+            (BusinessField.key BusinessField.ClaimedCurrency)
+            (fun value -> Money.currency value.ClaimedAmount)
+            currency
+        |> buildResult (
+            moneyProblem
+                (BusinessField.key BusinessField.ClaimedAmount)
+                (BusinessField.key BusinessField.ClaimedCurrency)
+        )
 
     let private decision =
         (record (fun date amount currency ->
@@ -59,14 +72,27 @@ module ResponseCodecs =
                     PayableAmount = money
                 }))
         : Fields<Decision, _>)
-        |> field "paymentDecisionDate" _.PaymentDecisionDate calendarDate
-        |> field "payableAmount" (fun value -> Money.format value.PayableAmount) amount
-        |> field "payableCurrency" (fun value -> Money.currency value.PayableAmount) currency
-        |> buildResult (moneyProblem "payableAmount" "payableCurrency")
+        |> field
+            (BusinessField.key BusinessField.PaymentDecisionDate)
+            _.PaymentDecisionDate
+            calendarDate
+        |> field
+            (BusinessField.key BusinessField.PayableAmount)
+            (fun value -> Money.format value.PayableAmount)
+            amount
+        |> field
+            (BusinessField.key BusinessField.PayableCurrency)
+            (fun value -> Money.currency value.PayableAmount)
+            currency
+        |> buildResult (
+            moneyProblem
+                (BusinessField.key BusinessField.PayableAmount)
+                (BusinessField.key BusinessField.PayableCurrency)
+        )
 
     let private payment =
         (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
-        |> field "paymentDate" _.PaymentDate calendarDate
+        |> field (BusinessField.key BusinessField.PaymentDate) _.PaymentDate calendarDate
         |> build
 
     let caseFields =
@@ -80,8 +106,11 @@ module ResponseCodecs =
                     Progress = progress
                 }))
         : Fields<CaseFields, _>)
-        |> field "caseReference" _.CaseReference caseReference
-        |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
+        |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
+        |> field
+            (BusinessField.key BusinessField.Status)
+            _.Status
+            (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
@@ -434,7 +463,11 @@ module ResponseCodecs =
         let state =
             stateCodec
                 "CaseSummaryState"
-                (record id |> field "status" id (VocabularyCodec.create CaseStatus.vocabulary))
+                (record id
+                 |> field
+                     (BusinessField.key BusinessField.Status)
+                     id
+                     (VocabularyCodec.create CaseStatus.vocabulary))
 
         (record (fun reference revision state ->
             {
@@ -443,7 +476,7 @@ module ResponseCodecs =
                 State = state
             })
         : Fields<CaseSummary, _>)
-        |> field "caseReference" _.Reference caseReference
+        |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
         |> field "state" _.State state
         |> build

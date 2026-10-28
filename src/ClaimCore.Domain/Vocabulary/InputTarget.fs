@@ -27,7 +27,7 @@ module InputTarget =
             |> Array.toList
 
         (CaseFields.declarations
-         |> List.filter (fun row -> row.Field <> BusinessField.Status)
+         |> List.filter _.IsAuthored
          |> List.map (fun row -> InputTarget.Field row.Field))
         @ [ InputTarget.Group RecordGroup.Payment ]
         @ technical

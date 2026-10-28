@@ -16,7 +16,7 @@ module internal CaseProjectionLayout =
         |> Array.ofSeq
         |> String
 
-    let private column (field: FieldDeclaration) = name field.Field
+    let private column (field: FieldDescriptor) = name field.Field
 
     let private retained, payload =
         CaseFields.declarations |> List.partition _.RetainedOnErasure
@@ -29,7 +29,7 @@ module internal CaseProjectionLayout =
         @ [ "revision"; "state" ]
         @ (payload |> List.map column)
 
-    let private selected (row: FieldDeclaration) =
+    let private selected (row: FieldDescriptor) =
         match row.Kind with
         | FieldValueKind.CalendarDate ->
             DatabaseSession.dateExpression (column row) + " AS " + column row
@@ -108,7 +108,7 @@ module internal CaseProjectionLayout =
             | CaseState.Voided(fields) -> fields, "VOIDED"
             | CaseState.Erased -> invalidArg (nameof snapshot) "Use the erasure projection."
 
-        let bind (row: FieldDeclaration) = parameter fields row.Field
+        let bind (row: FieldDescriptor) = parameter fields row.Field
 
         [ box id ]
         @ (retained |> List.map bind)
