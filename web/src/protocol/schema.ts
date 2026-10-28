@@ -9,7 +9,7 @@ export const admitBytes = (bytes: Uint8Array): unknown => {
   const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   const tokens =
     text.match(/"(?:[^"\\]|\\.)*"|-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/gu) ?? [];
-  if (tokens.some((token) => !token.startsWith('"') && /[.eE]/u.test(token))) {
+  if (tokens.some((value) => !value.startsWith('"') && /[.eE]/u.test(value))) {
     throw new Error("Integer wire values require integer spelling.");
   }
   return strictJsonBytes(bytes);

@@ -95,7 +95,7 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
   const input = screen.getByLabelText("Handler's case reference", { exact: true });
   await waitFor(() => {
-    expect(document.activeElement).toBe(input);
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("PRIVATE_CANARY");

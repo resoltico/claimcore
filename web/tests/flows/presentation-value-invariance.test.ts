@@ -63,7 +63,7 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     for (const choice of [index % 12, (index + 5) % 12]) {
       const language = (["en", "lv", "ar", "en-XA"] as const)[choice % 4]!;
       const displayLocale = (["en-GB", "lv-LV", "ar-EG"] as const)[Math.floor(choice / 4)]!;
-      const p = createPresenter({ language, displayLocale });
+      const p = createPresenter({ language, displayLocale, theme: "SYSTEM" });
       expect(p.fieldValue(values.claimedAmount, field("claimedAmount"))).toBe(
         amountOracle(whole, fraction, displayLocale),
       );

@@ -51,7 +51,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   vi.stubGlobal("fetch", fetch);
   const { result } = renderHook(() =>
     useOperation({
-      token: "token",
+      credential: "token",
       current,
       kind: "CLOSE",
       subject: "CASE",

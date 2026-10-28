@@ -1,3 +1,4 @@
+import { fillControl } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
@@ -150,7 +151,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   for (const group of ["registration", "decision", "payment"] as const) {
     if (modes[group] === "REPLACE") {
       for (const [name, value] of Object.entries(replacements[group])) {
-        await page.locator(`input[name="act.groups.${group}.values.${name}"]`).fill(value);
+        await fillControl(page.locator(`[data-field-name="${name}"]`), value);
       }
     }
   }

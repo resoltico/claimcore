@@ -1,7 +1,8 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { render, screen } from "../support/presentation-test-support";
+import { render, screen, TestSession } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
@@ -122,13 +123,10 @@ const emptyOffers = () => {
 it.each([false, true])(
   "revalidates authority disclosure after management refusal; retained read=%s",
   async (retainsRead) => {
-    const context = vi
-      .spyOn(service, "context")
+    const context = mockEndpoint("context")
       .mockResolvedValueOnce(success("context"))
       .mockResolvedValue(emptyOffers());
-    const listing = vi
-      .spyOn(service, "authorityList")
-      .mockResolvedValueOnce(success("authority.list"));
+    const listing = mockEndpoint("authority.list").mockResolvedValueOnce(success("authority.list"));
     let finish: ((value: Awaited<ReturnType<typeof service.authorityList>>) => void) | undefined;
     listing.mockImplementation(
       () =>
@@ -137,7 +135,7 @@ it.each([false, true])(
         }),
     );
     vi.spyOn(service, "execute").mockResolvedValue(unavailable());
-    render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await screen.findByText(listPrincipal());
     await prepare();
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
@@ -159,12 +157,11 @@ it.each([false, true])(
   },
 );
 it("aborts prior authority reads and ignores their late completion after an uncertain dispatch refusal", async () => {
-  vi.spyOn(service, "context")
+  mockEndpoint("context")
     .mockResolvedValueOnce(success("context"))
     .mockResolvedValue(emptyOffers());
   let priorFinish: ((value: Awaited<ReturnType<typeof service.authorityList>>) => void) | undefined;
-  const listing = vi
-    .spyOn(service, "authorityList")
+  const listing = mockEndpoint("authority.list")
     .mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -179,7 +176,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
       notice: { kind: "local", reason: "unreachable" },
     })
     .mockResolvedValue(unavailable());
-  render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   await prepare();
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
   fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
@@ -199,8 +196,7 @@ const revalidatingReads = async () => {
   let finishContext: ((value: Awaited<ReturnType<typeof service.context>>) => void) | undefined;
   let finishListing:
     ((value: Awaited<ReturnType<typeof service.authorityList>>) => void) | undefined;
-  const context = vi
-    .spyOn(service, "context")
+  const context = mockEndpoint("context")
     .mockResolvedValueOnce(success("context"))
     .mockImplementation(
       () =>
@@ -208,8 +204,7 @@ const revalidatingReads = async () => {
           finishContext = resolve;
         }),
     );
-  const listing = vi
-    .spyOn(service, "authorityList")
+  const listing = mockEndpoint("authority.list")
     .mockResolvedValueOnce(success("authority.list"))
     .mockImplementation(
       () =>
@@ -218,7 +213,7 @@ const revalidatingReads = async () => {
         }),
     );
   vi.spyOn(service, "execute").mockResolvedValue(unavailable());
-  render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   await screen.findByText(listPrincipal());
   await prepare();
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
@@ -277,6 +272,30 @@ it.each(["context", "listing"] as const)(
     expect(context).toHaveBeenCalledTimes(3);
   },
 );
+const loseManagement = async (
+  user: ReturnType<typeof userEvent.setup>,
+  reviewed: boolean,
+  returned: boolean,
+  context: ReturnType<typeof mockEndpoint<"context">>,
+  listing: ReturnType<typeof mockEndpoint<"authority.list">>,
+) => {
+  if (reviewed) {
+    await prepare();
+    if (returned) {
+      await user.click(screen.getByRole("button", { name: "Return to editing" }));
+      context.mockResolvedValue(emptyOffers());
+      listing.mockResolvedValue(refused());
+      await user.click(screen.getByRole("button", { name: "Reload actors" }));
+    } else {
+      await user.click(screen.getByRole("button", { name: "Record changes" }));
+    }
+  } else {
+    await author();
+    context.mockResolvedValue(emptyOffers());
+    listing.mockResolvedValue(refused());
+    await user.click(screen.getByRole("button", { name: "Reload actors" }));
+  }
+};
 it.each([
   { stage: "unprepared", reviewed: false, returned: false },
   { stage: "reviewed", reviewed: true, returned: false },
@@ -286,9 +305,9 @@ it.each([
   async ({ reviewed, returned }) => {
     const user = userEvent.setup();
     const logout = vi.fn().mockResolvedValue(undefined);
-    const context = vi.spyOn(service, "context").mockResolvedValue(success("context"));
-    const listing = vi.spyOn(service, "authorityList").mockResolvedValue(success("authority.list"));
-    vi.spyOn(service, "list").mockResolvedValue({
+    const context = mockEndpoint("context").mockResolvedValue(success("context"));
+    const listing = mockEndpoint("authority.list").mockResolvedValue(success("authority.list"));
+    mockEndpoint("case.list").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: wireReply("case.list"),
@@ -297,37 +316,32 @@ it.each([
       context.mockResolvedValue(emptyOffers());
       return Promise.resolve(unavailable());
     });
-    render(<Dashboard token="synthetic-token" onLogout={logout} />);
-    await user.click(await screen.findByRole("button", { name: "Authority" }));
-    if (reviewed) {
-      await prepare();
-      if (returned) {
-        await user.click(screen.getByRole("button", { name: "Return to editing" }));
-        context.mockResolvedValue(emptyOffers());
-        listing.mockResolvedValue(refused());
-        await user.click(screen.getByRole("button", { name: "Reload actors" }));
-      } else {
-        await user.click(screen.getByRole("button", { name: "Record changes" }));
-      }
-    } else {
-      await author();
-      context.mockResolvedValue(emptyOffers());
-      listing.mockResolvedValue(refused());
-      await user.click(screen.getByRole("button", { name: "Reload actors" }));
-    }
+    render(
+      <TestSession logout={logout}>
+        <Dashboard />
+      </TestSession>,
+    );
+    await user.click(await screen.findByRole("link", { name: "Authority" }));
+    await loseManagement(user, reviewed, returned, context, listing);
     await waitFor(() => {
-      expect(context).toHaveBeenCalledTimes(3);
+      expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 3);
     });
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Cases" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
+    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     await user.click(screen.getByRole("button", { name: "Discard and leave" }));
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
     );
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: "Cases" })).not.toBeDisabled();
+    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     expect(screen.queryByText("synthetic-authored")).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Cases" }));
+    await user.click(screen.getByRole("link", { name: "Cases" }));
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(logout).toHaveBeenCalledOnce();
   },
@@ -387,10 +401,10 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
 it.each(["lost", "unknown"] as const)(
   "removes the obsolete %s attempt alert after exact authority replay acceptance",
   async (first) => {
-    vi.spyOn(service, "context").mockResolvedValue(success("context"));
-    vi.spyOn(service, "authorityList").mockResolvedValue(success("authority.list"));
+    mockEndpoint("context").mockResolvedValue(success("context"));
+    mockEndpoint("authority.list").mockResolvedValue(success("authority.list"));
     const execute = authorityRecoveryDelivery(first);
-    render(<AuthorityPanel token="synthetic-token" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     const retry = await screen.findByRole("button", { name: "Send again" });

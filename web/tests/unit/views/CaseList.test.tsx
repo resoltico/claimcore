@@ -29,7 +29,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
         }),
     );
   vi.stubGlobal("fetch", fetch);
-  render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
   await screen.findByRole("button", {
     name: "Open a case",
   });
@@ -89,7 +89,7 @@ it.each(["access", "session"])(
       "fetch",
       vi.fn().mockResolvedValueOnce(page(true)).mockResolvedValueOnce(failure),
     );
-    render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+    render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
     fireEvent.click(
       await screen.findByRole("button", {
         name: "Load more cases",
@@ -121,7 +121,7 @@ it("retains the last accepted page advice after a request-local failure", async 
       .mockResolvedValueOnce(page(true))
       .mockRejectedValueOnce(new Error("Synthetic transport failure")),
   );
-  render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(
     await screen.findByRole("button", {
       name: "Load more cases",

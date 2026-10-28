@@ -8,13 +8,11 @@ import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 import { useCallback, useState } from "react";
 import type { CaseSummary, ServiceResponse } from "../api/service";
-import { service } from "../api/service";
 import { CharacterWarning } from "../components/BusinessValue";
 import { CopyValue } from "../components/CopyValue";
-import { useRetryablePage } from "../hooks/useRead";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 
 type CaseListProps = {
-  token: string;
   onSelect: (caseReference: string) => void;
   onOpen: () => void;
 };
@@ -94,30 +92,30 @@ const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void
   const p = usePresentation();
   return (
     <div className="section-heading">
-      <h2 id="case-list-title">{p.text("ui.cases")}</h2>
+      <h1 id="case-list-title">{p.text("ui.cases")}</h1>
       {mayOpen ? <Button onPress={onOpen}>{p.actLabel("OPEN")}</Button> : null}
     </div>
   );
 };
 
-const useCaseList = (token: string) => {
-  const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => service.list(cursor, 50, token, signal),
-    [token],
+const useCaseList = () => {
+  const input = useCallback(
+    (cursor: string | null) => ({ ...(cursor === null ? {} : { cursor }), limit: 50 }),
+    [],
   );
-  const page = useRetryablePage<
-    ServiceResponse<"case.list">,
-    CaseSummary,
-    NonNullable<ReturnType<typeof casePage>>
-  >(request, casePage);
+  const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof casePage>>>(
+    "case.list",
+    input,
+    casePage,
+  );
   const mayOpen = page.page?.offers.some((offer) => offer.kind === "OPEN") ?? false;
   return { ...page, mayOpen };
 };
 
-export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
+export const CaseList = ({ onSelect, onOpen }: CaseListProps) => {
   const p = usePresentation();
   const [lookup, setLookup] = useState("");
-  const { items, cursor, message, loading, load, mayOpen, page } = useCaseList(token);
+  const { items, cursor, message, loading, load, mayOpen, page } = useCaseList();
   return (
     <section aria-labelledby="case-list-title">
       <CaseHeading mayOpen={mayOpen} onOpen={onOpen} />

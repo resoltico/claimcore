@@ -13,7 +13,7 @@ const emptyFeedback: ObservationFeedback = {
   loading: false,
 };
 
-export const useOperationObservation = (token: string, initialOperationId = "") => {
+export const useOperationObservation = (credential: string, initialOperationId = "") => {
   const [operationId, setOperationId] = useState(initialOperationId);
   const controller = useRef<AbortController | null>(null);
   const [feedback, setFeedback] = useState(emptyFeedback);
@@ -36,7 +36,7 @@ export const useOperationObservation = (token: string, initialOperationId = "") 
     const current = new AbortController();
     controller.current = current;
     setFeedback({ ...emptyFeedback, loading: true });
-    const result = await service.observe(operationId, token, current.signal);
+    const result = await service.observe(operationId, credential, current.signal);
     if (current.signal.aborted) {
       return;
     }

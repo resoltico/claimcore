@@ -34,13 +34,13 @@ it("reload notice retains identity only and resolves without sending a mutation"
     },
   });
   const execute = vi.spyOn(service, "execute");
-  render(<UnresolvedNotice token="token" />);
+  render(<UnresolvedNotice />);
   expect(
     screen.queryByRole("button", {
       name: /retry exact|send again/iu,
     }),
   ).toBeNull();
-  await userEvent.click(getButton("Check outcome"));
+  await userEvent.click(getButton(/^Check outcome /u));
   expect(resolve).toHaveBeenCalledExactlyOnceWith(identity.operationId, "token");
   expect(execute).not.toHaveBeenCalled();
   expect(unresolvedOperation.read()).toBeNull();
@@ -52,7 +52,7 @@ const closeOperation = () =>
       subject: "CASE",
       kind: "CLOSE",
       current,
-      token: "token",
+      credential: "token",
       onLockChange: vi.fn(),
     });
     useUnresolvedOperation(model);
@@ -136,8 +136,8 @@ it("resolve acceptance returns the stored receipt", async () => {
       },
     },
   });
-  render(<UnresolvedNotice token="token" />);
-  await userEvent.click(getButton("Check outcome"));
+  render(<UnresolvedNotice />);
+  await userEvent.click(getButton(/^Check outcome /u));
   await waitFor(() => {
     expect(unresolvedOperation.read()).toBeNull();
   });

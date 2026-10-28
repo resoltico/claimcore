@@ -6,7 +6,7 @@ import { App } from "../../src/App";
 
 const useSession = vi.hoisted(() => vi.fn());
 
-vi.mock("../../src/hooks/useSession", () => ({ useSession }));
+vi.mock("../../src/session/useSession", () => ({ useSession }));
 
 const actions = () => ({ logout: vi.fn(), refresh: vi.fn() });
 

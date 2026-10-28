@@ -1,7 +1,7 @@
 import { businessFieldCount } from "../support/inventory";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { useSession } from "../../src/hooks/useSession";
+import { useSession } from "../../src/session/useSession";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { response } from "../support/service-ui.fixtures";
 

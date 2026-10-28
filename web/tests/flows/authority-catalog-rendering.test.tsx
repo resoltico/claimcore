@@ -161,7 +161,7 @@ it.each(authorityActs)(
     expect(authorityActs).toHaveLength(5);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
-    render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));

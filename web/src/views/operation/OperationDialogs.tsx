@@ -29,9 +29,9 @@ export const AcceptedOperation = ({
           <NoticeView value={message} />
         </p>
       )}
-      <h2 ref={heading} tabIndex={-1} id="accepted-title">
+      <h1 ref={heading} tabIndex={-1} id="accepted-title">
         {p.text("ui.acceptedOperation")}
-      </h2>
+      </h1>
       <p>
         {p.text("ui.operationAccepted", {
           operationId: receipt.operationId,

@@ -43,13 +43,11 @@ describe("catalog rendering", () => {
         />
       </>,
     );
-    const input = screen.getByLabelText("Incident date", {
-      exact: true,
-    });
-    expect(input).toHaveValue("2026-09-01");
+    const input = screen.getByRole("group", { name: "Incident date" });
+    expect(document.querySelector('input[name="incidentDate"]')).toHaveValue("2026-09-01");
     const descriptionId = input.getAttribute("aria-describedby");
     expect(descriptionId).not.toBeNull();
-    expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(
+    expect(document.getElementById(descriptionId?.split(" ").at(-1) ?? "")).toHaveTextContent(
       createPresenter(defaults).fieldMeaning(incident.name),
     );
     expect(screen.getAllByText(createPresenter(defaults).fieldMeaning(incident.name))).toHaveLength(
@@ -98,7 +96,6 @@ const acceptsOperation = async (): Promise<void> => {
   const committed = vi.fn();
   render(
     <OperationEditor
-      token="token"
       definition={definition}
       current={current}
       initialAct="CLOSE"

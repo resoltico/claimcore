@@ -232,7 +232,6 @@ it.each(acts)(
     vi.stubGlobal("fetch", caseTransport(calls));
     render(
       <OperationEditor
-        token="token"
         definition={productMetadata}
         current={act.kind === "OPEN" ? null : currentFor(act.kind)}
         initialAct={act.kind}

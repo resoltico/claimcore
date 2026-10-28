@@ -20,9 +20,10 @@ it("applies batched preference changes to current state even through a stale eve
   expect(result.current.language).toBe("ar");
   expect(result.current.displayLocale).toBe("lv-LV");
   expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({
-    version: 1,
+    version: 2,
     language: "ar",
     displayLocale: "lv-LV",
+    theme: "SYSTEM" as const,
   });
   act(() => {
     stale({ kind: "DISPLAY_LOCALE", displayLocale: "ar-EG" });
@@ -58,7 +59,7 @@ it("preserves the independent preference through bounded reproducible event sequ
       ({ displayLocale } = change);
     }
     actual = changePreferences(actual, change);
-    expect(actual).toEqual({ language, displayLocale });
+    expect(actual).toEqual({ language, displayLocale, theme: "SYSTEM" });
     expect(before).not.toBe(actual);
   }
 });

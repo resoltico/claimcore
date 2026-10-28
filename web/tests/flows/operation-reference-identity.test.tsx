@@ -62,7 +62,6 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const committed = vi.fn();
   render(
     <OperationEditor
-      token="token"
       definition={definition}
       current={current}
       initialAct="CLOSE"

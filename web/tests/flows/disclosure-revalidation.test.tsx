@@ -81,7 +81,6 @@ for (const retainCurrent of [false, true]) {
       const user = userEvent.setup();
       render(
         <CaseDetail
-          token="token"
           caseReference={fields.caseReference}
           reloadSignal={0}
           definition={definition.catalog}

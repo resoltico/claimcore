@@ -110,7 +110,7 @@ test("browser registers service principals, changes scoped grants and enablement
   const source = await syntheticPrincipals();
   const reference = `AUTHORITY-${randomUUID()}`;
   await openCase(page, reference);
-  await page.getByRole("button", { name: "Authority", exact: true }).click();
+  await page.getByRole("link", { name: "Authority", exact: true }).click();
   const subject = `browser-service-${randomUUID()}`;
   await authorityTarget(page, source.issuer, subject);
   await submitAuthority(page, "ACCEPTED");

@@ -1,3 +1,4 @@
+import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -21,7 +22,7 @@ const startPseudo = async (page: Page) => {
     ...registration({ claimantName: "A\u0308 العربية\u200D", claimedAmount: "1.0000" }),
   };
   for (const [name, value] of Object.entries(values)) {
-    await page.locator(`input[data-field-name="${name}"]`).fill(value);
+    await fillBusinessField(page, name, value);
   }
   const pending = await pauseJsonReply(page, "operation.preview");
   await page.locator('.operation-editor button[type="submit"]').click();
@@ -49,7 +50,11 @@ test("authors and prepares in seeded pseudolocale then switches out with draft, 
   await expect(dialog).toContainText(identity.operationId);
 
   for (const [name, value] of Object.entries(values)) {
-    await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveValue(value);
+    const field = page.locator(`[data-field-name="${name}"]`);
+    const segments = field.getByRole("spinbutton");
+    await expect(
+      (await segments.count()) > 0 ? field.locator('input[type="hidden"]') : field,
+    ).toHaveValue(value);
   }
   expect(requests).toHaveLength(0);
   await expect(page.locator('option[value="en-XA"]')).toHaveCount(0);

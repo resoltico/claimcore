@@ -1,8 +1,10 @@
+import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
+import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
@@ -48,7 +50,7 @@ const reads = (offered = true) => {
   if (context.outcome.kind !== "SUCCEEDED") {
     throw new Error("Context fixture absent.");
   }
-  vi.spyOn(service, "context").mockResolvedValue({
+  mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
@@ -63,7 +65,7 @@ const reads = (offered = true) => {
       },
     },
   });
-  vi.spyOn(service, "authorityList").mockResolvedValue({
+  mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
@@ -87,11 +89,10 @@ afterEach(() => {
 it("loads no grants without explicit core-offered selection and discards a late prior target", async () => {
   reads();
   const old = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
-  const request = vi
-    .spyOn(service, "authorityGrants")
+  const request = mockEndpoint("authority.grants")
     .mockImplementationOnce(() => old.promise)
     .mockResolvedValueOnce(grants(second));
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   const buttons = await screen.findAllByRole("button", { name: "View grants" });
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(buttons[0]!);
@@ -100,7 +101,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
   });
   fireEvent.click(buttons[1]!);
   await screen.findByText(`GRANT-${second}`);
-  expect(request.mock.calls[0]?.[3]?.aborted).toBe(true);
+  expect(request.mock.calls[0]?.[2]?.aborted).toBe(true);
   await act(() =>
     Promise.resolve().then(() => {
       old.finish(grants(first));
@@ -112,35 +113,27 @@ it("loads no grants without explicit core-offered selection and discards a late 
 });
 it("consumes the core read offer rather than inferring it from actor rows", async () => {
   reads(false);
-  const request = vi.spyOn(service, "authorityGrants");
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  const request = mockEndpoint("authority.grants");
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   await screen.findByText(`listed-${first}`);
   expect(screen.queryByRole("button", { name: "View grants" })).toBeNull();
   expect(request).not.toHaveBeenCalled();
 });
 it("keeps only the same actor's page on a transient error and follows server continuations", async () => {
-  const request = vi
-    .spyOn(service, "authorityGrants")
+  const request = mockEndpoint("authority.grants")
     .mockResolvedValueOnce(grants(first, "next"))
     .mockResolvedValueOnce({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     })
     .mockResolvedValueOnce(grants(first, null, "SECOND-PAGE"));
-  render(
-    <AuthorityGrants
-      actorId={first}
-      token="token"
-      onBack={vi.fn()}
-      onDisclosureRefused={vi.fn()}
-    />,
-  );
+  render(<AuthorityGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   await screen.findByRole("alert");
   expect(screen.getByText(`GRANT-${first}`)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await screen.findByText("All grants returned for this review are shown.");
-  expect(request.mock.calls.map((call) => call[1])).toEqual([null, "next", "next"]);
+  expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
 
 const prepare = async () => {
@@ -180,19 +173,19 @@ it.each(["session", "access"])(
   "clears all selected disclosures on %s refusal while preserving exact uncertain mutation bytes",
   async (kind) => {
     reads();
-    const grant = vi.spyOn(service, "authorityGrants").mockResolvedValue(refused(kind));
+    const grant = mockEndpoint("authority.grants").mockResolvedValue(refused(kind));
     const execute = vi.spyOn(service, "execute").mockResolvedValue({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     });
-    render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     await screen.findByRole("button", { name: "Send again" });
     const original = execute.mock.calls[0]?.[0];
     fireEvent.click(screen.getAllByRole("button", { name: "View grants" })[0]!);
     await waitFor(() => {
-      expect(service.authorityList).toHaveBeenCalledTimes(2);
+      expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
     });
     expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
     expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
@@ -208,7 +201,7 @@ it.each(["session", "access"])(
 it("ignores an in-flight grant page after an accepted authority mutation resets selection", async () => {
   reads();
   const old = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
-  const request = vi.spyOn(service, "authorityGrants").mockReturnValue(old.promise);
+  const request = mockEndpoint("authority.grants").mockReturnValue(old.promise);
   vi.spyOn(service, "execute").mockImplementation((prepared) => {
     const receipt = wireReply("operation.execute", "AUTHORITY");
     if (receipt.outcome.kind !== "ACCEPTED" || receipt.outcome.data.subject.kind !== "AUTHORITY") {
@@ -234,7 +227,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
       },
     });
   });
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
   await waitFor(() => {
     expect(request).toHaveBeenCalledTimes(1);
@@ -242,9 +235,9 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
   await prepare();
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
   await waitFor(() => {
-    expect(service.authorityList).toHaveBeenCalledTimes(2);
+    expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
   });
-  expect(request.mock.calls[0]?.[3]?.aborted).toBe(true);
+  expect(request.mock.calls[0]?.[2]?.aborted).toBe(true);
   await act(() =>
     Promise.resolve().then(() => {
       old.finish(grants(first));
@@ -257,15 +250,14 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
 it("clears pending pagination on back and never restores it on late completion", async () => {
   reads();
   const late = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
-  const request = vi
-    .spyOn(service, "authorityGrants")
+  const request = mockEndpoint("authority.grants")
     .mockResolvedValueOnce(grants(first, "next"))
     .mockReturnValueOnce(late.promise);
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   fireEvent.click(screen.getByRole("button", { name: "Back to actors" }));
-  expect(request.mock.calls[1]?.[3]?.aborted).toBe(true);
+  expect(request.mock.calls[1]?.[2]?.aborted).toBe(true);
   await act(() =>
     Promise.resolve().then(() => {
       late.finish(grants(first));
@@ -276,8 +268,7 @@ it("clears pending pagination on back and never restores it on late completion",
 });
 
 it("resets only the selected grant page on invalid continuation and reloads it without a cursor", async () => {
-  const request = vi
-    .spyOn(service, "authorityGrants")
+  const request = mockEndpoint("authority.grants")
     .mockResolvedValueOnce(grants(first, "old"))
     .mockResolvedValueOnce({
       kind: "outcome",
@@ -295,14 +286,7 @@ it("resets only the selected grant page on invalid continuation and reloads it w
     })
     .mockResolvedValueOnce(grants(first));
   const onRefused = vi.fn();
-  render(
-    <AuthorityGrants
-      actorId={first}
-      token="token"
-      onBack={vi.fn()}
-      onDisclosureRefused={onRefused}
-    />,
-  );
+  render(<AuthorityGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={onRefused} />);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   await screen.findByRole("alert");
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
@@ -312,7 +296,7 @@ it("resets only the selected grant page on invalid continuation and reloads it w
   expect(request).toHaveBeenCalledTimes(2);
   fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
   await screen.findByText(`GRANT-${first}`);
-  expect(request.mock.calls[2]?.[1]).toBeNull();
+  expect(request.mock.calls[2]?.[1].cursor ?? null).toBeNull();
   expect(onRefused).not.toHaveBeenCalled();
 });
 
@@ -337,43 +321,49 @@ const focusedBack = () => {
 };
 it("returns focus to the originating grant control when it is still present", async () => {
   reads();
-  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(first));
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  mockEndpoint("authority.grants").mockResolvedValue(grants(first));
+  render(<Dashboard />);
   const origin = (await screen.findAllByRole("button", { name: "View grants" }))[0]!;
   fireEvent.click(origin);
   await screen.findByText(`GRANT-${first}`);
   focusedBack();
-  expect(origin).toHaveFocus();
+  await waitFor(() => {
+    expect(origin).toHaveFocus();
+  });
 });
 it("focuses the stable actors heading during a pending reload and keeps it after the late page", async () => {
   reads();
-  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(first));
+  mockEndpoint("authority.grants").mockResolvedValue(grants(first));
   const late = pending<Awaited<ReturnType<typeof service.authorityList>>>();
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  render(<Dashboard />);
   fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
   await screen.findByText(`GRANT-${first}`);
-  vi.mocked(service.authorityList).mockReturnValueOnce(late.promise);
+  getEndpointMock("authority.list").mockReturnValueOnce(late.promise);
   fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
   expect(screen.queryByRole("button", { name: "View grants" })).toBeNull();
   focusedBack();
   const heading = screen.getByRole("heading", { name: "Actors and grants" });
-  expect(heading).toHaveFocus();
+  await waitFor(() => {
+    expect(heading).toHaveFocus();
+  });
   await act(() =>
     Promise.resolve().then(() => {
       late.finish(actorPage([first]));
     }),
   );
   await screen.findByRole("button", { name: "View grants" });
-  expect(heading).toHaveFocus();
+  await waitFor(() => {
+    expect(heading).toHaveFocus();
+  });
 });
 it("focuses the actors heading when a page-two origin is absent from refreshed page one", async () => {
   reads();
-  vi.mocked(service.authorityList)
+  getEndpointMock("authority.list")
     .mockResolvedValueOnce(actorPage([first], "second"))
     .mockResolvedValueOnce(actorPage([second]))
     .mockResolvedValueOnce(actorPage([first]));
-  vi.spyOn(service, "authorityGrants").mockResolvedValue(grants(second));
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  mockEndpoint("authority.grants").mockResolvedValue(grants(second));
+  render(<Dashboard />);
   fireEvent.click(await screen.findByRole("button", { name: "More actors" }));
   await screen.findByText(`listed-${second}`);
   fireEvent.click(screen.getAllByRole("button", { name: "View grants" })[1]!);
@@ -382,24 +372,47 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
   await screen.findByText(`listed-${first}`);
   expect(screen.queryByText(`listed-${second}`)).toBeNull();
   focusedBack();
-  expect(screen.getByRole("heading", { name: "Actors and grants" })).toHaveFocus();
+  await waitFor(() => {
+    expect(screen.getByRole("heading", { name: "Actors and grants" })).toHaveFocus();
+  });
 });
 it("does not restore actor focus when global disclosure refusal removes the selected pane", async () => {
   reads();
-  vi.spyOn(service, "authorityGrants")
+  mockEndpoint("authority.grants")
     .mockResolvedValueOnce(grants(first, "next"))
     .mockResolvedValueOnce(refused("session"));
-  render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
   await screen.findByText(`GRANT-${first}`);
   screen.getByRole("button", { name: "Back to actors" }).focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await waitFor(() => {
-    expect(service.authorityList).toHaveBeenCalledTimes(2);
+    expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
   });
   await screen.findByText(`listed-${first}`);
   expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
   expect(focus).not.toHaveBeenCalled();
   expect(document.body).toHaveFocus();
+});
+it("focuses the authority route heading without restoring an actor after disclosure refusal", async () => {
+  reads();
+  mockEndpoint("authority.grants")
+    .mockResolvedValueOnce(grants(first, "next"))
+    .mockResolvedValueOnce(refused("session"));
+  render(<Dashboard />);
+  const origin = (await screen.findAllByRole("button", { name: "View grants" }))[0]!;
+  fireEvent.click(origin);
+  await screen.findByText(`GRANT-${first}`);
+  screen.getByRole("button", { name: "Back to actors" }).focus();
+  const focus = vi.spyOn(HTMLElement.prototype, "focus");
+  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  await waitFor(() => {
+    expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Authority", level: 1 })).toHaveFocus();
+  });
+  expect(
+    focus.mock.contexts.some((target) => target instanceof HTMLElement && target.id === origin.id),
+  ).toBe(false);
+  expect(origin).not.toHaveFocus();
 });

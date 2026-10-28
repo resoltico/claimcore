@@ -1,3 +1,4 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
@@ -10,17 +11,17 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 const preparedHook = async () => {
   const view = renderHook(
-    ({ token }) =>
+    ({ credential }) =>
       useOperation({
         subject: "AUTHORITY",
         kind: "REGISTER",
         current: null,
-        token,
+        credential,
         onLockChange: vi.fn(),
       }),
     {
       initialProps: {
-        token: "first",
+        credential: "first",
       },
     },
   );
@@ -79,7 +80,7 @@ it("ignores completion from a superseded session while retaining the exact froze
     task = view.result.current.execute();
   });
   view.rerender({
-    token: "second",
+    credential: "second",
   });
   expect(view.result.current.priorUncertain).toBe(true);
   await act(async () => {
@@ -196,7 +197,7 @@ it("observation cannot resolve pending authority content", async () => {
       reason: "unreachable",
     },
   });
-  vi.spyOn(service, "observe").mockResolvedValue({
+  mockEndpoint("operation.observe").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: wireReply("operation.observe"),

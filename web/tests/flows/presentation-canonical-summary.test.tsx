@@ -16,7 +16,7 @@ it.each(["en", "lv", "ar"])(
     });
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 1, language, displayLocale: "ar-EG" }),
+      JSON.stringify({ version: 2, language, displayLocale: "ar-EG", theme: "SYSTEM" as const }),
     );
     render(
       <CaseFieldsView

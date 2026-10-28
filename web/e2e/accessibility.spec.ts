@@ -61,7 +61,10 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();
   await page.reload({ waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toHaveCount(0);
+  await expect(page.locator("section.receipt")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);
 });

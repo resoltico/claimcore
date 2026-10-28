@@ -28,15 +28,27 @@ export const seedPresentation = async (
     ({ key, preferences }) => {
       localStorage.setItem(key, JSON.stringify(preferences));
     },
-    { key: preferenceKey, preferences: { version: 1, language, displayLocale } },
+    { key: preferenceKey, preferences: { version: 2, language, displayLocale, theme: "SYSTEM" } },
   );
 };
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
   ({ en, lv, ar })[language]["act.OPEN.label"];
+const openPreferences = async (page: Page): Promise<boolean> => {
+  if (await page.locator('select[id$="-language"]:visible').count()) {
+    return false;
+  }
+  const settings = page.locator("[data-settings-button]");
+  if (!(await settings.isVisible())) {
+    await page.locator("header .compact-menu > summary").click();
+  }
+  await settings.click();
+  return true;
+};
 // Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
+  const opened = await openPreferences(page);
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
@@ -44,6 +56,9 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(control).toHaveCount(1);
   await control.selectOption(language);
   await expect(control).toHaveValue(language);
+  if (opened) {
+    await page.keyboard.press("Escape");
+  }
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
     language === "en-XA" ? "en" : language,
@@ -51,6 +66,7 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
 };
 export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<void> => {
+  const opened = await openPreferences(page);
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
@@ -58,6 +74,29 @@ export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<v
   await expect(control).toHaveCount(1);
   await control.selectOption(locale);
   await expect(control).toHaveValue(locale);
+  if (opened) {
+    await page.keyboard.press("Escape");
+  }
+};
+export const expectPreferences = async (
+  page: Page,
+  expected: { language?: Language; displayLocale?: DisplayLocale },
+) => {
+  const opened = await openPreferences(page);
+  if (expected.language !== undefined) {
+    await expect(page.locator('select[id$="-language"]')).toHaveValue(expected.language);
+  }
+  if (expected.displayLocale !== undefined) {
+    await expect(page.locator('select[id$="-format"]')).toHaveValue(expected.displayLocale);
+  }
+  if (expected.language !== undefined && expected.language !== "en-XA") {
+    await expect(
+      page.getByText(ui(expected.language, "ui.preferencesHint"), { exact: true }),
+    ).toBeVisible();
+  }
+  if (opened) {
+    await page.keyboard.press("Escape");
+  }
 };
 export const trackRequests = (page: Page) => {
   const requests: string[] = [];

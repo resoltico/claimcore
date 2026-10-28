@@ -10,7 +10,7 @@ const Workspace = ({ epoch }: { epoch: number }) => {
     subject: "AUTHORITY",
     kind: "REGISTER",
     current: null,
-    token: "synthetic",
+    credential: "synthetic",
     onLockChange: locked,
   });
   return (

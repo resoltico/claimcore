@@ -18,7 +18,11 @@ it("renders every admitted diagnostic identity in every real language", () => {
       ]),
     );
     for (const language of ["en", "lv", "ar"] as const) {
-      const value = renderCatalogKey({ language, displayLocale: "en-GB" }, id, values);
+      const value = renderCatalogKey(
+        { language, displayLocale: "en-GB", theme: "SYSTEM" as const },
+        id,
+        values,
+      );
       expect(value, id).not.toBe(id);
       expect(value.length, id).toBeGreaterThan(0);
       expect(value, id).not.toMatch(/\{[a-zA-Z]+\}/u);

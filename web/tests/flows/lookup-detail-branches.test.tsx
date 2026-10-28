@@ -21,7 +21,6 @@ it("does not request history or acts for a missing case", async () => {
   fetch.mockResolvedValueOnce(response("case.get", "REJECTED", unavailable));
   render(
     <CaseDetail
-      token="token"
       caseReference="MISSING"
       reloadSignal={0}
       definition={definition.catalog}
@@ -67,7 +66,6 @@ it("keeps a failed history page request-local without erasing current case data"
   );
   render(
     <CaseDetail
-      token="token"
       caseReference="CASE-1"
       reloadSignal={0}
       definition={definition.catalog}
@@ -102,7 +100,6 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
-      token="token"
       caseReference="CASE-1"
       reloadSignal={0}
       definition={definition.catalog}
@@ -141,7 +138,7 @@ it("reports absent and malformed operation observations without leaving stale re
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
-  render(<OperationLookup token="token" definition={definition} />);
+  render(<OperationLookup definition={definition} />);
   expect(
     screen.getByRole("button", {
       name: "Look up recorded result",
@@ -164,7 +161,7 @@ it("reports a found observation without a receipt as a protocol failure", async 
       kind: "FOUND",
     }),
   );
-  render(<OperationLookup token="token" definition={definition} />);
+  render(<OperationLookup definition={definition} />);
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(
     screen.getByRole("button", {
@@ -187,7 +184,7 @@ it("focuses and describes invalid operation identity then clears the stale error
     }),
   );
   const user = userEvent.setup();
-  render(<OperationLookup token="token" definition={definition} />);
+  render(<OperationLookup definition={definition} />);
   const input = screen.getByLabelText("Exact operation ID");
   await user.type(input, "invalid");
   await user.click(
@@ -217,7 +214,7 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   );
   const selected = vi.fn();
   const user = userEvent.setup();
-  render(<CaseList token="token" onSelect={selected} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={selected} onOpen={vi.fn()} />);
   const find = screen.getByRole("button", {
     name: "Find case",
   });

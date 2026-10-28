@@ -18,7 +18,6 @@ it("erased cases retain their exact reference and revision but expose no facts o
     );
   render(
     <CaseDetail
-      token="csrf"
       caseReference="ERASED-1"
       reloadSignal={0}
       definition={definition.catalog}

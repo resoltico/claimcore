@@ -12,7 +12,7 @@ export const prepareRoleFixture = async (page: Page) => {
   const reference = `NARROW-${randomUUID()}`;
   const unrelated = `UNRELATED-${randomUUID()}`;
   await openCase(page, unrelated);
-  await page.getByRole("button", { name: "Cases", exact: true }).click();
+  await page.getByRole("link", { name: "Cases", exact: true }).click();
   await openCase(page, reference);
   const inventory = await syntheticPrincipals();
   const principal = {

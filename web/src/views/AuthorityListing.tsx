@@ -1,8 +1,8 @@
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
 import type { Notice } from "../protocol/notices";
-import { service, type ServiceResponse } from "../api/service";
-import { useRetryablePage } from "../hooks/useRead";
+import { type ApiResult, type ServiceResponse } from "../api/service";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
@@ -27,31 +27,30 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
   );
 };
 type ListingProps = {
-  token: string;
   mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
   onDisclosureRestored: (source: "listing") => void;
 };
-const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
-  const request = useCallback(
-    async (cursor: string | null, signal: AbortSignal) => {
-      const result = await service.authorityList(cursor, token, signal);
-      if (
-        !signal.aborted &&
-        result.kind === "outcome" &&
-        result.value.outcome.kind === "SUCCEEDED"
-      ) {
+const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
+  const input = useCallback(
+    (cursor: string | null) => ({ ...(cursor === null ? {} : { cursor }), limit: 50 }),
+    [],
+  );
+  const restored = useCallback(
+    (result: ApiResult<ServiceResponse<"authority.list">>) => {
+      if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
         onDisclosureRestored("listing");
       }
-      return result;
     },
-    [token, onDisclosureRestored],
+    [onDisclosureRestored],
   );
-  return useRetryablePage<ServiceResponse<"authority.list">, Actor>(
-    request,
+  return useEndpointPage<"authority.list", Actor, NonNullable<ReturnType<typeof authorityPage>>>(
+    "authority.list",
+    input,
     authorityPage,
     onDisclosureRefused,
+    restored,
   );
 };
 export const AuthorityListing = (props: ListingProps) => {
@@ -59,9 +58,9 @@ export const AuthorityListing = (props: ListingProps) => {
   const page = useAuthorityPage(props);
   return (
     <section>
-      <h3 id="authority-actors-title" tabIndex={-1}>
+      <h2 id="authority-actors-title" tabIndex={-1}>
         {p.text("ui.actors")}
-      </h3>
+      </h2>
       <ul>
         {page.items.map((actor) => (
           <li key={actor.actorId}>

@@ -37,13 +37,7 @@ it("observes authority receipts as attributed metadata without assuming a case s
     "fetch",
     vi.fn().mockResolvedValueOnce(response("operation.observe", "SUCCEEDED", source.data)),
   );
-  render(
-    <OperationLookup
-      token="synthetic"
-      definition={definition}
-      initialOperationId={source.data.operationId}
-    />,
-  );
+  render(<OperationLookup definition={definition} initialOperationId={source.data.operationId} />);
   await userEvent.setup().click(
     screen.getByRole("button", {
       name: "Look up recorded result",

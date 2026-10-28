@@ -109,7 +109,7 @@ for (const [name, role, scoped] of cases) {
     await test.step("Open narrow actor session", () =>
       openAuthenticated(
         narrow,
-        role === null ? "ClaimCore" : "Cases",
+        role === null ? "No workspace views are available to this actor." : "Cases",
         "narrow-authenticated-state.json",
       ));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));

@@ -5,7 +5,7 @@ import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { HistoryEntry } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
-import { render, screen, waitFor } from "../support/presentation-test-support";
+import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
 import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
 const deferred = () => {
   let release!: (value: Response) => void;
@@ -18,14 +18,15 @@ const deferred = () => {
   };
 };
 const detail = (token = "token", reloadSignal = 0) => (
-  <CaseDetail
-    token={token}
-    caseReference={fields.caseReference}
-    reloadSignal={reloadSignal}
-    definition={definition.catalog}
-    onBack={vi.fn()}
-    onAct={vi.fn()}
-  />
+  <TestSession credential={token}>
+    <CaseDetail
+      caseReference={fields.caseReference}
+      reloadSignal={reloadSignal}
+      definition={definition.catalog}
+      onBack={vi.fn()}
+      onAct={vi.fn()}
+    />
+  </TestSession>
 );
 const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
   response("case.get", "SUCCEEDED", {

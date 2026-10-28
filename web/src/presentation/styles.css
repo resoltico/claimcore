@@ -1,12 +1,12 @@
 .review-values > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 0.65rem;
+  gap: var(--space-3);
 }
 
 .presentation-controls > div {
   display: grid;
-  gap: 0.3rem;
+  gap: var(--space-1);
   flex: 1 1 12rem;
   max-inline-size: 100%;
   min-inline-size: 0;
@@ -14,19 +14,19 @@
 }
 
 .presentation-bar {
-  inline-size: min(100% - 2rem, 72rem);
+  inline-size: min(100% - var(--space-6), 72rem);
   margin-inline: auto;
-  padding-block: 1rem;
+  padding-block: var(--space-4);
 }
 
 .presentation-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem 1rem;
+  gap: var(--space-3) var(--space-4);
   align-items: end;
   max-inline-size: 100%;
   min-inline-size: 0;
-  padding-block: 0.5rem;
+  padding-block: var(--space-2);
   overflow-wrap: anywhere;
 }
 
@@ -34,11 +34,11 @@
   inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
-  padding: 0.5rem;
-  border: 1px solid #617384;
-  border-radius: 0.35rem;
-  color: #17212b;
-  background: #fff;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .presentation-controls small,
@@ -57,7 +57,7 @@
   transform: scaleX(-1);
 }
 
-@media (width <= 42rem) {
+@media (width < 40rem) {
   .review-values > div {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -65,25 +65,25 @@
 
 .review-confirmation {
   display: inline-flex;
-  gap: 0.6rem;
+  gap: var(--space-3);
   align-items: center;
-  min-block-size: 2.75rem;
+  min-block-size: var(--target-primary);
   cursor: pointer;
 }
 
 .review-checkmark {
   display: inline-grid;
-  flex: 0 0 1.3rem;
+  flex: 0 0 var(--space-5);
   place-items: center;
-  inline-size: 1.3rem;
-  block-size: 1.3rem;
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
   border: 2px solid currentcolor;
-  border-radius: 0.2rem;
+  border-radius: var(--radius-sm);
 }
 
 .review-confirmation[data-focus-visible] {
-  outline: 2px solid currentcolor;
-  outline-offset: 3px;
+  outline: var(--focus-width) solid currentcolor;
+  outline-offset: var(--focus-offset);
 }
 
 .review-confirmation[data-disabled] {

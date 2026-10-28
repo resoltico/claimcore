@@ -1,3 +1,4 @@
+import { useCredential } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
@@ -13,7 +14,6 @@ import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
 
 type CaseDetailProps = {
-  token: string;
   caseReference: string;
   reloadSignal: number;
   definition: CatalogDocument;
@@ -105,9 +105,9 @@ const CaseHeader = ({
   return (
     <>
       <div className="section-heading">
-        <h2 id="case-detail-title" tabIndex={-1}>
+        <h1 id="case-detail-title" tabIndex={-1}>
           {p.text("ui.caseDetail")}
-        </h2>
+        </h1>
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
@@ -118,9 +118,9 @@ const CaseHeader = ({
   );
 };
 
-const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: CaseDetailProps) => {
+const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetailProps) => {
   const p = usePresentation();
-  const current = useCaseDisclosure(caseReference, token);
+  const current = useCaseDisclosure(caseReference);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
@@ -148,7 +148,6 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
       ) : null}
       {current.historyModes.length ? (
         <CaseHistory
-          token={token}
           caseReference={caseReference}
           fields={definition.fields}
           modes={current.historyModes}
@@ -159,9 +158,12 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
   );
 };
 
-export const CaseDetail = (props: CaseDetailProps) => (
-  <CaseDisclosure
-    key={JSON.stringify([props.caseReference, props.token, props.reloadSignal])}
-    {...props}
-  />
-);
+export const CaseDetail = (props: CaseDetailProps) => {
+  const credential = useCredential();
+  return (
+    <CaseDisclosure
+      key={JSON.stringify([props.caseReference, credential, props.reloadSignal])}
+      {...props}
+    />
+  );
+};

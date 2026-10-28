@@ -324,7 +324,7 @@ export const logout = async (page: Page): Promise<void> => {
   await page.getByRole("button", { name: "Sign out" }).click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {

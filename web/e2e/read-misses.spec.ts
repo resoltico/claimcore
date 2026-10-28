@@ -16,7 +16,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expect(page.getByRole("button", { name: "Find case", exact: true })).toBeDisabled();
   await page.getByLabel("Handler's case reference (exact)").press("Enter");
   expect(requests).toHaveLength(0);
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   const operation = page
     .locator('section[aria-labelledby="operation-lookup-title"]')
     .getByRole("textbox");
@@ -55,7 +55,7 @@ test("hides absent case and operation identities behind neutral access refusals"
   await expect(page.getByText("Case was not found.", { exact: true })).toHaveCount(0);
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByLabel("Exact operation ID").fill(randomUUID());
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();

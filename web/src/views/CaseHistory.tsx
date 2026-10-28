@@ -3,8 +3,7 @@ import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import type { CatalogDocument, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
-import { service } from "../api/service";
-import { useRetryablePage } from "../hooks/useRead";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { ReceiptFields } from "../components/ReceiptFields";
@@ -151,7 +150,7 @@ const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
 type CaseHistoryProps = {
   modes?: ReadonlyArray<HistoryMode>;
   onDisclosureRefused?: () => void;
-  token: string;
+
   caseReference: string;
   fields: CatalogDocument["fields"];
 };
@@ -179,7 +178,6 @@ const HistoryPageActions = ({
   );
 };
 export const CaseHistory = ({
-  token,
   caseReference,
   fields,
   modes = summaryModes,
@@ -188,24 +186,21 @@ export const CaseHistory = ({
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
-  const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) =>
-      service.history(
-        {
-          caseReference,
-          cursor,
-          limit: 50,
-          detail: requestedDetail,
-        },
-        token,
-        signal,
-      ),
-    [caseReference, token, requestedDetail],
+  const input = useCallback(
+    (cursor: string | null) => ({
+      caseReference,
+      ...(cursor === null ? {} : { cursor }),
+      limit: 50,
+      detail: requestedDetail,
+    }),
+    [caseReference, requestedDetail],
   );
-  const { items, cursor, message, loading, load, page } = useRetryablePage<
-    ServiceResponse<"case.history">,
-    HistoryEntry
-  >(request, historyPage, onDisclosureRefused);
+  const { items, cursor, message, loading, load, page } = useEndpointPage<
+    "case.history",
+    HistoryEntry,
+    NonNullable<ReturnType<typeof historyPage>>
+  >("case.history", input, historyPage, onDisclosureRefused);
+
   return (
     <section aria-labelledby="history-title">
       <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>

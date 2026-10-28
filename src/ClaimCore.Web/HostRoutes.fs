@@ -182,4 +182,7 @@ module HostRoutes =
             .RequireRateLimiting("login")
         |> ignore
 
+        for pattern in [ "/cases/{**path}"; "/operations/{**path}"; "/authority/{**path}" ] do
+            application.MapFallback(pattern, RequestDelegate(fallback assets)) |> ignore
+
         application.MapFallback(RequestDelegate(fallback assets)) |> ignore

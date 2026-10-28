@@ -19,13 +19,15 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
     action: "CORRECT_INPUT",
     issues: [{ field: target, code }],
   });
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator("[data-error-summary] a").click();
   await expect(control).toBeFocused();
   await expect(control).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 };
 const openAuthority = async (page: Page, language: "en" | "lv" | "ar") => {
   await openAuthenticated(page);
-  await page.getByRole("button", { name: "Authority", exact: true }).click();
+  await page.getByRole("link", { name: "Authority", exact: true }).click();
   await selectLanguage(page, language);
 };
 for (const language of ["en", "lv", "ar"] as const) {

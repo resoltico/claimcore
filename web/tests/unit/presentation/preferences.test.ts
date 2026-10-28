@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import {
+  defaults,
   loadPreferences,
   parsePreferences,
   resolveLanguage,
@@ -18,15 +19,26 @@ it("admits the exact tag budget and refuses otherwise valid oversized tags", () 
   expect(resolveLanguage(`${tag}f`)).toBe("en");
 });
 it("accepts exactly bounded settings and refuses valid JSON beyond its storage budget", () => {
-  const json = '{"version":1,"language":"ar","displayLocale":"lv-LV"}';
+  const json = '{"version":2,"language":"ar","displayLocale":"lv-LV","theme":"SYSTEM"}';
   const bounded = json.padEnd(256, " ");
-  expect(parsePreferences(bounded)).toEqual({ language: "ar", displayLocale: "lv-LV" });
-  expect(parsePreferences(`${bounded} `)).toEqual({ language: "en", displayLocale: "en-GB" });
+  expect(parsePreferences(bounded)).toEqual({
+    language: "ar",
+    displayLocale: "lv-LV",
+    theme: "SYSTEM" as const,
+  });
+  expect(parsePreferences(`${bounded} `)).toEqual({
+    language: "en",
+    displayLocale: "en-GB",
+    theme: "SYSTEM" as const,
+  });
 });
-it("reads previously persisted version-one settings under their actual browser storage key", () => {
+it("resets version-one settings and accepts only the current stored record", () => {
   localStorage.setItem(
     "claimcore.presentation.v1",
     '{"version":1,"language":"lv","displayLocale":"ar-EG"}',
   );
-  expect(loadPreferences()).toEqual({ language: "lv", displayLocale: "ar-EG" });
+  expect(loadPreferences()).toEqual(defaults);
+  expect(parsePreferences('{"version":1,"language":"lv","displayLocale":"ar-EG"}')).toEqual(
+    defaults,
+  );
 });

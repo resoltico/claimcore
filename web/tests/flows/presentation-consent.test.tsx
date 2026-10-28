@@ -54,7 +54,7 @@ it.each(["token", "target"] as const)(
       completion = view.result.current.preview();
     });
     view.rerender({
-      token: changed === "token" ? "other-token" : "token",
+      credential: changed === "token" ? "other-token" : "token",
       target: changed === "target" ? { ...current, caseReference: "OTHER" } : current,
     });
     expect(view.result.current.review).toBeNull();

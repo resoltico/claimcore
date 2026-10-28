@@ -9,7 +9,7 @@ it("local transport cancellation is translated distinctly from missing informati
   });
   expect(notice).toEqual({ kind: "local", reason: "cancelled" });
   for (const language of ["en", "lv", "ar"] as const) {
-    const p = createPresenter({ language, displayLocale: "en-GB" });
+    const p = createPresenter({ language, displayLocale: "en-GB", theme: "SYSTEM" as const });
     expect(p.notice(notice)).not.toBe(p.notice({ kind: "local", reason: "incomplete" }));
   }
 });

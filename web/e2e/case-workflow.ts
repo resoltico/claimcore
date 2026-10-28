@@ -1,3 +1,4 @@
+import { fillNamedField } from "./typed-entry";
 import { businessFieldCount } from "../tests/support/inventory";
 import { expect, type Page } from "@playwright/test";
 
@@ -14,7 +15,7 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
       .replace(/[^a-z0-9]+/gu, "-")
       .slice(0, 58);
     await progress(`fill-${stage}`);
-    await page.getByLabel(label, { exact: true }).fill(value);
+    await fillNamedField(page, label, value);
   }
 };
 

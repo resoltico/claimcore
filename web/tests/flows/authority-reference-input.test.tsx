@@ -51,7 +51,7 @@ const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
     subject: "AUTHORITY",
     kind,
     current: null,
-    token: "synthetic-token",
+    credential: "synthetic-token",
     onLockChange: noLockChange,
   });
   return <OperationForm model={model} current={null} offered={[kind]} onAct={() => undefined} />;
@@ -165,9 +165,10 @@ it.each(
     localStorage.setItem(
       preferenceKey,
       JSON.stringify({
-        version: 1,
+        version: 2,
         language: locale.language,
         displayLocale: "en-GB",
+        theme: "SYSTEM" as const,
       }),
     );
     expectGrantReferencePath(active);
@@ -186,7 +187,7 @@ it.each(
       }),
     );
     await waitFor(() => {
-      expect(reference).toHaveFocus();
+      expect(screen.getByRole("alert")).toHaveFocus();
     });
     expect(preview).toHaveBeenCalledOnce();
     expect(preview.mock.calls[0]![0].input).toMatchObject({
@@ -205,5 +206,7 @@ it.each(
     });
     expect(reference).toHaveAttribute("aria-invalid", "true");
     expectReferenceDescription(reference, locale, true);
+    await user.click(within(screen.getByRole("alert")).getByRole("link"));
+    expect(reference).toHaveFocus();
   },
 );

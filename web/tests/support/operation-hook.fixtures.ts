@@ -6,17 +6,17 @@ import { current } from "./operation-form.fixtures";
 import { review } from "./service-foundation.fixtures";
 export const hook = () =>
   renderHook(
-    ({ token, target }) =>
+    ({ credential, target }) =>
       useOperation({
         subject: "CASE",
         kind: "CLOSE",
         current: target,
-        token,
+        credential,
         onLockChange: vi.fn(),
       }),
     {
       initialProps: {
-        token: "token",
+        credential: "token",
         target: current,
       },
     },

@@ -41,9 +41,10 @@ const preferences = (language: (typeof languages)[number]) => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 1,
+      version: 2,
       language,
       displayLocale: "lv-LV",
+      theme: "SYSTEM" as const,
     }),
   );
 };
@@ -128,7 +129,6 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   );
   const view = render(
     <CaseDetail
-      token="token"
       caseReference={value}
       reloadSignal={0}
       definition={definition.catalog}
@@ -183,7 +183,7 @@ it.each(languages)(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),
       );
-      const list = render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
+      const list = render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
       await waitFor(() => {
         expect(list.container.querySelector("li")).not.toBeNull();
       });

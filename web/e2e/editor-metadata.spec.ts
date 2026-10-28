@@ -24,7 +24,9 @@ test("prefills metadata fields and confirms dirty act changes before review", as
   await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("DECIDE");
   await discard.getByRole("button", { name: "Discard and change action" }).click();
   await progress("metadata-discarded");
-  await expect(page.getByLabel("Payment decision date")).toHaveValue("");
+  await expect(
+    page.locator('[data-field-name="paymentDecisionDate"] input[type="hidden"]'),
+  ).toHaveValue("");
   await reviewDraft(page, {
     "Payment decision date": "2026-09-03",
     "Amount to be paid": "300.25",

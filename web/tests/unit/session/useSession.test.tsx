@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { response, unavailable } from "../../support/service-ui.fixtures";
-import { useSession } from "../../../src/hooks/useSession";
+import { useSession } from "../../../src/session/useSession";
 
 const session = (data: Record<string, unknown>) => response("session", "SUCCEEDED", data);
 

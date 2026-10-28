@@ -22,7 +22,6 @@ const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
   const close = vi.fn();
   render(
     <OperationEditor
-      token="synthetic"
       definition={definition}
       current={current}
       initialAct={act}

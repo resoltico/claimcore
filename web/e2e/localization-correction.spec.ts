@@ -80,6 +80,8 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
     return;
   }
   const payment = page.locator('[name="act.groups.payment.kind"]');
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator('[data-error-summary] a[href="#field-act.groups.payment.kind"]').click();
   await expect(payment).toBeFocused();
   await expect(payment).toHaveAttribute("aria-invalid", "true");
   await expect(payment).toHaveAttribute(

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useOperationObservation } from "../../src/hooks/useOperationObservation";
-import { useSession } from "../../src/hooks/useSession";
+import { useSession } from "../../src/session/useSession";
 
 import { deferredResponse } from "../support/presentation-state.fixtures";
 import { operationId, response, unavailable } from "../support/service-ui.fixtures";

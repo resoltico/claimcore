@@ -1,5 +1,5 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { CaseHistory } from "../../src/views/CaseHistory";
-import { service } from "../../src/api/service";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -91,7 +91,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 it("a failed history read stops loading without inventing a successful empty page", async () => {
-  vi.spyOn(service, "history").mockResolvedValue({
+  mockEndpoint("case.history").mockResolvedValue({
     kind: "deliveryFailure",
     notice: {
       kind: "local",
@@ -99,13 +99,7 @@ it("a failed history read stops loading without inventing a successful empty pag
     },
     dispatched: false,
   });
-  render(
-    <CaseHistory
-      token="synthetic"
-      caseReference="SYNTHETIC"
-      fields={productMetadata.catalog.fields}
-    />,
-  );
+  render(<CaseHistory caseReference="SYNTHETIC" fields={productMetadata.catalog.fields} />);
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.queryByText("No accessible history entries returned.")).toBeNull();

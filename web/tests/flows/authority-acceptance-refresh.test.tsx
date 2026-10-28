@@ -1,3 +1,4 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
@@ -82,14 +83,12 @@ it.each(["context", "listing"] as const)(
     const contextRead = pending<Awaited<ReturnType<typeof service.context>>>();
     const listingRead = pending<Awaited<ReturnType<typeof service.authorityList>>>();
     const execution = pending<Awaited<ReturnType<typeof service.execute>>>();
-    vi.spyOn(service, "context")
-      .mockResolvedValueOnce(context())
-      .mockReturnValue(contextRead.promise);
-    vi.spyOn(service, "authorityList")
+    mockEndpoint("context").mockResolvedValueOnce(context()).mockReturnValue(contextRead.promise);
+    mockEndpoint("authority.list")
       .mockResolvedValueOnce(listing())
       .mockReturnValue(listingRead.promise);
     const execute = vi.spyOn(service, "execute").mockReturnValue(execution.promise);
-    render(<AuthorityPanel token="synthetic" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await selectEnabled();
     await author("synthetic-first");
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -148,16 +147,15 @@ const failedContext = (
 it.each(["transport", "host", "core"] as const)(
   "accepted operation surfaces %s context refresh failure and allows explicit fresh reload",
   async (kind) => {
-    const reads = vi
-      .spyOn(service, "context")
+    const reads = mockEndpoint("context")
       .mockResolvedValueOnce(context())
       .mockResolvedValueOnce(failedContext(kind))
       .mockResolvedValue(context());
-    vi.spyOn(service, "authorityList").mockResolvedValue(listing());
+    mockEndpoint("authority.list").mockResolvedValue(listing());
     vi.spyOn(service, "execute").mockImplementation((prepared) =>
       Promise.resolve(acceptance(prepared)),
     );
-    render(<AuthorityPanel token="synthetic" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await author("synthetic-first");
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
@@ -178,11 +176,11 @@ it.each(["transport", "host", "core"] as const)(
 );
 it("context reload preserves an uncertain prepared authority request and exact retry identity", async () => {
   const oldListing = pending<Awaited<ReturnType<typeof service.authorityList>>>();
-  vi.spyOn(service, "context")
+  mockEndpoint("context")
     .mockResolvedValueOnce(context())
     .mockResolvedValueOnce(failedContext("transport"))
     .mockResolvedValue(context());
-  vi.spyOn(service, "authorityList")
+  mockEndpoint("authority.list")
     .mockReturnValueOnce(oldListing.promise)
     .mockResolvedValue(listing());
   const execute = vi
@@ -192,7 +190,7 @@ it("context reload preserves an uncertain prepared authority request and exact r
       notice: { kind: "local", reason: "unreachable" },
     })
     .mockImplementation((prepared) => Promise.resolve(acceptance(prepared)));
-  render(<AuthorityPanel token="synthetic" onLockChange={vi.fn()} />);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
   await author("synthetic-pending");
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));

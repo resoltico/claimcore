@@ -27,7 +27,12 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.lang = language;
     document.documentElement.dir = presenter.direction;
     document.title = "ClaimCore";
-  }, [language, presenter.direction]);
+    if (preferences.theme === "SYSTEM") {
+      delete document.documentElement.dataset["theme"];
+    } else {
+      document.documentElement.dataset["theme"] = preferences.theme.toLowerCase();
+    }
+  }, [language, presenter.direction, preferences.theme]);
   const value = {
     ...presenter,
     persistenceFailed,
@@ -41,7 +46,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
   };
   return (
     <PresentationContext value={value}>
-      <I18nProvider locale={language}>{children}</I18nProvider>
+      <I18nProvider locale={preferences.displayLocale}>{children}</I18nProvider>
     </PresentationContext>
   );
 };

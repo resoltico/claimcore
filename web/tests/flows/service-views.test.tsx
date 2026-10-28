@@ -67,7 +67,7 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   queueListPages();
   const select = vi.fn();
   const open = vi.fn();
-  render(<CaseList token="token" onSelect={select} onOpen={open} />);
+  render(<CaseList onSelect={select} onOpen={open} />);
   await user.click(
     await screen.findByRole(
       "button",
@@ -128,7 +128,6 @@ it("shows current fields, server act labels, full expandable history and retryab
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
-      token="token"
       caseReference="CASE-1"
       reloadSignal={0}
       definition={definition.catalog}
@@ -158,8 +157,8 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
     }),
   );
   fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
-  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-  await user.click(await findButton("Operations"));
+  render(<Dashboard />);
+  await user.click(await screen.findByRole("link", { name: "Operations" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
   expect(await screen.findByText(/Accepted operation/u)).toBeVisible();
@@ -181,7 +180,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
       },
     ),
   );
-  render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
   expect(screen.queryByRole("listitem")).toBeNull();
 });
@@ -203,11 +202,14 @@ it("keeps public metadata and other panes available when a case read is refused"
       },
     ),
   );
-  const first = render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
+  const first = render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
-  expect(getButton("Operations")).not.toBeDisabled();
+  expect(screen.getByRole("link", { name: "Operations" })).not.toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
   expect(
-    screen.getByRole("heading", {
+    screen.getByRole("link", {
       name: "ClaimCore",
     }),
   ).toBeVisible();
@@ -242,7 +244,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       nextCursor: null,
     }),
   );
-  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
+  render(<Dashboard />);
   await user.click(await findButton("Open a case"));
   expect(
     screen.getByRole("heading", {

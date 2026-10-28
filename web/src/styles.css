@@ -1,7 +1,7 @@
 :root {
-  color: #17212b;
-  background: #f4f7fa;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-body);
   font-synthesis: none;
 }
 
@@ -12,7 +12,7 @@
 .sr-only {
   position: absolute;
   inline-size: 1px;
-  height: 1px;
+  block-size: 1px;
   padding: 0;
   overflow: hidden;
   clip-path: inset(50%);
@@ -33,11 +33,11 @@ button,
   cursor: pointer;
   max-inline-size: 100%;
   min-inline-size: 0;
-  border: 1px solid #075cac;
-  border-radius: 0.4rem;
-  padding: 0.5rem 0.75rem;
-  color: #fff;
-  background: #075cac;
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
   overflow-wrap: anywhere;
 }
 
@@ -45,17 +45,17 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #06c;
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
 }
 
 .app-shell,
 .login-shell,
 .loading {
-  inline-size: min(100% - 2rem, 72rem);
+  inline-size: min(100% - var(--space-6), 72rem);
   min-inline-size: 0;
   margin: 0 auto;
-  padding: 2rem 0 4rem;
+  padding: var(--space-6) 0 var(--space-7);
 }
 
 .app-shell > header,
@@ -66,7 +66,7 @@ textarea:focus-visible {
 .dialog-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -84,10 +84,10 @@ textarea:focus-visible {
 .operation-editor,
 .case-fields,
 .review-modal {
-  background: #fff;
-  border: 1px solid #c7d2dc;
-  border-radius: 0.75rem;
-  box-shadow: 0 0.25rem 1rem rgb(23 33 43 / 8%);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-1);
 }
 
 .modal-overlay {
@@ -95,9 +95,9 @@ textarea:focus-visible {
   z-index: 1;
   inset: 0;
   display: grid;
-  padding: 1rem;
+  padding: var(--space-4);
   overflow: auto;
-  background: rgb(13 37 56 / 65%);
+  background: var(--color-scrim);
   place-items: center;
 }
 
@@ -106,31 +106,31 @@ textarea:focus-visible {
 .case-fields,
 .login-card {
   min-inline-size: 0;
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .app-shell > section,
 .operation-editor {
-  margin-block-start: 1rem;
+  margin-block-start: var(--space-4);
 }
 
 .eyebrow {
   margin: 0;
-  color: #40576b;
-  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 :is(h1, h2) {
-  color: #0d2538;
+  color: var(--color-text);
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 
 h1 {
-  margin: 0.25rem 0;
+  margin: var(--space-1) 0;
 }
 
 h2 {
@@ -139,8 +139,8 @@ h2 {
 
 button[aria-pressed="false"],
 .copy-button {
-  color: #08395f;
-  background: #fff;
+  color: var(--color-accent);
+  background: var(--color-surface);
 }
 
 button:disabled {
@@ -150,19 +150,19 @@ button:disabled {
 
 .text-field {
   display: grid;
-  gap: 0.35rem;
-  margin: 0.85rem 0;
+  gap: var(--space-1);
+  margin: var(--space-3) 0;
 }
 
 .field-description {
   display: grid;
-  gap: 0.2rem;
+  gap: var(--space-1);
 }
 
 .text-field label,
 .lookup label,
 .operation-editor > label {
-  color: #17212b;
+  color: var(--color-text);
   font-weight: 700;
 }
 
@@ -174,16 +174,16 @@ button:disabled {
 .copy-value textarea {
   inline-size: 100%;
   min-inline-size: 0;
-  border: 1px solid #617384;
-  border-radius: 0.35rem;
-  padding: 0.55rem;
-  color: #17212b;
-  background: #fff;
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .login-shell {
   display: grid;
-  min-height: 100vh;
+  min-block-size: 100vh;
   place-items: center;
 }
 
@@ -192,57 +192,57 @@ button:disabled {
 }
 
 .error {
-  border-inline-start: 0.3rem solid #b42318;
-  padding-inline-start: 0.75rem;
-  color: #8d1e14;
+  border-inline-start: var(--space-1) solid var(--color-danger);
+  padding-inline-start: var(--space-3);
+  color: var(--color-danger);
   font-weight: 700;
 }
 
 .notice {
-  border-inline-start: 0.3rem solid #06c;
-  padding-inline-start: 0.75rem;
+  border-inline-start: var(--space-1) solid var(--color-focus);
+  padding-inline-start: var(--space-3);
 }
 
 .case-list,
 .history-list {
-  padding-inline-start: 1.25rem;
+  padding-inline-start: var(--space-5);
 }
 
 :is(.case-list, .history-list) li {
-  margin: 0.75rem 0;
+  margin: var(--space-3) 0;
 }
 
 .case-list li,
 .case-fields {
-  margin: 1rem 0;
+  margin: var(--space-4) 0;
 }
 
 .field-row {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  border-block-start: 1px solid #dce4ea;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-block-start: var(--border-width) solid var(--color-border);
   overflow-wrap: anywhere;
 }
 
 .field-row dd {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin: 0;
   min-inline-size: 0;
 }
 
 .character-warning {
   inline-size: 100%;
-  color: #8d1e14;
+  color: var(--color-danger);
 }
 
 .copy-value {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--space-1);
   align-items: center;
   inline-size: 100%;
   max-inline-size: 100%;
@@ -250,20 +250,20 @@ button:disabled {
 }
 
 .copy-value textarea {
-  min-height: 5rem;
+  min-block-size: 5rem;
 }
 
 .review-modal {
-  inline-size: min(100% - 2rem, 42rem);
-  max-height: calc(100dvh - 2rem);
+  inline-size: min(100% - var(--space-6), 42rem);
+  max-block-size: calc(100dvh - var(--space-6));
   overflow: auto;
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .review-values {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.65rem;
+  gap: var(--space-3);
 }
 
 .review-values dd {
@@ -273,20 +273,183 @@ button:disabled {
 
 .dialog-actions {
   justify-content: end;
-  margin-block-start: 1rem;
+  margin-block-start: var(--space-4);
 }
 
-@media (width <= 42rem) {
+@media (width < 40rem) {
   .field-row,
   .review-values {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.25rem;
+    gap: var(--space-1);
   }
 
   .app-shell,
   .login-shell,
   .loading {
-    inline-size: min(100% - 1rem, 72rem);
-    padding-top: 1rem;
+    inline-size: min(100% - var(--space-4), 72rem);
+    padding-block-start: var(--space-4);
+  }
+}
+
+:root {
+  line-height: var(--line-body);
+}
+body {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+a {
+  color: var(--color-accent);
+}
+:is(h1, h2, h3) {
+  line-height: var(--line-heading);
+}
+button,
+.login-link {
+  min-block-size: var(--target-primary);
+  min-inline-size: var(--target-primary);
+}
+:is(a, summary, input, select, textarea) {
+  min-block-size: var(--target-minimum);
+}
+:is(input, select, textarea) {
+  font-variant-numeric: tabular-nums;
+}
+.app-shell,
+.login-shell,
+.loading {
+  inline-size: min(100% - 2 * var(--gutter), var(--content-max));
+  margin-inline: auto;
+}
+.workspace-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--gutter);
+  border-block-end: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+.product-name {
+  font-size: var(--text-xl);
+  font-weight: 750;
+  text-decoration: none;
+}
+.workspace-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1;
+}
+.workspace-header nav a {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+.workspace-header nav [aria-current] {
+  background: var(--color-surface-2);
+  font-weight: 700;
+}
+[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.workspace-settings {
+  max-inline-size: 100%;
+}
+.workspace-settings[open] {
+  flex-basis: 100%;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+@media (width < 40rem) {
+  .workspace-header nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+.date-control,
+.code-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.date-control > .text-field {
+  flex: 1;
+  min-inline-size: 0;
+}
+.react-aria-DateInput {
+  display: flex;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  min-block-size: var(--target-primary);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.react-aria-DateSegment {
+  padding-inline: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+.react-aria-DateSegment:focus {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+.calendar-popover,
+.code-popover {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  max-inline-size: calc(100vw - 2 * var(--gutter));
+  max-block-size: 20rem;
+  overflow: auto;
+  padding: var(--space-3);
+}
+.calendar-popover header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+.react-aria-CalendarCell {
+  min-inline-size: var(--target-primary);
+  min-block-size: var(--target-primary);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+}
+.react-aria-CalendarCell[data-selected] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.react-aria-CalendarCell[data-outside-month] {
+  color: var(--color-text-muted);
+}
+.react-aria-ListBoxItem {
+  padding: var(--space-2) var(--space-3);
+  min-block-size: var(--target-primary);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+.react-aria-ListBoxItem[data-focused] {
+  outline: var(--focus-width) solid var(--color-focus);
+  background: var(--color-surface-2);
+}
+.code-input input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+@media (width < 40rem) {
+  .react-aria-CalendarCell {
+    min-inline-size: var(--target-minimum);
+    min-block-size: var(--target-minimum);
   }
 }

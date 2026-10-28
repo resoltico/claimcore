@@ -1,3 +1,4 @@
+import { useCredential } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
 import { useEffect, useRef } from "react";
@@ -12,7 +13,6 @@ import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { ReceiptFields } from "../components/ReceiptFields";
 type OperationLookupProps = {
-  token: string;
   definition: ProductMetadata;
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
@@ -59,14 +59,11 @@ const ObservationFeedback = ({ message }: { message: Notice | null }) =>
       <NoticeView value={message} />
     </p>
   );
-export const OperationLookup = ({
-  token,
-  definition,
-  initialOperationId,
-}: OperationLookupProps) => {
+export const OperationLookup = ({ definition, initialOperationId }: OperationLookupProps) => {
+  const credential = useCredential();
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
-    useOperationObservation(token, initialOperationId);
+    useOperationObservation(credential, initialOperationId);
   const invalid = message?.kind === "diagnostic" && message.diagnostic.code === "INPUT_INVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -76,7 +73,7 @@ export const OperationLookup = ({
   }, [invalid, loading]);
   return (
     <section aria-labelledby="operation-lookup-title">
-      <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>
+      <h1 id="operation-lookup-title">{p.text("ui.operationLookup")}</h1>
       <Form
         className="lookup"
         onSubmit={(event) => {

@@ -10,7 +10,7 @@ test("context interruption recovers through an explicit in-page read retry", asy
   await page.route("**/api/context", (route) => route.abort("connectionfailed"));
   await page.reload();
   await expect(page.getByRole("button", { name: "Try again", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
   await page.unroute("**/api/context");
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
@@ -30,7 +30,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
   page,
 }) => {
   await openAuthenticated(page);
-  await page.getByRole("button", { name: "Authority", exact: true }).click();
+  await page.getByRole("link", { name: "Authority", exact: true }).click();
   await page.locator('[name="target.subject"]').fill(`repair-${randomUUID()}`);
   const event = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
@@ -49,6 +49,8 @@ test("authority input refusal preserves authored bytes and requires fresh review
     meaning: inputMessage("en", "field.principal.issuer.meaning"),
     issue: "A non-blank value is required.",
   });
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator("[data-error-summary]").getByRole("link").click();
   await expect(page.locator('[name="target.issuer"]')).toBeFocused();
   await expect(page.locator('[name="target.subject"]')).toHaveValue(/^repair-/u);
   await page.locator('[name="target.issuer"]').fill("https://issuer.example/");

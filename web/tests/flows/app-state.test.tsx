@@ -2,13 +2,13 @@ import { localNotice } from "../../src/protocol/notices";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import type { SessionState } from "../../src/hooks/useSession";
+import type { SessionState } from "../../src/session/useSession";
 
 afterEach(() => vi.resetModules());
 
 const renderState = async (state: SessionState) => {
   vi.resetModules();
-  vi.doMock("../../src/hooks/useSession", () => ({
+  vi.doMock("../../src/session/useSession", () => ({
     useSession: () => ({ state, logout: vi.fn(), refresh: vi.fn() }),
   }));
   const { stubDashboardContext } = await import("../support/dashboard-context.fixtures");

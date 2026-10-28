@@ -26,7 +26,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const user = userEvent.setup();
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "en-GB" }),
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
   );
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
   render(
@@ -93,7 +93,7 @@ it("associates payment acknowledgement with the generated mode control", async (
   );
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   await waitFor(() => {
-    expect(payment).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
   expect(payment).toHaveAttribute("aria-invalid", "true");
   const description = document.getElementById("act.groups.payment.kind-error");

@@ -98,7 +98,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
     await seedPresentation(steward, "en-XA", "ar-EG");
     await openAuthenticated(steward, "⟦Cààsëës⟧", "narrow-authenticated-state.json");
     const subject = `authority-uncertain-${randomUUID()}`;
-    await steward.locator("nav button").last().click();
+    await steward.getByRole("link").and(steward.locator('nav a[href="/authority"]')).click();
     await expect(steward.locator("#authority-actors-title").locator("..")).toContainText(
       source.ownerSubject,
     );

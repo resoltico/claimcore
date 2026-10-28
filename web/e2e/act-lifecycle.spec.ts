@@ -39,7 +39,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByLabel("Exact operation ID").fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
@@ -47,7 +47,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   ).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole("button", { name: "Cases", exact: true }).click();
+  await page.getByRole("link", { name: "Cases", exact: true }).click();
   await page.getByLabel("Handler's case reference (exact)").fill(caseReference);
   await page.getByLabel("Handler's case reference (exact)").press("Enter");
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();

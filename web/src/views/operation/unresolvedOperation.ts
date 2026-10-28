@@ -8,10 +8,22 @@ export type UnresolvedOperation = {
 const key = "claimcore.unresolvedOperation";
 const isSubject = (value: unknown): value is "CASE" | "AUTHORITY" =>
   value === "CASE" || value === "AUTHORITY";
-const read = (): UnresolvedOperation | null => {
+const listeners = new Set<() => void>();
+const snapshot = (): string | null => {
   try {
-    const raw = sessionStorage.getItem(key);
-    const value: unknown = raw === null ? null : JSON.parse(raw);
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const publish = (): void => {
+  listeners.forEach((listener) => {
+    listener();
+  });
+};
+const parse = (raw: string): UnresolvedOperation | null => {
+  try {
+    const value: unknown = JSON.parse(raw);
     if (
       value !== null &&
       typeof value === "object" &&
@@ -30,11 +42,20 @@ const read = (): UnresolvedOperation | null => {
   }
   return null;
 };
+const read = (raw = snapshot()): UnresolvedOperation | null => (raw === null ? null : parse(raw));
 export const unresolvedOperation = {
   read,
+  snapshot,
+  subscribe: (listener: () => void) => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  },
   save: (value: UnresolvedOperation): void => {
     try {
       sessionStorage.setItem(key, JSON.stringify(value));
+      publish();
     } catch {
       /* Optional reload notice. */
     }
@@ -43,6 +64,7 @@ export const unresolvedOperation = {
     try {
       if (read()?.operationId === operationId) {
         sessionStorage.removeItem(key);
+        publish();
       }
     } catch {
       /* Optional reload notice. */

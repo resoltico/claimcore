@@ -1,40 +1,48 @@
+import { useOperationNavigation } from "../hooks/useOperationNavigation";
+import { useEndpointCache } from "../hooks/EndpointProvider";
+import { useRoute } from "../routing/useRoute";
+import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
+import { useCredential } from "../session/SessionContext";
 import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
-import { resultNotice, service, type ServiceResponse, type OperationReceipt } from "../api/service";
+import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
 import { AuthorityGrants } from "./AuthorityGrants";
 import { AuthorityListing } from "./AuthorityListing";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { useRead } from "../hooks/useRead";
+import { useEndpoint } from "../hooks/useEndpoint";
 import { useAuthorityDisclosure } from "../hooks/operation/useAuthorityDisclosure";
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 const contextData = (response: ServiceResponse<"context">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Disclosure = ReturnType<typeof useAuthorityDisclosure>;
-const useAuthorityContext = (token: string, disclosure: Disclosure) => {
+const useAuthorityContext = (disclosure: Disclosure) => {
+  const query = useEndpoint("context", {});
   const { refused, restored } = disclosure;
-  return useRead(
-    useCallback(
-      async (signal: AbortSignal) => {
-        const result = await service.context(token, signal);
-        if (!signal.aborted) {
-          if (isDisclosureRefused(result)) {
-            refused(resultNotice(result));
-          } else if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-            restored("context");
-          }
-        }
-        return result;
-      },
-      [token, refused, restored],
-    ),
-    contextData,
-    token,
-  );
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active || query.result === null) {
+        return;
+      }
+      if (isDisclosureRefused(query.result)) {
+        refused(resultNotice(query.result));
+      } else if (
+        query.result.kind === "outcome" &&
+        query.result.value.outcome.kind === "SUCCEEDED"
+      ) {
+        restored("context");
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [query.result, refused, restored]);
+  return { ...query, value: query.value === null ? null : contextData(query.value) };
 };
 const ContextStatus = ({
   loading,
@@ -62,18 +70,70 @@ const ContextStatus = ({
     </>
   );
 };
+const SelectedActorGrants = ({
+  actorId,
+  refused,
+}: {
+  actorId: string | null;
+  refused: (notice?: Notice) => void;
+}) =>
+  actorId === null ? null : (
+    <AuthorityGrants
+      key={actorId}
+      actorId={actorId}
+      onBack={() => {
+        const target =
+          document.getElementById(`actor-grants-${actorId}`) ??
+          document.getElementById("authority-actors-title");
+        navigate("/authority", false, target?.id);
+      }}
+      onDisclosureRefused={refused}
+    />
+  );
+const AuthorityDirectory = ({
+  selectedActorId,
+  disclosure,
+  available,
+  onSelect,
+  mayReadGrants,
+}: {
+  selectedActorId: string | null;
+  disclosure: Disclosure;
+  available: boolean;
+  onSelect: (id: string) => void;
+  mayReadGrants: boolean;
+}) => {
+  if (!available) {
+    return null;
+  }
+  return (
+    <>
+      <SelectedActorGrants actorId={selectedActorId} refused={disclosure.refused} />
+      <AuthorityListing
+        mayReadGrants={mayReadGrants}
+        onSelect={onSelect}
+        onDisclosureRefused={disclosure.refused}
+        onDisclosureRestored={disclosure.restored}
+      />
+    </>
+  );
+};
 const AuthorityWorkspace = ({
-  token,
   model,
   disclosure,
+  disclosureAvailable,
 }: {
-  token: string;
   model: OperationModel;
   disclosure: Disclosure;
+  disclosureAvailable: boolean;
 }) => {
-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
-  const context = useAuthorityContext(token, disclosure);
-  const { refused } = disclosure;
+  const route = useRoute();
+  const selectedActorId =
+    route.screen === "authority" && route.actorId !== "" ? route.actorId : null;
+  const setSelectedActorId = (actorId: string | null): void => {
+    navigate(actorId === null ? "/authority" : `/authority/${encodeURIComponent(actorId)}`);
+  };
+  const context = useAuthorityContext(disclosure);
   const offered = productMetadata.catalog.entries
     .filter((entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute")
     .filter(
@@ -85,30 +145,20 @@ const AuthorityWorkspace = ({
     .map((act) => act.kind);
   return (
     <>
-      <OperationPanel model={model} current={null} offered={offered} />
-      <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      <AuthorityListing
-        token={token}
-        mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
-        onSelect={setSelectedActorId}
-        onDisclosureRefused={refused}
-        onDisclosureRestored={disclosure.restored}
+      <OperationPanel
+        model={model}
+        current={null}
+        offered={offered}
+        disclosureAvailable={disclosureAvailable}
       />
-      {selectedActorId === null ? null : (
-        <AuthorityGrants
-          key={selectedActorId}
-          actorId={selectedActorId}
-          token={token}
-          onBack={() => {
-            (
-              document.getElementById(`actor-grants-${selectedActorId}`) ??
-              document.getElementById("authority-actors-title")
-            )?.focus();
-            setSelectedActorId(null);
-          }}
-          onDisclosureRefused={refused}
-        />
-      )}
+      <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
+      <AuthorityDirectory
+        selectedActorId={selectedActorId}
+        disclosure={disclosure}
+        available={disclosureAvailable}
+        onSelect={setSelectedActorId}
+        mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
+      />
     </>
   );
 };
@@ -120,30 +170,73 @@ const AuthorityReceipt = ({ identity }: { identity: string }) => {
   }, []);
   return (
     <>
-      <h3 ref={heading} tabIndex={-1}>
+      <h2 ref={heading} tabIndex={-1}>
         {p.text("ui.accepted")}
-      </h3>
+      </h2>
       <p role="status">
         <bdi>{identity}</bdi>
       </p>
     </>
   );
 };
-type RecordedAuthority = { token: string; id: string } | null;
+type RecordedAuthority = { credential: string; id: string } | null;
 type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
 type AuthorityLayoutProps = {
-  token: string;
   model: OperationModel;
   disclosure: Disclosure;
   recorded: RecordedAuthority;
+  onClose: () => void;
+  disclosureAvailable: boolean;
 };
-const AuthorityLayout = ({ token, model, disclosure, recorded }: AuthorityLayoutProps) => {
+const AuthorityTitle = ({ selected, available }: { selected: boolean; available: boolean }) => {
   const p = usePresentation();
+  return selected && available ? (
+    <p id="authority-title" className="eyebrow">
+      {p.text("subject.AUTHORITY.label")}
+    </p>
+  ) : (
+    <h1 id="authority-title">{p.text(selected ? "ui.actorGrants" : "subject.AUTHORITY.label")}</h1>
+  );
+};
+const AuthorityUnavailable = ({
+  model,
+  invalidate,
+  available,
+}: {
+  model: OperationModel;
+  invalidate: Disclosure["invalidate"];
+  available: boolean;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      <OperationPanel model={model} current={null} offered={[]} disclosureAvailable={available} />
+      <button
+        type="button"
+        onClick={() => {
+          invalidate(true);
+        }}
+      >
+        {p.text("ui.reloadActors")}
+      </button>
+    </>
+  );
+};
+const AuthorityLayout = ({
+  model,
+  disclosure,
+  recorded,
+  onClose,
+  disclosureAvailable,
+}: AuthorityLayoutProps) => {
+  const route = useRoute();
+  const selected = route.screen === "authority" && route.actorId !== "";
+  const credential = useCredential();
   const { invalidate } = disclosure;
   return (
     <section aria-labelledby="authority-title" className="authority-panel">
-      <h2 id="authority-title">{p.text("subject.AUTHORITY.label")}</h2>
-      {recorded?.token === token ? (
+      <AuthorityTitle selected={selected} available={disclosureAvailable} />
+      {recorded?.credential === credential ? (
         <AuthorityReceipt key={recorded.id} identity={recorded.id} />
       ) : null}
       {disclosure.notice === null ? null : (
@@ -151,26 +244,20 @@ const AuthorityLayout = ({ token, model, disclosure, recorded }: AuthorityLayout
           <NoticeView value={disclosure.notice} />
         </p>
       )}
-      <OperationDiscard model={model} />
+      <OperationDiscard model={model} onClose={onClose} />
       {disclosure.active ? (
         <AuthorityWorkspace
-          key={`${token}:${disclosure.revision}`}
-          token={token}
+          key={`${credential}:${disclosure.revision}`}
           model={model}
           disclosure={disclosure}
+          disclosureAvailable={disclosureAvailable}
         />
       ) : (
-        <>
-          <OperationPanel model={model} current={null} offered={[]} />
-          <button
-            type="button"
-            onClick={() => {
-              invalidate(true);
-            }}
-          >
-            {p.text("ui.reloadActors")}
-          </button>
-        </>
+        <AuthorityUnavailable
+          model={model}
+          invalidate={invalidate}
+          available={disclosureAvailable}
+        />
       )}
     </section>
   );
@@ -179,41 +266,16 @@ const initialAuthorityAct = productMetadata.catalog.entries.find(
   (entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute",
 )!.kind;
 type AuthorityPanelProps = {
-  token: string;
   onLockChange: (locked: boolean) => void;
+  disclosureAvailable?: boolean;
 };
-const useAuthorityOperation = ({ token, onLockChange }: AuthorityPanelProps) => {
-  const disclosure = useAuthorityDisclosure();
-  const { refused: refuseDisclosure, invalidate, ready } = disclosure;
-  const [recorded, setRecorded] = useState<RecordedAuthority>(null);
-  const actions = useRef<AuthorityActions>(null);
-  const refused = useCallback(
-    (notice?: Notice) => {
-      actions.current?.invalidate();
-      setRecorded(null);
-      refuseDisclosure(notice);
-    },
-    [refuseDisclosure],
-  );
-  const onRecorded = (receipt: OperationReceipt) => {
-    setRecorded({
-      token,
-      id: receipt.operationId,
-    });
-    invalidate(true);
-  };
-  const model = useOperation({
-    subject: "AUTHORITY",
-    kind: initialAuthorityAct,
-    current: null,
-    token,
-    onLockChange,
-    onRecorded,
-    onDisclosureRefused: refused,
-  });
-  useUnresolvedOperation(model);
+const useAuthorityActions = (
+  model: OperationModel,
+  actionsRef: React.RefObject<AuthorityActions>,
+  ready: boolean,
+) => {
   useLayoutEffect(() => {
-    actions.current = {
+    actionsRef.current = {
       invalidate: model.invalidateDisclosure,
       restore: model.restoreDisclosure,
       reset: model.discard,
@@ -221,12 +283,66 @@ const useAuthorityOperation = ({ token, onLockChange }: AuthorityPanelProps) => 
   });
   useEffect(() => {
     if (ready) {
-      actions.current?.restore();
+      actionsRef.current?.restore();
     }
-  }, [ready]);
-  return { model, disclosure: { ...disclosure, refused }, recorded };
+  }, [ready, actionsRef]);
+};
+const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
+  const credential = useCredential();
+  const disclosure = useAuthorityDisclosure();
+  const cache = useEndpointCache();
+  const { refused: refuseDisclosure, invalidate, ready } = disclosure;
+  const [recorded, setRecorded] = useState<RecordedAuthority>(null);
+  const actions = useRef<AuthorityActions>(null);
+  const refused = useCallback(
+    (notice?: Notice) => {
+      actions.current?.invalidate();
+      setRecorded(null);
+      replaceDisclosureRoute("/authority");
+      cache?.invalidate();
+      refuseDisclosure(notice);
+    },
+    [cache, refuseDisclosure],
+  );
+  const onRecorded = (receipt: OperationReceipt) => {
+    setNavigationLock(false);
+    replaceDisclosureRoute("/authority");
+    setRecorded({ credential, id: receipt.operationId });
+    cache?.invalidate();
+    invalidate(true);
+  };
+  const model = useOperation({
+    subject: "AUTHORITY",
+    kind: initialAuthorityAct,
+    current: null,
+    credential,
+    onLockChange,
+    onRecorded,
+    onDisclosureRefused: refused,
+  });
+  useUnresolvedOperation(model);
+  useAuthorityActions(model, actions, ready);
+  return {
+    model,
+    disclosure: {
+      ...disclosure,
+      refused,
+      invalidate: (force = false) => {
+        cache?.invalidate();
+        invalidate(force);
+      },
+    },
+    recorded,
+  };
 };
 export const AuthorityPanel = (props: AuthorityPanelProps) => {
   const state = useAuthorityOperation(props);
-  return <AuthorityLayout token={props.token} {...state} />;
+  const navigation = useOperationNavigation(state.model, undefined, "/authority");
+  return (
+    <AuthorityLayout
+      {...state}
+      disclosureAvailable={props.disclosureAvailable ?? true}
+      onClose={navigation.close}
+    />
+  );
 };

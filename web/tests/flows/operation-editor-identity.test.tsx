@@ -25,7 +25,6 @@ const sentDraft = (call: number): SentDraft => {
 };
 const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "CORRECT") => (
   <OperationEditor
-    token="synthetic-token"
     definition={definition}
     current={current}
     initialAct={initialAct}

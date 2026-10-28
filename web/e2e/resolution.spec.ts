@@ -48,7 +48,10 @@ for (const reload of [false, true]) {
     const resolved = page.waitForResponse((reply) =>
       reply.url().endsWith("/api/operation.resolve"),
     );
-    await page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }).click();
+    const check = reload
+      ? page.getByRole("status").filter({ hasText: operationId }).getByRole("button")
+      : page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true });
+    await check.click();
     expect((await resolved).status()).toBe(200);
     await expect
       .poll(() => page.evaluate(() => sessionStorage.getItem("claimcore.unresolvedOperation")))

@@ -1,4 +1,4 @@
-import { fireEvent } from "./presentation-test-support";
+import { changeField } from "./field-entry";
 import { isResponse } from "../../src/protocol/client";
 import type { EndpointId, ResponseByEndpoint } from "@contracts/client";
 export type Dispatch<T> = {
@@ -12,17 +12,13 @@ export const runtime = {
   timeZone: "Etc/UTC",
 };
 export const input = (name: string, value: string) => {
-  const control = document.querySelector<HTMLInputElement>(
-    `input[name="${name}"],input[data-field-name="${name}"]`,
-  );
+  const control =
+    document.querySelector<HTMLElement>(`[data-field-name="${name.split(".").at(-1)}"]`) ??
+    document.querySelector<HTMLElement>(`input[name="${name}"]`);
   if (control === null) {
     throw new Error(`Missing catalogue input: ${name}`);
   }
-  fireEvent.change(control, {
-    target: {
-      value,
-    },
-  });
+  changeField(control, value);
 };
 export const response = <K extends EndpointId>(
   endpoint: K,
