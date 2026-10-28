@@ -93,6 +93,12 @@ value projections. Field/group inventories and authored input targets derive fro
 interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
 annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
 
+Registration formatting in [CaseAct](../src/ClaimCore.Domain/CaseActs.fs), parsing/construction in
+[Validation](../src/ClaimCore.Domain/Validation.fs), and asserted-value admission in
+[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) remain explicit. Keep those operations and
+the authored/admitted records aligned when changing fields; `describe` does not construct or admit
+a registration value.
+
 [StateValidation](../src/ClaimCore.Domain/StateValidation.fs) owns admission of newly asserted dates and
 names and progress invariants. Corrections retain proposed groups until acknowledgement and admission
 finish, so incomplete combinations can still report independent input issues. `InputTarget.order` owns
@@ -272,7 +278,7 @@ outside the code being refactored.
 
 | Probe | Change | Invariants to assess |
 | --- | --- | --- |
-| P-FIELD | Add a required registration text field (`PartyName`, for the reference measurement). | No `db/` or PostgreSQL source changes; no renderer changes; in Domain, only the one field-description function (`BusinessField.describe`) changes. |
+| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/` or PostgreSQL source changes; no renderer changes; in Domain, only the one field-description function (`BusinessField.describe`) changes. |
 | P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
 | P-ROLE | Add a role with one existing capability. | No renderer changes; SQL changes only the durable `grants.role` token list. |
 | P-READ | Add a read-only endpoint over existing case data. | No renderer changes; CLI verb and catalog entry derive; one store-port method implemented by PostgreSQL and the memory double. |
@@ -296,35 +302,8 @@ a later check passes. Keep these experiments isolated from the delivered feature
 A miss alone does not block merging. Fix defects within the PR's scope and rerun the affected probe;
 otherwise explain the cause and propose follow-up work. Preserve safeguards and existing gate limits.
 Future foundation proposals must cite the latest probe results, a concrete defect or a stated
-requirement. Put subsequent measurements in PR bodies, not a repository progress log. This section
+requirement. Put measurements, failures and follow-up proposals in PR bodies, not repository files. This section
 is the single authority for the procedure; no maintained script applies the probes automatically.
-
-The initial reference measurement used commit `aec35ffa38ebd6005853819f98c7d80b70fdaf7a`.
-Each experiment built, regenerated contracts and passed its temporary real-path test. The table
-counts authored production changes as added/deleted lines; generated output and temporary tests
-are excluded. Paths below are relative to `src/` unless prefixed with `db/`.
-
-| Probe | Production files | Lines +/− | Invariants and additional costs |
-| --- | --- | --- | --- |
-| P-FIELD | 11: Domain `CaseActs`, `CaseFields`, `StateValidation`, `Validation`; Protocol wire `RequestCodecs`, `ResponseCodecs`; RecordFormat `DurableNames`, `RecordCodecs`; three locales | 46/8 | Missed Domain-only-describe: `CaseAct.registration`, `Validation.registration` and `StateValidation.admitGroups` also changed. Metadata/projection consolidation, no-SQL/PostgreSQL and no-renderer criteria met. Three TypeScript fixture errors and 52 unit fixture/field-inventory failures remained. |
-| P-ACT | 10: `db/baseline.sql`; Domain `Authority`, `CaseActs`, `Transitions`; Protocol catalog `Annotations`; RecordFormat `DurableNames`, `LedgerEntry`; three locales | 29/4 | Missed no-SQL: the permanent act whitelist rejected the new act until its token was added. Renderer/codec invariants met. Twelve complexity findings and 11 unit inventory/availability failures remained. |
-| P-ROLE | 7: `db/baseline.sql`; Domain `Authority`, vocabulary `Roles`; RecordFormat `DurableNames`; three locales | 7/1 | Met both invariants. Three unit role-policy/inventory/positive-alternative fixtures needed updates. |
-| P-READ | 14: Application `LedgerStorePort`, `Queries`, `Service`; CLI `ServiceReply`, `TextReply`; PostgreSQL ledger `TransactionPrimitives`; Protocol API `Endpoints`, `Operations`, catalog `Metadata`, `Reads`; Web `ApiRoutes`; three locales | 103/1 | Missed no-renderer: host dispatch and typed CLI reply handling changed. Verb/catalog derivation and one port method with both implementations met. Five lint findings and 17 unit endpoint/mapping fixtures remained. |
-| P-MESSAGE | 5: Domain refusal `RefusalModel`, `Transitions`; three locales | 6/0 | Met all invariants; diagnostic mapping derived automatically. Two unit transition/positive-alternative fixtures needed updates. |
-
-P-FIELD retains explicit registration formatting, parsing and asserted-value admission outside the
-descriptor. Its saved patch demonstrates those three extra function edits, so the broader Domain
-criterion is missed. The probe identifies no current-behavior regression requiring an implementation
-fix. Under the nonblocking miss procedure,
-the follow-up is to investigate deriving those registration field operations from typed descriptions
-while preserving authored/admitted structure and separate permanent/current value rules, then rerun
-the same probe against the original criterion. No additional framework is implemented by this finding.
-
-The P-ACT follow-up is to investigate deriving the SQL act whitelist from its permanent owner and
-reducing exhaustive mapping growth within existing complexity limits. P-READ calls for investigating
-typed query/reply registration that can supply host dispatch and CLI presentation together. These
-are proposals grounded in measured misses, not implemented capabilities or relaxed protections.
-The PR body records full file lists, fixture failures and qualification evidence for this reference.
 
 ## Growth
 

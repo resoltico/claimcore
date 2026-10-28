@@ -43,10 +43,12 @@ Before ordinary registration editing, clear payment and withdraw the decision. A
 all declared tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
 KEEP, REPLACE their complete tuples, or CLEAR. KEEP reads accepted state under the ledger lock.
 
-A correction cannot be all-KEEP, make a no-op revision, add a missing decision/payment, or silently carry an
-existing payment assertion to a replaced payable amount. Clearing a paid decision also clears payment. Replacing
-it requires explicit payment replacement/reaffirmation or clearing. Acceptance creates one complete revision;
-refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domain/Case.fs) own these rules.
+A correction cannot be all-KEEP, make a no-op revision or add a missing decision/payment. Clearing a paid
+decision requires explicitly clearing payment too. Replacing a paid decision requires explicit payment
+replacement/reaffirmation or clearing, including when its payable amount stays the same. Acceptance creates
+one complete revision; refusal creates no intermediate state. The
+[correction policy](../src/ClaimCore.Domain/CaseCorrection.fs) and
+[transitions](../src/ClaimCore.Domain/Transitions.fs) enforce these rules.
 
 Current core advice filters eligible work by the actor's resource rights. Unauthorized correction groups stay
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
