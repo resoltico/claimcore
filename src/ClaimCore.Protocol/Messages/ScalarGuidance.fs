@@ -27,7 +27,7 @@ module ScalarGuidance =
             invalidOp "Text guidance requires its Domain admission bound.")
 
     let forField field =
-        match BusinessField.valueKind field with
+        match (BusinessField.describe field).Kind with
         | FieldValueKind.CalendarDate -> Some(message "scalar.calendarDate.guidance" [])
         | FieldValueKind.Amount ->
             Some(

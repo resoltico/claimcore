@@ -154,7 +154,7 @@ module MessageGeneration =
                 key.StartsWith("ui.", System.StringComparison.Ordinal)
                 || key.StartsWith("cli.", System.StringComparison.Ordinal)
             ))
-        |> generate "../src/ClaimCore.Protocol/Localization/" true
+        |> generate "../src/ClaimCore.Protocol/Messages/Localization/" true
 
     let chromeSource catalogs =
         catalogs

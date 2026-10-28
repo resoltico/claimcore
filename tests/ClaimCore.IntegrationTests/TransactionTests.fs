@@ -89,7 +89,10 @@ let private waiter (database: PostgresFixture.Database) settings =
             {
                 WriteOperation.Work =
                     (fun _ ->
-                        Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>))
+                        Task.FromResult(
+                            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+                            : Verdict<unit>
+                        ))
                 CancellationToken = token
             }
         )
@@ -146,7 +149,9 @@ let tests =
                         let! results = Task.WhenAll tasks
 
                         let positions =
-                            results |> Array.map (accepted >> _.Position.Sequence) |> Array.sort
+                            results
+                            |> Array.map (accepted >> _.Position.Sequence >> Sequence.value)
+                            |> Array.sort
 
                         Expect.equal
                             positions
@@ -157,7 +162,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            23L
+                            (CaseFixtures.sequence (23L))
                             "All links recompute"
                     }))
             testCaseAsync
@@ -215,14 +220,14 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(Verdict.Refuse Refusal.ResourceUnavailable))
+                            (Ok(Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            3L
+                            (CaseFixtures.sequence (3L))
                             "Neither waiter wrote"
 
                         let! _ = (Service.get actor ({ CaseReference = "absent" }) (token))
@@ -303,7 +308,10 @@ let tests =
                                                 return head.Sequence, false
                                             })
 
-                                Expect.equal head (Ok 0L) "Next writer obtains released lock"
+                                Expect.equal
+                                    head
+                                    (Ok(CaseFixtures.sequence (0L)))
+                                    "Next writer obtains released lock"
                     }))
             testCaseAsync
                 "deferred commit error is definite and rolls back entry and projection"
@@ -335,7 +343,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            3L
+                            (CaseFixtures.sequence (3L))
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
@@ -416,7 +424,7 @@ let tests =
                         let! _ =
                             DatabaseSession.execute
                                 holder
-                                "UPDATE claimcore.cases SET claimant_name='Changed synthetic'; DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
+                                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), 'Synthetic Party', 'Changed synthetic'),'UTF8'); DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
                                 [||]
                                 token
 

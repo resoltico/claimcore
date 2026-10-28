@@ -1,8 +1,8 @@
-import { isTerm } from "../presentation/terms";
+import { isTerm, isVocabulary } from "../presentation/terms";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
-import { atPath, termVocabulary, type CatalogEntry } from "../protocol/catalogAssembly";
+import { atPath, type CatalogEntry } from "../protocol/catalogAssembly";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -45,6 +45,13 @@ const isToken = (value: string, path: ReadonlyArray<string>, bindings: Bindings)
     input?.kind.kind === "CHOICE" || input?.kind.kind === "GROUP" ? input.kind.options : [];
   return choices.includes(value) || constant?.value === value;
 };
+const bindingVocabulary = (bindings: Bindings, path: ReadonlyArray<string>): string | null => {
+  const input = bindings.inputs.find((candidate) => samePath(candidate.path, path));
+  if (input?.kind.kind === "CHOICE" || input?.kind.kind === "GROUP") {
+    return input.kind.vocabulary;
+  }
+  return bindings.constants.find((candidate) => samePath(candidate.path, path))?.vocabulary ?? null;
+};
 type ValueProps = { value: unknown; path: ReadonlyArray<string>; bindings: Bindings };
 const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): string => {
   if (typeof value === "boolean") {
@@ -57,11 +64,12 @@ const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): s
 };
 const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
   const p = usePresentation();
-  const vocabulary = termVocabulary(path);
+  const vocabulary = bindingVocabulary(bindings, path);
   if (
     typeof value === "string" &&
     isToken(value, path, bindings) &&
     vocabulary !== null &&
+    isVocabulary(vocabulary) &&
     isTerm(vocabulary, value)
   ) {
     return (

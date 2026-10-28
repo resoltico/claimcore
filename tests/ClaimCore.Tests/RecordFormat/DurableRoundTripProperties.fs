@@ -280,7 +280,7 @@ let private snapshotProperty =
                             let expected: CaseSnapshot =
                                 {
                                     Reference = reference
-                                    Revision = revision
+                                    Revision = (CaseFixtures.revision revision)
                                     State = state
                                 }
 

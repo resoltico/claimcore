@@ -10,12 +10,12 @@ open ClaimCore.Application.VerificationChecks
 type internal AuthorityFoldContext =
     {
         InstallationId: Guid
-        CaseExists: Guid -> bool
+        CaseExists: CaseId -> bool
     }
 
 type internal AuthorityFoldTarget =
     {
-        ActorId: Guid
+        ActorId: ActorId
         Principal: PrincipalKey
     }
 
@@ -33,7 +33,7 @@ module internal AuthorityFold =
         && PrincipalKey.isHuman actor.Principal
         && List.contains ownerGrant actor.Grants
 
-    let executor (actors: Map<Guid, ActorAuthority>) (entry: StoredEntry) human ownerRequired =
+    let executor (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) human ownerRequired =
         result {
             let! actor =
                 Map.tryFind entry.ActorId actors
@@ -61,7 +61,7 @@ module internal AuthorityFold =
         |> Result.mapError (fun _ ->
             divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
-    let private target (actors: Map<Guid, ActorAuthority>) (entry: StoredEntry) id principal =
+    let private target (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) id principal =
         result {
             let! actor =
                 Map.tryFind id actors
@@ -77,7 +77,7 @@ module internal AuthorityFold =
         }
 
     let private register
-        (actors: Map<Guid, ActorAuthority>)
+        (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
         id
         principal
@@ -88,7 +88,7 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.AuthorityFold
-                    (id = entry.OperationId
+                    (id = ActorId.ofOperationId entry.OperationId
                      && not (Map.containsKey id actors)
                      && (actors
                          |> Map.values
@@ -99,7 +99,7 @@ module internal AuthorityFold =
                     (Some entry.Sequence)
                     VerificationFinding.AuthorityFold
                     (not provision
-                     || (Map.isEmpty actors && entry.Sequence = 1L && entry.ActorId = id))
+                     || (Map.isEmpty actors && entry.Sequence = Sequence.first && entry.ActorId = id))
 
             do!
                 require
@@ -160,7 +160,7 @@ module internal AuthorityFold =
 
     let private action
         (context: AuthorityFoldContext)
-        (actors: Map<Guid, ActorAuthority>)
+        (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
         (subject: AuthorityFoldTarget)
         request
@@ -204,7 +204,7 @@ module internal AuthorityFold =
     let apply
         installationId
         caseExists
-        (actors: Map<Guid, ActorAuthority>)
+        (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
         (request: AuthorityRequestRecord)
         =
@@ -218,7 +218,8 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.PayloadFormat
-                    (request.OperationId = entry.OperationId && AuthorityAct.kind request.Act = kind)
+                    (request.OperationId = OperationId.value entry.OperationId
+                     && AuthorityAct.kind request.Act = kind)
 
             let! principal = principal entry request
 

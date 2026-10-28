@@ -105,9 +105,11 @@ module Inputs =
             && parts[1]
                |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
         then
-            Convert.FromHexString(parts[1])
-            |> EntryHash.ofBytes
-            |> Option.bind (LedgerPosition.create sequence)
+            Sequence.create sequence
+            |> Option.bind (fun sequence ->
+                Convert.FromHexString(parts[1])
+                |> EntryHash.ofBytes
+                |> Option.map (LedgerPosition.create sequence))
         else
             None
 

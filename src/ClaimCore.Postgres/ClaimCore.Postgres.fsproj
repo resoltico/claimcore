@@ -6,7 +6,6 @@
     <Compile Include="DatabaseSession.fs" />
     <Compile Include="Schema/Baseline.fs" />
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
-    <Compile Include="Reads/CaseProjectionLayout.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />
     <Compile Include="Ledger/Persistence.fs" />

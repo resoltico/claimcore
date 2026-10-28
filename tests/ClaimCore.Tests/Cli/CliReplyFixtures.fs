@@ -51,16 +51,16 @@ let snapshot =
 
     {
         Reference = CaseFixtures.reference "x"
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
         State = CaseState.Active(fields)
     }
 
 let receipt =
     {
-        OperationId = id
+        OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = 1L
+                Sequence = CaseFixtures.sequence 1L
                 EntryHash =
                     (String.replicate 64 "0"
                      |> System.Convert.FromHexString
@@ -71,12 +71,12 @@ let receipt =
             ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference "x"
-                    Revision = 1L
+                    Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = id
+        RecordedBy = (CaseFixtures.actorId (id))
     }
 
 let review =
@@ -138,7 +138,7 @@ let private execute () =
     [
         ExecuteResult.Accepted receipt
         ExecuteResult.AlreadyAccepted receipt
-        ExecuteResult.Rejected Refusal.ResourceUnavailable
+        ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
         ExecuteResult.Failed CoreFault.StoreUnavailable
         ExecuteResult.OutcomeUnknown
     ]
@@ -154,7 +154,7 @@ let private preview () =
     [
         (Previewed.Reviewed >> Outcome.Succeeded) review
         (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-        Outcome.Rejected Refusal.ResourceUnavailable
+        Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
         Outcome.Failed CoreFault.StoreUnavailable
     ]
     |> List.map (fun outcome ->
@@ -177,7 +177,7 @@ let private grants =
     {
         Actor =
             {
-                ActorId = id
+                ActorId = (CaseFixtures.actorId (id))
                 Principal =
                     PrincipalKey.ofKind
                         authorityRequest.Target.Kind
@@ -231,7 +231,7 @@ let responses endpoint =
         [
             (Resolved.Accepted >> Outcome.Succeeded) receipt
             (Outcome.Succeeded Resolved.NotAccepted)
-            Outcome.Rejected Refusal.ResourceUnavailable
+            Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
             Outcome.Failed CoreFault.StoreUnavailable
         ]
         |> List.map Api.operationResolve.Output.Write

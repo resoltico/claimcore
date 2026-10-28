@@ -42,7 +42,7 @@ let private replay (database: PostgresFixture.Database) (actor: ServiceContext) 
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            4L
+            (CaseFixtures.sequence (4L))
             "One accepted case operation after replay"
     }
 
@@ -128,7 +128,11 @@ let private lostResolution drop (database: PostgresFixture.Database) =
             "Repeated resolution is final"
 
         let! head = Verification.verify database.OwnerSource None token
-        Expect.equal (VerificationSupport.position head).Sequence 3L "Resolution never appends"
+
+        Expect.equal
+            (VerificationSupport.position head).Sequence
+            (CaseFixtures.sequence (3L))
+            "Resolution never appends"
     }
 
 let private lostAuthority drop landed (database: PostgresFixture.Database) =
@@ -174,7 +178,11 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             "Exact authority replay reconciles both commit outcomes"
 
         let! head = Verification.verify database.OwnerSource None token
-        Expect.equal (VerificationSupport.position head).Sequence 4L "One authority acceptance"
+
+        Expect.equal
+            (VerificationSupport.position head).Sequence
+            (CaseFixtures.sequence (4L))
+            "One authority acceptance"
     }
 
 let private repeatedInitialization (database: PostgresFixture.Database) =

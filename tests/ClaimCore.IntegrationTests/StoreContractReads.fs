@@ -28,7 +28,7 @@ type internal HistoryInspection =
     {
         Case: StoredCase option
         Entries: StoredEntry list
-        Next: int64 option
+        Next: Revision option
     }
 
 let internal history fixture reference after limit =

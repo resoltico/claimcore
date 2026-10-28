@@ -9,6 +9,8 @@ type CaseCommand =
     private
         {
             Source: UnvalidatedCaseRequest
+            ParsedOperationId: OperationId
+            ParsedExpectedRevision: Revision
             ParsedReference: CaseReference
             ParsedAct: ValidCaseAct
         }
@@ -16,15 +18,15 @@ type CaseCommand =
     member this.Authored = this.Source
     member this.Reference = this.ParsedReference
     member this.Act = this.ParsedAct
-    member this.OperationId = this.Source.OperationId
-    member this.ExpectedRevision = this.Source.ExpectedRevision
+    member this.OperationId = this.ParsedOperationId
+    member this.ExpectedRevision = this.ParsedExpectedRevision
 
 [<NoComparison>]
 type CaseRecord =
     private
         {
             Reference: CaseReference
-            Revision: int64
+            Revision: Revision
             State: CaseState<Claim>
         }
 
@@ -59,36 +61,24 @@ module private BusinessState =
                 }
         }
 
-    let openCase (today: DateOnly) (facts: Registration) =
-        result {
-            do!
-                Admission.collect
-                    [
-                        Validation.notFuture
-                            (InputTarget.Field BusinessField.IncidentDate)
-                            today
-                            facts.IncidentDate
-                        Validation.notFuture
-                            (InputTarget.Field BusinessField.IncidentNotificationDate)
-                            today
-                            facts.IncidentNotificationDate
-                        Validation.assertedText None facts
-                    ]
+    let openCase today facts =
+        let claim =
+            {
+                Facts = facts
+                Progress = PaymentProgress.Undecided
+                Status = CaseStatus.Opened
+            }
 
-            return
-                {
-                    Facts = facts
-                    Progress = PaymentProgress.Undecided
-                    Status = CaseStatus.Opened
-                }
-        }
+        StateValidation.admit today None claim |> Result.map (fun () -> claim)
 
 module Case =
     let parse request =
         RequestValidation.parse request
-        |> Result.map (fun (reference, act) ->
+        |> Result.map (fun (reference, identity, revision, act) ->
             {
                 Source = request
+                ParsedOperationId = identity
+                ParsedExpectedRevision = revision
                 ParsedReference = reference
                 ParsedAct = act
             })
@@ -112,7 +102,7 @@ module Case =
 
     let ofAccepted (accepted: CaseSnapshot) =
         result {
-            if accepted.Revision < 1L || accepted.Revision > Revision.Maximum then
+            if accepted.Revision < Revision.first then
                 return! Error RecordViolation.RevisionOutOfRange
             else
                 let restore (fields: CaseFields) ctor =
@@ -136,21 +126,23 @@ module Case =
         }
 
     let private transition today act state =
-        Transitions.applicable state (CaseAct.kind act)
-        |> Result.bind (fun evidence -> Transitions.apply today evidence act)
+        Transitions.applicable state act
+        |> Result.mapError Refusal.Case
+        |> Result.bind (Transitions.apply today)
 
     let private create today (command: CaseCommand) =
         match command.Act with
-        | CaseAct.Open _ when command.ExpectedRevision <> 0L -> Error(Refusal.RevisionConflict 0L)
+        | CaseAct.Open _ when command.ExpectedRevision <> Revision.zero ->
+            Error(Refusal.RevisionConflict Revision.zero)
         | CaseAct.Open facts ->
             BusinessState.openCase today facts
             |> Result.map (fun claim ->
                 {
                     Reference = command.Reference
-                    Revision = 1L
+                    Revision = Revision.first
                     State = CaseState.Active claim
                 })
-        | _ -> Error Refusal.ResourceUnavailable
+        | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private existing today (request: CaseCommand) (record: CaseRecord) =
         if
@@ -160,8 +152,8 @@ module Case =
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
-            | CaseState.Erased, _ -> Error Refusal.CaseErased
-            | _, CaseAct.Open _ -> Error Refusal.CaseAlreadyExists
+            | CaseState.Erased, _ -> Error(Refusal.Case CaseRefusal.CaseErased)
+            | _, CaseAct.Open _ -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
@@ -179,7 +171,7 @@ module Case =
 
     let eligibleActs (record: CaseRecord) =
         CaseActKind.all
-        |> List.filter (Transitions.applicable record.State >> Result.isOk)
+        |> List.filter (CaseAct.probe >> Transitions.applicable record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

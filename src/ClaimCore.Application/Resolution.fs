@@ -17,7 +17,7 @@ module internal Resolution =
 
         match actor.Actor with
         | _ when not (Authority.validActor principal actor) ->
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         | Some owner ->
             match entry with
             | Some entry when entry.OperationId <> operation ->
@@ -28,14 +28,16 @@ module internal Resolution =
                 |> Result.map Verdict.Replay
                 |> Result.defaultWith Verdict.Fail
             | _ -> Verdict.Proceed owner.ActorId
-        | None -> Verdict.Refuse Refusal.ResourceUnavailable
+        | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let run (services: ServiceContext) (request: OperationLookup) token =
         let store = services.Store
         let principal = services.Principal
 
+        let operationId = OperationId.create request.OperationId
+
         task {
-            if request.OperationId = Guid.Empty then
+            if operationId.IsNone then
                 return
                     Outcome.Rejected(
                         Refusal.invalidInput (
@@ -44,6 +46,8 @@ module internal Resolution =
                         )
                     )
             else
+                let operationId = operationId.Value
+
                 let! result =
                     store.Write(
                         {
@@ -51,25 +55,15 @@ module internal Resolution =
                                 (fun tx ->
                                     task {
                                         let! actor, entry, current =
-                                            ExecutionFacts.operation
-                                                tx
-                                                principal
-                                                request.OperationId
+                                            ExecutionFacts.operation tx principal operationId
 
-                                        match
-                                            resolve
-                                                services
-                                                request.OperationId
-                                                actor
-                                                entry
-                                                current
-                                        with
+                                        match resolve services operationId actor entry current with
                                         | Verdict.Proceed actor ->
                                             do!
                                                 tx.Fence(
                                                     {
                                                         FenceKey.ActorId = actor
-                                                        OperationId = request.OperationId
+                                                        OperationId = operationId
                                                     }
                                                 )
 

@@ -138,7 +138,9 @@ let phase2 =
                     }
 
             let request =
-                ClaimCore.Tests.Fixtures.request (Case.snapshot before).Revision correction
+                ClaimCore.Tests.Fixtures.request
+                    (Revision.value (Case.snapshot before).Revision)
+                    correction
 
             let result = CaseFixtures.decide (DateOnly(2026, 7, 1)) request (Some before)
             let actual = result |> targets

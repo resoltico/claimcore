@@ -39,7 +39,10 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
                 { value with
-                    Metadata = { value.Metadata with ActorId = id 3 }
+                    Metadata =
+                        { value.Metadata with
+                            ActorId = (CaseFixtures.actorId (id 3))
+                        }
                 })
 
         do! finding VerificationFinding.ActorNotEnabled database
@@ -131,7 +134,10 @@ let internal permanentPolicyOnly (database: PostgresFixture.Database) =
         do!
             rewrite database (accepted opened).Position.Sequence (fun value ->
                 { value with
-                    Metadata = { value.Metadata with ActorId = id 3 }
+                    Metadata =
+                        { value.Metadata with
+                            ActorId = (CaseFixtures.actorId (id 3))
+                        }
                 })
 
         let! _ = verified database
@@ -168,14 +174,18 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecord
 
-        do! rewrite database 3L (updateAuthority altered)
+        do! rewrite database (CaseFixtures.sequence (3L)) (updateAuthority altered)
         let caseId = CaseReferenceId.encode database.Fixture.InstallationId "synthetic-a"
 
         do!
             sql
                 database
                 "UPDATE claimcore.grants SET case_id=$1 WHERE actor_id=$2 AND role=$3"
-                [| box caseId; box (id 1); box (Role.token Role.PaymentRecorder) |]
+                [|
+                    box (CaseId.value caseId)
+                    box (id 1)
+                    box (Role.token Role.PaymentRecorder)
+                |]
 
         do! finding VerificationFinding.AuthorityFold database
     }

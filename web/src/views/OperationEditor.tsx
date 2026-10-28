@@ -32,8 +32,8 @@ export const OperationEditor = (props: OperationEditorProps) => {
   const offered = props.current?.advice.acts ?? [props.initialAct];
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
-      <h2 id="operation-title">{p.actLabel(String(model.values["act.kind"]))}</h2>
-      <p>{p.actMeaning(String(model.values["act.kind"]))}</p>
+      <h2 id="operation-title">{p.actLabel(model.entry.kind)}</h2>
+      <p>{p.actMeaning(model.entry.kind)}</p>
       <p>{p.text("ui.unchangedUntilSubmit")}</p>
       <OperationDiscard model={model} onClose={props.onClose} />
       <OperationPanel

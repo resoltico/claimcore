@@ -11,7 +11,7 @@ module FieldPresentation =
         Vocabulary.messageKey BusinessField.vocabulary field "meaning"
 
     let descriptor field =
-        match BusinessField.valueKind field with
+        match (BusinessField.describe field).Kind with
         | FieldValueKind.CalendarDate -> ScalarRule.CalendarDate CalendarDate.descriptor
         | FieldValueKind.Country -> ScalarRule.Text CountryCode.descriptor
         | FieldValueKind.PartyName -> ScalarRule.Text PartyName.descriptor

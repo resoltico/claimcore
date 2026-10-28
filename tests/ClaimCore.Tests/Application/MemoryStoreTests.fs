@@ -11,7 +11,7 @@ open ClaimCore.TestSupport.StoreFixtures
 
 let private fixture () =
     let store =
-        new MemoryStore.Store(DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
+        new MemoryStore.Store(id 500, DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
 
     Task.FromResult
         {
@@ -32,7 +32,7 @@ let private fixture () =
 
 let private rollback () =
     async {
-        use memory = new MemoryStore.Store(DateTimeOffset.UtcNow)
+        use memory = new MemoryStore.Store(id 500, DateTimeOffset.UtcNow)
         let store = memory :> IStore
 
         let principal =
@@ -41,7 +41,7 @@ let private rollback () =
 
         for verdict in
             [
-                Verdict.Refuse Refusal.ResourceUnavailable
+                Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Verdict.Fail ClaimCore.Domain.CoreFault.InternalError
             ] do
             let! result =
@@ -54,7 +54,10 @@ let private rollback () =
 
                                     do!
                                         tx.ProjectAuthority(
-                                            AuthorityProjection.Register(id 800, principal)
+                                            AuthorityProjection.Register(
+                                                (CaseFixtures.actorId (id 800)),
+                                                principal
+                                            )
                                         )
 
                                     return verdict

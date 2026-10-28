@@ -72,7 +72,7 @@ let internal malformedOptionalDate (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "ALTER TABLE claimcore.cases DROP CONSTRAINT cases_payment_date_check; UPDATE claimcore.cases SET payment_date='infinity'"
+                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), '2026-08-15', 'infinity'),'UTF8')"
                 [||]
 
         do! finding VerificationFinding.CaseProjection database
@@ -85,7 +85,7 @@ let internal malformedAmount (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "ALTER TABLE claimcore.cases DROP CONSTRAINT claimed_money; UPDATE claimcore.cases SET claimed_amount='NaN'"
+                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), '\"claimedAmount\":\"1000\"', '\"claimedAmount\":\"NaN\"'),'UTF8')"
                 [||]
 
         do! finding VerificationFinding.CaseProjection database
@@ -131,13 +131,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!
-                rewrite database sequence (fun value ->
+                rewrite database (CaseFixtures.sequence (sequence)) (fun value ->
                     let request, snapshot = livePayload value
 
                     { value with
                         Metadata =
                             { value.Metadata with
-                                OperationId = id 10
+                                OperationId = (CaseFixtures.operationId (id 10))
                             }
                     }
                     |> updateCase { request with OperationId = id 10 } snapshot)
@@ -164,7 +164,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
             result
             (VerificationResult.Diverged
                 {
-                    Sequence = Some sequence
+                    Sequence = Some(CaseFixtures.sequence (sequence))
                     Finding = expected
                 })
             "Earliest second occurrence is checked after hash and payload, before history"

@@ -19,7 +19,7 @@ module internal QueryResults =
         | value -> Outcome.Failed(fault value)
 
     let unavailable<'Value> : Outcome<'Value> =
-        Outcome.Rejected Refusal.ResourceUnavailable
+        Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let validLimit limit =
         limit >= 1 && limit <= Paging.MaximumPageSize
@@ -41,7 +41,7 @@ module internal QueryResults =
         if Authority.validActor principal actor then
             Ok actor
         else
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let readResult result = result |> Result.defaultWith failure
 

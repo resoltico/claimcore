@@ -29,9 +29,7 @@ module InputIssues =
     let append (InputIssues(first, rest)) last = InputIssues(first, rest @ toList last)
 
 [<RequireQualifiedAccess>]
-type Refusal =
-    | InvalidInput of InputIssues
-    | RevisionConflict of actualRevision: int64
+type CaseRefusal =
     | CaseAlreadyExists
     | CaseErased
     | CaseVoided
@@ -48,14 +46,28 @@ type Refusal =
     | PaymentNotRecorded
     | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
-    | OperationResolved
-    | IdempotencyConflict
-    | ResourceUnavailable
-    | ActNotPermitted
+
+[<RequireQualifiedAccess>]
+type AuthorityRefusal =
     | LastOwner
     | ActorAlreadyRegistered
     | ActorUnknown
     | HumanPrincipalRequired
+
+[<RequireQualifiedAccess>]
+type AccessRefusal =
+    | ResourceUnavailable
+    | ActNotPermitted
+
+[<RequireQualifiedAccess>]
+type Refusal =
+    | InvalidInput of InputIssues
+    | RevisionConflict of actualRevision: Revision
+    | Case of CaseRefusal
+    | Authority of AuthorityRefusal
+    | Access of AccessRefusal
+    | OperationResolved
+    | IdempotencyConflict
     | InvalidCursor
 
 module Refusal =

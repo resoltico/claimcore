@@ -153,7 +153,10 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let first = succeeded first
 
-        Expect.equal (first.Items |> List.map _.ActorId) [ id 1 ] "Stable actor-ID order"
+        Expect.equal
+            (first.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+            [ id 1 ]
+            "Stable actor-ID order"
 
         let! second =
             (Service.actors
@@ -166,7 +169,10 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let second = succeeded second
 
-        Expect.equal (second.Items |> List.map _.ActorId) [ id 10; id 11 ] "Changed page size"
+        Expect.equal
+            (second.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+            [ id 10; id 11 ]
+            "Changed page size"
 
         let! third =
             (Service.actors
@@ -179,7 +185,11 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         match third with
         | Outcome.Succeeded page ->
-            Expect.equal (page.Items |> List.map _.ActorId) [ id 12 ] "No omission"
+            Expect.equal
+                (page.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+                [ id 12 ]
+                "No omission"
+
             Expect.isNone page.NextCursor "End of review"
         | _ -> failtest "Missing final review page"
 
@@ -385,7 +395,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
             function
             | HistoryEntry.FullEntry r ->
                 match r.Subject with
-                | ReceiptSubject.Case c -> c.Revision
+                | ReceiptSubject.Case c -> Revision.value c.Revision
                 | _ -> failtest "case"
             | _ -> failtest "full"
 
@@ -427,7 +437,7 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
                 (Service.grants
                     admin
                     ({
-                        ActorId = authority.ActorId
+                        ActorId = ActorId.value authority.ActorId
                         AfterCursor = Some cursor
                         Limit = 50
                     })
@@ -442,7 +452,7 @@ let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixtur
             (Service.grants
                 admin
                 ({
-                    ActorId = authority.ActorId
+                    ActorId = ActorId.value authority.ActorId
                     AfterCursor = None
                     Limit = 51
                 })

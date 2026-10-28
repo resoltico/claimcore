@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { CatalogInputs } from "../../src/components/CatalogInputs";
-import { initialOperationValues } from "../../src/operation/operationForm";
+import { initialOperationValues, operationEntry } from "../../src/operation/operationForm";
 import { catalogs } from "@contracts/messages";
 import { preferenceKey } from "../../src/presentation/preferences";
 import type { Notice } from "../../src/protocol/notices";
@@ -23,7 +23,13 @@ it.each(["en", "lv", "ar"] as const)(
     preferences(language);
     const user = userEvent.setup();
     const values = initialOperationValues("AUTHORITY", "REGISTER", null);
-    const props = { values, current: null, disabled: false, onChange: vi.fn() };
+    const props = {
+      entry: operationEntry({ subject: "AUTHORITY", kind: "REGISTER" }),
+      values,
+      current: null,
+      disabled: false,
+      onChange: vi.fn(),
+    };
     const view = render(<CatalogInputs {...props} fieldErrors={{}} />);
     for (const field of ["issuer", "subject"] as const) {
       const name = catalogs[language][`field.principal.${field}.label`];
@@ -54,6 +60,7 @@ it.each(["en", "lv", "ar"] as const)(
     preferences(language);
     render(
       <CatalogInputs
+        entry={operationEntry({ subject: "CASE", kind: "CORRECT" })}
         values={initialOperationValues("CASE", "CORRECT", null)}
         current={null}
         disabled={false}

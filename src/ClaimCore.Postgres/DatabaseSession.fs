@@ -18,6 +18,11 @@ type internal RecordCorruptException(reason: string) =
     inherit Exception(reason)
 
 module internal DatabaseSession =
+    let admitted create raw =
+        create raw
+        |> Option.defaultWith (fun () ->
+            raise (RecordCorruptException "Invalid stored identifier or position."))
+
     let statement (connection: NpgsqlConnection) sql (parameters: objnull array) =
         let statement = new NpgsqlCommand(sql, connection)
 
@@ -128,8 +133,6 @@ module internal DatabaseSession =
     let calendarDate index row =
         parsedCalendarDate (value<string> index row)
 
-    let namedCalendarDate name row =
-        parsedCalendarDate (namedValue<string> name row)
 
     let recordedInstant index row =
         let text = value<string> index row

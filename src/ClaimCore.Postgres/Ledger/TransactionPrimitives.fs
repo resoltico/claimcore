@@ -23,7 +23,7 @@ module internal TransactionPages =
                     None
         }
 
-    let cases connection (query: CasePageQuery) token =
+    let cases connection installation (query: CasePageQuery) token =
         let visibility = query.Visibility
         let actor = query.ActorId
         let roles = query.ReadRoles
@@ -39,7 +39,7 @@ module internal TransactionPages =
                     [|
                         DatabaseSession.parameter after
                         box (visibility = CaseVisibility.Every)
-                        box actor
+                        box (ActorId.value actor)
                         box (roles |> List.map Role.token |> List.toArray)
                         box (forbidden |> List.map Role.token |> List.toArray)
                         box (limit + 1)
@@ -48,7 +48,7 @@ module internal TransactionPages =
 
             return
                 rows
-                |> List.map Projections.caseRow
+                |> List.map (Projections.caseRow installation)
                 |> page limit (fun record -> CaseReference.identity record.Snapshot.Reference)
         }
 
@@ -62,7 +62,7 @@ module internal TransactionPages =
                 DatabaseSession.rows
                     connection
                     ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND case_revision>$2 ORDER BY case_revision LIMIT $3")
-                    [| box id; box after; box (limit + 1) |]
+                    [| box (CaseId.value id); box (Revision.value after); box (limit + 1) |]
                     token
 
             let entries = rows |> List.map (StoredEntries.decode installation >> _.Entry)
@@ -81,7 +81,10 @@ module internal TransactionPages =
                 DatabaseSession.rows
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) ORDER BY actor_id LIMIT $2"
-                    [| DatabaseSession.parameter after; box (limit + 1) |]
+                    [|
+                        DatabaseSession.parameter (after |> Option.map ActorId.value)
+                        box (limit + 1)
+                    |]
                     token
 
             return rows |> List.map Projections.actorRow |> page limit (fun actor -> actor.ActorId)
@@ -94,11 +97,13 @@ module internal TransactionPages =
                     connection
                     grantPageSql
                     [|
-                        box target
+                        box (ActorId.value target)
                         DatabaseSession.parameter (
                             after |> Option.map (fun value -> Role.token value.Role)
                         )
-                        DatabaseSession.parameter (after |> Option.bind _.CaseId)
+                        DatabaseSession.parameter (
+                            after |> Option.bind _.CaseId |> Option.map CaseId.value
+                        )
                         box (limit + 1)
                     |]
                     token
@@ -140,13 +145,13 @@ type private ReadTx
             }
 
         member _.FindCase id =
-            Projections.caseById connection id token
+            Projections.caseById connection installation id token
 
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
         member _.CasePage query =
-            TransactionPages.cases connection query token
+            TransactionPages.cases connection installation query token
 
         member _.HistoryPage query =
             TransactionPages.history connection installation query token
@@ -174,7 +179,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE actor_id=$1"
-                        [| box id |]
+                        [| box (ActorId.value id) |]
                         token
 
                 return rows |> List.tryExactlyOne |> Option.map Projections.actorRow
@@ -223,7 +228,7 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
                     DatabaseSession.rows
                         connection
                         "SELECT EXISTS (SELECT 1 FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2)"
-                        [| box actor; box operation |]
+                        [| box (ActorId.value actor); box (OperationId.value operation) |]
                         token
 
                 return DatabaseSession.value<bool> 0 rows.Head
@@ -249,7 +254,11 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES ($1,$2,$3) ON CONFLICT (actor_id,operation_id) DO NOTHING"
-                        [| box actor; box operation; box observedAt |]
+                        [|
+                            box (ActorId.value actor)
+                            box (OperationId.value operation)
+                            box observedAt
+                        |]
                         token
 
                 return ()

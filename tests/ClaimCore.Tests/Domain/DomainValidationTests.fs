@@ -106,17 +106,12 @@ let private restorationTests =
 
                 let terminal =
                     { original with
-                        Revision = Revision.Maximum
+                        Revision = CaseFixtures.revision 9007199254740991L
                     }
 
                 Expect.isOk (Case.ofAccepted terminal) "The format boundary remains readable"
 
-                Expect.isError
-                    (Case.ofAccepted
-                        { original with
-                            Revision = Revision.Maximum + 1L
-                        })
-                    "Beyond safe range")
+                Expect.isNone (Revision.create 9007199254740992L) "Beyond safe range")
         ]
 
 let private precisionAndRoundTripTests =

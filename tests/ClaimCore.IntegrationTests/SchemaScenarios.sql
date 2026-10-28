@@ -109,55 +109,32 @@ SELECT count(*) = 1 AS authority_payload_kept FROM claimcore.ledger
 \quit 3
 \endif
 
--- Case projection invariants --------------------------------------------------------------------
-INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', DATE '2026-08-01',
-    DATE '2026-08-03', 'LT', 'Example Claimant', 'Example Insurer', 1000, 'EUR',
-    NULL, NULL, NULL, NULL, 'OPENED');
+-- Snapshot projection invariants ---------------------------------------------------------------
+INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01');
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001',
-      1, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR', NULL, NULL,
-      NULL, NULL, 'OPENED')$s$, '23505');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01')$s$, '23505');
 SELECT pg_temp.expect('reference with a space refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3',
-      1, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR', NULL, NULL,
-      NULL, NULL, 'OPENED')$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1',
-      1, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR', NULL, NULL,
-      NULL, NULL, 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('lowercase country code refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      1, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'lt', 'A', 'B', 1, 'EUR', NULL, NULL,
-      NULL, NULL, 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('partial decision refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      2, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR',
-      DATE '2026-08-04', NULL, NULL, NULL, 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('paid zero decision refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      3, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR',
-      DATE '2026-08-04', 0, 'EUR', DATE '2026-08-05', 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('chronology violation refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      1, 'ACTIVE', DATE '2026-08-04', DATE '2026-08-03', 'LT', 'A', 'B', 1, 'EUR', NULL, NULL,
-      NULL, NULL, 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('erased projection with business values refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      4, 'ERASED', DATE '2026-08-01', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-      NULL, NULL)$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01')$s$, '23514');
+SELECT pg_temp.expect('erased projection with snapshot refused',
+    $s$UPDATE claimcore.cases SET state='ERASED'$s$, '23514');
+SELECT pg_temp.expect('live projection without snapshot refused',
+    $s$UPDATE claimcore.cases SET snapshot=NULL$s$, '23514');
+SELECT pg_temp.expect('empty snapshot refused',
+    $s$UPDATE claimcore.cases SET snapshot=''::bytea$s$, '23514');
+SELECT pg_temp.expect('oversized snapshot refused',
+    $s$UPDATE claimcore.cases SET snapshot=decode(repeat('00',32769),'hex')$s$, '23514');
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      9007199254740992, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1,
-      'EUR', NULL, NULL, NULL, NULL, 'OPENED')$s$, '23514');
-SELECT pg_temp.expect('money scale beyond four refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO-3',
-      1, 'ACTIVE', DATE '2026-08-01', DATE '2026-08-03', 'LT', 'A', 'B', 1.00001, 'EUR', NULL,
-      NULL, NULL, NULL, 'OPENED')$s$, '23514');
-UPDATE claimcore.cases SET revision = 3, state = 'ERASED', incident_date = NULL,
-    incident_notification_date = NULL, incident_country = NULL, claimant_name = NULL,
-    insurer_name = NULL, claimed_amount = NULL, claimed_currency = NULL, status = NULL
- WHERE case_id = :case1;
+    $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
+UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL WHERE case_id=:case1;
+SELECT snapshot IS NULL AND case_reference='Demo-0001' AND revision=3 AND state='ERASED' AS erased_projection FROM claimcore.cases WHERE case_id=:case1 \gset
+\if :erased_projection
 \echo PASS erased projection keeps only reference, revision and state
+\else
+\echo FAIL erased projection retained snapshot bytes
+\quit 3
+\endif
 
 -- Authority projections -----------------------------------------------------------------------
 INSERT INTO claimcore.actors VALUES (:owner, 'HUMAN', 'https://issuer.example/', 'owner', true);

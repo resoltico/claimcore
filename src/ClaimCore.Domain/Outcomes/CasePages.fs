@@ -4,7 +4,7 @@ namespace ClaimCore.Domain
 type CaseSummary =
     {
         Reference: CaseReference
-        Revision: int64
+        Revision: Revision
         State: CaseState<CaseStatus>
     }
 

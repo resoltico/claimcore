@@ -2,19 +2,20 @@ import { productMetadata } from "../protocol/productMetadata";
 import { buildRequest } from "../protocol/client";
 import type { FormValues } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
-import type { CatalogDocument } from "@contracts/client";
 import {
   atPath,
   applies,
   assembleCatalogInput,
   bindingPath,
   type CatalogInput,
+  type CatalogEntry,
+  type CatalogEntryIdentity,
 } from "../protocol/catalogAssembly";
 export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 
-export const operationEntry = (values: FormValues): CatalogDocument["entries"][number] => {
+export const operationEntry = (identity: CatalogEntryIdentity): CatalogEntry => {
   const definition = productMetadata.catalog.entries.find(
-    (item) => item.subject === values["kind"] && item.kind === values["act.kind"],
+    (item) => item.subject === identity.subject && item.kind === identity.kind,
   );
   if (definition === undefined) {
     throw new Error("Unknown operation catalog entry.");
@@ -51,33 +52,35 @@ export const initialOperationValues = (
   current: CurrentCase | null,
   id = crypto.randomUUID(),
 ): FormValues => {
-  const definition = operationEntry({ kind: subject, "act.kind": kind });
+  const definition = operationEntry({ subject, kind });
   const values: Record<string, string | boolean> = {};
-  for (const constant of definition.constants) {
-    values[constant.path.join(".")] =
-      typeof constant.value === "number" ? String(constant.value) : constant.value;
-  }
   for (const input of definition.inputs) {
     values[bindingPath(input)] = initialValue(input, current, id);
   }
   return values;
 };
-export const refusalPath = (target: string | null, values: FormValues): string | null => {
+export const refusalPath = (
+  target: string | null,
+  entry: CatalogEntry,
+  values: FormValues,
+): string | null => {
   if (target === null) {
     return null;
   }
   return (
-    operationEntry(values)
-      .inputs.find((input) => input.diagnosticTargets.includes(target) && applies(input, values))
+    entry.inputs
+      .find((input) => input.diagnosticTargets.includes(target) && applies(input, values))
       ?.path.join(".") ?? null
   );
 };
-export const assembleOperation = (values: FormValues) => {
-  const entry = operationEntry(values);
-  return buildRequest("operation.execute", assembleCatalogInput(entry, values));
-};
-export const visibleOperationInputs = (values: FormValues, current: CurrentCase | null) =>
-  operationEntry(values).inputs.filter(
+export const assembleOperation = (entry: CatalogEntry, values: FormValues) =>
+  buildRequest("operation.execute", assembleCatalogInput(entry, values));
+export const visibleOperationInputs = (
+  entry: CatalogEntry,
+  values: FormValues,
+  current: CurrentCase | null,
+) =>
+  entry.inputs.filter(
     (input) =>
       input.source === "AUTHORED" &&
       !(input.field === "caseReference" && current !== null) &&

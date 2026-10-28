@@ -272,6 +272,10 @@ let internal choose (source: Seeds) context kind =
 let internal domainValue (kind: Type) =
     if kind = typeof<CaseReference> then
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
+    elif kind = typeof<OperationId> then
+        Some(guid |> Gen.map (CaseFixtures.operationId >> box))
+    elif kind = typeof<ActorId> then
+        Some(guid |> Gen.map (CaseFixtures.actorId >> box))
     elif kind = typeof<CalendarDate> then
         Some(date |> Gen.map (CaseFixtures.date >> box))
     elif kind = typeof<CountryCode> then
@@ -318,10 +322,21 @@ let internal domainValue (kind: Type) =
     else
         None
 
+let private positionValue response context kind =
+    if kind = typeof<Revision> then
+        Some(integer response context |> Gen.map (CaseFixtures.revision >> box))
+    elif kind = typeof<Sequence> then
+        Some(integer response context |> Gen.map (CaseFixtures.sequence >> box))
+    else
+        None
+
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
-    match domainValue kind with
+    match positionValue response context kind with
     | Some generator -> generator
-    | None -> freshRepresentation response source context kind value
+    | None ->
+        match domainValue kind with
+        | Some generator -> generator
+        | None -> freshRepresentation response source context kind value
 
 and private freshRepresentation response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then

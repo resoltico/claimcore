@@ -30,8 +30,8 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | JSON-free values, typed acts, accepted state, outcomes, authority policy and decisions |
-| Protocol | Wire codecs, endpoints, derived catalog, diagnostic/command-line contracts and host build identity |
+| Domain | JSON-free values and identifiers, typed acts, accepted state, outcomes, authority policy and decisions |
+| Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
@@ -69,10 +69,73 @@ reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.
 from host composition. Multi-argument transaction and store members take named records.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
-[typed declaration](../src/ClaimCore.Domain/CaseFields.fs). Named projection columns derive from that declaration.
+[typed declaration](../src/ClaimCore.Domain/CaseFields.fs). The case projection stores exact durable snapshot bytes.
 Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
 [Route.bind](../src/ClaimCore.Web/Routes.fs).
 Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/Vocabulary.fs) mechanism.
+
+## Source vocabulary
+
+### Value module
+
+[Values.fs](../src/ClaimCore.Domain/Values.fs) owns permanent parsing and formatting for calendar dates,
+countries, money, party names, reasons and references. Current admission exists where a value has current
+rules: dates, party names and reasons. Money owns amount and currency together.
+[Identifiers.fs](../src/ClaimCore.Domain/Identifiers.fs) owns nonempty operation, actor and case IDs and
+bounded revisions and sequences. Authored requests and reply correlation fields retain raw values;
+admitted commands and stored identity/position fields use typed values.
+
+### Declaration
+
+[BusinessField.describe](../src/ClaimCore.Domain/CaseFields.fs) exhaustively supplies field structure and
+value projections. Field/group inventories and authored input targets derive from that description.
+`CaseAct.slot` and `AuthorityAct.slot` pair typed injection with projection. Protocol owns endpoint and
+interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
+annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
+
+Registration formatting in [CaseAct](../src/ClaimCore.Domain/CaseActs.fs), parsing/construction in
+[Validation](../src/ClaimCore.Domain/Validation.fs), and asserted-value admission in
+[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) remain explicit. Keep those operations and
+the authored/admitted records aligned when changing fields; `describe` does not construct or admit
+a registration value.
+
+[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) owns admission of newly asserted dates and
+names and progress invariants. Corrections retain proposed groups until acknowledgement and admission
+finish, so incomplete combinations can still report independent input issues. `InputTarget.order` owns
+issue order, applied after the transition checks.
+
+### Applicable
+
+[Applicable](../src/ClaimCore.Domain/Transitions.fs) carries both the permitted state and the selected
+act's payload. Transition execution matches that evidence exhaustively; eligibility evaluates unit-payload
+act probes. Actor authorization and admission of supplied values remain separate checks.
+
+### Verdict
+
+Application's `Verdict` is Proceed, Replay, Refuse or Fail. Only Proceed permits a transaction to commit;
+the other verdicts discard staged changes. Public outcomes adapt the result to each operation's contract.
+Domain refusals distinguish case, authority and access causes while codecs retain their flat public codes.
+
+### Route
+
+A Web-owned endpoint binding with input and output closures. Binding captures the handler with matching
+request and response types, so dispatch can invoke the route without recovering erased values.
+
+### Read and write transactions
+
+[IReadTx](../src/ClaimCore.Application/LedgerStorePort.fs) supplies primitives over one consistent snapshot.
+`IWriteTx` adds the head, nonce, append, projection and fence primitives. The PostgreSQL adapter constructs
+it after acquiring the ledger head lock.
+
+### Request gate
+
+Web checks the connection, origin, credentials, media type, request size and antiforgery token before
+Application handles a request. A rejected gate produces a transport failure.
+
+### Runtime leases
+
+Leases own work using a runtime resource. Closing leases stops new acquisition; active work keeps its
+lease until provider cleanup finishes.
 
 ## Transactions and durable formats
 
@@ -99,6 +162,13 @@ checksum-bound schema source; its SHA-256 installation identity derives from the
 Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
 identities without modifying them.
 
+The case projection contains identity, revision, lifecycle and a nullable snapshot. Live snapshots store
+exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
+Reads decode the permanent record and check its reference, revision and lifecycle against the columns and
+its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger and
+compares the projection snapshot bytes exactly. Case progress and business-value invariants belong to Domain
+and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
+
 ## Generated contracts
 
 After a declaration, codec or message change:
@@ -116,8 +186,11 @@ producer. Custom output directories contain only contract artifacts.
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
 `synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
-Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/WireMembers.fs) supplies technical
-member names; catalog annotations identify meaning by named schema definition/member. The schema walk
+Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/Wire/WireMembers.fs) supplies technical
+member names; catalog annotations identify meaning by named schema definition/member. Finite codec
+vocabularies supply the catalog's choice/group and constant vocabulary names; group annotations supply
+correction advice identity. Generation rejects finite inputs without a vocabulary. Browser form state
+keeps the selected catalog entry identity, and request constants derive from that entry. The schema walk
 resolves references and nested discriminators, and validates complete, non-orphan annotations and tokens.
 
 Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
@@ -196,6 +269,41 @@ engine jobs are required for the CI matrix; a selected engine alone does not qua
 mode explicitly reports incomplete qualification. Native report directories under
 `artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
+
+## Change probes
+
+Run these five manual probes at the end of every foundation or refactoring PR, before marking it
+ready, and whenever the owner asks. They measure representative future changes, including costs
+outside the code being refactored.
+
+| Probe | Change | Invariants to assess |
+| --- | --- | --- |
+| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/` or PostgreSQL source changes; no renderer changes; in Domain, only the one field-description function (`BusinessField.describe`) changes. |
+| P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
+| P-ROLE | Add a role with one existing capability. | No renderer changes; SQL changes only the durable `grants.role` token list. |
+| P-READ | Add a read-only endpoint over existing case data. | No renderer changes; CLI verb and catalog entry derive; one store-port method implemented by PostgreSQL and the memory double. |
+| P-MESSAGE | Add a case refusal and its message. | Only Domain refusal/producer, diagnostic mapping and three locale files change; no renderer changes. |
+
+Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
+`generated/`. Generated contracts and documentation are recorded separately from authored production
+files. Assess P-FIELD's Domain criterion across field mapping, parsing and admission as well as
+metadata and projection. Consolidating metadata in
+[CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs) alone does not establish that criterion.
+
+Start each probe from the same candidate commit on its own throwaway local `probe/<id>` branch.
+Never push these branches; delete them afterwards. Apply the representative change manually, build
+the solution, regenerate contracts and add one temporary test exercising the new element through its
+real path. A passing test must demonstrate the feature, including the relevant boundary or store,
+rather than merely compiling it. Record production files and added/deleted lines, generated files,
+test and fixture updates required, every gate failure, and each invariant as met or missed with its
+cause. Run the normal fast gate to expose costs beyond the focused test; preserve failures even when
+a later check passes. Keep these experiments isolated from the delivered feature set.
+
+A miss alone does not block merging. Fix defects within the PR's scope and rerun the affected probe;
+otherwise explain the cause and propose follow-up work. Preserve safeguards and existing gate limits.
+Future foundation proposals must cite the latest probe results, a concrete defect or a stated
+requirement. Put measurements, failures and follow-up proposals in PR bodies, not repository files. This section
+is the single authority for the procedure; no maintained script applies the probes automatically.
 
 ## Growth
 

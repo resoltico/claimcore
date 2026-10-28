@@ -28,6 +28,7 @@ type Previewed =
 
 type PreviewReply =
     {
+        // Correlation echoes authored input even when admission refuses its identity.
         OperationId: Guid
         Outcome: Outcome<Previewed>
     }
@@ -42,6 +43,7 @@ type ExecuteResult =
 
 type ExecuteReply =
     {
+        // Correlation echoes authored input even when admission refuses its identity.
         OperationId: Guid
         Outcome: ExecuteResult
     }

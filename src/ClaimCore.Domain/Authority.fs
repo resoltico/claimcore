@@ -8,7 +8,7 @@ type ValidAuthorityAct = AuthorityAct<AuthoredGrant>
 type AuthorityCommand =
     private
         {
-            Id: Guid
+            Id: OperationId
             Principal: PrincipalKey
             Action: ValidAuthorityAct
         }
@@ -29,7 +29,7 @@ type AuthorityChange =
 type AuthorityFacts =
     {
         TargetActor: ActorAuthority option
-        TargetCaseId: Guid option
+        TargetCaseId: CaseId option
         EnabledHumanOwners: int
         ActorCount: int
         Requester: AuthorityView
@@ -100,8 +100,7 @@ module Authority =
 
         view.Actor
         |> Option.exists (fun actor ->
-            actor.ActorId <> Guid.Empty
-            && actor.Enabled
+            actor.Enabled
             && actor.Principal = principal
             && (PrincipalKey.isHuman principal || loaded |> List.forall (humanOnlyRole >> not)))
 
@@ -110,8 +109,7 @@ module Authority =
             match resource with
             | Scope.Installation -> Some view.Installation
             | Scope.Case id when
-                id <> Guid.Empty
-                && capability <> Capability.ManageAuthority
+                capability <> Capability.ManageAuthority
                 && capability <> Capability.ReadAuthority
                 ->
                 Some(view.Installation @ (view.Cases |> Map.tryFind id |> Option.defaultValue []))
@@ -186,10 +184,10 @@ module Authority =
             None
 
     let private operationIdentity operationId =
-        if operationId = Guid.Empty then
-            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
-        else
-            Ok()
+        OperationId.create operationId
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
     let private scopeReference =
         function
@@ -207,9 +205,9 @@ module Authority =
 
     let private command operationId target act =
         Admission.map2
-            (fun () () ->
+            (fun identity () ->
                 {
-                    Id = operationId
+                    Id = identity
                     Principal = target
                     Action = act
                 })
@@ -221,17 +219,17 @@ module Authority =
 
     let parse (request: AuthorityRequest) =
         match request.Act with
-        | AuthorityAct.ProvisionOwner -> Error Refusal.ActNotPermitted
+        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
         | act ->
             Admission.map2
-                (fun target () ->
+                (fun (identity, target) () ->
                     {
-                        Id = request.OperationId
+                        Id = identity
                         Principal = target
                         Action = act
                     })
                 (Admission.map2
-                    (fun () target -> target)
+                    (fun identity target -> identity, target)
                     (operationIdentity request.OperationId)
                     (PrincipalKey.ofKind
                         request.Target.Kind
@@ -252,49 +250,54 @@ module Authority =
             }
             actor.Grants
 
-    let private grantChange (facts: AuthorityFacts) active role target (actor: ActorAuthority) =
-        let scope =
-            match target, facts.TargetCaseId with
-            | GrantTarget.Installation, _ -> Ok Scope.Installation
-            | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
-            | _ -> Error Refusal.ResourceUnavailable
+    let private grantScope (facts: AuthorityFacts) target =
+        match target, facts.TargetCaseId with
+        | GrantTarget.Installation, _ -> Ok Scope.Installation
+        | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
+        | _ -> Error AccessRefusal.ResourceUnavailable
 
-        scope
+    let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =
+        if humanOnlyRole role && not (PrincipalKey.isHuman actor.Principal) then
+            Error AuthorityRefusal.HumanPrincipalRequired
+        elif
+            not active
+            && role = Role.Owner
+            && scope = Scope.Installation
+            && owner actor
+            && facts.EnabledHumanOwners <= 1
+        then
+            Error AuthorityRefusal.LastOwner
+        elif active then
+            Ok(AuthorityChange.Granted(role, scope))
+        else
+            Ok(AuthorityChange.Revoked(role, scope))
+
+    let private scopedChange facts active role target actor =
+        grantScope facts target
+        |> Result.mapError Refusal.Access
         |> Result.bind (fun scope ->
-            if humanOnlyRole role && not (PrincipalKey.isHuman actor.Principal) then
-                Error Refusal.HumanPrincipalRequired
-            elif
-                not active
-                && role = Role.Owner
-                && scope = Scope.Installation
-                && owner actor
-                && facts.EnabledHumanOwners <= 1
-            then
-                Error Refusal.LastOwner
-            elif active then
-                Ok(AuthorityChange.Granted(role, scope))
-            else
-                Ok(AuthorityChange.Revoked(role, scope)))
+            grantChange facts active role scope actor |> Result.mapError Refusal.Authority)
 
 
     let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
         match command.Act, facts.TargetActor with
         | AuthorityAct.ProvisionOwner, _ when not (PrincipalKey.isHuman command.Target) ->
-            Error Refusal.HumanPrincipalRequired
+            Error(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
         | AuthorityAct.ProvisionOwner, None when facts.ActorCount = 0 ->
             Ok AuthorityChange.OwnerProvisioned
         | AuthorityAct.ProvisionOwner, _
-        | AuthorityAct.Register, Some _ -> Error Refusal.ActorAlreadyRegistered
+        | AuthorityAct.Register, Some _ ->
+            Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
         | AuthorityAct.Register, None -> Ok AuthorityChange.Registered
-        | _, None -> Error Refusal.ActorUnknown
+        | _, None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
         | AuthorityAct.Disable, Some actor when owner actor && facts.EnabledHumanOwners <= 1 ->
-            Error Refusal.LastOwner
+            Error(Refusal.Authority AuthorityRefusal.LastOwner)
         | AuthorityAct.Enable, Some _ -> Ok AuthorityChange.Enabled
         | AuthorityAct.Disable, Some _ -> Ok AuthorityChange.Disabled
         | AuthorityAct.Grant { Role = role; Scope = target }, Some actor ->
-            grantChange facts true role target actor
+            scopedChange facts true role target actor
         | AuthorityAct.Revoke { Role = role; Scope = target }, Some actor ->
-            grantChange facts false role target actor
+            scopedChange facts false role target actor
 
     let decide (facts: AuthorityFacts) (command: AuthorityCommand) =
         let permitted =
@@ -307,4 +310,4 @@ module Authority =
         if permitted then
             change facts command
         else
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)

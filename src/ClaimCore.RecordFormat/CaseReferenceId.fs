@@ -34,4 +34,4 @@ module CaseReferenceId =
         let bytes = digest[0..15]
         bytes[6] <- (bytes[6] &&& 0x0Fuy) ||| 0x80uy
         bytes[8] <- (bytes[8] &&& 0x3Fuy) ||| 0x80uy
-        Guid(ReadOnlySpan<byte>(bytes), bigEndian = true)
+        Guid(ReadOnlySpan<byte>(bytes), bigEndian = true) |> CaseId.create |> Option.get

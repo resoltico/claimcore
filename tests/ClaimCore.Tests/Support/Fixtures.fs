@@ -36,7 +36,10 @@ let opened () =
     |> accepted
 
 let apply act claim =
-    CaseFixtures.decide today (request (Case.snapshot claim).Revision act) (Some claim)
+    CaseFixtures.decide
+        today
+        (request (Revision.value (Case.snapshot claim).Revision) act)
+        (Some claim)
 
 let decided () =
     opened () |> apply (AuthoredCaseAct.Decide decision) |> accepted
@@ -62,6 +65,6 @@ let viewFields (snapshot: CaseSnapshot) =
 let snapshot revision (fields: CaseFields) =
     {
         Reference = fields.CaseReference
-        Revision = revision
+        Revision = CaseFixtures.revision revision
         State = CaseState.Active(fields)
     }

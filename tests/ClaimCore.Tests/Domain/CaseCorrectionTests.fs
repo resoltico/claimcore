@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseCorrectionTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Protocol
 
 open Expecto
@@ -37,7 +39,11 @@ let private paidCorrectionTests =
 
                 let after = before |> apply act |> accepted |> Case.snapshot
 
-                Expect.equal after.Revision ((Case.snapshot before).Revision + 1L) "One revision"
+                Expect.equal
+                    after.Revision
+                    (CaseFixtures.revision (Revision.value (Case.snapshot before).Revision + 1L))
+                    "One revision"
+
                 Expect.equal (viewFields after).Status CaseStatus.Opened "Status is retained"
 
                 Expect.equal
@@ -108,8 +114,15 @@ let private closedCorrectionTests =
 
                 let result = before |> apply (correct Amendment.Keep Change.Keep Change.Keep)
 
-                Expect.equal result (Error Refusal.CorrectionNoChanges) "No-op is refused"
-                Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
+                Expect.equal
+                    result
+                    (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+                    "No-op is refused"
+
+                Expect.equal
+                    (Case.snapshot before).Revision
+                    (CaseFixtures.revision 3L)
+                    "Existing case is unchanged")
             testCase
                 "equivalent scalar spelling cannot create a correction-only revision"
                 (fun () ->
@@ -126,7 +139,7 @@ let private closedCorrectionTests =
 
                     Expect.equal
                         result
-                        (Error Refusal.CorrectionNoChanges)
+                        (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
                         "Same accepted facts are no-op")
         ]
 
@@ -143,7 +156,7 @@ let private validationTests =
 
                 Expect.equal
                     (opened () |> apply act)
-                    (Error Refusal.CorrectionRequiresExistingValue)
+                    (Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue))
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =

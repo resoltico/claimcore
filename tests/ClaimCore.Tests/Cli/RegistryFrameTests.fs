@@ -170,7 +170,7 @@ let private results () =
             {
 
                 ExecuteReply.OperationId = id
-                Outcome = ExecuteResult.Rejected Refusal.LastOwner
+                Outcome = ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
             }
 
     frameRoundTrip (reply (FrameResult.Reply output) DeliveryState.Delivered)

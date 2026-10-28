@@ -6,9 +6,9 @@ import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
-import enCore from "../../src/ClaimCore.Protocol/Localization/en.json" with { type: "json" };
-import lvCore from "../../src/ClaimCore.Protocol/Localization/lv.json" with { type: "json" };
-import arCore from "../../src/ClaimCore.Protocol/Localization/ar.json" with { type: "json" };
+import enCore from "../../src/ClaimCore.Protocol/Messages/Localization/en.json" with { type: "json" };
+import lvCore from "../../src/ClaimCore.Protocol/Messages/Localization/lv.json" with { type: "json" };
+import arCore from "../../src/ClaimCore.Protocol/Messages/Localization/ar.json" with { type: "json" };
 
 import enChrome from "../locales/en.json" with { type: "json" };
 const en = { ...enCore, ...enChrome };

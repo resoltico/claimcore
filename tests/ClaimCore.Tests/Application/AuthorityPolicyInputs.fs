@@ -17,14 +17,17 @@ let internal human =
 let internal service =
     PrincipalKey.service "https://issuer.example/" "worker" |> accepted
 
-let internal caseId = Guid.Parse "c0000000-0000-4000-8000-000000000001"
-let internal otherCaseId = Guid.Parse "c0000000-0000-4000-8000-000000000002"
+let internal caseId =
+    Guid.Parse "c0000000-0000-4000-8000-000000000001" |> CaseFixtures.caseId
+
+let internal otherCaseId =
+    Guid.Parse "c0000000-0000-4000-8000-000000000002" |> CaseFixtures.caseId
 
 let internal actor principal grants : ActorAuthority =
     {
         Actor =
             {
-                ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
+                ActorId = (CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000001"))
                 Principal = principal
                 Enabled = true
             }
@@ -95,9 +98,8 @@ let internal expectedPermission (rule: PermissionRule) principal grant resource 
     let scope =
         match grant, resource with
         | Scope.Installation, Scope.Installation -> true
-        | Scope.Installation, Scope.Case id -> id <> Guid.Empty && not installationOnly
-        | Scope.Case granted, Scope.Case requested ->
-            granted = requested && requested <> Guid.Empty && not installationOnly
+        | Scope.Installation, Scope.Case _ -> not installationOnly
+        | Scope.Case granted, Scope.Case requested -> granted = requested && not installationOnly
         | _ -> false
 
     List.contains capability capabilities

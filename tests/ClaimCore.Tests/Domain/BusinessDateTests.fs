@@ -10,13 +10,46 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private applyAt date act claim =
-    CaseFixtures.decide date (request (Case.snapshot claim).Revision act) (Some claim)
+    CaseFixtures.decide
+        date
+        (request (Revision.value (Case.snapshot claim).Revision) act)
+        (Some claim)
 
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
         (Error(Refusal.invalidInput (field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
+
+let private openingAccumulatesAssertions =
+    testCase
+        "opening reports future dates and surrounding name whitespace in field order"
+        (fun () ->
+            let facts =
+                { registration with
+                    ClaimantName = " Synthetic claimant "
+                }
+
+            let outcome =
+                CaseFixtures.decide
+                    (DateOnly(2026, 7, 31))
+                    (request 0L (AuthoredCaseAct.Open facts))
+                    None
+
+            match outcome with
+            | Error(Refusal.InvalidInput issues) ->
+                Expect.equal
+                    (InputIssues.toList issues
+                     |> List.map (fun issue -> issue.Target, issue.Violation))
+                    [
+                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                        InputTarget.Field BusinessField.IncidentNotificationDate,
+                        Violation.FutureDate
+                        InputTarget.Field BusinessField.ClaimantName,
+                        Violation.SurroundingWhitespace
+                    ]
+                    "Independent newly asserted values retain field order"
+            | other -> failtestf "Expected accumulated assertions, got %A" other)
 
 let private amendmentRetainsDates =
     testCase "amendment retains accepted dates after clock rollback" (fun () ->
@@ -32,7 +65,7 @@ let private amendmentRetainsDates =
             |> accepted
             |> Case.snapshot
 
-        Expect.equal after.Revision 2L "One revision"
+        Expect.equal after.Revision (CaseFixtures.revision 2L) "One revision"
 
         Expect.isTrue
             (CalendarDate.format (viewFields after).Registration.IncidentNotificationDate =
@@ -148,7 +181,7 @@ let private closedCorrectionRetainsDates =
                 Some "2026-08-20")
             "Reaffirmed accepted payment"
 
-        Expect.equal after.Revision 5L "One complete revision")
+        Expect.equal after.Revision (CaseFixtures.revision 5L) "One complete revision")
 
 let private correctionIncidentIsBounded =
     testCase "a correction cannot hide a new future incident behind accepted dates" (fun () ->
@@ -168,6 +201,38 @@ let private correctionIncidentIsBounded =
         |> applyAt (DateOnly(2026, 7, 31)) act
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
+let private incompleteCorrectionAccumulatesAssertions =
+    testCase
+        "incomplete paid corrections retain acknowledgement and independent assertion issues"
+        (fun () ->
+            let correction =
+                AuthoredCaseAct.Correct
+                    {
+                        Registration =
+                            Amendment.Replace
+                                { registration with
+                                    IncidentDate = "2026-08-02"
+                                    ClaimantName = " New claimant "
+                                }
+                        Decision = Change.Clear
+                        Payment = Change.Replace { PaymentDate = "2026-08-21" }
+                    }
+
+            match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
+            | Error(Refusal.InvalidInput issues) ->
+                Expect.equal
+                    (InputIssues.toList issues
+                     |> List.map (fun issue -> issue.Target, issue.Violation))
+                    [
+                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                        InputTarget.Field BusinessField.ClaimantName,
+                        Violation.SurroundingWhitespace
+                        InputTarget.Group RecordGroup.Payment, Violation.PaymentClearRequired
+                        InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate
+                    ]
+                    "An incomplete proposal neither hides acknowledgement nor drops new assertions"
+            | other -> failtestf "Expected accumulated issues, got %A" other)
+
 let private spellingDoesNotRevise =
     testCase "equivalent amount spelling remains a correction no-op after rollback" (fun () ->
         let act =
@@ -180,12 +245,16 @@ let private spellingDoesNotRevise =
 
         let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act
 
-        Expect.equal result (Error Refusal.CorrectionNoChanges) "No spelling-only revision")
+        Expect.equal
+            result
+            (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+            "No spelling-only revision")
 
 let private ordinary =
     testList
         "ordinary assertions"
         [
+            openingAccumulatesAssertions
             amendmentRetainsDates
             newIncidentIsBounded
             newNotificationIsBounded
@@ -202,6 +271,7 @@ let private corrections =
         [
             closedCorrectionRetainsDates
             correctionIncidentIsBounded
+            incompleteCorrectionAccumulatesAssertions
             spellingDoesNotRevise
         ]
 

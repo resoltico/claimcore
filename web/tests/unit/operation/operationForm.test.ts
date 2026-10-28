@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
+import {
+  initialOperationValues,
+  assembleOperation,
+  operationEntry,
+} from "../../../src/operation/operationForm";
 import { current, firstId } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
 for (const status of ["OPENED", "CLOSED"] as const) {
@@ -33,7 +37,9 @@ for (const status of ["OPENED", "CLOSED"] as const) {
           "act.groups.payment.kind": payment,
           "act.groups.payment.values.paymentDate": "2026-09-04",
         };
-        expect(assembleOperation(values)).toEqual({
+        expect(
+          assembleOperation(operationEntry({ subject: "CASE", kind: "CORRECT" }), values),
+        ).toEqual({
           kind: "CASE",
           ...JSON.parse(expected),
         });
@@ -41,3 +47,19 @@ for (const status of ["OPENED", "CLOSED"] as const) {
     );
   });
 }
+
+it("takes the selected entry from identity while request constants derive from that entry", () => {
+  const entry = operationEntry({ subject: "CASE", kind: "CLOSE" });
+  const values = {
+    ...initialOperationValues("CASE", "CLOSE", current, firstId),
+    kind: "AUTHORITY",
+    "act.kind": "DISABLE",
+  };
+  expect(assembleOperation(entry, values)).toEqual({
+    kind: "CASE",
+    operationId: firstId,
+    caseReference: current.caseReference,
+    expectedRevision: current.revision,
+    act: { kind: "CLOSE" },
+  });
+});

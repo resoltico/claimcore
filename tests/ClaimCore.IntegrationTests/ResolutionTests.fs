@@ -86,7 +86,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position verified).Sequence
-            3L
+            (CaseFixtures.sequence (3L))
             "Only bootstrap and grants exist"
     }
 
@@ -253,7 +253,7 @@ let private actorAdmission (database: PostgresFixture.Database) =
 
         Expect.equal
             refused
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Disabled actor cannot resolve"
 
         let! nil = resolve actor Guid.Empty

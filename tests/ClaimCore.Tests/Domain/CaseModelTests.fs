@@ -66,7 +66,7 @@ let private retained revision view =
     Case.ofAccepted
         {
             Reference = CaseFixtures.reference "Demo-1"
-            Revision = revision
+            Revision = CaseFixtures.revision revision
             State = view
         }
     |> accepted
@@ -171,28 +171,28 @@ let private allKeep = AuthoredCaseAct.Correct Inputs.correction
 
 let private allKeepStates =
     [
-        "absent", None, 0L, Refusal.ResourceUnavailable
-        "erased", Some(retained 1L CaseState.Erased), 1L, Refusal.CaseErased
+        "absent", None, 0L, (Refusal.Access AccessRefusal.ResourceUnavailable)
+        "erased", Some(retained 1L CaseState.Erased), 1L, (Refusal.Case CaseRefusal.CaseErased)
         "stale",
         Some(retained 1L (live CaseStatus.Opened true false)),
         0L,
-        Refusal.RevisionConflict 1L
+        Refusal.RevisionConflict(CaseFixtures.revision 1L)
         "voided",
         Some(retained 1L (CaseState.Voided(fields CaseStatus.Opened true false))),
         1L,
-        Refusal.CaseVoided
+        (Refusal.Case CaseRefusal.CaseVoided)
         "ineligible",
         Some(retained 1L (live CaseStatus.Opened false false)),
         1L,
-        Refusal.CorrectionRequiresExistingValue
+        (Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
         "eligible",
         Some(retained 1L (live CaseStatus.Opened true false)),
         1L,
-        Refusal.CorrectionNoChanges
+        (Refusal.Case CaseRefusal.CorrectionNoChanges)
         "closed",
         Some(retained 1L (live CaseStatus.Closed false false)),
         1L,
-        Refusal.CorrectionNoChanges
+        (Refusal.Case CaseRefusal.CorrectionNoChanges)
     ]
 
 let private allKeepPrecedence =

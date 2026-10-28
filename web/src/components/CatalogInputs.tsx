@@ -1,5 +1,5 @@
-import { isTerm } from "../presentation/terms";
-import { termVocabulary } from "../protocol/catalogAssembly";
+import { isTerm, isVocabulary } from "../presentation/terms";
+import type { CatalogEntry } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
@@ -11,6 +11,7 @@ import { productMetadata } from "../protocol/productMetadata";
 import { bindingPath, visibleOperationInputs, type CatalogInput } from "../operation/operationForm";
 
 type Props = {
+  entry: CatalogEntry;
   values: FormValues;
   current: CurrentCase | null;
   disabled: boolean;
@@ -21,11 +22,8 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
   if (input.kind.kind !== "CHOICE" && input.kind.kind !== "GROUP") {
     return [];
   }
-  const correction = props.current?.advice.correction;
   const group =
-    props.values["act.kind"] === "CORRECT" && correction !== undefined
-      ? Object.entries(correction).find(([name]) => input.diagnosticTargets.includes(name))?.[1]
-      : undefined;
+    input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
   return group === undefined
     ? input.kind.options
     : input.kind.options.filter((mode) => group.some((value) => value === mode));
@@ -82,8 +80,11 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
           {permittedOptions(input, props).map((value) => (
             <option key={value} value={value}>
               {(() => {
-                const vocabulary = termVocabulary(input.path);
-                return vocabulary !== null && isTerm(vocabulary, value)
+                const vocabulary =
+                  input.kind.kind === "CHOICE" || input.kind.kind === "GROUP"
+                    ? input.kind.vocabulary
+                    : null;
+                return vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, value)
                   ? p.term(vocabulary, value)
                   : value;
               })()}
@@ -171,7 +172,7 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
 };
 export const CatalogInputs = (props: Props) => (
   <>
-    {visibleOperationInputs(props.values, props.current).map((input) => (
+    {visibleOperationInputs(props.entry, props.values, props.current).map((input) => (
       <BindingInput key={input.identity} input={input} {...props} />
     ))}
   </>

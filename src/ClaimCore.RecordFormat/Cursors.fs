@@ -5,11 +5,7 @@ open ClaimCore.Json
 open System
 open ClaimCore.Domain
 
-type GrantPosition =
-    {
-        Role: Role
-        CaseId: System.Guid option
-    }
+type GrantPosition = { Role: Role; CaseId: CaseId option }
 
 /// Plain positions convey no authority. Every selection authorizes before decoding.
 module Cursors =
@@ -68,9 +64,9 @@ module Cursors =
         |> Result.isOk
         && CaseReference.key value = value
 
-    let private uuid value =
+    let private uuid create value =
         match Guid.TryParseExact((value: string), "D") with
-        | true, id when id <> Guid.Empty && id.ToString("D") = value -> Some id
+        | true, id when id.ToString("D") = value -> create id
         | _ -> None
 
     let encodeCases after =
@@ -94,7 +90,7 @@ module Cursors =
     let encodeHistory reference after =
         encode
             [
-                DurableNames.After, JsonValue.Integer after
+                DurableNames.After, JsonValue.Integer(Revision.value after)
                 DurableNames.Case, JsonValue.String(CaseReference.key reference)
                 DurableNames.Kind, JsonValue.String "HISTORY"
                 DurableNames.V, JsonValue.Integer 1L
@@ -112,14 +108,14 @@ module Cursors =
                 && reference target
                 && target = CaseReference.key requested
                 ->
-                Some after
+                Revision.create after
             | _ -> None)
             token
 
-    let encodeActors (after: Guid) =
+    let encodeActors (after: ActorId) =
         encode
             [
-                DurableNames.After, JsonValue.String(after.ToString("D"))
+                DurableNames.After, JsonValue.String(ActorId.format after)
                 DurableNames.Kind, JsonValue.String "ACTORS"
                 DurableNames.V, JsonValue.Integer 1L
             ]
@@ -129,24 +125,24 @@ module Cursors =
             (function
             | JsonValue.Object [ DurableNames.After, JsonValue.String after
                                  DurableNames.Kind, JsonValue.String "ACTORS"
-                                 DurableNames.V, JsonValue.Integer 1L ] -> uuid after
+                                 DurableNames.V, JsonValue.Integer 1L ] -> uuid ActorId.create after
             | _ -> None)
             token
 
-    let encodeGrants (actorId: Guid) (after: GrantPosition) =
+    let encodeGrants (actorId: ActorId) (after: GrantPosition) =
         let position =
             JsonValue.Object
                 [
                     DurableNames.CaseId,
                     after.CaseId
-                    |> Option.map (fun id -> JsonValue.String(id.ToString("D")))
+                    |> Option.map (fun id -> JsonValue.String(CaseId.format id))
                     |> Option.defaultValue JsonValue.Null
                     DurableNames.Role, JsonValue.String(DurableNames.role after.Role)
                 ]
 
         encode
             [
-                DurableNames.Actor, JsonValue.String(actorId.ToString("D"))
+                DurableNames.Actor, JsonValue.String(ActorId.format actorId)
                 DurableNames.After, position
                 DurableNames.Kind, JsonValue.String "GRANTS"
                 DurableNames.V, JsonValue.Integer 1L
@@ -156,7 +152,7 @@ module Cursors =
         let scope =
             match caseId with
             | JsonValue.Null -> Some None
-            | JsonValue.String value -> uuid value |> Option.map Some
+            | JsonValue.String value -> uuid CaseId.create value |> Option.map Some
             | _ -> None
 
         match DurableNames.tryRole role, scope with
@@ -172,7 +168,7 @@ module Cursors =
                                                     DurableNames.Role, JsonValue.String role ]
                                  DurableNames.Kind, JsonValue.String "GRANTS"
                                  DurableNames.V, JsonValue.Integer 1L ] when
-                uuid target = Some actorId
+                uuid ActorId.create target = Some actorId
                 ->
                 grant role caseId
             | _ -> None)

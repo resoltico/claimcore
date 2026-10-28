@@ -291,7 +291,7 @@ let private exampleFrames () =
 
         Expect.equal
             (ClaimCore.Domain.Case.snapshot next).Revision
-            (int64 (index + 1))
+            (CaseFixtures.revision (int64 (index + 1)))
             "Example revision sequence"
 
         current <- Some next

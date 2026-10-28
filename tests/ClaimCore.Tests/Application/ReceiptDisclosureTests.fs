@@ -16,7 +16,7 @@ let private receipt authority current entry =
 
 let private disclosure () =
     let request, entry, current, _ = created 200 "PURE-DISCLOSURE"
-    let reader = actor owner (id 1) [ Role.CaseReader ] []
+    let reader = actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseReader ] []
 
     Expect.isTrue
         (match (receipt reader current entry).Subject with
@@ -28,7 +28,10 @@ let private disclosure () =
 
     let superseded =
         { current with
-            Snapshot = { current.Snapshot with Revision = 2L }
+            Snapshot =
+                { current.Snapshot with
+                    Revision = CaseFixtures.revision 2L
+                }
         }
 
     Expect.equal
@@ -44,7 +47,9 @@ let private disclosure () =
          | _ -> false)
         "Full history can disclose the superseded snapshot"
 
-    let registrar = actor owner (id 1) [ Role.CaseRegistrar ] []
+    let registrar =
+        actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseRegistrar ] []
+
     let view = locked registrar (Some superseded) (Some entry)
 
     match
@@ -67,7 +72,7 @@ let private erased () =
         { current with
             Snapshot =
                 { current.Snapshot with
-                    Revision = 2L
+                    Revision = CaseFixtures.revision 2L
                     State = CaseState.Erased
                 }
         }
@@ -90,7 +95,7 @@ let private foreignScope () =
     let both =
         actor
             owner
-            (id 1)
+            ((CaseFixtures.actorId (id 1)))
             []
             [ caseA.CaseId, [ Role.CaseHandler ]; caseB.CaseId, [ Role.CaseReader ] ]
 
@@ -126,12 +131,12 @@ let private foreignScope () =
             (CaseFixtures.command request)
             narrowed
     with
-    | Verdict.Refuse Refusal.ResourceUnavailable -> ()
+    | Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable) -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
     let _, entry, current, _ = created 204 "ROLE-DISCLOSURE"
-    let authority = actor owner (id 1) [ role ] []
+    let authority = actor owner ((CaseFixtures.actorId (id 1))) [ role ] []
 
     Expect.equal
         (LedgerEntries.canObserve owner authority entry.Subject)
@@ -147,7 +152,10 @@ let private roles role readable full () =
 
         let later =
             { current with
-                Snapshot = { current.Snapshot with Revision = 2L }
+                Snapshot =
+                    { current.Snapshot with
+                        Revision = CaseFixtures.revision 2L
+                    }
             }
 
         let shown = (caseReceipt (receipt authority later entry)).Snapshot
@@ -176,7 +184,7 @@ let private roles role readable full () =
 
 let private stewardship () =
     let _, _, current, _ = created 205 "STEWARD-REPLAY"
-    let steward = actor owner (id 1) [ Role.DataSteward ] []
+    let steward = actor owner ((CaseFixtures.actorId (id 1))) [ Role.DataSteward ] []
 
     let request =
         actRequest
@@ -190,7 +198,12 @@ let private stewardship () =
 
     let voided =
         match projection with
-        | CaseProjection.Update(id, snapshot) -> { CaseId = id; Snapshot = snapshot }
+        | CaseProjection.Update(id, snapshot) ->
+            {
+                CaseId = id
+                Snapshot = snapshot
+                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            }
         | _ -> failtest "Update"
 
     let restore =
@@ -205,7 +218,12 @@ let private stewardship () =
 
     let restored =
         match projection with
-        | CaseProjection.Update(id, snapshot) -> { CaseId = id; Snapshot = snapshot }
+        | CaseProjection.Update(id, snapshot) ->
+            {
+                CaseId = id
+                Snapshot = snapshot
+                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            }
         | _ -> failtest "Update"
 
     match decide request (locked steward (Some restored) (Some(LedgerEntries.stored draft))) with

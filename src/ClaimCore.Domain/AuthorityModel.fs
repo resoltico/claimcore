@@ -111,13 +111,13 @@ module PrincipalKey =
 [<RequireQualifiedAccess>]
 type Scope =
     | Installation
-    | Case of Guid
+    | Case of CaseId
 
 type ActorGrant = Grant<Scope>
 
 type Actor =
     {
-        ActorId: Guid
+        ActorId: ActorId
         Principal: PrincipalKey
         Enabled: bool
     }
@@ -137,7 +137,7 @@ type AuthorityView =
     {
         Actor: Actor option
         Installation: Role list
-        Cases: Map<Guid, Role list>
+        Cases: Map<CaseId, Role list>
         HasAssignedCases: bool
     }
 

@@ -34,16 +34,16 @@ let private fields length : CaseFields =
 let private snapshot length : CaseSnapshot =
     {
         Reference = CaseFixtures.reference reference
-        Revision = maximum
+        Revision = CaseFixtures.revision maximum
         State = CaseState.Voided(fields length)
     }
 
 let private receipt disclosure : OperationReceipt =
     {
-        OperationId = id
+        OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = maximum
+                Sequence = CaseFixtures.sequence maximum
                 EntryHash =
                     (String('a', 64)
                      |> System.Convert.FromHexString
@@ -51,12 +51,12 @@ let private receipt disclosure : OperationReceipt =
                      |> Option.get)
             }
         RecordedAt = instant
-        RecordedBy = id
+        RecordedBy = (CaseFixtures.actorId (id))
         Subject =
             ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference reference
-                    Revision = maximum
+                    Revision = CaseFixtures.revision maximum
                     Act = CaseActKind.AmendRegistration
                     Snapshot = disclosure
                 }
@@ -117,7 +117,7 @@ let private authorityFixture () =
 
     let actor: Actor =
         {
-            ActorId = id
+            ActorId = (CaseFixtures.actorId (id))
             Principal = principal
             Enabled = false
         }

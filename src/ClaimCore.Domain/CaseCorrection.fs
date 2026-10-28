@@ -10,7 +10,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | Change.Keep, _ -> Ok current
-        | _, None -> Error Refusal.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | Change.Replace replacement, Some _ -> Ok(Some replacement)
         | Change.Clear, Some _ -> Ok None
 
@@ -19,7 +19,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | Change.Keep, _ -> Ok current
-        | _, None -> Error Refusal.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | Change.Replace replacement, Some _ -> Ok(Some replacement.PaymentDate)
         | Change.Clear, Some _ -> Ok None
 
@@ -52,8 +52,8 @@ module internal CaseCorrections =
                 Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
-    /// A valid proposed state can be checked independently of acknowledgement input flags.
-    let proposed facts progress (correction: ValidCorrection) =
+    /// Proposed groups retain asserted values even when acknowledgement prevents a complete state.
+    let proposedGroups facts progress (correction: ValidCorrection) =
         result {
             let facts =
                 match correction.Registration with
@@ -63,11 +63,7 @@ module internal CaseCorrections =
             let! decision = decisionChoice progress correction.Decision
             let! payment = paymentChoice progress correction.Payment
 
-            let! next =
-                PaymentProgress.fromGroups decision payment
-                |> Result.mapError (fun () -> Refusal.DecisionRequired)
-
-            return facts, next
+            return facts, decision, payment
         }
 
     let apply facts progress (correction: ValidCorrection) =
@@ -77,16 +73,20 @@ module internal CaseCorrections =
                 | Amendment.Keep -> facts
                 | Amendment.Replace replacement -> replacement
 
-            let! nextDecision = decisionChoice progress correction.Decision
-            let! nextPayment = paymentChoice progress correction.Payment
+            let! nextDecision =
+                decisionChoice progress correction.Decision |> Result.mapError Refusal.Case
+
+            let! nextPayment =
+                paymentChoice progress correction.Payment |> Result.mapError Refusal.Case
+
             do! paidAcknowledgement progress correction
 
             let! nextProgress =
                 PaymentProgress.fromGroups nextDecision nextPayment
-                |> Result.mapError (fun () -> Refusal.DecisionRequired)
+                |> Result.mapError (fun () -> (Refusal.Case CaseRefusal.DecisionRequired))
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error Refusal.CorrectionNoChanges
+                return! Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
             else
                 return nextFacts, nextProgress
         }

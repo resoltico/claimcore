@@ -172,13 +172,13 @@ type VocabularyFromRecordFormatTask =
 
 type ApplicationInternalsFromWeb =
     static member InternalsDirect() =
-        ClaimCore.Application.LedgerEntries.position 0L (Array.zeroCreate 32)
+        ClaimCore.Application.LedgerEntries.position Sequence.zero (Array.zeroCreate 32)
 
 type ApplicationInternalsFromWebTask =
     static member InternalsTask() =
         task {
             do! Task.Yield()
-            return ClaimCore.Application.LedgerEntries.position 0L (Array.zeroCreate 32)
+            return ClaimCore.Application.LedgerEntries.position Sequence.zero (Array.zeroCreate 32)
         }
 
 type RecordFormatFromDomain =

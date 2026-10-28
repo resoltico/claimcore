@@ -139,7 +139,7 @@ let private indexCompatible (database: PostgresFixture.Database) targetId =
             DatabaseSession.rows
                 connection
                 ("EXPLAIN " + TransactionPages.grantPageSql)
-                [| box targetId; box "CASE_READER"; box (id 1); box 51 |]
+                [| box (ActorId.value targetId); box "CASE_READER"; box (id 1); box 51 |]
                 token
 
         let plan = rows |> List.map (DatabaseSession.value<string> 0) |> String.concat "\n"
@@ -221,7 +221,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         let query =
             {
-                ActorId = targetId
+                ActorId = (ActorId.value (targetId))
                 AfterCursor = None
                 Limit = 1
             }
@@ -246,7 +246,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Current caller authority precedes token acceptance"
     }
 
@@ -272,7 +272,7 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
 
         Expect.equal
             missing
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Absent target refuses generically"
 
     }
@@ -283,7 +283,7 @@ let private traversal (database: PostgresFixture.Database) =
 
         let query =
             {
-                ActorId = targetId
+                ActorId = (ActorId.value (targetId))
                 AfterCursor = None
                 Limit = 50
             }
@@ -318,7 +318,7 @@ let private traversal (database: PostgresFixture.Database) =
         Expect.isNone last.NextCursor "End follows last included grant"
 
         do! cursorIsolation admin query first.NextCursor
-        do! changedTarget admin targetId first.NextCursor
+        do! changedTarget admin (ActorId.value (targetId)) first.NextCursor
         let! _ = verified database
         return ()
     }
@@ -335,7 +335,7 @@ let private boundaries (database: PostgresFixture.Database) =
                 (Service.grants
                     admin
                     ({
-                        ActorId = targetId
+                        ActorId = (ActorId.value (targetId))
                         AfterCursor = cursor
                         Limit = 1
                     })
@@ -408,7 +408,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
 
         let query =
             {
-                ActorId = targetId
+                ActorId = (ActorId.value (targetId))
                 AfterCursor = None
                 Limit = 50
             }

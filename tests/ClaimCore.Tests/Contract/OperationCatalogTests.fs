@@ -150,7 +150,7 @@ let tests =
                                 File.ReadAllBytes(
                                     Path.Combine(
                                         RepositoryRoot.find (),
-                                        "src/ClaimCore.Protocol/Localization",
+                                        "src/ClaimCore.Protocol/Messages/Localization",
                                         language + ".json"
                                     )
                                 )

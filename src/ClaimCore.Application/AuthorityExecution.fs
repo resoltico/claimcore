@@ -9,8 +9,7 @@ module internal AuthorityExecution =
     let private targets installationId (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
         if
             view.Target.Actor
-            |> Option.exists (fun actor ->
-                actor.ActorId = Guid.Empty || actor.Principal <> command.Target)
+            |> Option.exists (fun actor -> actor.Principal <> command.Target)
         then
             Error CoreFault.StoreIntegrityError
         else
@@ -75,17 +74,13 @@ module internal AuthorityExecution =
             | Scope.Installation -> None
             | Scope.Case id -> Some id
 
+        let registeredId = ActorId.ofOperationId command.OperationId
+
         match change, view.Target.Actor with
         | AuthorityChange.Registered, _ ->
-            Ok(
-                command.OperationId,
-                AuthorityProjection.Register(command.OperationId, command.Target)
-            )
+            Ok(registeredId, AuthorityProjection.Register(registeredId, command.Target))
         | AuthorityChange.OwnerProvisioned, _ ->
-            Ok(
-                command.OperationId,
-                AuthorityProjection.ProvisionOwner(command.OperationId, command.Target)
-            )
+            Ok(registeredId, AuthorityProjection.ProvisionOwner(registeredId, command.Target))
         | AuthorityChange.Granted(role, target), Some actor ->
             Ok(actor.ActorId, AuthorityProjection.AddGrant(actor.ActorId, role, scope target))
         | AuthorityChange.Revoked(role, target), Some actor ->
@@ -107,7 +102,7 @@ module internal AuthorityExecution =
         if
             not (Authority.can principal view.Actor Capability.ManageAuthority Scope.Installation)
         then
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             OperationIdentity.decide
                 services
@@ -142,13 +137,13 @@ module internal AuthorityExecution =
         let principal = services.Principal
 
         if view.ActorCount = 0 then
-            if head.Sequence = 0L && view.ExistingOperation.IsNone then
+            if head.Sequence = Sequence.zero && view.ExistingOperation.IsNone then
                 Verdict.Proceed()
             else
                 Verdict.Fail CoreFault.StoreIntegrityError
         else
             match view.ExistingOperation with
-            | None -> Verdict.Refuse Refusal.ActorAlreadyRegistered
+            | None -> Verdict.Refuse(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             | Some entry when entry.OperationId <> operationId ->
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry ->
@@ -233,7 +228,7 @@ module internal AuthorityExecution =
         =
         let target = services.Principal
 
-        match Authority.provision operationId target with
+        match Authority.provision (OperationId.value operationId) target with
         | Error refusal -> Verdict.Refuse refusal
         | Ok command ->
             executeRecord
@@ -280,6 +275,11 @@ module internal AuthorityExecution =
     let provisionStore (services: ServiceContext) operationId token =
         let store = services.Store
         let target = services.Principal
+
+        let operationId =
+            OperationId.create operationId
+            |> Option.defaultWith (fun () ->
+                invalidArg (nameof operationId) "Use a nonempty provisioning operation.")
 
         store.Write(
             {

@@ -75,10 +75,6 @@ let private domain () =
          |> Set.ofArray)
         "Every business field has a table row"
 
-    let retained =
-        CaseFields.declarations |> List.filter _.RetainedOnErasure |> List.map _.Field
-
-    Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
 let private diagnosticGroups () =
     let actual =
@@ -135,7 +131,7 @@ let private actGroups () =
 
 let private locales () =
     let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Localization")
+        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Messages/Localization")
 
     for language in LocalizationPolicy.languages do
         use document =

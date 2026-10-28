@@ -105,7 +105,7 @@ module AuthorityRecord =
         let kind, issuer, subject = PrincipalKey.parts command.Target
 
         {
-            OperationId = command.OperationId
+            OperationId = OperationId.value command.OperationId
             Target =
                 {
                     Kind = kind

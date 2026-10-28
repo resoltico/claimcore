@@ -37,12 +37,12 @@ module internal LedgerCodecs =
                 RecordedBy = by
             })
         : Fields<ChangeSummary, _>)
-        |> field "operationId" _.OperationId uuid
+        |> field "operationId" _.OperationId operationId
         |> field "position" _.Position position
-        |> field "revision" _.Revision sequence
+        |> field "revision" _.Revision positiveRevision
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy uuid
+        |> field "recordedBy" _.RecordedBy actorId
         |> build
         |> named "ChangeSummary"
 

@@ -211,7 +211,8 @@ let internal timeout (database: PostgresFixture.Database) =
                     WriteOperation.Work =
                         (fun _ ->
                             Task.FromResult(
-                                Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>
+                                Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+                                : Verdict<unit>
                             ))
                     CancellationToken = token
                 }
@@ -248,7 +249,7 @@ let internal report
         actors = workload.Actors + 1
         grants = workload.Actors * 10 + 10
         writers = workload.Writers
-        ledgerEntries = position.Sequence
+        ledgerEntries = Sequence.value position.Sequence
         seconds = elapsed
         writesPerSecond = float workload.Writes / elapsed
         p50Milliseconds = latencies[latencies.Length / 2]
@@ -306,7 +307,7 @@ let internal verified workload actor database =
         let position = verification.Position
 
         Expect.equal
-            position.Sequence
+            (Sequence.value position.Sequence)
             (int64 (1016 + workload.Cases + workload.Writes + workload.Actors * 11))
             "Every accepted write is counted"
 

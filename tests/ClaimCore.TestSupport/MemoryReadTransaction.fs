@@ -11,7 +11,7 @@ open ClaimCore.Domain
 
 open ClaimCore.TestSupport.MemoryStoreState
 
-type internal Reader(get: unit -> State, observed, read: unit -> unit) =
+type internal Reader(get: unit -> State, installationId, observed, read: unit -> unit) =
     interface IReadTx with
         member _.ObservedAt = observed
 
@@ -75,7 +75,7 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
 
         member _.FindCase id =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Cases)
+            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase installationId))
 
         member _.FindEntry id =
             read ()
@@ -145,7 +145,10 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
                 |> Seq.toList
 
             Task.FromResult(
-                page limit (fun record -> CaseReference.identity record.Snapshot.Reference) rows
+                page
+                    limit
+                    (fun record -> CaseReference.identity record.Snapshot.Reference)
+                    (rows |> List.map (readCase installationId))
             )
 
         member _.HistoryPage
@@ -188,8 +191,10 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
                 (get ()).Actors
                 |> Map.values
                 |> Seq.filter (fun actor ->
-                    after |> Option.forall (fun after -> compareId actor.ActorId after > 0))
-                |> Seq.sortWith (fun a b -> compareId a.ActorId b.ActorId)
+                    after
+                    |> Option.forall (fun after ->
+                        compareId ActorId.format actor.ActorId after > 0))
+                |> Seq.sortWith (fun a b -> compareId ActorId.format a.ActorId b.ActorId)
                 |> Seq.toList
 
             Task.FromResult(page limit (fun actor -> actor.ActorId) rows)
@@ -209,7 +214,7 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
                 | None, None -> 0
                 | None, Some _ -> 1
                 | Some _, None -> -1
-                | Some a, Some b -> compareId a b
+                | Some a, Some b -> compareId CaseId.format a b
 
             let rows =
                 state.Grants

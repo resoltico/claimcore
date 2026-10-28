@@ -17,19 +17,23 @@ type StoreFailure =
     | CommitOutcomeUnknown
 
 type StoredCase =
-    { CaseId: Guid; Snapshot: CaseSnapshot }
+    {
+        CaseId: CaseId
+        Snapshot: CaseSnapshot
+        SnapshotBytes: byte array
+    }
 
 [<RequireQualifiedAccess>]
 type EntryTarget =
-    | Case of caseId: Guid * revision: int64 * act: CaseActKind * businessDate: DateOnly
-    | Authority of targetActorId: Guid * act: AuthorityKind
+    | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
+    | Authority of targetActorId: ActorId * act: AuthorityKind
 
 type StoredEntry =
     {
-        Sequence: int64
+        Sequence: Sequence
         EntryHash: byte array
-        OperationId: Guid
-        ActorId: Guid
+        OperationId: OperationId
+        ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
         PayloadCommitment: byte array
@@ -39,17 +43,17 @@ type StoredEntry =
 
 [<RequireQualifiedAccess>]
 type CaseProjection =
-    | Insert of caseId: Guid * snapshot: CaseSnapshot
-    | Update of caseId: Guid * snapshot: CaseSnapshot
-    | Erase of caseId: Guid * revision: int64
+    | Insert of caseId: CaseId * snapshot: CaseSnapshot
+    | Update of caseId: CaseId * snapshot: CaseSnapshot
+    | Erase of caseId: CaseId * revision: Revision
 
 type EntryDraft =
     {
-        Sequence: int64
+        Sequence: Sequence
         PreviousHash: byte array
         EntryHash: byte array
-        OperationId: Guid
-        ActorId: Guid
+        OperationId: OperationId
+        ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
         PayloadCommitment: byte array
@@ -59,22 +63,22 @@ type EntryDraft =
 
 [<RequireQualifiedAccess>]
 type AuthorityProjection =
-    | Register of actorId: Guid * principal: PrincipalKey
-    | ProvisionOwner of actorId: Guid * principal: PrincipalKey
-    | SetEnabled of actorId: Guid * enabled: bool
-    | AddGrant of actorId: Guid * role: Role * caseId: Guid option
-    | RemoveGrant of actorId: Guid * role: Role * caseId: Guid option
+    | Register of actorId: ActorId * principal: PrincipalKey
+    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey
+    | SetEnabled of actorId: ActorId * enabled: bool
+    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option
+    | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
 
 type AuthorityQuery =
     {
         Principal: PrincipalKey
-        CaseId: Guid option
+        CaseId: CaseId option
     }
 
 type CasePageQuery =
     {
         Visibility: CaseVisibility
-        ActorId: Guid
+        ActorId: ActorId
         ReadRoles: Role list
         ForbiddenRoles: Role list
         AfterReference: string option
@@ -83,25 +87,29 @@ type CasePageQuery =
 
 type HistoryPageQuery =
     {
-        CaseId: Guid
-        AfterRevision: int64
+        CaseId: CaseId
+        AfterRevision: Revision
         Limit: int
     }
 
 type ActorPageQuery =
     {
-        AfterActorId: Guid option
+        AfterActorId: ActorId option
         Limit: int
     }
 
 type GrantPageQuery =
     {
-        ActorId: Guid
+        ActorId: ActorId
         AfterGrant: GrantPosition option
         Limit: int
     }
 
-type FenceKey = { ActorId: Guid; OperationId: Guid }
+type FenceKey =
+    {
+        ActorId: ActorId
+        OperationId: OperationId
+    }
 
 /// A page carries only rows and a continuation position from the same transaction snapshot.
 type Page<'Item, 'Position> =
@@ -113,17 +121,17 @@ type Page<'Item, 'Position> =
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
-    abstract FindCase: Guid -> Task<StoredCase option>
-    abstract FindEntry: Guid -> Task<StoredEntry option>
+    abstract FindCase: CaseId -> Task<StoredCase option>
+    abstract FindEntry: OperationId -> Task<StoredEntry option>
 
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, string>>
 
-    abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, int64>>
-    abstract ActorPage: ActorPageQuery -> Task<Page<Actor, Guid>>
+    abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
+    abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
     abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>
 
-    abstract FindActor: Guid -> Task<Actor option>
+    abstract FindActor: ActorId -> Task<Actor option>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
 

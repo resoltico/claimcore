@@ -103,14 +103,13 @@ module internal Queries =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
-            | None -> Error Refusal.ResourceUnavailable
+            | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
                 cursor Cursors.decodeCases request.AfterCursor
                 |> Result.map (fun after ->
                     {
                         Visibility = visibility
-                        ActorId =
-                            actor.Actor |> Option.map _.ActorId |> Option.defaultValue Guid.Empty
+                        ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
                         ReadRoles = Authority.readRoles principal
                         ForbiddenRoles = Authority.invalidRoles principal
                         Limit = request.Limit
@@ -190,12 +189,12 @@ module internal Queries =
                 Capability.ReadHistory
 
         if not (CaseExecution.authorize principal actor capability record) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
             |> Result.bind (fun _ ->
                 cursor (Cursors.decodeHistory request.CaseReference) request.AfterCursor
-                |> Result.map (Option.defaultValue 0L))
+                |> Result.map (Option.defaultValue Revision.zero))
 
     let private historyEntry (services: ServiceContext) actor current detail entry =
         let installation = services.InstallationId
@@ -291,8 +290,10 @@ module internal Queries =
         let installation = services.InstallationId
         let principal = services.Principal
 
+        let operationId = OperationId.create operation
+
         task {
-            if operation = Guid.Empty then
+            if operationId.IsNone then
                 return
                     Outcome.Rejected(
                         Refusal.invalidInput (
@@ -301,6 +302,8 @@ module internal Queries =
                         )
                     )
             else
+                let operation = operationId.Value
+
                 let! result =
                     store.Read(
                         {

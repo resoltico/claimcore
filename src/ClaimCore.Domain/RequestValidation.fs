@@ -48,21 +48,21 @@ module internal RequestValidation =
 
     let parse (request: UnvalidatedCaseRequest) =
         let identity =
-            if request.OperationId = Guid.Empty then
-                Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
-            else
-                Ok()
+            OperationId.create request.OperationId
+            |> Option.map Ok
+            |> Option.defaultWith (fun () ->
+                Validation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
         let revision =
-            if request.ExpectedRevision < 0L || request.ExpectedRevision > Revision.Maximum then
-                Validation.invalid InputTarget.ExpectedRevision Violation.ExpectedRevisionRange
-            else
-                Ok()
+            Revision.create request.ExpectedRevision
+            |> Option.map Ok
+            |> Option.defaultWith (fun () ->
+                Validation.invalid InputTarget.ExpectedRevision Violation.ExpectedRevisionRange)
 
         Admission.map2
-            (fun reference (_, act) -> reference, act)
+            (fun (identity, reference) (revision, act) -> reference, identity, revision, act)
             (Admission.map2
-                (fun () reference -> reference)
+                (fun identity reference -> identity, reference)
                 identity
                 (reference request.CaseReference))
-            (Admission.map2 (fun () act -> (), act) revision (act request.Act))
+            (Admission.map2 (fun revision act -> revision, act) revision (act request.Act))

@@ -195,7 +195,7 @@ module LiveCase =
 type CaseSnapshot =
     {
         Reference: CaseReference
-        Revision: int64
+        Revision: Revision
         State: CaseState<CaseFields>
     }
 
@@ -209,14 +209,16 @@ type FieldValueKind =
     | Reference
     | Status
 
-type FieldDeclaration =
+[<NoEquality; NoComparison>]
+type FieldDescriptor =
     {
         Field: BusinessField
         Key: string
         Kind: FieldValueKind
         Group: RecordGroup option
         AllowsAbsence: bool
-        RetainedOnErasure: bool
+        IsAuthored: bool
+        Value: CaseFields -> string option
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -226,91 +228,113 @@ module BusinessField =
 
     let key = Vocabulary.token vocabulary
 
-    // Scalar meaning is an exhaustive domain declaration; compiler coverage protects every field.
-    // fsharplint:disable-next-line CyclomaticComplexity
-    let valueKind =
-        function
-        | BusinessField.IncidentDate
-        | BusinessField.IncidentNotificationDate
-        | BusinessField.PaymentDecisionDate
-        | BusinessField.PaymentDate -> FieldValueKind.CalendarDate
-        | BusinessField.IncidentCountry -> FieldValueKind.Country
-        | BusinessField.ClaimantName
-        | BusinessField.InsurerName -> FieldValueKind.PartyName
-        | BusinessField.ClaimedAmount
-        | BusinessField.PayableAmount -> FieldValueKind.Amount
-        | BusinessField.ClaimedCurrency
-        | BusinessField.PayableCurrency -> FieldValueKind.Currency
-        | BusinessField.CaseReference -> FieldValueKind.Reference
-        | BusinessField.Status -> FieldValueKind.Status
+    let private descriptor field kind group allowsAbsence value =
+        {
+            Field = field
+            Key = key field
+            Kind = kind
+            Group = group
+            AllowsAbsence = allowsAbsence
+            IsAuthored = field <> BusinessField.Status
+            Value = value
+        }
 
-    // This exhaustive field projection formats data; it selects no business policy.
+
+    // This exhaustive description owns each field's structure and projection.
     // fsharplint:disable-next-line CyclomaticComplexity
-    let value (fields: CaseFields) =
-        function
-        | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
-        | BusinessField.Status -> Some(CaseStatus.token fields.Status)
-        | BusinessField.IncidentDate -> Some(CalendarDate.format fields.Registration.IncidentDate)
+    let describe field =
+        match field with
+        | BusinessField.CaseReference ->
+            descriptor field FieldValueKind.Reference None false (fun fields ->
+                Some(CaseReference.format fields.CaseReference))
+        | BusinessField.Status ->
+            descriptor field FieldValueKind.Status None false (fun fields ->
+                Some(CaseStatus.token fields.Status))
+        | BusinessField.IncidentDate ->
+            descriptor
+                field
+                FieldValueKind.CalendarDate
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(CalendarDate.format fields.Registration.IncidentDate))
         | BusinessField.IncidentNotificationDate ->
-            Some(CalendarDate.format fields.Registration.IncidentNotificationDate)
+            descriptor
+                field
+                FieldValueKind.CalendarDate
+                (Some RecordGroup.Registration)
+                false
+                (fun fields ->
+                    Some(CalendarDate.format fields.Registration.IncidentNotificationDate))
         | BusinessField.IncidentCountry ->
-            Some(CountryCode.format fields.Registration.IncidentCountry)
-        | BusinessField.ClaimantName -> Some(PartyName.format fields.Registration.ClaimantName)
-        | BusinessField.InsurerName -> Some(PartyName.format fields.Registration.InsurerName)
-        | BusinessField.ClaimedAmount -> Some(Money.format fields.Registration.ClaimedAmount)
-        | BusinessField.ClaimedCurrency -> Some(Money.currency fields.Registration.ClaimedAmount)
+            descriptor
+                field
+                FieldValueKind.Country
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(CountryCode.format fields.Registration.IncidentCountry))
+        | BusinessField.ClaimantName ->
+            descriptor
+                field
+                FieldValueKind.PartyName
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(PartyName.format fields.Registration.ClaimantName))
+        | BusinessField.InsurerName ->
+            descriptor
+                field
+                FieldValueKind.PartyName
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(PartyName.format fields.Registration.InsurerName))
+        | BusinessField.ClaimedAmount ->
+            descriptor
+                field
+                FieldValueKind.Amount
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(Money.format fields.Registration.ClaimedAmount))
+        | BusinessField.ClaimedCurrency ->
+            descriptor
+                field
+                FieldValueKind.Currency
+                (Some RecordGroup.Registration)
+                false
+                (fun fields -> Some(Money.currency fields.Registration.ClaimedAmount))
         | BusinessField.PaymentDecisionDate ->
-            fields.Decision
-            |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate)
+            descriptor
+                field
+                FieldValueKind.CalendarDate
+                (Some RecordGroup.Decision)
+                true
+                (fun fields ->
+                    fields.Decision
+                    |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
         | BusinessField.PayableAmount ->
-            fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount)
+            descriptor field FieldValueKind.Amount (Some RecordGroup.Decision) true (fun fields ->
+                fields.Decision |> Option.map (fun value -> Money.format value.PayableAmount))
         | BusinessField.PayableCurrency ->
-            fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount)
+            descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) true (fun fields ->
+                fields.Decision |> Option.map (fun value -> Money.currency value.PayableAmount))
         | BusinessField.PaymentDate ->
-            fields.Payment
-            |> Option.map (fun value -> CalendarDate.format value.PaymentDate)
+            descriptor
+                field
+                FieldValueKind.CalendarDate
+                (Some RecordGroup.Payment)
+                true
+                (fun fields ->
+                    fields.Payment
+                    |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
 
     let values fields =
-        Vocabulary.all vocabulary |> List.map (fun field -> field, value fields field)
+        Vocabulary.all vocabulary
+        |> List.map (fun field -> field, (describe field).Value fields)
 
 /// Domain declarations carry structure; each boundary chooses its own names and codecs.
 module CaseFields =
-    let ofGroup =
-        function
-        | RecordGroup.Registration ->
-            [
-                BusinessField.IncidentDate
-                BusinessField.IncidentNotificationDate
-                BusinessField.IncidentCountry
-                BusinessField.ClaimantName
-                BusinessField.InsurerName
-                BusinessField.ClaimedAmount
-                BusinessField.ClaimedCurrency
-            ]
-        | RecordGroup.Decision ->
-            [
-                BusinessField.PaymentDecisionDate
-                BusinessField.PayableAmount
-                BusinessField.PayableCurrency
-            ]
-        | RecordGroup.Payment -> [ BusinessField.PaymentDate ]
-
-    let private declared group allowsAbsence field =
-        {
-            Field = field
-            Key = BusinessField.key field
-            Kind = BusinessField.valueKind field
-            Group = group
-            AllowsAbsence = allowsAbsence
-            RetainedOnErasure = field = BusinessField.CaseReference
-        }
-
     let declarations =
-        (ofGroup RecordGroup.Registration
-         |> List.map (declared (Some RecordGroup.Registration) false))
-        @ [ declared None false BusinessField.CaseReference ]
-        @ (ofGroup RecordGroup.Decision
-           |> List.map (declared (Some RecordGroup.Decision) true))
-        @ (ofGroup RecordGroup.Payment
-           |> List.map (declared (Some RecordGroup.Payment) true))
-        @ [ declared None false BusinessField.Status ]
+        Vocabulary.all BusinessField.vocabulary |> List.map BusinessField.describe
+
+    let ofGroup group =
+        declarations
+        |> List.filter (fun row -> row.Group = Some group)
+        |> List.map _.Field

@@ -7,13 +7,13 @@ open ClaimCore.Application.VerificationChecks
 
 type CaseHistory =
     {
-        Revision: int64
+        Revision: Revision
         Snapshot: CaseSnapshot option
         Reference: CaseReference option
         State: CaseState<unit>
-        MissingPayloadAt: int64 option
-        PresentPayloadAt: int64 option
-        ErasedAt: int64 option
+        MissingPayloadAt: Sequence option
+        PresentPayloadAt: Sequence option
+        ErasedAt: Sequence option
     }
 
 module internal CaseFold =
@@ -54,13 +54,16 @@ module internal CaseFold =
         | EntryTarget.Case(id, revision, act, _) ->
             result {
                 let previous = Map.tryFind id histories
-                let expected = previous |> Option.map _.Revision |> Option.defaultValue 0L
+
+                let expected =
+                    previous |> Option.map _.Revision |> Option.defaultValue Revision.zero
 
                 do!
                     require
                         (Some entry.Sequence)
                         VerificationFinding.RevisionSequence
-                        (expected < Revision.Maximum && revision = expected + 1L)
+                        (Revision.value expected < Revision.Maximum
+                         && revision = Revision.successor expected)
 
                 do!
                     require
@@ -134,12 +137,18 @@ module internal CaseFold =
             let state =
                 match record.Snapshot.State with
                 | CaseState.Erased ->
-                    history.State = CaseState.Erased && history.MissingPayloadAt.IsSome
+                    history.State = CaseState.Erased
+                    && history.MissingPayloadAt.IsSome
+                    && Array.isEmpty record.SnapshotBytes
                 | CaseState.Active _
                 | CaseState.Voided _ ->
                     history.State <> CaseState.Erased
                     && history.MissingPayloadAt.IsNone
                     && history.Snapshot = Some record.Snapshot
+                    && (history.Snapshot
+                        |> Option.exists (fun snapshot ->
+                            ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot =
+                                record.SnapshotBytes))
                     && CaseState.map ignore record.Snapshot.State = history.State
 
             identity && record.Snapshot.Revision = history.Revision && state

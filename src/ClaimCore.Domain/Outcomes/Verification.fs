@@ -25,7 +25,7 @@ type VerificationFinding =
 
 type VerificationDivergence =
     {
-        Sequence: int64 option
+        Sequence: Sequence option
         Finding: VerificationFinding
     }
 

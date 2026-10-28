@@ -17,6 +17,7 @@ type internal WriteInputs =
     {
         Get: unit -> State
         Set: State -> unit
+        InstallationId: Guid
         Observed: DateTimeOffset
         Head: LedgerPosition
         Nonce: byte array
@@ -24,7 +25,7 @@ type internal WriteInputs =
     }
 
 type internal Writer(inputs: WriteInputs) =
-    inherit Reader(inputs.Get, inputs.Observed, inputs.Read)
+    inherit Reader(inputs.Get, inputs.InstallationId, inputs.Observed, inputs.Read)
     let get = inputs.Get
     let set = inputs.Set
     let head = inputs.Head
@@ -48,7 +49,7 @@ type internal Writer(inputs: WriteInputs) =
             let state = get ()
 
             if
-                draft.Sequence <> state.Head.Sequence + 1L
+                draft.Sequence <> Sequence.successor state.Head.Sequence
                 || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
                 || Map.containsKey draft.OperationId state.Entries
             then
@@ -77,12 +78,20 @@ type internal Writer(inputs: WriteInputs) =
                 match projection with
                 | CaseProjection.Insert(id, snapshot)
                 | CaseProjection.Update(id, snapshot) ->
-                    Map.add id { CaseId = id; Snapshot = snapshot } state.Cases
+                    Map.add
+                        id
+                        {
+                            CaseId = id
+                            Snapshot = snapshot
+                            SnapshotBytes = CaseRecord.encodeSnapshot snapshot
+                        }
+                        state.Cases
                 | CaseProjection.Erase(id, revision) ->
                     Map.add
                         id
                         {
                             CaseId = id
+                            SnapshotBytes = Array.empty
                             Snapshot =
                                 { state.Cases[id].Snapshot with
                                     Revision = revision

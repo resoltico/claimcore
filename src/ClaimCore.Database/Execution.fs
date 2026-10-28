@@ -46,7 +46,8 @@ module Execution =
                 with error ->
                     return
                         match AdministrationFailures.classify error with
-                        | AdministrationFailure.Refused -> Replies.rejected Refusal.ActNotPermitted
+                        | AdministrationFailure.Refused ->
+                            Replies.rejected (Refusal.Access AccessRefusal.ActNotPermitted)
                         | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
                         | AdministrationFailure.Failed -> Replies.failed CoreFault.StoreUnavailable
         }

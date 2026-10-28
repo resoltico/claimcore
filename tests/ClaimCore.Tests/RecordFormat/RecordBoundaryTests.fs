@@ -43,7 +43,7 @@ let private revisions () =
 
     let terminal =
         { Case.snapshot (opened ()) with
-            Revision = Revision.Maximum
+            Revision = CaseFixtures.revision 9007199254740991L
         }
 
     Expect.equal

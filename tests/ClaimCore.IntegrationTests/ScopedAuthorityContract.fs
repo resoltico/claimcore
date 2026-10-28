@@ -26,7 +26,7 @@ let internal authorityChanges fixture =
 
         match read with
         | Ok({ Actor = Some actor } as authority) ->
-            Expect.equal actor.ActorId (id 2) "Registration identity"
+            Expect.equal actor.ActorId ((CaseFixtures.actorId (id 2))) "Registration identity"
 
             Expect.equal authority.Installation [ Role.CaseReader ] "Added grant"
         | _ -> failtest "Missing actor"
@@ -106,7 +106,11 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
                 |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
             Expect.contains value.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
-            Expect.equal value.Snapshot.Revision 2L "The snapshot owns the expected revision"
+
+            Expect.equal
+                value.Snapshot.Revision
+                (CaseFixtures.revision (2L))
+                "The snapshot owns the expected revision"
 
             Expect.equal
                 correction.Payment
@@ -151,7 +155,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
         Expect.equal
             refused.Outcome
-            (ExecuteResult.Rejected Refusal.ActNotPermitted)
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
             "Revocation is decided again under lock"
 
         let! current =
@@ -164,7 +168,10 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
         match current with
         | Outcome.Succeeded value ->
-            Expect.equal value.Snapshot.Revision 2L "Refusal preserves the projection"
+            Expect.equal
+                value.Snapshot.Revision
+                (CaseFixtures.revision (2L))
+                "Refusal preserves the projection"
 
             Expect.equal
                 value.Advice.History
@@ -176,7 +183,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 
-        let! entries = history fixture pending.CaseReference 0L 50
+        let! entries = history fixture pending.CaseReference (CaseFixtures.revision (0L)) 50
 
         Expect.equal
             (storedPage entries).Entries.Length
@@ -324,7 +331,11 @@ let internal scopedAuthority fixture =
             "Existing operation adds only its own case authority"
 
         let! observed =
-            inspectOperation fixture (principal) (id 102) (CancellationToken.None)
+            inspectOperation
+                fixture
+                (principal)
+                ((CaseFixtures.operationId (id 102)))
+                (CancellationToken.None)
 
         let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
         Expect.equal observed.Actor.Cases.Count 1 "Observation reads the accepted entry scope only"

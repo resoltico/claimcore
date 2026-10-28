@@ -1,7 +1,11 @@
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
-import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import {
+  initialOperationValues,
+  assembleOperation,
+  operationEntry,
+} from "../../src/operation/operationForm";
 import { fields, definition } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";
@@ -38,7 +42,7 @@ describe("core act metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(assembleOperation(close)).toEqual({
+    expect(assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close)).toEqual({
       kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,

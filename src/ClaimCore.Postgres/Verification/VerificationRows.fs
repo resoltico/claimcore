@@ -27,7 +27,11 @@ module internal VerificationRows =
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid projected role."))
 
-        DatabaseSession.value<System.Guid> 0 row, role, DatabaseSession.optional<System.Guid> 2 row
+        (DatabaseSession.value<System.Guid> 0 row
+         |> DatabaseSession.admitted ActorId.create),
+        role,
+        (DatabaseSession.optional<System.Guid> 2 row
+         |> Option.map (DatabaseSession.admitted CaseId.create))
 
     let private fold
         connection
@@ -63,7 +67,7 @@ module internal VerificationRows =
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
                     {
-                        Read = DatabaseSession.namedRow >> Projections.caseRow
+                        Read = DatabaseSession.namedRow >> Projections.caseRow installationId
                         Append = (ProjectionVerification.caseProjection installationId histories)
                         Initial = Set.empty
                         Finding = VerificationFinding.CaseProjection

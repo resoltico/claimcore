@@ -1,5 +1,7 @@
 module ClaimCore.Tests.AuthorityDecisionTests
 
+open ClaimCore.TestSupport
+
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -8,7 +10,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 let private lastOwner () =
-    let target = actor owner (id 1) [ Role.Owner ] []
+    let target = actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
     let view = authorityView worker target None
 
     let last =
@@ -32,11 +34,11 @@ let private lastOwner () =
 
         Expect.equal
             (executeAuthority installation owner request last)
-            (Verdict.Refuse Refusal.LastOwner)
+            (Verdict.Refuse(Refusal.Authority AuthorityRefusal.LastOwner))
             "The last enabled human owner remains protected"
 
 let private humanOnly () =
-    let target = actor service (id 2) [] []
+    let target = actor service ((CaseFixtures.actorId (id 2))) [] []
 
     for role in [ Role.Owner; Role.DataSteward ] do
         let request =
@@ -51,14 +53,17 @@ let private humanOnly () =
 
         Expect.equal
             (executeAuthority installation owner request (authorityView worker target None))
-            (Verdict.Refuse Refusal.HumanPrincipalRequired)
+            (Verdict.Refuse(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired))
             "Service principals cannot receive human-only grants"
 
     let view = authorityView AuthorityView.empty AuthorityView.empty None
 
     let genesis =
         { view with
-            Head = { head with Sequence = 0L }
+            Head =
+                { head with
+                    Sequence = CaseFixtures.sequence 0L
+                }
             Read =
                 { view.Read with
                     ActorCount = 0
@@ -67,8 +72,8 @@ let private humanOnly () =
         }
 
     Expect.equal
-        (provisionAuthority installation (id 102) service genesis)
-        (Verdict.Refuse Refusal.HumanPrincipalRequired)
+        (provisionAuthority installation ((CaseFixtures.operationId (id 102))) service genesis)
+        (Verdict.Refuse(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired))
         "Bootstrap also requires a human"
 
 let private replay () =
@@ -78,12 +83,16 @@ let private replay () =
     let entry, receipt =
         match executeAuthority installation owner request view with
         | Verdict.Proceed(entry, AuthorityProjection.Register(target, principal), receipt) ->
-            Expect.equal target request.OperationId "Registration owns the target identity"
+            Expect.equal
+                target
+                (ActorId.ofOperationId (request.OperationId))
+                "Registration owns the target identity"
+
             Expect.equal principal other "Exact authored principal"
             entry, receipt
         | _ -> failtest "Expected actor registration"
 
-    let target = actor other request.OperationId [] []
+    let target = actor other (ActorId.ofOperationId (request.OperationId)) [] []
     let existing = authorityView worker target (Some(LedgerEntries.stored entry))
 
     Expect.equal
@@ -92,7 +101,10 @@ let private replay () =
         "Executor target and position survive replay"
 
     let changed =
-        AuthorityRequests.input request.OperationId request.Target AuthorityAct.Disable
+        AuthorityRequests.input
+            (OperationId.value (request.OperationId))
+            request.Target
+            AuthorityAct.Disable
         |> Result.bind Authority.parse
         |> Result.defaultWith (string >> failtest)
 
@@ -105,13 +117,13 @@ let private replay () =
         { existing with
             Read =
                 { existing.Read with
-                    Actor = actor owner (id 1) [ Role.CaseReader ] []
+                    Actor = actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseReader ] []
                 }
         }
 
     Expect.equal
         (executeAuthority installation owner request revoked)
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Current management precedes replay"
 
 let private provision () =
@@ -119,7 +131,10 @@ let private provision () =
 
     let initial =
         { initial with
-            Head = { head with Sequence = 0L }
+            Head =
+                { head with
+                    Sequence = CaseFixtures.sequence 0L
+                }
             Read =
                 { initial.Read with
                     ActorCount = 0
@@ -128,22 +143,28 @@ let private provision () =
         }
 
     let entry, receipt =
-        match provisionAuthority installation (id 104) owner initial with
+        match
+            provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner initial
+        with
         | Verdict.Proceed(entry, AuthorityProjection.ProvisionOwner(target, principal), receipt) ->
-            Expect.equal (target, principal) (id 104, owner) "Bootstrap has explicit identity"
+            Expect.equal
+                (target, principal)
+                ((CaseFixtures.actorId (id 104)), owner)
+                "Bootstrap has explicit identity"
+
             entry, receipt
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
         entry.Subject
-        (EntryTarget.Authority(id 104, AuthorityKind.ProvisionOwner))
+        (EntryTarget.Authority((CaseFixtures.actorId (id 104)), AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
-    let target = actor owner (id 104) [ Role.Owner ] []
+    let target = actor owner ((CaseFixtures.actorId (id 104))) [ Role.Owner ] []
     let view = authorityView target target (Some(LedgerEntries.stored entry))
 
     Expect.equal
-        (provisionAuthority installation (id 104) owner view)
+        (provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view)
         (Verdict.Replay receipt)
         "Bootstrap exact replay is idempotent"
 
@@ -165,17 +186,25 @@ let private reviewAndFences () =
         (Verdict.Refuse Refusal.OperationResolved)
         "Operational fence precedes append"
 
-    let scoped = actor owner (id 1) [] [ id 77, [ Role.Owner ] ]
+    let scoped =
+        actor
+            owner
+            ((CaseFixtures.actorId (id 1)))
+            []
+            [ (CaseFixtures.caseId (id 77)), [ Role.Owner ] ]
 
     Expect.isEmpty
         (Advice.installationOffers owner scoped)
         "A case grant cannot offer installation administration"
 
     Expect.isEmpty
-        (Advice.installationOffers service (actor service (id 2) [ Role.Owner ] []))
+        (Advice.installationOffers
+            service
+            (actor service ((CaseFixtures.actorId (id 2))) [ Role.Owner ] []))
         "Invalid service owner grants convey no offers"
 
-    let installationOwner = actor owner (id 1) [ Role.Owner ] []
+    let installationOwner =
+        actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
 
     Expect.equal
         (Advice.installationOffers owner installationOwner)

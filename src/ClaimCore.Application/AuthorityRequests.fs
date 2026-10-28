@@ -38,7 +38,7 @@ module AuthorityRequests =
     /// Owner provisioning has a dedicated host boundary, never an ordinary wire request.
     let input operationId target act : Result<AuthorityRequest, Refusal> =
         match act with
-        | AuthorityAct.ProvisionOwner -> Error Refusal.ActNotPermitted
+        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
         | act ->
             Ok
                 {
@@ -48,7 +48,7 @@ module AuthorityRequests =
                 }
 
     let toInput (command: AuthorityCommand) =
-        input command.OperationId command.Target command.Act
+        input (OperationId.value command.OperationId) command.Target command.Act
 
     /// Permanent parsing does not reapply current capability decisions.
     let fromRecord request = AuthorityRecord.interpret request

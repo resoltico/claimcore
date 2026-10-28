@@ -1,5 +1,7 @@
 module ClaimCore.Tests.QuerySelectionTests
 
+open ClaimCore.TestSupport
+
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Protocol
@@ -14,18 +16,18 @@ let private authorityAndCursor () =
             Limit = 1
         }
 
-    let ungranted = actor owner (id 1) [] []
+    let ungranted = actor owner ((CaseFixtures.actorId (id 1))) [] []
 
     let read = ungranted
 
     Expect.equal
         (Queries.selectCases owner page read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Visibility precedes token parsing"
 
     Expect.equal
         (Queries.selectActors owner page read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Authority precedes token parsing"
 
     Expect.equal
@@ -33,7 +35,7 @@ let private authorityAndCursor () =
         (Error Refusal.InvalidCursor)
         "Authorized malformed cursor refuses"
 
-    let target = actor other (id 2) [] []
+    let target = actor other ((CaseFixtures.actorId (id 2))) [] []
 
     let grants: GrantsRequest =
         {
@@ -60,12 +62,12 @@ let private authorityAndCursor () =
 
     Expect.equal
         (Queries.selectGrants owner grants caller None)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent target remains private"
 
     Expect.equal
         (Queries.selectGrants owner grants ungranted view)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Grant review needs installation authority"
 
     Expect.isEmpty (Advice.views owner ungranted) "Ungrantable views are absent"
@@ -80,7 +82,7 @@ let private authorityAndCursor () =
 let private history () =
     let _, entry, current, _ = created 460 "QUERY-HISTORY"
 
-    let reader = actor owner (id 1) [ Role.CaseReader ] []
+    let reader = actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseReader ] []
     let read = Some current
 
     let request: HistoryRequest =
@@ -93,7 +95,7 @@ let private history () =
 
     Expect.equal
         (Queries.selectHistory owner request reader read)
-        (Ok 0L)
+        (Ok(CaseFixtures.revision (0L)))
         "Reader may select summary"
 
     Expect.equal
@@ -104,16 +106,19 @@ let private history () =
             }
             reader
             read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Reader cannot select full history"
 
     Expect.equal
         (Queries.selectHistory owner request reader None)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent case stays private"
 
     Expect.isFalse
-        (LedgerEntries.canObserve owner reader (EntryTarget.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve
+            owner
+            reader
+            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
@@ -122,9 +127,9 @@ let private history () =
 
 let private resources () =
     let _, _, current, _ = created 461 "QUERY-PRIVATE"
-    let revoked = actor owner (id 1) [ Role.Owner ] []
+    let revoked = actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
     let read = (locked revoked (Some current) None).Read
-    let expected = Outcome.Rejected Refusal.ResourceUnavailable
+    let expected = Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     Expect.equal
         (Queries.caseResult (DecisionFixtures.services installation calendar owner) read)
@@ -154,7 +159,7 @@ let private resources () =
         "Erased beyond view is indistinguishable"
 
 let private context () =
-    let ungranted = actor owner (id 1) [] []
+    let ungranted = actor owner ((CaseFixtures.actorId (id 1))) [] []
 
     let view = ungranted
 
@@ -179,7 +184,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             AuthorityView.empty)
-        (Outcome.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Unregistered actor has no context"
 
     let disabled =
@@ -192,27 +197,35 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             disabled)
-        (Outcome.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Disabled actor has no context"
 
     let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
-    let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.Auditor ] ]
+
+    let scoped =
+        actor owner ((CaseFixtures.actorId (id 1))) [] [ current.CaseId, [ Role.Auditor ] ]
 
     Expect.isTrue
         (LedgerEntries.canObserve owner scoped entry.Subject)
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse
-        (LedgerEntries.canObserve owner scoped (EntryTarget.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve
+            owner
+            scoped
+            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
         "Scoped auditor cannot observe installation authority"
 
     Expect.equal
         (Queries.selectActors owner { AfterCursor = None; Limit = 50 } scoped)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner worker (EntryTarget.Authority(id 1, AuthorityKind.Register)))
+        (LedgerEntries.canObserve
+            owner
+            worker
+            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
         "Installation owner may observe authority"
 
 [<Tests>]

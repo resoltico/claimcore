@@ -57,7 +57,7 @@ let internal commitment (database: PostgresFixture.Database) =
 let internal format (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        do! rewrite database 4L (payload [| 0x7Fuy |] Array.empty)
+        do! rewrite database (CaseFixtures.sequence (4L)) (payload [| 0x7Fuy |] Array.empty)
         do! finding VerificationFinding.PayloadFormat database
     }
 
@@ -69,10 +69,17 @@ let internal revision (database: PostgresFixture.Database) =
             let request, snapshot = livePayload value
 
             value
-            |> caseSubject (fun subject -> { subject with Revision = 2L })
-            |> updateCase { request with ExpectedRevision = 1L } { snapshot with Revision = 2L }
+            |> caseSubject (fun subject ->
+                { subject with
+                    Revision = CaseFixtures.revision 2L
+                })
+            |> updateCase
+                { request with ExpectedRevision = 1L }
+                { snapshot with
+                    Revision = CaseFixtures.revision 2L
+                }
 
-        do! rewrite database 4L change
+        do! rewrite database (CaseFixtures.sequence (4L)) change
         do! finding VerificationFinding.RevisionSequence database
     }
 
@@ -99,7 +106,7 @@ let internal start (database: PostgresFixture.Database) =
                 }
                 { snapshot with State = view }
 
-        do! rewrite database 4L change
+        do! rewrite database (CaseFixtures.sequence (4L)) change
         do! finding VerificationFinding.HistoryStart database
     }
 
@@ -136,7 +143,7 @@ let internal stateSequence (database: PostgresFixture.Database) =
 let internal erasure (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! original = row database 4L
+        let! original = row database (CaseFixtures.sequence (4L))
 
         let! granted =
             grant
@@ -226,9 +233,12 @@ let internal executor (database: PostgresFixture.Database) =
         let! _ = populated database
 
         do!
-            rewrite database 4L (fun value ->
+            rewrite database (CaseFixtures.sequence (4L)) (fun value ->
                 { value with
-                    Metadata = { value.Metadata with ActorId = id 99 }
+                    Metadata =
+                        { value.Metadata with
+                            ActorId = (CaseFixtures.actorId (id 99))
+                        }
                 })
 
         do! finding VerificationFinding.ActorNotEnabled database
@@ -268,7 +278,10 @@ let internal human (database: PostgresFixture.Database) =
         do!
             rewrite database (accepted voided).Position.Sequence (fun value ->
                 { value with
-                    Metadata = { value.Metadata with ActorId = id 3 }
+                    Metadata =
+                        { value.Metadata with
+                            ActorId = (CaseFixtures.actorId (id 3))
+                        }
                 })
 
         do! finding VerificationFinding.HumanRequired database
@@ -289,7 +302,10 @@ let internal owner (database: PostgresFixture.Database) =
         do!
             rewrite database (accepted changed).Position.Sequence (fun value ->
                 { value with
-                    Metadata = { value.Metadata with ActorId = id 3 }
+                    Metadata =
+                        { value.Metadata with
+                            ActorId = (CaseFixtures.actorId (id 3))
+                        }
                 })
 
         do! finding VerificationFinding.OwnerRequired database
@@ -302,7 +318,7 @@ let internal caseProjection (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.cases SET claimant_name='Tampered synthetic' WHERE case_reference='synthetic-a'"
+                "UPDATE claimcore.cases SET snapshot=set_byte(snapshot,0,0) WHERE case_reference='synthetic-a'"
                 [||]
 
         do! finding VerificationFinding.CaseProjection database

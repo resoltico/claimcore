@@ -26,7 +26,8 @@ module CaseRecord =
         |> Codec.field
             DurableNames.Revision
             (fun (snapshot: CaseSnapshot) -> snapshot.Revision)
-            (Codec.integer 1L JsonValue.MaximumInteger)
+            (Codec.integer 1L JsonValue.MaximumInteger
+             |> Codec.map (Revision.create >> Option.get) Revision.value)
         |> Codec.field DurableNames.State live RecordCodecs.liveState
         |> Codec.field
             DurableNames.Format

@@ -133,6 +133,30 @@ module DiagnosticCodecs =
             |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.OperationId)
         | _ -> fields
 
+    let private familyVariants<'T when 'T: equality> (wrap: 'T -> Refusal) unwrap =
+        nullaryVariants<'T>(wrap >> nullaryRefusalFields)
+        |> List.map (
+            extendVariant
+                (fun () value -> wrap value)
+                (fun refusal -> unwrap refusal |> Option.map (fun value -> (), value))
+                (record ())
+        )
+
+    let private caseVariants =
+        familyVariants Refusal.Case (function
+            | Refusal.Case value -> Some value
+            | _ -> None)
+
+    let private authorityVariants =
+        familyVariants Refusal.Authority (function
+            | Refusal.Authority value -> Some value
+            | _ -> None)
+
+    let private accessVariants =
+        familyVariants Refusal.Access (function
+            | Refusal.Access value -> Some value
+            | _ -> None)
+
     let private diagnosticVariants =
         [
             variant
@@ -154,7 +178,13 @@ module DiagnosticCodecs =
                  |> actionField RecommendedAction.ReadCurrent
                  |> field "actualRevision" id ResponseScalars.revision)
         ]
-        @ nullaryVariants<Refusal> nullaryRefusalFields
+        @ caseVariants
+        @ (nullaryVariants<Refusal> nullaryRefusalFields
+           |> List.filter (fun variant -> variant.Tag <> "INVALID_CURSOR"))
+        @ accessVariants
+        @ authorityVariants
+        @ (nullaryVariants<Refusal> nullaryRefusalFields
+           |> List.filter (fun variant -> variant.Tag = "INVALID_CURSOR"))
 
     let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants
 

@@ -15,7 +15,7 @@ open ClaimCore.TestSupport.StoreContractReads
 
 let internal erasureReadback fixture (actor: ServiceContext) =
     task {
-        let! rows = history fixture "CONTRACT-001" 0L 50
+        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 50
         let page = storedPage rows
 
         match page.Case with
@@ -57,7 +57,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
 
         Expect.equal
             replay.Outcome
-            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Erased requests cannot replay"
 
         let! reopen =
@@ -70,7 +70,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
 
         Expect.equal
             reopen.Outcome
-            (ExecuteResult.Rejected(Refusal.CaseErased))
+            (ExecuteResult.Rejected((Refusal.Case CaseRefusal.CaseErased)))
             "Folded reference remains reserved"
     }
 

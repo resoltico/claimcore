@@ -11,7 +11,7 @@ module internal Persistence =
         {
             Kind: string
             Id: Guid
-            Revision: int64 option
+            Revision: Revision option
             Act: string
             Date: DateOnly option
         }
@@ -22,7 +22,7 @@ module internal Persistence =
             | EntryTarget.Authority(target, kind) ->
                 {
                     Kind = "AUTHORITY"
-                    Id = target
+                    Id = ActorId.value target
                     Revision = None
                     Act = AuthorityKind.token kind
                     Date = None
@@ -30,7 +30,7 @@ module internal Persistence =
             | EntryTarget.Case(id, revision, kind, date) ->
                 {
                     Kind = "CASE"
-                    Id = id
+                    Id = CaseId.value id
                     Revision = Some revision
                     Act = CaseActKind.token kind
                     Date = Some date
@@ -40,23 +40,32 @@ module internal Persistence =
             connection
             "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
             [|
-                box entry.Sequence
+                box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
                 box entry.EntryHash
                 box (int16 RecordVersions.LedgerEntry)
                 box subject.Kind
                 box subject.Act
-                box entry.OperationId
-                box entry.ActorId
+                box (OperationId.value entry.OperationId)
+                box (ActorId.value entry.ActorId)
                 box entry.RecordedAt
                 box subject.Id
-                DatabaseSession.parameter subject.Revision
+                DatabaseSession.parameter (subject.Revision |> Option.map Revision.value)
                 DatabaseSession.parameter subject.Date
                 box entry.PayloadCommitment
                 box entry.Payload
                 box entry.PayloadNonce
             |]
             token
+
+    let private caseParameters id (snapshot: CaseSnapshot) =
+        [|
+            box (CaseId.value id)
+            box (CaseReference.format snapshot.Reference)
+            box (Revision.value snapshot.Revision)
+            box (CaseState.token snapshot.State)
+            box (CaseRecord.encodeSnapshot snapshot)
+        |]
 
     let case connection projection token =
         task {
@@ -65,8 +74,8 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.insert
-                        (CaseProjectionLayout.parameters id snapshot)
+                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot) VALUES ($1,$2,$3,$4,$5)"
+                        (caseParameters id snapshot)
                         token
 
                 return ()
@@ -74,8 +83,8 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.update
-                        (CaseProjectionLayout.parameters id snapshot)
+                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5 WHERE case_id=$1"
+                        (caseParameters id snapshot)
                         token
 
                 if changed <> 1 then
@@ -85,14 +94,14 @@ module internal Persistence =
                     DatabaseSession.rows
                         connection
                         "SELECT claimcore.erase_case_payload($1)"
-                        [| box id |]
+                        [| box (CaseId.value id) |]
                         token
 
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.erase
-                        [| box id; box revision |]
+                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL WHERE case_id=$1"
+                        [| box (CaseId.value id); box (Revision.value revision) |]
                         token
 
                 if changed <> 1 then
@@ -105,7 +114,12 @@ module internal Persistence =
         DatabaseSession.execute
             connection
             "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
-            [| box id; box (DurableNames.principalKind kind); box issuer; box subject |]
+            [|
+                box (ActorId.value id)
+                box (DurableNames.principalKind kind)
+                box issuer
+                box subject
+            |]
             token
 
     let authority connection projection token =
@@ -121,7 +135,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box id; box (Role.token Role.Owner) |]
+                        [| box (ActorId.value id); box (Role.token Role.Owner) |]
                         token
 
                 return ()
@@ -130,7 +144,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "UPDATE claimcore.actors SET enabled=$2 WHERE actor_id=$1"
-                        [| box id; box enabled |]
+                        [| box (ActorId.value id); box enabled |]
                         token
 
                 if changed <> 1 then
@@ -140,7 +154,11 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
-                        [| box id; box (Role.token role); DatabaseSession.parameter caseId |]
+                        [|
+                            box (ActorId.value id)
+                            box (Role.token role)
+                            DatabaseSession.parameter (caseId |> Option.map CaseId.value)
+                        |]
                         token
 
                 return ()
@@ -149,7 +167,11 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
-                        [| box id; box (Role.token role); DatabaseSession.parameter caseId |]
+                        [|
+                            box (ActorId.value id)
+                            box (Role.token role)
+                            DatabaseSession.parameter (caseId |> Option.map CaseId.value)
+                        |]
                         token
 
                 return ()

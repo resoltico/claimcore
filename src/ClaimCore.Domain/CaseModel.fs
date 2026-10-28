@@ -3,24 +3,6 @@ namespace ClaimCore.Domain
 
 open System
 
-/// Exact integer range shared by Domain revisions and interoperable JSON records.
-module SafeInteger =
-    [<Literal>]
-    let Maximum = 9007199254740991L
-
-module Revision =
-    [<Literal>]
-    let Maximum = SafeInteger.Maximum
-
-    /// JSON's exact-integer bound is a permanent format limit.
-    let successor revision =
-        let value = Checked.(+) revision 1L
-
-        if value > Maximum then
-            raise (OverflowException "The successor is outside the exact-integer format.")
-
-        value
-
 /// A retained snapshot that cannot represent accepted state; never an input diagnostic.
 [<RequireQualifiedAccess>]
 type RecordViolation =

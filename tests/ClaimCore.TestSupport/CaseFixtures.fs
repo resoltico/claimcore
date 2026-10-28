@@ -46,3 +46,13 @@ let progress decision payment =
     | Some value, None -> PaymentProgress.Decided value
     | Some value, Some paid -> PaymentProgress.Paid(value, paid.PaymentDate)
     | None, Some _ -> failtest "A fixture cannot represent payment without a decision."
+
+let private identifier create value =
+    create value
+    |> Option.defaultWith (fun () -> failtest "Invalid typed fixture identity or position.")
+
+let operationId value = identifier OperationId.create value
+let actorId value = identifier ActorId.create value
+let caseId value = identifier CaseId.create value
+let revision value = identifier Revision.create value
+let sequence value = identifier Sequence.create value

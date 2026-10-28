@@ -81,7 +81,10 @@ let internal integerLexemes () =
                         Outcome =
                             ExecuteResult.Accepted
                                 { receipt with
-                                    Position = { position with Sequence = sequence }
+                                    Position =
+                                        { position with
+                                            Sequence = (CaseFixtures.sequence (sequence))
+                                        }
                                 }
                     }
                 |> ignore)

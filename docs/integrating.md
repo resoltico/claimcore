@@ -12,6 +12,17 @@ entries; `schema ENDPOINT request|response` exposes a wire schema. The generated
 [catalog](../contracts/catalog.json) describes operation meaning and input bindings without CLI synopsis
 text. CLI grammar derives command words, flags and usage separately.
 
+Catalog `CHOICE` and `GROUP` input kinds supply `vocabulary` and `options`; use the vocabulary name to
+render option labels. Each constant supplies nullable `vocabulary`, and each input supplies nullable
+`adviceGroup`. A non-null `adviceGroup` identifies the registration, decision or payment correction group
+whose current advice constrains the input's choices. These identities come from the catalog, not member
+path spellings.
+
+Keep the selected entry's `subject` and `kind` as operation identity. Assemble its applicable constants
+and inputs using their declared `path` and `branches`; form values do not select the operation. Constants
+remain part of the submitted wire request. The browser follows this model; custom clients can use the
+[catalog model](../src/ClaimCore.Protocol/Catalog/Metadata.fs) and generated contracts as references.
+
 Dates and amounts travel as strings. Keep authored names, reasons, amount spelling and references intact;
 use the supplied input descriptors and current server guidance when preparing changes. A preview is advisory.
 
@@ -58,7 +69,7 @@ fault, never a request-correction refusal.
 HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
-[host failure policy](../src/ClaimCore.Protocol/HostFailures.fs).
+[host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
 
 Contract identity hashes canonical OpenAPI. Locale/help-only edits preserve it. Tracked
 [client validators](../contracts/client.ts) and [message contracts](../contracts/messages.ts) accompany the

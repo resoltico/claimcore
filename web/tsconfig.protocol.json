@@ -15,8 +15,8 @@
   },
   "include": ["src/protocol/**/*.ts", "../contracts/*.ts", "../contracts/*.json"],
   "files": [
-    "../src/ClaimCore.Protocol/Localization/en.json",
-    "../src/ClaimCore.Protocol/Localization/lv.json",
-    "../src/ClaimCore.Protocol/Localization/ar.json"
+    "../src/ClaimCore.Protocol/Messages/Localization/en.json",
+    "../src/ClaimCore.Protocol/Messages/Localization/lv.json",
+    "../src/ClaimCore.Protocol/Messages/Localization/ar.json"
   ]
 }

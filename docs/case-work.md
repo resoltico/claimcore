@@ -8,14 +8,14 @@ look up an act. The sections below explain the business meaning and the limits o
 
 ## Business record
 
-A case has thirteen business fields: incident date, this handler's first notification date, incident country,
+The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) covers incident date, this handler's first notification date, incident country,
 claimant, responsible insurer, claimed amount/currency, case reference, decision date, payable amount/currency,
 payment date and open/closed status. Technical IDs, revisions, timestamps and advice stay outside this record.
-The [typed record declaration](../src/ClaimCore.Domain/CaseFields.fs) owns the field structure; the generated catalog supplies input guidance.
+The generated catalog supplies input guidance.
 
-Opening supplies the seven registration values and top-level reference. Decision and payment groups begin as
-null; status begins OPENED. The view places the seven registration members in `registration`, the three
-decision members in `decision`, and the payment date in `payment`. A recorded group contains all its members;
+Opening supplies the declared registration values and top-level reference. Decision and payment groups begin
+as null; status begins OPENED. The view places registration members in `registration`, decision members in
+`decision`, and the payment date in `payment`. A recorded group contains all its members;
 null means the whole group is unrecorded, with no invented zero or date. Claimant may identify a person or
 organization; insurer records the handler's assertion.
 
@@ -40,25 +40,28 @@ needs no decision or payment. Use `claimcore describe` for current inputs and co
   existing decision; a closed case permits correction independently of payment progress.
 
 Before ordinary registration editing, clear payment and withdraw the decision. A correction instead supplies
-all three tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
+all declared tagged groups. Registration may KEEP or REPLACE all registration values. Decision and payment may
 KEEP, REPLACE their complete tuples, or CLEAR. KEEP reads accepted state under the ledger lock.
 
-A correction cannot be all-KEEP, make a no-op revision, add a missing decision/payment, or silently carry an
-existing payment assertion to a replaced payable amount. Clearing a paid decision also clears payment. Replacing
-it requires explicit payment replacement/reaffirmation or clearing. Acceptance creates one complete revision;
-refusal creates no intermediate state. [Case transitions](../src/ClaimCore.Domain/Case.fs) own these rules.
+A correction cannot be all-KEEP, make a no-op revision or add a missing decision/payment. Clearing a paid
+decision requires explicitly clearing payment too. Replacing a paid decision requires explicit payment
+replacement/reaffirmation or clearing, including when its payable amount stays the same. Acceptance creates
+one complete revision; refusal creates no intermediate state. The
+[correction policy](../src/ClaimCore.Domain/CaseCorrection.fs) and
+[transitions](../src/ClaimCore.Domain/Transitions.fs) enforce these rules.
 
 Current core advice filters eligible work by the actor's resource rights. Unauthorized correction groups stay
 KEEP. Case-scoped handling does not grant installation creation. Execution rechecks rights, state and expected
 revision; an offered act or preview grants no commit authority.
 
-The twelve case acts share one flat vocabulary. Business availability follows status and recorded facts;
+The [case-act declaration](../src/ClaimCore.Domain/CaseActs.fs) supplies one flat vocabulary. Business availability follows status and recorded facts;
 stewardship follows ACTIVE, VOIDED or ERASED lifecycle state. Both remain subject to current authority.
 
 ### Case stewardship
 
 Lifecycle state is ACTIVE, VOIDED or ERASED. Active and voided cases retain separate open/closed status
-and payment progress; erased cases carry no business fields.
+and payment progress. Erased cases retain their reference and ledger metadata, with no registration,
+decision, payment or status values.
 VOID records an entry-error reason and blocks business work while preserving fields and history.
 REINSTATE records a reason and restores ACTIVE state on a voided case. Both leave business fields unchanged.
 Reasons use the same current text admission profile as names.
@@ -97,7 +100,7 @@ acceptance without another entry, subject to [current disclosure](integrating.md
 content under a used ID refuses. Rejection changes no accepted state.
 
 Retained revisions and sequences use the exact-integer format bound defined by
-[Revision](../src/ClaimCore.Domain/CaseModel.fs). SQL and durable decoding enforce that format.
+[typed positions](../src/ClaimCore.Domain/Identifiers.fs). SQL and durable decoding enforce that format.
 
 See the [glossary](glossary.md) for project terminology.
 

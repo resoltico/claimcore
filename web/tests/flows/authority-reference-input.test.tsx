@@ -7,7 +7,11 @@ import lvChrome from "@locales/lv.json";
 import arChrome from "@locales/ar.json";
 import { service } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
-import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";
+import {
+  initialOperationValues,
+  refusalPath,
+  operationEntry,
+} from "../../src/operation/operationForm";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { OperationForm } from "../../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -125,16 +129,24 @@ const expectGrantReferencePath = (active: boolean) => {
     ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
   };
   expect(
-    refusalPath("caseReference", {
-      ...values,
-      "act.scope.kind": "INSTALLATION",
-    }),
+    refusalPath(
+      "caseReference",
+      operationEntry({ subject: "AUTHORITY", kind: active ? "GRANT" : "REVOKE" }),
+      {
+        ...values,
+        "act.scope.kind": "INSTALLATION",
+      },
+    ),
   ).toBeNull();
   expect(
-    refusalPath("caseReference", {
-      ...values,
-      "act.scope.kind": "CASE",
-    }),
+    refusalPath(
+      "caseReference",
+      operationEntry({ subject: "AUTHORITY", kind: active ? "GRANT" : "REVOKE" }),
+      {
+        ...values,
+        "act.scope.kind": "CASE",
+      },
+    ),
   ).toBe("act.scope.caseReference");
 };
 it.each(

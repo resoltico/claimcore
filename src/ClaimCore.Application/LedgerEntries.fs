@@ -27,8 +27,8 @@ type internal EntryCreation =
         Head: LedgerPosition
         Instant: DateTimeOffset
         Nonce: byte array
-        ActorId: Guid
-        OperationId: Guid
+        ActorId: ActorId
+        OperationId: OperationId
         Subject: EntryTarget
         Request: byte array
         Snapshot: byte array
@@ -36,7 +36,7 @@ type internal EntryCreation =
 
 type internal OperationIdentityRequest =
     {
-        OperationId: Guid
+        OperationId: OperationId
         Bytes: byte array
         Existing: StoredEntry option
     }
@@ -47,7 +47,7 @@ module LedgerEntries =
 
     let position sequence (hash: byte array) : LedgerPosition =
         EntryHash.ofBytes hash
-        |> Option.bind (LedgerPosition.create sequence)
+        |> Option.map (LedgerPosition.create sequence)
         |> Option.defaultWith (fun () -> invalidArg (nameof hash) "Invalid ledger position.")
 
     let internal stored (entry: EntryDraft) : StoredEntry =
@@ -87,9 +87,6 @@ module LedgerEntries =
         let request = input.Request
         let snapshot = input.Snapshot
 
-        if head.Sequence < 0L then
-            invalidArg (nameof head) "Ledger head cannot advance."
-
         let payload =
             LedgerEntry.encodePayload
                 {
@@ -101,7 +98,7 @@ module LedgerEntries =
             invalidArg (nameof request) "Ledger payload exceeds its format bound."
 
         let commitment = LedgerEntry.commitment nonce payload
-        let sequence = Revision.successor head.Sequence
+        let sequence = Sequence.successor head.Sequence
 
         let metadata =
             {
@@ -156,19 +153,14 @@ module LedgerEntries =
     let private validMetadata (entry: StoredEntry) =
         let subject =
             match entry.Subject with
-            | EntryTarget.Case(id, revision, act, _) ->
-                id <> Guid.Empty
-                && revision >= 1L
-                && revision <= Revision.Maximum
-                && ((revision = 1L) = (act = CaseActKind.Open))
-            | EntryTarget.Authority(id, _) -> id <> Guid.Empty
+            | EntryTarget.Case(_, revision, act, _) ->
+                revision >= Revision.first
+                && ((revision = Revision.first) = (act = CaseActKind.Open))
+            | EntryTarget.Authority _ -> true
 
-        entry.Sequence >= 1L
-        && entry.Sequence <= Revision.Maximum
+        entry.Sequence >= Sequence.first
         && width 32 entry.EntryHash
         && width 32 entry.PayloadCommitment
-        && entry.OperationId <> Guid.Empty
-        && entry.ActorId <> Guid.Empty
         && entry.RecordedAt.UtcTicks % 10L = 0L
         && subject
 
@@ -179,7 +171,7 @@ module LedgerEntries =
             match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
             | Ok request when
                 request.OperationId = entry.OperationId
-                && request.ExpectedRevision = revision - 1L
+                && Revision.value request.ExpectedRevision = Revision.value revision - 1L
                 && CaseAct.kind request.Act = act
                 && CaseReferenceId.encode installationId (CaseReference.format request.Reference) =
                     id
@@ -203,7 +195,7 @@ module LedgerEntries =
     let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
         match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
         | Ok request when
-            request.OperationId = entry.OperationId
+            request.OperationId = OperationId.value entry.OperationId
             && AuthorityAct.kind request.Act = act
             && AuthorityRequests.validRecord request
             && Array.isEmpty data.Snapshot
@@ -211,8 +203,11 @@ module LedgerEntries =
             let identity =
                 match act with
                 | AuthorityKind.ProvisionOwner ->
-                    target = entry.OperationId && entry.ActorId = target && entry.Sequence = 1L
-                | AuthorityKind.Register -> target = entry.OperationId && entry.ActorId <> target
+                    target = ActorId.ofOperationId entry.OperationId
+                    && entry.ActorId = target
+                    && entry.Sequence = Sequence.first
+                | AuthorityKind.Register ->
+                    target = ActorId.ofOperationId entry.OperationId && entry.ActorId <> target
                 | _ -> true
 
             if identity then
@@ -372,7 +367,7 @@ module internal OperationIdentity =
         match existing with
         | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         | Some entry when entry.OperationId <> operationId ->
             Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
@@ -380,7 +375,7 @@ module internal OperationIdentity =
             | Error fault -> Verdict.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> Verdict.Refuse Refusal.ResourceUnavailable
+                | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
                 | Some accepted when accepted = bytes ->
                     receipt validated
                     |> Result.map Verdict.Replay

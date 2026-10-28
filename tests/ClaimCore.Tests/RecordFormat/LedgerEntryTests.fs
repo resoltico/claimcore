@@ -23,14 +23,14 @@ let private subject (vector: JsonElement) =
     if text vector "subject" = "AUTHORITY" then
         RecordedTarget.Authority
             {
-                TargetActorId = Guid.Parse(text vector "subjectId")
+                TargetActorId = CaseFixtures.actorId (Guid.Parse(text vector "subjectId"))
                 Act = AuthorityKind.Grant
             }
     else
         RecordedTarget.Case
             {
-                CaseId = Guid.Parse(text vector "subjectId")
-                Revision = vector.GetProperty("caseRevision").GetInt64()
+                CaseId = CaseFixtures.caseId (Guid.Parse(text vector "subjectId"))
+                Revision = CaseFixtures.revision (vector.GetProperty("caseRevision").GetInt64())
                 Act = CaseActKind.Open
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
@@ -39,10 +39,10 @@ let private subject (vector: JsonElement) =
 let private metadata vector : LedgerMetadata =
     {
         InstallationId = Guid.Parse(text vector "installationId")
-        Sequence = vector.GetProperty("sequence").GetInt64()
+        Sequence = CaseFixtures.sequence (vector.GetProperty("sequence").GetInt64())
         PreviousHash = Convert.FromHexString(text vector "previousHash")
-        OperationId = Guid.Parse(text vector "operationId")
-        ActorId = Guid.Parse(text vector "actorId")
+        OperationId = CaseFixtures.operationId (Guid.Parse(text vector "operationId"))
+        ActorId = CaseFixtures.actorId (Guid.Parse(text vector "actorId"))
         RecordedAt = DateTimeOffset.Parse(text vector "recordedAt", CultureInfo.InvariantCulture)
         Subject = subject vector
         PayloadCommitment = Convert.FromHexString(text vector "payloadCommitment")
@@ -126,7 +126,9 @@ let private changedHash (value: byte array) =
 let private changedCaseMetadata otherId (case: CaseEntryMetadata) =
     [
         { case with CaseId = otherId }
-        { case with Revision = 2L }
+        { case with
+            Revision = CaseFixtures.revision 2L
+        }
         { case with Act = CaseActKind.Close }
         { case with
             BusinessDate = case.BusinessDate.AddDays 1
@@ -145,12 +147,18 @@ let private allMetadataFields () =
         let changes =
             [
                 { entry with InstallationId = otherId }
-                { entry with Sequence = 2L }
+                { entry with
+                    Sequence = CaseFixtures.sequence 2L
+                }
                 { entry with
                     PreviousHash = changedHash entry.PreviousHash
                 }
-                { entry with OperationId = otherId }
-                { entry with ActorId = otherId }
+                { entry with
+                    OperationId = (CaseFixtures.operationId otherId)
+                }
+                { entry with
+                    ActorId = (CaseFixtures.actorId otherId)
+                }
                 { entry with
                     RecordedAt = entry.RecordedAt.AddTicks 10L
                 }
@@ -161,13 +169,13 @@ let private allMetadataFields () =
                     Subject =
                         RecordedTarget.Authority
                             {
-                                TargetActorId = otherId
+                                TargetActorId = (CaseFixtures.actorId otherId)
                                 Act = AuthorityKind.Grant
                             }
                 }
             ]
 
-        let subjects = changedCaseMetadata otherId case
+        let subjects = changedCaseMetadata (CaseFixtures.caseId otherId) case
 
         let original = LedgerEntry.hash entry
 
@@ -205,7 +213,7 @@ let private hashProperty =
             withVectors (fun vectors ->
                 let entry =
                     { metadata vectors.Head with
-                        Sequence = sequence
+                        Sequence = (CaseFixtures.sequence sequence)
                     }
 
                 let commitment = Array.copy entry.PayloadCommitment
@@ -280,7 +288,8 @@ let tests =
                                 Subject =
                                     RecordedTarget.Authority
                                         { subject with
-                                            TargetActorId = entry.OperationId
+                                            TargetActorId =
+                                                (ActorId.ofOperationId entry.OperationId)
                                         }
                             }
 
@@ -288,19 +297,9 @@ let tests =
                             (LedgerEntry.hash changed <> LedgerEntry.hash candidate)
                             "Target actor is hash-bound"
 
-                    let invalid =
-                        { entry with
-                            Subject =
-                                RecordedTarget.Authority
-                                    {
-                                        TargetActorId = Guid.Empty
-                                        Act = AuthorityKind.Grant
-                                    }
-                        }
-
-                    Expect.throwsT<ArgumentException>
-                        (fun () -> LedgerEntry.hash invalid |> ignore)
-                        "Subject required"))
+                    Expect.isNone
+                        (ActorId.create Guid.Empty)
+                        "An authority subject requires a nonempty admitted actor ID"))
             testCase "payload framing round trips arbitrary bytes" (fun () ->
                 PropertyHarness.run "ledger payload framing" framingProperty)
             testCase "commitment changes affect hashes across the sequence range" (fun () ->
@@ -350,19 +349,28 @@ let tests =
                     withVectors (fun vectors ->
                         let entry = metadata vectors.Head
 
+                        Expect.isNone
+                            (OperationId.create Guid.Empty)
+                            "Empty operation identity cannot be admitted"
+
+                        Expect.isNone
+                            (ActorId.create Guid.Empty)
+                            "Empty actor identity cannot be admitted"
+
+                        for sequence in [ -1L; 9007199254740992L ] do
+                            Expect.isNone
+                                (Sequence.create sequence)
+                                "Invalid ledger sequence cannot be admitted"
+
                         let cases =
                             [
                                 { entry with PreviousHash = [||] }
                                 { entry with PayloadCommitment = [||] }
-                                { entry with OperationId = Guid.Empty }
                                 { entry with
                                     InstallationId = Guid.Empty
                                 }
-                                { entry with ActorId = Guid.Empty }
-                                { entry with Sequence = 0L }
-                                { entry with Sequence = -1L }
                                 { entry with
-                                    Sequence = Revision.Maximum + 1L
+                                    Sequence = CaseFixtures.sequence 0L
                                 }
                                 { entry with
                                     RecordedAt = entry.RecordedAt.AddTicks 1L
@@ -371,7 +379,11 @@ let tests =
 
                         for sequence in [ 1L; Revision.Maximum - 1L; Revision.Maximum ] do
                             Expect.equal
-                                (LedgerEntry.hash { entry with Sequence = sequence }).Length
+                                (LedgerEntry.hash
+                                    { entry with
+                                        Sequence = (CaseFixtures.sequence sequence)
+                                    })
+                                    .Length
                                 32
                                 "Safe boundary is representable"
 
@@ -389,13 +401,19 @@ let tests =
 
                     let case = caseMetadata entry
 
+                    Expect.isNone
+                        (CaseId.create Guid.Empty)
+                        "Empty case identity cannot be admitted"
+
+                    for revision in [ Int64.MaxValue; 9007199254740992L ] do
+                        Expect.isNone
+                            (Revision.create revision)
+                            "Unsafe case revision cannot be admitted"
+
                     for invalid in
                         [
-                            { case with CaseId = Guid.Empty }
-                            { case with Revision = 0L }
-                            { case with Revision = Int64.MaxValue }
                             { case with
-                                Revision = Revision.Maximum + 1L
+                                Revision = CaseFixtures.revision 0L
                             }
                         ] do
                         Expect.throwsT<ArgumentException>

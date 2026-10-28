@@ -48,14 +48,19 @@ let private cardinalityWrites cases keyRing (database: PostgresFixture.Database)
         let baseline = measurement.BaselineManagedBytes
         let peakManaged = measurement.PeakManagedBytes
         let peakWorking = measurement.PeakWorkingBytes
-        Expect.equal position.Sequence 1003L "Resource comparisons keep accepted history fixed"
+
+        Expect.equal
+            position.Sequence
+            (CaseFixtures.sequence (1003L))
+            "Resource comparisons keep accepted history fixed"
+
         let! population = GrowthEnvironment.database database
         Expect.equal population.cases (int64 cases) "Compared resource population is exact"
 
         return
             {|
                 cases = cases
-                acceptedEntries = position.Sequence
+                acceptedEntries = Sequence.value position.Sequence
                 verificationMilliseconds = elapsed
                 managedBytesBeforeVerification = baseline
                 managedBytesAfterVerification = GC.GetTotalMemory false

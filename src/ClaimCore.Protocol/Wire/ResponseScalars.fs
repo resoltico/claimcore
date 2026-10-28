@@ -13,8 +13,17 @@ open System.Text.RegularExpressions
 module ResponseScalars =
     open Codec
 
-    let revision = RequestCodecs.revision
-    let sequence = RequestCodecs.sequence
+    let revision =
+        RequestCodecs.revision |> map (Revision.create >> Option.get) Revision.value
+
+    let positiveRevision =
+        RequestCodecs.sequence |> map (Revision.create >> Option.get) Revision.value
+
+    let sequence =
+        RequestCodecs.sequence |> map (Sequence.create >> Option.get) Sequence.value
+
+    let operationId = uuid |> map (OperationId.create >> Option.get) OperationId.value
+    let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
 
     let private amountMaximumCharacters =

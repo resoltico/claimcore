@@ -28,8 +28,8 @@ let private oracle () =
         let reference = vector.GetProperty("reference").GetString() |> nonNull
         let expected = vector.GetProperty("caseId").GetString() |> nonNull |> Guid.Parse
         let actual = CaseReferenceId.encode installation reference
-        Expect.equal actual expected "Independent network-order UUIDv8 oracle"
-        let bytes = actual.ToByteArray(bigEndian = true)
+        Expect.equal actual (CaseFixtures.caseId expected) "Independent network-order UUIDv8 oracle"
+        let bytes = (ClaimCore.Domain.CaseId.value actual).ToByteArray(bigEndian = true)
         Expect.equal (bytes[6] >>> 4) 8uy "UUID version 8"
         Expect.equal (bytes[8] >>> 6) 2uy "UUID variant 10"
 

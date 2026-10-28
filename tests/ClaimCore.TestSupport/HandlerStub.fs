@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.HandlerStub
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Web
 
 open ClaimCore.Protocol
@@ -15,7 +17,7 @@ let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 
 let position: LedgerPosition =
     {
-        Sequence = 1L
+        Sequence = Sequence.first
         EntryHash =
             (String.replicate 64 "a"
              |> System.Convert.FromHexString
@@ -67,13 +69,13 @@ let view reference =
 
 let receipt id (reference: string) =
     {
-        OperationId = id
+        OperationId = CaseFixtures.operationId id
         Position = position
         Subject =
             ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference reference
-                    Revision = 1L
+                    Revision = Revision.first
                     Act = CaseActKind.Open
                     Snapshot =
                         SnapshotDisclosure.Disclosed(
@@ -81,7 +83,7 @@ let receipt id (reference: string) =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = operationId
+        RecordedBy = CaseFixtures.actorId operationId
     }
 
 let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
@@ -89,7 +91,7 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = operationId
+                    TargetActorId = CaseFixtures.actorId operationId
                     Act = request.Act |> fun value -> AuthorityAct.kind value
                 }
     }
@@ -134,7 +136,7 @@ type Stub() =
 
     member _.InvocationContext principal =
         let store =
-            new MemoryStore.Store(DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
+            new MemoryStore.Store(operationId, DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
 
         store.ReadFailure <- Some StoreFailure.Unavailable
         store.WriteFailure <- Some StoreFailure.Unavailable
@@ -263,7 +265,7 @@ type Stub() =
                         {
                             Actor =
                                 {
-                                    ActorId = request.ActorId
+                                    ActorId = CaseFixtures.actorId request.ActorId
                                     Principal = principal
                                     Enabled = false
                                 }

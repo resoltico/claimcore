@@ -24,7 +24,7 @@ let private actor principal grants : ActorAuthority =
     {
         Actor =
             {
-                ActorId = id
+                ActorId = (CaseFixtures.actorId id)
                 Principal = principal
                 Enabled = true
             }
@@ -51,28 +51,28 @@ let private row payload =
     let metadata: LedgerMetadata =
         {
             InstallationId = installation
-            Sequence = 1L
+            Sequence = CaseFixtures.sequence 1L
             PreviousHash = Array.zeroCreate 32
-            OperationId = id
-            ActorId = id
+            OperationId = (CaseFixtures.operationId id)
+            ActorId = (CaseFixtures.actorId id)
             RecordedAt = instant
             PayloadCommitment = commitment
             Subject =
                 RecordedTarget.Authority
                     {
-                        TargetActorId = id
+                        TargetActorId = (CaseFixtures.actorId id)
                         Act = AuthorityKind.ProvisionOwner
                     }
         }
 
     let entry: StoredEntry =
         {
-            Sequence = 1L
+            Sequence = CaseFixtures.sequence 1L
             EntryHash = LedgerEntry.hash metadata
-            OperationId = id
-            ActorId = id
+            OperationId = (CaseFixtures.operationId id)
+            ActorId = (CaseFixtures.actorId id)
             RecordedAt = instant
-            Subject = EntryTarget.Authority(id, AuthorityKind.ProvisionOwner)
+            Subject = EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.ProvisionOwner)
             PayloadCommitment = commitment
             PayloadNonce = Some nonce
             Payload = Some payload
@@ -82,7 +82,7 @@ let private row payload =
 
 let private history: CaseHistory =
     {
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
         Snapshot = None
         Reference = Some(CaseFixtures.reference "SYNTHETIC")
         State = CaseState.Active()
@@ -94,7 +94,11 @@ let private history: CaseHistory =
 let private ledgerChecks =
     [
         VerificationFinding.Link,
-        fun () -> LedgerVerification.link state 2L (EntryHash.toBytes state.Head.EntryHash)
+        fun () ->
+            LedgerVerification.link
+                state
+                (CaseFixtures.sequence 2L)
+                (EntryHash.toBytes state.Head.EntryHash)
         VerificationFinding.EntryHash,
         fun () ->
             let entry, metadata = row [| 1uy |]
@@ -131,7 +135,7 @@ let private ledgerChecks =
             LedgerVerification.complete
                 (Some
                     {
-                        Sequence = 1L
+                        Sequence = CaseFixtures.sequence 1L
                         EntryHash = EntryHash.zero
                     })
                 state
@@ -150,7 +154,12 @@ let private caseChecks =
                 Map.empty
                 { entry with
                     Subject =
-                        EntryTarget.Case(id, 2L, opened, DateOnly.FromDateTime instant.DateTime)
+                        EntryTarget.Case(
+                            (CaseFixtures.caseId id),
+                            (CaseFixtures.revision 2L),
+                            opened,
+                            DateOnly.FromDateTime instant.DateTime
+                        )
                 }
                 VerifiedPayload.Erased
             |> unitResult
@@ -160,7 +169,12 @@ let private caseChecks =
                 Map.empty
                 { entry with
                     Subject =
-                        EntryTarget.Case(id, 1L, closed, DateOnly.FromDateTime instant.DateTime)
+                        EntryTarget.Case(
+                            (CaseFixtures.caseId id),
+                            (CaseFixtures.revision 1L),
+                            closed,
+                            DateOnly.FromDateTime instant.DateTime
+                        )
                 }
                 VerifiedPayload.Erased
             |> unitResult
@@ -169,14 +183,19 @@ let private caseChecks =
             CaseFold.apply
                 (Map.ofList
                     [
-                        id,
+                        (CaseFixtures.caseId id),
                         { history with
                             State = CaseState.Erased
                         }
                     ])
                 { entry with
                     Subject =
-                        EntryTarget.Case(id, 2L, closed, DateOnly.FromDateTime instant.DateTime)
+                        EntryTarget.Case(
+                            (CaseFixtures.caseId id),
+                            (CaseFixtures.revision 2L),
+                            closed,
+                            DateOnly.FromDateTime instant.DateTime
+                        )
                 }
                 VerifiedPayload.Erased
             |> unitResult
@@ -185,11 +204,11 @@ let private caseChecks =
             CaseFold.erasure (
                 Map.ofList
                     [
-                        id,
+                        CaseFixtures.caseId id,
                         { history with
                             State = CaseState.Erased
-                            PresentPayloadAt = Some 1L
-                            ErasedAt = Some 2L
+                            PresentPayloadAt = Some(CaseFixtures.sequence 1L)
+                            ErasedAt = Some(CaseFixtures.sequence 2L)
                         }
                     ]
             )
@@ -198,21 +217,25 @@ let private caseChecks =
             CaseFold.erasure (
                 Map.ofList
                     [
-                        id,
+                        CaseFixtures.caseId id,
                         { history with
-                            MissingPayloadAt = Some 1L
+                            MissingPayloadAt = Some(CaseFixtures.sequence 1L)
                         }
                     ]
             )
         VerificationFinding.CaseProjection,
-        fun () -> ProjectionVerification.cases installation (Map.ofList [ id, history ]) []
+        fun () ->
+            ProjectionVerification.cases
+                installation
+                (Map.ofList [ (CaseFixtures.caseId id), history ])
+                []
     ]
 
 let private authorityChecks =
     let entry, _ = row [| 1uy |]
 
     let executor actors human owner =
-        AuthorityFold.executor (Map.ofList [ id, actors ]) entry human owner
+        AuthorityFold.executor (Map.ofList [ (CaseFixtures.actorId id), actors ]) entry human owner
 
     [
         VerificationFinding.ActorNotEnabled,
@@ -223,7 +246,8 @@ let private authorityChecks =
         fun () ->
             let entry =
                 { entry with
-                    Subject = EntryTarget.Authority(id, AuthorityKind.Register)
+                    Subject =
+                        EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.Register)
                 }
 
             let request: AuthorityRequestRecord =
@@ -236,12 +260,13 @@ let private authorityChecks =
             AuthorityFold.apply
                 installation
                 (fun _ -> false)
-                (Map.ofList [ id, owner ])
+                (Map.ofList [ (CaseFixtures.actorId id), owner ])
                 entry
                 request
             |> unitResult
         VerificationFinding.AuthorityProjection,
-        fun () -> ProjectionVerification.authority (Map.ofList [ id, owner ]) [] []
+        fun () ->
+            ProjectionVerification.authority (Map.ofList [ (CaseFixtures.actorId id), owner ]) [] []
     ]
 
 let private finding expected run =
@@ -265,7 +290,7 @@ let private duplicatePrecedence () =
             }
 
     let entry, metadata = row bytes
-    let duplicate = LedgerVerification.initial None (Some 1L)
+    let duplicate = LedgerVerification.initial None (Some(CaseFixtures.sequence 1L))
 
     let append state entry metadata =
         LedgerVerification.append installation None state entry metadata |> unitResult
@@ -290,18 +315,18 @@ let private duplicatePrecedence () =
             metadata)
 
     Expect.isOk
-        (append (LedgerVerification.initial None (Some 2L)) entry metadata)
+        (append (LedgerVerification.initial None (Some(CaseFixtures.sequence 2L))) entry metadata)
         "A later duplicate cannot hide an earlier valid row"
 
 let private invalidProjectionRows () =
     let row: Actor =
         {
-            ActorId = id
+            ActorId = (CaseFixtures.actorId id)
             Principal = human
             Enabled = true
         }
 
-    let actors = Map.ofList [ id, owner ]
+    let actors = Map.ofList [ CaseFixtures.actorId id, owner ]
 
     let duplicateGrant =
         { owner with
@@ -314,22 +339,29 @@ let private invalidProjectionRows () =
                 ]
         }
 
+    Expect.isNone (ActorId.create Guid.Empty) "Empty projected actor IDs cannot be admitted"
+    Expect.isNone (CaseId.create Guid.Empty) "Empty projected grant scopes cannot be admitted"
+
     let checks =
         [
-            (fun () -> ProjectionVerification.actor Map.empty { row with ActorId = Guid.Empty })
             (fun () -> ProjectionVerification.actor actors row)
             (fun () ->
                 ProjectionVerification.actor
                     actors
                     { row with
-                        ActorId = Guid.Parse "20000000-0000-4000-8000-000000000002"
+                        ActorId =
+                            (CaseFixtures.actorId (
+                                Guid.Parse "20000000-0000-4000-8000-000000000002"
+                            ))
                     })
-            (fun () -> ProjectionVerification.grant Map.empty (id, Role.CaseReader, None))
             (fun () ->
                 ProjectionVerification.grant
-                    (Map.ofList[id, duplicateGrant])
-                    (id, Role.CaseReader, None))
-            (fun () -> ProjectionVerification.grant actors (id, Role.CaseReader, Some Guid.Empty))
+                    Map.empty
+                    ((CaseFixtures.actorId id), Role.CaseReader, None))
+            (fun () ->
+                ProjectionVerification.grant
+                    (Map.ofList[(CaseFixtures.actorId id), duplicateGrant])
+                    ((CaseFixtures.actorId id), Role.CaseReader, None))
         ]
 
     for check in checks do

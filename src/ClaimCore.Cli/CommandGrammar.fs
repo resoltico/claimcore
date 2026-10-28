@@ -73,8 +73,8 @@ module CommandGrammar =
                 | _, BindingKind.Text -> CatalogAtom.Text
                 | _, BindingKind.Integer -> CatalogAtom.Integer
                 | _, BindingKind.Boolean -> CatalogAtom.Boolean
-                | _, BindingKind.Choice choices
-                | _, BindingKind.Group choices -> CatalogAtom.Choice choices
+                | _, BindingKind.Choice(_, choices)
+                | _, BindingKind.Group(_, choices) -> CatalogAtom.Choice choices
 
             {
                 Name = input.Name

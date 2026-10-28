@@ -10,7 +10,7 @@ module internal AuthorityQueries =
 
     let selectActors principal (request: PageRequest) actor =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
             |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
@@ -75,23 +75,27 @@ module internal AuthorityQueries =
         (target: Actor option)
         =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             match currentActor principal actor, target with
-            | Ok _, Some target when target.ActorId = request.ActorId ->
-                cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
-            | _ -> Error Refusal.ResourceUnavailable
+            | Ok _, Some target when ActorId.value target.ActorId = request.ActorId ->
+                cursor (Cursors.decodeGrants target.ActorId) request.AfterCursor
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let grants (services: ServiceContext) (request: GrantsRequest) token =
         let store = services.Store
         let principal = services.Principal
 
+        let actorId = ActorId.create request.ActorId
+
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
-            elif request.ActorId = Guid.Empty then
+            elif actorId.IsNone then
                 return unavailable
             else
+                let actorId = actorId.Value
+
                 let! result =
                     store.Read(
                         {
@@ -106,7 +110,7 @@ module internal AuthorityQueries =
                                                 }
                                             )
 
-                                        let! target = tx.FindActor request.ActorId
+                                        let! target = tx.FindActor actorId
 
                                         match selectGrants principal request actor target with
                                         | Error refusal -> return Outcome.Rejected refusal
@@ -118,8 +122,7 @@ module internal AuthorityQueries =
                                                 let! page =
                                                     tx.GrantPage(
                                                         {
-                                                            GrantPageQuery.ActorId =
-                                                                request.ActorId
+                                                            GrantPageQuery.ActorId = actorId
                                                             AfterGrant = after
                                                             Limit = request.Limit
                                                         }
@@ -139,7 +142,7 @@ module internal AuthorityQueries =
                                                                     page.Next
                                                                     |> Option.map (
                                                                         Cursors.encodeGrants
-                                                                            request.ActorId
+                                                                            actorId
                                                                     )
                                                             }
                                     })

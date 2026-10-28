@@ -366,7 +366,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            4L
+                            (CaseFixtures.sequence (4L))
                             "Admitted transaction still committed exactly once"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->

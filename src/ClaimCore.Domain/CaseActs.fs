@@ -198,6 +198,21 @@ module CaseAct =
         | CaseActKind.Reinstate -> CaseActSlot.Reason(CaseAct.Reinstate, projectReinstate)
         | CaseActKind.Erase -> CaseActSlot.Bare CaseAct.Erase
 
+    let probe kind : CaseAct<unit, unit, unit, unit> =
+        match slot kind with
+        | CaseActSlot.Bare act -> act
+        | CaseActSlot.Registration(inject, _)
+        | CaseActSlot.Decision(inject, _)
+        | CaseActSlot.Payment(inject, _)
+        | CaseActSlot.Reason(inject, _) -> inject ()
+        | CaseActSlot.Correction(inject, _) ->
+            inject
+                {
+                    Registration = Amendment.Keep
+                    Decision = Change.Keep
+                    Payment = Change.Keep
+                }
+
     let registration (value: Registration) : RegistrationInput =
         {
             IncidentDate = CalendarDate.format value.IncidentDate

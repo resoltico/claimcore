@@ -9,6 +9,7 @@ export const effect = (id = "preview"): EffectIdentity => ({
   target: "CASE:CASE-SERIALIZATION",
 });
 export const initial = (): OperationState => ({
+  entry: { subject: "CASE", kind: "CLOSE" },
   target: "CASE:CASE-SERIALIZATION",
   context: { token: "token", target: "CASE:CASE-SERIALIZATION" },
   disclosureToken: "token",

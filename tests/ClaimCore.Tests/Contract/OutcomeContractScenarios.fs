@@ -98,7 +98,7 @@ let internal executeOutcomes () =
             [
                 ExecuteResult.Accepted receiptValue, 0
                 ExecuteResult.AlreadyAccepted receiptValue, 0
-                ExecuteResult.Rejected Refusal.ActNotPermitted, 2
+                ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted), 2
                 ExecuteResult.Failed CoreFault.StoreUnavailable, 3
                 ExecuteResult.OutcomeUnknown, 4
             ] do
@@ -146,7 +146,7 @@ let internal disclosures () =
                     ClaimCore.Domain.ReceiptSubject.Case
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
-                            Revision = 1L
+                            Revision = CaseFixtures.revision 1L
                             Act = CaseActKind.Open
                             Snapshot = snapshot
                         }
@@ -183,7 +183,7 @@ let internal previewCodecs () =
         [
             (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
+            Outcome.Rejected(ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted)
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
@@ -196,9 +196,10 @@ let internal diagnostics () =
     for value, expectedCode in
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
-            ClaimCore.Domain.Refusal.LastOwner, "LAST_OWNER"
-            ClaimCore.Domain.Refusal.ActNotPermitted, "ACT_NOT_PERMITTED"
-            ClaimCore.Domain.Refusal.ResourceUnavailable, "RESOURCE_UNAVAILABLE"
+            (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
+            (ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted), "ACT_NOT_PERMITTED"
+            (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
+            "RESOURCE_UNAVAILABLE"
         ] do
         let result = admitted Api.caseGet.Output (Outcome.Rejected value)
 
@@ -231,7 +232,7 @@ let internal actionExpectations =
             Revision = None
         }
         {
-            Refusal = (Refusal.RevisionConflict 7L)
+            Refusal = (Refusal.RevisionConflict(CaseFixtures.revision 7L))
             Action = RecommendedAction.ReadCurrent
             Token = "READ_CURRENT"
             Field = None
@@ -251,7 +252,7 @@ let internal actionEnums () =
             "Input correction and current-state recovery are distinct"
 
 let internal diagnosticRevisions () =
-    let reason = Refusal.RevisionConflict 0L
+    let reason = Refusal.RevisionConflict(CaseFixtures.revision 0L)
     let codec = DiagnosticCodecs.diagnostic
 
     Expect.equal
@@ -260,12 +261,14 @@ let internal diagnosticRevisions () =
         "An absent record can report actual revision zero"
 
     Expect.throws
-        (fun () -> Codec.encode codec (Refusal.RevisionConflict -1L) |> ignore)
+        (fun () ->
+            Codec.encode codec (Refusal.RevisionConflict(CaseFixtures.revision (-1L)))
+            |> ignore)
         "Negative actual revisions remain invalid"
 
     let snapshot =
         { Case.snapshot (opened ()) with
-            Revision = 0L
+            Revision = CaseFixtures.revision 0L
         }
 
     Expect.throws
@@ -276,7 +279,11 @@ let internal diagnosticRevisions () =
         match receipt.Subject with
         | ReceiptSubject.Case target ->
             { receipt with
-                Subject = ReceiptSubject.Case { target with Revision = 0L }
+                Subject =
+                    ReceiptSubject.Case
+                        { target with
+                            Revision = CaseFixtures.revision 0L
+                        }
             }
         | _ -> failtest "Case receipt fixture"
 
@@ -338,4 +345,7 @@ let internal actionTokens () =
         |> Option.iter (fun revision ->
             Expect.equal (encodedRevision.GetInt64()) revision "Literal revision")
 
-        Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
+        Expect.equal
+            (refusal.ActualRevision |> Option.map Revision.value)
+            revision
+            "Revision metadata is retained"

@@ -48,6 +48,7 @@ module Bindings =
             Required: bool
             Branches: BindingCondition list
             References: Set<string>
+            Vocabulary: string option
         }
 
     let private refuse detail =
@@ -60,6 +61,7 @@ module Bindings =
     let rec private resolved definitions =
         function
         | Schema.Ref name -> definition definitions name |> resolved definitions
+        | Schema.Vocabulary(_, schema) -> resolved definitions schema
         | schema -> schema
 
     let branchDefinition definitions name token =
@@ -76,6 +78,11 @@ module Bindings =
         |> List.map (function
             | Schema.Const token -> token
             | _ -> refuse "non-scalar untagged alternative")
+
+    let private vocabulary (position: Position) =
+        position.Vocabulary
+        |> Option.defaultWith (fun () ->
+            refuse ("enumeration lacks its codec vocabulary at " + String.concat "." position.Path))
 
     let private input position kind schema =
         let memberName =
@@ -97,6 +104,7 @@ module Bindings =
                 Path = position.Path
                 Value = value
                 Branches = position.Branches
+                Vocabulary = position.Vocabulary
             }
 
     let private branch definitions tag (token, target) =
@@ -109,8 +117,10 @@ module Bindings =
         | _ -> refuse ("tagged branch is not an object: " + target)
 
     let walk definitions selections schema =
-        let rec visit position schema =
+        let rec visit (position: Position) schema =
             match schema with
+            | Schema.Vocabulary(name, schema) ->
+                visit { position with Vocabulary = Some name } schema
             | Schema.Ref name ->
                 if Set.contains name position.References then
                     refuse ("recursive request definition " + name)
@@ -124,7 +134,8 @@ module Bindings =
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
             | Schema.OneOf(cases, None) ->
-                input position (BindingKind.Choice(enumTokens cases)) schema |> List.singleton
+                input position (BindingKind.Choice(vocabulary position, enumTokens cases)) schema
+                |> List.singleton
             | Schema.String _ -> [ input position BindingKind.Text schema ]
             | Schema.Integer _ -> [ input position BindingKind.Integer schema ]
             | Schema.Boolean -> [ input position BindingKind.Boolean schema ]
@@ -138,12 +149,15 @@ module Bindings =
                 visit
                     { position with
                         Member = Some(position.Definition, name)
+                        Vocabulary = None
                         Path = position.Path @ [ name ]
                         Required = position.Required && not (List.contains name optional)
                     }
                     schema)
 
         and tagged position tag mapping =
+            let name = vocabulary position
+
             let alternatives =
                 mapping |> List.map (fun entry -> entry, branch definitions tag entry)
 
@@ -171,7 +185,7 @@ module Bindings =
                             Member = Some(position.Definition, tag)
                             Path = position.Path @ [ tag ]
                         }
-                        (BindingKind.Group tokens)
+                        (BindingKind.Group(name, tokens))
                         (Schema.OneOf(tokens |> List.map Schema.Const, None))
 
                 let children =
@@ -202,6 +216,7 @@ module Bindings =
                 Required = true
                 Branches = []
                 References = Set.empty
+                Vocabulary = None
             }
             schema
 
@@ -274,6 +289,11 @@ module Bindings =
                     Field = target annotation.Name
                     Path = input.Path
                     Kind = input.Kind
+                    AdviceGroup =
+                        match input.Kind, annotation.Name with
+                        | BindingKind.Group _, InteractionInput.Target(InputTarget.Group group) ->
+                            Some group
+                        | _ -> None
                     Branches = input.Branches
                     LabelId = InteractionInput.messageKey annotation.Name "label"
                     MeaningId = Some(InteractionInput.messageKey annotation.Name "meaning")
@@ -312,6 +332,7 @@ module Bindings =
                                     Path = input.Path
                                     Value = value
                                     Branches = input.Branches
+                                    Vocabulary = BindingKind.vocabulary input.Kind
                                 }
                             ]
                         | None -> inputs @ [ bindInput annotation input ], constants)

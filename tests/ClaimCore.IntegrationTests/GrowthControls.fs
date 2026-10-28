@@ -72,7 +72,7 @@ let private sameCase database (actor: ServiceContext) =
                                 request
                                     (710000 + index)
                                     (CaseReference.format snapshot.Reference)
-                                    snapshot.Revision
+                                    (Revision.value snapshot.Revision)
                                     act
                             ))
                             (token))
@@ -136,7 +136,11 @@ let private revocation (database: PostgresFixture.Database) owner principal =
             (Service.execute
                 writer
                 (OperationInput.Case(
-                    request 710010 (CaseReference.format snapshot.Reference) snapshot.Revision act
+                    request
+                        710010
+                        (CaseReference.format snapshot.Reference)
+                        (Revision.value snapshot.Revision)
+                        act
                 ))
                 (token))
 
@@ -188,7 +192,7 @@ let private revocation (database: PostgresFixture.Database) owner principal =
 let private longCase database (actor: ServiceContext) =
     task {
         let! snapshot = current database "synthetic-growth-998"
-        let mutable revision = snapshot.Revision
+        let mutable revision = Revision.value snapshot.Revision
 
         let mutable closed =
             match snapshot.State with
@@ -225,7 +229,7 @@ let private longCase database (actor: ServiceContext) =
         let! final = current database (CaseReference.format snapshot.Reference)
 
         Expect.equal
-            final.Revision
+            (Revision.value final.Revision)
             revision
             "The long history's final projection includes every accepted operation"
 
@@ -261,7 +265,7 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                     request
                         730001
                         (CaseReference.format snapshot.Reference)
-                        snapshot.Revision
+                        (Revision.value snapshot.Revision)
                         AuthoredCaseAct.Erase
                 ))
                 (token))
