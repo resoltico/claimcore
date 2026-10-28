@@ -307,7 +307,7 @@ let internal verified workload actor database =
         let position = verification.Position
 
         Expect.equal
-            position.Sequence
+            (Sequence.value position.Sequence)
             (int64 (1016 + workload.Cases + workload.Writes + workload.Actors * 11))
             "Every accepted write is counted"
 

@@ -131,13 +131,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!
-                rewrite database sequence (fun value ->
+                rewrite database (CaseFixtures.sequence (sequence)) (fun value ->
                     let request, snapshot = livePayload value
 
                     { value with
                         Metadata =
                             { value.Metadata with
-                                OperationId = id 10
+                                OperationId = (CaseFixtures.operationId (id 10))
                             }
                     }
                     |> updateCase { request with OperationId = id 10 } snapshot)
@@ -164,7 +164,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
             result
             (VerificationResult.Diverged
                 {
-                    Sequence = Some sequence
+                    Sequence = Some(CaseFixtures.sequence (sequence))
                     Finding = expected
                 })
             "Earliest second occurrence is checked after hash and payload, before history"

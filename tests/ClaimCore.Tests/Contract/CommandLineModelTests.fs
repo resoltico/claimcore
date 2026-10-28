@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CommandLineModelTests
 
+open ClaimCore.TestSupport
+
 open System
 open Expecto
 open ClaimCore.Domain
@@ -42,14 +44,19 @@ let tests =
                 let accepted =
                     {
                         OwnerAcceptance.OperationId =
-                            Guid.Parse "10000000-0000-4000-8000-000000000001"
-                        TargetActorId = Guid.Parse "10000000-0000-4000-8000-000000000002"
+                            (CaseFixtures.operationId (
+                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                            ))
+                        TargetActorId =
+                            (CaseFixtures.actorId (
+                                Guid.Parse "10000000-0000-4000-8000-000000000002"
+                            ))
                         Position = position
                     }
 
                 let successes =
                     [
-                        DatabaseSuccess.Initialized accepted.OperationId
+                        DatabaseSuccess.Initialized(OperationId.value accepted.OperationId)
                         DatabaseSuccess.Head position
                         DatabaseSuccess.Accepted accepted
                         DatabaseSuccess.AlreadyAccepted accepted

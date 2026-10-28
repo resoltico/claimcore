@@ -54,7 +54,10 @@ let private rollback () =
 
                                     do!
                                         tx.ProjectAuthority(
-                                            AuthorityProjection.Register(id 800, principal)
+                                            AuthorityProjection.Register(
+                                                (CaseFixtures.actorId (id 800)),
+                                                principal
+                                            )
                                         )
 
                                     return verdict

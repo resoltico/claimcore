@@ -13,14 +13,14 @@ type SnapshotDisclosure =
 type CaseReceipt =
     {
         Reference: CaseReference
-        Revision: int64
+        Revision: Revision
         Act: CaseActKind
         Snapshot: SnapshotDisclosure
     }
 
 type AuthorityReceipt =
     {
-        TargetActorId: Guid
+        TargetActorId: ActorId
         Act: AuthorityKind
     }
 
@@ -31,19 +31,19 @@ type ReceiptSubject =
 
 type OperationReceipt =
     {
-        OperationId: Guid
+        OperationId: OperationId
         Position: LedgerPosition
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
-        RecordedBy: Guid
+        RecordedBy: ActorId
     }
 
 type ChangeSummary =
     {
-        OperationId: Guid
+        OperationId: OperationId
         Position: LedgerPosition
-        Revision: int64
+        Revision: Revision
         Act: CaseActKind
         RecordedAt: DateTimeOffset
-        RecordedBy: Guid
+        RecordedBy: ActorId
     }

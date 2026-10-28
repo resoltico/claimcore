@@ -1,5 +1,7 @@
 module ClaimCore.Tests.EndpointRegistryTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Web
 
 open ClaimCore.Protocol
@@ -90,10 +92,10 @@ let private readReplies () =
 
 let private receipt =
     {
-        OperationId = id
+        OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = 1L
+                Sequence = CaseFixtures.sequence 1L
                 EntryHash =
                     (String.replicate 64 "a"
                      |> System.Convert.FromHexString
@@ -101,11 +103,11 @@ let private receipt =
                      |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
-        RecordedBy = id
+        RecordedBy = (CaseFixtures.actorId (id))
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = id
+                    TargetActorId = (CaseFixtures.actorId (id))
                     Act = AuthorityKind.Register
                 }
     }

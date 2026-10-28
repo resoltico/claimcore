@@ -5,9 +5,9 @@ open ClaimCore.Domain
 
 type internal LedgerAppend<'projection> =
     {
-        OperationId: Guid
+        OperationId: OperationId
         ObservedAt: DateTimeOffset
-        ActorId: Guid
+        ActorId: ActorId
         Subject: EntryTarget
         Snapshot: byte array
         Current: StoredCase option

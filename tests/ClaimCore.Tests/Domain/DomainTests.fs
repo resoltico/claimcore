@@ -19,7 +19,12 @@ let private registrationTests =
                 "registration preserves the requested meanings, without invented later facts"
                 (fun () ->
                     let view = opened () |> Case.snapshot
-                    Expect.equal view.Revision 1L "Technical first revision"
+
+                    Expect.equal
+                        view.Revision
+                        (CaseFixtures.revision 1L)
+                        "Technical first revision"
+
                     Expect.equal (viewFields view).Status CaseStatus.Opened "Only requested status"
 
                     Expect.isTrue
@@ -167,14 +172,15 @@ let private identityAndVersionTests =
 
                 Expect.equal
                     after.Revision
-                    ((Case.snapshot original).Revision + 2L)
+                    (CaseFixtures.revision (Revision.value (Case.snapshot original).Revision + 2L))
                     "Technical revisions")
             testCase "stale version cannot overwrite a case" (fun () ->
                 let result =
                     CaseFixtures.decide today (request 0L AuthoredCaseAct.Close) (Some(opened ()))
 
                 Expect.isTrue
-                    ((result |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 1L))
+                    ((result |> Result.map Case.snapshot) =
+                        Error(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
@@ -322,7 +328,10 @@ let private correctionTests =
 
                 Expect.isTrue ((viewFields after) = expected) "Only requested payment date cleared"
 
-                Expect.equal after.Revision 4L "History has a new technical revision")
+                Expect.equal
+                    after.Revision
+                    (CaseFixtures.revision 4L)
+                    "History has a new technical revision")
             testCase "clear payment without a recorded date is rejected" (fun () ->
                 let result =
                     decided () |> apply AuthoredCaseAct.ClearPayment |> Result.map Case.snapshot

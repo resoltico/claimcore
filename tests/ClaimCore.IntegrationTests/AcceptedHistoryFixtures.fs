@@ -18,7 +18,7 @@ let private snapshot (reference: string) claimant : CaseSnapshot =
 
     {
         Reference = reference
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
         State =
             CaseState.Active(
                 {
@@ -71,7 +71,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
         let scope =
-            EntryTarget.Case(id, 1L, CaseActKind.Open, fixture.Calendar.DateAt view.ObservedAt)
+            EntryTarget.Case(
+                id,
+                (CaseFixtures.revision (1L)),
+                CaseActKind.Open,
+                fixture.Calendar.DateAt view.ObservedAt
+            )
 
         let entry =
             LedgerEntries.create
@@ -81,7 +86,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                     Instant = view.ObservedAt
                     Nonce = tx.Nonce
                     ActorId = actor.ActorId
-                    OperationId = request.OperationId
+                    OperationId = (CaseFixtures.operationId (request.OperationId))
                     Subject = scope
                     Request = CaseFixtures.encode request
                     Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
@@ -113,7 +118,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                     ExecutionFacts.case
                                         (core fixture fixture.Owner)
                                         tx
-                                        (Some request.OperationId)
+                                        (Some(CaseFixtures.operationId (request.OperationId)))
                                         request.CaseReference
 
                                 return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
@@ -281,7 +286,12 @@ let private assertRemainingHistoryAccess
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
         let! observed =
-            (Service.observe actor ({ OperationId = original.OperationId }) (token))
+            (Service.observe
+                actor
+                ({
+                    OperationId = (OperationId.value (original.OperationId))
+                })
+                (token))
 
         Expect.equal
             observed
@@ -303,7 +313,7 @@ let private revokedFullHistory
 
         Expect.equal
             original.OperationId
-            (ClaimCore.TestSupport.StoreFixtures.id 10)
+            (CaseFixtures.operationId (ClaimCore.TestSupport.StoreFixtures.id 10))
             "Original OPEN acceptance"
 
         Expect.isSome first.NextCursor "Retain the genuine first FULL continuation"
@@ -372,7 +382,8 @@ let private retainedPages (database: PostgresFixture.Database) =
         let revisions =
             entries
             |> List.map (function
-                | HistoryEntry.FullEntry { Subject = ReceiptSubject.Case c } -> c.Revision
+                | HistoryEntry.FullEntry { Subject = ReceiptSubject.Case c } ->
+                    Revision.value c.Revision
                 | _ -> failtest "Full case receipt")
 
         Expect.equal

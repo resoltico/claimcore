@@ -14,7 +14,7 @@ module internal Verification =
         result {
             let! sequence =
                 VerificationRows.capture None VerificationFinding.PayloadFormat (fun () ->
-                    DatabaseSession.value<int64> 0 row)
+                    DatabaseSession.value<int64> 0 row |> DatabaseSession.admitted Sequence.create)
 
             let at = Some sequence
 
@@ -44,7 +44,7 @@ module internal Verification =
             return
                 match List.exactlyOne rows |> Array.exactlyOne with
                 | :? DBNull -> None
-                | value -> Some(unbox<int64> value)
+                | value -> Some(DatabaseSession.admitted Sequence.create (unbox<int64> value))
         }
 
     let private scan
@@ -145,13 +145,6 @@ module internal Verification =
         (expected: LedgerPosition option)
         (token: CancellationToken)
         =
-        if
-            expected
-            |> Option.exists (fun position ->
-                LedgerPosition.create position.Sequence position.EntryHash |> Option.isNone)
-        then
-            invalidArg (nameof expected) "Expected position is outside the supported format."
-
         DatabaseSession.read source token (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion

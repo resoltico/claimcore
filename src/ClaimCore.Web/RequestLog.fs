@@ -16,8 +16,8 @@ type internal RequestLogEntry =
     {
         Endpoint: string
         mutable Outcome: string
-        mutable ActorId: Guid option
-        mutable OperationId: Guid option
+        mutable ActorId: ActorId option
+        mutable OperationId: OperationId option
     }
 
 module internal RequestLog =
@@ -44,10 +44,14 @@ module internal RequestLog =
         entry context |> Option.iter (fun value -> value.Outcome <- tag)
 
     let operation id context =
-        entry context |> Option.iter (fun value -> value.OperationId <- Some id)
+        OperationId.create id
+        |> Option.iter (fun id ->
+            entry context |> Option.iter (fun value -> value.OperationId <- Some id))
 
     let actor id context =
-        entry context |> Option.iter (fun value -> value.ActorId <- Some id)
+        ActorId.create id
+        |> Option.iter (fun id ->
+            entry context |> Option.iter (fun value -> value.ActorId <- Some id))
 
     let exceptionLine (error: exn) =
         let frames = StackTrace(error, false).GetFrames()
@@ -104,8 +108,12 @@ module internal RequestLog =
                                 outcome = value.Outcome
                                 status = context.Response.StatusCode
                                 durationMs = duration
-                                actorId = Option.toNullable value.ActorId
-                                operationId = Option.toNullable value.OperationId
+                                actorId =
+                                    value.ActorId |> Option.map ActorId.value |> Option.toNullable
+                                operationId =
+                                    value.OperationId
+                                    |> Option.map OperationId.value
+                                    |> Option.toNullable
                             |}
 
                     try

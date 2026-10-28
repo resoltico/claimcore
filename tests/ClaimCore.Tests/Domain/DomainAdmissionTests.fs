@@ -49,7 +49,8 @@ let private snapshots =
 
         for fields, refusal in variants do
             Expect.equal
-                (Case.ofAccepted (snapshot original.Revision fields) |> Result.map ignore)
+                (Case.ofAccepted (snapshot (Revision.value original.Revision) fields)
+                 |> Result.map ignore)
                 (Error refusal)
                 "No invalid opaque Claim")
 

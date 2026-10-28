@@ -25,9 +25,16 @@ module internal Projections =
             |> CaseReference.parse
             |> parsed
 
-        let revision = DatabaseSession.namedValue<int64> "revision" row
+        let revision =
+            DatabaseSession.namedValue<int64> "revision" row
+            |> DatabaseSession.admitted Revision.create
+
         let state = DatabaseSession.namedValue<string> "state" row
-        let id = DatabaseSession.namedValue<Guid> "case_id" row
+
+        let id =
+            DatabaseSession.namedValue<Guid> "case_id" row
+            |> DatabaseSession.admitted CaseId.create
+
         let bytes = DatabaseSession.namedOptional<byte array> "snapshot" row
 
         let snapshot =
@@ -64,7 +71,7 @@ module internal Projections =
                 DatabaseSession.namedRows
                     connection
                     ($"SELECT {caseColumns} FROM claimcore.cases WHERE case_id=$1")
-                    [| box id |]
+                    [| box (CaseId.value id) |]
                     token
 
             match rows with
@@ -95,7 +102,9 @@ module internal Projections =
                             Role = role
                             Scope =
                                 optional<Guid> 3 row
-                                |> Option.map Scope.Case
+                                |> Option.map (
+                                    DatabaseSession.admitted CaseId.create >> Scope.Case
+                                )
                                 |> Option.defaultValue Scope.Installation
                         }))
 
@@ -103,7 +112,7 @@ module internal Projections =
                 {
                     Actor =
                         {
-                            ActorId = required 0 first
+                            ActorId = required 0 first |> DatabaseSession.admitted ActorId.create
                             Principal = principal
                             Enabled = required 1 first
                         }
@@ -112,7 +121,7 @@ module internal Projections =
 
             AuthorityView.ofActor (Some stored)
 
-    let actor connection principal (caseIds: Guid list) token =
+    let actor connection principal (caseIds: CaseId list) token =
         task {
             let kind, issuer, subject = PrincipalKey.parts principal
 
@@ -124,7 +133,7 @@ module internal Projections =
                         box (DurableNames.principalKind kind)
                         box issuer
                         box subject
-                        box (caseIds |> List.distinct |> List.toArray)
+                        box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
                     |]
                     token
 
@@ -144,7 +153,7 @@ module internal Projections =
                         connection
                         "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
                         [|
-                            box actor.ActorId
+                            box (ActorId.value actor.ActorId)
                             box (readRoles |> List.map Role.token |> List.toArray)
                             box forbidden
                         |]
@@ -163,7 +172,7 @@ module internal Projections =
 
     let actorRow row : Actor =
         {
-            ActorId = required 0 row
+            ActorId = required 0 row |> DatabaseSession.admitted ActorId.create
             Principal =
                 (DurableNames.tryPrincipalKind (required 1 row)
                  |> Option.defaultWith (fun () ->
@@ -175,7 +184,9 @@ module internal Projections =
 
     let grantRow row : AuthoredGrant * GrantPosition =
         let role = role row
-        let caseId = optional<Guid> 2 row
+
+        let caseId =
+            optional<Guid> 2 row |> Option.map (DatabaseSession.admitted CaseId.create)
 
         let scope =
             match caseId, optional<string> 1 row with

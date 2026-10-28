@@ -175,7 +175,7 @@ module ResponseCodecs =
             })
         : Fields<CaseSnapshot, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
-        |> field "revision" _.Revision sequence
+        |> field "revision" _.Revision positiveRevision
         |> field "state" _.State caseState
         |> build
         |> named "CaseSnapshot"
@@ -251,7 +251,7 @@ module ResponseCodecs =
             })
         : Fields<CaseReadModel, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
-        |> field "revision" _.Snapshot.Revision sequence
+        |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
         |> build
@@ -337,7 +337,7 @@ module ResponseCodecs =
                 Enabled = v2
             })
         : Fields<Actor, _>)
-        |> field "actorId" _.ActorId (uuid)
+        |> field "actorId" _.ActorId actorId
         |> field "principal" _.Principal (principal)
         |> field "enabled" _.Enabled (boolean)
         |> build
@@ -477,7 +477,7 @@ module ResponseCodecs =
             })
         : Fields<CaseSummary, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
-        |> field "revision" _.Revision sequence
+        |> field "revision" _.Revision positiveRevision
         |> field "state" _.State state
         |> build
         |> named "CaseSummary"

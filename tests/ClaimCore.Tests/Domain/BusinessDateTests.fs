@@ -10,7 +10,10 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private applyAt date act claim =
-    CaseFixtures.decide date (request (Case.snapshot claim).Revision act) (Some claim)
+    CaseFixtures.decide
+        date
+        (request (Revision.value (Case.snapshot claim).Revision) act)
+        (Some claim)
 
 let private future field result =
     Expect.equal
@@ -62,7 +65,7 @@ let private amendmentRetainsDates =
             |> accepted
             |> Case.snapshot
 
-        Expect.equal after.Revision 2L "One revision"
+        Expect.equal after.Revision (CaseFixtures.revision 2L) "One revision"
 
         Expect.isTrue
             (CalendarDate.format (viewFields after).Registration.IncidentNotificationDate =
@@ -178,7 +181,7 @@ let private closedCorrectionRetainsDates =
                 Some "2026-08-20")
             "Reaffirmed accepted payment"
 
-        Expect.equal after.Revision 5L "One complete revision")
+        Expect.equal after.Revision (CaseFixtures.revision 5L) "One complete revision")
 
 let private correctionIncidentIsBounded =
     testCase "a correction cannot hide a new future incident behind accepted dates" (fun () ->

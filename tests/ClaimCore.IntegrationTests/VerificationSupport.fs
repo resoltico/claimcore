@@ -76,7 +76,7 @@ let populated (database: PostgresFixture.Database) =
         return actor
     }
 
-let row (database: PostgresFixture.Database) sequence =
+let row (database: PostgresFixture.Database) (sequence: Sequence) =
     task {
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
@@ -84,7 +84,7 @@ let row (database: PostgresFixture.Database) sequence =
             DatabaseSession.rows
                 connection
                 ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence=$1")
-                [| box sequence |]
+                [| box (Sequence.value sequence) |]
                 token
 
         return StoredEntries.decode database.Fixture.InstallationId (List.exactlyOne rows)
@@ -105,15 +105,15 @@ let private subject =
         {
             Kind = "CASE"
             Act = CaseActKind.token value.Act
-            Id = value.CaseId
-            Revision = Some value.Revision
+            Id = (CaseId.value (value.CaseId))
+            Revision = Some(Revision.value (value.Revision))
             BusinessDate = Some value.BusinessDate
         }
     | RecordedTarget.Authority value ->
         {
             Kind = "AUTHORITY"
             Act = AuthorityKind.token value.Act
-            Id = value.TargetActorId
+            Id = (ActorId.value (value.TargetActorId))
             Revision = None
             BusinessDate = None
         }
@@ -131,13 +131,13 @@ let private parameters (value: LedgerRow) =
     let date = target.BusinessDate
 
     [|
-        box metadata.Sequence
+        box (Sequence.value metadata.Sequence)
         box metadata.PreviousHash
         box (LedgerEntry.hash metadata)
         box kind
         box act
-        box metadata.OperationId
-        box metadata.ActorId
+        box (OperationId.value metadata.OperationId)
+        box (ActorId.value metadata.ActorId)
         box metadata.RecordedAt
         box subject
         DatabaseSession.parameter revision
@@ -199,7 +199,7 @@ let rewrite (database: PostgresFixture.Database) sequence mutate =
             DatabaseSession.rows
                 connection
                 ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence>=$1 ORDER BY sequence")
-                [| box sequence |]
+                [| box (Sequence.value sequence) |]
                 token
 
         let mutable previous = None

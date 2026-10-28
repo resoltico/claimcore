@@ -1,5 +1,7 @@
 module ClaimCore.Tests.AuthorityRefusalOrderTests
 
+open ClaimCore.TestSupport
+
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
@@ -34,14 +36,20 @@ type private AuthorityRefusalScenario =
 let private ordering () =
     let manager = owner, worker
     let missingManager = owner, AuthorityView.empty
-    let serviceManager = service, actor service (id 603) [ Role.Owner ] []
+
+    let serviceManager =
+        service, actor service ((CaseFixtures.actorId (id 603))) [ Role.Owner ] []
+
     let missingHuman = other, AuthorityView.empty
     let missingService = service, AuthorityView.empty
-    let human = other, actor other (id 602) [] []
-    let serviceActor = service, actor service (id 603) [] []
-    let lastOwner = owner, actor owner (id 1) [ Role.Owner ] []
-    let secondOwner = other, actor other (id 602) [ Role.Owner ] []
-    let disabled = actor other (id 602) [ Role.Owner ] []
+    let human = other, actor other ((CaseFixtures.actorId (id 602))) [] []
+    let serviceActor = service, actor service ((CaseFixtures.actorId (id 603))) [] []
+    let lastOwner = owner, actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
+
+    let secondOwner =
+        other, actor other ((CaseFixtures.actorId (id 602))) [ Role.Owner ] []
+
+    let disabled = actor other ((CaseFixtures.actorId (id 602))) [ Role.Owner ] []
 
     let disabledOwner =
         other,
@@ -403,13 +411,15 @@ let private ordering () =
             | Attempt.Provision ->
                 let head =
                     if actors = 0 then
-                        { view.Head with Sequence = 0L }
+                        { view.Head with
+                            Sequence = CaseFixtures.sequence 0L
+                        }
                     else
                         view.Head
 
                 provisionAuthority
                     installation
-                    (id 605)
+                    ((CaseFixtures.operationId (id 605)))
                     targetPrincipal
                     { view with Head = head; Read = facts }
                 |> refusal

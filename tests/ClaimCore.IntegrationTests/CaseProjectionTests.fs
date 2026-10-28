@@ -18,7 +18,7 @@ let private snapshot (reference: string) : CaseSnapshot =
 
     {
         Reference = reference
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
         State =
             CaseState.Active(
                 {
@@ -44,7 +44,7 @@ let private history (snapshot: CaseSnapshot) : CaseHistory =
         Reference = Some snapshot.Reference
         State = CaseState.Active()
         MissingPayloadAt = None
-        PresentPayloadAt = Some 1L
+        PresentPayloadAt = Some(Sequence.create 1L |> Option.get)
         ErasedAt = None
     }
 
@@ -76,6 +76,10 @@ let private collection () =
             "Exact collection finding"
 
 let private liveState () =
+    Expect.isNone
+        (CaseId.create Guid.Empty)
+        "An empty projected case identity is refused before construction"
+
     let a = stored (snapshot "synthetic-a")
     let histories = Map.ofList [ a.CaseId, history a.Snapshot ]
 
@@ -86,7 +90,6 @@ let private liveState () =
 
     for changed in
         [
-            { a with CaseId = Guid.Empty }
             { a with
                 Snapshot =
                     { a.Snapshot with
@@ -94,7 +97,10 @@ let private liveState () =
                     }
             }
             { a with
-                Snapshot = { a.Snapshot with Revision = 2L }
+                Snapshot =
+                    { a.Snapshot with
+                        Revision = CaseFixtures.revision 2L
+                    }
             }
             { a with
                 Snapshot =
@@ -129,11 +135,12 @@ let private liveState () =
             "Live mismatch"
 
 let private erasedState () =
+    Expect.isNone (CaseId.create Guid.Empty) "Erased cases also require admitted identity"
     let live = snapshot "synthetic-erased"
 
     let erased =
         { live with
-            Revision = 2L
+            Revision = CaseFixtures.revision 2L
             State = CaseState.Erased
         }
 
@@ -141,12 +148,12 @@ let private erasedState () =
 
     let accepted =
         { history live with
-            Revision = 2L
+            Revision = CaseFixtures.revision 2L
             Snapshot = None
             State = CaseState.Erased
-            MissingPayloadAt = Some 1L
+            MissingPayloadAt = Some(Sequence.create 1L |> Option.get)
             PresentPayloadAt = None
-            ErasedAt = Some 2L
+            ErasedAt = Some(Sequence.create 2L |> Option.get)
         }
 
     let check (history: CaseHistory) (row: StoredCase) =
@@ -156,7 +163,6 @@ let private erasedState () =
 
     for changed in
         [
-            { row with CaseId = Guid.Empty }
             { row with
                 Snapshot =
                     { erased with
@@ -164,7 +170,10 @@ let private erasedState () =
                     }
             }
             { row with
-                Snapshot = { erased with Revision = 1L }
+                Snapshot =
+                    { erased with
+                        Revision = CaseFixtures.revision 1L
+                    }
             }
             { row with Snapshot = live }
         ] do
@@ -210,7 +219,7 @@ let private projectionBindings () =
     let snapshot =
         {
             Reference = projectionFields.CaseReference
-            Revision = 4L
+            Revision = CaseFixtures.revision 4L
             State = CaseState.Voided projectionFields
         }
 
@@ -219,7 +228,7 @@ let private projectionBindings () =
     let row =
         Map.ofList
             [
-                "case_id", box expected.CaseId
+                "case_id", box (CaseId.value expected.CaseId)
                 "case_reference", box "synthetic-layout"
                 "revision", box 4L
                 "state", box "VOIDED"
@@ -307,7 +316,10 @@ let private corruptReads database =
             [
                 [| 0uy |]
                 CaseRecord.encodeSnapshot wrongReference
-                CaseRecord.encodeSnapshot { record.Snapshot with Revision = 2L }
+                CaseRecord.encodeSnapshot
+                    { record.Snapshot with
+                        Revision = CaseFixtures.revision 2L
+                    }
                 CaseRecord.encodeSnapshot wrongState
             ] do
             do!
@@ -370,7 +382,10 @@ let private roundTrips database =
                     expectedState
                     "Round-trip lifecycle"
 
-                Expect.equal record.Snapshot.Revision revision "Round-trip revision"
+                Expect.equal
+                    (Revision.value record.Snapshot.Revision)
+                    revision
+                    "Round-trip revision"
 
                 Expect.equal
                     record.SnapshotBytes

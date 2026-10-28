@@ -36,14 +36,14 @@ module ReceiptCodecs =
             })
         : Fields<CaseReceipt, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
-        |> field "revision" _.Revision sequence
+        |> field "revision" _.Revision positiveRevision
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "snapshot" _.Snapshot disclosure
 
     let private authorityFields =
         (record (fun target act -> { TargetActorId = target; Act = act })
         : Fields<AuthorityReceipt, _>)
-        |> field "targetActorId" _.TargetActorId Codec.uuid
+        |> field "targetActorId" _.TargetActorId actorId
         |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
 
     let private caseVariant =
@@ -79,10 +79,10 @@ module ReceiptCodecs =
                 Subject = subject
             })
         : Fields<OperationReceipt, _>)
-        |> field "operationId" _.OperationId Codec.uuid
+        |> field "operationId" _.OperationId operationId
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
-        |> field "recordedBy" _.RecordedBy Codec.uuid
+        |> field "recordedBy" _.RecordedBy actorId
         |> field "subject" _.Subject subjectCodec
         |> build
 

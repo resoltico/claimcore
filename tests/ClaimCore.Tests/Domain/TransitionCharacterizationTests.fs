@@ -40,7 +40,7 @@ let snapshot status progress state : CaseSnapshot =
 
     {
         Reference = CaseFixtures.reference "DEMO-1"
-        Revision = 3L
+        Revision = CaseFixtures.revision 3L
         State =
             state
                 {
@@ -60,7 +60,7 @@ let snapshot status progress state : CaseSnapshot =
 let erased: CaseSnapshot =
     {
         Reference = CaseFixtures.reference "DEMO-1"
-        Revision = 3L
+        Revision = CaseFixtures.revision 3L
         State = CaseState.Erased
     }
 
@@ -109,6 +109,8 @@ let classes =
 let outcome =
     function
     | Ok(_: CaseRecord) -> "ACCEPTED"
+    | Error(Refusal.RevisionConflict revision) ->
+        sprintf "RevisionConflict %A" (Revision.value revision)
     | Error(Refusal.Case refusal) -> sprintf "%A" refusal
     | Error(Refusal.Authority refusal) -> sprintf "%A" refusal
     | Error(Refusal.Access refusal) -> sprintf "%A" refusal

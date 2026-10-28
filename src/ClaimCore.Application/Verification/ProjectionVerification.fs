@@ -7,7 +7,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// Projections are comparison targets only after the ledger has been folded.
 module ProjectionVerification =
-    let actor (actors: Map<Guid, ActorAuthority>) (row: Actor) =
+    let actor (actors: Map<ActorId, ActorAuthority>) (row: Actor) =
         result {
             let id = row.ActorId
             let principal = row.Principal
@@ -16,8 +16,7 @@ module ProjectionVerification =
                 require
                     None
                     VerificationFinding.AuthorityProjection
-                    (id <> Guid.Empty
-                     && not (Map.containsKey id actors)
+                    (not (Map.containsKey id actors)
                      && not (
                          actors
                          |> Map.values
@@ -38,7 +37,7 @@ module ProjectionVerification =
             return Map.add id actor actors
         }
 
-    let grant (actors: Map<Guid, ActorAuthority>) (id, role, caseId) =
+    let grant (actors: Map<ActorId, ActorAuthority>) (id, role, caseId) =
         result {
             let! actor =
                 Map.tryFind id actors |> known None VerificationFinding.AuthorityProjection
@@ -52,7 +51,7 @@ module ProjectionVerification =
                 require
                     None
                     VerificationFinding.AuthorityProjection
-                    (not (List.contains grant actor.Grants) && scope <> Scope.Case Guid.Empty)
+                    (not (List.contains grant actor.Grants))
 
             return
                 Map.add

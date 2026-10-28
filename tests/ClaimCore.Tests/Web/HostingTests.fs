@@ -55,7 +55,7 @@ let tests =
 
                     let expected: ExecuteReply =
                         {
-                            OperationId = receipt.OperationId
+                            OperationId = (OperationId.value (receipt.OperationId))
                             Outcome = ExecuteResult.Accepted receipt
                         }
 

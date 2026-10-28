@@ -51,16 +51,16 @@ let snapshot =
 
     {
         Reference = CaseFixtures.reference "x"
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
         State = CaseState.Active(fields)
     }
 
 let receipt =
     {
-        OperationId = id
+        OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = 1L
+                Sequence = CaseFixtures.sequence 1L
                 EntryHash =
                     (String.replicate 64 "0"
                      |> System.Convert.FromHexString
@@ -71,12 +71,12 @@ let receipt =
             ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference "x"
-                    Revision = 1L
+                    Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = id
+        RecordedBy = (CaseFixtures.actorId (id))
     }
 
 let review =
@@ -177,7 +177,7 @@ let private grants =
     {
         Actor =
             {
-                ActorId = id
+                ActorId = (CaseFixtures.actorId (id))
                 Principal =
                     PrincipalKey.ofKind
                         authorityRequest.Target.Kind

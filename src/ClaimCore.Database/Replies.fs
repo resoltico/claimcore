@@ -9,8 +9,8 @@ open ClaimCore.Postgres
 
 type OwnerAcceptance =
     {
-        OperationId: Guid
-        TargetActorId: Guid
+        OperationId: OperationId
+        TargetActorId: ActorId
         Position: LedgerPosition
     }
 
@@ -26,7 +26,7 @@ type DatabaseSuccess =
 type Reply =
     | Operation of Outcome<DatabaseSuccess>
     | Cancelled
-    | OutcomeUnknown of Guid option
+    | OutcomeUnknown of OperationId option
     | Diverged of VerificationDivergence
     | Usage of UsageFrame
     | Help of HelpFrame
@@ -43,8 +43,8 @@ module Replies =
                 TargetActorId = target
                 Position = position
             })
-        |> field "operationId" _.OperationId uuid
-        |> field "targetActorId" _.TargetActorId uuid
+        |> field "operationId" _.OperationId ResponseScalars.operationId
+        |> field "targetActorId" _.TargetActorId ResponseScalars.actorId
         |> field "position" _.Position ResponseCodecs.position
 
     let private successVariants =
@@ -111,7 +111,7 @@ module Replies =
                 (function
                 | Reply.OutcomeUnknown operation -> Some operation
                 | _ -> None)
-                (record id |> optionalField "operationId" id uuid)
+                (record id |> optionalField "operationId" id ResponseScalars.operationId)
             variant
                 "DIVERGED"
                 Reply.Diverged
@@ -124,7 +124,13 @@ module Replies =
                         Finding = finding
                     })
                  : Fields<VerificationDivergence, _>)
-                 |> field "sequence" _.Sequence (nullable (integer 0L SafeInteger.Maximum))
+                 |> field
+                     "sequence"
+                     _.Sequence
+                     (nullable (
+                         integer 0L SafeInteger.Maximum
+                         |> map (Sequence.create >> Option.get) Sequence.value
+                     ))
                  |> field "finding" _.Finding (enumeration VerificationFinding.all))
         ]
 

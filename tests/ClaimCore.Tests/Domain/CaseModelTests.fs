@@ -66,7 +66,7 @@ let private retained revision view =
     Case.ofAccepted
         {
             Reference = CaseFixtures.reference "Demo-1"
-            Revision = revision
+            Revision = CaseFixtures.revision revision
             State = view
         }
     |> accepted
@@ -176,7 +176,7 @@ let private allKeepStates =
         "stale",
         Some(retained 1L (live CaseStatus.Opened true false)),
         0L,
-        Refusal.RevisionConflict 1L
+        Refusal.RevisionConflict(CaseFixtures.revision 1L)
         "voided",
         Some(retained 1L (CaseState.Voided(fields CaseStatus.Opened true false))),
         1L,

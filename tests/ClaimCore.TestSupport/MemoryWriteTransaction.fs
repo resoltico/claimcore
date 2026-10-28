@@ -49,7 +49,7 @@ type internal Writer(inputs: WriteInputs) =
             let state = get ()
 
             if
-                draft.Sequence <> state.Head.Sequence + 1L
+                draft.Sequence <> Sequence.successor state.Head.Sequence
                 || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
                 || Map.containsKey draft.OperationId state.Entries
             then

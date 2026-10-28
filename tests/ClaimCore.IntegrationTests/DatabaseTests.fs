@@ -120,7 +120,11 @@ let tests =
                     task {
                         let! _, receipt = populated database
                         let! head = verify database
-                        Expect.equal (position head).Sequence 5L "Five accepted entries"
+
+                        Expect.equal
+                            (position head).Sequence
+                            (CaseFixtures.sequence (5L))
+                            "Five accepted entries"
 
                         let expected =
                             {
@@ -144,7 +148,10 @@ let tests =
                         let! future =
                             Verification.verify
                                 database.OwnerSource
-                                (Some { expected with Sequence = 999L })
+                                (Some
+                                    { expected with
+                                        Sequence = CaseFixtures.sequence 999L
+                                    })
                                 token
 
                         diverged VerificationFinding.ExpectedPosition future
@@ -288,7 +295,11 @@ let tests =
                             "Public initializer is idempotent"
 
                         let! empty = administration.Verify(None, token)
-                        Expect.equal (position empty).Sequence 0L "Public verifier reports genesis"
+
+                        Expect.equal
+                            (position empty).Sequence
+                            (CaseFixtures.sequence (0L))
+                            "Public verifier reports genesis"
 
                         do!
                             sql

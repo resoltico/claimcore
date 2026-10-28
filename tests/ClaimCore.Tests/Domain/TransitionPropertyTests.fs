@@ -72,7 +72,7 @@ let private initial: CaseSnapshot =
                     Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
-        Revision = 1L
+        Revision = CaseFixtures.revision 1L
     }
 
 let private checkSequence steps =
@@ -85,9 +85,9 @@ let private checkSequence steps =
                 let candidate =
                     actRequest
                         (if step.Stale then
-                             expected.Revision - 1L
+                             Revision.value expected.Revision - 1L
                          else
-                             expected.Revision)
+                             Revision.value expected.Revision)
                         step.Act
 
                 let result = CaseFixtures.decide today candidate (Some current)
@@ -246,7 +246,7 @@ let private executionMatchesAdvertisement claim expected =
     acts
     |> List.forall (fun act ->
         let candidate =
-            { actRequest view.Revision act with
+            { actRequest (Revision.value view.Revision) act with
                 CaseReference = CaseReference.format view.Reference
             }
 

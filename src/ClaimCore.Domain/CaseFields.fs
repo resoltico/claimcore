@@ -195,7 +195,7 @@ module LiveCase =
 type CaseSnapshot =
     {
         Reference: CaseReference
-        Revision: int64
+        Revision: Revision
         State: CaseState<CaseFields>
     }
 

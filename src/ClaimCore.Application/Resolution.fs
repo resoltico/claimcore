@@ -34,8 +34,10 @@ module internal Resolution =
         let store = services.Store
         let principal = services.Principal
 
+        let operationId = OperationId.create request.OperationId
+
         task {
-            if request.OperationId = Guid.Empty then
+            if operationId.IsNone then
                 return
                     Outcome.Rejected(
                         Refusal.invalidInput (
@@ -44,6 +46,8 @@ module internal Resolution =
                         )
                     )
             else
+                let operationId = operationId.Value
+
                 let! result =
                     store.Write(
                         {
@@ -51,25 +55,15 @@ module internal Resolution =
                                 (fun tx ->
                                     task {
                                         let! actor, entry, current =
-                                            ExecutionFacts.operation
-                                                tx
-                                                principal
-                                                request.OperationId
+                                            ExecutionFacts.operation tx principal operationId
 
-                                        match
-                                            resolve
-                                                services
-                                                request.OperationId
-                                                actor
-                                                entry
-                                                current
-                                        with
+                                        match resolve services operationId actor entry current with
                                         | Verdict.Proceed actor ->
                                             do!
                                                 tx.Fence(
                                                     {
                                                         FenceKey.ActorId = actor
-                                                        OperationId = request.OperationId
+                                                        OperationId = operationId
                                                     }
                                                 )
 

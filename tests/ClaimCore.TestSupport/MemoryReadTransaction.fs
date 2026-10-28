@@ -191,8 +191,10 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 (get ()).Actors
                 |> Map.values
                 |> Seq.filter (fun actor ->
-                    after |> Option.forall (fun after -> compareId actor.ActorId after > 0))
-                |> Seq.sortWith (fun a b -> compareId a.ActorId b.ActorId)
+                    after
+                    |> Option.forall (fun after ->
+                        compareId ActorId.format actor.ActorId after > 0))
+                |> Seq.sortWith (fun a b -> compareId ActorId.format a.ActorId b.ActorId)
                 |> Seq.toList
 
             Task.FromResult(page limit (fun actor -> actor.ActorId) rows)
@@ -212,7 +214,7 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 | None, None -> 0
                 | None, Some _ -> 1
                 | Some _, None -> -1
-                | Some a, Some b -> compareId a b
+                | Some a, Some b -> compareId CaseId.format a b
 
             let rows =
                 state.Grants

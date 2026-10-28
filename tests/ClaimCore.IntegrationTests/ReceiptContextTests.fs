@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.ReceiptContextTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Protocol
 
 open System.Threading
@@ -93,7 +95,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             registration.ClaimantName
             "Disclosure uses the write's locked context"
 
-        Expect.equal receipt.RecordedBy (id 3) "Original executor"
+        Expect.equal receipt.RecordedBy ((CaseFixtures.actorId (id 3))) "Original executor"
 
         let! denied =
             (Service.get

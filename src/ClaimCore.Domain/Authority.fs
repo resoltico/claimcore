@@ -8,7 +8,7 @@ type ValidAuthorityAct = AuthorityAct<AuthoredGrant>
 type AuthorityCommand =
     private
         {
-            Id: Guid
+            Id: OperationId
             Principal: PrincipalKey
             Action: ValidAuthorityAct
         }
@@ -29,7 +29,7 @@ type AuthorityChange =
 type AuthorityFacts =
     {
         TargetActor: ActorAuthority option
-        TargetCaseId: Guid option
+        TargetCaseId: CaseId option
         EnabledHumanOwners: int
         ActorCount: int
         Requester: AuthorityView
@@ -100,8 +100,7 @@ module Authority =
 
         view.Actor
         |> Option.exists (fun actor ->
-            actor.ActorId <> Guid.Empty
-            && actor.Enabled
+            actor.Enabled
             && actor.Principal = principal
             && (PrincipalKey.isHuman principal || loaded |> List.forall (humanOnlyRole >> not)))
 
@@ -110,8 +109,7 @@ module Authority =
             match resource with
             | Scope.Installation -> Some view.Installation
             | Scope.Case id when
-                id <> Guid.Empty
-                && capability <> Capability.ManageAuthority
+                capability <> Capability.ManageAuthority
                 && capability <> Capability.ReadAuthority
                 ->
                 Some(view.Installation @ (view.Cases |> Map.tryFind id |> Option.defaultValue []))
@@ -186,10 +184,10 @@ module Authority =
             None
 
     let private operationIdentity operationId =
-        if operationId = Guid.Empty then
-            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired
-        else
-            Ok()
+        OperationId.create operationId
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
     let private scopeReference =
         function
@@ -207,9 +205,9 @@ module Authority =
 
     let private command operationId target act =
         Admission.map2
-            (fun () () ->
+            (fun identity () ->
                 {
-                    Id = operationId
+                    Id = identity
                     Principal = target
                     Action = act
                 })
@@ -224,14 +222,14 @@ module Authority =
         | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
         | act ->
             Admission.map2
-                (fun target () ->
+                (fun (identity, target) () ->
                     {
-                        Id = request.OperationId
+                        Id = identity
                         Principal = target
                         Action = act
                     })
                 (Admission.map2
-                    (fun () target -> target)
+                    (fun identity target -> identity, target)
                     (operationIdentity request.OperationId)
                     (PrincipalKey.ofKind
                         request.Target.Kind

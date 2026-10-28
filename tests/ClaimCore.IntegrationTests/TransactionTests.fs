@@ -149,7 +149,9 @@ let tests =
                         let! results = Task.WhenAll tasks
 
                         let positions =
-                            results |> Array.map (accepted >> _.Position.Sequence) |> Array.sort
+                            results
+                            |> Array.map (accepted >> _.Position.Sequence >> Sequence.value)
+                            |> Array.sort
 
                         Expect.equal
                             positions
@@ -160,7 +162,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            23L
+                            (CaseFixtures.sequence (23L))
                             "All links recompute"
                     }))
             testCaseAsync
@@ -225,7 +227,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            3L
+                            (CaseFixtures.sequence (3L))
                             "Neither waiter wrote"
 
                         let! _ = (Service.get actor ({ CaseReference = "absent" }) (token))
@@ -306,7 +308,10 @@ let tests =
                                                 return head.Sequence, false
                                             })
 
-                                Expect.equal head (Ok 0L) "Next writer obtains released lock"
+                                Expect.equal
+                                    head
+                                    (Ok(CaseFixtures.sequence (0L)))
+                                    "Next writer obtains released lock"
                     }))
             testCaseAsync
                 "deferred commit error is definite and rolls back entry and projection"
@@ -338,7 +343,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            3L
+                            (CaseFixtures.sequence (3L))
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"

@@ -14,8 +14,10 @@ type internal LedgerRow =
 
 module internal StoredEntries =
     let position sequence bytes =
+        let sequence = DatabaseSession.admitted Sequence.create sequence
+
         EntryHash.ofBytes bytes
-        |> Option.bind (LedgerPosition.create sequence)
+        |> Option.map (LedgerPosition.create sequence)
         |> Option.defaultWith (fun () ->
             raise (RecordCorruptException "Invalid stored ledger position."))
 
@@ -32,6 +34,8 @@ module internal StoredEntries =
 
         match DatabaseSession.value<string> 4 row with
         | "AUTHORITY" ->
+            let target = DatabaseSession.admitted ActorId.create target
+
             if not (Convert.IsDBNull row[10]) || not (Convert.IsDBNull row[11]) then
                 raise (RecordCorruptException "Invalid authority ledger shape.")
 
@@ -43,7 +47,10 @@ module internal StoredEntries =
             EntryTarget.Authority(target, kind),
             RecordedTarget.Authority { TargetActorId = target; Act = kind }
         | "CASE" ->
-            let revision = DatabaseSession.value<int64> 10 row
+            let target = DatabaseSession.admitted CaseId.create target
+
+            let revision =
+                DatabaseSession.value<int64> 10 row |> DatabaseSession.admitted Revision.create
 
             let kind =
                 CaseActKind.parse act
@@ -69,10 +76,11 @@ module internal StoredEntries =
 
         let entry: StoredEntry =
             {
-                Sequence = DatabaseSession.value 0 row
+                Sequence = DatabaseSession.value 0 row |> DatabaseSession.admitted Sequence.create
                 EntryHash = DatabaseSession.value 2 row
-                OperationId = DatabaseSession.value 6 row
-                ActorId = DatabaseSession.value 7 row
+                OperationId =
+                    DatabaseSession.value 6 row |> DatabaseSession.admitted OperationId.create
+                ActorId = DatabaseSession.value 7 row |> DatabaseSession.admitted ActorId.create
                 RecordedAt = DatabaseSession.recordedInstant 8 row
                 Subject = subject
                 PayloadCommitment = DatabaseSession.value 12 row
@@ -101,7 +109,7 @@ module internal StoredEntries =
                 DatabaseSession.rows
                     connection
                     ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1")
-                    [| box id |]
+                    [| box (OperationId.value id) |]
                     token
 
             match rows with

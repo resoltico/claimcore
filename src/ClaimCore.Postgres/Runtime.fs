@@ -78,7 +78,7 @@ type ProvisionOwnerOutcome =
     | Rejected of Refusal
     | Failed of CoreFault
     | Cancelled
-    | OutcomeUnknown of operationId: Guid
+    | OutcomeUnknown of operationId: OperationId
 
 module internal LedgerAdministration =
     let verify source expected cancellationToken =
@@ -101,7 +101,8 @@ module internal LedgerAdministration =
                 | [ row ] ->
                     return
                         LedgerEntries.position
-                            (DatabaseSession.value 0 row)
+                            (DatabaseSession.value 0 row
+                             |> DatabaseSession.admitted Sequence.create)
                             (DatabaseSession.value 1 row)
                 | _ -> return invalidOp "Ledger head is absent."
             })
@@ -145,7 +146,7 @@ module internal LedgerAdministration =
             let services = Service.create productVersion installationId store calendar principal
             let! result = Service.provisionOwner services operationId cancellationToken
 
-            return provisionResult operationId result
+            return provisionResult (OperationId.create operationId |> Option.get) result
         }
 
 [<RequireQualifiedAccess>]

@@ -123,7 +123,11 @@ let private checkChoice
     | Error _ -> Expect.isTrue (Case.snapshot before = snapshot) "Refusal preserves accepted state"
     | Ok changed ->
         let after = Case.snapshot changed
-        Expect.equal after.Revision (snapshot.Revision + 1L) "One revision"
+
+        Expect.equal
+            after.Revision
+            (CaseFixtures.revision (Revision.value snapshot.Revision + 1L))
+            "One revision"
 
         Expect.isTrue
             ((viewFields after) =

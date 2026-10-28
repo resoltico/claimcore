@@ -58,19 +58,19 @@ let private accepted () =
                 | "case.history" ->
                     Expect.equal
                         (Cursors.decodeHistory "demo-0001" encoded)
-                        (Ok(position.GetInt64()))
+                        (Ok(CaseFixtures.revision (position.GetInt64())))
                         "Independent history position"
 
-                    Cursors.encodeHistory "DEMO-0001" (position.GetInt64())
+                    Cursors.encodeHistory "DEMO-0001" (CaseFixtures.revision (position.GetInt64()))
                 | "authority.list" ->
                     let expected = Guid.Parse(position.GetString() |> nonNull)
 
                     Expect.equal
                         (Cursors.decodeActors encoded)
-                        (Ok expected)
+                        (Ok(CaseFixtures.actorId (expected)))
                         "Independent actor position"
 
-                    Cursors.encodeActors expected
+                    Cursors.encodeActors (CaseFixtures.actorId (expected))
                 | "authority.grants" ->
                     let caseId = position.GetProperty "caseId"
 
@@ -81,15 +81,19 @@ let private accepted () =
                                 if caseId.ValueKind = JsonValueKind.Null then
                                     None
                                 else
-                                    Some(Guid.Parse(caseId.GetString() |> nonNull))
+                                    Some(
+                                        CaseFixtures.caseId (
+                                            Guid.Parse(caseId.GetString() |> nonNull)
+                                        )
+                                    )
                         }
 
                     Expect.equal
-                        (Cursors.decodeGrants actor encoded)
+                        (Cursors.decodeGrants (CaseFixtures.actorId (actor)) encoded)
                         (Ok expected)
                         "Independent grant position"
 
-                    Cursors.encodeGrants actor expected
+                    Cursors.encodeGrants (CaseFixtures.actorId (actor)) expected
                 | _ -> failtest "Unknown fixture endpoint"
 
             Expect.equal actual encoded "Encoder reproduces committed owner bytes")
@@ -135,18 +139,21 @@ let private boundaries () =
             $"{{\"actor\":\"{actor:D}\",\"after\":{{\"caseId\":{caseId},\"role\":\"{role}\"}},\"kind\":\"GRANTS\",\"v\":1}}"
 
         Expect.equal
-            (Cursors.decodeGrants actor (token raw))
+            (Cursors.decodeGrants (CaseFixtures.actorId (actor)) (token raw))
             (Error Refusal.InvalidCursor)
             "Admitted role and UUID only"
 
 let private maximum () =
     let reference = String('"', 80)
-    let encoded = Cursors.encodeHistory reference Revision.Maximum
+
+    let encoded =
+        Cursors.encodeHistory reference (CaseFixtures.revision 9007199254740991L)
+
     Expect.isLessThan encoded.Length 512 "Largest escaped history position fits"
 
     Expect.equal
         (Cursors.decodeHistory reference encoded)
-        (Ok Revision.Maximum)
+        (Ok(CaseFixtures.revision 9007199254740991L))
         "Maximum safe revision"
 
     Expect.equal
@@ -154,10 +161,11 @@ let private maximum () =
         (Error Refusal.InvalidCursor)
         "Resource binding"
 
-    let grant = Cursors.encodeGrants actor { Role = Role.Owner; CaseId = None }
+    let grant =
+        Cursors.encodeGrants (CaseFixtures.actorId (actor)) { Role = Role.Owner; CaseId = None }
 
     Expect.equal
-        (Cursors.decodeGrants (Guid.NewGuid()) grant)
+        (Cursors.decodeGrants (CaseFixtures.actorId (Guid.NewGuid())) grant)
         (Error Refusal.InvalidCursor)
         "Actor binding"
 

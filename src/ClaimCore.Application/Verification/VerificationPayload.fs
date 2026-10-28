@@ -35,7 +35,7 @@ module internal VerificationPayload =
                         (Some entry.Sequence)
                         VerificationFinding.PayloadFormat
                         (request.OperationId = entry.OperationId
-                         && request.ExpectedRevision = revision - 1L
+                         && Revision.value request.ExpectedRevision = Revision.value revision - 1L
                          && CaseAct.kind request.Act = act
                          && CaseReferenceId.encode
                              installationId
@@ -77,7 +77,7 @@ module internal VerificationPayload =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.PayloadFormat
-                    (request.OperationId = entry.OperationId
+                    (request.OperationId = OperationId.value entry.OperationId
                      && AuthorityAct.kind request.Act = kind
                      && Array.isEmpty payload.Snapshot)
 

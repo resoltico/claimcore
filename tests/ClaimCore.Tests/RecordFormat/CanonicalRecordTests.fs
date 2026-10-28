@@ -47,7 +47,11 @@ let private requests () =
 
         let first = RequestRecord.decode 65536 (bytes vectors.Head) |> Fixtures.accepted
         Expect.equal first.Authored.CaseReference "Demo-0001" "Independent authored target"
-        Expect.equal first.ExpectedRevision 0L "Independent initial revision"
+
+        Expect.equal
+            first.ExpectedRevision
+            (CaseFixtures.revision 0L)
+            "Independent initial revision"
 
         match first.Authored.Act with
         | (AuthoredCaseAct.Open registration) ->
@@ -65,7 +69,7 @@ let private snapshot () =
         let encoded = bytes vector
         let observed = CaseRecord.decodeSnapshot encoded |> Fixtures.accepted
         Expect.equal (CaseReference.format observed.Reference) "Demo-0001" "Independent reference"
-        Expect.equal observed.Revision 1L "Independent revision"
+        Expect.equal observed.Revision (CaseFixtures.revision 1L) "Independent revision"
 
         match observed.State with
         | CaseState.Active(fields) ->

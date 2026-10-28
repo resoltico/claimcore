@@ -146,7 +146,7 @@ let internal disclosures () =
                     ClaimCore.Domain.ReceiptSubject.Case
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
-                            Revision = 1L
+                            Revision = CaseFixtures.revision 1L
                             Act = CaseActKind.Open
                             Snapshot = snapshot
                         }
@@ -232,7 +232,7 @@ let internal actionExpectations =
             Revision = None
         }
         {
-            Refusal = (Refusal.RevisionConflict 7L)
+            Refusal = (Refusal.RevisionConflict(CaseFixtures.revision 7L))
             Action = RecommendedAction.ReadCurrent
             Token = "READ_CURRENT"
             Field = None
@@ -252,7 +252,7 @@ let internal actionEnums () =
             "Input correction and current-state recovery are distinct"
 
 let internal diagnosticRevisions () =
-    let reason = Refusal.RevisionConflict 0L
+    let reason = Refusal.RevisionConflict(CaseFixtures.revision 0L)
     let codec = DiagnosticCodecs.diagnostic
 
     Expect.equal
@@ -261,12 +261,14 @@ let internal diagnosticRevisions () =
         "An absent record can report actual revision zero"
 
     Expect.throws
-        (fun () -> Codec.encode codec (Refusal.RevisionConflict -1L) |> ignore)
+        (fun () ->
+            Codec.encode codec (Refusal.RevisionConflict(CaseFixtures.revision (-1L)))
+            |> ignore)
         "Negative actual revisions remain invalid"
 
     let snapshot =
         { Case.snapshot (opened ()) with
-            Revision = 0L
+            Revision = CaseFixtures.revision 0L
         }
 
     Expect.throws
@@ -277,7 +279,11 @@ let internal diagnosticRevisions () =
         match receipt.Subject with
         | ReceiptSubject.Case target ->
             { receipt with
-                Subject = ReceiptSubject.Case { target with Revision = 0L }
+                Subject =
+                    ReceiptSubject.Case
+                        { target with
+                            Revision = CaseFixtures.revision 0L
+                        }
             }
         | _ -> failtest "Case receipt fixture"
 
@@ -339,4 +345,7 @@ let internal actionTokens () =
         |> Option.iter (fun revision ->
             Expect.equal (encodedRevision.GetInt64()) revision "Literal revision")
 
-        Expect.equal refusal.ActualRevision revision "Revision metadata is retained"
+        Expect.equal
+            (refusal.ActualRevision |> Option.map Revision.value)
+            revision
+            "Revision metadata is retained"

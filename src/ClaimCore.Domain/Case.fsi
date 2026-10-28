@@ -8,8 +8,8 @@ type CaseCommand =
     member Authored: UnvalidatedCaseRequest
     member Reference: CaseReference
     member Act: ValidCaseAct
-    member OperationId: Guid
-    member ExpectedRevision: int64
+    member OperationId: OperationId
+    member ExpectedRevision: Revision
 
 [<NoComparison>]
 type CaseRecord

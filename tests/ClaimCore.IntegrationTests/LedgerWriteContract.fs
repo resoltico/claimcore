@@ -29,11 +29,14 @@ let internal genesis fixture =
                                     ExecutionFacts.target
                                         (core fixture fixture.Owner)
                                         tx
-                                        (id 1)
+                                        ((CaseFixtures.operationId (id 1)))
                                         fixture.Owner
                                         None
 
-                                Expect.equal tx.Head.Sequence 0L "Genesis head"
+                                Expect.equal
+                                    tx.Head.Sequence
+                                    (CaseFixtures.sequence 0L)
+                                    "Genesis head"
 
                                 Expect.isTrue
                                     (tx.Head.EntryHash = EntryHash.zero)
@@ -44,7 +47,7 @@ let internal genesis fixture =
                                 return!
                                     AuthorityExecution.provision
                                         (core fixture fixture.Owner)
-                                        (id 1)
+                                        ((CaseFixtures.operationId (id 1)))
                                         {
                                             Head = tx.Head
                                             Fenced = false
@@ -58,7 +61,8 @@ let internal genesis fixture =
             )
 
         match result with
-        | Ok(Verdict.Proceed receipt) -> Expect.equal receipt.Position.Sequence 1L "First sequence"
+        | Ok(Verdict.Proceed receipt) ->
+            Expect.equal receipt.Position.Sequence (CaseFixtures.sequence 1L) "First sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -69,11 +73,16 @@ let internal genesis fixture =
             Expect.equal authority.Installation [ Role.Owner ] "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
-        let! entry = inspectOperation fixture (fixture.Owner) (id 1) (CancellationToken.None)
+        let! entry =
+            inspectOperation
+                fixture
+                (fixture.Owner)
+                ((CaseFixtures.operationId (id 1)))
+                (CancellationToken.None)
 
         match entry with
         | Ok { ExistingOperation = Some entry } ->
-            Expect.equal entry.Sequence 1L "Readable acceptance"
+            Expect.equal entry.Sequence (CaseFixtures.sequence 1L) "Readable acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
@@ -89,7 +98,7 @@ let internal replayAndRefusal fixture =
 
         Expect.equal
             receipt.Position.Sequence
-            4L
+            (CaseFixtures.sequence 4L)
             "One entry per authority operation and case operation"
 
         let! replay =
@@ -105,7 +114,7 @@ let internal replayAndRefusal fixture =
 
         Expect.equal
             stale.Outcome
-            (ExecuteResult.Rejected((Refusal.RevisionConflict 1L)))
+            (ExecuteResult.Rejected((Refusal.RevisionConflict(CaseFixtures.revision 1L))))
             "No stale acceptance"
 
         let! view =
@@ -119,7 +128,7 @@ let internal replayAndRefusal fixture =
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
-        let! rows = history fixture "CONTRACT-001" 0L 50
+        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision 0L) 50
         Expect.equal (storedPage rows).Entries.Length 1 "Replay/refusal append nothing"
     }
 
@@ -144,11 +153,14 @@ let internal lockedView fixture =
                                     ExecutionFacts.case
                                         (core fixture fixture.Owner)
                                         tx
-                                        (Some original.OperationId)
+                                        (Some(CaseFixtures.operationId original.OperationId))
                                         original.CaseReference
 
                                 let! fenced =
-                                    ExecutionFacts.fenced tx view.Actor original.OperationId
+                                    ExecutionFacts.fenced
+                                        tx
+                                        view.Actor
+                                        (CaseFixtures.operationId original.OperationId)
 
                                 calls <- calls + 1
 
@@ -165,12 +177,12 @@ let internal lockedView fixture =
                                 Expect.equal
                                     (view.Case
                                      |> Option.map (fun record -> record.Snapshot.Revision))
-                                    (Some 1L)
+                                    (Some(CaseFixtures.revision 1L))
                                     "Current case"
 
                                 Expect.equal
                                     (view.ExistingOperation |> Option.map _.OperationId)
-                                    (Some original.OperationId)
+                                    (Some(CaseFixtures.operationId original.OperationId))
                                     "Existing identity in the same view"
 
                                 return!
@@ -218,15 +230,19 @@ let internal caseUpdate fixture =
                 (CancellationToken.None))
 
         let receipt = accepted closed
-        Expect.equal (caseReceipt receipt).Revision 2L "One revision"
+        Expect.equal (caseReceipt receipt).Revision (CaseFixtures.revision (2L)) "One revision"
         Expect.equal (disclosedFields receipt).Status CaseStatus.Closed "Closure stored"
-        let! rows = history fixture "CONTRACT-001" 0L 1
+        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 1
         let page = storedPage rows
         Expect.equal page.Entries.Length 1 "Bounded page"
-        Expect.equal page.Next (Some 1L) "Continuation"
+        Expect.equal page.Next (Some(CaseFixtures.revision (1L))) "Continuation"
 
         let! operation =
-            inspectOperation fixture (fixture.Owner) (id 11) (CancellationToken.None)
+            inspectOperation
+                fixture
+                (fixture.Owner)
+                ((CaseFixtures.operationId (id 11)))
+                (CancellationToken.None)
 
         match operation with
         | Ok {
@@ -234,6 +250,6 @@ let internal caseUpdate fixture =
                  Case = Some record
              } ->
             Expect.equal entry.Sequence receipt.Position.Sequence "Operation position"
-            Expect.equal record.Snapshot.Revision 2L "Current projection"
+            Expect.equal record.Snapshot.Revision (CaseFixtures.revision (2L)) "Current projection"
         | _ -> failtest "Missing accepted update"
     }

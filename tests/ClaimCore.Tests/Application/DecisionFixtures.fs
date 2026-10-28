@@ -58,11 +58,15 @@ let actor principal actorId roles cases : AuthorityView =
     }
 
 let worker =
-    actor owner (id 1) [ Role.Owner; Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward ] []
+    actor
+        owner
+        ((CaseFixtures.actorId (id 1)))
+        [ Role.Owner; Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward ]
+        []
 
 let head =
     {
-        Sequence = 3L
+        Sequence = CaseFixtures.sequence 3L
         EntryHash = EntryHash.zero
     }
 

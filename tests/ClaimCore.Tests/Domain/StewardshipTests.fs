@@ -18,7 +18,7 @@ let private current revision state =
 
     Case.ofAccepted
         { original with
-            Revision = revision
+            Revision = CaseFixtures.revision revision
             State = CaseState.map (fun () -> viewFields original) state
         }
     |> accepted
@@ -68,7 +68,7 @@ let private revisionProperty =
             result
             |> Result.map Case.snapshot
             |> Result.exists (fun next ->
-                next.Revision = revision + 1L && next.State = CaseState.Erased)
+                Revision.value next.Revision = revision + 1L && next.State = CaseState.Erased)
     }
 
 let private transitionTest () =
@@ -82,7 +82,7 @@ let private transitionTest () =
         let state =
             result
             |> Result.map (fun snapshot ->
-                Expect.equal snapshot.Revision 8L "Exactly one revision"
+                Expect.equal snapshot.Revision (CaseFixtures.revision (8L)) "Exactly one revision"
 
                 match CaseState.fields snapshot.State with
                 | None -> ()
@@ -131,7 +131,8 @@ let private staleRevision () =
             (Some(current 7L (CaseState.Voided())))
 
     Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) = Error(Refusal.RevisionConflict 7L))
+        ((outcome |> Result.map Case.snapshot) =
+            Error(Refusal.RevisionConflict(CaseFixtures.revision 7L)))
         "Revision check precedes admission and state"
 
 let private vocabulary () =

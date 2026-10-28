@@ -25,19 +25,19 @@ let internal digest = String.replicate 64 "a"
 
 let internal position: ClaimCore.Domain.LedgerPosition =
     {
-        Sequence = 1L
+        Sequence = CaseFixtures.sequence 1L
         EntryHash = (Convert.FromHexString digest |> EntryHash.ofBytes |> Option.get)
     }
 
 let internal receipt: ClaimCore.Domain.OperationReceipt =
     {
-        OperationId = id
+        OperationId = (CaseFixtures.operationId (id))
         Position = position
         Subject =
             ClaimCore.Domain.ReceiptSubject.Case
                 {
                     Reference = CaseFixtures.reference "UNIT-001"
-                    Revision = 1L
+                    Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open
                     Snapshot =
                         ClaimCore.Domain.SnapshotDisclosure.Disclosed(
@@ -45,7 +45,7 @@ let internal receipt: ClaimCore.Domain.OperationReceipt =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = id
+        RecordedBy = (CaseFixtures.actorId (id))
     }
 
 let internal authority =
@@ -53,7 +53,7 @@ let internal authority =
         Subject =
             ClaimCore.Domain.ReceiptSubject.Authority
                 {
-                    TargetActorId = id
+                    TargetActorId = (CaseFixtures.actorId (id))
                     Act = AuthorityKind.Register
                 }
     }

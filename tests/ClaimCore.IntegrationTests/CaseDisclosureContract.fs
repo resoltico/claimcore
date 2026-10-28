@@ -15,7 +15,7 @@ open ClaimCore.TestSupport.StoreContractReads
 
 let internal erasureReadback fixture (actor: ServiceContext) =
     task {
-        let! rows = history fixture "CONTRACT-001" 0L 50
+        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 50
         let page = storedPage rows
 
         match page.Case with

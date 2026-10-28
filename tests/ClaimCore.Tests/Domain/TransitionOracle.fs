@@ -100,7 +100,7 @@ let private business (before: CaseSnapshot) fields stale act =
         else
             Some
                 { before with
-                    Revision = before.Revision + 1L
+                    Revision = CaseFixtures.revision (Revision.value before.Revision + 1L)
                     State = CaseState.Active nextFields
                 }
 
@@ -111,7 +111,7 @@ let advance (before: CaseSnapshot) stale act =
         let changed view =
             Some
                 { before with
-                    Revision = before.Revision + 1L
+                    Revision = CaseFixtures.revision (Revision.value before.Revision + 1L)
                     State = view
                 }
 

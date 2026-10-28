@@ -31,13 +31,7 @@ let private matrix () =
             for scope in [ Scope.Installation; Scope.Case caseId ] do
                 let current = actor principal [ { Role = role; Scope = scope } ]
 
-                for resource in
-                    [
-                        Scope.Installation
-                        Scope.Case caseId
-                        Scope.Case otherCaseId
-                        Scope.Case Guid.Empty
-                    ] do
+                for resource in [ Scope.Installation; Scope.Case caseId; Scope.Case otherCaseId ] do
                     for capability in allCapabilities do
                         let expected =
                             expectedPermission
@@ -69,6 +63,12 @@ let private invalidPrincipals () =
             "Identity text has permanent Unicode bounds"
 
 let private invalidActors () =
+    Expect.isNone
+        (ActorId.create Guid.Empty)
+        "Empty actor identities are rejected before authorization"
+
+    Expect.isNone (CaseId.create Guid.Empty) "Empty case scopes are rejected before authorization"
+
     let current =
         actor
             human
@@ -81,12 +81,6 @@ let private invalidActors () =
 
     for invalid in
         [
-            { current with
-                Actor =
-                    { current.Actor with
-                        ActorId = Guid.Empty
-                    }
-            }
             { current with Grants = [] }
             { current with
                 Actor = { current.Actor with Enabled = false }
@@ -252,7 +246,7 @@ let private reaffirmations () =
     Expect.isError
         (CaseFixtures.decide
             today
-            (actRequest ((Case.snapshot (paid ())).Revision) keep)
+            (actRequest (Revision.value (Case.snapshot (paid ())).Revision) keep)
             (Some(paid ())))
         "All-KEEP never creates a revision"
 

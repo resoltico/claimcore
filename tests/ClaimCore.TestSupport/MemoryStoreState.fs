@@ -13,15 +13,15 @@ open ClaimCore.Domain
 type internal State =
     {
         Head: LedgerPosition
-        Entries: Map<Guid, StoredEntry>
-        Cases: Map<Guid, StoredCase>
-        Actors: Map<Guid, Actor>
-        Grants: Set<Guid * Role * Guid option>
-        Fences: Set<Guid * Guid>
+        Entries: Map<OperationId, StoredEntry>
+        Cases: Map<CaseId, StoredCase>
+        Actors: Map<ActorId, Actor>
+        Grants: Set<ActorId * Role * CaseId option>
+        Fences: Set<ActorId * OperationId>
     }
 
-let internal compareId (left: Guid) (right: Guid) =
-    StringComparer.Ordinal.Compare(left.ToString("N"), right.ToString("N"))
+let internal compareId format left right =
+    StringComparer.Ordinal.Compare(format left, format right)
 
 let internal page limit position items =
     let visible = List.truncate limit items

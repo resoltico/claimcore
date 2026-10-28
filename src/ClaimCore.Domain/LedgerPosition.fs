@@ -15,23 +15,19 @@ module EntryHash =
 
 type LedgerPosition =
     {
-        Sequence: int64
+        Sequence: Sequence
         EntryHash: EntryHash
     }
 
 module LedgerPosition =
     let create sequence hash =
-        if sequence < 0L || sequence > SafeInteger.Maximum then
-            None
-        else
-            Some
-                {
-                    Sequence = sequence
-                    EntryHash = hash
-                }
+        {
+            Sequence = sequence
+            EntryHash = hash
+        }
 
     let genesis =
         {
-            Sequence = 0L
+            Sequence = Sequence.zero
             EntryHash = EntryHash.zero
         }

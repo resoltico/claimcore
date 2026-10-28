@@ -11,9 +11,9 @@ module LedgerVerification =
     type Scan =
         {
             Head: LedgerPosition
-            Cases: Map<Guid, CaseHistory>
-            Actors: Map<Guid, ActorAuthority>
-            EarliestDuplicate: int64 option
+            Cases: Map<CaseId, CaseHistory>
+            Actors: Map<ActorId, ActorAuthority>
+            EarliestDuplicate: Sequence option
             ExpectedSeen: bool
         }
 
@@ -43,8 +43,8 @@ module LedgerVerification =
         require
             (Some sequence)
             VerificationFinding.Link
-            (state.Head.Sequence < Revision.Maximum
-             && sequence = state.Head.Sequence + 1L
+            (Sequence.value state.Head.Sequence < Sequence.Maximum
+             && sequence = Sequence.successor state.Head.Sequence
              && previous = EntryHash.toBytes state.Head.EntryHash)
 
     let append
@@ -104,7 +104,7 @@ module LedgerVerification =
             ExpectedSeen =
                 expected
                 |> Option.exists (fun position ->
-                    position.Sequence = 0L && position.EntryHash = head.EntryHash)
+                    position.Sequence = Sequence.zero && position.EntryHash = head.EntryHash)
         }
 
     let head (state: Scan) (actual: LedgerPosition option) =

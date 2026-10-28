@@ -86,7 +86,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position verified).Sequence
-            3L
+            (CaseFixtures.sequence (3L))
             "Only bootstrap and grants exist"
     }
 

@@ -30,7 +30,7 @@ let internal authorityReview fixture principal input =
                 fixture
                 (principal)
                 {
-                    OperationId = request.OperationId
+                    OperationId = (OperationId.value (request.OperationId))
                     Target = request.Target
                     CaseReference = AuthorityRequests.targetCase request
                 }
@@ -197,7 +197,7 @@ let internal authorityReviewReplay fixture =
 
         Expect.equal
             receipt.Position.Sequence
-            (before.Sequence + 1L)
+            (CaseFixtures.sequence (Sequence.value before.Sequence + 1L))
             "Only execution advances the head."
 
         let! replay, _ = authorityReview fixture fixture.Owner input
@@ -301,7 +301,7 @@ let internal assertGrantRevocation (review: AuthorityReview) =
 
     Expect.equal
         (review.Target |> Option.map _.ActorId)
-        (Some(id 11))
+        (Some((CaseFixtures.actorId (id 11))))
         "Review identifies the existing target actor."
 
 let internal authorityGrantReview fixture =

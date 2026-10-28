@@ -9,15 +9,15 @@ open ClaimCore.Domain
 
 type CaseEntryMetadata =
     {
-        CaseId: Guid
-        Revision: int64
+        CaseId: CaseId
+        Revision: Revision
         Act: CaseActKind
         BusinessDate: DateOnly
     }
 
 type AuthorityEntryMetadata =
     {
-        TargetActorId: Guid
+        TargetActorId: ActorId
         Act: AuthorityKind
     }
 
@@ -29,10 +29,10 @@ type RecordedTarget =
 type LedgerMetadata =
     {
         InstallationId: Guid
-        Sequence: int64
+        Sequence: Sequence
         PreviousHash: byte array
-        OperationId: Guid
-        ActorId: Guid
+        OperationId: OperationId
+        ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: RecordedTarget
         PayloadCommitment: byte array
@@ -136,38 +136,31 @@ module LedgerEntry =
         {
             Kind: byte
             Act: byte
-            Id: Guid
-            Revision: int64
-            Date: int
+            Identifier: byte array
+            Revision: byte array
+            Date: byte array
         }
 
     let private subjectBytes =
         function
         | RecordedTarget.Authority subject ->
-            if subject.TargetActorId = Guid.Empty then
-                invalidArg (nameof subject) "Invalid authority subject."
-
             {
                 Kind = 2uy
                 Act = authorityCode subject.Act
-                Id = subject.TargetActorId
-                Revision = 0L
-                Date = 0
+                Identifier = (ActorId.value subject.TargetActorId).ToByteArray(bigEndian = true)
+                Revision = i64 0L
+                Date = i32 0
             }
         | RecordedTarget.Case subject ->
-            if
-                subject.CaseId = Guid.Empty
-                || subject.Revision < 1L
-                || subject.Revision > Revision.Maximum
-            then
+            if subject.Revision < Revision.first then
                 invalidArg (nameof subject) "Invalid case ledger metadata."
 
             {
                 Kind = 1uy
                 Act = actCode subject.Act
-                Id = subject.CaseId
-                Revision = subject.Revision
-                Date = subject.BusinessDate.DayNumber
+                Identifier = (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
+                Revision = i64 (Revision.value subject.Revision)
+                Date = i32 subject.BusinessDate.DayNumber
             }
 
     /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
@@ -175,13 +168,7 @@ module LedgerEntry =
         requireHash DurableNames.PreviousHash metadata.PreviousHash
         requireHash DurableNames.PayloadCommitment metadata.PayloadCommitment
 
-        if
-            metadata.InstallationId = Guid.Empty
-            || metadata.OperationId = Guid.Empty
-            || metadata.ActorId = Guid.Empty
-            || metadata.Sequence < 1L
-            || metadata.Sequence > Revision.Maximum
-        then
+        if metadata.InstallationId = Guid.Empty || metadata.Sequence < Sequence.first then
             invalidArg (nameof metadata) "Invalid ledger identity or sequence."
 
         let ticks = metadata.RecordedAt.UtcTicks - DateTimeOffset.UnixEpoch.UtcTicks
@@ -197,15 +184,15 @@ module LedgerEntry =
                     sprintf "claimcore/ledger-entry/%d\n" RecordVersions.LedgerEntry
                 )
                 metadata.InstallationId.ToByteArray(bigEndian = true)
-                u64 (uint64 metadata.Sequence)
+                u64 (uint64 (Sequence.value metadata.Sequence))
                 metadata.PreviousHash
                 [| subject.Kind; subject.Act |]
-                metadata.OperationId.ToByteArray(bigEndian = true)
-                metadata.ActorId.ToByteArray(bigEndian = true)
+                (OperationId.value metadata.OperationId).ToByteArray(bigEndian = true)
+                (ActorId.value metadata.ActorId).ToByteArray(bigEndian = true)
                 i64 (ticks / 10L)
-                subject.Id.ToByteArray(bigEndian = true)
-                i64 subject.Revision
-                i32 subject.Date
+                subject.Identifier
+                subject.Revision
+                subject.Date
                 metadata.PayloadCommitment
             ]
 

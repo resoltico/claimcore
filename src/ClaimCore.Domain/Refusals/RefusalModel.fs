@@ -62,7 +62,7 @@ type AccessRefusal =
 [<RequireQualifiedAccess>]
 type Refusal =
     | InvalidInput of InputIssues
-    | RevisionConflict of actualRevision: int64
+    | RevisionConflict of actualRevision: Revision
     | Case of CaseRefusal
     | Authority of AuthorityRefusal
     | Access of AccessRefusal

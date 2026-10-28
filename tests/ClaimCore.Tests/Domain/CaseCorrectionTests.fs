@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseCorrectionTests
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Protocol
 
 open Expecto
@@ -37,7 +39,11 @@ let private paidCorrectionTests =
 
                 let after = before |> apply act |> accepted |> Case.snapshot
 
-                Expect.equal after.Revision ((Case.snapshot before).Revision + 1L) "One revision"
+                Expect.equal
+                    after.Revision
+                    (CaseFixtures.revision (Revision.value (Case.snapshot before).Revision + 1L))
+                    "One revision"
+
                 Expect.equal (viewFields after).Status CaseStatus.Opened "Status is retained"
 
                 Expect.equal
@@ -113,7 +119,10 @@ let private closedCorrectionTests =
                     (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
                     "No-op is refused"
 
-                Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
+                Expect.equal
+                    (Case.snapshot before).Revision
+                    (CaseFixtures.revision 3L)
+                    "Existing case is unchanged")
             testCase
                 "equivalent scalar spelling cannot create a correction-only revision"
                 (fun () ->

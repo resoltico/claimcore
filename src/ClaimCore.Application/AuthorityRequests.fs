@@ -48,7 +48,7 @@ module AuthorityRequests =
                 }
 
     let toInput (command: AuthorityCommand) =
-        input command.OperationId command.Target command.Act
+        input (OperationId.value command.OperationId) command.Target command.Act
 
     /// Permanent parsing does not reapply current capability decisions.
     let fromRecord request = AuthorityRecord.interpret request

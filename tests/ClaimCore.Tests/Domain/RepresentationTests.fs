@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RepresentationTests
 
+open ClaimCore.TestSupport
+
 open Expecto
 open ClaimCore.Domain
 
@@ -27,21 +29,51 @@ let tests =
                         "A hash has exactly 32 bytes")
             testCase "ledger positions include genesis and enforce exact-integer bounds" (fun () ->
                 Expect.equal
-                    (LedgerPosition.create 0L EntryHash.zero)
-                    (Some LedgerPosition.genesis)
+                    (LedgerPosition.create Sequence.zero EntryHash.zero)
+                    LedgerPosition.genesis
                     "Genesis is an admitted empty head"
 
-                Expect.isNone
-                    (LedgerPosition.create -1L EntryHash.zero)
-                    "Negative sequence refused"
+                Expect.isNone (Sequence.create -1L) "Negative sequence refused"
 
-                Expect.isSome
-                    (LedgerPosition.create SafeInteger.Maximum EntryHash.zero)
-                    "Exact upper bound admitted"
+                Expect.isSome (Sequence.create 9007199254740991L) "Exact upper bound admitted"
 
-                Expect.isNone
-                    (LedgerPosition.create (SafeInteger.Maximum + 1L) EntryHash.zero)
-                    "Unsafe integer refused")
+                Expect.isNone (Sequence.create 9007199254740992L) "Unsafe integer refused")
+            testCase
+                "identifier constructors reject empty values and preserve valid identities and positions"
+                (fun () ->
+                    let raw = System.Guid.Parse "91000000-0000-4000-8000-000000000001"
+
+                    for create in
+                        [
+                            OperationId.create >> Option.map OperationId.value
+                            ActorId.create >> Option.map ActorId.value
+                            CaseId.create >> Option.map CaseId.value
+                        ] do
+                        Expect.isNone (create System.Guid.Empty) "Empty identity refused"
+                        Expect.equal (create raw) (Some raw) "Identity bits are preserved"
+
+                    for create in
+                        [
+                            Revision.create >> Option.map Revision.value
+                            Sequence.create >> Option.map Sequence.value
+                        ] do
+                        for value in [ 0L; 1L; 9007199254740991L ] do
+                            Expect.equal (create value) (Some value) "Exact position is preserved"
+
+                        for value in [ -1L; 9007199254740992L; System.Int64.MaxValue ] do
+                            Expect.isNone (create value) "Unsafe position refused"
+
+                    Expect.throwsT<System.OverflowException>
+                        (fun () ->
+                            Revision.successor (Revision.create 9007199254740991L |> Option.get)
+                            |> ignore)
+                        "Revision cannot advance beyond the exact integer bound"
+
+                    Expect.throwsT<System.OverflowException>
+                        (fun () ->
+                            Sequence.successor (Sequence.create 9007199254740991L |> Option.get)
+                            |> ignore)
+                        "Sequence cannot advance beyond the exact integer bound")
             testCase "payment groups cannot construct paid without a decision" (fun () ->
                 let date =
                     CalendarDate.parse "2026-08-20" |> Result.defaultWith (string >> failwith)

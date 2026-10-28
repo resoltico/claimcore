@@ -357,7 +357,7 @@ let private completionFailure () =
         task {
             let invalid =
                 { receipt operationId "WEB-001" with
-                    RecordedBy = Guid.Empty
+                    Position = LedgerPosition.genesis
                 }
 
             host.HandlerStub.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)

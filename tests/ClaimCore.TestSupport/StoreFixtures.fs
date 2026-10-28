@@ -1,5 +1,7 @@
 module ClaimCore.TestSupport.StoreFixtures
 
+open ClaimCore.TestSupport
+
 open ClaimCore.Protocol
 
 open System
@@ -31,7 +33,12 @@ let internal inspectCase fixture principal operation reference token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
-                (fun tx -> ExecutionFacts.case (core fixture principal) tx operation reference)
+                (fun tx ->
+                    ExecutionFacts.case
+                        (core fixture principal)
+                        tx
+                        (Option.map CaseFixtures.operationId operation)
+                        reference)
             CancellationToken = token
         }
     )
@@ -51,7 +58,7 @@ let internal inspectTarget fixture principal (query: AuthorityInspection) token 
                     ExecutionFacts.target
                         (core fixture principal)
                         tx
-                        query.OperationId
+                        (CaseFixtures.operationId query.OperationId)
                         query.Target
                         query.CaseReference)
             CancellationToken = token
@@ -123,7 +130,7 @@ let internal accepted (reply: ExecuteReply) =
     | ExecuteResult.Accepted receipt ->
         Expect.equal
             reply.OperationId
-            receipt.OperationId
+            (OperationId.value receipt.OperationId)
             "Accepted reply echoes its operation identity"
 
         receipt

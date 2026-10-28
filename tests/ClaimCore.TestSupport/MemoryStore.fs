@@ -21,7 +21,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
         {
             Head =
                 {
-                    Sequence = 0L
+                    Sequence = Sequence.zero
                     EntryHash = EntryHash.zero
                 }
             Entries = Map.empty

@@ -42,7 +42,10 @@ let private replay () =
 
     let later =
         { current with
-            Snapshot = { current.Snapshot with Revision = 2L }
+            Snapshot =
+                { current.Snapshot with
+                    Revision = CaseFixtures.revision 2L
+                }
         }
 
     let laterView = locked worker (Some later) (Some entry)
@@ -63,14 +66,15 @@ let private replay () =
 
 let private authorization () =
     let request, entry, current, _ = created 11 "PURE-RIGHTS"
-    let revoked = actor owner (id 1) [ Role.Owner ] []
+    let revoked = actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
 
     Expect.equal
         (decide request (locked revoked (Some current) (Some entry)))
         (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Revocation precedes identity disclosure"
 
-    let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.CaseHandler ] ]
+    let scoped =
+        actor owner ((CaseFixtures.actorId (id 1))) [] [ current.CaseId, [ Role.CaseHandler ] ]
 
     Expect.equal
         (decide (opening 12 "NEW-CASE") (locked scoped None None))
@@ -98,7 +102,10 @@ let private reviewAndTime () =
             view.Read
     with
     | Verdict.Proceed(None, after) ->
-        Expect.equal (Case.snapshot after).Revision 1L "Pure review proposes without append"
+        Expect.equal
+            (Case.snapshot after).Revision
+            (CaseFixtures.revision (1L))
+            "Pure review proposes without append"
     | _ -> failtest "Expected a pure proposed state"
 
     let early =
@@ -133,7 +140,7 @@ let private reviewAndTime () =
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
-        (Verdict.Refuse(Refusal.RevisionConflict 1L))
+        (Verdict.Refuse(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
         "Execution rechecks the current revision"
 
 let private integrityAndPrivacy () =
@@ -150,7 +157,9 @@ let private integrityAndPrivacy () =
         "Stored corruption discloses no receipt"
 
     let _, _, readable, _ = created 17 "READABLE-CASE"
-    let scoped = actor owner (id 1) [] [ readable.CaseId, [ Role.CaseHandler ] ]
+
+    let scoped =
+        actor owner ((CaseFixtures.actorId (id 1))) [] [ readable.CaseId, [ Role.CaseHandler ] ]
 
     let different =
         { original with
@@ -171,7 +180,7 @@ let private boundsAndFence () =
         { locked worker None None with
             Head =
                 { head with
-                    Sequence = Revision.Maximum
+                    Sequence = CaseFixtures.sequence 9007199254740991L
                 }
         }
 
@@ -194,7 +203,7 @@ let private boundsAndFence () =
         { current with
             Snapshot =
                 { current.Snapshot with
-                    Revision = Revision.Maximum
+                    Revision = CaseFixtures.revision 9007199254740991L
                 }
         }
 
@@ -265,11 +274,49 @@ let private wireSpelling () =
         (Verdict.Refuse Refusal.IdempotencyConflict)
         "A different amount still conflicts"
 
+let private terminalRequestMismatch () =
+    let request, entry, current, _ = created 21 "TERMINAL-REQUEST"
+
+    let request =
+        { request with
+            ExpectedRevision = 9007199254740991L
+        }
+
+    let payload =
+        LedgerEntry.encodePayload
+            {
+                Request = CaseFixtures.encode request
+                Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot current.Snapshot
+            }
+
+    let corrupted =
+        { entry with
+            Payload = Some payload
+            PayloadCommitment = LedgerEntry.commitment nonce payload
+        }
+
+    Expect.equal
+        (LedgerEntries.validate installation corrupted |> Result.map ignore)
+        (Error CoreFault.StoreIntegrityError)
+        "A terminal expected revision is a mismatched stored request, without advancing it"
+
+    Expect.equal
+        (VerificationPayload.read installation corrupted |> Result.map ignore)
+        (Error
+            {
+                Sequence = Some entry.Sequence
+                Finding = VerificationFinding.PayloadFormat
+            })
+        "Verification reports typed corruption rather than throwing on the authored bound"
+
 [<Tests>]
 let tests =
     testList
         "pure case decisions"
         [
+            testCase
+                "terminal expected revisions remain typed stored-data corruption"
+                terminalRequestMismatch
             testCase "raw JSON spelling preserves the accepted receipt" wireSpelling
             testCase "canonical replay preserves attribution and original identity" replay
             testCase "current resource authority precedes replay and creation" authorization

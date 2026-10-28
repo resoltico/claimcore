@@ -23,7 +23,6 @@ module internal TextReply =
     let private number (value: int64) =
         value.ToString(CultureInfo.InvariantCulture)
 
-    let private id (value: Guid) = value.ToString "D"
     let private boolean value = if value then "true" else "false"
 
     let private instant (value: DateTimeOffset) =
@@ -84,7 +83,7 @@ module internal TextReply =
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)
-                (number value.Snapshot.Revision)
+                (Revision.format value.Snapshot.Revision)
             line
                 language
                 (CliMessages.key CliMessage.StateLabel)
@@ -108,10 +107,12 @@ module internal TextReply =
                 CaseReference.format value.Reference,
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
-                    number value.Revision
+                    Revision.format value.Revision
                 ]
             | ReceiptSubject.Authority value ->
-                term language AuthorityKind.vocabulary value.Act, id value.TargetActorId, []
+                term language AuthorityKind.vocabulary value.Act,
+                ActorId.format value.TargetActorId,
+                []
 
         [
             String.concat
@@ -124,7 +125,7 @@ module internal TextReply =
                          (ContractDiscovery.inputLabel (
                              InteractionInput.Target InputTarget.OperationId
                          ))
-                     id receipt.OperationId
+                     OperationId.format receipt.OperationId
                  ])
         ]
 
@@ -141,10 +142,10 @@ module internal TextReply =
                      String.concat
                          "  "
                          [
-                             number change.Revision
+                             Revision.format change.Revision
                              term language CaseActKind.vocabulary change.Act
                              instant change.RecordedAt
-                             id change.OperationId
+                             OperationId.format change.OperationId
                          ]
                  ]
              | HistoryEntry.FullEntry receipt ->
@@ -161,7 +162,7 @@ module internal TextReply =
                              | SnapshotDisclosure.Withheld
                              | SnapshotDisclosure.Erased -> []
 
-                         number value.Revision,
+                         Revision.format value.Revision,
                          term language CaseActKind.vocabulary value.Act,
                          fields
                      | ReceiptSubject.Authority value ->
@@ -169,7 +170,12 @@ module internal TextReply =
 
                  String.concat
                      "  "
-                     [ revision; act; instant receipt.RecordedAt; id receipt.OperationId ]
+                     [
+                         revision
+                         act
+                         instant receipt.RecordedAt
+                         OperationId.format receipt.OperationId
+                     ]
                  :: (fields |> List.map ((+) "  "))))
         @ nextLines language page.NextCursor
 
@@ -189,7 +195,7 @@ module internal TextReply =
         String.concat
             "  "
             [
-                id actor.ActorId
+                ActorId.format actor.ActorId
                 principalKind language kind
                 issuer
                 subject
@@ -209,7 +215,7 @@ module internal TextReply =
                  "  "
                  [
                      CaseReference.format item.Reference
-                     number item.Revision
+                     Revision.format item.Revision
                      term language Lifecycle.vocabulary (CaseState.lifecycle item.State)
                      + "  "
                      + status
