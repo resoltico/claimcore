@@ -41,7 +41,7 @@ let private rollback () =
 
         for verdict in
             [
-                Verdict.Refuse Refusal.ResourceUnavailable
+                Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Verdict.Fail ClaimCore.Domain.CoreFault.InternalError
             ] do
             let! result =

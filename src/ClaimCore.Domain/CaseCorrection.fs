@@ -10,7 +10,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | Change.Keep, _ -> Ok current
-        | _, None -> Error Refusal.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | Change.Replace replacement, Some _ -> Ok(Some replacement)
         | Change.Clear, Some _ -> Ok None
 
@@ -19,7 +19,7 @@ module internal CaseCorrections =
 
         match choice, current with
         | Change.Keep, _ -> Ok current
-        | _, None -> Error Refusal.CorrectionRequiresExistingValue
+        | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
         | Change.Replace replacement, Some _ -> Ok(Some replacement.PaymentDate)
         | Change.Clear, Some _ -> Ok None
 
@@ -65,7 +65,7 @@ module internal CaseCorrections =
 
             let! next =
                 PaymentProgress.fromGroups decision payment
-                |> Result.mapError (fun () -> Refusal.DecisionRequired)
+                |> Result.mapError (fun () -> CaseRefusal.DecisionRequired)
 
             return facts, next
         }
@@ -77,16 +77,20 @@ module internal CaseCorrections =
                 | Amendment.Keep -> facts
                 | Amendment.Replace replacement -> replacement
 
-            let! nextDecision = decisionChoice progress correction.Decision
-            let! nextPayment = paymentChoice progress correction.Payment
+            let! nextDecision =
+                decisionChoice progress correction.Decision |> Result.mapError Refusal.Case
+
+            let! nextPayment =
+                paymentChoice progress correction.Payment |> Result.mapError Refusal.Case
+
             do! paidAcknowledgement progress correction
 
             let! nextProgress =
                 PaymentProgress.fromGroups nextDecision nextPayment
-                |> Result.mapError (fun () -> Refusal.DecisionRequired)
+                |> Result.mapError (fun () -> (Refusal.Case CaseRefusal.DecisionRequired))
 
             if nextFacts = facts && nextProgress = progress then
-                return! Error Refusal.CorrectionNoChanges
+                return! Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
             else
                 return nextFacts, nextProgress
         }

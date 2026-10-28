@@ -67,14 +67,14 @@ let private authorization () =
 
     Expect.equal
         (decide request (locked revoked (Some current) (Some entry)))
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Revocation precedes identity disclosure"
 
     let scoped = actor owner (id 1) [] [ current.CaseId, [ Role.CaseHandler ] ]
 
     Expect.equal
         (decide (opening 12 "NEW-CASE") (locked scoped None None))
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Case handling cannot create another resource"
 
     let disabled =
@@ -84,7 +84,7 @@ let private authorization () =
 
     Expect.equal
         (decide request (locked disabled (Some current) (Some entry)))
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Disabled actor cannot replay"
 
 let private reviewAndTime () =
@@ -125,7 +125,7 @@ let private reviewAndTime () =
         (decide
             (opening 13 (CaseReference.format current.Snapshot.Reference))
             (locked worker (Some current) None))
-        (Verdict.Refuse Refusal.CaseAlreadyExists)
+        (Verdict.Refuse(Refusal.Case CaseRefusal.CaseAlreadyExists))
         "An earlier preview cannot authorize opening after another acceptance"
 
     let stale =
@@ -161,7 +161,7 @@ let private integrityAndPrivacy () =
 
     Expect.equal
         (decide different (locked scoped (Some readable) (Some entry)))
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "An inaccessible existing operation does not leak through another readable case"
 
 let private boundsAndFence () =

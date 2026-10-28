@@ -211,7 +211,8 @@ let internal timeout (database: PostgresFixture.Database) =
                     WriteOperation.Work =
                         (fun _ ->
                             Task.FromResult(
-                                Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>
+                                Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+                                : Verdict<unit>
                             ))
                     CancellationToken = token
                 }

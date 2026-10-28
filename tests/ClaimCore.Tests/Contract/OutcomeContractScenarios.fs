@@ -98,7 +98,7 @@ let internal executeOutcomes () =
             [
                 ExecuteResult.Accepted receiptValue, 0
                 ExecuteResult.AlreadyAccepted receiptValue, 0
-                ExecuteResult.Rejected Refusal.ActNotPermitted, 2
+                ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted), 2
                 ExecuteResult.Failed CoreFault.StoreUnavailable, 3
                 ExecuteResult.OutcomeUnknown, 4
             ] do
@@ -183,7 +183,7 @@ let internal previewCodecs () =
         [
             (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected ClaimCore.Domain.Refusal.ActNotPermitted
+            Outcome.Rejected(ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted)
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
@@ -196,9 +196,10 @@ let internal diagnostics () =
     for value, expectedCode in
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
-            ClaimCore.Domain.Refusal.LastOwner, "LAST_OWNER"
-            ClaimCore.Domain.Refusal.ActNotPermitted, "ACT_NOT_PERMITTED"
-            ClaimCore.Domain.Refusal.ResourceUnavailable, "RESOURCE_UNAVAILABLE"
+            (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
+            (ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted), "ACT_NOT_PERMITTED"
+            (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
+            "RESOURCE_UNAVAILABLE"
         ] do
         let result = admitted Api.caseGet.Output (Outcome.Rejected value)
 

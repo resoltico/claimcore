@@ -30,17 +30,17 @@ module internal CaseExecution =
             if Authority.canAct principal actor Scope.Installation request.Act then
                 Ok()
             else
-                Error Refusal.ResourceUnavailable
+                Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             match record with
-            | None -> Error Refusal.ResourceUnavailable
+            | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) request.Act ->
                 Ok()
             | Some value when
                 Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
-                Error Refusal.ActNotPermitted
-            | _ -> Error Refusal.ResourceUnavailable
+                Error(Refusal.Access AccessRefusal.ActNotPermitted)
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private authorizeIdentity (services: ServiceContext) request bytes (view: CaseFacts) =
         let principal = services.Principal

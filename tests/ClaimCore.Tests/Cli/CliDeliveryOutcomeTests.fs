@@ -23,7 +23,7 @@ let tests =
                     [
                         (Resolved.Accepted >> Outcome.Succeeded) CliReplyFixtures.receipt, 0
                         (Outcome.Succeeded Resolved.NotAccepted), 2
-                        Outcome.Rejected Refusal.ResourceUnavailable, 2
+                        Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable), 2
                         Outcome.Failed CoreFault.StoreUnavailable, 3
                     ] do
                     Expect.equal
@@ -53,7 +53,10 @@ let tests =
                     Api.operationExecute.Output.Write
                         {
                             OperationId = CliReplyFixtures.id
-                            Outcome = ExecuteResult.Rejected Refusal.ResourceUnavailable
+                            Outcome =
+                                ExecuteResult.Rejected(
+                                    Refusal.Access AccessRefusal.ResourceUnavailable
+                                )
                         }
 
                 Expect.equal (admittedReply request rejected).ExitCode 2 "Known business refusal")

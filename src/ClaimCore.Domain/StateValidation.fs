@@ -28,7 +28,7 @@ module internal StateValidation =
                     (PaymentProgress.paymentDate value).IsSome
                     && Money.value decision.PayableAmount = 0M
                 then
-                    Error Refusal.ZeroDecisionCannotBePaid
+                    Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid)
                 else
                     Ok())
 

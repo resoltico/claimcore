@@ -108,7 +108,11 @@ let private closedCorrectionTests =
 
                 let result = before |> apply (correct Amendment.Keep Change.Keep Change.Keep)
 
-                Expect.equal result (Error Refusal.CorrectionNoChanges) "No-op is refused"
+                Expect.equal
+                    result
+                    (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+                    "No-op is refused"
+
                 Expect.equal (Case.snapshot before).Revision 3L "Existing case is unchanged")
             testCase
                 "equivalent scalar spelling cannot create a correction-only revision"
@@ -126,7 +130,7 @@ let private closedCorrectionTests =
 
                     Expect.equal
                         result
-                        (Error Refusal.CorrectionNoChanges)
+                        (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
                         "Same accepted facts are no-op")
         ]
 
@@ -143,7 +147,7 @@ let private validationTests =
 
                 Expect.equal
                     (opened () |> apply act)
-                    (Error Refusal.CorrectionRequiresExistingValue)
+                    (Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue))
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =

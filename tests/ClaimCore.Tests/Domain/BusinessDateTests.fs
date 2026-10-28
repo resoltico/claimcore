@@ -210,7 +210,10 @@ let private spellingDoesNotRevise =
 
         let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act
 
-        Expect.equal result (Error Refusal.CorrectionNoChanges) "No spelling-only revision")
+        Expect.equal
+            result
+            (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+            "No spelling-only revision")
 
 let private ordinary =
     testList

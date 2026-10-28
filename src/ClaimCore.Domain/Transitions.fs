@@ -23,60 +23,60 @@ module internal Transitions =
         match claim.Progress with
         | PaymentProgress.Undecided -> Ok(Applicable.Amending claim)
         | PaymentProgress.Decided _
-        | PaymentProgress.Paid _ -> Error Refusal.AmendmentRequiresUndecided
+        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.AmendmentRequiresUndecided)
 
     let private correct claim =
         match claim.Status, claim.Progress with
         | CaseStatus.Closed, _ -> Ok(Applicable.Correcting claim)
         | CaseStatus.Opened, PaymentProgress.Undecided ->
-            Error Refusal.CorrectionRequiresExistingValue
+            Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
         | CaseStatus.Opened, (PaymentProgress.Decided _ | PaymentProgress.Paid _) ->
             Ok(Applicable.Correcting claim)
 
     let private decide claim =
         match claim.Progress with
-        | PaymentProgress.Paid _ -> Error Refusal.DecisionAlreadyPaid
+        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid)
         | PaymentProgress.Undecided
         | PaymentProgress.Decided _ -> Ok(Applicable.Deciding claim)
 
     let private withdraw claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error Refusal.DecisionAlreadyPaid
+        | PaymentProgress.Undecided -> Error(Refusal.Case CaseRefusal.DecisionRequired)
+        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid)
         | PaymentProgress.Decided _ -> Ok(Applicable.Withdrawing claim)
 
     let private pay claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error Refusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error Refusal.PaymentAlreadyRecorded
+        | PaymentProgress.Undecided -> Error(Refusal.Case CaseRefusal.DecisionRequired)
+        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded)
         | PaymentProgress.Decided decision when Money.value decision.PayableAmount = 0M ->
-            Error Refusal.ZeroDecisionCannotBePaid
+            Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid)
         | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision))
 
     let private unpay claim =
         match claim.Progress with
         | PaymentProgress.Paid(decision, _) -> Ok(Applicable.Unpaying(claim, decision))
         | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error Refusal.PaymentNotRecorded
+        | PaymentProgress.Decided _ -> Error(Refusal.Case CaseRefusal.PaymentNotRecorded)
 
     let private whenOpened decide claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error Refusal.CaseClosed
+        | CaseStatus.Closed -> Error(Refusal.Case CaseRefusal.CaseClosed)
         | CaseStatus.Opened -> decide claim
 
     let private close claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error Refusal.AlreadyClosed
+        | CaseStatus.Closed -> Error(Refusal.Case CaseRefusal.AlreadyClosed)
         | CaseStatus.Opened -> Ok(Applicable.Closing claim)
 
     let private reopen claim =
         match claim.Status with
         | CaseStatus.Closed -> Ok(Applicable.Reopening claim)
-        | CaseStatus.Opened -> Error Refusal.AlreadyOpened
+        | CaseStatus.Opened -> Error(Refusal.Case CaseRefusal.AlreadyOpened)
 
     let private active claim =
         function
-        | CaseActKind.Open -> Error Refusal.CaseAlreadyExists
+        | CaseActKind.Open -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
         | CaseActKind.AmendRegistration -> whenOpened amend claim
         | CaseActKind.Correct -> correct claim
         | CaseActKind.Decide -> whenOpened decide claim
@@ -86,20 +86,20 @@ module internal Transitions =
         | CaseActKind.Close -> close claim
         | CaseActKind.Reopen -> reopen claim
         | CaseActKind.Void -> Ok(Applicable.Voiding claim)
-        | CaseActKind.Reinstate -> Error Refusal.NotVoided
+        | CaseActKind.Reinstate -> Error(Refusal.Case CaseRefusal.NotVoided)
         | CaseActKind.Erase -> Ok Applicable.Erasing
 
     let private voided claim =
         function
-        | CaseActKind.Open -> Error Refusal.CaseAlreadyExists
-        | CaseActKind.Void -> Error Refusal.AlreadyVoided
+        | CaseActKind.Open -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
+        | CaseActKind.Void -> Error(Refusal.Case CaseRefusal.AlreadyVoided)
         | CaseActKind.Reinstate -> Ok(Applicable.Reinstating claim)
         | CaseActKind.Erase -> Ok Applicable.Erasing
-        | _ -> Error Refusal.CaseVoided
+        | _ -> Error(Refusal.Case CaseRefusal.CaseVoided)
 
     let applicable state kind =
         match state with
-        | CaseState.Erased -> Error Refusal.CaseErased
+        | CaseState.Erased -> Error(Refusal.Case CaseRefusal.CaseErased)
         | CaseState.Voided claim -> voided claim kind
         | CaseState.Active claim -> active claim kind
 
@@ -176,7 +176,7 @@ module internal Transitions =
         | Applicable.Erasing, CaseAct.Erase ->
             // Erasure consumes no business payload and performs no new scalar admission.
             None, Ok CaseState.Erased
-        | _ -> None, Error Refusal.ActNotPermitted
+        | _ -> None, Error(Refusal.Access AccessRefusal.ActNotPermitted)
 
     let private ordered =
         function
@@ -197,6 +197,7 @@ module internal Transitions =
             | Some before, CaseAct.Correct correction, _ ->
                 let admitted =
                     CaseCorrections.proposed before.Facts before.Progress correction
+                    |> Result.mapError Refusal.Case
                     |> Result.bind (fun (facts, progress) ->
                         StateValidation.admit
                             today

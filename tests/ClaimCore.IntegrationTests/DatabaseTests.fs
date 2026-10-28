@@ -96,7 +96,9 @@ let tests =
 
                         Expect.equal
                             otherResult
-                            (ProvisionOwnerOutcome.Rejected Refusal.ActorAlreadyRegistered)
+                            (ProvisionOwnerOutcome.Rejected(
+                                Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered
+                            ))
                             "No second bootstrap"
 
                         let! changed =

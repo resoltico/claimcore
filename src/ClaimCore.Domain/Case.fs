@@ -136,7 +136,7 @@ module Case =
                     Revision = 1L
                     State = CaseState.Active claim
                 })
-        | _ -> Error Refusal.ResourceUnavailable
+        | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private existing today (request: CaseCommand) (record: CaseRecord) =
         if
@@ -146,8 +146,8 @@ module Case =
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
-            | CaseState.Erased, _ -> Error Refusal.CaseErased
-            | _, CaseAct.Open _ -> Error Refusal.CaseAlreadyExists
+            | CaseState.Erased, _ -> Error(Refusal.Case CaseRefusal.CaseErased)
+            | _, CaseAct.Open _ -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.RevisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->

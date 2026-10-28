@@ -107,7 +107,7 @@ module internal AuthorityExecution =
         if
             not (Authority.can principal view.Actor Capability.ManageAuthority Scope.Installation)
         then
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             OperationIdentity.decide
                 services
@@ -148,7 +148,7 @@ module internal AuthorityExecution =
                 Verdict.Fail CoreFault.StoreIntegrityError
         else
             match view.ExistingOperation with
-            | None -> Verdict.Refuse Refusal.ActorAlreadyRegistered
+            | None -> Verdict.Refuse(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             | Some entry when entry.OperationId <> operationId ->
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry ->

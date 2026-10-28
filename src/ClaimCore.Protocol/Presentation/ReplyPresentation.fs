@@ -10,8 +10,6 @@ type RecommendedAction =
     | NoneRequired
 
 module Refusals =
-    // This exhaustive business policy intentionally requires a decision for every refusal case.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let action =
         function
         | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
@@ -19,28 +17,9 @@ module Refusals =
         | Refusal.OperationResolved
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
-        | Refusal.CaseAlreadyExists
-        | Refusal.CaseErased
-        | Refusal.CaseVoided
-        | Refusal.AlreadyVoided
-        | Refusal.NotVoided
-        | Refusal.CaseClosed
-        | Refusal.AlreadyClosed
-        | Refusal.AlreadyOpened
-        | Refusal.AmendmentRequiresUndecided
-        | Refusal.CorrectionNoChanges
-        | Refusal.CorrectionRequiresExistingValue
-        | Refusal.DecisionRequired
-        | Refusal.PaymentAlreadyRecorded
-        | Refusal.PaymentNotRecorded
-        | Refusal.DecisionAlreadyPaid
-        | Refusal.ZeroDecisionCannotBePaid
-        | Refusal.ResourceUnavailable
-        | Refusal.ActNotPermitted
-        | Refusal.LastOwner
-        | Refusal.ActorAlreadyRegistered
-        | Refusal.ActorUnknown
-        | Refusal.HumanPrincipalRequired -> RecommendedAction.NoneRequired
+        | Refusal.Case _
+        | Refusal.Authority _
+        | Refusal.Access _ -> RecommendedAction.NoneRequired
 
     let actualRevision =
         function

@@ -32,7 +32,7 @@ let private lastOwner () =
 
         Expect.equal
             (executeAuthority installation owner request last)
-            (Verdict.Refuse Refusal.LastOwner)
+            (Verdict.Refuse(Refusal.Authority AuthorityRefusal.LastOwner))
             "The last enabled human owner remains protected"
 
 let private humanOnly () =
@@ -51,7 +51,7 @@ let private humanOnly () =
 
         Expect.equal
             (executeAuthority installation owner request (authorityView worker target None))
-            (Verdict.Refuse Refusal.HumanPrincipalRequired)
+            (Verdict.Refuse(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired))
             "Service principals cannot receive human-only grants"
 
     let view = authorityView AuthorityView.empty AuthorityView.empty None
@@ -68,7 +68,7 @@ let private humanOnly () =
 
     Expect.equal
         (provisionAuthority installation (id 102) service genesis)
-        (Verdict.Refuse Refusal.HumanPrincipalRequired)
+        (Verdict.Refuse(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired))
         "Bootstrap also requires a human"
 
 let private replay () =
@@ -111,7 +111,7 @@ let private replay () =
 
     Expect.equal
         (executeAuthority installation owner request revoked)
-        (Verdict.Refuse Refusal.ResourceUnavailable)
+        (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Current management precedes replay"
 
 let private provision () =

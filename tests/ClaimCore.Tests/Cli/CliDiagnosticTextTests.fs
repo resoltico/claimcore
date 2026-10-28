@@ -162,7 +162,10 @@ let tests =
                     (Some "field.cursor.label")
                     "INVALID_CURSOR")
             testCase "targetless refusal has no invented target" (fun () ->
-                assertOptionalTarget Refusal.ResourceUnavailable None "RESOURCE_UNAVAILABLE")
+                assertOptionalTarget
+                    (Refusal.Access AccessRefusal.ResourceUnavailable)
+                    None
+                    "RESOURCE_UNAVAILABLE")
         ]
 
 [<Tests>]

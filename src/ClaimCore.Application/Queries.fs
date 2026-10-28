@@ -103,7 +103,7 @@ module internal Queries =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
-            | None -> Error Refusal.ResourceUnavailable
+            | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
                 cursor Cursors.decodeCases request.AfterCursor
                 |> Result.map (fun after ->
@@ -190,7 +190,7 @@ module internal Queries =
                 Capability.ReadHistory
 
         if not (CaseExecution.authorize principal actor capability record) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
             |> Result.bind (fun _ ->

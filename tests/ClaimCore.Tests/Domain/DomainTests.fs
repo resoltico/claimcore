@@ -181,7 +181,9 @@ let private identityAndVersionTests =
                     CaseFixtures.decide today (request 1L AuthoredCaseAct.Close) None
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.ResourceUnavailable) "Not found")
+                Expect.isTrue
+                    (result = Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+                    "Not found")
         ]
 
 let private paymentGuardTests =
@@ -194,14 +196,18 @@ let private paymentGuardTests =
                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.DecisionRequired) "Decision required")
+                Expect.isTrue
+                    (result = Error(Refusal.Case CaseRefusal.DecisionRequired))
+                    "Decision required")
             testCase "second full payment rejected" (fun () ->
                 let result =
                     paid ()
                     |> apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-21" })
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.PaymentAlreadyRecorded) "No instalment model")
+                Expect.isTrue
+                    (result = Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded))
+                    "No instalment model")
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
                     opened ()
@@ -212,7 +218,9 @@ let private paymentGuardTests =
                     apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.ZeroDecisionCannotBePaid) "No transfer"
+                Expect.isTrue
+                    (result = Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid))
+                    "No transfer"
 
                 Expect.isFalse
                     (availableActs claim |> List.contains "RECORD_PAYMENT")
@@ -254,7 +262,7 @@ let private decisionEditingTests =
                     paid () |> apply (AuthoredCaseAct.Decide decision) |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error Refusal.DecisionAlreadyPaid)
+                    (result = Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid))
                     "Explicit correction first")
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
@@ -276,7 +284,7 @@ let private decisionEditingTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (amendment = Error Refusal.AmendmentRequiresUndecided)
+                    (amendment = Error(Refusal.Case CaseRefusal.AmendmentRequiresUndecided))
                     "No stale decision"
 
                 let fields =
@@ -319,7 +327,9 @@ let private correctionTests =
                 let result =
                     decided () |> apply AuthoredCaseAct.ClearPayment |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.PaymentNotRecorded) "No payment")
+                Expect.isTrue
+                    (result = Error(Refusal.Case CaseRefusal.PaymentNotRecorded))
+                    "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
                 let claim = decided () |> apply AuthoredCaseAct.Close |> accepted
 
@@ -327,7 +337,9 @@ let private correctionTests =
                     apply (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }) claim
                     |> Result.map Case.snapshot
 
-                Expect.isTrue (result = Error Refusal.CaseClosed) "Explicit reopen")
+                Expect.isTrue
+                    (result = Error(Refusal.Case CaseRefusal.CaseClosed))
+                    "Explicit reopen")
         ]
 
 [<Tests>]

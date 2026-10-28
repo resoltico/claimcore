@@ -17,7 +17,7 @@ module internal Resolution =
 
         match actor.Actor with
         | _ when not (Authority.validActor principal actor) ->
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         | Some owner ->
             match entry with
             | Some entry when entry.OperationId <> operation ->
@@ -28,7 +28,7 @@ module internal Resolution =
                 |> Result.map Verdict.Replay
                 |> Result.defaultWith Verdict.Fail
             | _ -> Verdict.Proceed owner.ActorId
-        | None -> Verdict.Refuse Refusal.ResourceUnavailable
+        | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let run (services: ServiceContext) (request: OperationLookup) token =
         let store = services.Store

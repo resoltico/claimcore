@@ -208,7 +208,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
 
         Expect.equal
             hiddenEqual.Outcome
-            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Unauthorized equivalent content is opaque"
 
         Expect.equal
@@ -242,7 +242,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
 
         Expect.equal
             retry.Outcome
-            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Erased requests remain non-replayable"
 
         let! after = verified database

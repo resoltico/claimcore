@@ -109,6 +109,9 @@ let classes =
 let outcome =
     function
     | Ok(_: CaseRecord) -> "ACCEPTED"
+    | Error(Refusal.Case refusal) -> sprintf "%A" refusal
+    | Error(Refusal.Authority refusal) -> sprintf "%A" refusal
+    | Error(Refusal.Access refusal) -> sprintf "%A" refusal
     | Error refusal -> sprintf "%A" refusal |> fun text -> text.Replace("\n", " ")
 
 let matrix () =

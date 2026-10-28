@@ -152,7 +152,7 @@ let private negativeControls () =
 
     let controls =
         [
-            Some decided, Error Refusal.ResourceUnavailable
+            Some decided, Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             Some paid,
             Ok
                 { paid with

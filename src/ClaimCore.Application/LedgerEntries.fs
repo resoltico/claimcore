@@ -372,7 +372,7 @@ module internal OperationIdentity =
         match existing with
         | None -> Verdict.Proceed()
         | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
-            Verdict.Refuse Refusal.ResourceUnavailable
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
         | Some entry when entry.OperationId <> operationId ->
             Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
@@ -380,7 +380,7 @@ module internal OperationIdentity =
             | Error fault -> Verdict.Fail fault
             | Ok validated ->
                 match LedgerEntries.identityBytes validated with
-                | None -> Verdict.Refuse Refusal.ResourceUnavailable
+                | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
                 | Some accepted when accepted = bytes ->
                     receipt validated
                     |> Result.map Verdict.Replay

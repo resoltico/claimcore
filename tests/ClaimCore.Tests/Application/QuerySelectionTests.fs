@@ -20,12 +20,12 @@ let private authorityAndCursor () =
 
     Expect.equal
         (Queries.selectCases owner page read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Visibility precedes token parsing"
 
     Expect.equal
         (Queries.selectActors owner page read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Authority precedes token parsing"
 
     Expect.equal
@@ -60,12 +60,12 @@ let private authorityAndCursor () =
 
     Expect.equal
         (Queries.selectGrants owner grants caller None)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent target remains private"
 
     Expect.equal
         (Queries.selectGrants owner grants ungranted view)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Grant review needs installation authority"
 
     Expect.isEmpty (Advice.views owner ungranted) "Ungrantable views are absent"
@@ -104,12 +104,12 @@ let private history () =
             }
             reader
             read)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Reader cannot select full history"
 
     Expect.equal
         (Queries.selectHistory owner request reader None)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent case stays private"
 
     Expect.isFalse
@@ -124,7 +124,7 @@ let private resources () =
     let _, _, current, _ = created 461 "QUERY-PRIVATE"
     let revoked = actor owner (id 1) [ Role.Owner ] []
     let read = (locked revoked (Some current) None).Read
-    let expected = Outcome.Rejected Refusal.ResourceUnavailable
+    let expected = Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     Expect.equal
         (Queries.caseResult (DecisionFixtures.services installation calendar owner) read)
@@ -179,7 +179,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             AuthorityView.empty)
-        (Outcome.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Unregistered actor has no context"
 
     let disabled =
@@ -192,7 +192,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             disabled)
-        (Outcome.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Disabled actor has no context"
 
     let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
@@ -208,7 +208,7 @@ let private context () =
 
     Expect.equal
         (Queries.selectActors owner { AfterCursor = None; Limit = 50 } scoped)
-        (Error Refusal.ResourceUnavailable)
+        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue

@@ -84,7 +84,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorAlreadyRegistered
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             }
             {
                 Name = "register missing service"
@@ -104,7 +104,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorAlreadyRegistered
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             }
             {
                 Name = "grant missing actor precedes role restriction"
@@ -114,7 +114,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorUnknown
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorUnknown)
             }
             {
                 Name = "revoke missing actor precedes missing case"
@@ -124,7 +124,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorUnknown
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorUnknown)
             }
             {
                 Name = "enable missing actor"
@@ -134,7 +134,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorUnknown
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorUnknown)
             }
             {
                 Name = "disable missing actor"
@@ -144,7 +144,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorUnknown
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorUnknown)
             }
             {
                 Name = "grant human owner"
@@ -164,7 +164,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.HumanPrincipalRequired
+                Expected = Some(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
             }
             {
                 Name = "revoke service owner role even without a grant"
@@ -174,7 +174,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.HumanPrincipalRequired
+                Expected = Some(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
             }
             {
                 Name = "missing case precedes human-only role"
@@ -184,7 +184,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ResourceUnavailable
+                Expected = Some(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
             {
                 Name = "resolved case still requires human steward"
@@ -194,7 +194,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = Some knownCase
-                Expected = Some Refusal.HumanPrincipalRequired
+                Expected = Some(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
             }
             {
                 Name = "service case handler"
@@ -214,7 +214,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.LastOwner
+                Expected = Some(Refusal.Authority AuthorityRefusal.LastOwner)
             }
             {
                 Name = "second installation owner revoke"
@@ -244,7 +244,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ResourceUnavailable
+                Expected = Some(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
             {
                 Name = "different role revoke does not remove owner"
@@ -264,7 +264,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.LastOwner
+                Expected = Some(Refusal.Authority AuthorityRefusal.LastOwner)
             }
             {
                 Name = "second owner disable"
@@ -304,7 +304,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ResourceUnavailable
+                Expected = Some(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
             {
                 Name = "provision first human owner"
@@ -324,7 +324,7 @@ let private ordering () =
                 EnabledOwners = 0
                 Actors = 0
                 Current = None
-                Expected = Some Refusal.HumanPrincipalRequired
+                Expected = Some(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
             }
             {
                 Name = "provision existing human installation"
@@ -334,7 +334,7 @@ let private ordering () =
                 EnabledOwners = 2
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorAlreadyRegistered
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             }
             {
                 Name = "provision existing service installation identity precedes target rule"
@@ -344,7 +344,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ActorAlreadyRegistered
+                Expected = Some(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
             }
             {
                 Name = "management precedes target existence"
@@ -354,7 +354,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ResourceUnavailable
+                Expected = Some(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
             {
                 Name = "service owner grant conveys no management"
@@ -364,7 +364,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some Refusal.ResourceUnavailable
+                Expected = Some(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
 
         ]

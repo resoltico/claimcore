@@ -10,7 +10,7 @@ module internal AuthorityQueries =
 
     let selectActors principal (request: PageRequest) actor =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
             |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
@@ -75,12 +75,12 @@ module internal AuthorityQueries =
         (target: Actor option)
         =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
-            Error Refusal.ResourceUnavailable
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             match currentActor principal actor, target with
             | Ok _, Some target when target.ActorId = request.ActorId ->
                 cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
-            | _ -> Error Refusal.ResourceUnavailable
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let grants (services: ServiceContext) (request: GrantsRequest) token =
         let store = services.Store

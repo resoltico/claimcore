@@ -53,7 +53,11 @@ let internal ledgerHead fixture =
                         (fun tx ->
                             task {
                                 loaded <- Some tx.Head
-                                return Verdict.Refuse Refusal.ResourceUnavailable
+
+                                return
+                                    Verdict.Refuse(
+                                        Refusal.Access AccessRefusal.ResourceUnavailable
+                                    )
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -61,7 +65,7 @@ let internal ledgerHead fixture =
 
         Expect.equal
             result
-            (Ok(Verdict.Refuse Refusal.ResourceUnavailable))
+            (Ok(Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)))
             "The head probe appends nothing."
 
         return loaded |> Option.get
@@ -74,15 +78,17 @@ let internal authorityReviewRefusals fixture =
 
         for index, act, expected in
             [
-                10, AuthorityAct.Register, Refusal.ActorAlreadyRegistered
-                11, AuthorityAct.Disable, Refusal.LastOwner
+                10,
+                AuthorityAct.Register,
+                (Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
+                11, AuthorityAct.Disable, (Refusal.Authority AuthorityRefusal.LastOwner)
                 12,
                 AuthorityAct.Revoke
                     {
                         AuthoredGrant.Role = Role.Owner
                         Scope = GrantTarget.Installation
                     },
-                Refusal.LastOwner
+                (Refusal.Authority AuthorityRefusal.LastOwner)
             ] do
             let input = authorityRequest (id index) fixture.Owner act
             let! preview, _ = authorityReview fixture fixture.Owner input
@@ -143,7 +149,7 @@ let internal authorityReadIsNotManage fixture =
 
         Expect.equal
             preview.Outcome
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Read authority cannot authorize mutation preview."
 
         let! execution =
@@ -154,7 +160,7 @@ let internal authorityReadIsNotManage fixture =
 
         Expect.equal
             execution.Outcome
-            (ExecuteResult.Rejected Refusal.ResourceUnavailable)
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Preview and execution conceal the same inaccessible operation."
     }
 
@@ -398,7 +404,7 @@ let internal authorityReviewRechecks fixture =
 
         Expect.equal
             execution.Outcome
-            (ExecuteResult.Rejected Refusal.LastOwner)
+            (ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner))
             "Execution decides again against its locked authority state."
 
         let! after = ledgerHead fixture

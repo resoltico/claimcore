@@ -89,7 +89,10 @@ let private waiter (database: PostgresFixture.Database) settings =
             {
                 WriteOperation.Work =
                     (fun _ ->
-                        Task.FromResult(Verdict.Refuse Refusal.ResourceUnavailable: Verdict<unit>))
+                        Task.FromResult(
+                            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+                            : Verdict<unit>
+                        ))
                 CancellationToken = token
             }
         )
@@ -215,7 +218,7 @@ let tests =
 
                         Expect.equal
                             recovered
-                            (Ok(Verdict.Refuse Refusal.ResourceUnavailable))
+                            (Ok(Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)))
                             "Next writer proceeds"
 
                         let! head = Verification.verify database.OwnerSource None token

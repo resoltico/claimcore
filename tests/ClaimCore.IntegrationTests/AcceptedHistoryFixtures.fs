@@ -327,7 +327,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (Outcome.Rejected Refusal.ResourceUnavailable)
+                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original

@@ -246,7 +246,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Current caller authority precedes token acceptance"
     }
 
@@ -272,7 +272,7 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
 
         Expect.equal
             missing
-            (Outcome.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Absent target refuses generically"
 
     }

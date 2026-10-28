@@ -123,7 +123,7 @@ let private mutationReplies () =
         [
             (Previewed.Reviewed >> Outcome.Succeeded) authorityReview
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected Refusal.LastOwner
+            Outcome.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         roundTrip

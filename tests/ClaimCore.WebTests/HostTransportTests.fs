@@ -182,7 +182,7 @@ let private outcomes () =
                 [
                     ExecuteResult.Accepted accepted, "ACCEPTED"
                     ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteResult.Rejected((ClaimCore.Domain.Refusal.CaseVoided)), "REJECTED"
+                    ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseVoided), "REJECTED"
                     ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]

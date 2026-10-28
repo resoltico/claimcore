@@ -26,10 +26,12 @@ let private current revision state =
 let private transitions =
     [
         (CaseState.Active()), AuthoredCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
-        (CaseState.Voided()), AuthoredCaseAct.Void "Recorded in error", Error Refusal.AlreadyVoided
+        (CaseState.Voided()),
+        AuthoredCaseAct.Void "Recorded in error",
+        Error(Refusal.Case CaseRefusal.AlreadyVoided)
         (CaseState.Active()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
-        Error Refusal.NotVoided
+        Error(Refusal.Case CaseRefusal.NotVoided)
         (CaseState.Voided()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())

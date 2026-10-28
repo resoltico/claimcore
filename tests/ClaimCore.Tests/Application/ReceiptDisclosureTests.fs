@@ -126,7 +126,7 @@ let private foreignScope () =
             (CaseFixtures.command request)
             narrowed
     with
-    | Verdict.Refuse Refusal.ResourceUnavailable -> ()
+    | Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable) -> ()
     | _ -> failtest "Missing accepted-operation subject must retain privacy"
 
 let private roles role readable full () =
