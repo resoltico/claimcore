@@ -122,8 +122,9 @@ module Case =
         }
 
     let private transition today act state =
-        Transitions.applicable state (CaseAct.kind act)
-        |> Result.bind (fun evidence -> Transitions.apply today evidence act)
+        Transitions.applicable state act
+        |> Result.mapError Refusal.Case
+        |> Result.bind (Transitions.apply today)
 
     let private create today (command: CaseCommand) =
         match command.Act with
@@ -165,7 +166,7 @@ module Case =
 
     let eligibleActs (record: CaseRecord) =
         CaseActKind.all
-        |> List.filter (Transitions.applicable record.State >> Result.isOk)
+        |> List.filter (CaseAct.probe >> Transitions.applicable record.State >> Result.isOk)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

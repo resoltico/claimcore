@@ -4,114 +4,121 @@ open ClaimCore.Domain.ResultFlow
 
 /// Eligibility carries the accepted sub-state required to perform the selected change.
 [<RequireQualifiedAccess; NoComparison>]
-type internal Applicable =
+type internal Applicable<'r, 'd, 'p, 's> =
     private
-    | Amending of Claim
-    | Correcting of Claim
-    | Deciding of Claim
+    | Amending of Claim * 'r
+    | Correcting of Claim * Correction<'r, 'd, 'p>
+    | Deciding of Claim * 'd
     | Withdrawing of Claim
-    | Paying of Claim * Decision
+    | Paying of Claim * Decision * 'p
     | Unpaying of Claim * Decision
     | Closing of Claim
     | Reopening of Claim
-    | Voiding of Claim
-    | Reinstating of Claim
+    | Voiding of Claim * 's
+    | Reinstating of Claim * 's
     | Erasing
 
 module internal Transitions =
-    let private amend claim =
+    let private amend facts claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Ok(Applicable.Amending claim)
+        | PaymentProgress.Undecided -> Ok(Applicable.Amending(claim, facts))
         | PaymentProgress.Decided _
-        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.AmendmentRequiresUndecided)
+        | PaymentProgress.Paid _ -> Error CaseRefusal.AmendmentRequiresUndecided
 
-    let private correct claim =
+    let private correct correction claim =
         match claim.Status, claim.Progress with
-        | CaseStatus.Closed, _ -> Ok(Applicable.Correcting claim)
+        | CaseStatus.Closed, _ -> Ok(Applicable.Correcting(claim, correction))
         | CaseStatus.Opened, PaymentProgress.Undecided ->
-            Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
+            Error CaseRefusal.CorrectionRequiresExistingValue
         | CaseStatus.Opened, (PaymentProgress.Decided _ | PaymentProgress.Paid _) ->
-            Ok(Applicable.Correcting claim)
+            Ok(Applicable.Correcting(claim, correction))
 
-    let private decide claim =
+    let private decide decision claim =
         match claim.Progress with
-        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid)
+        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
         | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Ok(Applicable.Deciding claim)
+        | PaymentProgress.Decided _ -> Ok(Applicable.Deciding(claim, decision))
 
     let private withdraw claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error(Refusal.Case CaseRefusal.DecisionRequired)
-        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid)
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
         | PaymentProgress.Decided _ -> Ok(Applicable.Withdrawing claim)
 
-    let private pay claim =
+    let private pay payment claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error(Refusal.Case CaseRefusal.DecisionRequired)
-        | PaymentProgress.Paid _ -> Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded)
+        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
+        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
         | PaymentProgress.Decided decision when Money.value decision.PayableAmount = 0M ->
-            Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid)
-        | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision))
+            Error CaseRefusal.ZeroDecisionCannotBePaid
+        | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision, payment))
 
     let private unpay claim =
         match claim.Progress with
         | PaymentProgress.Paid(decision, _) -> Ok(Applicable.Unpaying(claim, decision))
         | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error(Refusal.Case CaseRefusal.PaymentNotRecorded)
+        | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
 
     let private whenOpened decide claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error(Refusal.Case CaseRefusal.CaseClosed)
+        | CaseStatus.Closed -> Error CaseRefusal.CaseClosed
         | CaseStatus.Opened -> decide claim
 
     let private close claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error(Refusal.Case CaseRefusal.AlreadyClosed)
+        | CaseStatus.Closed -> Error CaseRefusal.AlreadyClosed
         | CaseStatus.Opened -> Ok(Applicable.Closing claim)
 
     let private reopen claim =
         match claim.Status with
         | CaseStatus.Closed -> Ok(Applicable.Reopening claim)
-        | CaseStatus.Opened -> Error(Refusal.Case CaseRefusal.AlreadyOpened)
+        | CaseStatus.Opened -> Error CaseRefusal.AlreadyOpened
 
     let private active claim =
         function
-        | CaseActKind.Open -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
-        | CaseActKind.AmendRegistration -> whenOpened amend claim
-        | CaseActKind.Correct -> correct claim
-        | CaseActKind.Decide -> whenOpened decide claim
-        | CaseActKind.WithdrawDecision -> whenOpened withdraw claim
-        | CaseActKind.RecordPayment -> whenOpened pay claim
-        | CaseActKind.ClearPayment -> whenOpened unpay claim
-        | CaseActKind.Close -> close claim
-        | CaseActKind.Reopen -> reopen claim
-        | CaseActKind.Void -> Ok(Applicable.Voiding claim)
-        | CaseActKind.Reinstate -> Error(Refusal.Case CaseRefusal.NotVoided)
-        | CaseActKind.Erase -> Ok Applicable.Erasing
+        | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
+        | CaseAct.AmendRegistration facts -> whenOpened (amend facts) claim
+        | CaseAct.Correct correction -> correct correction claim
+        | CaseAct.Decide decision -> whenOpened (decide decision) claim
+        | CaseAct.WithdrawDecision -> whenOpened withdraw claim
+        | CaseAct.RecordPayment payment -> whenOpened (pay payment) claim
+        | CaseAct.ClearPayment -> whenOpened unpay claim
+        | CaseAct.Close -> close claim
+        | CaseAct.Reopen -> reopen claim
+        | CaseAct.Void reason -> Ok(Applicable.Voiding(claim, reason))
+        | CaseAct.Reinstate _ -> Error CaseRefusal.NotVoided
+        | CaseAct.Erase -> Ok Applicable.Erasing
 
     let private voided claim =
         function
-        | CaseActKind.Open -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
-        | CaseActKind.Void -> Error(Refusal.Case CaseRefusal.AlreadyVoided)
-        | CaseActKind.Reinstate -> Ok(Applicable.Reinstating claim)
-        | CaseActKind.Erase -> Ok Applicable.Erasing
-        | _ -> Error(Refusal.Case CaseRefusal.CaseVoided)
+        | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
+        | CaseAct.Void _ -> Error CaseRefusal.AlreadyVoided
+        | CaseAct.Reinstate reason -> Ok(Applicable.Reinstating(claim, reason))
+        | CaseAct.Erase -> Ok Applicable.Erasing
+        | CaseAct.AmendRegistration _
+        | CaseAct.Correct _
+        | CaseAct.Decide _
+        | CaseAct.WithdrawDecision
+        | CaseAct.RecordPayment _
+        | CaseAct.ClearPayment
+        | CaseAct.Close
+        | CaseAct.Reopen -> Error CaseRefusal.CaseVoided
 
-    let applicable state kind =
+    let applicable state act =
         match state with
-        | CaseState.Erased -> Error(Refusal.Case CaseRefusal.CaseErased)
-        | CaseState.Voided claim -> voided claim kind
-        | CaseState.Active claim -> active claim kind
+        | CaseState.Erased -> Error CaseRefusal.CaseErased
+        | CaseState.Voided claim -> voided claim act
+        | CaseState.Active claim -> active claim act
 
     let private businessChange before after =
         Some before, after |> Result.map CaseState.Active
 
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
-    let private change evidence payload =
-        match evidence, payload with
-        | Applicable.Amending claim, CaseAct.AmendRegistration facts ->
+    let private change evidence =
+        match evidence with
+        | Applicable.Amending(claim, facts) ->
             businessChange claim (Ok { claim with Facts = facts })
-        | Applicable.Correcting claim, CaseAct.Correct correction ->
+        | Applicable.Correcting(claim, correction) ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
                 { claim with
@@ -119,64 +126,63 @@ module internal Transitions =
                     Progress = progress
                 })
             |> businessChange claim
-        | Applicable.Deciding claim, CaseAct.Decide decision ->
+        | Applicable.Deciding(claim, decision) ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Decided decision
                     })
-        | Applicable.Withdrawing claim, CaseAct.WithdrawDecision ->
+        | Applicable.Withdrawing claim ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Undecided
                     })
-        | Applicable.Paying(claim, decision), CaseAct.RecordPayment payment ->
+        | Applicable.Paying(claim, decision, payment) ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Paid(decision, payment.PaymentDate)
                     })
-        | Applicable.Unpaying(claim, decision), CaseAct.ClearPayment ->
+        | Applicable.Unpaying(claim, decision) ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Progress = PaymentProgress.Decided decision
                     })
-        | Applicable.Closing claim, CaseAct.Close ->
+        | Applicable.Closing claim ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Status = CaseStatus.Closed
                     })
-        | Applicable.Reopening claim, CaseAct.Reopen ->
+        | Applicable.Reopening claim ->
             businessChange
                 claim
                 (Ok
                     { claim with
                         Status = CaseStatus.Opened
                     })
-        | Applicable.Voiding claim, CaseAct.Void reason ->
+        | Applicable.Voiding(claim, reason) ->
             Some claim,
             Reason.admit reason
             |> Result.map (fun _ -> CaseState.Voided claim)
             |> Result.mapError (fun violation ->
                 Refusal.invalidInput (InputTarget.Reason, violation))
-        | Applicable.Reinstating claim, CaseAct.Reinstate reason ->
+        | Applicable.Reinstating(claim, reason) ->
             Some claim,
             Reason.admit reason
             |> Result.map (fun _ -> CaseState.Active claim)
             |> Result.mapError (fun violation ->
                 Refusal.invalidInput (InputTarget.Reason, violation))
-        | Applicable.Erasing, CaseAct.Erase ->
+        | Applicable.Erasing ->
             // Erasure consumes no business payload and performs no new scalar admission.
             None, Ok CaseState.Erased
-        | _ -> None, Error(Refusal.Access AccessRefusal.ActNotPermitted)
 
     let private ordered =
         function
@@ -189,30 +195,36 @@ module internal Transitions =
             |> Error
         | result -> result
 
-    let apply today evidence payload =
-        let before, changed = change evidence payload
+    let private admitBusiness today before changed =
+        match before, changed with
+        | Some before, Ok(CaseState.Active after) -> StateValidation.admit today (Some before) after
+        | _ -> Ok()
 
-        let admitted =
-            match before, payload, changed with
-            | Some before, CaseAct.Correct correction, _ ->
-                let admitted =
-                    CaseCorrections.proposed before.Facts before.Progress correction
-                    |> Result.mapError Refusal.Case
-                    |> Result.bind (fun (facts, progress) ->
-                        StateValidation.admit
-                            today
-                            (Some before)
-                            { before with
-                                Facts = facts
-                                Progress = progress
-                            })
+    let apply today evidence =
+        let before, changed = change evidence
 
-                Admission.map2 (fun next () -> next) changed admitted
-            | Some before, act, Ok(CaseState.Active after) when
-                not (CaseActKind.isStewardship (CaseAct.kind act))
-                ->
-                StateValidation.admit today (Some before) after
-                |> Result.map (fun () -> CaseState.Active after)
-            | _ -> changed
+        let admission =
+            match evidence with
+            | Applicable.Correcting(before, correction) ->
+                CaseCorrections.proposed before.Facts before.Progress correction
+                |> Result.mapError Refusal.Case
+                |> Result.bind (fun (facts, progress) ->
+                    StateValidation.admit
+                        today
+                        (Some before)
+                        { before with
+                            Facts = facts
+                            Progress = progress
+                        })
+            | Applicable.Voiding _
+            | Applicable.Reinstating _
+            | Applicable.Erasing -> Ok()
+            | Applicable.Amending _
+            | Applicable.Deciding _
+            | Applicable.Withdrawing _
+            | Applicable.Paying _
+            | Applicable.Unpaying _
+            | Applicable.Closing _
+            | Applicable.Reopening _ -> admitBusiness today before changed
 
-        ordered admitted
+        Admission.map2 (fun next () -> next) changed admission |> ordered
