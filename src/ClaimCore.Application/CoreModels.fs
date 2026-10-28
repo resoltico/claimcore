@@ -36,6 +36,13 @@ module internal Verdict =
 
     let map mapping value = bind (mapping >> Verdict.Proceed) value
 
+    let outcome proceeded replayed =
+        function
+        | Verdict.Proceed value -> Outcome.Succeeded(proceeded value)
+        | Verdict.Replay receipt -> Outcome.Succeeded(replayed receipt)
+        | Verdict.Refuse refusal -> Outcome.Rejected refusal
+        | Verdict.Fail fault -> Outcome.Failed fault
+
 type IBusinessCalendar =
     abstract TimeZoneId: string
     abstract DateAt: instant: DateTimeOffset -> DateOnly

@@ -27,8 +27,7 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
 };
 export const isMutationUncertain = mutationUncertain;
 export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean =>
-  (result.kind === "hostFailure" &&
-    (result.failure.code === "SESSION_REJECTED" || result.failure.code === "SESSION_FORBIDDEN")) ||
+  (result.kind === "hostFailure" && result.failure.code === "SESSION_REJECTED") ||
   (result.kind === "outcome" &&
     result.value.outcome.kind === "REJECTED" &&
     result.value.outcome.data.code === "RESOURCE_UNAVAILABLE");

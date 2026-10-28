@@ -77,14 +77,23 @@ let private disposalSteps (container: PostgreSqlContainer) (sources: NpgsqlDataS
         (fun () -> container.DisposeAsync().AsTask().GetAwaiter().GetResult())
     ]
 
+[<NoEquality; NoComparison>]
+type private AdmittedConnections =
+    {
+        Owner: NpgsqlDataSource
+        Runtime: NpgsqlDataSource
+    }
+
 let private admittedDatabase
     (container: PostgreSqlContainer)
     sources
-    ownerSource
-    runtime
+    (connections: AdmittedConnections)
     installationId
     owner
     =
+    let ownerSource = connections.Owner
+    let runtime = connections.Runtime
+
     let dispose () =
         disposalSteps container sources |> ClaimCore.TestSupport.FixtureDisposal.finish
 
@@ -144,7 +153,16 @@ let internal createFor owner =
             if admitted.InstallationId <> installationId then
                 invalidOp "InstallationCheck changed identity."
 
-            return admittedDatabase container sources ownerSource runtime installationId owner
+            return
+                admittedDatabase
+                    container
+                    sources
+                    {
+                        Owner = ownerSource
+                        Runtime = runtime
+                    }
+                    installationId
+                    owner
         with error ->
             // A broken diagnostic sink must not bypass owned cleanup or replace setup failure.
             try

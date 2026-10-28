@@ -1,7 +1,8 @@
 import type { Notice } from "../protocol/notices";
-import { diagnosticParameters as requirements } from "@contracts/messages";
+import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
 import { exactInteger } from "./format";
 import { renderKey, translate } from "./messages";
+import type { MessageKey } from "./types";
 import type { Preferences } from "./preferences";
 
 const limits: Readonly<
@@ -10,19 +11,29 @@ const limits: Readonly<
     Readonly<Record<string, { minimum?: number; maximum?: number; enum?: ReadonlyArray<string> }>>
   >
 > = requirements;
-const contextFields = new Set(["code", "action", "target", "actualRevision", "phase"]);
+const isDiagnosticCode = (code: string): code is keyof typeof diagnosticMessageKeys =>
+  Object.hasOwn(diagnosticMessageKeys, code);
+const contextFields = new Set([
+  "code",
+  "action",
+  "target",
+  "actualRevision",
+  "phase",
+  "field",
+  "issues",
+]);
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
 ): string => {
-  const keys = ["diagnostic", "fault", "host"]
-    .map((family) => `${family}.${diagnostic.code}`)
-    .filter((key) => Object.hasOwn(limits, key));
-  const messageKey = keys.length === 1 ? keys[0] : undefined;
+  const messageKey = isDiagnosticCode(diagnostic.code)
+    ? diagnosticMessageKeys[diagnostic.code]
+    : undefined;
   const expected = messageKey === undefined ? undefined : limits[messageKey];
-  const supplied: Readonly<Record<string, unknown>> = Object.fromEntries(
-    Object.entries(diagnostic).filter(([key]) => !contextFields.has(key)),
-  );
+  const supplied: Readonly<Record<string, unknown>> =
+    diagnostic.code === "INVALID_INPUT" && "issues" in diagnostic
+      ? { issueCount: diagnostic.issues.length }
+      : Object.fromEntries(Object.entries(diagnostic).filter(([key]) => !contextFields.has(key)));
   const suppliedKeys = Object.keys(supplied).sort().join(",");
   if (
     messageKey === undefined ||
@@ -52,8 +63,13 @@ const diagnosticText = (
 };
 export const renderNotice = (preferences: Preferences, notice: Notice): string => {
   switch (notice.kind) {
-    case "local":
-      return renderKey(preferences, `notice.${notice.reason}`);
+    case "issues":
+      return notice.issues.map((issue) => diagnosticText(preferences, issue)).join(" ");
+    case "local": {
+      const key: MessageKey =
+        notice.reason === "incomplete" ? "ui.incompleteResponse" : `notice.${notice.reason}`;
+      return renderKey(preferences, key);
+    }
     case "diagnostic":
       return diagnosticText(preferences, notice.diagnostic);
     case "invalidHttp":

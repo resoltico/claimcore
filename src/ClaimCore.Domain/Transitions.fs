@@ -166,39 +166,117 @@ module internal Transitions =
             Reason.admit reason
             |> Result.map (fun _ -> CaseState.Voided claim)
             |> Result.mapError (fun violation ->
-                Refusal.InvalidInput(InputTarget.Reason, violation))
+                Refusal.invalidInput (InputTarget.Reason, violation))
         | Applicable.Reinstating claim, CaseAct.Reinstate reason ->
             Some claim,
             Reason.admit reason
             |> Result.map (fun _ -> CaseState.Active claim)
             |> Result.mapError (fun violation ->
-                Refusal.InvalidInput(InputTarget.Reason, violation))
+                Refusal.invalidInput (InputTarget.Reason, violation))
         | Applicable.Erasing, CaseAct.Erase ->
             // Erasure consumes no business payload and performs no new scalar admission.
             None, Ok CaseState.Erased
         | _ -> None, Error Refusal.ActNotPermitted
 
+    let private assertedCorrection today (before: Claim) (correction: ValidCorrection) =
+        let facts =
+            match correction.Registration with
+            | Amendment.Keep -> before.Facts
+            | Amendment.Replace value -> value
+
+        let asserted field previous candidate =
+            match candidate with
+            | None -> Ok()
+            | Some date when previous = Some date -> Ok()
+            | Some date -> Validation.notFuture field today date
+
+        let decision =
+            match correction.Decision with
+            | Change.Replace value -> Some value.PaymentDecisionDate
+            | _ -> None
+
+        let payment =
+            match correction.Payment with
+            | Change.Replace value -> Some value.PaymentDate
+            | _ -> None
+
+        let structural =
+            match CaseCorrections.proposed before.Facts before.Progress correction with
+            | Ok(facts, progress) -> StateValidation.progress facts progress
+            | Error _ -> Ok()
+
+        Admission.collect
+            [
+                structural
+                asserted
+                    (InputTarget.Field BusinessField.IncidentDate)
+                    (Some before.Facts.IncidentDate)
+                    (Some facts.IncidentDate)
+                asserted
+                    (InputTarget.Field BusinessField.IncidentNotificationDate)
+                    (Some before.Facts.IncidentNotificationDate)
+                    (Some facts.IncidentNotificationDate)
+                Validation.assertedText (Some before.Facts) facts
+                asserted
+                    (InputTarget.Field BusinessField.PaymentDecisionDate)
+                    (PaymentProgress.decision before.Progress |> Option.map _.PaymentDecisionDate)
+                    decision
+                asserted
+                    (InputTarget.Field BusinessField.PaymentDate)
+                    (PaymentProgress.paymentDate before.Progress)
+                    payment
+            ]
+
+    let private ordered =
+        function
+        | Error(Refusal.InvalidInput issues) ->
+            let targets =
+                [
+                    yield InputTarget.OperationId
+                    yield InputTarget.Field BusinessField.CaseReference
+                    yield InputTarget.ExpectedRevision
+                    for group in Vocabulary.all RecordGroup.vocabulary do
+                        yield InputTarget.Group group
+                        yield! CaseFields.ofGroup group |> List.map InputTarget.Field
+                    yield InputTarget.Reason
+                ]
+
+            let rank target =
+                targets |> List.tryFindIndex ((=) target) |> Option.defaultValue targets.Length
+
+            InputIssues.toList issues
+            |> List.sortBy (fun issue -> rank issue.Target)
+            |> InputIssues.ofList
+            |> Option.get
+            |> Refusal.InvalidInput
+            |> Error
+        | result -> result
+
     let apply today evidence payload =
         let before, changed = change evidence payload
 
-        changed
-        |> Result.bind (fun next ->
-            match before, payload, next with
-            | Some before, act, CaseState.Active after when
+        let admitted =
+            match before, payload, changed with
+            | Some before, CaseAct.Correct correction, Error(Refusal.InvalidInput _) ->
+                Admission.map2
+                    (fun next () -> next)
+                    changed
+                    (assertedCorrection today before correction)
+            | Some before, act, Ok(CaseState.Active after) when
                 not (CaseActKind.isStewardship (CaseAct.kind act))
                 ->
-                result {
-                    do! StateValidation.progress after.Facts after.Progress
-
-                    do!
+                Admission.collect
+                    [
+                        StateValidation.progress after.Facts after.Progress
                         StateValidation.newlyAssertedDates
                             today
                             before.Facts
                             before.Progress
                             after.Facts
                             after.Progress
+                        Validation.assertedText (Some before.Facts) after.Facts
+                    ]
+                |> Result.map (fun () -> CaseState.Active after)
+            | _ -> changed
 
-                    do! Validation.assertedText (Some before.Facts) after.Facts
-                    return next
-                }
-            | _ -> Ok next)
+        ordered admitted

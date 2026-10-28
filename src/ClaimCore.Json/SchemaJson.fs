@@ -87,6 +87,12 @@ module SchemaJson =
         | Schema.Null -> JsonValue.Object [ "type", text "null" ]
         | Schema.Const token -> JsonValue.Object [ "const", text token ]
         | Schema.OneOf([ single ], None) -> value prefix single
+        | Schema.OneOf(variants, None) when Schema.tryLiteralSet variants |> Option.isSome ->
+            JsonValue.Object
+                [
+                    "enum",
+                    JsonValue.Array(Schema.tryLiteralSet variants |> Option.get |> List.map text)
+                ]
         | Schema.OneOf(variants, tag) ->
             JsonValue.Object(
                 [ "oneOf", JsonValue.Array(variants |> List.map (value prefix)) ]

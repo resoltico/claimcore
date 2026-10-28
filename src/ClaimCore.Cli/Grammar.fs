@@ -8,20 +8,6 @@ open System.Collections.Generic
 open System.Globalization
 open ClaimCore.Json
 
-[<RequireQualifiedAccess>]
-type UsageError =
-    | UnknownCommand of string * string list
-    | UnknownOption of string * string option
-    | MissingOption of string
-    | MissingOperand of string
-    | ExtraOperand of string
-    | InvalidInteger of string * string
-    | InvalidChoice of string * string * string list
-    | NotApplicable of string * string
-    | DuplicateOption of string
-    | MissingValue of string
-    | RequestTooLarge of int
-
 type PreparedVerb =
     {
         Bytes: byte array
@@ -32,10 +18,10 @@ type PreparedVerb =
 
 module Grammar =
     let private flag name =
-        "--" + CommandGrammar.kebab (OperationCatalog.inputKey name)
+        "--" + CommandGrammar.kebab (CommandGrammar.inputName name)
 
     let private operand name =
-        CommandGrammar.kebab (OperationCatalog.inputKey name) |> _.ToUpperInvariant()
+        CommandGrammar.kebab (CommandGrammar.inputName name) |> _.ToUpperInvariant()
 
     let private distance (left: string) (right: string) =
         let costs = Array2D.zeroCreate<int> (left.Length + 1) (right.Length + 1)
@@ -67,7 +53,7 @@ module Grammar =
         function
         | UsageError.UnknownOption(flag, _)
         | UsageError.MissingOption flag
-        | UsageError.InvalidInteger(flag, _)
+        | UsageError.InvalidValue(flag, _)
         | UsageError.InvalidChoice(flag, _, _)
         | UsageError.NotApplicable(flag, _)
         | UsageError.DuplicateOption flag
@@ -79,7 +65,7 @@ module Grammar =
         | UsageError.DuplicateOption _ -> 5
         | UsageError.MissingValue _ -> 4
         | UsageError.InvalidChoice _
-        | UsageError.InvalidInteger _ -> 3
+        | UsageError.InvalidValue _ -> 3
         | UsageError.MissingOption _ -> 0
         | _ -> 2
 
@@ -156,7 +142,7 @@ module Grammar =
             match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
             | true, number when number <= JsonValue.MaximumInteger -> JsonValue.Integer number
             | _ ->
-                problems.Add(UsageError.InvalidInteger(name, value))
+                problems.Add(UsageError.InvalidValue(name, value))
                 JsonValue.Null
         | CatalogAtom.Choice choices ->
             match
@@ -446,7 +432,7 @@ module Grammar =
                     let issue =
                         match input with
                         | Some input when input.Atom = CatalogAtom.Integer ->
-                            UsageError.InvalidInteger(name, raw)
+                            UsageError.InvalidValue(name, raw)
                         | _ -> UsageError.InvalidChoice(name, raw, [])
 
                     Error [ issue ]

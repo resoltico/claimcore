@@ -50,6 +50,5 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Npgsql" />
-    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
   </ItemGroup>
 </Project>

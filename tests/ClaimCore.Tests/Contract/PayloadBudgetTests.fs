@@ -28,8 +28,7 @@ let private fields length : CaseFields =
                     InsurerName = String(char 1, length)
                     ClaimedAmount = "999999999999999999.9999"
                 }
-        Decision = None
-        Payment = None
+        Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
     }
 
 let private snapshot length : CaseSnapshot =
@@ -45,7 +44,11 @@ let private receipt disclosure : OperationReceipt =
         Position =
             {
                 Sequence = maximum
-                EntryHash = String('a', 64)
+                EntryHash =
+                    (String('a', 64)
+                     |> System.Convert.FromHexString
+                     |> EntryHash.ofBytes
+                     |> Option.get)
             }
         RecordedAt = instant
         RecordedBy = id
@@ -62,7 +65,7 @@ let private receipt disclosure : OperationReceipt =
 let private encodedHistory count disclosure =
     Codec.encode
         Api.caseHistory.Output
-        (ReadReply.Succeeded
+        (Outcome.Succeeded
             {
                 Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -112,14 +115,14 @@ let private authorityFixture () =
         PrincipalKey.human (prefix + String('+', 2048 - prefix.Length)) (String(char 1, 512))
         |> Result.defaultWith (string >> failwith)
 
-    let actor: ActorSummary =
+    let actor: Actor =
         {
             ActorId = id
-            Principal = PrincipalKey.describe principal
+            Principal = principal
             Enabled = false
         }
 
-    let grant: AuthorityGrant =
+    let grant: AuthoredGrant =
         {
             Role = Role.PaymentRecorder
             Scope = GrantTarget.CaseReference reference
@@ -133,7 +136,7 @@ let private boundedAuthority () =
     let actors count =
         Codec.encode
             Api.authorityList.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Items = List.replicate count actor
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -142,7 +145,7 @@ let private boundedAuthority () =
     let grants count =
         Codec.encode
             Api.authorityGrants.Output
-            (ReadReply.Succeeded
+            (Outcome.Succeeded
                 {
                     Actor = actor
                     Items = List.replicate count grant

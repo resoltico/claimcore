@@ -50,7 +50,7 @@ module internal Verification =
     let private scan
         connection
         installationId
-        (expected: ExpectedPosition option)
+        (expected: LedgerPosition option)
         (token: CancellationToken)
         =
         task {
@@ -96,11 +96,9 @@ module internal Verification =
                     match rows with
                     | [ row ] ->
                         Some(
-                            {
-                                Sequence = DatabaseSession.value 0 row
-                                EntryHash = DatabaseSession.value 1 row
-                            }
-                            : LedgerHead
+                            StoredEntries.position
+                                (DatabaseSession.value 0 row)
+                                (DatabaseSession.value 1 row)
                         )
                     | _ -> None)
                 |> Result.bind (LedgerVerification.head state)
@@ -118,7 +116,7 @@ module internal Verification =
     let private finish
         connection
         installationId
-        (expected: ExpectedPosition option)
+        (expected: LedgerPosition option)
         (state: LedgerVerification.Scan)
         token
         =
@@ -144,10 +142,14 @@ module internal Verification =
 
     let verify
         (source: NpgsqlDataSource)
-        (expected: ExpectedPosition option)
+        (expected: LedgerPosition option)
         (token: CancellationToken)
         =
-        if expected |> Option.exists (ExpectedPositions.isValid >> not) then
+        if
+            expected
+            |> Option.exists (fun position ->
+                LedgerPosition.create position.Sequence position.EntryHash |> Option.isNone)
+        then
             invalidArg (nameof expected) "Expected position is outside the supported format."
 
         DatabaseSession.read source token (fun connection ->

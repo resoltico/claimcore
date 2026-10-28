@@ -136,7 +136,7 @@ let private authority () =
             request.Act
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
-                    Role = "CASE_HANDLER"
+                    Role = Role.CaseHandler
                     Scope = GrantTarget.CaseReference "Demo-0001"
                 })
             "Independent grant meaning"
@@ -267,7 +267,7 @@ let private malformedIdentity () =
 
         Expect.equal
             (Case.parse admitted |> Result.map ignore)
-            (Error(Refusal.InvalidInput(InputTarget.Field BusinessField.ClaimedAmount, expected)))
+            (Error(Refusal.invalidInput (InputTarget.Field BusinessField.ClaimedAmount, expected)))
             "The original malformed spelling reaches its field-specific diagnostic"
 
 [<Tests>]

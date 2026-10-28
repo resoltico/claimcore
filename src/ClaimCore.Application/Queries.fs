@@ -6,56 +6,10 @@ open ClaimCore.RecordFormat
 
 /// Every read authorizes and decodes its continuation inside one store snapshot.
 module internal Queries =
-    let fault =
-        function
-        | StoreFailure.Internal -> CoreFault.InternalError
-        | StoreFailure.Unavailable -> CoreFault.StoreUnavailable
-        | StoreFailure.SchemaMismatch -> CoreFault.SchemaMismatch
-        | _ -> CoreFault.StoreIntegrityError
+    open QueryResults
 
-    let failure =
-        function
-        | StoreFailure.Cancelled -> ReadReply.Failed CoreFault.StoreUnavailable
-        | value -> ReadReply.Failed(fault value)
-
-    let private unavailable<'Value> : ReadReply<'Value> =
-        ReadReply.Rejected Refusal.ResourceUnavailable
-
-    let private validLimit limit =
-        limit >= 1 && limit <= Paging.MaximumPageSize
-
-    let private invalidLimit () =
-        ReadReply.Rejected(
-            Refusal.InvalidInput(InputTarget.Limit, Violation.PageLimitRange Paging.MaximumPageSize)
-        )
-
-    let private parseReference value =
-        CaseReference.parse value
-        |> Result.mapError (fun violation ->
-            Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation))
-
-    let private currentActor principal actor =
-        if Authority.validActor principal actor then
-            Ok actor
-        else
-            Error Refusal.ResourceUnavailable
-
-    let private readResult result = result |> Result.defaultWith failure
-
-    let private succeeded result =
-        result |> Result.map ReadReply.Succeeded |> Result.defaultWith ReadReply.Failed
-
-    let private collect results =
-        List.foldBack
-            (fun item rest ->
-                Result.bind (fun value -> Result.map (fun rest -> value :: rest) rest) item)
-            results
-            (Ok [])
-
-    let private cursor decode =
-        function
-        | None -> Ok None
-        | Some value -> decode value |> Result.map Some
+    let fault = QueryResults.fault
+    let failure = QueryResults.failure
 
     let caseRecord (services: ServiceContext) actor record = Advice.caseRecord services actor record
 
@@ -67,14 +21,14 @@ module internal Queries =
         else
             match view.Case with
             | Some record -> caseRecord services view.Actor record |> succeeded
-            | None -> ReadReply.Failed CoreFault.StoreIntegrityError
+            | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
     let get (services: ServiceContext) reference token =
         let store = services.Store
 
         task {
             match parseReference reference with
-            | Error refusal -> return ReadReply.Rejected refusal
+            | Error refusal -> return Outcome.Rejected refusal
             | Ok _ ->
                 let! result =
                     store.Read(
@@ -101,7 +55,7 @@ module internal Queries =
         match currentActor principal actor with
         | Error _ -> unavailable
         | Ok _ ->
-            ReadReply.Succeeded
+            Outcome.Succeeded
                 {
                     Runtime =
                         {
@@ -114,7 +68,7 @@ module internal Queries =
                     Capability =
                         Capability.all
                         |> List.filter (fun capability ->
-                            Authority.can principal actor capability ResourceScope.Installation)
+                            Authority.can principal actor capability Scope.Installation)
                 }
 
     let context (services: ServiceContext) token =
@@ -197,13 +151,12 @@ module internal Queries =
                                             )
 
                                         match selectCases principal request actor with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
 
                                             if page.Items.Length > Paging.MaximumPageSize then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
                                                     page.Items
@@ -262,7 +215,7 @@ module internal Queries =
 
         task {
             match parseReference request.CaseReference with
-            | Error refusal -> return ReadReply.Rejected refusal
+            | Error refusal -> return Outcome.Rejected refusal
             | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok _ ->
                 let! result =
@@ -287,12 +240,11 @@ module internal Queries =
                                         let! record = tx.FindCase id
 
                                         match selectHistory principal request actor record with
-                                        | Error refusal -> return ReadReply.Rejected refusal
+                                        | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match record with
                                             | None ->
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             | Some current ->
                                                 let! page =
                                                     tx.HistoryPage(
@@ -342,8 +294,11 @@ module internal Queries =
         task {
             if operation = Guid.Empty then
                 return
-                    ReadReply.Rejected(
-                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+                    Outcome.Rejected(
+                        Refusal.invalidInput (
+                            InputTarget.OperationId,
+                            Violation.OperationIdRequired
+                        )
                     )
             else
                 let! result =
@@ -360,8 +315,7 @@ module internal Queries =
                                             LedgerEntries.canObserve principal actor entry.Subject
                                             ->
                                             if entry.OperationId <> operation then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
                                                     LedgerEntries.validate installation entry
@@ -381,152 +335,7 @@ module internal Queries =
                 return readResult result
         }
 
-    let selectActors principal (request: PageRequest) actor =
-        if
-            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
-        then
-            Error Refusal.ResourceUnavailable
-        else
-            currentActor principal actor
-            |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
-
-    let actors (services: ServiceContext) (request: PageRequest) token =
-        let store = services.Store
-        let principal = services.Principal
-
-        task {
-            if not (validLimit request.Limit) then
-                return invalidLimit ()
-            else
-                let! result =
-                    store.Read(
-                        {
-                            ReadOperation.Work =
-                                (fun tx ->
-                                    task {
-                                        let! actor =
-                                            tx.Authority(
-                                                {
-                                                    AuthorityQuery.Principal = principal
-                                                    CaseId = None
-                                                }
-                                            )
-
-                                        match selectActors principal request actor with
-                                        | Error refusal -> return ReadReply.Rejected refusal
-                                        | Ok after ->
-                                            let! page =
-                                                tx.ActorPage(
-                                                    {
-                                                        ActorPageQuery.AfterActorId = after
-                                                        Limit = request.Limit
-                                                    }
-                                                )
-
-                                            if page.Items.Length > Paging.MaximumPageSize then
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
-                                            else
-                                                return
-                                                    ReadReply.Succeeded
-                                                        {
-                                                            ActorReviewPage.Items =
-                                                                page.Items
-                                                                |> List.map Actor.describe
-                                                            NextCursor =
-                                                                page.Next
-                                                                |> Option.map Cursors.encodeActors
-                                                        }
-                                    })
-                            CancellationToken = token
-                        }
-                    )
-
-                return readResult result
-        }
-
-    let selectGrants
-        principal
-        (request: GrantsRequest)
-        (actor: AuthorityView)
-        (target: Actor option)
-        =
-        if
-            not (Authority.can principal actor Capability.ReadAuthority ResourceScope.Installation)
-        then
-            Error Refusal.ResourceUnavailable
-        else
-            match currentActor principal actor, target with
-            | Ok _, Some target when target.ActorId = request.ActorId ->
-                cursor (Cursors.decodeGrants request.ActorId) request.AfterCursor
-            | _ -> Error Refusal.ResourceUnavailable
-
-    let grants (services: ServiceContext) (request: GrantsRequest) token =
-        let store = services.Store
-        let principal = services.Principal
-
-        task {
-            if not (validLimit request.Limit) then
-                return invalidLimit ()
-            elif request.ActorId = Guid.Empty then
-                return unavailable
-            else
-                let! result =
-                    store.Read(
-                        {
-                            ReadOperation.Work =
-                                (fun tx ->
-                                    task {
-                                        let! actor =
-                                            tx.Authority(
-                                                {
-                                                    AuthorityQuery.Principal = principal
-                                                    CaseId = None
-                                                }
-                                            )
-
-                                        let! target = tx.FindActor request.ActorId
-
-                                        match selectGrants principal request actor target with
-                                        | Error refusal -> return ReadReply.Rejected refusal
-                                        | Ok after ->
-                                            match target with
-                                            | None ->
-                                                return
-                                                    ReadReply.Failed CoreFault.StoreIntegrityError
-                                            | Some target ->
-                                                let! page =
-                                                    tx.GrantPage(
-                                                        {
-                                                            GrantPageQuery.ActorId =
-                                                                request.ActorId
-                                                            AfterGrant = after
-                                                            Limit = request.Limit
-                                                        }
-                                                    )
-
-                                                if page.Items.Length > Paging.MaximumPageSize then
-                                                    return
-                                                        ReadReply.Failed
-                                                            CoreFault.StoreIntegrityError
-                                                else
-                                                    return
-                                                        ReadReply.Succeeded
-                                                            {
-                                                                AuthorityGrantPage.Actor =
-                                                                    Actor.describe target
-                                                                Items = page.Items
-                                                                NextCursor =
-                                                                    page.Next
-                                                                    |> Option.map (
-                                                                        Cursors.encodeGrants
-                                                                            request.ActorId
-                                                                    )
-                                                            }
-                                    })
-                            CancellationToken = token
-                        }
-                    )
-
-                return readResult result
-        }
+    let selectActors = AuthorityQueries.selectActors
+    let actors = AuthorityQueries.actors
+    let selectGrants = AuthorityQueries.selectGrants
+    let grants = AuthorityQueries.grants

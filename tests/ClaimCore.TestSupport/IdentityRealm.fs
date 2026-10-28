@@ -57,7 +57,24 @@ let browserAccounts =
 let private parse source =
     JsonNode.Parse(source: string) |> nonNull
 
-let private client id secret publicClient interactive scoped redirects =
+type private ClientDefinition =
+    {
+        Id: string
+        Secret: string
+        Public: bool
+        Interactive: bool
+        Scoped: bool
+        Redirects: string
+    }
+
+let private client (definition: ClientDefinition) =
+    let id = definition.Id
+    let secret = definition.Secret
+    let publicClient = definition.Public
+    let interactive = definition.Interactive
+    let scoped = definition.Scoped
+    let redirects = definition.Redirects
+
     let node =
         parse """{"protocol":"openid-connect","enabled":true,"directAccessGrantsEnabled":false}"""
 
@@ -84,18 +101,64 @@ let bytes (definition: Definition) (secrets: ClientSecrets) password =
 
     clients.Add(
         client
-            "web"
-            secrets.Web
-            false
-            true
-            true
-            (JsonSerializer.Serialize [| definition.Origin + "/signin-oidc" |])
+            {
+                Id = "web"
+                Secret = secrets.Web
+                Public = false
+                Interactive = true
+                Scoped = true
+                Redirects = JsonSerializer.Serialize [| definition.Origin + "/signin-oidc" |]
+            }
     )
 
-    clients.Add(client "cli" "" true true true """["http://127.0.0.1"]""")
-    clients.Add(client "service" secrets.Service false false true "[]")
-    clients.Add(client "second-service" secrets.Service false false true "[]")
-    clients.Add(client "unscoped" secrets.Unscoped false false false "[]")
+    clients.Add(
+        client
+            {
+                Id = "cli"
+                Secret = ""
+                Public = true
+                Interactive = true
+                Scoped = true
+                Redirects = """["http://127.0.0.1"]"""
+            }
+    )
+
+    clients.Add(
+        client
+            {
+                Id = "service"
+                Secret = secrets.Service
+                Public = false
+                Interactive = false
+                Scoped = true
+                Redirects = "[]"
+            }
+    )
+
+    clients.Add(
+        client
+            {
+                Id = "second-service"
+                Secret = secrets.Service
+                Public = false
+                Interactive = false
+                Scoped = true
+                Redirects = "[]"
+            }
+    )
+
+    clients.Add(
+        client
+            {
+                Id = "unscoped"
+                Secret = secrets.Unscoped
+                Public = false
+                Interactive = false
+                Scoped = false
+                Redirects = "[]"
+            }
+    )
+
     realm["clients"] <- clients
     let users = JsonArray()
 

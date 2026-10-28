@@ -221,8 +221,10 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 actor
                 (id 921)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         acceptedAuthority stewardship

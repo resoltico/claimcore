@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="ActorDescriptions.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
@@ -13,6 +12,8 @@
     <Compile Include="AuthorityExecution.fs" />
     <Compile Include="AuthorityReviews.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="QueryResults.fs" />
+    <Compile Include="AuthorityQueries.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
     <Compile Include="Service.fs" />

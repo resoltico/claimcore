@@ -10,11 +10,11 @@ open ClaimCore.Json
 module RequestCodecs =
     open Codec
 
+    let private tagged name variants =
+        Codec.taggedOn WireMembers.Kind name variants
+
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
-
-    let tokens values =
-        values |> List.map (fun value -> value, value) |> enumeration
 
     let private inputField name get fields =
         Codec.field (BusinessField.key name) get Codec.text fields
@@ -39,7 +39,7 @@ module RequestCodecs =
         |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
         |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
         |> Codec.build
-        |> Codec.named "Registration"
+        |> Codec.named RequestSchemas.Registration
 
     let decision =
         (Codec.record (fun date amount currency ->
@@ -53,73 +53,57 @@ module RequestCodecs =
         |> inputField BusinessField.PayableAmount _.PayableAmount
         |> inputField BusinessField.PayableCurrency _.PayableCurrency
         |> Codec.build
-        |> Codec.named "Decision"
+        |> Codec.named RequestSchemas.Decision
 
     let payment =
         (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
         |> inputField BusinessField.PaymentDate _.PaymentDate
         |> Codec.build
-        |> Codec.named "Payment"
-
-    let private correctionVariants group variants =
-        CorrectionGroupAction.forGroup group
-        |> List.map (fun action ->
-            variants
-            |> List.find (fun make -> make.Tag = CorrectionGroupAction.token action))
+        |> Codec.named RequestSchemas.Payment
 
     let registrationGroup =
         tagged
-            "RegistrationGroup"
-            (correctionVariants
-                RecordGroup.Registration
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id registration)
-                ])
+            RequestSchemas.RegistrationGroup
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Amendment.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Amendment.Replace
+                    (function
+                    | Amendment.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field WireMembers.Values id registration)
+            ]
 
     let decisionGroup =
         tagged
-            "DecisionGroup"
-            (correctionVariants
-                RecordGroup.Decision
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id decision)
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        Change.Clear
-                ])
+            RequestSchemas.DecisionGroup
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Change.Replace
+                    (function
+                    | Change.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field WireMembers.Values id decision)
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+            ]
 
     let paymentGroup =
         tagged
-            "PaymentGroup"
-            (correctionVariants
-                RecordGroup.Payment
-                [
-                    unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
-                    variant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                        Change.Replace
-                        (function
-                        | Change.Replace value -> Some value
-                        | _ -> None)
-                        (record id |> field "values" id payment)
-                    unitVariant
-                        (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                        Change.Clear
-                ])
+            RequestSchemas.PaymentGroup
+            [
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                variant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
+                    Change.Replace
+                    (function
+                    | Change.Replace value -> Some value
+                    | _ -> None)
+                    (record id |> field WireMembers.Values id payment)
+                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+            ]
 
     let correction =
         (record (fun v0 v1 v2 ->
@@ -129,48 +113,36 @@ module RequestCodecs =
                 Payment = v2
             })
         : Fields<AuthoredCorrection, _>)
-        |> field "registration" _.Registration (registrationGroup)
-        |> field "decision" _.Decision (decisionGroup)
-        |> field "payment" _.Payment (paymentGroup)
+        |> field (RecordGroup.token RecordGroup.Registration) _.Registration (registrationGroup)
+        |> field (RecordGroup.token RecordGroup.Decision) _.Decision (decisionGroup)
+        |> field (RecordGroup.token RecordGroup.Payment) _.Payment (paymentGroup)
         |> build
-        |> named "Correction"
+        |> named RequestSchemas.Correction
 
-    let private caseCodec token registration decision payment reason correction =
-        let memberCodec name codec inject project kind =
-            variant
-                (token kind)
-                (inject >> CaseAct.ofPayload kind)
-                (fun act ->
-                    if CaseAct.kind act = kind then
-                        project (CaseAct.payload act)
-                    else
-                        None)
-                (record id |> field name id codec)
-
+    let private caseCodec token (registration, decision, payment) (reason, correction) =
         CaseActKind.all
         |> List.map (fun kind ->
-            match CaseActKind.shape kind with
-            | ActShape.NoValues ->
-                unitVariant (token kind) (CaseAct.ofPayload kind ActPayload.Empty)
-            | ActShape.RegistrationValues ->
-                memberCodec
-                    "values"
-                    registration
-                    ActPayload.Registration
-                    ActPayload.registration
-                    kind
-            | ActShape.DecisionValues ->
-                memberCodec "values" decision ActPayload.Decision ActPayload.decision kind
-            | ActShape.PaymentValues ->
-                memberCodec "values" payment ActPayload.Payment ActPayload.payment kind
-            | ActShape.ReasonText ->
-                memberCodec "reason" reason ActPayload.Reason ActPayload.reason kind
-            | ActShape.CorrectionGroups ->
-                memberCodec "groups" correction ActPayload.Correction ActPayload.correction kind)
-        |> tagged "CaseAct"
+            let tag = token kind
+
+            let memberCodec name codec (inject, project) =
+                variant tag inject project (record id |> field name id codec)
+
+            match CaseAct.slot kind with
+            | CaseActSlot.Bare act -> unitVariant tag act
+            | CaseActSlot.Registration(inject, project) ->
+                memberCodec WireMembers.Values registration (inject, project)
+            | CaseActSlot.Decision(inject, project) ->
+                memberCodec WireMembers.Values decision (inject, project)
+            | CaseActSlot.Payment(inject, project) ->
+                memberCodec WireMembers.Values payment (inject, project)
+            | CaseActSlot.Reason(inject, project) ->
+                memberCodec WireMembers.Reason reason (inject, project)
+            | CaseActSlot.Correction(inject, project) ->
+                memberCodec WireMembers.Groups correction (inject, project))
+        |> tagged RequestSchemas.CaseAct
 
     let caseActWithNames names =
-        caseCodec names registration decision payment text correction
+        caseCodec names (registration, decision, payment) (text, correction)
 
     let caseAct = caseActWithNames CaseActKind.token
 
@@ -183,30 +155,30 @@ module RequestCodecs =
                 Act = v3
             })
         : Fields<UnvalidatedCaseRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
+        |> field WireMembers.OperationId _.OperationId (uuid)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference (text)
-        |> field "expectedRevision" _.ExpectedRevision (revision)
-        |> field "act" _.Act (caseAct)
+        |> field WireMembers.ExpectedRevision _.ExpectedRevision (revision)
+        |> field WireMembers.Act _.Act (caseAct)
 
-    let caseRequest = caseRequestFields |> build |> named "CaseRequest"
+    let caseRequest = caseRequestFields |> build |> named RequestSchemas.CaseRequest
 
     let principal =
         (record (fun v0 v1 v2 ->
             {
-                Principal.Kind = v0
+                PrincipalInput.Kind = v0
                 Issuer = v1
                 Subject = v2
             })
-        : Fields<Principal, _>)
-        |> field "kind" _.Kind (tokens PrincipalKind.all)
-        |> field "issuer" _.Issuer (text)
-        |> field "subject" _.Subject (text)
+        : Fields<PrincipalInput, _>)
+        |> field WireMembers.Kind _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
+        |> field WireMembers.Issuer _.Issuer (text)
+        |> field WireMembers.Subject _.Subject (text)
         |> build
-        |> named "Principal"
+        |> named RequestSchemas.PrincipalInput
 
     let scope =
         tagged
-            "Scope"
+            RequestSchemas.Scope
             [
                 unitVariant (ScopeKind.token ScopeKind.Installation) GrantTarget.Installation
                 variant
@@ -222,34 +194,25 @@ module RequestCodecs =
         let grant =
             record (fun role scope ->
                 {
-                    GrantChange.Role = role
+                    AuthoredGrant.Role = role
                     Scope = scope
                 })
-            |> field "role" _.Role role
-            |> field "scope" _.Scope scope
+            |> field WireMembers.Role _.Role role
+            |> field WireMembers.Scope _.Scope scope
 
         AuthorityKind.all
         |> List.filter ((<>) AuthorityKind.ProvisionOwner)
         |> List.map (fun kind ->
             let token = AuthorityKind.token kind
 
-            match AuthorityAct.shape kind with
-            | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
-            | AuthorityShape.GrantValues ->
-                variant
-                    token
-                    (Some >> AuthorityAct.ofPayload kind)
-                    (fun act ->
-                        if AuthorityAct.kind act = kind then
-                            AuthorityAct.payload act
-                        else
-                            None)
-                    grant)
+            match AuthorityAct.slot kind with
+            | AuthorityActSlot.Bare act -> unitVariant token act
+            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
     let authorityActWith role =
-        authorityVariantsWith role scope |> tagged "AuthorityAct"
+        authorityVariantsWith role scope |> tagged RequestSchemas.AuthorityAct
 
-    let authorityAct = authorityActWith (tokens (Role.all |> List.map Role.token))
+    let authorityAct = authorityActWith (VocabularyCodec.create Role.vocabulary)
 
     let authorityRequestFields =
         (record (fun v0 v1 v2 ->
@@ -259,11 +222,12 @@ module RequestCodecs =
                 Act = v2
             })
         : Fields<AuthorityRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "target" _.Target (principal)
-        |> field "act" _.Act (authorityAct)
+        |> field WireMembers.OperationId _.OperationId (uuid)
+        |> field WireMembers.Target _.Target (principal)
+        |> field WireMembers.Act _.Act (authorityAct)
 
-    let authorityRequest = authorityRequestFields |> build |> named "AuthorityRequest"
+    let authorityRequest =
+        authorityRequestFields |> build |> named RequestSchemas.AuthorityRequest
 
     let private caseVariant =
         variant
@@ -283,7 +247,8 @@ module RequestCodecs =
             | _ -> None)
             authorityRequestFields
 
-    let operationInput = tagged "OperationInput" [ caseVariant; authorityVariant ]
+    let operationInput =
+        tagged RequestSchemas.OperationInput [ caseVariant; authorityVariant ]
 
     [<NoEquality; NoComparison>]
     type private ReadFields<'request, 'ctor> =
@@ -303,13 +268,13 @@ module RequestCodecs =
     let private operationOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.OperationOperand ]
-            Fields = fields.Fields |> field "operationId" get uuid
+            Fields = fields.Fields |> field WireMembers.OperationId get uuid
         }
 
     let private actorOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.ActorOperand ]
-            Fields = fields.Fields |> field "actorId" get uuid
+            Fields = fields.Fields |> field WireMembers.ActorId get uuid
         }
 
     let private detail get (fields: ReadFields<'request, HistoryDetail -> 'rest>) =
@@ -317,7 +282,7 @@ module RequestCodecs =
             Inputs = fields.Inputs @ [ ReadInput.Detail ]
             Fields =
                 fields.Fields
-                |> field "detail" get (VocabularyCodec.create HistoryDetail.vocabulary)
+                |> field WireMembers.Detail get (VocabularyCodec.create HistoryDetail.vocabulary)
         }
 
     let private page cursor limit (fields: ReadFields<'request, string option -> int -> 'rest>) =
@@ -325,12 +290,16 @@ module RequestCodecs =
             Inputs = fields.Inputs @ [ ReadInput.Page ]
             Fields =
                 fields.Fields
-                |> optionalField "cursor" cursor (boundedText 1 512)
-                |> field "limit" limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+                |> optionalField WireMembers.Cursor cursor (boundedText 1 512)
+                |> field
+                    WireMembers.Limit
+                    limit
+                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
 
     let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
-        let declaration = Record.reads |> List.find (fun value -> value.Endpoint = endpoint)
+        let declaration =
+            ReadCatalog.declarations |> List.find (fun value -> value.Endpoint = endpoint)
 
         if declaration.Inputs <> fields.Inputs then
             invalidOp "The read codec must follow its Domain input declaration."
@@ -344,7 +313,7 @@ module RequestCodecs =
             })
         : ReadFields<CaseGetRequest, _>)
         |> caseOperand _.CaseReference
-        |> finishRead "CaseGetRequest" QueryEndpoint.CaseGet
+        |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
     let pageRequest =
         (read (fun cursor limit ->
@@ -354,7 +323,7 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> page _.AfterCursor _.Limit
-        |> finishRead "PageRequest" QueryEndpoint.CaseList
+        |> finishRead RequestSchemas.PageRequest QueryEndpoint.CaseList
 
     let historyRequest =
         (read (fun reference detail cursor limit ->
@@ -368,25 +337,25 @@ module RequestCodecs =
         |> caseOperand _.CaseReference
         |> detail _.Detail
         |> page _.AfterCursor _.Limit
-        |> finishRead "HistoryRequest" QueryEndpoint.CaseHistory
+        |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory
 
     let observeRequest =
         (read (fun operation ->
             {
-                ObserveRequest.OperationId = operation
+                OperationLookup.OperationId = operation
             })
-        : ReadFields<ObserveRequest, _>)
+        : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ObserveRequest" QueryEndpoint.Observe
+        |> finishRead RequestSchemas.ObserveRequest QueryEndpoint.Observe
 
     let resolveRequest =
         (read (fun operation ->
             {
-                ResolveRequest.OperationId = operation
+                OperationLookup.OperationId = operation
             })
-        : ReadFields<ResolveRequest, _>)
+        : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
-        |> finishRead "ResolveRequest" QueryEndpoint.Resolve
+        |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
 
     let grantsRequest =
         (read (fun actor cursor limit ->
@@ -398,6 +367,6 @@ module RequestCodecs =
         : ReadFields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead "GrantsRequest" QueryEndpoint.AuthorityGrants
+        |> finishRead RequestSchemas.GrantsRequest QueryEndpoint.AuthorityGrants
 
-    let empty = read () |> finishRead "Empty" QueryEndpoint.Context
+    let empty = read () |> finishRead RequestSchemas.Empty QueryEndpoint.Context

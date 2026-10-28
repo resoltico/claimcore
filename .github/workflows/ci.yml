@@ -110,7 +110,7 @@ jobs:
           docker run --rm --env CI=true --env NO_COLOR=1 \
             --env CLAIMCORE_EXPECTED_SDK="$expected_sdk" \
             --volume "$PWD:/workspace" --workdir /workspace \
-            mcr.microsoft.com/dotnet/sdk@sha256:496914451b05ac5a24592024362ec370c3a2d3c3fe817f864e4aa55c4c194a56 \
+            mcr.microsoft.com/dotnet/sdk:10.0.403-alpine3.24@sha256:cc02b814237a76c4735fb6eeee87181597b5e56f2ce458a435e527674d91f4d7 \
             sh -euc '
               apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1
               test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"

@@ -33,8 +33,7 @@ let private snapshot (reference: string) claimant : CaseSnapshot =
                                 InsurerName = registration.InsurerName
                                 ClaimedAmount = "1000"
                             }
-                    Decision = None
-                    Payment = None
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
     }
@@ -76,15 +75,17 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let entry =
             LedgerEntries.create
-                fixture.InstallationId
-                tx.Head
-                view.ObservedAt
-                tx.Nonce
-                actor.ActorId
-                request.OperationId
-                scope
-                (CaseFixtures.encode request)
-                (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
+                {
+                    InstallationId = fixture.InstallationId
+                    Head = tx.Head
+                    Instant = view.ObservedAt
+                    Nonce = tx.Nonce
+                    ActorId = actor.ActorId
+                    OperationId = request.OperationId
+                    Subject = scope
+                    Request = CaseFixtures.encode request
+                    Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+                }
 
         let current: StoredCase = { CaseId = id; Snapshot = snapshot }
 
@@ -130,11 +131,11 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! current = (Service.get actor ({ CaseReference = "historical-1" }) (token))
 
         match current with
-        | ReadReply.Succeeded {
-                                  Snapshot = {
-                                                 State = (CaseState.Active(fields) | CaseState.Voided(fields))
-                                             }
-                              } ->
+        | Outcome.Succeeded {
+                                Snapshot = {
+                                               State = (CaseState.Active(fields) | CaseState.Voided(fields))
+                                           }
+                            } ->
             Expect.equal
                 (PartyName.format fields.Registration.ClaimantName)
                 name
@@ -175,7 +176,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         Expect.equal
             changed.Outcome
             (ExecuteResult.Rejected(
-                (Refusal.InvalidInput(
+                (Refusal.invalidInput (
                     (InputTarget.Field BusinessField.ClaimantName),
                     (Violation.TooLong 200)
                 ))
@@ -222,7 +223,7 @@ let private assertRetained name entries =
 
 let private historyPage =
     function
-    | ReadReply.Succeeded page -> page
+    | Outcome.Succeeded page -> page
     | _ -> failtest "Expected accepted history page"
 
 let private remainingHistory (actor: ServiceContext) (query: HistoryRequest) =
@@ -279,7 +280,7 @@ let private assertRemainingHistoryAccess
 
         Expect.equal
             observed
-            (ReadReply.Succeeded(withheldReceipt original))
+            (Outcome.Succeeded(withheldReceipt original))
             "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
     }
 
@@ -307,8 +308,10 @@ let private revokedFullHistory
                 actor
                 (ClaimCore.TestSupport.StoreFixtures.id 200)
                 database.Fixture.Owner
-                Role.CaseHandler
-                GrantTarget.Installation
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
                 false
 
         acceptedAuthority removed
@@ -324,7 +327,7 @@ let private revokedFullHistory
 
             Expect.equal
                 refused
-                (ReadReply.Rejected Refusal.ResourceUnavailable)
+                (Outcome.Rejected Refusal.ResourceUnavailable)
                 "FULL requires current rights before accepting or comparing a cursor"
 
         do! assertRemainingHistoryAccess actor query original
@@ -383,7 +386,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 (token))
 
         match summary with
-        | ReadReply.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
+        | Outcome.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
 
         do! revokedFullHistory database actor query first

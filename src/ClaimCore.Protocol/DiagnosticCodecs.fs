@@ -61,29 +61,89 @@ module DiagnosticCodecs =
     let private actionField action =
         ResponseScalars.fixedField "action" (RecommendedAction.token action)
 
+    let MaximumInputIssues =
+        let definitions = RequestCodecs.operationInput.Definitions
+
+        let width subject family token =
+            let selection = Map.ofList [ RequestSchemas.OperationInput, subject; family, token ]
+
+            Bindings.walk definitions selection RequestCodecs.operationInput.Schema
+            |> List.choose (function
+                | BindingNode.Input input -> Some input
+                | _ -> None)
+            |> List.length
+
+        let caseWidths =
+            CaseActKind.all
+            |> List.map (fun kind ->
+                width
+                    (ActSubject.token ActSubject.Case)
+                    RequestSchemas.CaseAct
+                    (CaseActKind.token kind))
+
+        let authorityWidths =
+            AuthorityKind.all
+            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+            |> List.map (fun kind ->
+                width
+                    (ActSubject.token ActSubject.Authority)
+                    RequestSchemas.AuthorityAct
+                    (AuthorityKind.token kind))
+
+        List.max (caseWidths @ authorityWidths)
+
+    let private issueVariants =
+        let fields =
+            record id
+            |> field
+                "field"
+                id
+                (VocabularyCodec.create InputTarget.vocabulary |> named "InputTarget")
+
+        violationVariants
+        |> List.map (
+            extendVariant
+                (fun target violation ->
+                    {
+                        Target = target
+                        Violation = violation
+                    })
+                (fun issue -> Some(issue.Target, issue.Violation))
+                fields
+        )
+
+    let inputIssue = groupedTaggedOn "code" "InputIssue" issueVariants
+
+    let private inputIssues =
+        list MaximumInputIssues inputIssue
+        |> constrained
+            (Schema.Array(inputIssue.Schema, 1, MaximumInputIssues))
+            (List.isEmpty >> not)
+        |> map (InputIssues.ofList >> Option.get) InputIssues.toList
+
     let private nullaryRefusalFields refusal =
         let fields = record () |> actionField (Refusals.action refusal)
 
-        match Refusals.target refusal with
-        | None -> fields
-        | Some target -> fields |> ResponseScalars.fixedField "target" (InputTarget.token target)
+        match refusal with
+        | Refusal.InvalidCursor ->
+            fields
+            |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.Cursor)
+        | Refusal.OperationResolved ->
+            fields
+            |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.OperationId)
+        | _ -> fields
 
     let private diagnosticVariants =
-        let inputFields =
-            record id
-            |> actionField RecommendedAction.CorrectInput
-            |> field "target" id (enumeration InputTarget.all |> named "InputTarget")
-
-        (violationVariants
-         |> List.map (
-             extendVariant
-                 (fun target violation -> Refusal.InvalidInput(target, violation))
-                 (function
-                 | Refusal.InvalidInput(target, violation) -> Some(target, violation)
-                 | _ -> None)
-                 inputFields
-         ))
-        @ [
+        [
+            variant
+                "INVALID_INPUT"
+                Refusal.InvalidInput
+                (function
+                | Refusal.InvalidInput issues -> Some issues
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.CorrectInput
+                 |> field "issues" id inputIssues)
             variant
                 (codeName (nameof Refusal.RevisionConflict))
                 Refusal.RevisionConflict
@@ -106,6 +166,13 @@ module DiagnosticCodecs =
                 | Schema.Object(properties, _) ->
                     properties
                     |> List.choose (function
+                        | "issues", Schema.Array(_, minimum, maximum) ->
+                            Some
+                                {
+                                    Name = "issueCount"
+                                    Minimum = minimum
+                                    Maximum = maximum
+                                }
                         | name, Schema.Integer(minimum, maximum) when name <> "actualRevision" ->
                             Some
                                 {
@@ -121,12 +188,13 @@ module DiagnosticCodecs =
                 Parameters = parameters
             })
 
+    let violationDefinitions = definitionsOf violationVariants
     let definitions = definitionsOf diagnosticVariants
     let codes = definitions |> List.map _.Id
 
     /// Presentation consumes the codec's fields; no parallel code or parameter table is maintained.
-    let describe refusal =
-        match diagnostic.Write refusal with
+    let private described =
+        function
         | JsonValue.Object(("code", JsonValue.String code) :: fields) ->
             let parameters =
                 fields
@@ -137,6 +205,14 @@ module DiagnosticCodecs =
 
             code, parameters
         | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
+
+    let describeIssue issue = inputIssue.Write issue |> described
+
+    let describe refusal =
+        match refusal with
+        | Refusal.InvalidInput issues ->
+            "INVALID_INPUT", [ "issueCount", InputIssues.toList issues |> List.length ]
+        | refusal -> diagnostic.Write refusal |> described
 
     let code refusal = describe refusal |> fst
     let parameters refusal = describe refusal |> snd

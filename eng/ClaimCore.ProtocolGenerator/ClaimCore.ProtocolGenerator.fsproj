@@ -2,6 +2,7 @@
   <PropertyGroup><OutputType>Exe</OutputType><DefineConstants>$(DefineConstants);CONTRACT_GENERATION</DefineConstants></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
@@ -9,6 +10,7 @@
     <Compile Include="CatalogRendering.fs" />
     <Compile Include="ClientValidation.fs" />
     <Compile Include="TypeScript.fs" />
+    <Compile Include="Terms.fs" />
     <Compile Include="CatalogValidation.fs" />
     <Compile Include="MessageGeneration.fs" />
     <Compile Include="CliDocumentation.fs" />

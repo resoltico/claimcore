@@ -21,7 +21,7 @@ let private column (key: string) =
     |> String
 
 let private expected =
-    Record.fields
+    CaseFields.declarations
     |> List.map (fun row -> column row.Key)
     |> Set.ofList
     |> Set.union (set [ "case_id"; "revision"; "state" ])

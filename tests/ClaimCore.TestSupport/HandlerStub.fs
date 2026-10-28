@@ -16,7 +16,11 @@ let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 let position: LedgerPosition =
     {
         Sequence = 1L
-        EntryHash = String.replicate 64 "a"
+        EntryHash =
+            (String.replicate 64 "a"
+             |> System.Convert.FromHexString
+             |> EntryHash.ofBytes
+             |> Option.get)
     }
 // Independently authored valid OPEN exercises dispatch as well as shape.
 let commandInput =
@@ -154,7 +158,7 @@ type Stub() =
         function
         | (ActorEndpoint.Query QueryEndpoint.Context) ->
             Route.read Api.context (fun _ -> None) (fun _ () _ ->
-                this.Invoke "context" (ReadReply.Succeeded description))
+                this.Invoke "context" (Outcome.Succeeded description))
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             Route.bind
                 Api.operationPreview
@@ -162,17 +166,19 @@ type Stub() =
                 (fun input ->
                     {
                         PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = PreviewResult.Failed CoreFault.StoreUnavailable
+                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
                     })
                 (fun _ input _ ->
                     let outcome =
                         match input with
                         | OperationInput.Case request ->
-                            PreviewResult.AlreadyAccepted(
+                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                                 receipt request.OperationId request.CaseReference
                             )
                         | OperationInput.Authority request ->
-                            PreviewResult.AlreadyAccepted(authorityReceipt request)
+                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
+                                authorityReceipt request
+                            )
 
                     this.Invoke
                         "operation.preview"
@@ -212,13 +218,14 @@ type Stub() =
             Route.bind
                 Api.operationResolve
                 (fun input -> Some input.OperationId)
-                (fun _ -> ResolveReply.Failed CoreFault.StoreUnavailable)
-                (fun _ _ _ -> this.Invoke "operation.resolve" ResolveReply.NotAccepted)
+                (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
+                (fun _ _ _ ->
+                    this.Invoke "operation.resolve" (Outcome.Succeeded Resolved.NotAccepted))
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
             Route.read Api.caseGet (fun _ -> None) (fun _ request _ ->
                 this.Invoke
                     "case.get"
-                    (ReadReply.Succeeded
+                    (Outcome.Succeeded
                         {
                             Snapshot = view request.CaseReference
                             Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
@@ -227,7 +234,7 @@ type Stub() =
             Route.read Api.caseList (fun _ -> None) (fun _ _ _ ->
                 this.Invoke
                     "case.list"
-                    (ReadReply.Succeeded
+                    (Outcome.Succeeded
                         {
                             Items = []
                             NextCursor = None
@@ -235,9 +242,7 @@ type Stub() =
                         }))
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
             Route.read Api.caseHistory (fun _ -> None) (fun _ _ _ ->
-                this.Invoke
-                    "case.history"
-                    (ReadReply.Succeeded { Entries = []; NextCursor = None }))
+                this.Invoke "case.history" (Outcome.Succeeded { Entries = []; NextCursor = None }))
         | (ActorEndpoint.Query QueryEndpoint.Observe) ->
             Route.read
                 Api.operationObserve
@@ -245,7 +250,7 @@ type Stub() =
                 (fun _ request _ ->
                     this.Invoke
                         "operation.observe"
-                        (ReadReply.Succeeded(receipt request.OperationId "WEB-001")))
+                        (Outcome.Succeeded(receipt request.OperationId "WEB-001")))
         | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
             Route.read Api.authorityGrants (fun _ -> None) (fun _ request _ ->
                 let principal =
@@ -254,12 +259,12 @@ type Stub() =
 
                 this.Invoke
                     "authority.grants"
-                    (ReadReply.Succeeded
+                    (Outcome.Succeeded
                         {
                             Actor =
                                 {
                                     ActorId = request.ActorId
-                                    Principal = PrincipalKey.describe principal
+                                    Principal = principal
                                     Enabled = false
                                 }
                             Items = []
@@ -267,6 +272,4 @@ type Stub() =
                         }))
         | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             Route.read Api.authorityList (fun _ -> None) (fun _ _ _ ->
-                this.Invoke
-                    "authority.list"
-                    (ReadReply.Succeeded { Items = []; NextCursor = None }))
+                this.Invoke "authority.list" (Outcome.Succeeded { Items = []; NextCursor = None }))

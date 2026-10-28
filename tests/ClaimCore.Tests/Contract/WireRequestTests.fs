@@ -124,6 +124,25 @@ let private structure () =
         (admit (endpoint "session") "{\"extra\":true}")
         "Empty endpoint inputs are closed objects"
 
+let private registrationClear () =
+    let raw =
+        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","caseReference":"CASE","expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
+
+    match
+        Codec.decode
+            Limits.MaximumRequestBytes
+            RequestCodecs.operationInput
+            (Encoding.UTF8.GetBytes raw)
+    with
+    | Error problem ->
+        Expect.equal
+            problem.Path
+            "$.act.groups.registration.kind"
+            "Registration clearing fails at its wire discriminator"
+
+        Expect.equal problem.Reason "unknown tag" "The rejected input is a shape error"
+    | Ok _ -> failtest "A registration cannot be cleared."
+
 [<Tests>]
 let tests =
     testList
@@ -132,4 +151,5 @@ let tests =
             testCase "independent examples cover every registry endpoint codec" examples
             testCase "business scalar grammar is not shape admission" scalarAdmission
             testCase "technical structures remain closed" structure
+            testCase "registration clearing is rejected by the wire shape" registrationClear
         ]

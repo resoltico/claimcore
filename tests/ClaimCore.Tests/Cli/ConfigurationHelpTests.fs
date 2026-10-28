@@ -8,6 +8,18 @@ open ClaimCore.Protocol
 open ClaimCore.Cli
 open ClaimCore.HostSecurity
 
+[<NoEquality; NoComparison>]
+type private OperatorPhrases =
+    {
+        Language: string
+        Accepted: string
+        Refused: string
+        Syntax: string
+        MissingSlash: string
+        NotRoot: string
+        Trim: string
+    }
+
 let private create service issuer clientId =
     RemoteConfiguration.create service issuer clientId RemoteClientMode.Interactive None
 
@@ -121,34 +133,48 @@ let private helpAlias () =
 
 let private operatorPhrases =
     [
-        "en",
-        "accepted:",
-        "refused:",
-        "accepted syntax:",
-        "(missing explicit /)",
-        "(not a service root)",
-        "Surrounding whitespace is trimmed before the secret is sent."
-        "lv",
-        "pieņemts:",
-        "atteikts:",
-        "pieņemta sintakse:",
-        "(trūkst skaidri norādīta /)",
-        "(nav pakalpojuma sakne)",
-        "Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes."
-        "ar",
-        "مقبول:",
-        "مرفوض:",
-        "صياغة مقبولة:",
-        "(علامة / الصريحة مفقودة)",
-        "(ليس جذر الخدمة)",
-        "تُزال المسافات المحيطة بالسر قبل إرساله."
+        {
+            Language = "en"
+            Accepted = "accepted:"
+            Refused = "refused:"
+            Syntax = "accepted syntax:"
+            MissingSlash = "(missing explicit /)"
+            NotRoot = "(not a service root)"
+            Trim = "Surrounding whitespace is trimmed before the secret is sent."
+        }
+        {
+            Language = "lv"
+            Accepted = "pieņemts:"
+            Refused = "atteikts:"
+            Syntax = "pieņemta sintakse:"
+            MissingSlash = "(trūkst skaidri norādīta /)"
+            NotRoot = "(nav pakalpojuma sakne)"
+            Trim = "Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes."
+        }
+        {
+            Language = "ar"
+            Accepted = "مقبول:"
+            Refused = "مرفوض:"
+            Syntax = "صياغة مقبولة:"
+            MissingSlash = "(علامة / الصريحة مفقودة)"
+            NotRoot = "(ليس جذر الخدمة)"
+            Trim = "تُزال المسافات المحيطة بالسر قبل إرساله."
+        }
+
     ]
 
 let private localizedExplanations () =
     let render language =
         ContractDiscovery.helpTopic language (CliTopic.Help HelpTopic.Configuration)
 
-    for language, accepted, refused, syntax, missingSlash, notRoot, trim in operatorPhrases do
+    for phrases in operatorPhrases do
+        let language = phrases.Language
+        let accepted = phrases.Accepted
+        let refused = phrases.Refused
+        let syntax = phrases.Syntax
+        let missingSlash = phrases.MissingSlash
+        let notRoot = phrases.NotRoot
+        let trim = phrases.Trim
         let content = render language
 
         for expected in

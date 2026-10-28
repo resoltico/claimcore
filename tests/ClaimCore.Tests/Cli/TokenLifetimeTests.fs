@@ -24,9 +24,11 @@ let private response seconds =
 
 let private parsed (clock: TokenClock) =
     AccessTokens.fromPartsAt
-        clock
-        (clock.GetUtcNow())
-        (clock.GetTimestamp())
+        {
+            Clock = clock
+            Utc = clock.GetUtcNow()
+            Timestamp = clock.GetTimestamp()
+        }
         "Bearer"
         "synthetic-token"
         60
@@ -92,8 +94,10 @@ let private delayedDelivery () =
                 clock
                 client
                 endpoint
-                "synthetic-client"
-                secret
+                {
+                    ClientId = "synthetic-client"
+                    SecretFile = secret
+                }
                 CancellationToken.None
             |> _.GetAwaiter().GetResult()
 

@@ -104,14 +104,14 @@ let private lostResolution drop (database: PostgresFixture.Database) =
 
         Expect.equal
             unknown
-            (ResolveReply.Failed CoreFault.StoreUnavailable)
+            (Outcome.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
         let! repeated = (Service.resolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated
-            ResolveReply.NotAccepted
+            (Outcome.Succeeded Resolved.NotAccepted)
             "Resolve repeats safely whether the first fence landed or aborted"
 
         let! delayed =

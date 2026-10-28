@@ -21,7 +21,7 @@ type CatalogAtom =
 
 type CatalogDerivedInput =
     {
-        Name: CatalogInputName
+        Name: InteractionInput
         Atom: CatalogAtom
         Argument: CatalogArgument
         Binding: CatalogInput
@@ -30,6 +30,14 @@ type CatalogDerivedInput =
 module CommandGrammar =
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
+
+    let inputName =
+        function
+        | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
+        | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
+        | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
+        | InteractionInput.Detail -> "full"
+        | input -> InteractionInput.key input
 
     let words (entry: CatalogOperation) =
         match entry.SelectedAct with
@@ -43,21 +51,21 @@ module CommandGrammar =
         let grammar (input: OperationInputDefinition) =
             let argument =
                 match input.Name with
-                | CatalogInputName.Technical TechnicalInput.Scope -> CatalogArgument.Implicit
-                | CatalogInputName.Field BusinessField.CaseReference when
+                | InteractionInput.Scope -> CatalogArgument.Implicit
+                | InteractionInput.Target(InputTarget.Field BusinessField.CaseReference) when
                     input.Binding.Path = [ "caseReference" ]
                     ->
                     CatalogArgument.Operand
-                | CatalogInputName.Technical TechnicalInput.OperationId when
+                | (InteractionInput.Target InputTarget.OperationId) when
                     input.Binding.Source <> InputSource.OperationIdentity
                     ->
                     CatalogArgument.Operand
-                | CatalogInputName.Technical TechnicalInput.ActorId -> CatalogArgument.Operand
+                | InteractionInput.ActorId -> CatalogArgument.Operand
                 | _ -> CatalogArgument.Named
 
             let atom =
                 match input.Name, input.Binding.Kind with
-                | CatalogInputName.Technical TechnicalInput.Full, _ ->
+                | InteractionInput.Detail, _ ->
                     CatalogAtom.Switch(
                         Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Summary,
                         Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Full
@@ -94,13 +102,13 @@ module CommandGrammar =
                 match input.Argument with
                 | CatalogArgument.Implicit -> None
                 | CatalogArgument.Operand ->
-                    Some(kebab (OperationCatalog.inputKey input.Name) |> _.ToUpperInvariant())
+                    Some(kebab (inputName input.Name) |> _.ToUpperInvariant())
                 | CatalogArgument.Named ->
                     let suffix = placeholder input.Atom
 
                     let text =
                         "--"
-                        + kebab (OperationCatalog.inputKey input.Name)
+                        + kebab (inputName input.Name)
                         + (if suffix = "" then "" else " " + suffix)
 
                     Some(

@@ -4,13 +4,6 @@ open ClaimCore.Domain
 open ClaimCore.Protocol
 
 [<RequireQualifiedAccess>]
-type CliUsageIssue =
-    | Invocation
-    | Topic
-    | Options
-    | Selector
-
-[<RequireQualifiedAccess>]
 type CliCommand =
     | Help
     | Version

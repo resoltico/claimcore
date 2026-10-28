@@ -20,10 +20,8 @@ module ContractDiscovery =
 
     let entries () = OperationCatalog.entries
 
-    let inputLabel name =
-        Catalog.document.InputFields
-        |> List.find (fun input -> input.Name = name)
-        |> _.LabelId
+    let inputLabel (input: InteractionInput) =
+        InteractionInput.messageKey input "label"
 
     let helpTopic language topic =
         MessageCatalogs.help language topic
@@ -48,19 +46,7 @@ module ContractDiscovery =
         JsonSerializer.SerializeToUtf8Bytes {| endpoints = endpoints |}
 
     let presentation () =
-        let keys =
-            [
-                yield!
-                    DiagnosticCodecs.definitions
-                    |> List.map (fun definition -> "diagnostic." + definition.Id)
-                yield!
-                    DiagnosticCodecs.faultDefinitions
-                    |> List.map (fun definition -> "fault." + definition.Id)
-                yield!
-                    HostFailureReason.all
-                    |> List.map (fun reason -> "host." + HostFailureReason.code reason)
-            ]
-            |> Set.ofList
+        let keys = DiagnosticCode.all |> Map.values |> Seq.map _.MessageKey |> Set.ofSeq
 
         let templates = MessageCatalogs.templates "en"
 

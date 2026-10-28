@@ -8,6 +8,7 @@ import {
   hasMessage,
   messageShapes as shapes,
   renderKey,
+  renderCatalogKey,
   renderIsolatedValue,
   translate,
 } from "../../src/presentation/messages";
@@ -20,6 +21,9 @@ it("renders every catalog key in every language and preserves typed interpolatio
     for (const [key, shape] of Object.entries(shapes)) {
       const args = Object.fromEntries(Object.keys(shape).map((name) => [name, "CANONICAL-123"]));
       expect(hasMessage(key)).toBe(true);
+      if (!hasMessage(key)) {
+        throw new Error("Generated key was not admitted.");
+      }
       expect(renderKey({ ...defaults, language }, key, args)).not.toBe("");
     }
   }
@@ -46,7 +50,7 @@ it("refuses unknown or malformed message arguments without echoing the supplied 
     expect(renderKey(defaults, "ui.operationAccepted", args)).toBe(fallback);
   }
   for (const key of ["unexpected-secret-key", "constructor", "toString", "__proto__"]) {
-    expect(renderKey(defaults, key)).toBe(fallback);
+    expect(renderCatalogKey(defaults, key)).toBe(fallback);
   }
   const canonical = "<unsafe>\u0308-CANONICAL";
   expect(

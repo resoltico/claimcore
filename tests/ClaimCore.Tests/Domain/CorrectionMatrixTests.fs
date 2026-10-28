@@ -19,8 +19,8 @@ let private states () =
 
 let private registrationChoices =
     [
-        Change.Keep, false
-        Change.Replace
+        Amendment.Keep, false
+        Amendment.Replace
             { registration with
                 ClaimantName = "Synthetic matrix party"
             },
@@ -93,8 +93,7 @@ let private expectedFields (fields: CaseFields) registrationChanged decisionMode
 
     { fields with
         Registration = registration
-        Decision = decision
-        Payment = payment
+        Progress = ClaimCore.TestSupport.CaseFixtures.progress decision payment
     }
 
 let private checkChoice
@@ -149,7 +148,7 @@ let private zeroPaid =
         let act =
             AuthoredCaseAct.Correct
                 {
-                    Registration = Change.Keep
+                    Registration = Amendment.Keep
                     Decision = Change.Replace { decision with PayableAmount = "0" }
                     Payment = Change.Replace { PaymentDate = "2026-08-20" }
                 }

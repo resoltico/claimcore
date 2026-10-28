@@ -157,7 +157,7 @@ let private cancellationPolicy () =
 
         Expect.equal
             preview.Outcome
-            (PreviewResult.Failed CoreFault.StoreUnavailable)
+            (Outcome.Failed CoreFault.StoreUnavailable)
             "Preview observes caller cancellation."
 
         let! execute =

@@ -7,7 +7,7 @@ open ClaimCore.Cli
 
 module CliDocumentation =
     let private argument (input: CatalogDerivedInput) =
-        let name = OperationCatalog.inputKey input.Name |> CommandGrammar.kebab
+        let name = CommandGrammar.inputName input.Name |> CommandGrammar.kebab
 
         match input.Argument with
         | CatalogArgument.Named -> "--" + name
@@ -36,8 +36,8 @@ module CliDocumentation =
         let scalarGuidance (input: CatalogDerivedInput) =
             let guidance =
                 match input.Name with
-                | CatalogInputName.Field field -> ScalarGuidance.forField field
-                | CatalogInputName.Technical TechnicalInput.Reason -> Some ScalarGuidance.forReason
+                | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
+                | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
                 | _ -> None
 
             guidance
@@ -118,7 +118,9 @@ module CliDocumentation =
             ""
             "Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON."
             ""
-            "## Offline commands"
+            "## Discovery and frame commands"
+            ""
+            "Help, version, describe and schema commands work offline. Call and session dispatch frames through the configured HTTPS service and authentication mode."
             ""
             yield!
                 CliCommand.all
@@ -148,9 +150,9 @@ module CliDocumentation =
                     + " | "
                     + exitMeaning code
                     + " | "
-                    + supported (ExitCode.cli code)
+                    + supported (List.contains code CliIdentity.supportedExitCodes)
                     + " | "
-                    + supported (ExitCode.database code)
+                    + supported (List.contains code ClaimCore.Database.Command.supportedExitCodes)
                     + " |")
             ""
             yield! OperationCatalog.all |> List.collect describe

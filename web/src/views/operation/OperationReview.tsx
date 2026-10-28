@@ -6,7 +6,7 @@ import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { OperationReview as Review, CaseReview } from "../../protocol/types";
-import { renderKey } from "../../presentation/messages";
+import { renderCatalogKey } from "../../presentation/messages";
 type ReviewModel = Pick<
   OperationModel,
   "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
@@ -52,7 +52,7 @@ const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }
       {grants.map((grant) => (
         <li key={JSON.stringify(grant)}>
           <dl>
-            <dt>{p.text("input.role.label")}</dt>
+            <dt>{p.text("field.role.label")}</dt>
             <dd>
               <span>{p.term("role", grant.role)}</span>
             </dd>
@@ -109,7 +109,7 @@ const ReviewConfirmation = ({
             model.confirm(event.target.checked);
           }}
         />
-        {renderKey(p, confirmationId)}
+        {renderCatalogKey(p, confirmationId)}
       </label>
       <button
         type="button"

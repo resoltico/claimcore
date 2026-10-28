@@ -5,24 +5,30 @@ Implemented release summaries are recorded here, with changes awaiting release u
 ## [Unreleased]
 
 - Initialize a fresh installation; the SQL baseline checksum changes. Earlier installations are refused untouched; preserve them with matching software. No migration or reader is supplied.
-- Deploy matching service, CLI and browser builds; wire tokens and locale keys change. Regenerate integrations from the checked contracts.
+- Deploy matching service, CLI and browser builds; wire tokens, input diagnostics and locale keys change. Regenerate integrations from the checked contracts.
+- Input refusals carry a nonempty INVALID_INPUT.issues array; each issue has field, code and declared parameters. Replace single-target scalar diagnostics in integrations.
+- Technical-target locale keys use field.*; history detail uses input.detail.*. Replace token.* keys with vocabulary-qualified labels and typed terms; renderer catalogs cannot copy core wording.
+- Database HELP/VERSION replies use kind tags; help exitCodes lists code/number entries. Update consumers of earlier machine replies.
+- Database USAGE_ERROR carries a typed issue and applicable syntax; update machine consumers. Both tools share help/version models and declare supported exits locally.
+- Build with .NET SDK 10.0.403 and deploy .NET/ASP.NET Core 10.0.14; production JWT/configuration transitives and deployment images track the security patch train.
+- Independent input errors accumulate within parsing and admission phases. CLI prints each issue; browser forms show all field errors, focus the first and report the count.
+- Principal kinds and roles stay typed after decoding. Unknown tokens are protocol faults; malformed stored kinds or roles produce integrity faults instead of input refusals.
+- Actor replies use admitted principal identities with canonical HTTPS issuers. Authored identity fields remain separate from trusted output models.
 - Case advice lists act kinds with conditional correction choices; offers omit expectedRevision. Use the snapshot revision, or zero when opening.
-- Catalogs omit synopsis; CLI owns command grammar and usage. Country format metadata publishes unknownCode for consumers.
-- Replace token.* locale keys with vocabulary-qualified labels and typed browser terms. Renderer catalogs cannot duplicate core wording.
-- Update source integrations for Domain-owned service models, JSON-free Domain, ClaimCore.Protocol wire APIs and ServiceContext with named port records.
-- Refusals, violations and faults use flat code-tagged diagnostics with typed parameters; replace limits containers and expect actualRevision only for revision conflicts.
-- Authority admission belongs to Domain; invalid roles return ROLE_FORMAT at role. Service and ports replace Application routes and handlers.
-- CLI authority input uses --principal-kind instead of --kind. Human output uses core labels and scalar guidance; JSON frames keep wire tokens.
-- Command syntax, localized guidance, help topics and both executables’ exits are in the [CLI reference](docs/cli.md).
-- Client reply correlation checks are removed; clients trust schema-admitted HTTPS replies. Keep the exact frame and use resubmission or final resolution for uncertain delivery.
-- Database help/version replies use HELP/VERSION kind tags; help exitCodes is a list of code/number entries. Update scripts consuming these machine replies.
-- Database replies retain diagnostic and fault details; invalid command grammar returns USAGE_ERROR with applicable syntax. Both executables share one exit-code table.
-- Remove REVISION_EXHAUSTED and LEDGER_SEQUENCE_EXHAUSTED; catalog message keys change from label.read.<endpoint>.* to endpoint.<endpoint>.*.
-- Generic act stages and structural declarations drive boundary codecs and catalog inputs. Internal APIs change; durable encodings remain unchanged and format numbers stay 1.
+- Catalog inputs, paths and branch conditions derive from request codecs. Generation refuses missing/orphan annotations and undeclared branch tokens; CLI owns command syntax.
+- Source integrations use Domain outcomes, typed amendments/act slots, shared grants/actors and EntryHash positions; Protocol owns endpoint, catalog and command-line models.
+- Registration amendments expose KEEP/REPLACE; CLEAR remains a wire decode error. PaymentProgress prevents payment without a decision. Retained encodings and format numbers stay unchanged.
+- Other refusals and faults retain flat code-tagged parameters; actualRevision is specific to revision conflicts. One checked diagnostic registry supplies direct message-key lookup.
+- Authority admission belongs to Domain. Service and named ports replace Application routes and handlers; CLI authority input uses --principal-kind.
+- Client reply correlation checks are removed; clients trust schema-admitted HTTPS replies. Retain exact frames for resubmission or final resolution after uncertain delivery.
+- Execute OUTCOME_UNKNOWN remains distinct from known failure with exit 4 and its recovery guidance. Existing success tags and numeric exits remain stable.
+- Remove unproduced REPLAY_EXACT/REAUTHENTICATE actions and SESSION_FORBIDDEN host code; credential failures retain SESSION_REJECTED with HTTP 401.
+- Remove REVISION_EXHAUSTED and LEDGER_SEQUENCE_EXHAUSTED; endpoint locale keys replace label.read.<endpoint>.*. Country metadata publishes unknownCode.
 - RecordFormat owns literal durable names and record-byte limits independently of wire policy; permanent scalar grammars only relax within a format.
-- Browser production builds compile app sources and omit OpenAPI from the bundle. Structural catalog checks and handwritten vectors supply independent expectations.
-- Compiled assembly boundaries cover Domain, durable names, service models, hosts and vocabulary naming. Product internals remain test-only.
-- Generic CLI/wire strictness properties replace feature-specific rejection checks. Browser unit paths mirror source; lint retains its resolved policy while removing root defaults.
+- Compiled controls cover core ownership, unused/duplicate declarations, typed vocabularies/messages and codec/catalog agreement. Each added gate has a prohibited control.
+- F# and TypeScript product/test files have 500-line limits. Functions allow five parameters and F# tuples four items; complexity remains capped at 12 without new suppressions.
+- Remove unused .NET and browser coverage tooling. Locked dependency audits, meaningful properties, handwritten vectors and complete stage discovery remain required.
+- Browser production builds compile app sources and omit OpenAPI from the bundle. Browser unit paths mirror source; lint policy is split by responsibility.
 
 ## [0.12.0] - 2026-10-26
 

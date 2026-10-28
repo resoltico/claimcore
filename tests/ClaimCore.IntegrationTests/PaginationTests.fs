@@ -16,9 +16,9 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private query after limit : PageRequest = { AfterCursor = after; Limit = limit }
 
-let private page (outcome: ReadReply<CaseSummaryPage>) =
+let private page (outcome: Outcome<CaseSummaryPage>) =
     match outcome with
-    | ReadReply.Succeeded value -> value
+    | Outcome.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
 let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
@@ -49,7 +49,15 @@ let private setup (database: PostgresFixture.Database) =
         acceptedAuthority registered
 
         let! granted =
-            grant admin (id 4) principal Role.CaseReader GrantTarget.Installation true
+            grant
+                admin
+                (id 4)
+                principal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority granted
         return admin, principal, core database.Fixture principal
@@ -63,14 +71,22 @@ let private revocation (database: PostgresFixture.Database) =
         Expect.isSome cursor "Real database issues a continuation"
 
         let! revoked =
-            grant admin (id 5) principal Role.CaseReader GrantTarget.Installation false
+            grant
+                admin
+                (id 5)
+                principal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         acceptedAuthority revoked
         let! next = (Service.list actor (query cursor 2) (token))
 
         Expect.equal
             next
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Current grants are rechecked at the real database boundary"
     }
 
@@ -228,7 +244,15 @@ let private snapshot (database: PostgresFixture.Database) =
         let! admin, principal, actor = setup database
 
         let! promoted =
-            grant admin (id 30) principal Role.CaseRegistrar GrantTarget.Installation true
+            grant
+                admin
+                (id 30)
+                principal
+                {
+                    Role = Role.CaseRegistrar
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority promoted
         let! first = (Service.list actor (query None 1) (token))
@@ -250,8 +274,8 @@ let private snapshot (database: PostgresFixture.Database) =
                 principal
 
         let reading =
-            Task.Run<ReadReply<CaseSummaryPage>>(
-                Func<Task<ReadReply<CaseSummaryPage>>>(fun () ->
+            Task.Run<Outcome<CaseSummaryPage>>(
+                Func<Task<Outcome<CaseSummaryPage>>>(fun () ->
                     (Service.list facade (query cursor 50) (token)))
             )
 
@@ -259,7 +283,15 @@ let private snapshot (database: PostgresFixture.Database) =
             do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
 
             let! revoked =
-                grant admin (id 5) principal Role.CaseRegistrar GrantTarget.Installation false
+                grant
+                    admin
+                    (id 5)
+                    principal
+                    {
+                        Role = Role.CaseRegistrar
+                        Scope = GrantTarget.Installation
+                    }
+                    false
 
             acceptedAuthority revoked
 

@@ -4,6 +4,11 @@
     <Compile Include="JsonValue.fs" />
     <Compile Include="StrictJson.fs" />
     <Compile Include="Writers.fs" />
+    <Compile Include="CodecModel.fs" />
+    <Compile Include="CodecScalars.fs" />
+    <Compile Include="CodecRecords.fs" />
+    <Compile Include="CodecUnions.fs" />
+    <Compile Include="CodecSchema.fs" />
     <Compile Include="Codec.fs" />
     <Compile Include="SchemaJson.fs" />
   </ItemGroup>

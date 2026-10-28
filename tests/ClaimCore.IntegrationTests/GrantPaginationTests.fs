@@ -16,7 +16,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private page =
     function
-    | ReadReply.Succeeded p -> p
+    | Outcome.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
 let private seedCases (admin: ServiceContext) target =
@@ -40,8 +40,10 @@ let private seedCases (admin: ServiceContext) target =
                     admin
                     (id (400 + n))
                     target
-                    Role.CaseReader
-                    (GrantTarget.CaseReference reference)
+                    {
+                        Role = Role.CaseReader
+                        Scope = (GrantTarget.CaseReference reference)
+                    }
                     true
 
             acceptedAuthority added
@@ -56,8 +58,10 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 admin
                 (id 604)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         acceptedAuthority steward
@@ -94,16 +98,24 @@ let private prepare (database: PostgresFixture.Database) =
         do! seedCases admin target
 
         for n, role in [ 600, Role.CaseReader; 601, Role.CaseHandler; 602, Role.PaymentRecorder ] do
-            let! added = grant admin (id n) target role GrantTarget.Installation true
+            let! added =
+                grant
+                    admin
+                    (id n)
+                    target
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
             acceptedAuthority added
 
 
         let! actors = (Service.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
 
         let actorId =
-            (page actors).Items
-            |> List.find (fun a -> a.Principal = PrincipalKey.describe target)
-            |> _.ActorId
+            (page actors).Items |> List.find (fun a -> a.Principal = target) |> _.ActorId
 
         let! disabled =
             (Service.execute
@@ -148,7 +160,15 @@ let private changedTarget (admin: ServiceContext) targetId cursor =
             |> Result.defaultWith (string >> failtest)
 
         let! removed =
-            grant admin (id 610) target Role.PaymentRecorder GrantTarget.Installation false
+            grant
+                admin
+                (id 610)
+                target
+                {
+                    Role = Role.PaymentRecorder
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         acceptedAuthority removed
 
@@ -186,7 +206,15 @@ let private callerRevocation (database: PostgresFixture.Database) =
         acceptedAuthority registered
 
         let! authorized =
-            grant admin (id 621) target Role.Auditor GrantTarget.Installation true
+            grant
+                admin
+                (id 621)
+                target
+                {
+                    Role = Role.Auditor
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority authorized
         let actor = core database.Fixture target
@@ -202,7 +230,15 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let cursor = (page first).NextCursor
 
         let! revoked =
-            grant admin (id 622) target Role.Auditor GrantTarget.Installation false
+            grant
+                admin
+                (id 622)
+                target
+                {
+                    Role = Role.Auditor
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         acceptedAuthority revoked
 
@@ -210,7 +246,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
 
         Expect.equal
             denied
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Current caller authority precedes token acceptance"
     }
 
@@ -225,18 +261,18 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
                 })
                 (token))
 
-        Expect.equal crossTarget (ReadReply.Rejected Refusal.InvalidCursor) "Target is bound"
+        Expect.equal crossTarget (Outcome.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint =
             (Service.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
 
-        Expect.equal crossEndpoint (ReadReply.Rejected Refusal.InvalidCursor) "Endpoint is bound"
+        Expect.equal crossEndpoint (Outcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
         let! missing = (Service.grants admin ({ query with ActorId = id 999 }) (token))
 
         Expect.equal
             missing
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Absent target refuses generically"
 
     }
@@ -336,7 +372,15 @@ let private changeTarget (admin: ServiceContext) =
         acceptedAuthority enabled
 
         let! removed =
-            grant admin (id 631) target Role.CaseHandler GrantTarget.Installation false
+            grant
+                admin
+                (id 631)
+                target
+                {
+                    Role = Role.CaseHandler
+                    Scope = GrantTarget.Installation
+                }
+                false
 
         acceptedAuthority removed
     }
@@ -370,8 +414,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
 
         let reading =
-            Task.Run<ReadReply<AuthorityGrantPage>>(
-                Func<Task<ReadReply<AuthorityGrantPage>>>(fun () ->
+            Task.Run<Outcome<AuthorityGrantPage>>(
+                Func<Task<Outcome<AuthorityGrantPage>>>(fun () ->
                     (Service.grants actor (query) (token)))
             )
 

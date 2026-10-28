@@ -15,22 +15,24 @@ type OwnerAcceptance =
     }
 
 [<RequireQualifiedAccess; NoComparison>]
-type Reply =
+type DatabaseSuccess =
     | Initialized of Guid
     | Head of LedgerPosition
     | Accepted of OwnerAcceptance
     | AlreadyAccepted of OwnerAcceptance
-    | Rejected of Refusal
-    | Failed of CoreFault
+    | Verified of LedgerPosition
+
+[<RequireQualifiedAccess; NoComparison>]
+type Reply =
+    | Operation of Outcome<DatabaseSuccess>
     | Cancelled
     | OutcomeUnknown of Guid option
-    | Verified of LedgerPosition
     | Diverged of VerificationDivergence
-    | Usage of UsageIssue * string list
-    | Help of string list * (string * int) list
-    | Version of string * string * string * string
+    | Usage of UsageFrame
+    | Help of HelpFrame
+    | Version of VersionFrame
 
-/// Database replies have a local codec; they do not add a public contract document.
+/// Administrative successes share failures with other public outcomes; uncertainty remains distinct.
 module Replies =
     open Codec
 
@@ -45,60 +47,61 @@ module Replies =
         |> field "targetActorId" _.TargetActorId uuid
         |> field "position" _.Position ResponseCodecs.position
 
-    let private exitEntry =
-        record (fun code number -> code, number)
-        |> field "code" fst text
-        |> field "number" snd (integer 0L 255L |> map int int64)
-        |> build
-
-    let private usageIssue = UsageIssue.vocabulary |> VocabularyCodec.create
-
     let private successVariants =
         [
             variant
                 "INITIALIZED"
-                Reply.Initialized
+                (DatabaseSuccess.Initialized >> Outcome.Succeeded >> Reply.Operation)
                 (function
-                | Reply.Initialized id -> Some id
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) -> Some id
                 | _ -> None)
                 (record id |> field "installationId" id uuid)
             variant
                 "HEAD"
-                Reply.Head
+                (DatabaseSuccess.Head >> Outcome.Succeeded >> Reply.Operation)
                 (function
-                | Reply.Head position -> Some position
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) -> Some position
                 | _ -> None)
                 (record id |> field "position" id ResponseCodecs.position)
             variant
                 "ACCEPTED"
-                Reply.Accepted
+                (DatabaseSuccess.Accepted >> Outcome.Succeeded >> Reply.Operation)
                 (function
-                | Reply.Accepted receipt -> Some receipt
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Accepted value)) -> Some value
                 | _ -> None)
                 acceptance
             variant
                 "ALREADY_ACCEPTED"
-                Reply.AlreadyAccepted
+                (DatabaseSuccess.AlreadyAccepted >> Outcome.Succeeded >> Reply.Operation)
                 (function
-                | Reply.AlreadyAccepted receipt -> Some receipt
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.AlreadyAccepted value)) ->
+                    Some value
                 | _ -> None)
                 acceptance
+            variant
+                "VERIFIED"
+                (DatabaseSuccess.Verified >> Outcome.Succeeded >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified position)) ->
+                    Some position
+                | _ -> None)
+                (record id |> field "position" id ResponseCodecs.position)
         ]
 
-    let private outcomeVariants =
+    let private operationVariants =
         [
             variant
                 "REJECTED"
-                Reply.Rejected
+                (Outcome.Rejected >> Reply.Operation)
                 (function
-                | Reply.Rejected diagnostic -> Some diagnostic
+                | Reply.Operation(Outcome.Rejected diagnostic) -> Some diagnostic
                 | _ -> None)
                 (record id |> field "diagnostic" id DiagnosticCodecs.diagnostic)
             variant
                 "FAILED"
-                Reply.Failed
+                (Outcome.Failed >> Reply.Operation)
                 (function
-                | Reply.Failed fault -> Some fault
+                | Reply.Operation(Outcome.Failed fault) -> Some fault
                 | _ -> None)
                 (record id |> field "fault" id DiagnosticCodecs.fault)
             unitVariant "CANCELLED" Reply.Cancelled
@@ -110,95 +113,73 @@ module Replies =
                 | _ -> None)
                 (record id |> optionalField "operationId" id uuid)
             variant
-                "VERIFIED"
-                Reply.Verified
-                (function
-                | Reply.Verified position -> Some position
-                | _ -> None)
-                (record id |> field "position" id ResponseCodecs.position)
-            variant
                 "DIVERGED"
                 Reply.Diverged
                 (function
                 | Reply.Diverged finding -> Some finding
                 | _ -> None)
-                (record (fun sequence finding ->
+                ((record (fun sequence finding ->
                     {
                         VerificationDivergence.Sequence = sequence
                         Finding = finding
                     })
-                 |> field
-                     "sequence"
-                     (fun (value: VerificationDivergence) -> value.Sequence)
-                     (nullable (integer 0L SafeInteger.Maximum))
-                 |> field
-                     "finding"
-                     (fun (value: VerificationDivergence) -> value.Finding)
-                     (enumeration VerificationFinding.all))
-            variant
-                "USAGE_ERROR"
-                Reply.Usage
-                (function
-                | Reply.Usage(issue, usage) -> Some(issue, usage)
-                | _ -> None)
-                (record (fun issue usage -> issue, usage)
-                 |> field "issue" fst usageIssue
-                 |> field "usage" snd (list Int32.MaxValue text))
+                 : Fields<VerificationDivergence, _>)
+                 |> field "sequence" _.Sequence (nullable (integer 0L SafeInteger.Maximum))
+                 |> field "finding" _.Finding (enumeration VerificationFinding.all))
         ]
 
     let private discoveryVariants =
         [
             variant
+                "USAGE_ERROR"
+                Reply.Usage
+                (function
+                | Reply.Usage usage -> Some usage
+                | _ -> None)
+                UsageFrame.fields
+            variant
                 "HELP"
                 Reply.Help
                 (function
-                | Reply.Help(acts, codes) -> Some(acts, codes)
+                | Reply.Help help -> Some help
                 | _ -> None)
-                (record (fun acts codes -> acts, codes)
-                 |> field "acts" fst (list Int32.MaxValue text)
-                 |> field "exitCodes" snd (list Int32.MaxValue exitEntry))
+                HelpFrame.fields
             variant
                 "VERSION"
                 Reply.Version
                 (function
-                | Reply.Version(product, version, assembly, file) ->
-                    Some(product, version, assembly, file)
+                | Reply.Version version -> Some version
                 | _ -> None)
-                (record (fun product version assembly file -> product, version, assembly, file)
-                 |> field "product" (fun (product, _, _, _) -> product) text
-                 |> field "version" (fun (_, version, _, _) -> version) text
-                 |> field "assemblyVersion" (fun (_, _, assembly, _) -> assembly) text
-                 |> field "fileVersion" (fun (_, _, _, file) -> file) text)
+                VersionFrame.fields
         ]
 
     let codec =
-        tagged "DatabaseReply" (successVariants @ outcomeVariants @ discoveryVariants)
+        tagged "DatabaseReply" (successVariants @ operationVariants @ discoveryVariants)
 
-    // Exhaustive outcome policy, including delivery uncertainty and administrative divergence.
-    // fsharplint:disable-next-line CyclomaticComplexity
-    let private exit =
+    let exitCode =
         function
-        | Reply.Rejected _
+        | Reply.Operation outcome -> OutcomePresentation.exitCode outcome
         | Reply.Usage _ -> ExitCode.Rejected
-        | Reply.Failed _
         | Reply.Cancelled -> ExitCode.Failed
         | Reply.OutcomeUnknown _ -> ExitCode.OutcomeUnknown
         | Reply.Diverged _ -> ExitCode.Diverged
-        | Reply.Initialized _
-        | Reply.Head _
-        | Reply.Accepted _
-        | Reply.AlreadyAccepted _
-        | Reply.Verified _
         | Reply.Help _
         | Reply.Version _ -> ExitCode.Success
 
     let encode reply =
-        Codec.encode codec reply, ExitCode.value (exit reply)
+        Codec.encode codec reply, ExitCode.value (exitCode reply)
 
-    let initialized id = Reply.Initialized id |> encode
-    let head position = Reply.Head position |> encode
-    let rejected diagnostic = Reply.Rejected diagnostic |> encode
-    let failed fault = Reply.Failed fault |> encode
+    let initialized id =
+        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) |> encode
+
+    let head position =
+        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) |> encode
+
+    let rejected refusal =
+        Reply.Operation(Outcome.Rejected refusal) |> encode
+
+    let failed fault =
+        Reply.Operation(Outcome.Failed fault) |> encode
 
     let unknown operation =
         Reply.OutcomeUnknown operation |> encode
@@ -206,19 +187,22 @@ module Replies =
     let private accepted make (receipt: OperationReceipt) =
         match receipt.Subject with
         | ReceiptSubject.Authority target ->
-            make
-                {
-                    OperationId = receipt.OperationId
-                    TargetActorId = target.TargetActorId
-                    Position = receipt.Position
-                }
+            {
+                OperationId = receipt.OperationId
+                TargetActorId = target.TargetActorId
+                Position = receipt.Position
+            }
+            |> make
+            |> Outcome.Succeeded
+            |> Reply.Operation
             |> encode
         | ReceiptSubject.Case _ -> failed CoreFault.InternalError
 
     let authority =
         function
-        | ProvisionOwnerOutcome.Accepted receipt -> accepted Reply.Accepted receipt
-        | ProvisionOwnerOutcome.AlreadyAccepted receipt -> accepted Reply.AlreadyAccepted receipt
+        | ProvisionOwnerOutcome.Accepted receipt -> accepted DatabaseSuccess.Accepted receipt
+        | ProvisionOwnerOutcome.AlreadyAccepted receipt ->
+            accepted DatabaseSuccess.AlreadyAccepted receipt
         | ProvisionOwnerOutcome.Rejected refusal -> rejected refusal
         | ProvisionOwnerOutcome.Failed fault -> failed fault
         | ProvisionOwnerOutcome.Cancelled -> encode Reply.Cancelled
@@ -226,38 +210,33 @@ module Replies =
 
     let verification =
         function
-        | VerificationResult.Verified position -> encode (Reply.Verified position)
+        | VerificationResult.Verified position ->
+            encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified position)))
         | VerificationResult.Diverged finding -> encode (Reply.Diverged finding)
 
-    let usage (error: UsageError) =
-        let usage =
-            error.Command
-            |> Option.map (CommandName.synopsis >> List.singleton)
-            |> Option.defaultWith (fun () -> CommandName.all |> List.map CommandName.synopsis)
-
-        encode (Reply.Usage(error.Issue, usage))
+    let usage error = encode (Reply.Usage error)
 
     let help () =
-        encode (
-            Reply.Help(
-                CommandName.all |> List.map CommandName.token,
-                ExitCode.all
-                |> List.filter ExitCode.database
-                |> List.map (fun code -> ExitCode.token code, ExitCode.value code)
-            )
-        )
+        Reply.Help
+            {
+                Acts = CommandName.all |> List.map CommandName.token
+                ExitCodes =
+                    Command.supportedExitCodes
+                    |> List.map (fun code -> ExitCode.token code, ExitCode.value code)
+            }
+        |> encode
 
     let version () =
         let identity = BuildIdentity.current
 
-        encode (
-            Reply.Version(
-                identity.Product,
-                identity.Version,
-                identity.AssemblyVersion,
-                identity.FileVersion
-            )
-        )
+        Reply.Version
+            {
+                Product = identity.Product
+                Version = identity.Version
+                AssemblyVersion = identity.AssemblyVersion
+                FileVersion = identity.FileVersion
+            }
+        |> encode
 
     let write (output: IO.Stream) (bytes: byte array, code, deliveryUnknown) =
         try

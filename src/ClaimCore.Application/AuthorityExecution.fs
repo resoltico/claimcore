@@ -41,25 +41,24 @@ module internal AuthorityExecution =
             view.Target.Actor
             |> Option.map (fun actor ->
                 {
-                    ActorId = actor.ActorId
-                    Principal = actor.Principal
-                    Enabled = actor.Enabled
+                    Actor =
+                        {
+                            ActorId = actor.ActorId
+                            Principal = actor.Principal
+                            Enabled = actor.Enabled
+                        }
                     Grants =
                         (view.Target.Installation
                          |> List.map (fun role ->
                              {
                                  Role = role
-                                 Scope = GrantScope.Installation
+                                 Scope = Scope.Installation
                              }))
                         @ (view.Target.Cases
                            |> Map.toList
                            |> List.collect (fun (id, roles) ->
                                roles
-                               |> List.map (fun role ->
-                                   {
-                                       Role = role
-                                       Scope = GrantScope.Case id
-                                   })))
+                               |> List.map (fun role -> { Role = role; Scope = Scope.Case id })))
                 })
 
         {
@@ -73,8 +72,8 @@ module internal AuthorityExecution =
     let private projection (command: AuthorityCommand) (view: AuthorityExecutionFacts) change =
         let scope =
             function
-            | GrantScope.Installation -> None
-            | GrantScope.Case id -> Some id
+            | Scope.Installation -> None
+            | Scope.Case id -> Some id
 
         match change, view.Target.Actor with
         | AuthorityChange.Registered, _ ->
@@ -106,22 +105,18 @@ module internal AuthorityExecution =
         let principal = services.Principal
 
         if
-            not (
-                Authority.can
-                    principal
-                    view.Actor
-                    Capability.ManageAuthority
-                    ResourceScope.Installation
-            )
+            not (Authority.can principal view.Actor Capability.ManageAuthority Scope.Installation)
         then
             Verdict.Refuse Refusal.ResourceUnavailable
         else
             OperationIdentity.decide
                 services
                 view.Actor
-                operationId
-                bytes
-                view.ExistingOperation
+                {
+                    OperationId = operationId
+                    Bytes = bytes
+                    Existing = view.ExistingOperation
+                }
                 (LedgerEntries.receipt principal view.Actor None)
 
 
@@ -140,7 +135,7 @@ module internal AuthorityExecution =
         (services: ServiceContext)
         operationId
         bytes
-        (head: LedgerHead)
+        (head: LedgerPosition)
         (view: AuthorityExecutionFacts)
         =
         let installationId = services.InstallationId
@@ -174,6 +169,7 @@ module internal AuthorityExecution =
         (targetId, projection)
         =
         {
+            OperationId = command.OperationId
             ObservedAt = view.ObservedAt
             ActorId =
                 match command.Act with
@@ -201,9 +197,7 @@ module internal AuthorityExecution =
         (services: ServiceContext)
         (command: AuthorityCommand)
         admit
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         let installationId = services.InstallationId
@@ -211,43 +205,30 @@ module internal AuthorityExecution =
         let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
         admit bytes
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
         |> Verdict.bind (fun () -> propose installationId command view)
         |> Verdict.bind (fun proposed ->
             let plan = project command record view proposed
 
-            LedgerEnvelope.accept
-                services
-                view.Actor
-                command.OperationId
-                head
-                nonce
-                plan
-                (AuthorityRecord.encode record))
+            LedgerEnvelope.accept services view.Actor write plan (AuthorityRecord.encode record))
 
     let execute
         (services: ServiceContext)
         (command: AuthorityCommand)
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         executeRecord
             services
             command
             (fun bytes -> authorizeIdentity services command.OperationId bytes view)
-            head
-            fenced
-            nonce
+            write
             view
 
     let provision
         (services: ServiceContext)
         operationId
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
         let target = services.Principal
@@ -258,10 +239,8 @@ module internal AuthorityExecution =
             executeRecord
                 services
                 command
-                (fun bytes -> provisionIdentity services operationId bytes head view)
-                head
-                fenced
-                nonce
+                (fun bytes -> provisionIdentity services operationId bytes write.Head view)
+                write
                 view
 
     let run (services: ServiceContext) (command: AuthorityCommand) token =
@@ -283,7 +262,15 @@ module internal AuthorityExecution =
                             let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
 
                             return!
-                                execute services command tx.Head fenced tx.Nonce view
+                                execute
+                                    services
+                                    command
+                                    {
+                                        Head = tx.Head
+                                        Fenced = fenced
+                                        Nonce = tx.Nonce
+                                    }
+                                    view
                                 |> ExecutionFacts.persist tx tx.ProjectAuthority
                         })
                 CancellationToken = token
@@ -304,7 +291,15 @@ module internal AuthorityExecution =
                             let! fenced = ExecutionFacts.fenced tx view.Actor operationId
 
                             return!
-                                provision services operationId tx.Head fenced tx.Nonce view
+                                provision
+                                    services
+                                    operationId
+                                    {
+                                        Head = tx.Head
+                                        Fenced = fenced
+                                        Nonce = tx.Nonce
+                                    }
+                                    view
                                 |> ExecutionFacts.persist tx tx.ProjectAuthority
                         })
                 CancellationToken = token

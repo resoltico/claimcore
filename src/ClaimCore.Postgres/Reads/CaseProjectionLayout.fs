@@ -17,7 +17,10 @@ module internal CaseProjectionLayout =
         |> String
 
     let private column (field: FieldDeclaration) = name field.Field
-    let private retained, payload = Record.fields |> List.partition _.RetainedOnErasure
+
+    let private retained, payload =
+        CaseFields.declarations |> List.partition _.RetainedOnErasure
+
     let payloadColumns = payload |> List.map column
 
     let private columns =

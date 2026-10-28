@@ -9,7 +9,9 @@ module RequestRecord =
     let private validate request =
         match Case.parse request with
         | Ok command -> Ok command
-        | Error(Refusal.InvalidInput(target, _)) ->
+        | Error(Refusal.InvalidInput issues) ->
+            let target = (InputIssues.head issues).Target
+
             Error
                 {
                     Field = "$." + DurableNames.inputTarget target

@@ -14,12 +14,12 @@ let private frame refusal =
         Delivery = DeliveryState.Delivered
         Result =
             FrameResult.Reply(
-                ClaimCore.Tests.CliReplies.ofValue Api.caseGet (ReadReply.Rejected refusal)
+                ClaimCore.Tests.CliReplies.ofValue Api.caseGet (Outcome.Rejected refusal)
             )
     }
 
 let private assertTarget target identity violation code parameters =
-    let refusal = Refusal.InvalidInput(target, violation)
+    let refusal = Refusal.invalidInput (target, violation)
     let source = Frames.encode (frame refusal)
     let original = Array.copy source
 
@@ -67,14 +67,14 @@ let private dates () =
 let private principalAndPayment () =
     assertTarget
         InputTarget.PrincipalIssuer
-        "input.issuer.label"
+        "field.principal.issuer.label"
         Violation.PrincipalFormat
         "PRINCIPAL_FORMAT"
         []
 
     assertTarget
         InputTarget.PrincipalSubject
-        "input.subject.label"
+        "field.principal.subject.label"
         Violation.TextRequired
         "TEXT_REQUIRED"
         []
@@ -89,23 +89,23 @@ let private principalAndPayment () =
 let private remainingTargets () =
     assertTarget
         InputTarget.OperationId
-        "input.operationId.label"
+        "field.operationId.label"
         Violation.OperationIdRequired
         "OPERATION_ID_REQUIRED"
         []
 
     assertTarget
         InputTarget.ExpectedRevision
-        "input.expectedRevision.label"
+        "field.expectedRevision.label"
         Violation.ExpectedRevisionRange
         "EXPECTED_REVISION_RANGE"
         []
 
-    assertTarget InputTarget.Reason "input.reason.label" Violation.TextRequired "TEXT_REQUIRED" []
+    assertTarget InputTarget.Reason "field.reason.label" Violation.TextRequired "TEXT_REQUIRED" []
 
     assertTarget
         InputTarget.Limit
-        "input.limit.label"
+        "field.limit.label"
         (Violation.PageLimitRange 50)
         "PAGE_LIMIT_RANGE"
         [ "maximumPageSize", "50" ]
@@ -159,8 +159,43 @@ let tests =
             testCase "cursor uses a localized identity" (fun () ->
                 assertOptionalTarget
                     Refusal.InvalidCursor
-                    (Some "input.cursor.label")
+                    (Some "field.cursor.label")
                     "INVALID_CURSOR")
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget Refusal.ResourceUnavailable None "RESOURCE_UNAVAILABLE")
         ]
+
+[<Tests>]
+let accumulated =
+    testCase "CLI prints every input issue in list order in every language" (fun () ->
+        let values =
+            [
+                {
+                    Target = InputTarget.Field BusinessField.ClaimantName
+                    Violation = Violation.TextRequired
+                }
+                {
+                    Target = InputTarget.Field BusinessField.InsurerName
+                    Violation = Violation.TextRequired
+                }
+            ]
+
+        let refusal = values |> InputIssues.ofList |> Option.get |> Refusal.InvalidInput
+
+        for language in LocalizationPolicy.languages do
+            let lines =
+                TextReply.bytes language (frame refusal)
+                |> Encoding.UTF8.GetString
+                |> fun text -> text.Split('\n')
+
+            let message = MessageCatalogs.render language "diagnostic.TEXT_REQUIRED" Map.empty
+
+            for index, field in
+                [ BusinessField.ClaimantName; BusinessField.InsurerName ] |> List.indexed do
+                let label =
+                    MessageCatalogs.render language (FieldPresentation.labelId field) Map.empty
+
+                Expect.equal
+                    lines[index]
+                    (label + ": " + message)
+                    "Each issue has its own localized line")

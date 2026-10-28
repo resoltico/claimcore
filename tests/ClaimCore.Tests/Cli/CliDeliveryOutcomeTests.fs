@@ -21,10 +21,10 @@ let tests =
 
                 for outcome, expected in
                     [
-                        ResolveReply.Accepted CliReplyFixtures.receipt, 0
-                        ResolveReply.NotAccepted, 2
-                        ResolveReply.Rejected Refusal.ResourceUnavailable, 2
-                        ResolveReply.Failed CoreFault.StoreUnavailable, 3
+                        (Resolved.Accepted >> Outcome.Succeeded) CliReplyFixtures.receipt, 0
+                        (Outcome.Succeeded Resolved.NotAccepted), 2
+                        Outcome.Rejected Refusal.ResourceUnavailable, 2
+                        Outcome.Failed CoreFault.StoreUnavailable, 3
                     ] do
                     Expect.equal
                         (admittedReply request (Api.operationResolve.Output.Write outcome))

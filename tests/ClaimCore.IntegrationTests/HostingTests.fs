@@ -71,7 +71,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let cursor =
             match page with
-            | ReadReply.Succeeded page -> page.NextCursor
+            | Outcome.Succeeded page -> page.NextCursor
             | _ -> failtest "Missing page"
 
         Expect.isSome cursor "A page is available"
@@ -81,7 +81,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
                 (Service.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match same with
-        | ReadReply.Succeeded page ->
+        | Outcome.Succeeded page ->
             Expect.equal page.Items.Length 1 "Every facade accepts the plain position"
         | _ -> failtest "Same-runtime continuation refused"
 
@@ -95,7 +95,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
                 (Service.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
 
         match continued with
-        | ReadReply.Succeeded page ->
+        | Outcome.Succeeded page ->
             Expect.equal page.Items.Length 1 "Plain positions survive runtime restart"
         | _ -> failtest "Restart continuation refused"
 

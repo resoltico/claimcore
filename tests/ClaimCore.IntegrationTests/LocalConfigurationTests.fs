@@ -65,7 +65,7 @@ let private admittedOwner directory =
         let operationId, principal = Inputs.decodeOwner bytes
         Expect.isTrue (operationId <> Guid.Empty) "Generated operation identity is nonzero"
         Expect.isTrue (PrincipalKey.isHuman principal) "Generated owner is a human principal"
-        let identity = PrincipalKey.describe principal
+        let identity = PrincipalKey.toInput principal
 
         Expect.equal
             identity.Issuer

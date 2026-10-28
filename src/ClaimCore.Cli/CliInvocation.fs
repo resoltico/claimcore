@@ -39,7 +39,7 @@ module CliInvocations =
                 ->
                 collect operands format (Some value) tail
             | value :: _ when value.StartsWith("-", System.StringComparison.Ordinal) ->
-                Error CliUsageIssue.Options
+                Error(UsageError.NotApplicable("options", "command"))
             | value :: tail -> collect (value :: operands) format language tail
 
         collect [] None None arguments
@@ -48,7 +48,7 @@ module CliInvocations =
         CliTopic.parse topic
         |> Option.map (fun topic -> CliInvocation.Help(topic, language))
         |> Option.map Ok
-        |> Option.defaultValue (Error CliUsageIssue.Topic)
+        |> Option.defaultValue (Error(UsageError.UnknownTopic topic))
 
     let private admitHelp tail =
         options tail
@@ -56,7 +56,7 @@ module CliInvocations =
             match operands, format with
             | [], None -> help "overview" (defaultArg language "en")
             | [ topic ], None -> help topic (defaultArg language "en")
-            | _ -> Error CliUsageIssue.Options)
+            | _ -> Error(UsageError.NotApplicable("options", "command")))
 
     let private describeSelector operands =
         match operands with
@@ -66,23 +66,23 @@ module CliInvocations =
             |> List.exists (fun entry -> CommandGrammar.words entry = words)
             ->
             Ok(CliDescription.Operation words)
-        | _ -> Error CliUsageIssue.Selector
+        | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
 
-    let private schemaSelector =
-        function
+    let private schemaSelector operands =
+        match operands with
         | [ name ] -> Ok(CliSchema.Named name)
         | [ name; direction ] ->
             match Api.tryFind name, direction with
             | Some endpoint, "request" -> Ok(CliSchema.Request(Api.id endpoint))
             | Some endpoint, "response" -> Ok(CliSchema.Response(Api.id endpoint))
-            | _ -> Error CliUsageIssue.Selector
-        | _ -> Error CliUsageIssue.Selector
+            | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
+        | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
 
     let private admitDescribe tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
             if language.IsSome && format = Some "json" then
-                Error CliUsageIssue.Options
+                Error(UsageError.NotApplicable("options", "command"))
             else
                 describeSelector operands
                 |> Result.map (fun selector ->
@@ -96,7 +96,7 @@ module CliInvocations =
         function
         | [] -> Ok(CliInvocation.Version false)
         | [ "--json" ] -> Ok(CliInvocation.Version true)
-        | _ -> Error CliUsageIssue.Invocation
+        | _ -> Error(UsageError.NotApplicable("arguments", "command"))
 
     let private admitSchema arguments =
         if
@@ -104,7 +104,7 @@ module CliInvocations =
             |> List.exists (fun (item: string) ->
                 item.StartsWith("-", System.StringComparison.Ordinal))
         then
-            Error CliUsageIssue.Options
+            Error(UsageError.NotApplicable("options", "command"))
         else
             schemaSelector arguments |> Result.map CliInvocation.Schema
 
@@ -122,12 +122,12 @@ module CliInvocations =
                 if List.isEmpty tail then
                     Ok CliInvocation.Call
                 else
-                    Error CliUsageIssue.Invocation
+                    Error(UsageError.NotApplicable("arguments", "command"))
             | CliCommand.Session ->
                 if List.isEmpty tail then
                     Ok CliInvocation.Session
                 else
-                    Error CliUsageIssue.Invocation
+                    Error(UsageError.NotApplicable("arguments", "command"))
 
     let admit arguments =
         match arguments with

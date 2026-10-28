@@ -78,9 +78,9 @@ it("associates payment acknowledgement with the generated mode control", async (
     vi.fn().mockImplementation(() =>
       Promise.resolve(
         response("operation.preview", "REJECTED", {
-          code: "PAYMENT_ACKNOWLEDGEMENT_REQUIRED",
+          code: "INVALID_INPUT",
           action: "CORRECT_INPUT",
-          target: "payment",
+          issues: [{ field: "payment", code: "PAYMENT_ACKNOWLEDGEMENT_REQUIRED" }],
         }),
       ),
     ),

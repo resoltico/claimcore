@@ -54,7 +54,17 @@ let private bytes root binary methodName mode seed =
     match mode with
     | "pipe"
     | "broken" ->
-        let result = OutputControls.run directory binary methodName mode (dict []) [||]
+        let result =
+            OutputControls.run
+                directory
+                binary
+                methodName
+                {
+                    Destination = mode
+                    Environment = dict []
+                }
+                [||]
+
         result, result.StandardOutput
     | "pty" ->
         let result = OutputControls.terminal directory binary methodName
@@ -157,7 +167,18 @@ let private controls () =
 
         if OperatingSystem.IsLinux() then
             let full = Path.Combine(directory.FullName, "full")
-            let result = OutputControls.run full binary "selected" "full" (dict []) [||]
+
+            let result =
+                OutputControls.run
+                    full
+                    binary
+                    "selected"
+                    {
+                        Destination = "full"
+                        Environment = dict []
+                    }
+                    [||]
+
             Expect.equal result.ExitCode 70 "Linux ENOSPC remains observable"
     with _ ->
         let retained =

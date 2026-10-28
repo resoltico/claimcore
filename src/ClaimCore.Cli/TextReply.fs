@@ -16,9 +16,7 @@ module internal TextReply =
         label language (Vocabulary.messageKey vocabulary value "label")
 
     let private principalKind language value =
-        Vocabulary.tryParse PrincipalKind.vocabulary value
-        |> Option.map (term language PrincipalKind.vocabulary)
-        |> Option.defaultValue value
+        term language PrincipalKind.vocabulary value
 
     let private line language key value = label language key + ": " + value
 
@@ -54,7 +52,7 @@ module internal TextReply =
 
     let private fieldLines language fields =
         let rows placement =
-            Record.fields
+            CaseFields.declarations
             |> List.filter (fun row -> row.Group = placement)
             |> List.map (fun row ->
                 line
@@ -89,7 +87,7 @@ module internal TextReply =
                 (number value.Snapshot.Revision)
             line
                 language
-                "cli.text.state"
+                (CliMessages.key CliMessage.StateLabel)
                 (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
         ]
         @ (CaseState.fields value.Snapshot.State
@@ -121,7 +119,11 @@ module internal TextReply =
                 ([ outcome; act; target ]
                  @ revision
                  @ [
-                     label language (ContractDiscovery.inputLabel "operationId")
+                     label
+                         language
+                         (ContractDiscovery.inputLabel (
+                             InteractionInput.Target InputTarget.OperationId
+                         ))
                      id receipt.OperationId
                  ])
         ]
@@ -129,7 +131,7 @@ module internal TextReply =
     let private nextLines language =
         function
         | None -> []
-        | Some value -> [ line language "cli.text.next" value ]
+        | Some value -> [ line language (CliMessages.key CliMessage.NextLabel) value ]
 
     let private historyLines language (page: HistoryResultPage) =
         (page.Entries
@@ -171,7 +173,7 @@ module internal TextReply =
                  :: (fields |> List.map ((+) "  "))))
         @ nextLines language page.NextCursor
 
-    let private grantRow language (grant: AuthorityGrant) =
+    let private grantRow language (grant: AuthoredGrant) =
         let scope, reference =
             match grant.Scope with
             | GrantTarget.Installation ->
@@ -181,14 +183,16 @@ module internal TextReply =
 
         String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 
-    let private actorRow language (actor: ActorSummary) =
+    let private actorRow language (actor: Actor) =
+        let kind, issuer, subject = PrincipalKey.parts actor.Principal
+
         String.concat
             "  "
             [
                 id actor.ActorId
-                principalKind language actor.Principal.Kind
-                actor.Principal.Issuer
-                actor.Principal.Subject
+                principalKind language kind
+                issuer
+                subject
                 boolean actor.Enabled
             ]
 
@@ -244,14 +248,13 @@ module internal TextReply =
             | OperationReview.Authority value ->
                 let principal =
                     match input with
-                    | Some(OperationInput.Authority value) -> Some value.Target
-                    | _ -> value.Target |> Option.map _.Principal
+                    | Some(OperationInput.Authority value) ->
+                        Some(value.Target.Kind, value.Target.Issuer, value.Target.Subject)
+                    | _ -> value.Target |> Option.map (_.Principal >> PrincipalKey.parts)
 
                 match principal with
-                | Some value ->
-                    String.concat
-                        " "
-                        [ principalKind language value.Kind; value.Issuer; value.Subject ]
+                | Some(kind, issuer, subject) ->
+                    String.concat " " [ principalKind language kind; issuer; subject ]
                 | None -> "— — —"
 
         act + " " + target
@@ -259,7 +262,7 @@ module internal TextReply =
     let private authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
-            "cli.text.grants",
+            (CliMessages.key CliMessage.GrantsLabel),
             (before.Grants |> List.map (grantRow language) |> String.concat "; "),
             (after.Grants |> List.map (grantRow language) |> String.concat "; ")
         ]
@@ -286,7 +289,7 @@ module internal TextReply =
 
                 let after = CaseState.fields value.Proposed.State
 
-                Record.fields
+                CaseFields.declarations
                 |> List.choose (fun row ->
                     let previous =
                         before |> Option.bind (fun fields -> BusinessField.value fields row.Field)
@@ -310,38 +313,50 @@ module internal TextReply =
             (reviewIdentity language request review)
         :: changes
 
-    let private diagnosticTargetIdentity =
-        function
-        | InputTarget.Field field -> FieldPresentation.labelId field
-        | InputTarget.OperationId -> ContractDiscovery.inputLabel "operationId"
-        | InputTarget.ExpectedRevision -> ContractDiscovery.inputLabel "expectedRevision"
-        | InputTarget.Group group -> Vocabulary.messageKey RecordGroup.vocabulary group "label"
-        | InputTarget.Reason ->
-            OperationCatalog.inputMessage (CatalogInputName.Technical TechnicalInput.Reason) "label"
-        | InputTarget.PrincipalIssuer -> ContractDiscovery.inputLabel "issuer"
-        | InputTarget.PrincipalSubject -> ContractDiscovery.inputLabel "subject"
-        | InputTarget.Limit -> "input.limit.label"
-        | InputTarget.Cursor -> "input.cursor.label"
-        | InputTarget.Role -> "input.role.label"
+    let private diagnosticTargetIdentity target =
+        ContractDiscovery.inputLabel (InteractionInput.Target target)
 
     let private refusalLines language refusal =
-        let code, parameters = DiagnosticCodecs.describe refusal
+        let render code parameters =
+            let arguments =
+                parameters
+                |> List.map (fun (name, value) -> name, number (int64 value))
+                |> Map.ofList
 
-        let arguments =
-            parameters
-            |> List.map (fun (name, value) -> name, number (int64 value))
-            |> Map.ofList
+            MessageCatalogs.render language (DiagnosticCode.key code) arguments
 
-        let message = MessageCatalogs.render language ("diagnostic." + code) arguments
+        let messages =
+            match refusal with
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.map (fun issue ->
+                    let code, parameters = DiagnosticCodecs.describeIssue issue
 
-        let message =
-            match Refusals.target refusal with
-            | None -> message
-            | Some target -> label language (diagnosticTargetIdentity target) + ": " + message
+                    label language (diagnosticTargetIdentity issue.Target)
+                    + ": "
+                    + render code parameters)
+            | refusal ->
+                let code, parameters = DiagnosticCodecs.describe refusal
+                let message = render code parameters
 
-        [
-            message
-            line language "cli.text.code" code
+                match refusal with
+                | Refusal.InvalidCursor ->
+                    [
+                        label language (diagnosticTargetIdentity InputTarget.Cursor)
+                        + ": "
+                        + message
+                    ]
+                | Refusal.OperationResolved ->
+                    [
+                        label language (diagnosticTargetIdentity InputTarget.OperationId)
+                        + ": "
+                        + message
+                    ]
+                | _ -> [ message ]
+
+        messages
+        @ [
+            line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
@@ -352,19 +367,16 @@ module internal TextReply =
         let code = CoreFault.token fault
 
         [
-            label language ("fault." + code)
-            line language "cli.text.code" code
+            label language (DiagnosticCode.key code)
+            line language (CliMessages.key CliMessage.CodeLabel) code
             line
                 language
                 (CliMessages.key CliMessage.ActionLabel)
                 (RecommendedAction.token fault.Action)
         ]
 
-    let private readLines language success =
-        function
-        | ReadReply.Succeeded value -> success value
-        | ReadReply.Rejected refusal -> refusalLines language refusal
-        | ReadReply.Failed fault -> faultLines language fault
+    let private readLines language success outcome =
+        Outcome.fold success (refusalLines language) (faultLines language) outcome
 
     let private contextLines (value: ActorContext) =
         [
@@ -393,26 +405,32 @@ module internal TextReply =
         ]
 
     let private previewLines language request (reply: PreviewReply) =
-        match reply.Outcome with
-        | PreviewResult.Reviewed review -> reviewLines language request review
-        | PreviewResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
-        | PreviewResult.Rejected refusal -> refusalLines language refusal
-        | PreviewResult.Failed fault -> faultLines language fault
+        readLines
+            language
+            (function
+            | Previewed.Reviewed review -> reviewLines language request review
+            | Previewed.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt)
+            reply.Outcome
 
     let private executeLines language (reply: ExecuteReply) =
+        let failed outcome =
+            readLines language (fun () -> []) outcome
+
         match reply.Outcome with
         | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
         | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
-        | ExecuteResult.Rejected refusal -> refusalLines language refusal
-        | ExecuteResult.Failed fault -> faultLines language fault
-        | ExecuteResult.OutcomeUnknown -> [ label language "cli.text.uncertain" ]
+        | ExecuteResult.Rejected refusal -> failed (Outcome.Rejected refusal)
+        | ExecuteResult.Failed fault -> failed (Outcome.Failed fault)
+        | ExecuteResult.OutcomeUnknown ->
+            [ label language (CliMessages.key CliMessage.UncertainDelivery) ]
 
-    let private resolveLines language (reply: ResolveReply) =
-        match reply with
-        | ResolveReply.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-        | ResolveReply.NotAccepted -> [ label language "notice.notAccepted" ]
-        | ResolveReply.Rejected refusal -> refusalLines language refusal
-        | ResolveReply.Failed fault -> faultLines language fault
+    let private resolveLines language (reply: Outcome<Resolved>) =
+        readLines
+            language
+            (function
+            | Resolved.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
+            reply
 
     let private replyLines language request =
         function
@@ -435,8 +453,13 @@ module internal TextReply =
         | FrameResult.Reply reply -> replyLines language request reply
         | FrameResult.HostFailure failure ->
             [
-                label language ("host." + failure.Code)
-                line language "cli.text.code" failure.Code
+                label
+                    language
+                    (DiagnosticCode.key (Vocabulary.token HostFailureCode.vocabulary failure.Code))
+                line
+                    language
+                    (CliMessages.key CliMessage.CodeLabel)
+                    (Vocabulary.token HostFailureCode.vocabulary failure.Code)
             ]
         | FrameResult.LocalFailure(CliFailure.ConfigurationIssue(setting, issue)) ->
             let setting = InputDiagnostics.settingName setting
@@ -448,11 +471,17 @@ module internal TextReply =
             ]
         | FrameResult.LocalFailure failure ->
             let code = Frames.failureCode failure
-            [ label language ("cli.failure." + code); line language "cli.text.code" code ]
+
+            [
+                MessageCatalogs.renderCli
+                    language
+                    (CliMessage.Failure(ClientFailure.ofFrame failure))
+                line language (CliMessages.key CliMessage.CodeLabel) code
+            ]
 
     let bytesFor language request (frame: FrameReply) =
         let lines = resultLines language request frame.Result
-        let warning = label language "cli.text.uncertain"
+        let warning = label language (CliMessages.key CliMessage.UncertainDelivery)
 
         let lines =
             if frame.Delivery = DeliveryState.Uncertain && not (List.contains warning lines) then

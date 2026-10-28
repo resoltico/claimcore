@@ -112,7 +112,7 @@ let private reviewAndTime () =
     Expect.equal
         (decide request early)
         (Verdict.Refuse(
-            Refusal.InvalidInput(
+            Refusal.invalidInput (
                 InputTarget.Field BusinessField.IncidentNotificationDate,
                 Violation.FutureDate
             )

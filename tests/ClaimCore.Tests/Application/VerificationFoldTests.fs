@@ -22,9 +22,12 @@ let private service =
 
 let private actor principal grants : ActorAuthority =
     {
-        ActorId = id
-        Principal = principal
-        Enabled = true
+        Actor =
+            {
+                ActorId = id
+                Principal = principal
+                Enabled = true
+            }
         Grants = grants
     }
 
@@ -34,7 +37,7 @@ let private owner =
         [
             {
                 Role = Role.Owner
-                Scope = GrantScope.Installation
+                Scope = Scope.Installation
             }
         ]
 
@@ -90,7 +93,8 @@ let private history: CaseHistory =
 
 let private ledgerChecks =
     [
-        VerificationFinding.Link, fun () -> LedgerVerification.link state 2L state.Head.EntryHash
+        VerificationFinding.Link,
+        fun () -> LedgerVerification.link state 2L (EntryHash.toBytes state.Head.EntryHash)
         VerificationFinding.EntryHash,
         fun () ->
             let entry, metadata = row [| 1uy |]
@@ -128,7 +132,7 @@ let private ledgerChecks =
                 (Some
                     {
                         Sequence = 1L
-                        EntryHash = Array.zeroCreate 32
+                        EntryHash = EntryHash.zero
                     })
                 state
             |> unitResult
@@ -141,9 +145,25 @@ let private caseChecks =
 
     [
         VerificationFinding.RevisionSequence,
-        fun () -> CaseFold.apply Map.empty entry id 2L opened VerifiedPayload.Erased |> unitResult
+        fun () ->
+            CaseFold.apply
+                Map.empty
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 2L, opened, DateOnly.FromDateTime instant.DateTime)
+                }
+                VerifiedPayload.Erased
+            |> unitResult
         VerificationFinding.HistoryStart,
-        fun () -> CaseFold.apply Map.empty entry id 1L closed VerifiedPayload.Erased |> unitResult
+        fun () ->
+            CaseFold.apply
+                Map.empty
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 1L, closed, DateOnly.FromDateTime instant.DateTime)
+                }
+                VerifiedPayload.Erased
+            |> unitResult
         VerificationFinding.StateSequence,
         fun () ->
             CaseFold.apply
@@ -154,10 +174,10 @@ let private caseChecks =
                             State = CaseState.Erased
                         }
                     ])
-                entry
-                id
-                2L
-                closed
+                { entry with
+                    Subject =
+                        EntryTarget.Case(id, 2L, closed, DateOnly.FromDateTime instant.DateTime)
+                }
                 VerifiedPayload.Erased
             |> unitResult
         VerificationFinding.ErasureIncomplete,
@@ -209,7 +229,7 @@ let private authorityChecks =
             let request: AuthorityRequestRecord =
                 {
                     OperationId = id
-                    Target = PrincipalKey.describe human
+                    Target = PrincipalKey.toInput human
                     Act = ClaimCore.Domain.AuthorityAct.Register
                 }
 
@@ -238,7 +258,7 @@ let private duplicatePrecedence () =
                     AuthorityRecord.encode
                         {
                             OperationId = id
-                            Target = PrincipalKey.describe human
+                            Target = PrincipalKey.toInput human
                             Act = AuthorityAct.ProvisionOwner
                         }
                 Snapshot = Array.empty
@@ -289,7 +309,7 @@ let private invalidProjectionRows () =
                 [
                     {
                         Role = Role.CaseReader
-                        Scope = GrantScope.Installation
+                        Scope = Scope.Installation
                     }
                 ]
         }

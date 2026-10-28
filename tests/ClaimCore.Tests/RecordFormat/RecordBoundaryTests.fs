@@ -120,7 +120,7 @@ let private envelope () =
             OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
             Target =
                 {
-                    Kind = "HUMAN"
+                    Kind = PrincipalKind.Human
                     Issuer = "https://issuer.example/"
                     Subject = "owner"
                 }
@@ -284,7 +284,7 @@ let private independentNames () =
             OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
             Target =
                 {
-                    Kind = "HUMAN"
+                    Kind = PrincipalKind.Human
                     Issuer = String('a', RecordLimits.MaximumRequestRecordBytes)
                     Subject = "boundary"
                 }
@@ -302,7 +302,7 @@ let private kindRoundTrips () =
             AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
             AuthoredCaseAct.Correct
                 {
-                    Registration = Change.Keep
+                    Registration = Amendment.Keep
                     Decision = Change.Keep
                     Payment = Change.Keep
                 },
@@ -339,7 +339,7 @@ let private kindRoundTrips () =
 
     let grant =
         {
-            GrantChange.Role = "CASE_READER"
+            AuthoredGrant.Role = Role.CaseReader
             Scope = GrantTarget.Installation
         }
 

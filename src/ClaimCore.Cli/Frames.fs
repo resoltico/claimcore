@@ -17,60 +17,6 @@ module DeliveryState =
     let vocabulary =
         Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
 
-[<RequireQualifiedAccess>]
-type CliFailure =
-    | ConfigurationInvalid
-    | ConfigurationIssue of CliSetting * ConfigurationIssue
-    | AuthenticationFailed
-    | ServiceUnavailable
-    | Cancelled
-    | Internal
-    | InvalidFrame
-    | InvalidResponse
-    | ContractMismatch
-
-[<RequireQualifiedAccess>]
-type CliFailureCode =
-    | ConfigurationInvalid
-    | AuthenticationFailed
-    | ServiceUnavailable
-    | Cancelled
-    | Internal
-    | InvalidFrame
-    | InvalidResponse
-    | ContractMismatch
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CliFailureCode =
-    let vocabulary =
-        Vocabulary.ofUnion<CliFailureCode> "cli-failure" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-    let codes = Vocabulary.tokens vocabulary
-
-    let ofFailure =
-        function
-        | CliFailure.ConfigurationInvalid
-        | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
-        | CliFailure.AuthenticationFailed -> CliFailureCode.AuthenticationFailed
-        | CliFailure.ServiceUnavailable -> CliFailureCode.ServiceUnavailable
-        | CliFailure.Cancelled -> CliFailureCode.Cancelled
-        | CliFailure.Internal -> CliFailureCode.Internal
-        | CliFailure.InvalidFrame -> CliFailureCode.InvalidFrame
-        | CliFailure.InvalidResponse -> CliFailureCode.InvalidResponse
-        | CliFailure.ContractMismatch -> CliFailureCode.ContractMismatch
-
-    let toFailure =
-        function
-        | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
-        | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
-        | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
-        | CliFailureCode.Cancelled -> CliFailure.Cancelled
-        | CliFailureCode.Internal -> CliFailure.Internal
-        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame
-        | CliFailureCode.InvalidResponse -> CliFailure.InvalidResponse
-        | CliFailureCode.ContractMismatch -> CliFailure.ContractMismatch
-
 [<RequireQualifiedAccess; NoComparison>]
 type FrameResult =
     | Reply of ServiceReply
@@ -297,14 +243,6 @@ module Frames =
 
             Api.executesLedger endpoint)
 
-    let private outcomeExitCode reply =
-        match outcome reply with
-        | Some "REJECTED"
-        | Some "NOT_ACCEPTED" -> ExitCode.Rejected
-        | Some "FAILED" -> ExitCode.Failed
-        | Some "OUTCOME_UNKNOWN" -> ExitCode.OutcomeUnknown
-        | _ -> ExitCode.Success
-
     let exitCode frame =
         (if frame.Delivery = DeliveryState.Uncertain && mutation frame then
              ExitCode.OutcomeUnknown
@@ -316,5 +254,5 @@ module Frames =
                  ExitCode.Rejected
              | FrameResult.LocalFailure _
              | FrameResult.HostFailure _ -> ExitCode.Failed
-             | FrameResult.Reply reply -> outcomeExitCode (ServiceReply.json reply))
+             | FrameResult.Reply reply -> ServiceReply.exitCode reply)
         |> ExitCode.value

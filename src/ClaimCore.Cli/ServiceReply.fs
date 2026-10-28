@@ -8,18 +8,18 @@ open ClaimCore.Json
 /// A decoded reply retains its original admitted wire value for JSON delivery.
 [<RequireQualifiedAccess; NoComparison>]
 type ServiceReply =
-    | Session of JsonValue * ReadReply<Session>
-    | Logout of JsonValue * ReadReply<unit>
+    | Session of JsonValue * Outcome<Session>
+    | Logout of JsonValue * Outcome<unit>
     | Preview of JsonValue * PreviewReply
     | Execute of JsonValue * ExecuteReply
-    | CaseGet of JsonValue * ReadReply<CaseReadModel>
-    | CaseList of JsonValue * ReadReply<CaseSummaryPage>
-    | CaseHistory of JsonValue * ReadReply<HistoryResultPage>
-    | Observe of JsonValue * ReadReply<OperationReceipt>
-    | Resolve of JsonValue * ResolveReply
-    | AuthorityList of JsonValue * ReadReply<ActorReviewPage>
-    | AuthorityGrants of JsonValue * ReadReply<AuthorityGrantPage>
-    | Context of JsonValue * ReadReply<ActorContext>
+    | CaseGet of JsonValue * Outcome<CaseReadModel>
+    | CaseList of JsonValue * Outcome<CaseSummaryPage>
+    | CaseHistory of JsonValue * Outcome<HistoryResultPage>
+    | Observe of JsonValue * Outcome<OperationReceipt>
+    | Resolve of JsonValue * Outcome<Resolved>
+    | AuthorityList of JsonValue * Outcome<ActorReviewPage>
+    | AuthorityGrants of JsonValue * Outcome<AuthorityGrantPage>
+    | Context of JsonValue * Outcome<ActorContext>
 
     member this.Endpoint =
         match this with
@@ -56,6 +56,21 @@ module ServiceReply =
         | ServiceReply.AuthorityList(wire, _)
         | ServiceReply.AuthorityGrants(wire, _)
         | ServiceReply.Context(wire, _) -> wire
+
+    let exitCode =
+        function
+        | ServiceReply.Session(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.Logout(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.CaseGet(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.CaseList(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.CaseHistory(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.Observe(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.AuthorityList(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.AuthorityGrants(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.Context(_, reply) -> OutcomePresentation.exitCode reply
+        | ServiceReply.Preview(_, reply) -> OutcomePresentation.exitCode reply.Outcome
+        | ServiceReply.Execute(_, reply) -> OutcomePresentation.executeExitCode reply.Outcome
+        | ServiceReply.Resolve(_, reply) -> OutcomePresentation.resolveExitCode reply
 
     let private decode value (codec: Codec<'Reply>) make =
         codec.Read "$" value |> Result.map (fun reply -> make (value, reply))

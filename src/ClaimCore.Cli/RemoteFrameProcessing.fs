@@ -56,9 +56,11 @@ module private FrameInvocation =
                         return!
                             RemoteServiceCall.send
                                 access.Client
-                                access.Configuration.Service
+                                {
+                                    Service = access.Configuration.Service
+                                    Authorization = token.Authorization
+                                }
                                 frame
-                                token.Authorization
                                 beforeSend
                                 cancelled
         }

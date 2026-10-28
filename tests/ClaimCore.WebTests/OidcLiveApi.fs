@@ -106,7 +106,25 @@ let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonEle
         (value credentials "serviceClientId")
         (value credentials "foreignClientSecret")
 
-let private serviceAuthority issuer identity local (credentials: JsonElement) token first =
+[<NoEquality; NoComparison>]
+type private ServiceAuthorityScenario =
+    {
+        Issuer: string
+        Identity: HttpClient
+        Local: HttpClient
+        Credentials: JsonElement
+        Token: string
+        First: JsonElement option
+    }
+
+let private serviceAuthority (scenario: ServiceAuthorityScenario) =
+    let issuer = scenario.Issuer
+    let identity = scenario.Identity
+    let local = scenario.Local
+    let credentials = scenario.Credentials
+    let token = scenario.Token
+    let first = scenario.First
+
     task {
         let tag (value: JsonElement option) =
             value |> Option.map (fun value -> value.GetProperty("kind").GetString())
@@ -158,7 +176,16 @@ let qualifyBearers
         if allowed <> 204 || caseAllowed <> 200 || mixed <> 401 then
             raise (CredentialDispatchMismatch(allowed, caseAllowed, mixed))
 
-        do! serviceAuthority issuer identity local credentials token first
+        do!
+            serviceAuthority
+                {
+                    Issuer = issuer
+                    Identity = identity
+                    Local = local
+                    Credentials = credentials
+                    Token = token
+                    First = first
+                }
 
         let! unscoped =
             serviceToken

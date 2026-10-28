@@ -7,7 +7,7 @@ open ClaimCore.Domain
 type AuthorityRequestRecord =
     {
         OperationId: Guid
-        Target: Principal
+        Target: PrincipalInput
         Act: AuthoredAuthorityAct
     }
 
@@ -16,7 +16,7 @@ module AuthorityRecord =
         Codec.taggedOn
             DurableNames.Kind
             "RecordedAuthorityAct"
-            ((RecordCodecs.authorityVariants Codec.text)
+            ((RecordCodecs.authorityVariants RecordCodecs.role)
              @ [
                  Codec.unitVariant
                      (DurableNames.authorityAct AuthorityKind.ProvisionOwner)
@@ -54,21 +54,11 @@ module AuthorityRecord =
                              }
         | AuthorityAct.Revoke {
                                   Scope = GrantTarget.CaseReference reference
-                              } ->
-            (CaseReference.parse
-             >> Result.map ignore
-             >> Result.mapError (fun violation ->
-                 Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
-                reference
-            |> Result.isOk
+                              } -> CaseReference.parse reference |> Result.isOk
         | _ -> true
 
     let private validate request =
-        if
-            request.OperationId = Guid.Empty
-            || not (List.contains request.Target.Kind DurableNames.principalKinds)
-            || not (validScope request.Act)
-        then
+        if request.OperationId = Guid.Empty || not (validScope request.Act) then
             Error
                 {
                     Field = "$"
@@ -93,53 +83,40 @@ module AuthorityRecord =
 
     /// Permanent spellings are interpreted here; Domain receives typed principal and grant facts.
     let interpret (request: AuthorityRequestRecord) =
-        let principal =
-            if request.Target.Kind = DurableNames.principalKind PrincipalKind.Human then
-                PrincipalKey.human request.Target.Issuer request.Target.Subject
-            elif request.Target.Kind = DurableNames.principalKind PrincipalKind.Service then
-                PrincipalKey.service request.Target.Issuer request.Target.Subject
-            else
-                Error(Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.PrincipalFormat))
-
-        let grant (value: GrantChange) =
-            DurableNames.tryRole value.Role
-            |> Option.map (fun role ->
-                Ok
-                    {
-                        AuthorityGrant.Role = role
-                        Scope = value.Scope
-                    })
-            |> Option.defaultValue (
-                Error(Refusal.InvalidInput(InputTarget.Role, Violation.RoleFormat))
-            )
-
-        principal
+        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
         |> Result.bind (fun principal ->
-            AuthorityAct.traverse grant request.Act
-            |> Result.bind (Authority.restore request.OperationId principal))
+            let act =
+                AuthorityAct.map
+                    (fun (value: AuthoredGrant) ->
+                        {
+                            AuthoredGrant.Role = value.Role
+                            Scope = value.Scope
+                        })
+                    request.Act
+
+            Authority.restore request.OperationId principal act)
+        |> Result.mapError (fun _ ->
+            {
+                Field = "$"
+                Message = "Invalid authority record values."
+            })
 
     let ofCommand (command: AuthorityCommand) : AuthorityRequestRecord =
-        let _, issuer, subject = PrincipalKey.storageParts command.Target
-
-        let kind =
-            if PrincipalKey.isHuman command.Target then
-                PrincipalKind.Human
-            else
-                PrincipalKind.Service
+        let kind, issuer, subject = PrincipalKey.parts command.Target
 
         {
             OperationId = command.OperationId
             Target =
                 {
-                    Kind = DurableNames.principalKind kind
+                    Kind = kind
                     Issuer = issuer
                     Subject = subject
                 }
             Act =
                 AuthorityAct.map
-                    (fun (grant: AuthorityGrant) ->
+                    (fun (grant: AuthoredGrant) ->
                         {
-                            GrantChange.Role = DurableNames.role grant.Role
+                            AuthoredGrant.Role = grant.Role
                             Scope = grant.Scope
                         })
                     command.Act

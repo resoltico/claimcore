@@ -24,7 +24,7 @@ let private lastOwner () =
             AuthorityAct.Disable
             AuthorityAct.Revoke
                 {
-                    AuthorityGrant.Role = Role.Owner
+                    AuthoredGrant.Role = Role.Owner
                     Scope = GrantTarget.Installation
                 }
         ] do

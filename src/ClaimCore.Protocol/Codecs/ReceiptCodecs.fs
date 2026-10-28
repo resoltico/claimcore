@@ -37,20 +37,14 @@ module ReceiptCodecs =
         : Fields<CaseReceipt, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision sequence
-        |> field
-            "act"
-            _.Act
-            (enumeration (CaseActKind.all |> List.map (fun act -> act, CaseActKind.token act)))
+        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "snapshot" _.Snapshot disclosure
 
     let private authorityFields =
         (record (fun target act -> { TargetActorId = target; Act = act })
         : Fields<AuthorityReceipt, _>)
         |> field "targetActorId" _.TargetActorId Codec.uuid
-        |> field
-            "act"
-            _.Act
-            (enumeration (AuthorityKind.all |> List.map (fun act -> act, AuthorityKind.token act)))
+        |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
 
     let private caseVariant =
         variant

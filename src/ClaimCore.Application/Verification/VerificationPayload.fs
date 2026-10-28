@@ -20,48 +20,52 @@ module internal VerificationPayload =
     let private decoded (entry: StoredEntry) =
         Result.mapError (fun _ -> problem entry.Sequence)
 
-    let private case installationId (entry: StoredEntry) id revision act (payload: LedgerPayload) =
-        result {
-            let! request =
-                RequestRecord.decode RecordLimits.MaximumRequestRecordBytes payload.Request
-                |> decoded entry
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.PayloadFormat
-                    (request.OperationId = entry.OperationId
-                     && request.ExpectedRevision = revision - 1L
-                     && CaseAct.kind request.Act = act
-                     && CaseReferenceId.encode
-                         installationId
-                         (CaseReference.format request.Reference)
-                         =
-                         id)
-
-            if act = CaseActKind.Erase then
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.PayloadFormat
-                        (Array.isEmpty payload.Snapshot)
-
-                return VerifiedPayload.Case(request, None)
-            else
-                let! snapshot =
-                    ClaimCore.RecordFormat.CaseRecord.decodeSnapshot payload.Snapshot
+    let private case installationId (entry: StoredEntry) (payload: LedgerPayload) =
+        match entry.Subject with
+        | EntryTarget.Authority _ ->
+            Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+        | EntryTarget.Case(id, revision, act, _) ->
+            result {
+                let! request =
+                    RequestRecord.decode RecordLimits.MaximumRequestRecordBytes payload.Request
                     |> decoded entry
 
                 do!
                     require
                         (Some entry.Sequence)
                         VerificationFinding.PayloadFormat
-                        (snapshot.Revision = revision
-                         && CaseReference.identity snapshot.Reference =
-                             CaseReference.identity request.Reference)
+                        (request.OperationId = entry.OperationId
+                         && request.ExpectedRevision = revision - 1L
+                         && CaseAct.kind request.Act = act
+                         && CaseReferenceId.encode
+                             installationId
+                             (CaseReference.format request.Reference)
+                             =
+                             id)
 
-                return VerifiedPayload.Case(request, Some snapshot)
-        }
+                if act = CaseActKind.Erase then
+                    do!
+                        require
+                            (Some entry.Sequence)
+                            VerificationFinding.PayloadFormat
+                            (Array.isEmpty payload.Snapshot)
+
+                    return VerifiedPayload.Case(request, None)
+                else
+                    let! snapshot =
+                        ClaimCore.RecordFormat.CaseRecord.decodeSnapshot payload.Snapshot
+                        |> decoded entry
+
+                    do!
+                        require
+                            (Some entry.Sequence)
+                            VerificationFinding.PayloadFormat
+                            (snapshot.Revision = revision
+                             && CaseReference.identity snapshot.Reference =
+                                 CaseReference.identity request.Reference)
+
+                    return VerifiedPayload.Case(request, Some snapshot)
+            }
 
     let private authority (entry: StoredEntry) kind (payload: LedgerPayload) =
         result {
@@ -100,8 +104,7 @@ module internal VerificationPayload =
 
                 return!
                     match entry.Subject with
-                    | EntryTarget.Case(id, revision, act, _) ->
-                        case installationId entry id revision act payload
+                    | EntryTarget.Case _ -> case installationId entry payload
                     | EntryTarget.Authority(_, kind) -> authority entry kind payload
             }
         | _ -> Error(problem entry.Sequence)

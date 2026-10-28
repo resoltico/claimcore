@@ -6,13 +6,26 @@ open System
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
+[<NoEquality; NoComparison>]
+type internal AuthorityFoldContext =
+    {
+        InstallationId: Guid
+        CaseExists: Guid -> bool
+    }
+
+type internal AuthorityFoldTarget =
+    {
+        ActorId: Guid
+        Principal: PrincipalKey
+    }
+
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
 
     let private ownerGrant: ActorGrant =
         {
             Role = Role.Owner
-            Scope = GrantScope.Installation
+            Scope = Scope.Installation
         }
 
     let private owner (actor: ActorAuthority) =
@@ -44,7 +57,7 @@ module internal AuthorityFold =
         }
 
     let private principal (entry: StoredEntry) (request: AuthorityRequestRecord) =
-        PrincipalKey.fromStorage request.Target.Kind request.Target.Issuer request.Target.Subject
+        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
         |> Result.mapError (fun _ ->
             divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
@@ -96,9 +109,12 @@ module internal AuthorityFold =
 
             let actor =
                 {
-                    ActorId = id
-                    Principal = principal
-                    Enabled = true
+                    Actor =
+                        {
+                            ActorId = id
+                            Principal = principal
+                            Enabled = true
+                        }
                     Grants = if provision then [ ownerGrant ] else []
                 }
 
@@ -106,18 +122,18 @@ module internal AuthorityFold =
         }
 
     let private grant
-        installationId
-        caseExists
+        (context: AuthorityFoldContext)
         (entry: StoredEntry)
         (actor: ActorAuthority)
-        role
-        scope
+        (value: AuthoredGrant)
         active
         =
-        result {
-            let! role =
-                Role.parse role |> known (Some entry.Sequence) VerificationFinding.PayloadFormat
+        let installationId = context.InstallationId
+        let caseExists = context.CaseExists
+        let role = value.Role
+        let scope = value.Scope
 
+        result {
             do!
                 require
                     (Some entry.Sequence)
@@ -126,12 +142,12 @@ module internal AuthorityFold =
 
             let! scope =
                 match scope with
-                | GrantTarget.Installation -> Ok GrantScope.Installation
+                | GrantTarget.Installation -> Ok Scope.Installation
                 | GrantTarget.CaseReference reference ->
                     let id = CaseReferenceId.encode installationId reference
 
                     require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
-                    |> Result.map (fun () -> GrantScope.Case id)
+                    |> Result.map (fun () -> Scope.Case id)
 
             let grant: ActorGrant = { Role = role; Scope = scope }
             let grants = actor.Grants |> List.filter ((<>) grant)
@@ -143,23 +159,36 @@ module internal AuthorityFold =
         }
 
     let private action
-        installationId
-        caseExists
+        (context: AuthorityFoldContext)
         (actors: Map<Guid, ActorAuthority>)
         (entry: StoredEntry)
-        id
-        principal
+        (subject: AuthorityFoldTarget)
         request
         =
+        let id = subject.ActorId
+        let principal = subject.Principal
+
         match request.Act with
         | AuthorityAct.ProvisionOwner -> register actors entry id principal true
         | AuthorityAct.Register -> register actors entry id principal false
         | AuthorityAct.Enable ->
             target actors entry id principal
-            |> Result.map (fun actor -> Map.add id { actor with Enabled = true } actors)
+            |> Result.map (fun actor ->
+                Map.add
+                    id
+                    { actor with
+                        Actor = { actor.Actor with Enabled = true }
+                    }
+                    actors)
         | AuthorityAct.Disable ->
             target actors entry id principal
-            |> Result.map (fun actor -> Map.add id { actor with Enabled = false } actors)
+            |> Result.map (fun actor ->
+                Map.add
+                    id
+                    { actor with
+                        Actor = { actor.Actor with Enabled = false }
+                    }
+                    actors)
         | AuthorityAct.Grant value
         | AuthorityAct.Revoke value ->
             let active =
@@ -169,7 +198,7 @@ module internal AuthorityFold =
 
             target actors entry id principal
             |> Result.bind (fun actor ->
-                grant installationId caseExists entry actor value.Role value.Scope active
+                grant context entry actor value active
                 |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply
@@ -199,7 +228,16 @@ module internal AuthorityFold =
                 else
                     executor actors entry true true
 
-            let! next = action installationId caseExists actors entry id principal request
+            let! next =
+                action
+                    {
+                        InstallationId = installationId
+                        CaseExists = caseExists
+                    }
+                    actors
+                    entry
+                    { ActorId = id; Principal = principal }
+                    request
 
             do!
                 require

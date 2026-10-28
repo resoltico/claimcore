@@ -34,14 +34,21 @@ let private selected (root: JsonNode) =
     |> nonNull
     |> fun targets -> targets[name] |> nonNull |> _.AsObject()
 
+let private fsharpIdentity (entries: JsonObject) =
+    entries
+    |> Seq.map _.Key
+    |> Seq.filter (fun identity -> identity.StartsWith("FSharp.Core/", StringComparison.Ordinal))
+    |> Seq.exactlyOne
+
 let private renamePackage replacement directory =
     changedDeps directory (fun root ->
         let target = selected root
         let libraries = root["libraries"] |> nonNull |> _.AsObject()
 
         for entries in [ target; libraries ] do
-            let original = entries["FSharp.Core/10.1.402"] |> nonNull
-            entries.Remove "FSharp.Core/10.1.402" |> ignore
+            let identity = fsharpIdentity entries
+            let original = entries[identity] |> nonNull
+            entries.Remove identity |> ignore
             entries.Add(replacement, original))
 
 let private resource directory =
@@ -50,7 +57,8 @@ let private resource directory =
 
 let private omitResource directory =
     changedDeps directory (fun root ->
-        let library = (selected root)["FSharp.Core/10.1.402"] |> nonNull
+        let target = selected root
+        let library = target[fsharpIdentity target] |> nonNull
         let entries = library["resources"] |> nonNull |> _.AsObject()
         let first = entries |> Seq.head |> _.Key
         entries.Remove first |> ignore)
@@ -59,7 +67,8 @@ let private unreviewedAsset kind file directory =
     File.WriteAllBytes(Path.Combine(directory, file), [| 1uy |])
 
     changedDeps directory (fun root ->
-        let library = (selected root)["FSharp.Core/10.1.402"] |> nonNull
+        let target = selected root
+        let library = target[fsharpIdentity target] |> nonNull
         let mutable entries = Unchecked.defaultof<JsonNode | null>
 
         if not (library.AsObject().TryGetPropertyValue(kind, &entries)) then

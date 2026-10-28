@@ -32,9 +32,11 @@ let private serviceReply service (token: AccessToken) cancelled =
         let! reply =
             RemoteServiceCall.send
                 service
-                (Uri "https://localhost:5443/")
+                {
+                    Service = (Uri "https://localhost:5443/")
+                    Authorization = token.Authorization
+                }
                 invocation
-                token.Authorization
                 ignore
                 cancelled
 

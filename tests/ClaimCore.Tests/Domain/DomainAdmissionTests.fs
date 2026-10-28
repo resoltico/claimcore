@@ -15,32 +15,34 @@ let private snapshots =
     testCase "restoration refuses invalid paid and chronological states" (fun () ->
         let original = paid () |> Case.snapshot
 
+        let current = viewFields original
+        let decision = Option.get current.Decision
+        let payment = (Option.get current.Payment).PaymentDate
+
         let variants =
             [
-                { (viewFields original) with
-                    Decision =
-                        (viewFields original).Decision
-                        |> Option.map (fun value ->
-                            { value with
+                { current with
+                    Progress =
+                        PaymentProgress.Paid(
+                            { decision with
                                 PayableAmount = CaseFixtures.money "0" "EUR"
-                            })
+                            },
+                            payment
+                        )
                 },
                 RecordViolation.InvalidProgress
-                { (viewFields original) with
-                    Decision =
-                        (viewFields original).Decision
-                        |> Option.map (fun value ->
-                            { value with
+                { current with
+                    Progress =
+                        PaymentProgress.Paid(
+                            { decision with
                                 PaymentDecisionDate = CaseFixtures.date "2026-08-02"
-                            })
+                            },
+                            payment
+                        )
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
-                { (viewFields original) with
-                    Payment =
-                        Some
-                            {
-                                PaymentDate = CaseFixtures.date "2026-08-14"
-                            }
+                { current with
+                    Progress = PaymentProgress.Paid(decision, CaseFixtures.date "2026-08-14")
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDate)
             ]
@@ -66,7 +68,7 @@ let private payload =
         Expect.equal
             rejected
             (Error(
-                Refusal.InvalidInput(
+                Refusal.invalidInput (
                     (InputTarget.Field BusinessField.PaymentDecisionDate),
                     Violation.CalendarDateRequired
                 )

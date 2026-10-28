@@ -14,9 +14,6 @@ module internal RecordCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let tokens values =
-        values |> List.map (fun value -> value, value) |> enumeration
-
     let private inputField name get fields =
         Codec.field (DurableNames.field name) get Codec.text fields
 
@@ -66,12 +63,12 @@ module internal RecordCodecs =
         tagged
             "RegistrationGroup"
             [
-                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
+                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Amendment.Keep
                 variant
                     (DurableNames.correction CorrectionGroupAction.Replace)
-                    Change.Replace
+                    Amendment.Replace
                     (function
-                    | Change.Replace value -> Some value
+                    | Amendment.Replace value -> Some value
                     | _ -> None)
                     (record id |> field DurableNames.Values id registration)
             ]
@@ -120,51 +117,29 @@ module internal RecordCodecs =
         |> build
         |> named "Correction"
 
-    let private caseCodec registration decision payment reason correction =
-        let memberCodec name codec inject project kind =
-            variant
-                (DurableNames.caseAct kind)
-                (inject >> CaseAct.ofPayload kind)
-                (fun act ->
-                    if CaseAct.kind act = kind then
-                        project (CaseAct.payload act)
-                    else
-                        None)
-                (record id |> field name id codec)
-
+    let private caseCodec (registration, decision, payment) (reason, correction) =
         DurableNames.caseKinds
         |> List.map (fun kind ->
-            match CaseActKind.shape kind with
-            | ActShape.NoValues ->
-                unitVariant (DurableNames.caseAct kind) (CaseAct.ofPayload kind ActPayload.Empty)
-            | ActShape.RegistrationValues ->
-                memberCodec
-                    DurableNames.Values
-                    registration
-                    ActPayload.Registration
-                    ActPayload.registration
-                    kind
-            | ActShape.DecisionValues ->
-                memberCodec
-                    DurableNames.Values
-                    decision
-                    ActPayload.Decision
-                    ActPayload.decision
-                    kind
-            | ActShape.PaymentValues ->
-                memberCodec DurableNames.Values payment ActPayload.Payment ActPayload.payment kind
-            | ActShape.ReasonText ->
-                memberCodec DurableNames.Reason reason ActPayload.Reason ActPayload.reason kind
-            | ActShape.CorrectionGroups ->
-                memberCodec
-                    DurableNames.Groups
-                    correction
-                    ActPayload.Correction
-                    ActPayload.correction
-                    kind)
+            let tag = DurableNames.caseAct kind
+
+            let memberCodec name codec (inject, project) =
+                variant tag inject project (record id |> field name id codec)
+
+            match CaseAct.slot kind with
+            | CaseActSlot.Bare act -> unitVariant tag act
+            | CaseActSlot.Registration(inject, project) ->
+                memberCodec DurableNames.Values registration (inject, project)
+            | CaseActSlot.Decision(inject, project) ->
+                memberCodec DurableNames.Values decision (inject, project)
+            | CaseActSlot.Payment(inject, project) ->
+                memberCodec DurableNames.Values payment (inject, project)
+            | CaseActSlot.Reason(inject, project) ->
+                memberCodec DurableNames.Reason reason (inject, project)
+            | CaseActSlot.Correction(inject, project) ->
+                memberCodec DurableNames.Groups correction (inject, project))
         |> tagged "CaseAct"
 
-    let caseAct = caseCodec registration decision payment text correction
+    let caseAct = caseCodec (registration, decision, payment) (text, correction)
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 () ->
@@ -183,12 +158,12 @@ module internal RecordCodecs =
     let principal =
         (record (fun v0 v1 v2 ->
             {
-                Principal.Kind = v0
+                PrincipalInput.Kind = v0
                 Issuer = v1
                 Subject = v2
             })
-        : Fields<Principal, _>)
-        |> field DurableNames.Kind _.Kind (tokens DurableNames.principalKinds)
+        : Fields<PrincipalInput, _>)
+        |> field DurableNames.Kind _.Kind (enumeration DurableNames.principalKindEntries)
         |> field DurableNames.Issuer _.Issuer (text)
         |> field DurableNames.Subject _.Subject (text)
         |> build
@@ -212,7 +187,7 @@ module internal RecordCodecs =
         let grant =
             record (fun role scope ->
                 {
-                    GrantChange.Role = role
+                    AuthoredGrant.Role = role
                     Scope = scope
                 })
             |> field DurableNames.Role _.Role role
@@ -223,19 +198,11 @@ module internal RecordCodecs =
         |> List.map (fun kind ->
             let token = DurableNames.authorityAct kind
 
-            match AuthorityAct.shape kind with
-            | AuthorityShape.TargetOnly -> unitVariant token (AuthorityAct.ofPayload kind None)
-            | AuthorityShape.GrantValues ->
-                variant
-                    token
-                    (Some >> AuthorityAct.ofPayload kind)
-                    (fun act ->
-                        if AuthorityAct.kind act = kind then
-                            AuthorityAct.payload act
-                        else
-                            None)
-                    grant)
+            match AuthorityAct.slot kind with
+            | AuthorityActSlot.Bare act -> unitVariant token act
+            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
+    let role = enumeration DurableNames.roleEntries
     let authorityVariants role = authorityVariantsWith role scope
 
     let caseOperation =
@@ -326,20 +293,25 @@ module internal RecordCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            {
-                CaseFields.CaseReference = reference
-                Status = status
-                Registration = registration
-                Decision = decision
-                Payment = payment
-            })
+            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            |> Result.map (fun progress ->
+                {
+                    CaseFields.CaseReference = reference
+                    Status = status
+                    Registration = registration
+                    Progress = progress
+                }))
         : Fields<CaseFields, _>)
         |> field DurableNames.CaseReference _.CaseReference acceptedReference
         |> field DurableNames.Status _.Status (enumeration (DurableNames.statusEntries))
         |> field DurableNames.Registration _.Registration acceptedRegistration
         |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
         |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
-        |> build
+        |> buildResult (fun path () ->
+            {
+                Path = path + ".payment"
+                Reason = "Payment requires a decision."
+            })
 
     let liveState =
         let fields = record id |> field DurableNames.Fields id caseFields

@@ -34,26 +34,20 @@ module private BusinessState =
             CaseReference = reference
             Status = claim.Status
             Registration = claim.Facts
-            Decision = PaymentProgress.decision claim.Progress
-            Payment =
-                PaymentProgress.paymentDate claim.Progress
-                |> Option.map (fun date -> { PaymentDate = date })
+            Progress = claim.Progress
         }
 
     let private retained value =
         value
         |> Result.mapError (function
-            | Refusal.InvalidInput(field, violation) ->
-                RecordViolation.InvalidScalar(field, violation)
+            | Refusal.InvalidInput issues ->
+                let issue = InputIssues.head issues
+                RecordViolation.InvalidScalar(issue.Target, issue.Violation)
             | _ -> RecordViolation.InvalidProgress)
 
     let restore (accepted: CaseFields) =
         result {
-            let! progress =
-                PaymentProgress.fromGroups
-                    accepted.Decision
-                    (accepted.Payment |> Option.map _.PaymentDate)
-                |> retained
+            let progress = accepted.Progress
 
             do! StateValidation.progress accepted.Registration progress |> retained
 
@@ -68,18 +62,18 @@ module private BusinessState =
     let openCase (today: DateOnly) (facts: Registration) =
         result {
             do!
-                Validation.notFuture
-                    (InputTarget.Field BusinessField.IncidentDate)
-                    today
-                    facts.IncidentDate
-
-            do!
-                Validation.notFuture
-                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                    today
-                    facts.IncidentNotificationDate
-
-            do! Validation.assertedText None facts
+                Admission.collect
+                    [
+                        Validation.notFuture
+                            (InputTarget.Field BusinessField.IncidentDate)
+                            today
+                            facts.IncidentDate
+                        Validation.notFuture
+                            (InputTarget.Field BusinessField.IncidentNotificationDate)
+                            today
+                            facts.IncidentNotificationDate
+                        Validation.assertedText None facts
+                    ]
 
             return
                 {

@@ -79,9 +79,11 @@ let send handler frame =
 
     RemoteServiceCall.send
         client
-        (Uri "https://localhost/")
+        {
+            Service = (Uri "https://localhost/")
+            Authorization = (AuthenticationHeaderValue("Bearer", "synthetic-token"))
+        }
         frame
-        (AuthenticationHeaderValue("Bearer", "synthetic-token"))
         ignore
         CancellationToken.None
     |> _.GetAwaiter().GetResult()

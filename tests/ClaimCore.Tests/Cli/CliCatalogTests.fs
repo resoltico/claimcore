@@ -131,7 +131,9 @@ let private replacement () =
 
     match request with
     | OperationInput.Case {
-                              Act = AuthoredCaseAct.Correct { Registration = Change.Replace value }
+                              Act = AuthoredCaseAct.Correct {
+                                                                Registration = Amendment.Replace value
+                                                            }
                           } ->
         Expect.equal value.ClaimedAmount "1.0000" "Authored amount spelling is preserved"
 

@@ -201,8 +201,8 @@ it("context reload preserves an uncertain prepared authority request and exact r
   const [prepared] = execute.mock.calls[0]!;
   await finish(oldListing, {
     kind: "hostFailure",
-    status: 403,
-    failure: { code: "SESSION_FORBIDDEN", phase: "NOT_STARTED" },
+    status: 401,
+    failure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
   });
   fireEvent.click(await screen.findByRole("button", { name: /^Try again$/u }));
   await waitFor(() => {

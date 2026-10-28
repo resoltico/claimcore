@@ -29,6 +29,28 @@ let private accepted result =
     | Error _ -> failtest "Expected synthetic acceptance"
 
 let private fields status decided paid : CaseFields =
+    let decision =
+        if decided then
+            Some(
+                CaseFixtures.decision
+                    {
+                        PaymentDecisionDate = "2026-08-15"
+                        PayableAmount = "750"
+                        PayableCurrency = "EUR"
+                    }
+            )
+        else
+            None
+
+    let payment =
+        if paid then
+            Some
+                {
+                    PaymentDate = CaseFixtures.date "2026-08-20"
+                }
+        else
+            None
+
     {
         CaseReference = CaseFixtures.reference "Demo-1"
         Status = status
@@ -37,26 +59,7 @@ let private fields status decided paid : CaseFields =
                 { registration with
                     ClaimedAmount = "1000"
                 }
-        Decision =
-            if decided then
-                Some(
-                    CaseFixtures.decision
-                        {
-                            PaymentDecisionDate = "2026-08-15"
-                            PayableAmount = "750"
-                            PayableCurrency = "EUR"
-                        }
-                )
-            else
-                None
-        Payment =
-            if paid then
-                Some
-                    {
-                        PaymentDate = CaseFixtures.date "2026-08-20"
-                    }
-            else
-                None
+        Progress = CaseFixtures.progress decision payment
     }
 
 let private retained revision view =
@@ -83,7 +86,7 @@ let private acts =
         (AuthoredCaseAct.Correct
             {
                 Registration =
-                    Change.Replace
+                    Amendment.Replace
                         { registration with
                             ClaimantName = "Changed Party"
                         }
@@ -278,7 +281,7 @@ let private identifiers =
                     ((CaseReference.parse
                       >> Result.map ignore
                       >> Result.mapError (fun violation ->
-                          Refusal.InvalidInput(
+                          Refusal.invalidInput (
                               InputTarget.Field BusinessField.CaseReference,
                               violation
                           )))
@@ -290,7 +293,7 @@ let private identifiers =
                     ((CaseReference.parse
                       >> Result.map ignore
                       >> Result.mapError (fun violation ->
-                          Refusal.InvalidInput(
+                          Refusal.invalidInput (
                               InputTarget.Field BusinessField.CaseReference,
                               violation
                           )))

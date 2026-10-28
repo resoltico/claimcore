@@ -15,7 +15,7 @@ let private applyAt date act claim =
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
-        (Error(Refusal.InvalidInput(field, Violation.FutureDate)))
+        (Error(Refusal.invalidInput (field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
 
 let private amendmentRetainsDates =
@@ -128,7 +128,7 @@ let private closedCorrectionRetainsDates =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Change.Replace
+                        Amendment.Replace
                             { registration with
                                 ClaimantName = "Synthetic corrected party"
                             }
@@ -156,7 +156,7 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Change.Replace
+                        Amendment.Replace
                             { registration with
                                 IncidentDate = "2026-08-02"
                             }
@@ -173,7 +173,7 @@ let private spellingDoesNotRevise =
         let act =
             AuthoredCaseAct.Correct
                 {
-                    Registration = Change.Keep
+                    Registration = Amendment.Keep
                     Decision = Change.Replace decision
                     Payment = Change.Replace { PaymentDate = "2026-08-20" }
                 }

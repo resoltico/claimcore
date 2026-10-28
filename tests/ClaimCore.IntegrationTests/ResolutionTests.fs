@@ -67,7 +67,12 @@ let private delayedExecute (database: PostgresFixture.Database) =
         do! waiters database 2L
         do! transaction.CommitAsync()
         let! resolved = resolving
-        Expect.equal resolved ResolveReply.NotAccepted "A committed fence is a final answer"
+
+        Expect.equal
+            resolved
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "A committed fence is a final answer"
+
         let! executed = executing
 
         Expect.equal
@@ -88,7 +93,17 @@ let private delayedExecute (database: PostgresFixture.Database) =
 let private revokeReadRoles (actor: ServiceContext) principal =
     task {
         for operation, role in [ id 111, Role.CaseHandler; id 114, Role.PaymentRecorder ] do
-            let! reply = grant actor operation principal role GrantTarget.Installation false
+            let! reply =
+                grant
+                    actor
+                    operation
+                    principal
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    false
+
             acceptedAuthority reply
     }
 
@@ -107,7 +122,7 @@ let private receipts (database: PostgresFixture.Database) =
 
         Expect.equal
             resolved
-            (ResolveReply.Accepted receipt)
+            ((Resolved.Accepted >> Outcome.Succeeded) receipt)
             "Committed operation returns its receipt"
 
         do! revokeReadRoles actor database.Fixture.Owner
@@ -115,7 +130,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! withheld = resolve actor (id 110)
 
         match withheld with
-        | ResolveReply.Accepted receipt ->
+        | Outcome.Succeeded(Resolved.Accepted receipt) ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
                 SnapshotDisclosure.Withheld
@@ -127,8 +142,10 @@ let private receipts (database: PostgresFixture.Database) =
                 actor
                 (id 112)
                 database.Fixture.Owner
-                Role.DataSteward
-                GrantTarget.Installation
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
                 true
 
         acceptedAuthority steward
@@ -143,7 +160,7 @@ let private receipts (database: PostgresFixture.Database) =
         let! resolvedErased = resolve actor (id 110)
 
         match resolvedErased with
-        | ResolveReply.Accepted receipt ->
+        | Outcome.Succeeded(Resolved.Accepted receipt) ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
                 SnapshotDisclosure.Erased
@@ -174,7 +191,12 @@ let private foreign (database: PostgresFixture.Database) =
         let! created = (Service.execute actor (input) (token))
         let receipt = accepted created
         let! hidden = resolve other (id 121)
-        Expect.equal hidden ResolveReply.NotAccepted "Foreign acceptance discloses nothing"
+
+        Expect.equal
+            hidden
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "Foreign acceptance discloses nothing"
+
         let! replayed = (Service.execute actor (input) (token))
 
         Expect.equal
@@ -186,7 +208,7 @@ let private foreign (database: PostgresFixture.Database) =
 
         Expect.equal
             fence
-            ResolveReply.NotAccepted
+            (Outcome.Succeeded Resolved.NotAccepted)
             "Another actor's future ID is independently fenced"
 
         let! acceptedOtherId =
@@ -231,15 +253,15 @@ let private actorAdmission (database: PostgresFixture.Database) =
 
         Expect.equal
             refused
-            (ResolveReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Disabled actor cannot resolve"
 
         let! nil = resolve actor Guid.Empty
 
         Expect.equal
             nil
-            (ResolveReply.Rejected(
-                Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+            (Outcome.Rejected(
+                Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired)
             ))
             "Nil identity is invalid"
     }
@@ -253,7 +275,11 @@ let private authorityFence (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! resolved = resolve actor (id 130)
-        Expect.equal resolved ResolveReply.NotAccepted "Authority identity is fenced"
+
+        Expect.equal
+            resolved
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "Authority identity is fenced"
 
         let! rejected =
             (Service.execute
@@ -277,7 +303,7 @@ let private authorityFence (database: PostgresFixture.Database) =
 
         Expect.equal
             accepted
-            (ResolveReply.Accepted receipt)
+            ((Resolved.Accepted >> Outcome.Succeeded) receipt)
             "Accepted authority operation resolves to its receipt"
     }
 

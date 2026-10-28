@@ -30,15 +30,18 @@ module internal Resolution =
             | _ -> Verdict.Proceed owner.ActorId
         | None -> Verdict.Refuse Refusal.ResourceUnavailable
 
-    let run (services: ServiceContext) (request: ResolveRequest) token =
+    let run (services: ServiceContext) (request: OperationLookup) token =
         let store = services.Store
         let principal = services.Principal
 
         task {
             if request.OperationId = Guid.Empty then
                 return
-                    ResolveReply.Rejected(
-                        Refusal.InvalidInput(InputTarget.OperationId, Violation.OperationIdRequired)
+                    Outcome.Rejected(
+                        Refusal.invalidInput (
+                            InputTarget.OperationId,
+                            Violation.OperationIdRequired
+                        )
                     )
             else
                 let! result =
@@ -79,11 +82,9 @@ module internal Resolution =
 
                 return
                     match result with
-                    | Ok(Verdict.Proceed()) -> ResolveReply.NotAccepted
-                    | Ok(Verdict.Replay receipt) -> ResolveReply.Accepted receipt
-                    | Ok(Verdict.Refuse refusal) -> ResolveReply.Rejected refusal
-                    | Ok(Verdict.Fail fault) -> ResolveReply.Failed fault
+                    | Ok verdict ->
+                        Verdict.outcome (fun () -> Resolved.NotAccepted) Resolved.Accepted verdict
                     | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
-                        ResolveReply.Failed CoreFault.StoreUnavailable
-                    | Error failure -> ResolveReply.Failed(Queries.fault failure)
+                        Outcome.Failed CoreFault.StoreUnavailable
+                    | Error failure -> Queries.failure failure
         }

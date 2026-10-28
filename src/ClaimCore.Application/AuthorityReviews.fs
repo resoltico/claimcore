@@ -14,7 +14,7 @@ module internal AuthorityReviews =
                 GrantTarget.CaseReference(CaseReference.format record.Snapshot.Reference),
                 (view.Target.Cases |> Map.tryFind id |> Option.defaultValue [])
 
-        let value: AuthorityGrant = { Role = role; Scope = scope }
+        let value: AuthoredGrant = { Role = role; Scope = scope }
         value, (if List.contains role roles then [ value ] else [])
 
     let describe (view: AuthorityExecutionFacts) projection =
@@ -49,7 +49,7 @@ module internal AuthorityReviews =
                 { before with Grants = current }, before
 
         {
-            Target = view.Target.Actor |> Option.map Actor.describe
+            Target = view.Target.Actor
             Before = before
             After = after
         }

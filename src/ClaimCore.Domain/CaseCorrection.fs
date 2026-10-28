@@ -31,10 +31,14 @@ module internal CaseCorrections =
             | RecordGroup.Decision -> decisionChoice progress Change.Clear |> Result.isOk
             | RecordGroup.Payment -> paymentChoice progress Change.Clear |> Result.isOk
 
-        if present then
-            CorrectionGroupAction.forGroup group
-        else
-            [ CorrectionGroupAction.Keep ]
+        match group with
+        | RecordGroup.Registration -> Amendment.actions
+        | RecordGroup.Decision
+        | RecordGroup.Payment ->
+            if present then
+                CorrectionGroupAction.all
+            else
+                [ CorrectionGroupAction.Keep ]
 
     let private paidAcknowledgement progress (correction: ValidCorrection) =
         match progress, correction.Decision, correction.Payment with
@@ -48,18 +52,38 @@ module internal CaseCorrections =
                 Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
 
+    /// A valid proposed state can be checked independently of acknowledgement input flags.
+    let proposed facts progress (correction: ValidCorrection) =
+        result {
+            let facts =
+                match correction.Registration with
+                | Amendment.Keep -> facts
+                | Amendment.Replace replacement -> replacement
+
+            let! decision = decisionChoice progress correction.Decision
+            let! payment = paymentChoice progress correction.Payment
+
+            let! next =
+                PaymentProgress.fromGroups decision payment
+                |> Result.mapError (fun () -> Refusal.DecisionRequired)
+
+            return facts, next
+        }
+
     let apply facts progress (correction: ValidCorrection) =
         result {
-            let! nextFacts =
+            let nextFacts =
                 match correction.Registration with
-                | Change.Keep -> Ok facts
-                | Change.Replace replacement -> Ok replacement
-                | Change.Clear -> Error Refusal.ActNotPermitted
+                | Amendment.Keep -> facts
+                | Amendment.Replace replacement -> replacement
 
             let! nextDecision = decisionChoice progress correction.Decision
             let! nextPayment = paymentChoice progress correction.Payment
             do! paidAcknowledgement progress correction
-            let! nextProgress = PaymentProgress.fromGroups nextDecision nextPayment
+
+            let! nextProgress =
+                PaymentProgress.fromGroups nextDecision nextPayment
+                |> Result.mapError (fun () -> Refusal.DecisionRequired)
 
             if nextFacts = facts && nextProgress = progress then
                 return! Error Refusal.CorrectionNoChanges

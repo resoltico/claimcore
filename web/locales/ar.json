@@ -46,6 +46,7 @@
   "ui.historyDetail": "تفاصيل السجل",
   "ui.historyHint": "إدخالات السجل للقراءة فقط. وسّع الإدخال للاطّلاع على تفاصيل الملف المسجّلة ومن سجّلها.",
   "ui.historySummary": "{act} · المراجعة {revision} · {timestamp}",
+  "ui.incompleteResponse": "أعاد الخادم استجابة غير مكتملة أو غير صالحة.",
   "ui.keepEditing": "متابعة التحرير",
   "ui.language": "لغة الواجهة",
   "ui.leaveDraftDescription": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟",

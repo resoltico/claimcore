@@ -61,7 +61,9 @@ let tests =
                     inputs
                     |> List.choose (fun input ->
                         match input.Name with
-                        | CatalogInputName.Field field when field <> BusinessField.CaseReference ->
+                        | InteractionInput.Target(InputTarget.Field field) when
+                            field <> BusinessField.CaseReference
+                            ->
                             Some(BusinessField.key field)
                         | _ -> None)
 
@@ -81,13 +83,16 @@ let tests =
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
                 let operation = find [ "case"; "decide" ]
-                let inputs, _ = OperationCatalog.caseInputs operation CaseActKind.Decide
+                let inputs, _ = OperationCatalog.derive operation
 
                 let check (inputs: OperationInputDefinition list) =
                     let date =
                         inputs
                         |> List.find (fun input ->
-                            input.Name = CatalogInputName.Field BusinessField.PaymentDecisionDate)
+                            input.Name =
+                                InteractionInput.Target(
+                                    InputTarget.Field BusinessField.PaymentDecisionDate
+                                ))
 
                     Expect.equal
                         date.Binding.Prefill
@@ -108,7 +113,7 @@ let tests =
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
                     let operation = find [ "case"; "open" ]
-                    let inputs, constants = OperationCatalog.caseInputs operation CaseActKind.Open
+                    let inputs, constants = OperationCatalog.derive operation
 
                     let check
                         (inputs: OperationInputDefinition list)
@@ -118,7 +123,7 @@ let tests =
                             (inputs
                              |> List.exists (fun input ->
                                  input.Name =
-                                     CatalogInputName.Technical TechnicalInput.ExpectedRevision))
+                                     (InteractionInput.Target InputTarget.ExpectedRevision)))
                             "Opening has no authored revision flag"
 
                         Expect.isTrue
@@ -190,7 +195,8 @@ let tests =
                 let payment =
                     inputs
                     |> List.find (fun input ->
-                        input.Name = CatalogInputName.Field BusinessField.PaymentDate)
+                        input.Name =
+                            InteractionInput.Target(InputTarget.Field BusinessField.PaymentDate))
 
                 Expect.equal
                     payment.Binding.Branches

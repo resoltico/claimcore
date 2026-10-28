@@ -16,7 +16,7 @@ open ClaimCore.HostSecurity
 type Command =
     | Initialize of string
     | ProvisionOwner
-    | Verify of ExpectedPosition option
+    | Verify of LedgerPosition option
     | Head
     | Help
     | Version
@@ -33,6 +33,15 @@ type CommandName =
 module Command =
     [<Literal>]
     let ProgramName = "claimcore-database"
+
+    let supportedExitCodes =
+        [
+            ExitCode.Success
+            ExitCode.Rejected
+            ExitCode.Failed
+            ExitCode.OutcomeUnknown
+            ExitCode.Diverged
+        ]
 
     let name =
         function
@@ -82,18 +91,6 @@ module CommandName =
             " "
             (Command.ProgramName :: token name :: (arguments name |> List.map argument))
 
-[<RequireQualifiedAccess>]
-type UsageIssue =
-    | UnknownCommand
-    | ArgumentsInvalid
-    | CheckpointInvalid
-
-type UsageError =
-    {
-        Issue: UsageIssue
-        Command: CommandName option
-    }
-
 module Inputs =
     let private expected (text: string) =
         let parts = text.Split(':')
@@ -108,16 +105,9 @@ module Inputs =
             && parts[1]
                |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
         then
-            let position: ExpectedPosition =
-                {
-                    Sequence = sequence
-                    EntryHash = Convert.FromHexString(parts[1])
-                }
-
-            if ExpectedPositions.isValid position then
-                Some position
-            else
-                None
+            Convert.FromHexString(parts[1])
+            |> EntryHash.ofBytes
+            |> Option.bind (LedgerPosition.create sequence)
         else
             None
 
@@ -125,12 +115,13 @@ module Inputs =
         if List.isEmpty arguments then
             Ok command
         else
-            Error UsageIssue.ArgumentsInvalid
+            Error(UsageError.NotApplicable("arguments", "command"))
 
     let private initialize arguments =
         match arguments with
         | [ zone ] -> Ok(Initialize zone)
-        | _ -> Error UsageIssue.ArgumentsInvalid
+        | [] -> Error(UsageError.MissingOperand "TIME_ZONE")
+        | _ -> Error(UsageError.NotApplicable("arguments", "initialize"))
 
     let private verify arguments =
         match arguments with
@@ -138,8 +129,8 @@ module Inputs =
         | [ "--expect"; value ] ->
             expected value
             |> Option.map (Some >> Verify >> Ok)
-            |> Option.defaultValue (Error UsageIssue.CheckpointInvalid)
-        | _ -> Error UsageIssue.ArgumentsInvalid
+            |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
+        | _ -> Error(UsageError.NotApplicable("arguments", "command"))
 
     let private parse name arguments =
         match name with
@@ -158,12 +149,16 @@ module Inputs =
             | None ->
                 Error
                     {
-                        Issue = UsageIssue.UnknownCommand
-                        Command = None
+                        Issue = UsageError.UnknownCommand(first, [])
+                        Usage = CommandName.all |> List.map CommandName.synopsis
                     }
             | Some name ->
                 parse name rest
-                |> Result.mapError (fun issue -> { Issue = issue; Command = Some name })
+                |> Result.mapError (fun issue ->
+                    {
+                        Issue = issue
+                        Usage = [ CommandName.synopsis name ]
+                    })
 
     let private bytes setting maximum =
         Environment.GetEnvironmentVariable setting
@@ -206,8 +201,3 @@ module Inputs =
             decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module UsageIssue =
-    let vocabulary =
-        Vocabulary.ofUnion<UsageIssue> "usage" TokenCasing.ScreamingSnake None

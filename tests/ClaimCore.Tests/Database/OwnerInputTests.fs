@@ -30,7 +30,7 @@ let private accepted () =
     Expect.isTrue (PrincipalKey.isHuman principal) "The format denotes a human owner"
 
     Expect.equal
-        (PrincipalKey.describe principal).Subject
+        (PrincipalKey.toInput principal).Subject
         "human-owner"
         "Immutable identity retained"
 
@@ -72,28 +72,37 @@ let private refused () =
 
 let private replies () =
     let reason =
-        Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.TooLong 512)
+        Refusal.invalidInput (InputTarget.PrincipalSubject, Violation.TooLong 512)
 
     let bytes, code = Replies.authority (ProvisionOwnerOutcome.Rejected reason)
     use document = JsonDocument.Parse(bytes: byte array)
     Expect.equal code 2 "A refusal uses the shared rejected exit"
     Expect.equal (document.RootElement.GetProperty("kind").GetString()) "REJECTED" "Literal outcome"
     let diagnostic = document.RootElement.GetProperty("diagnostic")
-    Expect.equal (diagnostic.GetProperty("code").GetString()) "TOO_LONG" "The cause is retained"
 
     Expect.equal
-        (diagnostic.GetProperty("target").GetString())
+        (diagnostic.GetProperty("code").GetString())
+        "INVALID_INPUT"
+        "The refusal envelope is retained"
+
+    let issues = diagnostic.GetProperty("issues").EnumerateArray() |> Seq.toList
+    Expect.hasLength issues 1 "Every owner input issue is retained"
+    let issue = List.head issues
+    Expect.equal (issue.GetProperty("code").GetString()) "TOO_LONG" "The cause is retained"
+
+    Expect.equal
+        (issue.GetProperty("field").GetString())
         "principal.subject"
         "The input target is retained"
 
     Expect.equal
-        (diagnostic.GetProperty("maximumCharacters").GetInt32())
+        (issue.GetProperty("maximumCharacters").GetInt32())
         512
         "Typed parameters are retained"
 
     Expect.equal
         (Codec.decode 10000 Replies.codec bytes)
-        (Ok(Reply.Rejected reason))
+        (Ok(Reply.Operation(Outcome.Rejected reason)))
         "The local codec reads its own complete reply"
 
     let bytes, code =
@@ -113,7 +122,7 @@ let private usageAndExits () =
         | Error usage -> usage
         | Ok _ -> failtest "A missing zone must produce usage"
 
-    Expect.equal usage.Issue UsageIssue.ArgumentsInvalid "Typed grammar error"
+    Expect.equal usage.Issue (UsageError.MissingOperand "TIME_ZONE") "Typed grammar error"
     let bytes, code = Replies.usage usage
     use document = JsonDocument.Parse(bytes: byte array)
     Expect.equal code 2 "Usage is a definite refusal"

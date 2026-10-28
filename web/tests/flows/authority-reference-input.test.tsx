@@ -62,9 +62,9 @@ const rejectedPreview = () =>
         outcome: {
           kind: "REJECTED",
           data: {
-            code: "REFERENCE_FORMAT",
+            code: "INVALID_INPUT",
             action: "CORRECT_INPUT",
-            target: "caseReference",
+            issues: [{ field: "caseReference", code: "REFERENCE_FORMAT" }],
           },
         },
       },
@@ -73,13 +73,13 @@ const rejectedPreview = () =>
 const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale: Locale) => {
   await user.type(
     screen.getByRole("textbox", {
-      name: locale.authority["input.issuer.label"],
+      name: locale.authority["field.principal.issuer.label"],
     }),
     "https://synthetic.example/",
   );
   await user.type(
     screen.getByRole("textbox", {
-      name: locale.authority["input.subject.label"],
+      name: locale.authority["field.principal.subject.label"],
     }),
     "synthetic-target",
   );

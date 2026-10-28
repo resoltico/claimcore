@@ -6,7 +6,7 @@ module Catalog =
     let document: CatalogDocument =
         {
             Fields =
-                Record.fields
+                CaseFields.declarations
                 |> List.map (fun row ->
                     {
                         Name = row.Field
@@ -17,24 +17,14 @@ module Catalog =
                         AllowsAbsence = row.AllowsAbsence
                     })
             InputFields =
-                Vocabulary.all TechnicalInput.vocabulary
+                InteractionInput.technical
                 |> List.map (fun input ->
                     {
-                        Name = TechnicalInput.token input
-                        LabelId = Vocabulary.messageKey TechnicalInput.vocabulary input "label"
-                        MeaningId =
-                            (match input with
-                             | TechnicalInput.Target
-                             | TechnicalInput.Act -> None
-                             | _ ->
-                                 Some(
-                                     Vocabulary.messageKey
-                                         TechnicalInput.vocabulary
-                                         input
-                                         "meaning"
-                                 ))
+                        Name = InteractionInput.key input
+                        LabelId = InteractionInput.messageKey input "label"
+                        MeaningId = Some(InteractionInput.messageKey input "meaning")
                         Scalar =
-                            if input = TechnicalInput.Reason then
+                            if input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
                             else
                                 None

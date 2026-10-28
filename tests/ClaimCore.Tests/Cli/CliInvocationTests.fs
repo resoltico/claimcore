@@ -333,7 +333,7 @@ let private authorityPreviewInvocation verb =
 
 
 let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter =
-    let grants present : AuthorityGrant list =
+    let grants present : AuthoredGrant list =
         if present then
             [
                 {
@@ -348,7 +348,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
         {
             PreviewReply.OperationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
             Outcome =
-                PreviewResult.Reviewed(
+                (Previewed.Reviewed >> Outcome.Succeeded) (
                     OperationReview.Authority
                         {
                             Target = None

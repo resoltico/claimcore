@@ -47,12 +47,13 @@ let snapshot status progress state : CaseSnapshot =
                     CaseReference = CaseFixtures.reference "DEMO-1"
                     Status = status
                     Registration = registration "Synthetic claimant" |> CaseFixtures.registration
-                    Decision = decided |> Option.map CaseFixtures.decision
-                    Payment =
-                        (if progress = Paid then
-                             Some(CaseFixtures.payment payment)
-                         else
-                             None)
+                    Progress =
+                        ClaimCore.TestSupport.CaseFixtures.progress
+                            (decided |> Option.map CaseFixtures.decision)
+                            ((if progress = Paid then
+                                  Some(CaseFixtures.payment payment)
+                              else
+                                  None))
                 }
     }
 
@@ -66,7 +67,7 @@ let erased: CaseSnapshot =
 let correction =
     AuthoredCaseAct.Correct
         {
-            Registration = Change.Replace(registration "Corrected claimant")
+            Registration = Amendment.Replace(registration "Corrected claimant")
             Decision = Change.Keep
             Payment = Change.Keep
         }

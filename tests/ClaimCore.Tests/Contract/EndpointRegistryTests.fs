@@ -72,10 +72,10 @@ let private readReplies () =
 
     for value in
         [
-            ReadReply.Succeeded true
-            ReadReply.Succeeded false
-            ReadReply.Rejected Refusal.InvalidCursor
-            ReadReply.Failed CoreFault.StoreUnavailable
+            Outcome.Succeeded true
+            Outcome.Succeeded false
+            Outcome.Rejected Refusal.InvalidCursor
+            Outcome.Failed CoreFault.StoreUnavailable
         ] do
         roundTrip codec value
 
@@ -94,7 +94,11 @@ let private receipt =
         Position =
             {
                 Sequence = 1L
-                EntryHash = String.replicate 64 "a"
+                EntryHash =
+                    (String.replicate 64 "a"
+                     |> System.Convert.FromHexString
+                     |> EntryHash.ofBytes
+                     |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = id
@@ -117,10 +121,10 @@ let private authorityReview =
 let private mutationReplies () =
     for outcome in
         [
-            PreviewResult.Reviewed authorityReview
-            PreviewResult.AlreadyAccepted receipt
-            PreviewResult.Rejected Refusal.LastOwner
-            PreviewResult.Failed CoreFault.StoreIntegrityError
+            (Previewed.Reviewed >> Outcome.Succeeded) authorityReview
+            (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
+            Outcome.Rejected Refusal.LastOwner
+            Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         roundTrip
             ReplyCodecs.preview

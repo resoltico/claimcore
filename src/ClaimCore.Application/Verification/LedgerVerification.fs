@@ -10,7 +10,7 @@ open ClaimCore.Application.VerificationChecks
 module LedgerVerification =
     type Scan =
         {
-            Head: LedgerHead
+            Head: LedgerPosition
             Cases: Map<Guid, CaseHistory>
             Actors: Map<Guid, ActorAuthority>
             EarliestDuplicate: int64 option
@@ -27,9 +27,9 @@ module LedgerVerification =
                 entry
                 request
             |> Result.map (fun actors -> state.Cases, actors)
-        | EntryTarget.Case(id, revision, act, _), _ ->
+        | EntryTarget.Case(_, _, act, _), _ ->
             result {
-                let! cases = CaseFold.apply state.Cases entry id revision act payload
+                let! cases = CaseFold.apply state.Cases entry payload
 
                 let human =
                     List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
@@ -45,11 +45,11 @@ module LedgerVerification =
             VerificationFinding.Link
             (state.Head.Sequence < Revision.Maximum
              && sequence = state.Head.Sequence + 1L
-             && previous = state.Head.EntryHash)
+             && previous = EntryHash.toBytes state.Head.EntryHash)
 
     let append
         installationId
-        (expected: ExpectedPosition option)
+        (expected: LedgerPosition option)
         (state: Scan)
         (entry: StoredEntry)
         (metadata: LedgerMetadata)
@@ -76,14 +76,15 @@ module LedgerVerification =
             let seen =
                 expected
                 |> Option.exists (fun position ->
-                    position.Sequence = sequence && position.EntryHash = entry.EntryHash)
+                    position.Sequence = sequence
+                    && EntryHash.toBytes position.EntryHash = entry.EntryHash)
 
             return
                 {
                     Head =
                         {
                             Sequence = sequence
-                            EntryHash = entry.EntryHash
+                            EntryHash = EntryHash.ofBytes entry.EntryHash |> Option.get
                         }
                     Cases = cases
                     Actors = actors
@@ -92,12 +93,8 @@ module LedgerVerification =
                 }
         }
 
-    let initial (expected: ExpectedPosition option) earliestDuplicate =
-        let head: LedgerHead =
-            {
-                Sequence = 0L
-                EntryHash = Array.zeroCreate 32
-            }
+    let initial (expected: LedgerPosition option) earliestDuplicate =
+        let head = LedgerPosition.genesis
 
         {
             Head = head
@@ -110,15 +107,15 @@ module LedgerVerification =
                     position.Sequence = 0L && position.EntryHash = head.EntryHash)
         }
 
-    let head (state: Scan) (actual: LedgerHead option) =
+    let head (state: Scan) (actual: LedgerPosition option) =
         require None VerificationFinding.Head (actual = Some state.Head)
 
-    let complete (expected: ExpectedPosition option) (state: Scan) =
+    let complete (expected: LedgerPosition option) (state: Scan) =
         if expected.IsSome && not state.ExpectedSeen then
             Error(
                 divergence (expected |> Option.map _.Sequence) VerificationFinding.ExpectedPosition
             )
         else
-            Ok(LedgerEntries.position state.Head.Sequence state.Head.EntryHash)
+            Ok(state.Head)
 
     let erasure (state: Scan) = CaseFold.erasure state.Cases

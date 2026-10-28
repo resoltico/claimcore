@@ -1,7 +1,7 @@
 import { isTerm } from "../presentation/terms";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
-import { renderKey } from "../presentation/messages";
+import { renderCatalogKey } from "../presentation/messages";
 import { atPath, termVocabulary, type CatalogEntry } from "../protocol/catalogAssembly";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -25,13 +25,15 @@ const label = (
 ): string => {
   const input = bindings.inputs.find((candidate) => samePath(candidate.path, path));
   if (input !== undefined) {
-    return input.kind.kind === "GROUP" ? p.text("label.action") : renderKey(p, input.labelId);
+    return input.kind.kind === "GROUP"
+      ? p.text("label.action")
+      : renderCatalogKey(p, input.labelId);
   }
   const group = bindings.inputs.find(
     (candidate) => candidate.kind.kind === "GROUP" && samePath(candidate.path.slice(0, -1), path),
   );
   if (group !== undefined) {
-    return renderKey(p, group.labelId);
+    return renderCatalogKey(p, group.labelId);
   }
   const name = path.at(-1)!;
   return name === "kind" ? p.text("label.action") : p.fieldLabel(name);

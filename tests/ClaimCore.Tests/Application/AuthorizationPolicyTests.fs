@@ -9,88 +9,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.AuthorityPolicyInputs
 
-let private human =
-    PrincipalKey.human "https://issuer.example/" "worker" |> accepted
-
-let private service =
-    PrincipalKey.service "https://issuer.example/" "worker" |> accepted
-
-let private caseId = Guid.Parse "c0000000-0000-4000-8000-000000000001"
-let private otherCaseId = Guid.Parse "c0000000-0000-4000-8000-000000000002"
-
-let private actor principal grants : ActorAuthority =
-    {
-        ActorId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-        Principal = principal
-        Enabled = true
-        Grants = grants
-    }
-
-let private expectedRoles =
-    [
-        Role.Owner, "OWNER", [ Capability.ManageAuthority; Capability.ReadAuthority ]
-        Role.CaseReader, "CASE_READER", [ Capability.ReadCase; Capability.ReadHistory ]
-        Role.CaseRegistrar,
-        "CASE_REGISTRAR",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
-        Role.CaseHandler,
-        "CASE_HANDLER",
-        [
-            Capability.ReadCase
-            Capability.ReadHistory
-            Capability.ReadHistoryFull
-            Capability.Register
-            Capability.Decide
-            Capability.Close
-        ]
-        Role.PaymentRecorder,
-        "PAYMENT_RECORDER",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
-        Role.DataSteward,
-        "DATA_STEWARD",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
-        Role.Auditor,
-        "AUDITOR",
-        [
-            Capability.ReadCase
-            Capability.ReadHistory
-            Capability.ReadHistoryFull
-            Capability.ReadAuthority
-        ]
-    ]
-
-let private allCapabilities =
-    [
-        Capability.ReadCase
-        Capability.ReadHistory
-        Capability.ReadHistoryFull
-        Capability.Register
-        Capability.Decide
-        Capability.RecordPayment
-        Capability.Close
-        Capability.Steward
-        Capability.ManageAuthority
-        Capability.ReadAuthority
-    ]
-
-let private expectedPermission role capabilities principal grant resource capability =
-    let humanRole = role = Role.Owner || role = Role.DataSteward
-
-    let installationOnly =
-        capability = Capability.ManageAuthority || capability = Capability.ReadAuthority
-
-    let scope =
-        match grant, resource with
-        | GrantScope.Installation, ResourceScope.Installation -> true
-        | GrantScope.Installation, ResourceScope.Case id -> id <> Guid.Empty && not installationOnly
-        | GrantScope.Case granted, ResourceScope.Case requested ->
-            granted = requested && requested <> Guid.Empty && not installationOnly
-        | _ -> false
-
-    List.contains capability capabilities
-    && scope
-    && (not humanRole || principal = human)
 
 let private matrix () =
     Expect.equal Role.all.Length 7 "Seven roles"
@@ -108,19 +28,27 @@ let private matrix () =
         Expect.equal (Role.parse token) (Some role) "Role parser"
 
         for principal in [ human; service ] do
-            for scope in [ GrantScope.Installation; GrantScope.Case caseId ] do
+            for scope in [ Scope.Installation; Scope.Case caseId ] do
                 let current = actor principal [ { Role = role; Scope = scope } ]
 
                 for resource in
                     [
-                        ResourceScope.Installation
-                        ResourceScope.Case caseId
-                        ResourceScope.Case otherCaseId
-                        ResourceScope.Case Guid.Empty
+                        Scope.Installation
+                        Scope.Case caseId
+                        Scope.Case otherCaseId
+                        Scope.Case Guid.Empty
                     ] do
                     for capability in allCapabilities do
                         let expected =
-                            expectedPermission role capabilities principal scope resource capability
+                            expectedPermission
+                                {
+                                    Role = role
+                                    Capabilities = capabilities
+                                }
+                                principal
+                                scope
+                                resource
+                                capability
 
                         Expect.equal
                             (Authority.can
@@ -147,27 +75,39 @@ let private invalidActors () =
             [
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantScope.Installation
+                    Scope = Scope.Installation
                 }
             ]
 
     for invalid in
         [
-            { current with ActorId = Guid.Empty }
+            { current with
+                Actor =
+                    { current.Actor with
+                        ActorId = Guid.Empty
+                    }
+            }
             { current with Grants = [] }
-            { current with Enabled = false }
-            { current with Principal = service }
+            { current with
+                Actor = { current.Actor with Enabled = false }
+            }
+            { current with
+                Actor =
+                    { current.Actor with
+                        Principal = service
+                    }
+            }
         ] do
         Expect.isFalse
             (Authority.can
                 human
                 (AuthorityView.ofActor (Some invalid))
                 Capability.ReadCase
-                (ResourceScope.Case caseId))
+                (Scope.Case caseId))
             "Invalid actor grants no rights"
 
     Expect.isFalse
-        (Authority.can human AuthorityView.empty Capability.ReadCase (ResourceScope.Case caseId))
+        (Authority.can human AuthorityView.empty Capability.ReadCase (Scope.Case caseId))
         "Absent actor grants no rights"
 
     let scoped =
@@ -176,7 +116,7 @@ let private invalidActors () =
             [
                 {
                     Role = Role.Auditor
-                    Scope = GrantScope.Case caseId
+                    Scope = Scope.Case caseId
                 }
             ]
 
@@ -185,7 +125,7 @@ let private invalidActors () =
             human
             (AuthorityView.ofActor (Some scoped))
             Capability.ReadAuthority
-            ResourceScope.Installation)
+            Scope.Installation)
         "Case-scoped audit does not enumerate the installation"
 
     invalidPrincipals ()
@@ -232,9 +172,9 @@ let private replacementCorrection
     {
         Registration =
             (if registrationChanged then
-                 Change.Replace registration
+                 Amendment.Replace registration
              else
-                 Change.Keep)
+                 Amendment.Keep)
         Decision =
             (if decisionChanged then
                  Change.Replace decision
@@ -281,14 +221,14 @@ let private reaffirmations () =
             [
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantScope.Installation
+                    Scope = Scope.Installation
                 }
             ]
 
     let paymentReaffirmation =
         (AuthoredCaseAct.Correct
             {
-                Registration = Change.Keep
+                Registration = Amendment.Keep
                 Decision = Change.Keep
                 Payment = Change.Replace { PaymentDate = "2026-08-20" }
             })
@@ -297,14 +237,14 @@ let private reaffirmations () =
         (Authority.canAct
             human
             (AuthorityView.ofActor (Some handler))
-            (ResourceScope.Case caseId)
+            (Scope.Case caseId)
             (CaseFixtures.act paymentReaffirmation))
         "An unchanged payment assertion still requires payment authority"
 
     let keep =
         (AuthoredCaseAct.Correct
             {
-                Registration = Change.Keep
+                Registration = Amendment.Keep
                 Decision = Change.Keep
                 Payment = Change.Keep
             })
@@ -339,7 +279,7 @@ let private scopedAdvice () =
                 [
                     {
                         Role = role
-                        Scope = GrantScope.Case target
+                        Scope = Scope.Case target
                     }
                 ]
 
@@ -416,7 +356,7 @@ let private noUsableCorrectionOffer () =
             [
                 {
                     Role = Role.PaymentRecorder
-                    Scope = GrantScope.Case target
+                    Scope = Scope.Case target
                 }
             ]
 

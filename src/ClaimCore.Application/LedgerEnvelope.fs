@@ -5,12 +5,20 @@ open ClaimCore.Domain
 
 type internal LedgerAppend<'projection> =
     {
+        OperationId: Guid
         ObservedAt: DateTimeOffset
         ActorId: Guid
         Subject: EntryTarget
         Snapshot: byte array
         Current: StoredCase option
         Projection: 'projection
+    }
+
+type internal LedgerWriteContext =
+    {
+        Head: LedgerPosition
+        Nonce: byte array
+        Fenced: bool
     }
 
 /// Common ledger sequencing and receipt construction, independent of a use case.
@@ -29,9 +37,7 @@ module internal LedgerEnvelope =
     let accept
         (services: ServiceContext)
         actor
-        operationId
-        head
-        nonce
+        (write: LedgerWriteContext)
         (plan: LedgerAppend<'Projection>)
         bytes
         =
@@ -41,15 +47,17 @@ module internal LedgerEnvelope =
         try
             let entry =
                 LedgerEntries.create
-                    installationId
-                    head
-                    plan.ObservedAt
-                    nonce
-                    plan.ActorId
-                    operationId
-                    plan.Subject
-                    bytes
-                    plan.Snapshot
+                    {
+                        InstallationId = installationId
+                        Head = write.Head
+                        Instant = plan.ObservedAt
+                        Nonce = write.Nonce
+                        ActorId = plan.ActorId
+                        OperationId = plan.OperationId
+                        Subject = plan.Subject
+                        Request = bytes
+                        Snapshot = plan.Snapshot
+                    }
 
             LedgerEntries.validate installationId (LedgerEntries.stored entry)
             |> Result.bind (LedgerEntries.receipt principal actor plan.Current)

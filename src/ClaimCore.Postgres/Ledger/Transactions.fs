@@ -45,11 +45,9 @@ module internal Transactions =
             match rows with
             | [ row ] ->
                 return
-                    ({
-                        Sequence = DatabaseSession.value 0 row
-                        EntryHash = DatabaseSession.value 1 row
-                    }
-                    : LedgerHead),
+                    StoredEntries.position
+                        (DatabaseSession.value 0 row)
+                        (DatabaseSession.value 1 row),
                     DatabaseSession.instant 2 row,
                     RandomNumberGenerator.GetBytes 32
             | _ -> return raise (RecordCorruptException "Ledger head is absent.")

@@ -67,21 +67,21 @@ module internal MessageCatalogs =
     let private overview language =
         let families =
             [
-                "case", "cli.family.case"
-                "authority", "cli.family.authority"
-                "operation", "cli.family.operation"
-                "context", "cli.family.context"
-                "call", "cli.family.call"
-                "session", "cli.family.session"
-                "describe", "cli.family.describe"
-                "schema", "cli.family.schema"
-                "help", "cli.family.help"
+                "case", CliMessage.CaseFamily
+                "authority", CliMessage.AuthorityFamily
+                "operation", CliMessage.OperationFamily
+                "context", CliMessage.ContextFamily
+                "call", CliMessage.CallFamily
+                "session", CliMessage.SessionFamily
+                "describe", CliMessage.DescribeFamily
+                "schema", CliMessage.SchemaFamily
+                "help", CliMessage.HelpFamily
             ]
 
         CliIdentity.programName
         + "\n"
         + (families
-           |> List.map (fun (family, key) -> family + " — " + render language key Map.empty)
+           |> List.map (fun (family, key) -> family + " — " + renderCli language key)
            |> String.concat "\n")
         + "\n"
 
@@ -94,11 +94,11 @@ module internal MessageCatalogs =
         | HelpTopic.Configuration ->
             renderCli language (CliMessage.HelpConfiguration(secret, trust))
         | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
-        | HelpTopic.Describe -> render language "cli.help.describe" Map.empty
-        | HelpTopic.Examples -> render language "cli.help.examples" Map.empty
-        | HelpTopic.Help -> render language "cli.help.help" Map.empty
-        | HelpTopic.Schema -> render language "cli.help.schema" Map.empty
-        | HelpTopic.Version -> render language "cli.help.version" Map.empty
+        | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
+        | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
+        | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
+        | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
+        | HelpTopic.Version -> renderCli language CliMessage.HelpVersion
         | HelpTopic.Overview -> overview language
         | HelpTopic.Verbs ->
             Catalog.document.Entries

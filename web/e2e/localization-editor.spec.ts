@@ -1,3 +1,4 @@
+import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
@@ -80,8 +81,14 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
   );
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(page.getByRole("alert")).toContainText(
-      businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
+    await expectInputRefusal(
+      page,
+      page.locator('input[data-field-name="incidentDate"]'),
+      language,
+      {
+        meaning: issueMeanings[language].incidentDate,
+        issue: businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
+      },
     );
   }
   await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveValue("2026-02-30");
@@ -103,10 +110,10 @@ const policyRefusal = async (page: Page, requests: string[]) => {
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
-      expect(outcome.data).toMatchObject({
-        code: "TOO_LONG",
-        target: "claimantName",
-        maximumCharacters: 200,
+      expect(outcome.data).toEqual({
+        code: "INVALID_INPUT",
+        action: "CORRECT_INPUT",
+        issues: [{ field: "claimantName", code: "TOO_LONG", maximumCharacters: 200 }],
       });
     }
     await selectLanguage(page, "lv");
@@ -119,7 +126,10 @@ const policyRefusal = async (page: Page, requests: string[]) => {
       ["en", "The value must not exceed 200 Unicode characters."],
     ] as const) {
       await selectLanguage(page, language);
-      await expect(page.getByRole("alert")).toContainText(text);
+      await expectInputRefusal(page, name, language, {
+        meaning: issueMeanings[language].claimantName,
+        issue: text,
+      });
       await expect(name).toHaveAttribute("aria-invalid", "true");
     }
     await expect(name).toHaveValue(authored);

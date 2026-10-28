@@ -293,7 +293,14 @@ let private businessFormatRefusals () =
             | Ok {
                      Outcome = ExecuteResult.Rejected value
                  } ->
-                Expect.equal value.Field (Some field) "The malformed business field is identified."
+                match value with
+                | Refusal.InvalidInput issues ->
+                    let fields =
+                        InputIssues.toList issues
+                        |> List.map (fun issue -> InputTarget.token issue.Target)
+
+                    Expect.equal fields [ field ] "The malformed business field is identified."
+                | _ -> failtest "Malformed business format must produce input issues."
             | _ -> failtest "Malformed business format must produce a typed rejection."
     }
     |> _.GetAwaiter().GetResult()
@@ -325,7 +332,7 @@ let private authorityPreview () =
         match Codec.decode 100000 Api.operationPreview.Output response with
         | Ok {
                  OperationId = id
-                 Outcome = PreviewResult.Reviewed(OperationReview.Authority review)
+                 Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review))
              } ->
             Expect.equal id operationId "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"
@@ -350,7 +357,7 @@ let private completionFailure () =
         task {
             let invalid =
                 { receipt operationId "WEB-001" with
-                    Position = { position with EntryHash = "invalid" }
+                    RecordedBy = Guid.Empty
                 }
 
             host.HandlerStub.Execute <- fun _ -> Task.FromResult(ExecuteResult.Accepted invalid)
@@ -447,7 +454,10 @@ let private principalAdmission () =
                  } ->
                 Expect.equal
                     (Error refusal)
-                    (PrincipalKey.admit kind issuer subject)
+                    (PrincipalKey.ofKind
+                        (Vocabulary.tryParse PrincipalKind.vocabulary kind |> Option.get)
+                        issuer
+                        subject)
                     "Application preserves the authoritative identity refusal."
             | _ -> failtest "Invalid principal must receive a typed refusal."
 

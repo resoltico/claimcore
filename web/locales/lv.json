@@ -46,6 +46,7 @@
   "ui.historyDetail": "Vēstures detalizācija",
   "ui.historyHint": "Vēstures ieraksti ir tikai lasāmi. Izvērsiet ierakstu, lai skatītu reģistrētās lietas ziņas un to autoru.",
   "ui.historySummary": "{act} · redakcija {revision} · {timestamp}",
+  "ui.incompleteResponse": "Pakalpojums atgrieza nepilnīgu vai nederīgu atbildi.",
   "ui.keepEditing": "Turpināt rediģēšanu",
   "ui.language": "Saskarnes valoda",
   "ui.leaveDraftDescription": "Vai atmest šo melnrakstu un aizvērt redaktoru?",

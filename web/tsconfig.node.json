@@ -18,6 +18,8 @@
     "playwright.config.ts",
     "scripts",
     "../contracts/client.ts",
-    "prettier.config.mjs"
+    "prettier.config.mjs",
+    "typed-presentation-lint.config.ts",
+    "browser-transport-lint.config.ts"
   ]
 }

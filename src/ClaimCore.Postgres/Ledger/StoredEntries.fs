@@ -13,6 +13,12 @@ type internal LedgerRow =
     }
 
 module internal StoredEntries =
+    let position sequence bytes =
+        EntryHash.ofBytes bytes
+        |> Option.bind (LedgerPosition.create sequence)
+        |> Option.defaultWith (fun () ->
+            raise (RecordCorruptException "Invalid stored ledger position."))
+
     let columns =
         "sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,"
         + DatabaseSession.instantExpression "recorded_at"

@@ -4,7 +4,7 @@ import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { FormValues } from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
-import { renderKey } from "../presentation/messages";
+import { renderCatalogKey } from "../presentation/messages";
 import { usePresentation } from "../presentation/context";
 import { CatalogField } from "./CatalogField";
 import { productMetadata } from "../protocol/productMetadata";
@@ -14,8 +14,7 @@ type Props = {
   values: FormValues;
   current: CurrentCase | null;
   disabled: boolean;
-  errorPath: string | null;
-  errorNotice: Notice | null;
+  fieldErrors: Readonly<Record<string, Notice>>;
   onChange: (path: string, value: string | boolean) => void;
 };
 const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<string> => {
@@ -32,7 +31,7 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
     : input.kind.options.filter((mode) => group.some((value) => value === mode));
 };
 const inputError = (input: CatalogInput, props: Props) =>
-  props.errorPath === bindingPath(input) ? props.errorNotice : null;
+  props.fieldErrors[bindingPath(input)] ?? null;
 const descriptionIds = (input: CatalogInput, error: Notice | null) =>
   [
     input.meaningId === null ? null : `${input.identity}-meaning`,
@@ -45,7 +44,7 @@ const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice
   return (
     <>
       {input.meaningId === null ? null : (
-        <small id={`${input.identity}-meaning`}>{renderKey(p, input.meaningId)}</small>
+        <small id={`${input.identity}-meaning`}>{renderCatalogKey(p, input.meaningId)}</small>
       )}
       {error === null ? null : (
         <small id={`${input.identity}-error`}>
@@ -62,9 +61,9 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const error = inputError(input, props);
   return (
     <fieldset>
-      {group ? <legend>{renderKey(p, input.labelId)}</legend> : null}
+      {group ? <legend>{renderCatalogKey(p, input.labelId)}</legend> : null}
       <label>
-        {group ? p.text("label.action") : renderKey(p, input.labelId)}
+        {group ? p.text("label.action") : renderCatalogKey(p, input.labelId)}
         <select
           name={path}
           id={
@@ -74,7 +73,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
           }
           disabled={props.disabled}
           value={String(props.values[path] ?? "")}
-          aria-invalid={props.errorPath === path || undefined}
+          aria-invalid={props.fieldErrors[path] !== undefined || undefined}
           aria-describedby={descriptionIds(input, error)}
           onChange={(event) => {
             props.onChange(path, event.target.value);
@@ -119,7 +118,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   }
   return (
     <div className="text-field">
-      <label htmlFor={input.identity}>{renderKey(p, input.labelId)}</label>
+      <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
       <input
         id={input.identity}
         name={path}
@@ -128,7 +127,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         dir="auto"
         value={String(props.values[path] ?? "")}
         disabled={props.disabled}
-        aria-invalid={props.errorPath === path || undefined}
+        aria-invalid={props.fieldErrors[path] !== undefined || undefined}
         aria-describedby={descriptionIds(input, error)}
         onChange={(event) => {
           props.onChange(path, event.target.value);
@@ -152,13 +151,13 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
             name={path}
             disabled={props.disabled}
             checked={props.values[path] === true}
-            aria-invalid={props.errorPath === path || undefined}
+            aria-invalid={props.fieldErrors[path] !== undefined || undefined}
             aria-describedby={descriptionIds(input, error)}
             onChange={(event) => {
               props.onChange(path, event.target.checked);
             }}
           />
-          {renderKey(p, input.labelId)}
+          {renderCatalogKey(p, input.labelId)}
         </label>
         <InputDescription input={input} error={error} />
       </div>

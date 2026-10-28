@@ -11,7 +11,8 @@ module ResponseCodecs =
     open Codec
     open ResponseScalars
 
-    let private principal = RequestCodecs.principal
+    let private principal = PrincipalCodecs.key
+
     let private scope = RequestCodecs.scope
 
     let private moneyProblem amountField currencyField path =
@@ -70,20 +71,25 @@ module ResponseCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            {
-                CaseFields.CaseReference = reference
-                Status = status
-                Registration = registration
-                Decision = decision
-                Payment = payment
-            })
+            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            |> Result.map (fun progress ->
+                {
+                    CaseFields.CaseReference = reference
+                    Status = status
+                    Registration = registration
+                    Progress = progress
+                }))
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference caseReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
+        |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
-        |> build
+        |> buildResult (fun path () ->
+            {
+                Path = path + ".payment"
+                Reason = "Payment requires a decision."
+            })
         |> named "CaseFields"
 
     let private stateCodec name fields =
@@ -151,9 +157,7 @@ module ResponseCodecs =
     let private historyDetail = VocabularyCodec.create HistoryDetail.vocabulary
 
     let private authorityKind =
-        Vocabulary.entries AuthorityKind.vocabulary
-        |> List.filter (fun (value, _) -> value <> AuthorityKind.ProvisionOwner)
-        |> enumeration
+        VocabularyCodec.select ((<>) AuthorityKind.ProvisionOwner) AuthorityKind.vocabulary
 
     let private maximumInstallationOffers =
         1
@@ -181,9 +185,9 @@ module ResponseCodecs =
             _.Registration
             (list
                 2
-                (Vocabulary.entries CorrectionGroupAction.vocabulary
-                 |> List.filter (fun (value, _) -> value <> CorrectionGroupAction.Clear)
-                 |> enumeration))
+                (VocabularyCodec.select
+                    (fun value -> List.contains value Amendment.actions)
+                    CorrectionGroupAction.vocabulary))
         |> field "decision" _.Decision (list 3 correctionAction)
         |> field "payment" _.Payment (list 3 correctionAction)
         |> build
@@ -272,64 +276,15 @@ module ResponseCodecs =
         |> field
             "capabilities"
             _.Capability
-            (list
-                16
-                (enumeration (
-                    Capability.all |> List.map (fun value -> value, Capability.token value)
-                )))
+            (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "ActorContext"
 
-    let position =
-        (record (fun sequence hash ->
-            {
-                Sequence = sequence
-                EntryHash = hash
-            })
-        : Fields<LedgerPosition, _>)
-        |> field "sequence" _.Sequence sequence
-        |> field "entryHash" _.EntryHash digest
-        |> build
-        |> named "Position"
-
-    let changeSummary =
-        (record (fun id position revision act at by ->
-            {
-                OperationId = id
-                Position = position
-                Revision = revision
-                Act = act
-                RecordedAt = at
-                RecordedBy = by
-            })
-        : Fields<ChangeSummary, _>)
-        |> field "operationId" _.OperationId uuid
-        |> field "position" _.Position position
-        |> field "revision" _.Revision sequence
-        |> field
-            "act"
-            _.Act
-            (enumeration (CaseActKind.all |> List.map (fun act -> act, CaseActKind.token act)))
-        |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy uuid
-        |> build
-        |> named "ChangeSummary"
-
-    let fieldChange =
-        (record (fun field before after ->
-            {
-                FieldName = field
-                Before = before
-                After = after
-            })
-        : Fields<FieldDiff, _>)
-        |> field "field" _.FieldName (enumeration (Vocabulary.entries BusinessField.vocabulary))
-        |> field "before" _.Before (nullable nonempty)
-        |> field "after" _.After (nullable nonempty)
-        |> build
-        |> named "FieldChange"
+    let position = LedgerCodecs.position
+    let changeSummary = LedgerCodecs.changeSummary
+    let fieldChange = LedgerCodecs.fieldChange
 
     let reviewFields =
         (record (fun before proposed changes context ->
@@ -342,17 +297,17 @@ module ResponseCodecs =
         : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list Record.fields.Length fieldChange)
+        |> field "changes" _.Changes (list CaseFields.declarations.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
     let actorSummary =
         (record (fun v0 v1 v2 ->
             {
-                ActorSummary.ActorId = v0
+                Actor.ActorId = v0
                 Principal = v1
                 Enabled = v2
             })
-        : Fields<ActorSummary, _>)
+        : Fields<Actor, _>)
         |> field "actorId" _.ActorId (uuid)
         |> field "principal" _.Principal (principal)
         |> field "enabled" _.Enabled (boolean)
@@ -360,11 +315,8 @@ module ResponseCodecs =
         |> named "ActorSummary"
 
     let authorityGrant =
-        (record (fun v0 v1 -> { AuthorityGrant.Role = v0; Scope = v1 }): Fields<AuthorityGrant, _>)
-        |> field
-            "role"
-            _.Role
-            (enumeration (Role.all |> List.map (fun role -> role, Role.token role)))
+        (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
         |> build
         |> named "AuthorityGrant"

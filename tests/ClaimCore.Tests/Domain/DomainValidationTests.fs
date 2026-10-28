@@ -45,22 +45,20 @@ let private restorationTests =
     testList
         "restoration integrity"
         [
-            testCase "restore cannot invent a decision for payment" (fun () ->
+            testCase "snapshot decoding cannot invent a decision for payment" (fun () ->
                 let original = Case.snapshot (opened ())
+                let bytes = Codec.encode ResponseCodecs.caseSnapshot original
+                let root = System.Text.Json.Nodes.JsonNode.Parse(bytes) |> nonNull
+                let fields = root["state"] |> nonNull |> fun state -> state["fields"] |> nonNull
 
-                let invalid =
-                    snapshot
-                        original.Revision
-                        { (viewFields original) with
-                            Payment =
-                                Some
-                                    {
-                                        PaymentDate = CaseFixtures.date "2026-08-20"
-                                    }
-                        }
+                fields["payment"] <-
+                    System.Text.Json.Nodes.JsonNode.Parse("{\"paymentDate\":\"2026-08-20\"}")
 
-                let result = Case.ofAccepted invalid |> Result.map Case.snapshot
-                Expect.isTrue (result = Error RecordViolation.InvalidProgress) "Corruption")
+                let invalid = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString())
+
+                Expect.isError
+                    (Codec.decode 100000 ResponseCodecs.caseSnapshot invalid)
+                    "The invalid group pair is refused at the boundary")
             testCase "all six partial decision objects are rejected at the wire boundary" (fun () ->
                 let text value = JsonValue.String value
 

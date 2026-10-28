@@ -38,9 +38,8 @@ let private registration (value: RegistrationInput) (fields: CaseFields) =
 
 let private correctedRegistration fields =
     function
-    | Change.Replace value -> registration value fields
-    | Change.Keep -> fields
-    | Change.Clear -> failwith "Registration clearing is outside the authored grammar"
+    | Amendment.Replace value -> registration value fields
+    | Amendment.Keep -> fields
 
 let private changed fields act =
     match act with
@@ -48,20 +47,30 @@ let private changed fields act =
     | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
     | AuthoredCaseAct.Decide value ->
         { fields with
-            Decision =
-                Some(
+            Progress =
+                PaymentProgress.Decided(
                     CaseFixtures.decision
                         { value with
                             PayableAmount = if value.PayableAmount = "0" then "0" else "750"
                         }
                 )
         }
-    | AuthoredCaseAct.WithdrawDecision -> { fields with Decision = None }
+    | AuthoredCaseAct.WithdrawDecision ->
+        { fields with
+            Progress = PaymentProgress.Undecided
+        }
     | AuthoredCaseAct.RecordPayment payment ->
         { fields with
-            Payment = Some(CaseFixtures.payment payment)
+            Progress =
+                PaymentProgress.Paid(
+                    Option.get fields.Decision,
+                    (CaseFixtures.payment payment).PaymentDate
+                )
         }
-    | AuthoredCaseAct.ClearPayment -> { fields with Payment = None }
+    | AuthoredCaseAct.ClearPayment ->
+        { fields with
+            Progress = PaymentProgress.Decided(Option.get fields.Decision)
+        }
     | AuthoredCaseAct.Close ->
         { fields with
             Status = CaseStatus.Closed
@@ -76,21 +85,24 @@ let private changed fields act =
     | AuthoredCaseAct.Erase -> fields
 
 let private business (before: CaseSnapshot) fields stale act =
-    let nextFields = changed fields act
-
-    let noOpCorrection =
-        match act with
-        | AuthoredCaseAct.Correct _ -> nextFields = fields
-        | _ -> false
-
-    if stale || not (eligible fields act) || noOpCorrection then
+    if stale || not (eligible fields act) then
         None
     else
-        Some
-            { before with
-                Revision = before.Revision + 1L
-                State = CaseState.Active(nextFields)
-            }
+        let nextFields = changed fields act
+
+        let noOpCorrection =
+            match act with
+            | AuthoredCaseAct.Correct _ -> nextFields = fields
+            | _ -> false
+
+        if noOpCorrection then
+            None
+        else
+            Some
+                { before with
+                    Revision = before.Revision + 1L
+                    State = CaseState.Active nextFields
+                }
 
 let advance (before: CaseSnapshot) stale act =
     if stale then

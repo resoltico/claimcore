@@ -3,14 +3,6 @@ namespace ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Protocol
 
-type ClientFailure =
-    | Configuration
-    | ConfigurationIssue of CliSetting * ConfigurationIssue
-    | Authentication
-    | Unavailable
-    | Cancelled
-    | Unexpected
-
 [<NoComparison>]
 type CliReply =
     {
@@ -61,6 +53,9 @@ module CliReply =
             | ClientFailure.Unavailable -> CliFailure.ServiceUnavailable
             | ClientFailure.Cancelled -> CliFailure.Cancelled
             | ClientFailure.Unexpected -> CliFailure.Internal
+            | ClientFailure.InvalidFrame -> CliFailure.InvalidFrame
+            | ClientFailure.InvalidResponse -> CliFailure.InvalidResponse
+            | ClientFailure.ContractMismatch -> CliFailure.ContractMismatch
 
         initial (FrameResult.LocalFailure code) |> encoded
 

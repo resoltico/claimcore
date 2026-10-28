@@ -15,7 +15,6 @@ module ResponseScalars =
 
     let revision = RequestCodecs.revision
     let sequence = RequestCodecs.sequence
-    let tokens = RequestCodecs.tokens
     let nonempty = boundedText 1 Int32.MaxValue
 
     let private amountMaximumCharacters =
@@ -75,9 +74,7 @@ module ResponseScalars =
     let countryCode = parsed CountryCode.parse CountryCode.format country
     let partyName = parsed PartyName.parse PartyName.format nonempty
 
-    let businessField = Vocabulary.tokens BusinessField.vocabulary |> tokens
 
-    let capability = Capability.all |> List.map Capability.token |> tokens
 
     let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
         let codec = constant token

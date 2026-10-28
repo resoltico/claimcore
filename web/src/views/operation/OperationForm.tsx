@@ -68,8 +68,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           current={current}
           values={model.values}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
-          errorPath={model.fieldError}
-          errorNotice={model.notice}
+          fieldErrors={model.fieldErrors}
           onChange={model.edit}
         />
       )}
@@ -109,9 +108,9 @@ export const OperationForm = (props: OperationFormProps) => {
     }
     const input = [
       ...form.current!.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input,select"),
-    ].find((item) => item.name === model.fieldError);
+    ].find((item) => item.name === Object.keys(model.fieldErrors)[0]);
     (input ?? form.current?.querySelector<HTMLElement>("[data-error-summary]"))?.focus();
-  }, [model.fieldError, model.notice]);
+  }, [model.fieldErrors, model.notice]);
   const allowed = offered.includes(String(model.values["act.kind"]));
   return (
     <form

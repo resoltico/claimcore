@@ -124,7 +124,7 @@ let private resources () =
     let _, _, current, _ = created 461 "QUERY-PRIVATE"
     let revoked = actor owner (id 1) [ Role.Owner ] []
     let read = (locked revoked (Some current) None).Read
-    let expected = ReadReply.Rejected Refusal.ResourceUnavailable
+    let expected = Outcome.Rejected Refusal.ResourceUnavailable
 
     Expect.equal
         (Queries.caseResult (DecisionFixtures.services installation calendar owner) read)
@@ -161,7 +161,7 @@ let private context () =
     match
         Queries.contextResult (DecisionFixtures.services installation calendar owner) instant view
     with
-    | ReadReply.Succeeded value ->
+    | Outcome.Succeeded value ->
         Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
         Expect.isEmpty value.View "No views before grants"
         Expect.isEmpty value.Offers "No offers before grants"
@@ -179,7 +179,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             AuthorityView.empty)
-        (ReadReply.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected Refusal.ResourceUnavailable)
         "Unregistered actor has no context"
 
     let disabled =
@@ -192,7 +192,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             disabled)
-        (ReadReply.Rejected Refusal.ResourceUnavailable)
+        (Outcome.Rejected Refusal.ResourceUnavailable)
         "Disabled actor has no context"
 
     let _, entry, current, _ = created 462 "SCOPED-AUDITOR"

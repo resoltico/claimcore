@@ -16,12 +16,6 @@ type StoreFailure =
     | Cancelled
     | CommitOutcomeUnknown
 
-type LedgerHead =
-    {
-        Sequence: int64
-        EntryHash: byte array
-    }
-
 type StoredCase =
     { CaseId: Guid; Snapshot: CaseSnapshot }
 
@@ -127,7 +121,7 @@ type IReadTx =
     abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, int64>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, Guid>>
 
-    abstract GrantPage: GrantPageQuery -> Task<Page<AuthorityGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>
 
     abstract FindActor: Guid -> Task<Actor option>
     abstract EnabledHumanOwners: unit -> Task<int>
@@ -135,7 +129,7 @@ type IReadTx =
 
 type IWriteTx =
     inherit IReadTx
-    abstract Head: LedgerHead
+    abstract Head: LedgerPosition
     abstract Nonce: byte array
     abstract IsFenced: FenceKey -> Task<bool>
     abstract Append: EntryDraft -> Task<unit>

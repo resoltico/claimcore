@@ -2,6 +2,9 @@ module ClaimCore.Tests.SchemaFormatTests
 
 open System
 open System.Text.Json
+open System.IO
+open System.Text
+open global.Json.Schema
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -66,11 +69,64 @@ let private businessAdmission () =
     for raw in [ "-1"; "01"; "1e2"; "1234567890123456789"; "1.12345" ] do
         Expect.isFalse (admits ResponseScalars.amount raw) "Amounts cannot leave durable grammar"
 
+let private literalEnums () =
+    let literals = [ Schema.Const "FIRST"; Schema.Const "SECOND" ]
+    let emitted = SchemaJson.value "" (Schema.OneOf(literals, None)) |> WireWriter.bytes
+    use rendered = JsonDocument.Parse emitted
+    let mutable property = Unchecked.defaultof<JsonElement>
+
+    Expect.isTrue
+        (rendered.RootElement.TryGetProperty("enum", &property))
+        "Literal alternatives share one enum"
+
+    Expect.equal (property.GetArrayLength()) 2 "Every distinct literal remains present"
+
+    use buffer = new MemoryStream()
+    use writer = new Utf8JsonWriter(buffer)
+    Codec.writeSchema "" writer (Schema.OneOf(literals, None))
+    writer.Flush()
+
+    Expect.sequenceEqual
+        (buffer.ToArray())
+        emitted
+        "CLI and OpenAPI schema writers use the same representation"
+
+    let compact = JsonSchema.FromText(Encoding.UTF8.GetString emitted)
+
+    let independent =
+        JsonSchema.FromText "{\"oneOf\":[{\"const\":\"FIRST\"},{\"const\":\"SECOND\"}]}"
+
+    for raw in [ "\"FIRST\""; "\"SECOND\""; "\"OTHER\""; "null"; "true"; "1"; "{}"; "[]" ] do
+        use sample = JsonDocument.Parse raw
+
+        Expect.equal
+            (compact.Evaluate(sample.RootElement).IsValid)
+            (independent.Evaluate(sample.RootElement).IsValid)
+            "Independent JSON Schema evaluation preserves acceptance for every JSON type"
+
+    let duplicated =
+        SchemaJson.value "" (Schema.OneOf([ Schema.Const "FIRST"; Schema.Const "FIRST" ], None))
+        |> WireWriter.bytes
+
+    use duplicateDocument = JsonDocument.Parse duplicated
+
+    Expect.isTrue
+        (duplicateDocument.RootElement.TryGetProperty("oneOf", &property))
+        "Overlapping literals retain exact-one semantics"
+
+    let duplicateSchema = JsonSchema.FromText(Encoding.UTF8.GetString duplicated)
+    use first = JsonDocument.Parse "\"FIRST\""
+
+    Expect.isFalse
+        (duplicateSchema.Evaluate(first.RootElement).IsValid)
+        "The duplicate-literal negative control still rejects"
+
 [<Tests>]
 let tests =
     testList
         "wire scalar formats"
         [
+            testCase "disjoint literal alternatives use equivalent compact enums" literalEnums
             testCase "instants use exact UTC microsecond spelling" timestamps
             testCase "calendar dates exist and have exact spelling" calendar
             testCase "accepted references preserve printable ASCII identity" references

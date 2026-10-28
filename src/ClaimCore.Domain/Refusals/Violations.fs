@@ -11,7 +11,6 @@ type Violation =
     | ReferenceFormat
     | CountryFormat
     | PrincipalFormat
-    | RoleFormat
     | CalendarDateRequired
     | ChronologicalOrder
     | FutureDate

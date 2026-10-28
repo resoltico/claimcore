@@ -8,7 +8,7 @@ module internal CaseExecution =
     let authorize principal actor capability (record: StoredCase option) =
         record
         |> Option.exists (fun value ->
-            Authority.can principal actor capability (ResourceScope.Case value.CaseId))
+            Authority.can principal actor capability (Scope.Case value.CaseId))
 
     let current installationId (record: StoredCase) =
         Case.ofAccepted record.Snapshot
@@ -27,19 +27,17 @@ module internal CaseExecution =
 
     let permission principal actor (request: CaseCommand) (record: StoredCase option) =
         if CaseAct.kind request.Act = CaseActKind.Open then
-            if Authority.canAct principal actor ResourceScope.Installation request.Act then
+            if Authority.canAct principal actor Scope.Installation request.Act then
                 Ok()
             else
                 Error Refusal.ResourceUnavailable
         else
             match record with
             | None -> Error Refusal.ResourceUnavailable
-            | Some value when
-                Authority.canAct principal actor (ResourceScope.Case value.CaseId) request.Act
-                ->
+            | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) request.Act ->
                 Ok()
             | Some value when
-                Authority.can principal actor Capability.ReadCase (ResourceScope.Case value.CaseId)
+                Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
                 Error Refusal.ActNotPermitted
             | _ -> Error Refusal.ResourceUnavailable
@@ -53,9 +51,11 @@ module internal CaseExecution =
             OperationIdentity.decide
                 services
                 view.Actor
-                request.OperationId
-                bytes
-                view.ExistingOperation
+                {
+                    OperationId = request.OperationId
+                    Bytes = bytes
+                    Existing = view.ExistingOperation
+                }
                 (LedgerEntries.receipt principal view.Actor view.Case)
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
@@ -96,6 +96,7 @@ module internal CaseExecution =
             | _ -> CaseProjection.Update(id, snapshot)
 
         {
+            OperationId = request.OperationId
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
             Subject =
@@ -119,9 +120,7 @@ module internal CaseExecution =
     let execute
         (services: ServiceContext)
         (command: CaseCommand)
-        head
-        fenced
-        nonce
+        (write: LedgerWriteContext)
         (view: CaseFacts)
         =
         let installationId = services.InstallationId
@@ -129,19 +128,12 @@ module internal CaseExecution =
         let identity = Case.canonical command |> RequestRecord.encode
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
         |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after
 
-            LedgerEnvelope.accept
-                services
-                view.Actor
-                command.OperationId
-                head
-                nonce
-                plan
-                (RequestRecord.encode command))
+            LedgerEnvelope.accept services view.Actor write plan (RequestRecord.encode command))
 
     let run (services: ServiceContext) (command: CaseCommand) token =
         let store = services.Store
@@ -161,7 +153,15 @@ module internal CaseExecution =
                             let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
 
                             return!
-                                execute services command tx.Head fenced tx.Nonce view
+                                execute
+                                    services
+                                    command
+                                    {
+                                        Head = tx.Head
+                                        Fenced = fenced
+                                        Nonce = tx.Nonce
+                                    }
+                                    view
                                 |> ExecutionFacts.persist tx tx.ProjectCase
                         })
                 CancellationToken = token

@@ -11,6 +11,13 @@ open System.Net.Http.Headers
 open System.Threading
 
 module RemoteServiceCall =
+    [<NoEquality; NoComparison>]
+    type Access =
+        {
+            Service: Uri
+            Authorization: AuthenticationHeaderValue
+        }
+
     [<Literal>]
     let MaximumResponseBytes = Limits.MaximumResponseBytes
 
@@ -62,15 +69,10 @@ module RemoteServiceCall =
                     | _ -> return invalid frame
         }
 
-    let send
-        (client: HttpClient)
-        (service: Uri)
-        frame
-        (authorization: AuthenticationHeaderValue)
-        beforeSend
-        (cancelled: CancellationToken)
-        =
+    let send (client: HttpClient) (access: Access) frame beforeSend (cancelled: CancellationToken) =
         task {
+            let service = access.Service
+            let authorization = access.Authorization
             let endpoint = Frames.endpoint frame
             use deadline = HttpRequestDeadline.link client cancelled
 

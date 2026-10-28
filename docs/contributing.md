@@ -30,8 +30,8 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | JSON-free value types, structural declarations, service requests/replies, policy and decisions |
-| Protocol | Wire codecs, endpoints, semantic catalog, OpenAPI, core messages and host build identity |
+| Domain | JSON-free values, typed acts, accepted state, outcomes, authority policy and decisions |
+| Protocol | Wire codecs, endpoints, derived catalog, diagnostic/command-line contracts and host build identity |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
@@ -41,7 +41,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Database | Owner administration |
 
 Domain has no project dependencies. Protocol and RecordFormat build codecs over Domain structure using
-Json; Application uses Domain and RecordFormat. Postgres implements Application ports using Domain,
+Json; Application uses Domain and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
 RecordFormat and Json. Application and Postgres have no Protocol reference. Web and Database use the
 Application Service and port surface; the published CLI contains Domain, Protocol, Json and HostSecurity,
 with Application and Postgres excluded. The
@@ -54,14 +54,22 @@ service-model independence, host usage and vocabulary naming. Domain controls ve
 assembly separately, so duplicate fixtures cannot mask a missing boundary. Product internals may be exposed
 to tests only.
 
-A vocabulary uses the module named for its value type, compiled as `<Type>Module`. Structural act behavior
-on `CaseActKind` is separate from its vocabulary module, so durable codecs can use shapes without importing
-wire-facing names. [Domain service models](../src/ClaimCore.Domain/Service/) own typed outcomes;
+[Domain ownership](../tests/ClaimCore.Tests/Architecture/DomainOwnershipTests.fs) follows compiler symbol
+references from Application, RecordFormat and Postgres through called Domain helpers. The pinned SDK
+supplies the compiler service. Compiled controls distinguish a used helper from an unrelated presentation
+member in the same module, and preserve references in signatures and later body expressions.
+Unused-declaration controls use actual product consumers and compiler-visible union-case uses, including
+pattern matches. Structural checks compare record fields and union cases; generated containers are not
+source declarations. Explicit exceptions require a concrete consumer or ownership reason.
+
+A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot` and `AuthorityAct.slot`
+pair typed inject/project functions; wire and durable codecs select their own member names without
+reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 
 Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
-[typed declaration](../src/ClaimCore.Domain/Record.fs). Named projection columns derive from that declaration.
+[typed declaration](../src/ClaimCore.Domain/CaseFields.fs). Named projection columns derive from that declaration.
 Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
 [Route.bind](../src/ClaimCore.Web/Routes.fs).
 Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/Vocabulary.fs) mechanism.
@@ -108,6 +116,10 @@ producer. Custom output directories contain only contract artifacts.
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
 `synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
+Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/WireMembers.fs) supplies technical
+member names; catalog annotations identify meaning by named schema definition/member. The schema walk
+resolves references and nested discriminators, and validates complete, non-orphan annotations and tokens.
+
 Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
 `p.term(vocabulary, value)`. Registry checks allow equal tokens in different vocabularies and reserve one
 composite `act` vocabulary. Identical renderer/core wording is refused in every locale.
@@ -122,7 +134,9 @@ the implementation. Keep those source cases independent of production codecs and
 
 ## Browser boundaries and lint
 
-[oxlint.config.ts](../web/oxlint.config.ts) is the single browser policy. Maintained import rules separate
+[oxlint.config.ts](../web/oxlint.config.ts) composes the browser policy with
+[typed presentation rules](../web/typed-presentation-lint.config.ts) and
+[transport boundary rules](../web/browser-transport-lint.config.ts). Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
 manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
@@ -132,8 +146,12 @@ actual platform declarations. The app-only build references the strict protocol 
 are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
 Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenarios live under
 `web/tests/flows`, with fixtures and setup under `web/tests/support`. `npm run lint` rejects unit paths
-without a matching source module. The lint configuration omits root category defaults while preserving
-explicit override policy; review the complete `oxlint --print-config` output when changing it.
+without a matching source module. Categories, explicit rules and overrides together define the effective
+policy; review the complete `oxlint --print-config` output when changing it.
+
+Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
+tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
+Each FSharpLint suppression needs a preceding justification comment; new suppressions do not qualify a split.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
@@ -145,8 +163,15 @@ bash eng/verify.sh --fast
 bash eng/verify.sh
 ```
 
-The first command is an iteration scope. The second is the complete required gate. Named stages share
-restore/build work, execute in order and stop at failure:
+The first command is an iteration scope. The second runs all default stages. Before the first acceptance
+run, and after changing the Playwright version, install the locked engines and system dependencies:
+
+```sh
+bash eng/verify.sh browsers
+```
+
+The `browsers` stage may require administrator access on Linux. Named stages share restore/build work,
+execute in order and stop at failure:
 
 | Stage | Scope |
 | --- | --- |
@@ -162,11 +187,13 @@ restore/build work, execute in order and stop at failure:
 
 Pure tests run in Debug without optimization for visible compiled negative controls; production is built
 in Release. Shared store-contract scenarios run against both the memory double and PostgreSQL. Native
-projects use automatic nonempty discovery and explicit stage assignment. Focused, filtered, skipped, pending
-or retried tests do not qualify a change. The postgres/growth stage split is defined by the gate itself.
+projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
+skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
+PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 
-Default acceptance runs complete Chromium, Firefox and WebKit suites, with zero retries. Engine/smoke selectors
-are iteration scopes and label their incomplete evidence. Native report directories under
+Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
+engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
+mode explicitly reports incomplete qualification. Native report directories under
 `artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
 
@@ -184,8 +211,8 @@ still run with caches; shared caches are not disposable task resources.
 
 ## Dependencies
 
-[Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and reviewed package lockfiles
-record transitive resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
+[Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and selected production
+transitives that track the runtime security train; reviewed lockfiles record the complete resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
 Audit all dependencies, retain image digests and use locked restore/npm ci. Dependency changes must update
 consumers, lockfiles, licensing evidence and qualification together.
 

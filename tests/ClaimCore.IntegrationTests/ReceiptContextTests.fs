@@ -26,7 +26,15 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         acceptedAuthority registered
 
         let! granted =
-            grant admin (id 4) principal Role.CaseRegistrar GrantTarget.Installation true
+            grant
+                admin
+                (id 4)
+                principal
+                {
+                    Role = Role.CaseRegistrar
+                    Scope = GrantTarget.Installation
+                }
+                true
 
         acceptedAuthority granted
 
@@ -48,7 +56,15 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 accepted amended |> ignore
 
                 let! revoked =
-                    grant admin (id 5) principal Role.CaseRegistrar GrantTarget.Installation false
+                    grant
+                        admin
+                        (id 5)
+                        principal
+                        {
+                            Role = Role.CaseRegistrar
+                            Scope = GrantTarget.Installation
+                        }
+                        false
 
                 acceptedAuthority revoked
             }
@@ -87,7 +103,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
 
         Expect.equal
             denied
-            (ReadReply.Rejected Refusal.ResourceUnavailable)
+            (Outcome.Rejected Refusal.ResourceUnavailable)
             "Later reads use revoked authority"
     }
 

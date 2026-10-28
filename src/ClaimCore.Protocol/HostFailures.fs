@@ -3,29 +3,6 @@ namespace ClaimCore.Protocol
 open ClaimCore.Protocol
 open ClaimCore.Domain
 
-[<RequireQualifiedAccess>]
-type HostFailureCode =
-    | ContractMismatch
-    | ConnectionRejected
-    | OriginRejected
-    | MediaTypeRejected
-    | BodyTooLarge
-    | SessionRejected
-    | SessionForbidden
-    | MethodRejected
-    | AntiforgeryRejected
-    | EndpointMissing
-    | RateLimited
-    | InputInvalid
-    | Internal
-    | ResponseFailed
-
-/// Fixed transport policy; each reason owns its code, status and dispatch phase together.
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module HostFailureCode =
-    let vocabulary =
-        Vocabulary.ofUnion<HostFailureCode> "host" TokenCasing.ScreamingSnake None
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HostFailureReason =
     // Reasons and wire codes are separate sets: dispatch reasons share INTERNAL and differ by phase.
@@ -49,8 +26,6 @@ module HostFailureReason =
             HostFailureCode.BodyTooLarge, 413, Some ExecutionPhase.NotStarted
         | HostFailureReason.SessionRejected ->
             HostFailureCode.SessionRejected, 401, Some ExecutionPhase.NotStarted
-        | HostFailureReason.SessionForbidden ->
-            HostFailureCode.SessionForbidden, 403, Some ExecutionPhase.NotStarted
         | HostFailureReason.MethodRejected ->
             HostFailureCode.MethodRejected, 405, Some ExecutionPhase.NotStarted
         | HostFailureReason.AntiforgeryRejected ->
@@ -67,7 +42,7 @@ module HostFailureReason =
             HostFailureCode.Internal, 500, Some ExecutionPhase.StartedUnconfirmed
         | HostFailureReason.CompletedResponseFailed -> HostFailureCode.ResponseFailed, 500, None
 
-    let private codeKind reason = let code, _, _ = policy reason in code
+    let codeKind reason = let code, _, _ = policy reason in code
 
     let all = Vocabulary.all vocabulary
 

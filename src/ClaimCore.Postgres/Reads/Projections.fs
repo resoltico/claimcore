@@ -73,10 +73,10 @@ module internal Projections =
                             (field<string> BusinessField.ClaimedCurrency row)
                         |> parsed
                 }
-            Decision = decision
-            Payment =
-                optionalDate BusinessField.PaymentDate row
-                |> Option.map (fun date -> { PaymentDate = date })
+            Progress =
+                PaymentProgress.fromGroups decision (optionalDate BusinessField.PaymentDate row)
+                |> Result.defaultWith (fun () ->
+                    raise (RecordCorruptException "Payment lacks a decision."))
         }
 
     let caseRow (row: Map<string, obj>) : StoredCase =
@@ -128,7 +128,7 @@ module internal Projections =
         }
 
     let private role row =
-        Role.parse (required<string> 0 row)
+        DurableNames.tryRole (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -141,7 +141,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            Role.parse role
+                            DurableNames.tryRole role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -149,15 +149,18 @@ module internal Projections =
                             Role = role
                             Scope =
                                 optional<Guid> 3 row
-                                |> Option.map GrantScope.Case
-                                |> Option.defaultValue GrantScope.Installation
+                                |> Option.map Scope.Case
+                                |> Option.defaultValue Scope.Installation
                         }))
 
             let stored: ActorAuthority =
                 {
-                    ActorId = required 0 first
-                    Principal = principal
-                    Enabled = required 1 first
+                    Actor =
+                        {
+                            ActorId = required 0 first
+                            Principal = principal
+                            Enabled = required 1 first
+                        }
                     Grants = grants
                 }
 
@@ -165,14 +168,14 @@ module internal Projections =
 
     let actor connection principal (caseIds: Guid list) token =
         task {
-            let kind, issuer, subject = PrincipalKey.storageParts principal
+            let kind, issuer, subject = PrincipalKey.parts principal
 
             let! rows =
                 DatabaseSession.rows
                     connection
                     "SELECT a.actor_id,a.enabled,g.role,g.case_id FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
                     [|
-                        box kind
+                        box (DurableNames.principalKind kind)
                         box issuer
                         box subject
                         box (caseIds |> List.distinct |> List.toArray)
@@ -216,12 +219,15 @@ module internal Projections =
         {
             ActorId = required 0 row
             Principal =
-                PrincipalKey.fromStorage (required 1 row) (required 2 row) (required 3 row)
+                (DurableNames.tryPrincipalKind (required 1 row)
+                 |> Option.defaultWith (fun () ->
+                     raise (RecordCorruptException "Invalid stored principal kind.")))
+                |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)
                 |> parsed
             Enabled = required 4 row
         }
 
-    let grantRow row : AuthorityGrant * GrantPosition =
+    let grantRow row : AuthoredGrant * GrantPosition =
         let role = role row
         let caseId = optional<Guid> 2 row
 
@@ -232,7 +238,10 @@ module internal Projections =
                 (CaseReference.parse
                  >> Result.map ignore
                  >> Result.mapError (fun violation ->
-                     Refusal.InvalidInput(InputTarget.Field BusinessField.CaseReference, violation)))
+                     Refusal.invalidInput (
+                         InputTarget.Field BusinessField.CaseReference,
+                         violation
+                     )))
                     reference
                 |> Result.isOk
                 ->

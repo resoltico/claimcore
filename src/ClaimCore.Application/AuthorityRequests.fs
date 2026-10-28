@@ -6,7 +6,7 @@ open ClaimCore.RecordFormat
 /// Conversion preserves the act stage and the record format's independent ownership.
 module AuthorityRequests =
     let canonical (request: AuthorityRequestRecord) =
-        let grant (value: GrantChange) =
+        let grant (value: AuthoredGrant) =
             let scope =
                 match value.Scope with
                 | GrantTarget.Installation -> GrantTarget.Installation
@@ -26,9 +26,9 @@ module AuthorityRequests =
 
     let private authored (act: ValidAuthorityAct) : AuthoredAuthorityAct =
         AuthorityAct.map
-            (fun (grant: AuthorityGrant) ->
+            (fun (grant: AuthoredGrant) ->
                 {
-                    GrantChange.Role = Role.token grant.Role
+                    AuthoredGrant.Role = grant.Role
                     Scope = grant.Scope
                 })
             act
@@ -43,7 +43,7 @@ module AuthorityRequests =
             Ok
                 {
                     OperationId = operationId
-                    Target = PrincipalKey.describe target
+                    Target = PrincipalKey.toInput target
                     Act = authored act
                 }
 

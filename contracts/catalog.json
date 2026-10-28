@@ -209,38 +209,63 @@
   "inputFields": [
     {
       "name": "operationId",
-      "labelId": "input.operationId.label",
-      "meaningId": "input.operationId.meaning",
+      "labelId": "field.operationId.label",
+      "meaningId": "field.operationId.meaning",
       "scalar": null
     },
     {
       "name": "expectedRevision",
-      "labelId": "input.expectedRevision.label",
-      "meaningId": "input.expectedRevision.meaning",
+      "labelId": "field.expectedRevision.label",
+      "meaningId": "field.expectedRevision.meaning",
       "scalar": null
     },
     {
-      "name": "principalKind",
-      "labelId": "input.principalKind.label",
-      "meaningId": "input.principalKind.meaning",
+      "name": "reason",
+      "labelId": "field.reason.label",
+      "meaningId": "field.reason.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    },
+    {
+      "name": "principal.kind",
+      "labelId": "field.principal.kind.label",
+      "meaningId": "field.principal.kind.meaning",
       "scalar": null
     },
     {
-      "name": "issuer",
-      "labelId": "input.issuer.label",
-      "meaningId": "input.issuer.meaning",
+      "name": "principal.issuer",
+      "labelId": "field.principal.issuer.label",
+      "meaningId": "field.principal.issuer.meaning",
       "scalar": null
     },
     {
-      "name": "subject",
-      "labelId": "input.subject.label",
-      "meaningId": "input.subject.meaning",
+      "name": "principal.subject",
+      "labelId": "field.principal.subject.label",
+      "meaningId": "field.principal.subject.meaning",
       "scalar": null
     },
     {
       "name": "role",
-      "labelId": "input.role.label",
-      "meaningId": "input.role.meaning",
+      "labelId": "field.role.label",
+      "meaningId": "field.role.meaning",
+      "scalar": null
+    },
+    {
+      "name": "limit",
+      "labelId": "field.limit.label",
+      "meaningId": "field.limit.meaning",
+      "scalar": null
+    },
+    {
+      "name": "cursor",
+      "labelId": "field.cursor.label",
+      "meaningId": "field.cursor.meaning",
       "scalar": null
     },
     {
@@ -250,53 +275,16 @@
       "scalar": null
     },
     {
-      "name": "target",
-      "labelId": "input.target.label",
-      "meaningId": null,
-      "scalar": null
-    },
-    {
-      "name": "act",
-      "labelId": "input.act.label",
-      "meaningId": null,
-      "scalar": null
-    },
-    {
       "name": "actorId",
       "labelId": "input.actorId.label",
       "meaningId": "input.actorId.meaning",
       "scalar": null
     },
     {
-      "name": "cursor",
-      "labelId": "input.cursor.label",
-      "meaningId": "input.cursor.meaning",
+      "name": "detail",
+      "labelId": "input.detail.label",
+      "meaningId": "input.detail.meaning",
       "scalar": null
-    },
-    {
-      "name": "limit",
-      "labelId": "input.limit.label",
-      "meaningId": "input.limit.meaning",
-      "scalar": null
-    },
-    {
-      "name": "full",
-      "labelId": "input.full.label",
-      "meaningId": "input.full.meaning",
-      "scalar": null
-    },
-    {
-      "name": "reason",
-      "labelId": "input.reason.label",
-      "meaningId": "input.reason.meaning",
-      "scalar": {
-        "kind": "TEXT",
-        "format": {
-          "minimumCharacters": 1,
-          "grammar": null
-        },
-        "maximumCharacters": 200
-      }
     }
   ],
   "characterWarnings": {
@@ -332,8 +320,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -571,8 +559,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -615,8 +603,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -845,8 +833,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -889,8 +877,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -1441,8 +1429,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -1485,8 +1473,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -1611,8 +1599,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -1655,8 +1643,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -1703,8 +1691,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -1747,8 +1735,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -1818,8 +1806,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -1862,8 +1850,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -1910,8 +1898,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -1954,8 +1942,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2002,8 +1990,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2046,8 +2034,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2094,8 +2082,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2138,8 +2126,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2160,8 +2148,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.reason.label",
-          "meaningId": "input.reason.meaning",
+          "labelId": "field.reason.label",
+          "meaningId": "field.reason.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2208,8 +2196,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2252,8 +2240,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2274,8 +2262,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.reason.label",
-          "meaningId": "input.reason.meaning",
+          "labelId": "field.reason.label",
+          "meaningId": "field.reason.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2322,8 +2310,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2366,8 +2354,8 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.expectedRevision.label",
-          "meaningId": "input.expectedRevision.meaning",
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2414,8 +2402,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2440,13 +2428,15 @@
             ]
           },
           "branches": [],
-          "labelId": "input.principalKind.label",
-          "meaningId": "input.principalKind.meaning",
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -2460,8 +2450,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.issuer.label",
-          "meaningId": "input.issuer.meaning",
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2482,8 +2472,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.subject.label",
-          "meaningId": "input.subject.meaning",
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2530,8 +2520,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2556,13 +2546,15 @@
             ]
           },
           "branches": [],
-          "labelId": "input.principalKind.label",
-          "meaningId": "input.principalKind.meaning",
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -2576,8 +2568,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.issuer.label",
-          "meaningId": "input.issuer.meaning",
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2598,8 +2590,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.subject.label",
-          "meaningId": "input.subject.meaning",
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2629,8 +2621,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.role.label",
-          "meaningId": "input.role.meaning",
+          "labelId": "field.role.label",
+          "meaningId": "field.role.meaning",
           "order": 4,
           "prefill": null,
           "required": true,
@@ -2734,8 +2726,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2760,13 +2752,15 @@
             ]
           },
           "branches": [],
-          "labelId": "input.principalKind.label",
-          "meaningId": "input.principalKind.meaning",
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -2780,8 +2774,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.issuer.label",
-          "meaningId": "input.issuer.meaning",
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -2802,8 +2796,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.subject.label",
-          "meaningId": "input.subject.meaning",
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2833,8 +2827,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.role.label",
-          "meaningId": "input.role.meaning",
+          "labelId": "field.role.label",
+          "meaningId": "field.role.meaning",
           "order": 4,
           "prefill": null,
           "required": true,
@@ -2938,8 +2932,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -2964,13 +2958,15 @@
             ]
           },
           "branches": [],
-          "labelId": "input.principalKind.label",
-          "meaningId": "input.principalKind.meaning",
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -2984,8 +2980,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.issuer.label",
-          "meaningId": "input.issuer.meaning",
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -3006,8 +3002,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.subject.label",
-          "meaningId": "input.subject.meaning",
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -3054,8 +3050,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -3080,13 +3076,15 @@
             ]
           },
           "branches": [],
-          "labelId": "input.principalKind.label",
-          "meaningId": "input.principalKind.meaning",
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
           "order": 1,
           "prefill": null,
           "required": true,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -3100,8 +3098,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.issuer.label",
-          "meaningId": "input.issuer.meaning",
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -3122,8 +3120,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.subject.label",
-          "meaningId": "input.subject.meaning",
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -3204,13 +3202,15 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.cursor.label",
-          "meaningId": "input.cursor.meaning",
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "cursor"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -3223,13 +3223,15 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.limit.label",
-          "meaningId": "input.limit.meaning",
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
           "order": 1,
           "prefill": null,
           "required": false,
           "default": 50,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "limit"
+          ],
           "source": "AUTHORED"
         }
       ],
@@ -3280,8 +3282,8 @@
             ]
           },
           "branches": [],
-          "labelId": "input.full.label",
-          "meaningId": "input.full.meaning",
+          "labelId": "input.detail.label",
+          "meaningId": "input.detail.meaning",
           "order": 1,
           "prefill": null,
           "required": false,
@@ -3299,13 +3301,15 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.cursor.label",
-          "meaningId": "input.cursor.meaning",
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
           "order": 2,
           "prefill": null,
           "required": false,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "cursor"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -3318,13 +3322,15 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.limit.label",
-          "meaningId": "input.limit.meaning",
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
           "order": 3,
           "prefill": null,
           "required": false,
           "default": 50,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "limit"
+          ],
           "source": "AUTHORED"
         }
       ],
@@ -3348,8 +3354,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": true,
@@ -3380,8 +3386,8 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.operationId.label",
-          "meaningId": "input.operationId.meaning",
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
           "order": 0,
           "prefill": null,
           "required": true,
@@ -3412,13 +3418,15 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.cursor.label",
-          "meaningId": "input.cursor.meaning",
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
           "order": 0,
           "prefill": null,
           "required": false,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "cursor"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -3431,13 +3439,15 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.limit.label",
-          "meaningId": "input.limit.meaning",
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
           "order": 1,
           "prefill": null,
           "required": false,
           "default": 50,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "limit"
+          ],
           "source": "AUTHORED"
         }
       ],
@@ -3480,13 +3490,15 @@
             "kind": "TEXT"
           },
           "branches": [],
-          "labelId": "input.cursor.label",
-          "meaningId": "input.cursor.meaning",
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
           "order": 1,
           "prefill": null,
           "required": false,
           "default": null,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "cursor"
+          ],
           "source": "AUTHORED"
         },
         {
@@ -3499,13 +3511,15 @@
             "kind": "INTEGER"
           },
           "branches": [],
-          "labelId": "input.limit.label",
-          "meaningId": "input.limit.meaning",
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
           "order": 2,
           "prefill": null,
           "required": false,
           "default": 50,
-          "diagnosticTargets": [],
+          "diagnosticTargets": [
+            "limit"
+          ],
           "source": "AUTHORED"
         }
       ],

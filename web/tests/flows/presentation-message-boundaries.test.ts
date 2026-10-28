@@ -1,6 +1,6 @@
 import type { Language } from "../../src/presentation/preferences";
 import { expect, it } from "vitest";
-import { renderKey, renderIsolatedValue } from "../../src/presentation/messages";
+import { renderKey, renderCatalogKey, renderIsolatedValue } from "../../src/presentation/messages";
 import { templateParts, pseudolocalizeLiteral } from "../../src/presentation/templates";
 import vectors from "../../../tests/fixtures/message-template-vectors.json";
 
@@ -15,7 +15,7 @@ it("matches independent quoting, isolation, RTL and pseudolocale vectors", () =>
   }
   for (const row of vectors.presentation) {
     expect(
-      renderKey(
+      renderCatalogKey(
         { language: row.language as Language, displayLocale: "en-GB" },
         row.key,
         row.arguments,

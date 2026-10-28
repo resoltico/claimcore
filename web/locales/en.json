@@ -46,6 +46,7 @@
   "ui.historyDetail": "History detail",
   "ui.historyHint": "History entries are read-only. Expand an entry to see the recorded case details and who recorded them.",
   "ui.historySummary": "{act} · revision {revision} · {timestamp}",
+  "ui.incompleteResponse": "The service returned an incomplete or invalid response.",
   "ui.keepEditing": "Keep editing",
   "ui.language": "Interface language",
   "ui.leaveDraftDescription": "Discard this draft and leave the editor?",

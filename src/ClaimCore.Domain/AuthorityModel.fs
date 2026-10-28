@@ -11,18 +11,29 @@ type PrincipalKey =
     | ServicePrincipal of issuer: string * clientId: string
 
 module PrincipalKey =
-    let private issuer value =
+    [<Literal>]
+    let MaximumIssuerCharacters = 2048
+
+    [<Literal>]
+    let MaximumHumanSubjectCharacters = 512
+
+    [<Literal>]
+    let MaximumServiceSubjectCharacters = 256
+
+    let issuerScheme = Uri.UriSchemeHttps
+
+    let isIssuer value =
         try
             if
                 String.IsNullOrWhiteSpace value
-                || value.Length > 2048
+                || value.Length > MaximumIssuerCharacters
                 || not (UnicodeText.isPersisted value)
             then
                 false
             else
                 let parsed = Uri(value, UriKind.Absolute)
 
-                parsed.Scheme = Uri.UriSchemeHttps
+                parsed.Scheme = issuerScheme
                 && parsed.UserInfo = ""
                 && parsed.Query = ""
                 && parsed.Fragment = ""
@@ -35,9 +46,9 @@ module PrincipalKey =
         && value.Length <= maximum
         && UnicodeText.isPersisted value
 
-    let admit kind issuerValue subject =
+    let ofKind kind issuerValue subject =
         let issue target value =
-            Refusal.InvalidInput(
+            Refusal.invalidInput (
                 target,
                 if String.IsNullOrWhiteSpace value then
                     Violation.TextRequired
@@ -45,44 +56,51 @@ module PrincipalKey =
                     Violation.PrincipalFormat
             )
 
-        let maximum = if kind = PrincipalKind.humanToken then 512 else 256
+        let maximum =
+            match kind with
+            | PrincipalKind.Human -> MaximumHumanSubjectCharacters
+            | PrincipalKind.Service -> MaximumServiceSubjectCharacters
 
-        match issuer issuerValue, identifier maximum subject with
-        | false, _ -> Error(issue InputTarget.PrincipalIssuer issuerValue)
-        | _, false -> Error(issue InputTarget.PrincipalSubject subject)
-        | true, true when kind = PrincipalKind.humanToken ->
-            Ok(HumanPrincipal(issuerValue, subject))
-        | true, true when kind = PrincipalKind.serviceToken ->
-            Ok(ServicePrincipal(issuerValue, subject))
-        | _ -> Error(issue InputTarget.PrincipalSubject kind)
+        let validIssuer =
+            if isIssuer issuerValue then
+                Ok()
+            else
+                Error(issue InputTarget.PrincipalIssuer issuerValue)
+
+        let validSubject =
+            if identifier maximum subject then
+                Ok()
+            else
+                Error(issue InputTarget.PrincipalSubject subject)
+
+        Admission.map2
+            (fun () () ->
+                match kind with
+                | PrincipalKind.Human -> HumanPrincipal(issuerValue, subject)
+                | PrincipalKind.Service -> ServicePrincipal(issuerValue, subject))
+            validIssuer
+            validSubject
 
     let human issuerValue subject =
-        admit PrincipalKind.humanToken issuerValue subject
+        ofKind PrincipalKind.Human issuerValue subject
 
     let service issuerValue clientId =
-        admit PrincipalKind.serviceToken issuerValue clientId
+        ofKind PrincipalKind.Service issuerValue clientId
 
-    /// Private storage projection; never infer identity from email, display name or groups.
-    let storageParts =
+    /// Admitted identity parts; each boundary owns its token spellings.
+    let parts =
         function
-        | HumanPrincipal(issuerValue, subject) -> PrincipalKind.humanToken, issuerValue, subject
-        | ServicePrincipal(issuerValue, clientId) ->
-            PrincipalKind.serviceToken, issuerValue, clientId
+        | HumanPrincipal(issuerValue, subject) -> PrincipalKind.Human, issuerValue, subject
+        | ServicePrincipal(issuerValue, clientId) -> PrincipalKind.Service, issuerValue, clientId
 
-    let describe principal : Principal =
-        let kind, issuer, subject = storageParts principal
+    let toInput principal : PrincipalInput =
+        let kind, issuer, subject = parts principal
 
         {
             Kind = kind
             Issuer = issuer
             Subject = subject
         }
-
-    let fromStorage kind issuerValue stableValue =
-        match Vocabulary.tryParse PrincipalKind.vocabulary kind with
-        | Some PrincipalKind.Human -> human issuerValue stableValue
-        | Some PrincipalKind.Service -> service issuerValue stableValue
-        | _ -> Error(Refusal.InvalidInput(InputTarget.PrincipalSubject, Violation.PrincipalFormat))
 
     let isHuman =
         function
@@ -91,19 +109,11 @@ module PrincipalKey =
 
 
 [<RequireQualifiedAccess>]
-type GrantScope =
+type Scope =
     | Installation
     | Case of Guid
 
-type ActorGrant = { Role: Role; Scope: GrantScope }
-
-type ActorAuthority =
-    {
-        ActorId: Guid
-        Principal: PrincipalKey
-        Enabled: bool
-        Grants: ActorGrant list
-    }
+type ActorGrant = Grant<Scope>
 
 type Actor =
     {
@@ -111,6 +121,16 @@ type Actor =
         Principal: PrincipalKey
         Enabled: bool
     }
+
+type ActorAuthority =
+    {
+        Actor: Actor
+        Grants: ActorGrant list
+    }
+
+    member this.ActorId = this.Actor.ActorId
+    member this.Principal = this.Actor.Principal
+    member this.Enabled = this.Actor.Enabled
 
 /// Only roles that can influence this decision are loaded. Operation identity may add a second case.
 type AuthorityView =
@@ -137,7 +157,7 @@ module AuthorityView =
             let installation =
                 actor.Grants
                 |> List.choose (fun grant ->
-                    if grant.Scope = GrantScope.Installation then
+                    if grant.Scope = Scope.Installation then
                         Some grant.Role
                     else
                         None)
@@ -146,29 +166,18 @@ module AuthorityView =
                 actor.Grants
                 |> List.choose (fun grant ->
                     match grant.Scope with
-                    | GrantScope.Case id -> Some(id, grant.Role)
+                    | Scope.Case id -> Some(id, grant.Role)
                     | _ -> None)
                 |> List.groupBy fst
                 |> List.map (fun (id, grants) -> id, grants |> List.map snd)
                 |> Map.ofList
 
             {
-                Actor =
-                    Some
-                        {
-                            ActorId = actor.ActorId
-                            Principal = actor.Principal
-                            Enabled = actor.Enabled
-                        }
+                Actor = Some actor.Actor
                 Installation = installation
                 Cases = cases
                 HasAssignedCases = false
             }
-
-[<RequireQualifiedAccess>]
-type ResourceScope =
-    | Installation
-    | Case of Guid
 
 [<RequireQualifiedAccess>]
 type CaseVisibility =

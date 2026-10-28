@@ -18,6 +18,18 @@ let private text =
             Gen.item [ "Žąsis"; "東京"; "😀"; "é"; "مرحبا"; "quoted\"value"; "path\\value" ]
         ]
 
+[<NoEquality; NoComparison>]
+type private PermanentValueSample =
+    {
+        OperationId: Guid
+        Reference: string
+        Revision: int64
+        Registration: RegistrationInput
+        Decision: DecisionInput
+        Payment: PaymentInput
+        Reason: string
+    }
+
 let private sample =
     gen {
         let! id = Gen.guid
@@ -74,7 +86,16 @@ let private sample =
             else
                 id
 
-        return id, reference, revision, registration, decision, payment, reason
+        return
+            {
+                OperationId = id
+                Reference = reference
+                Revision = revision
+                Registration = registration
+                Decision = decision
+                Payment = payment
+                Reason = reason
+            }
     }
 
 let private tokenAt path expected (bytes: byte array) =
@@ -94,7 +115,7 @@ let private caseActs registration decision payment reason =
         AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
         AuthoredCaseAct.Correct
             {
-                Registration = Change.Replace registration
+                Registration = Amendment.Replace registration
                 Decision = Change.Replace decision
                 Payment = Change.Replace payment
             },
@@ -110,7 +131,8 @@ let private caseActs registration decision payment reason =
         AuthoredCaseAct.Erase, "ERASE"
     ]
 
-let private principalKinds = [ "HUMAN"; "SERVICE" ]
+let private principalKinds =
+    [ PrincipalKind.Human, "HUMAN"; PrincipalKind.Service, "SERVICE" ]
 
 let private statuses = [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
@@ -127,8 +149,8 @@ let private roles =
 
 let private scopes reference =
     [
-        ScopeKind.Installation, GrantTarget.Installation, "INSTALLATION"
-        ScopeKind.Case, GrantTarget.CaseReference reference, "CASE"
+        GrantTarget.Installation, "INSTALLATION"
+        GrantTarget.CaseReference reference, "CASE"
     ]
 
 let private authorityActs reference =
@@ -137,11 +159,11 @@ let private authorityActs reference =
         yield AuthorityAct.Register, "REGISTER"
         yield AuthorityAct.Enable, "ENABLE"
         yield AuthorityAct.Disable, "DISABLE"
-        for _, role in roles do
-            for _, scope, _ in scopes reference do
+        for role, _ in roles do
+            for scope, _ in scopes reference do
                 let grant =
                     {
-                        GrantChange.Role = role
+                        AuthoredGrant.Role = role
                         Scope = scope
                     }
 
@@ -167,14 +189,27 @@ let private inventories () =
         "Status inventory"
 
     Expect.equal statuses.Length 2 "Both statuses occur every trial"
-    Expect.equal (Set.ofList principalKinds) (Set.ofList PrincipalKind.all) "Principal inventory"
+
+    Expect.equal
+        (principalKinds |> List.map fst |> Set.ofList)
+        (Vocabulary.all PrincipalKind.vocabulary |> Set.ofList)
+        "Principal inventory"
+
     Expect.equal (roles |> List.map fst |> Set.ofList) (Set.ofList Role.all) "Role inventory"
     Expect.equal roles.Length 7 "Every role occurs every trial"
 
     Expect.equal
-        (scopes "ref" |> List.map (fun (kind, _, _) -> kind) |> Set.ofList)
-        (Set.ofList ScopeKind.all)
-        "Scope inventory"
+        (scopes "ref"
+         |> List.map (fun (scope, _) ->
+             let case, _ =
+                 Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(scope, typeof<GrantTarget>)
+
+             case.Name)
+         |> Set.ofList)
+        (Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<GrantTarget>
+         |> Array.map _.Name
+         |> Set.ofArray)
+        "The authored scope inventory covers every durable scope case"
 
     Expect.equal
         (authorityActs "ref" |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)
@@ -183,7 +218,14 @@ let private inventories () =
 
 let private caseProperty =
     property {
-        let! id, reference, revision, registration, decision, payment, reason = sample
+        let! values = sample
+        let id = values.OperationId
+        let reference = values.Reference
+        let revision = values.Revision
+        let registration = values.Registration
+        let decision = values.Decision
+        let payment = values.Payment
+        let reason = values.Reason
 
         return
             caseActs registration decision payment reason
@@ -206,7 +248,12 @@ let private caseProperty =
 
 let private snapshotProperty =
     property {
-        let! _, reference, revision, registration, decision, payment, _ = sample
+        let! values = sample
+        let reference = values.Reference
+        let revision = values.Revision
+        let registration = values.Registration
+        let decision = values.Decision
+        let payment = values.Payment
         let reference = Inputs.reference reference
 
         return
@@ -224,8 +271,8 @@ let private snapshotProperty =
                                 CaseReference = reference
                                 Status = status
                                 Registration = Inputs.admittedRegistration registration
-                                Decision = decision
-                                Payment = payment
+                                Progress =
+                                    ClaimCore.TestSupport.CaseFixtures.progress (decision) (payment)
                             }
 
                         for state, lifecycle in
@@ -256,13 +303,19 @@ let private grantTokens act bytes =
             | GrantTarget.Installation -> "INSTALLATION"
             | GrantTarget.CaseReference _ -> "CASE"
 
-        tokenAt [ "act"; "role" ] grant.Role bytes
+        tokenAt
+            [ "act"; "role" ]
+            (roles |> List.find (fun (role, _) -> role = grant.Role) |> snd)
+            bytes
         && tokenAt [ "act"; "scope"; "kind" ] scope bytes
     | _ -> true
 
 let private authorityProperty =
     property {
-        let! id, reference, _, _, _, _, subject = sample
+        let! values = sample
+        let id = values.OperationId
+        let reference = values.Reference
+        let subject = values.Reason
 
         return
             [
@@ -270,11 +323,11 @@ let private authorityProperty =
                     // Provisioning is human-only; every other durable shape preserves both principal kinds.
                     let kinds =
                         if token = "PROVISION_OWNER" then
-                            [ "HUMAN" ]
+                            [ PrincipalKind.Human, "HUMAN" ]
                         else
                             principalKinds
 
-                    for kind in kinds do
+                    for kind, kindToken in kinds do
                         let expected: AuthorityRequestRecord =
                             {
                                 OperationId = id
@@ -292,7 +345,7 @@ let private authorityProperty =
                         yield
                             AuthorityRecord.decode Int32.MaxValue bytes = Ok expected
                             && tokenAt [ "act"; "kind" ] token bytes
-                            && tokenAt [ "target"; "kind" ] kind bytes
+                            && tokenAt [ "target"; "kind" ] kindToken bytes
                             && grantTokens act bytes
             ]
             |> List.forall (fun value -> value)

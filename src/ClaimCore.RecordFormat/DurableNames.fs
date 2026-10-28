@@ -97,6 +97,7 @@ module DurableNames =
         | InputTarget.OperationId -> "operationId"
         | InputTarget.ExpectedRevision -> "expectedRevision"
         | InputTarget.Reason -> "reason"
+        | InputTarget.PrincipalKind -> "principal.kind"
         | InputTarget.PrincipalIssuer -> "principal.issuer"
         | InputTarget.PrincipalSubject -> "principal.subject"
         | InputTarget.Role -> "role"
@@ -114,7 +115,15 @@ module DurableNames =
     let statusEntries =
         values<CaseStatus>() |> List.map (fun value -> value, status value)
 
-    let principalKinds = values<PrincipalKind>() |> List.map principalKind
+    let principalKindEntries =
+        values<PrincipalKind>() |> List.map (fun value -> value, principalKind value)
+
+    let principalKinds = principalKindEntries |> List.map snd
+
+    let tryPrincipalKind token =
+        principalKindEntries
+        |> List.tryPick (fun (value, name) -> if name = token then Some value else None)
+
     let roleEntries = values<Role>() |> List.map (fun value -> value, role value)
 
     let tryRole token =

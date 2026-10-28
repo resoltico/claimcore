@@ -23,7 +23,7 @@ let private businessActs =
         AuthoredCaseAct.Correct
             {
                 Registration =
-                    Change.Replace
+                    Amendment.Replace
                         { registration with
                             ClaimantName = "Corrected Synthetic Name"
                         }
@@ -69,8 +69,7 @@ let private initial: CaseSnapshot =
                                 InsurerName = "Example Alleged Insurer"
                                 ClaimedAmount = "1000"
                             }
-                    Decision = None
-                    Payment = None
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
                 }
             )
         Revision = 1L
@@ -157,7 +156,13 @@ let private negativeControls () =
             Some paid,
             Ok
                 { paid with
-                    State = CaseState.Active({ viewFields paid with Payment = None })
+                    State =
+                        CaseState.Active(
+                            { viewFields paid with
+                                Progress =
+                                    PaymentProgress.Decided(Option.get (viewFields paid).Decision)
+                            }
+                        )
                 }
             Some paid,
             Ok
@@ -170,7 +175,8 @@ let private negativeControls () =
                     State =
                         CaseState.Active(
                             { viewFields closed with
-                                Payment = None
+                                Progress =
+                                    PaymentProgress.Decided(Option.get (viewFields closed).Decision)
                             }
                         )
                 }

@@ -1,5 +1,5 @@
-import type { Diagnostic, Fault, HostFailure } from "@contracts/client";
-export type DiagnosticNotice = Diagnostic | Fault | HostFailure;
+import type { Diagnostic, Fault, HostFailure, InputIssue } from "@contracts/client";
+export type DiagnosticNotice = Diagnostic | Fault | HostFailure | InputIssue;
 export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"
@@ -12,6 +12,7 @@ export type LocalNoticeReason =
   | "outcomeUnknown"
   | "notAccepted";
 export type Notice =
+  | { readonly kind: "issues"; readonly issues: ReadonlyArray<InputIssue> }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
   | { readonly kind: "diagnostic"; readonly diagnostic: DiagnosticNotice }
   | { readonly kind: "invalidHttp"; readonly status: number }

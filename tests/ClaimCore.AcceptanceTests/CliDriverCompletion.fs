@@ -44,7 +44,12 @@ let private report (diagnostics: TextWriter) state =
     | :? IOException
     | :? ObjectDisposedException -> ()
 
-let private complete budget timer diagnostics progress required successful =
+type private CompletionPolicy = { Required: bool; Successful: bool }
+
+let private complete budget timer diagnostics progress (policy: CompletionPolicy) =
+    let required = policy.Required
+    let successful = policy.Successful
+
     match progress with
     | None -> ()
     | Some path ->
@@ -66,7 +71,7 @@ let private complete budget timer diagnostics progress required successful =
 
 let private secondary budget timer diagnostics progress =
     try
-        complete budget timer diagnostics progress false false
+        complete budget timer diagnostics progress { Required = false; Successful = false }
     with _ ->
         ()
 
@@ -81,7 +86,15 @@ let run budget diagnostics progress expected (invoke: unit -> ProcessRunner.Resu
             reraise ()
 
     if result.ExitCode = expected then
-        complete budget timer diagnostics progress true (result.ExitCode = 0)
+        complete
+            budget
+            timer
+            diagnostics
+            progress
+            {
+                Required = true
+                Successful = result.ExitCode = 0
+            }
     else
         secondary budget timer diagnostics progress
 

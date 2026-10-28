@@ -322,24 +322,35 @@ module Money =
     let format (Money(value, _)) = amountText value
     let currency (Money(_, value)) = value
 
-    let parse rawAmount rawCurrency =
-        // Both permanent text checks precede either grammar, preserving diagnostic order.
-        ScalarText.parse None 0 rawAmount
-        |> Result.mapError MoneyViolation.Amount
-        |> Result.bind (fun value ->
+    let parseAll rawAmount rawCurrency =
+        let parsedAmount =
+            ScalarText.parse None 0 rawAmount
+            |> Result.bind (fun value ->
+                amount value
+                |> Option.map Ok
+                |> Option.defaultValue (
+                    Error(Violation.DecimalFormat(MaximumIntegerDigits, MaximumFractionalDigits))
+                ))
+            |> Result.mapError MoneyViolation.Amount
+
+        let parsedCurrency =
             ScalarText.parse None 0 rawCurrency
+            |> Result.bind (fun value ->
+                if ScalarText.matches currencyGrammar value then
+                    Ok value
+                else
+                    Error Violation.CurrencyFormat)
             |> Result.mapError MoneyViolation.Currency
-            |> Result.bind (fun currency ->
-                match amount value with
-                | None ->
-                    Error(
-                        MoneyViolation.Amount(
-                            Violation.DecimalFormat(MaximumIntegerDigits, MaximumFractionalDigits)
-                        )
-                    )
-                | Some _ when not (ScalarText.matches currencyGrammar currency) ->
-                    Error(MoneyViolation.Currency Violation.CurrencyFormat)
-                | Some value -> Ok(Money(value, currency))))
+
+        match parsedAmount, parsedCurrency with
+        | Ok amount, Ok currency -> Ok(Money(amount, currency))
+        | Error amount, Error currency -> Error [ amount; currency ]
+        | Error error, _
+        | _, Error error -> Error [ error ]
+
+    /// Retained scalar decoding reports one fixed problem; authored admission uses every field issue.
+    let parse rawAmount rawCurrency =
+        parseAll rawAmount rawCurrency |> Result.mapError List.head
 
     let admit (value: Money) : Result<Money, Violation> = Ok value
 

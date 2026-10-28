@@ -59,9 +59,9 @@ const refusedResponse = () =>
     action: "STOP_AND_INVESTIGATE",
   });
 const validationRefusal: Diagnostic = {
-  code: "TEXT_REQUIRED",
+  code: "INVALID_INPUT",
   action: "CORRECT_INPUT",
-  target: "claimantName",
+  issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
 };
 const staleRefusal: Diagnostic = {
   code: "REVISION_CONFLICT",
@@ -95,7 +95,11 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
   await user.click(getButton("Review changes"));
-  expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Input problems: 1.");
+  expect(claimant).toHaveAccessibleDescription(
+    "Name of the person or company making the claim.Up to 200 characters. A non-blank value is required.",
+  );
+  expect(claimant).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).act.values["claimantName"]).toBe("Synthetic A");
   expect(sentDraft(2).act.values["claimantName"]).toBe("Synthetic B");

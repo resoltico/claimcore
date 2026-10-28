@@ -112,9 +112,11 @@ let private physicalReplyLoss () =
     let reply =
         RemoteServiceCall.send
             client
-            (Uri($"https://127.0.0.1:{port}/"))
+            {
+                Service = (Uri($"https://127.0.0.1:{port}/"))
+                Authorization = (AuthenticationHeaderValue("Bearer", "synthetic-token"))
+            }
             invocation
-            (AuthenticationHeaderValue("Bearer", "synthetic-token"))
             (fun () -> dispatched <- true)
             timeout.Token
         |> _.GetAwaiter().GetResult()
