@@ -9,6 +9,7 @@
 - Browser forms use catalog vocabulary and correction advice; the selected catalog entry supplies request constants.
 - Protocol sources are grouped by responsibility; [source vocabulary](docs/contributing.md#source-vocabulary) explains implementation terms.
 - Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.
+- Foundation and refactoring reviews use five manual [change probes](docs/contributing.md#change-probes), with measured misses and follow-ups recorded in PRs.
 
 ## [0.13.0] - 2026-10-28
 

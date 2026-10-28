@@ -264,6 +264,60 @@ mode explicitly reports incomplete qualification. Native report directories unde
 `artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
 
+## Change probes
+
+Run these five manual probes at the end of every foundation or refactoring PR, before marking it
+ready, and whenever the owner asks. They measure representative future changes, including costs
+outside the code being refactored.
+
+| Probe | Change | Invariants to assess |
+| --- | --- | --- |
+| P-FIELD | Add a required registration text field (`PartyName`, for the reference measurement). | No `db/` or PostgreSQL source changes; no renderer changes; field-description functions change only in `BusinessField.describe`. |
+| P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
+| P-ROLE | Add a role with one existing capability. | No renderer changes; SQL changes only the durable `grants.role` token list. |
+| P-READ | Add a read-only endpoint over existing case data. | No renderer changes; CLI verb and catalog entry derive; one store-port method implemented by PostgreSQL and the memory double. |
+| P-MESSAGE | Add a case refusal and its message. | Only Domain refusal/producer, diagnostic mapping and three locale files change; no renderer changes. |
+
+Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
+`generated/`. Generated contracts and documentation are recorded separately from authored production
+files. Field-description functions mean the metadata and projection functions in
+[CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs); authored/admitted value and admission work is
+also counted, even when it falls outside those functions.
+
+Start each probe from the same candidate commit on its own throwaway local `probe/<id>` branch.
+Never push these branches; delete them afterwards. Apply the representative change manually, build
+the solution, regenerate contracts and add one temporary test exercising the new element through its
+real path. A passing test must demonstrate the feature, including the relevant boundary or store,
+rather than merely compiling it. Record production files and added/deleted lines, generated files,
+test and fixture updates required, every gate failure, and each invariant as met or missed with its
+cause. Run the normal fast gate to expose costs beyond the focused test; preserve failures even when
+a later check passes. Keep these experiments isolated from the delivered feature set.
+
+A miss alone does not block merging. Fix defects within the PR's scope and rerun the affected probe;
+otherwise explain the cause and propose follow-up work. Preserve safeguards and existing gate limits.
+Future foundation proposals must cite the latest probe results, a concrete defect or a stated
+requirement. Put subsequent measurements in PR bodies, not a repository progress log. This section
+is the single authority for the procedure; no maintained script applies the probes automatically.
+
+The initial reference measurement used commit `aec35ffa38ebd6005853819f98c7d80b70fdaf7a`.
+Each experiment built, regenerated contracts and passed its temporary real-path test. The table
+counts authored production changes as added/deleted lines; generated output and temporary tests
+are excluded. Paths below are relative to `src/` unless prefixed with `db/`.
+
+| Probe | Production files | Lines +/− | Invariants and additional costs |
+| --- | --- | --- | --- |
+| P-FIELD | 11: Domain `CaseActs`, `CaseFields`, `StateValidation`, `Validation`; Protocol wire `RequestCodecs`, `ResponseCodecs`; RecordFormat `DurableNames`, `RecordCodecs`; three locales | 46/8 | Met all invariants. Authored/admitted registration and admission also changed. Fast gate found three TypeScript fixture errors; unit checks found 52 fixture/field-inventory failures. |
+| P-ACT | 10: `db/baseline.sql`; Domain `Authority`, `CaseActs`, `Transitions`; Protocol catalog `Annotations`; RecordFormat `DurableNames`, `LedgerEntry`; three locales | 29/4 | Missed no-SQL: the permanent act whitelist rejected the new act until its token was added. Renderer/codec invariants met. Twelve complexity findings and 11 unit inventory/availability failures remained. |
+| P-ROLE | 7: `db/baseline.sql`; Domain `Authority`, vocabulary `Roles`; RecordFormat `DurableNames`; three locales | 7/1 | Met both invariants. Three unit role-policy/inventory/positive-alternative fixtures needed updates. |
+| P-READ | 14: Application `LedgerStorePort`, `Queries`, `Service`; CLI `ServiceReply`, `TextReply`; PostgreSQL ledger `TransactionPrimitives`; Protocol API `Endpoints`, `Operations`, catalog `Metadata`, `Reads`; Web `ApiRoutes`; three locales | 103/1 | Missed no-renderer: host dispatch and typed CLI reply handling changed. Verb/catalog derivation and one port method with both implementations met. Five lint findings and 17 unit endpoint/mapping fixtures remained. |
+| P-MESSAGE | 5: Domain refusal `RefusalModel`, `Transitions`; three locales | 6/0 | Met all invariants; diagnostic mapping derived automatically. Two unit transition/positive-alternative fixtures needed updates. |
+
+The P-ACT follow-up is to investigate deriving the SQL act whitelist from its permanent owner and
+reducing exhaustive mapping growth within existing complexity limits. P-READ calls for investigating
+typed query/reply registration that can supply host dispatch and CLI presentation together. These
+are proposals grounded in measured misses, not implemented capabilities or relaxed protections.
+The PR body records full file lists, fixture failures and qualification evidence for this reference.
+
 ## Growth
 
 Run `bash eng/verify.sh growth` before a release and on demand. Its nine profiles, cardinality comparisons,
