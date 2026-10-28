@@ -60,7 +60,7 @@ let private cardinalityWrites cases keyRing (database: PostgresFixture.Database)
         return
             {|
                 cases = cases
-                acceptedEntries = position.Sequence
+                acceptedEntries = Sequence.value position.Sequence
                 verificationMilliseconds = elapsed
                 managedBytesBeforeVerification = baseline
                 managedBytesAfterVerification = GC.GetTotalMemory false

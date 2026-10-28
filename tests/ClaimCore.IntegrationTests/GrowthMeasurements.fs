@@ -249,7 +249,7 @@ let internal report
         actors = workload.Actors + 1
         grants = workload.Actors * 10 + 10
         writers = workload.Writers
-        ledgerEntries = position.Sequence
+        ledgerEntries = Sequence.value position.Sequence
         seconds = elapsed
         writesPerSecond = float workload.Writes / elapsed
         p50Milliseconds = latencies[latencies.Length / 2]
