@@ -34,3 +34,19 @@ module InputTarget =
 
     let vocabulary = Vocabulary.define "field" values token
     let all = values |> List.map (fun value -> value, token value)
+
+    let private orderedTargets =
+        [
+            yield InputTarget.OperationId
+            yield InputTarget.Field BusinessField.CaseReference
+            yield InputTarget.ExpectedRevision
+            for group in Vocabulary.all RecordGroup.vocabulary do
+                yield InputTarget.Group group
+                yield! CaseFields.ofGroup group |> List.map InputTarget.Field
+            yield InputTarget.Reason
+        ]
+
+    let order target =
+        orderedTargets
+        |> List.tryFindIndex ((=) target)
+        |> Option.defaultValue orderedTargets.Length

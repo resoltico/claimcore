@@ -32,29 +32,49 @@ module internal StateValidation =
                 else
                     Ok())
 
-    let newlyAssertedDates today (before: Registration) prior (after: Registration) next =
-        let asserted field previous candidate =
+    let admit today (before: Claim option) (after: Claim) =
+        let assertedDate field previous candidate =
             match candidate with
             | None -> Ok()
             | Some date when previous = Some date -> Ok()
-            | Some date -> Validation.notFuture field today date
+            | Some date -> Validation.notFuture (InputTarget.Field field) today date
+
+        let assertedName field previous candidate =
+            if previous = Some candidate then
+                Ok()
+            else
+                PartyName.admit candidate
+                |> Result.map ignore
+                |> Result.mapError (fun violation ->
+                    Refusal.invalidInput (InputTarget.Field field, violation))
 
         Admission.collect
             [
-                asserted
-                    (InputTarget.Field BusinessField.IncidentDate)
-                    (Some before.IncidentDate)
-                    (Some after.IncidentDate)
-                asserted
-                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                    (Some before.IncidentNotificationDate)
-                    (Some after.IncidentNotificationDate)
-                asserted
-                    (InputTarget.Field BusinessField.PaymentDecisionDate)
-                    (PaymentProgress.decision prior |> Option.map _.PaymentDecisionDate)
-                    (PaymentProgress.decision next |> Option.map _.PaymentDecisionDate)
-                asserted
-                    (InputTarget.Field BusinessField.PaymentDate)
-                    (PaymentProgress.paymentDate prior)
-                    (PaymentProgress.paymentDate next)
+                progress after.Facts after.Progress
+                assertedDate
+                    BusinessField.IncidentDate
+                    (before |> Option.map _.Facts.IncidentDate)
+                    (Some after.Facts.IncidentDate)
+                assertedDate
+                    BusinessField.IncidentNotificationDate
+                    (before |> Option.map _.Facts.IncidentNotificationDate)
+                    (Some after.Facts.IncidentNotificationDate)
+                assertedDate
+                    BusinessField.PaymentDecisionDate
+                    (before
+                     |> Option.bind (fun claim -> PaymentProgress.decision claim.Progress)
+                     |> Option.map _.PaymentDecisionDate)
+                    (PaymentProgress.decision after.Progress |> Option.map _.PaymentDecisionDate)
+                assertedDate
+                    BusinessField.PaymentDate
+                    (before |> Option.bind (fun claim -> PaymentProgress.paymentDate claim.Progress))
+                    (PaymentProgress.paymentDate after.Progress)
+                assertedName
+                    BusinessField.ClaimantName
+                    (before |> Option.map _.Facts.ClaimantName)
+                    after.Facts.ClaimantName
+                assertedName
+                    BusinessField.InsurerName
+                    (before |> Option.map _.Facts.InsurerName)
+                    after.Facts.InsurerName
             ]

@@ -8,25 +8,6 @@ module internal Validation =
     let private at target =
         Result.mapError (fun violation -> Refusal.invalidInput (target, violation))
 
-    let assertedText previous (facts: Registration) =
-        let changed field before after =
-            if before = Some after then
-                Ok()
-            else
-                PartyName.admit after |> Result.map ignore |> at field
-
-        Admission.collect
-            [
-                changed
-                    (InputTarget.Field BusinessField.ClaimantName)
-                    (previous |> Option.map _.ClaimantName)
-                    facts.ClaimantName
-                changed
-                    (InputTarget.Field BusinessField.InsurerName)
-                    (previous |> Option.map _.InsurerName)
-                    facts.InsurerName
-            ]
-
     let date input value =
         CalendarDate.parse value |> at (InputTarget.Field input)
 

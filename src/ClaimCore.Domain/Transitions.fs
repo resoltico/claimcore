@@ -178,74 +178,11 @@ module internal Transitions =
             None, Ok CaseState.Erased
         | _ -> None, Error Refusal.ActNotPermitted
 
-    let private assertedCorrection today (before: Claim) (correction: ValidCorrection) =
-        let facts =
-            match correction.Registration with
-            | Amendment.Keep -> before.Facts
-            | Amendment.Replace value -> value
-
-        let asserted field previous candidate =
-            match candidate with
-            | None -> Ok()
-            | Some date when previous = Some date -> Ok()
-            | Some date -> Validation.notFuture field today date
-
-        let decision =
-            match correction.Decision with
-            | Change.Replace value -> Some value.PaymentDecisionDate
-            | _ -> None
-
-        let payment =
-            match correction.Payment with
-            | Change.Replace value -> Some value.PaymentDate
-            | _ -> None
-
-        let structural =
-            match CaseCorrections.proposed before.Facts before.Progress correction with
-            | Ok(facts, progress) -> StateValidation.progress facts progress
-            | Error _ -> Ok()
-
-        Admission.collect
-            [
-                structural
-                asserted
-                    (InputTarget.Field BusinessField.IncidentDate)
-                    (Some before.Facts.IncidentDate)
-                    (Some facts.IncidentDate)
-                asserted
-                    (InputTarget.Field BusinessField.IncidentNotificationDate)
-                    (Some before.Facts.IncidentNotificationDate)
-                    (Some facts.IncidentNotificationDate)
-                Validation.assertedText (Some before.Facts) facts
-                asserted
-                    (InputTarget.Field BusinessField.PaymentDecisionDate)
-                    (PaymentProgress.decision before.Progress |> Option.map _.PaymentDecisionDate)
-                    decision
-                asserted
-                    (InputTarget.Field BusinessField.PaymentDate)
-                    (PaymentProgress.paymentDate before.Progress)
-                    payment
-            ]
-
     let private ordered =
         function
         | Error(Refusal.InvalidInput issues) ->
-            let targets =
-                [
-                    yield InputTarget.OperationId
-                    yield InputTarget.Field BusinessField.CaseReference
-                    yield InputTarget.ExpectedRevision
-                    for group in Vocabulary.all RecordGroup.vocabulary do
-                        yield InputTarget.Group group
-                        yield! CaseFields.ofGroup group |> List.map InputTarget.Field
-                    yield InputTarget.Reason
-                ]
-
-            let rank target =
-                targets |> List.tryFindIndex ((=) target) |> Option.defaultValue targets.Length
-
             InputIssues.toList issues
-            |> List.sortBy (fun issue -> rank issue.Target)
+            |> List.sortBy (fun issue -> InputTarget.order issue.Target)
             |> InputIssues.ofList
             |> Option.get
             |> Refusal.InvalidInput
@@ -257,25 +194,23 @@ module internal Transitions =
 
         let admitted =
             match before, payload, changed with
-            | Some before, CaseAct.Correct correction, Error(Refusal.InvalidInput _) ->
-                Admission.map2
-                    (fun next () -> next)
-                    changed
-                    (assertedCorrection today before correction)
+            | Some before, CaseAct.Correct correction, _ ->
+                let admitted =
+                    CaseCorrections.proposed before.Facts before.Progress correction
+                    |> Result.bind (fun (facts, progress) ->
+                        StateValidation.admit
+                            today
+                            (Some before)
+                            { before with
+                                Facts = facts
+                                Progress = progress
+                            })
+
+                Admission.map2 (fun next () -> next) changed admitted
             | Some before, act, Ok(CaseState.Active after) when
                 not (CaseActKind.isStewardship (CaseAct.kind act))
                 ->
-                Admission.collect
-                    [
-                        StateValidation.progress after.Facts after.Progress
-                        StateValidation.newlyAssertedDates
-                            today
-                            before.Facts
-                            before.Progress
-                            after.Facts
-                            after.Progress
-                        Validation.assertedText (Some before.Facts) after.Facts
-                    ]
+                StateValidation.admit today (Some before) after
                 |> Result.map (fun () -> CaseState.Active after)
             | _ -> changed
 

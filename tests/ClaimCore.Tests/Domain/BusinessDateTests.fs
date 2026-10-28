@@ -18,6 +18,36 @@ let private future field result =
         (Error(Refusal.invalidInput (field, Violation.FutureDate)))
         "A newly asserted date is bounded by business time"
 
+let private openingAccumulatesAssertions =
+    testCase
+        "opening reports future dates and surrounding name whitespace in field order"
+        (fun () ->
+            let facts =
+                { registration with
+                    ClaimantName = " Synthetic claimant "
+                }
+
+            let outcome =
+                CaseFixtures.decide
+                    (DateOnly(2026, 7, 31))
+                    (request 0L (AuthoredCaseAct.Open facts))
+                    None
+
+            match outcome with
+            | Error(Refusal.InvalidInput issues) ->
+                Expect.equal
+                    (InputIssues.toList issues
+                     |> List.map (fun issue -> issue.Target, issue.Violation))
+                    [
+                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                        InputTarget.Field BusinessField.IncidentNotificationDate,
+                        Violation.FutureDate
+                        InputTarget.Field BusinessField.ClaimantName,
+                        Violation.SurroundingWhitespace
+                    ]
+                    "Independent newly asserted values retain field order"
+            | other -> failtestf "Expected accumulated assertions, got %A" other)
+
 let private amendmentRetainsDates =
     testCase "amendment retains accepted dates after clock rollback" (fun () ->
         let before = opened ()
@@ -186,6 +216,7 @@ let private ordinary =
     testList
         "ordinary assertions"
         [
+            openingAccumulatesAssertions
             amendmentRetainsDates
             newIncidentIsBounded
             newNotificationIsBounded

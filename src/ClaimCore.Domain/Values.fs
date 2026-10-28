@@ -213,7 +213,6 @@ module CountryCode =
     let parse value =
         ScalarText.token Grammar Violation.CountryFormat value |> Result.map CountryCode
 
-    let admit (value: CountryCode) : Result<CountryCode, Violation> = Ok value
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type PartyName = private PartyName of string
@@ -352,7 +351,6 @@ module Money =
     let parse rawAmount rawCurrency =
         parseAll rawAmount rawCurrency |> Result.mapError List.head
 
-    let admit (value: Money) : Result<Money, Violation> = Ok value
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CaseReference = private CaseReference of authored: string * key: string
@@ -380,5 +378,3 @@ module CaseReference =
     let parse value =
         ScalarText.token Grammar Violation.ReferenceFormat value
         |> Result.map (fun value -> CaseReference(value, key value))
-
-    let admit (value: CaseReference) : Result<CaseReference, Violation> = Ok value

@@ -59,29 +59,15 @@ module private BusinessState =
                 }
         }
 
-    let openCase (today: DateOnly) (facts: Registration) =
-        result {
-            do!
-                Admission.collect
-                    [
-                        Validation.notFuture
-                            (InputTarget.Field BusinessField.IncidentDate)
-                            today
-                            facts.IncidentDate
-                        Validation.notFuture
-                            (InputTarget.Field BusinessField.IncidentNotificationDate)
-                            today
-                            facts.IncidentNotificationDate
-                        Validation.assertedText None facts
-                    ]
+    let openCase today facts =
+        let claim =
+            {
+                Facts = facts
+                Progress = PaymentProgress.Undecided
+                Status = CaseStatus.Opened
+            }
 
-            return
-                {
-                    Facts = facts
-                    Progress = PaymentProgress.Undecided
-                    Status = CaseStatus.Opened
-                }
-        }
+        StateValidation.admit today None claim |> Result.map (fun () -> claim)
 
 module Case =
     let parse request =
