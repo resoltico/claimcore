@@ -17,13 +17,13 @@ module DeliveryState =
     let vocabulary =
         Vocabulary.ofUnion<DeliveryState> "delivery" TokenCasing.ScreamingSnake None
 
-[<RequireQualifiedAccess; NoComparison>]
+[<RequireQualifiedAccess; NoEquality; NoComparison>]
 type FrameResult =
     | Reply of ServiceReply
     | HostFailure of HostFailure
     | LocalFailure of CliFailure
 
-[<NoComparison>]
+[<NoEquality; NoComparison>]
 type FrameReply =
     {
         Endpoint: EndpointId option

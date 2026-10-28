@@ -14,3 +14,7 @@ let endpointId name =
     Api.tryFind name
     |> Option.map _.Id
     |> Option.defaultWith (fun () -> failtestf "Unknown fixture endpoint: %s" name)
+
+// Compare transport facts and exit semantics; endpoint closures are deliberately not comparable.
+let frameFacts frame =
+    Frames.encode frame, Frames.exitCode frame

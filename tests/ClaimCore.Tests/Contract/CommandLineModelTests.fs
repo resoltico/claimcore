@@ -23,7 +23,7 @@ let tests =
                     ]
 
                 for outcome, expected in outcomes do
-                    let actual = OutcomePresentation.exitCode outcome
+                    let actual = (OutcomePresentation.classify outcome).ExitCode
                     Expect.equal actual expected "Shared outcome exit meaning"
 
                     Expect.contains
@@ -33,7 +33,7 @@ let tests =
 
                 Expect.contains
                     CliIdentity.supportedExitCodes
-                    (OutcomePresentation.executeExitCode ExecuteResult.OutcomeUnknown)
+                    (OutcomePresentation.classifyExecute ExecuteResult.OutcomeUnknown).ExitCode
                     "Unknown delivery is supported"
 
                 for code in [ ExitCode.Usage; ExitCode.InternalError; ExitCode.Cancelled ] do

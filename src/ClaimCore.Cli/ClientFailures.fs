@@ -3,7 +3,7 @@ namespace ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Protocol
 
-[<NoComparison>]
+[<NoEquality; NoComparison>]
 type CliReply =
     {
         Frame: FrameReply

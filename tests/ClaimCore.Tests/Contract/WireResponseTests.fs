@@ -21,6 +21,18 @@ let private accepted =
     | Ok value -> value
     | Error problem -> failtestf "Unexpected wire refusal at %s: %s" problem.Path problem.Reason
 
+let private expectedExit =
+    function
+    | "SUCCEEDED"
+    | "REVIEWED"
+    | "ACCEPTED"
+    | "ALREADY_ACCEPTED" -> 0
+    | "REJECTED"
+    | "NOT_ACCEPTED" -> 2
+    | "FAILED" -> 3
+    | "OUTCOME_UNKNOWN" -> 4
+    | _ -> failtest "The authored reply requires a declared outcome kind."
+
 let private examples () =
     let path =
         Path.Combine(RepositoryRoot.find (), "tests/fixtures/wire-response-examples.json")
@@ -45,6 +57,22 @@ let private examples () =
             (sample.GetProperty("name").GetString() |> nonNull)
 
         if expected then
+            let classification = endpoint.ClassifyOutput value |> accepted
+
+            let kind =
+                sample.GetProperty("value").GetProperty("outcome").GetProperty("kind").GetString()
+                |> nonNull
+
+            Expect.equal
+                (ReplyKind.token classification.Kind)
+                kind
+                "Endpoint-owned classification agrees with the independent wire outcome"
+
+            Expect.equal
+                (ExitCode.value classification.ExitCode)
+                (expectedExit kind)
+                "Every wire outcome retains its declared exit meaning"
+
             Expect.equal
                 (CanonicalWriter.bytes (encoded |> accepted))
                 (CanonicalWriter.bytes value)
@@ -127,8 +155,9 @@ let private frames () =
 
     let roundTrip value =
         Expect.equal
-            (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode value))
-            (Ok value)
+            (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode value)
+             |> Result.map CliReplies.frameFacts)
+            (Ok(CliReplies.frameFacts value))
             "CLI result frames round trip."
 
     roundTrip reply

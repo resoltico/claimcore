@@ -39,8 +39,8 @@ let private assertTarget target identity violation code parameters =
         Expect.equal source original "Human rendering preserves the structured reply bytes"
 
         Expect.equal
-            (Frames.decode source)
-            (Ok(frame refusal))
+            (Frames.decode source |> Result.map CliReplies.frameFacts)
+            (Ok(CliReplies.frameFacts (frame refusal)))
             "Structured diagnostic target and typed parameters remain unchanged"
 
 let private requiredNames () =
@@ -137,8 +137,8 @@ let private assertOptionalTarget refusal identity code =
             "Only actual diagnostic targets add a localized label"
 
         Expect.equal
-            (Frames.decode source)
-            (Ok(frame refusal))
+            (Frames.decode source |> Result.map CliReplies.frameFacts)
+            (Ok(CliReplies.frameFacts (frame refusal)))
             "The structured diagnostic is unchanged"
 
 [<Tests>]

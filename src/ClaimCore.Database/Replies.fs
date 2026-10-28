@@ -164,7 +164,7 @@ module Replies =
 
     let exitCode =
         function
-        | Reply.Operation outcome -> OutcomePresentation.exitCode outcome
+        | Reply.Operation outcome -> (OutcomePresentation.classify outcome).ExitCode
         | Reply.Usage _ -> ExitCode.Rejected
         | Reply.Cancelled -> ExitCode.Failed
         | Reply.OutcomeUnknown _ -> ExitCode.OutcomeUnknown

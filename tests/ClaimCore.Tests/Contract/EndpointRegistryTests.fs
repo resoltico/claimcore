@@ -242,60 +242,43 @@ let handlerBindings =
 
 [<Tests>]
 let handlerCallTypes =
-    testCase "handler calls tie nominal input and output to the registered endpoint" (fun () ->
-        let method =
+    testCase "handler calls and endpoint behavior retain nominal input and output types" (fun () ->
+        let methodInfo =
             typeof<ClaimCore.Web.Route>.Assembly.GetTypes()
             |> Array.collect (fun kind ->
                 kind.GetMethods(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Static))
-            |> Array.find (fun method ->
-                let parameters = method.GetParameters()
+            |> Array.find (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
 
-                method.Name = "bind"
-                && parameters.Length = 4
+                methodInfo.Name = "bind"
+                && parameters.Length = 2
                 && parameters[0].ParameterType.IsGenericType
                 && parameters[0].ParameterType.GetGenericTypeDefinition() =
                     typedefof<Endpoint<_, _>>)
 
+        let parameters = methodInfo.GetParameters()
+        let endpoint = parameters[0].ParameterType
+        let endpointTypes = endpoint.GetGenericArguments()
 
-        let parameters = method.GetParameters()
-        let endpointTypes = parameters[0].ParameterType.GetGenericArguments()
-        let identity = parameters[1].ParameterType.GetGenericArguments()
+        let correlation =
+            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()
+
+        Expect.equal correlation[0] endpointTypes[0] "Correlation receives the typed input"
 
         Expect.equal
-            identity[0]
-            endpointTypes[0]
-            "Logging identity receives the typed endpoint input"
-
-        Expect.equal
-            identity[1]
+            correlation[1]
             typeof<Guid option>
-            "Logging receives an optional admitted operation id"
+            "Correlation returns an optional operation id"
 
-        let unavailable = parameters[2].ParameterType.GetGenericArguments()
+        let unavailable =
+            (endpoint.GetProperty("Unavailable") |> nonNull).PropertyType.GetGenericArguments()
 
-        Expect.equal
-            (unavailable[0])
-            (endpointTypes[0])
-            "The unavailable response receives this endpoint's exact input"
-
-        Expect.equal
-            (unavailable[1])
-            (endpointTypes[1])
-            "The unavailable response has this endpoint's exact output"
-
+        Expect.equal unavailable[0] endpointTypes[0] "Unavailable receives this exact input"
+        Expect.equal unavailable[1] endpointTypes[1] "Unavailable returns this exact output"
         let arguments (kind: Type) = kind.GetGenericArguments()
-        let invocation = parameters[3].ParameterType |> arguments
+        let invocation = parameters[1].ParameterType |> arguments
         let input = invocation[1] |> arguments
-
-        Expect.equal
-            (input[0])
-            (endpointTypes[0])
-            "The invocation receives this endpoint's exact input"
-
+        Expect.equal input[0] endpointTypes[0] "Invocation receives this exact input"
         let cancellation = input[1] |> arguments
         let output = cancellation[1] |> arguments
-
-        Expect.equal
-            (output[0])
-            (endpointTypes[1])
-            "The invocation returns this endpoint's exact output")
+        Expect.equal output[0] endpointTypes[1] "Invocation returns this exact output")

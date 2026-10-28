@@ -132,9 +132,18 @@ let private mappedExamples () =
             let! reply =
                 prepared.Invoke (Some actor) CancellationToken.None ignore |> Async.AwaitTask
 
-            Api.admitOutput endpoint reply |> admitted |> ignore
+            Api.admitOutput endpoint reply.Wire |> admitted |> ignore
 
-            assertServerIdentity endpoint input reply
+            let kind =
+                JsonValue.tryMember "outcome" reply.Wire
+                |> Option.bind (JsonValue.tryMember "kind")
+
+            Expect.equal
+                kind
+                (Some(JsonValue.String(ReplyKind.token reply.Class.Kind)))
+                "Typed classification agrees with the actual server outcome"
+
+            assertServerIdentity endpoint input reply.Wire
     }
 
 let private cancellationPolicy () =

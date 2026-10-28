@@ -44,13 +44,10 @@ module internal RouteSupport =
             | JsonValue.String text -> Some text
             | _ -> None)
 
-    let reply value context =
+    let reply (reply: ClassifiedReply) context =
+        let value = reply.Wire
         let outcome = JsonValue.tryMember "outcome" value
-
-        let tag =
-            outcome
-            |> Option.bind (memberText "kind")
-            |> Option.defaultWith (fun () -> invalidOp "Missing typed outcome.")
+        let tag = ReplyKind.token reply.Class.Kind
 
         RequestLog.outcome tag context
 
