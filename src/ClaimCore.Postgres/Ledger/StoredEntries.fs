@@ -40,7 +40,7 @@ module internal StoredEntries =
                 raise (RecordCorruptException "Invalid authority ledger shape.")
 
             let kind =
-                AuthorityKind.parse act
+                DurableNames.tryAuthorityAct act
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 
@@ -53,7 +53,7 @@ module internal StoredEntries =
                 DatabaseSession.value<int64> 10 row |> DatabaseSession.admitted Revision.create
 
             let kind =
-                CaseActKind.parse act
+                DurableNames.tryCaseAct act
                 |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid case act."))
 
             let date = DatabaseSession.calendarDate 11 row

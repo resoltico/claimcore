@@ -12,6 +12,7 @@
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />
+    <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />

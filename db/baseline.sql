@@ -89,14 +89,12 @@ CREATE TABLE claimcore.ledger (
         (subject_kind = 'CASE'
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
-            AND act IN ('OPEN', 'AMEND_REGISTRATION', 'CORRECT', 'DECIDE',
-                        'WITHDRAW_DECISION', 'RECORD_PAYMENT', 'CLEAR_PAYMENT', 'CLOSE',
-                        'REOPEN', 'VOID', 'REINSTATE', 'ERASE'))
+            AND act ~ '^[A-Z][A-Z_]{0,39}$')
         OR (subject_kind = 'AUTHORITY'
             AND case_revision IS NULL
             AND business_date IS NULL
             AND payload IS NOT NULL
-            AND act IN ('PROVISION_OWNER', 'REGISTER', 'GRANT', 'REVOKE', 'ENABLE', 'DISABLE'))
+            AND act ~ '^[A-Z][A-Z_]{0,39}$')
     ),
     CONSTRAINT ledger_payload_shape CHECK (
         (payload IS NULL AND payload_nonce IS NULL)
@@ -264,7 +262,7 @@ CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference
 CREATE TABLE claimcore.actors (
     -- The operation ID of the authority entry that registered the actor.
     actor_id uuid PRIMARY KEY CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
-    principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN', 'SERVICE')),
+    principal_kind text NOT NULL CHECK (principal_kind ~ '^[A-Z][A-Z_]{0,39}$'),
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
     enabled boolean NOT NULL,
@@ -274,10 +272,7 @@ CREATE TABLE claimcore.actors (
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
     -- Role tokens only; the role-to-capability matrix lives in one F# table and never in SQL.
-    role text NOT NULL CHECK (role IN (
-        'OWNER', 'CASE_READER', 'CASE_REGISTRAR', 'CASE_HANDLER', 'PAYMENT_RECORDER',
-        'DATA_STEWARD', 'AUDITOR'
-    )),
+    role text NOT NULL CHECK (role ~ '^[A-Z][A-Z_]{0,39}$'),
     -- NULL grants the role across the installation; otherwise only on this case.
     case_id uuid REFERENCES claimcore.cases (case_id),
     CONSTRAINT grants_unique UNIQUE NULLS NOT DISTINCT (actor_id, role, case_id)

@@ -112,6 +112,12 @@ module DurableNames =
     let caseKinds = values<CaseActKind>()
     let authorityKinds = values<AuthorityKind>()
 
+    let tryCaseAct token =
+        caseKinds |> List.tryFind (fun value -> caseAct value = token)
+
+    let tryAuthorityAct token =
+        authorityKinds |> List.tryFind (fun value -> authorityAct value = token)
+
     let statusEntries =
         values<CaseStatus>() |> List.map (fun value -> value, status value)
 

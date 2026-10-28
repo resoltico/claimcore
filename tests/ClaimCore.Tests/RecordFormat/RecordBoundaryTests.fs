@@ -304,6 +304,16 @@ let private kindRoundTrips () =
         "Every case kind is independently authored"
 
     for act, token in cases do
+        Expect.equal
+            (DurableNames.caseAct (CaseAct.kind act))
+            token
+            "Independent permanent act token"
+
+        Expect.equal
+            (DurableNames.tryCaseAct token)
+            (Some(CaseAct.kind act))
+            "Permanent act inverse"
+
         let command = request 1L act |> CaseFixtures.command
         let bytes = RequestRecord.encode command
 
@@ -331,6 +341,16 @@ let private kindRoundTrips () =
         "Every authority kind is independently authored"
 
     for act, token in acts do
+        Expect.equal
+            (DurableNames.authorityAct (AuthorityAct.kind act))
+            token
+            "Independent permanent authority token"
+
+        Expect.equal
+            (DurableNames.tryAuthorityAct token)
+            (Some(AuthorityAct.kind act))
+            "Permanent authority inverse"
+
         let record: AuthorityRequestRecord =
             {
                 OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"

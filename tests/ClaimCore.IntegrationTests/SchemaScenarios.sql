@@ -60,8 +60,8 @@ SELECT pg_temp.expect('authority row without payload refused',
     format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'GRANT',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, NULL, NULL)$s$, :h2, :hx, :owner, :owner, :h3), '23514');
-SELECT pg_temp.expect('case act in authority subject_kind refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'VOID',
+SELECT pg_temp.expect('malformed authority act token refused',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'invalid',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, %L, %L)$s$, :h2, :hx, :owner, :owner, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('payload without nonce refused',
@@ -140,8 +140,8 @@ SELECT snapshot IS NULL AND case_reference='Demo-0001' AND revision=3 AND state=
 INSERT INTO claimcore.actors VALUES (:owner, 'HUMAN', 'https://issuer.example/', 'owner', true);
 INSERT INTO claimcore.grants VALUES (:owner, 'OWNER', NULL);
 INSERT INTO claimcore.grants VALUES (:owner, 'PAYMENT_RECORDER', :case1);
-SELECT pg_temp.expect('undeclared role token refused',
-    format($s$INSERT INTO claimcore.grants VALUES (%L, 'SYNTHETIC_UNDECLARED_ROLE', NULL)$s$, :owner), '23514');
+SELECT pg_temp.expect('malformed role token refused',
+    format($s$INSERT INTO claimcore.grants VALUES (%L, 'invalid-role', NULL)$s$, :owner), '23514');
 SELECT pg_temp.expect('duplicate installation grant refused',
     format($s$INSERT INTO claimcore.grants VALUES (%L, 'OWNER', NULL)$s$, :owner), '23505');
 \echo PASS runtime scenarios complete
