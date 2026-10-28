@@ -31,7 +31,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
 | Domain | JSON-free values, typed acts, accepted state, outcomes, authority policy and decisions |
-| Protocol | Wire codecs, endpoints, derived catalog, diagnostic/command-line contracts and host build identity |
+| Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
@@ -116,7 +116,7 @@ producer. Custom output directories contain only contract artifacts.
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
 `synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
-Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/WireMembers.fs) supplies technical
+Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/Wire/WireMembers.fs) supplies technical
 member names; catalog annotations identify meaning by named schema definition/member. The schema walk
 resolves references and nested discriminators, and validates complete, non-orphan annotations and tokens.
 

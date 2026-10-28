@@ -20,6 +20,6 @@
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="../../web/locales/*.json" LogicalName="ClaimCore.Localization.%(Filename).browser%(Extension)" />
     <EmbeddedResource Include="../../src/ClaimCore.Cli/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
-    <EmbeddedResource Include="../../src/ClaimCore.Protocol/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../src/ClaimCore.Protocol/Messages/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

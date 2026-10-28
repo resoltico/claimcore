@@ -58,7 +58,7 @@ fault, never a request-correction refusal.
 HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
-[host failure policy](../src/ClaimCore.Protocol/HostFailures.fs).
+[host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
 
 Contract identity hashes canonical OpenAPI. Locale/help-only edits preserve it. Tracked
 [client validators](../contracts/client.ts) and [message contracts](../contracts/messages.ts) accompany the

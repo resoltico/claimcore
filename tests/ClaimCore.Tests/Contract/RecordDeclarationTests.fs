@@ -135,7 +135,7 @@ let private actGroups () =
 
 let private locales () =
     let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Localization")
+        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Messages/Localization")
 
     for language in LocalizationPolicy.languages do
         use document =
