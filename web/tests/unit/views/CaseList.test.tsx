@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../../support/inputs";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
@@ -6,14 +7,11 @@ import { context, response, unavailable } from "../../support/service-ui.fixture
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
     items: [
-      {
-        state: {
-          kind: "ACTIVE",
-          status: "OPENED",
-        },
+      caseSummaryInput({
+        state: { kind: "ACTIVE", status: "OPENED" },
         caseReference: "ADVISED-CASE",
         revision: 1,
-      },
+      }),
     ],
     offers: mayOpen ? context.offers : [],
     nextCursor,

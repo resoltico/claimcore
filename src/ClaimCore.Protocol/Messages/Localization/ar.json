@@ -206,6 +206,7 @@
   "input.status.meaning": "حصر النتائج في حالات الفتح أو الإغلاق المحددة. لا تحمل الملفات الممحوة حالة.",
   "label.action": "الإجراء",
   "label.availableActs": "الإجراءات المتاحة",
+  "label.changedAt": "آخر تعديل",
   "label.characterWarning": "يحتوي على {characters}",
   "label.enabled": "مفعّل",
   "label.reviewTitle": "مراجعة التغييرات",

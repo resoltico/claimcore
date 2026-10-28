@@ -50,6 +50,7 @@
     <Compile Include="GrowthQualificationTests.fs" />
     <Compile Include="ReadGrowthHarnessTests.fs" />
     <Compile Include="CaseProjectionTests.fs" />
+    <Compile Include="SummaryDisclosureTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="BaselineRefusalTests.fs" />
     <Compile Include="PaginationTests.fs" />

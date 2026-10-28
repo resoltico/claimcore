@@ -99,6 +99,7 @@ type CliMessage =
     | [<MessageKey("cli.callbackAccepted")>] CallbackAccepted
     | [<MessageKey("cli.callbackRefused")>] CallbackRefused
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
+    | [<MessageKey("cli.text.cursorReached")>] CursorReached of cursor: string
     | Failure of ClientFailure
 
 /// Rendering and publication inspect the same closed producers; no separate argument-name list exists.

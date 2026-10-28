@@ -206,6 +206,7 @@
   "input.status.meaning": "Atlasīt norādītos atvērtos vai slēgtos statusus. Dzēstām lietām statusa nav.",
   "label.action": "Darbība",
   "label.availableActs": "Pieejamās darbības",
+  "label.changedAt": "Pēdējoreiz mainīta",
   "label.characterWarning": "Satur {characters}",
   "label.enabled": "Aktīvs",
   "label.reviewTitle": "Pārskatīt izmaiņas",

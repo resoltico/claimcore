@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import {
@@ -43,14 +44,11 @@ const queueDefinitionAndList = () => {
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: "CASE-1",
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     }),

@@ -206,6 +206,7 @@
   "input.status.meaning": "Restrict results to the selected open or closed statuses. Erased cases have no status.",
   "label.action": "Action",
   "label.availableActs": "Available actions",
+  "label.changedAt": "Last changed",
   "label.characterWarning": "Contains {characters}",
   "label.enabled": "Enabled",
   "label.reviewTitle": "Review changes",

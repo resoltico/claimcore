@@ -47,6 +47,18 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                 errors.WriteByte(byte '\n')
                 errors.Flush())
 
+    let writeWith (renderReply: CliReply -> byte array) (reply: CliReply) =
+        advance ignore
+        output.Write(renderReply reply)
+        output.WriteByte(byte '\n')
+        output.Flush()
+
+        if reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown then
+            retryFrame ()
+
+        lock gate (fun () ->
+            potentiallyChanged <- reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown)
+
     new(output, errors, language) =
         new FrameDelivery(output, errors, language, (fun reply -> reply.Bytes))
 
@@ -67,17 +79,8 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
             dispatched <- true
             pending <- Some frame)
 
-    member _.Write(reply: CliReply) =
-        advance ignore
-        output.Write(render reply)
-        output.WriteByte(byte '\n')
-        output.Flush()
-
-        if reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown then
-            retryFrame ()
-
-        lock gate (fun () ->
-            potentiallyChanged <- reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown)
+    member _.Write(reply: CliReply) = writeWith render reply
+    member internal _.WriteWith(renderReply, reply) = writeWith renderReply reply
 
     member _.Interrupt() =
         lock gate (fun () ->

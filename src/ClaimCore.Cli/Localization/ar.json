@@ -34,6 +34,7 @@
   "cli.help.session": "call: مستند JSON واحد بترميز UTF-8؛ يسمح بعدة أسطر؛ أغلق stdin (EOF).\nsession: NDJSON، إطار كامل في كل سطر؛ تُستخدم المصادقة داخل العملية فقط دون حفظ بيانات الاعتماد.\nInvocation bytes ≤ {maximumInvocationBytes}; request input bytes ≤ {maximumRequestBytes}; response bytes ≤ {maximumResponseBytes}\nاحتفظ ببايتات الطلب الأصلية وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.",
   "cli.help.version": "اعرض إصدار العميل.",
   "cli.text.code": "الرمز",
+  "cli.text.cursorReached": "توقف عند المؤشر {cursor}.",
   "cli.text.grants": "الأدوار",
   "cli.text.next": "التالي",
   "cli.text.state": "الحالة",

@@ -129,6 +129,7 @@
     <Compile Include="Cli/CliDescriptionTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/WorklistGrammarTests.fs" />
+    <Compile Include="Cli/CaseListCommandTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

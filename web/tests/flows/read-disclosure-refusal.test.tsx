@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../support/inputs";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, CaseSummary, ServiceResponse } from "../../src/api/service";
@@ -13,16 +14,7 @@ const initial: ApiResult<ListResponse> = {
       kind: "SUCCEEDED",
       data: {
         offers: [],
-        items: [
-          {
-            state: {
-              kind: "ACTIVE",
-              status: "OPENED",
-            },
-            caseReference: "SYNTHETIC-PRIVATE",
-            revision: 1,
-          },
-        ],
+        items: [caseSummaryInput({ caseReference: "SYNTHETIC-PRIVATE" })],
         nextCursor: "continuation",
       },
     },

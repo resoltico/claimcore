@@ -90,7 +90,7 @@ let private verbPreparation () =
     let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
     let actual = prepared (args @ [ "--dry-run" ])
     Expect.isTrue actual.DryRun "Dry run is an offline preparation"
-    Expect.isTrue actual.Text "Human acts default to text"
+    Expect.equal actual.Format VerbFormat.Text "Human acts default to text"
 
     let frame =
         Frames.admit actual.Bytes |> Result.defaultWith (fun _ -> failtest "Frame")
@@ -100,7 +100,7 @@ let private verbPreparation () =
     let preview =
         prepared (args @ [ "--preview"; "--format"; "json"; "--language"; "lv" ])
 
-    Expect.isFalse preview.Text "Explicit JSON format"
+    Expect.equal preview.Format VerbFormat.Json "Explicit JSON format"
     Expect.equal preview.Language "lv" "Explicit language"
 
     Expect.equal

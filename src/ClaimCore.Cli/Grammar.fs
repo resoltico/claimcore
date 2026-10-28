@@ -8,11 +8,18 @@ open System.Collections.Generic
 open System.Globalization
 open ClaimCore.Json
 
+[<RequireQualifiedAccess>]
+type VerbFormat =
+    | Text
+    | Json
+    | Csv
+
 type PreparedVerb =
     {
         Bytes: byte array
         DryRun: bool
-        Text: bool
+        Format: VerbFormat
+        All: bool
         Language: string
     }
 
@@ -282,8 +289,8 @@ module Grammar =
 
             let options, operands =
                 tokenize
-                    ("--dry-run" :: "--preview" :: "--format" :: "--language" :: flags)
-                    ("--dry-run" :: "--preview" :: switches)
+                    ("--dry-run" :: "--preview" :: "--all" :: "--format" :: "--language" :: flags)
+                    ("--dry-run" :: "--preview" :: "--all" :: switches)
                     repeated
                     arguments
                     problems
@@ -312,8 +319,24 @@ module Grammar =
             let format = option "--format" "text"
             let language = option "--language" "en"
 
-            if not (List.contains format [ "text"; "json" ]) then
-                problems.Add(UsageError.InvalidChoice("--format", format, [ "text"; "json" ]))
+            let listing = entry.Endpoint = ActorEndpoint.Query QueryEndpoint.CaseList
+
+            let formats =
+                if listing then
+                    [ "text"; "json"; "csv" ]
+                else
+                    [ "text"; "json" ]
+
+            if not (List.contains format formats) then
+                problems.Add(UsageError.InvalidChoice("--format", format, formats))
+
+            if options.ContainsKey "--all" && not listing then
+                problems.Add(
+                    UsageError.NotApplicable(
+                        "--all",
+                        String.concat " " (CommandGrammar.words entry)
+                    )
+                )
 
             if not (List.contains language LocalizationPolicy.languages) then
                 problems.Add(
@@ -379,6 +402,10 @@ module Grammar =
                         {
                             Bytes = bytes
                             DryRun = options.ContainsKey "--dry-run"
-                            Text = format = "text"
+                            Format =
+                                if format = "csv" then VerbFormat.Csv
+                                elif format = "json" then VerbFormat.Json
+                                else VerbFormat.Text
+                            All = options.ContainsKey "--all"
                             Language = language
                         })

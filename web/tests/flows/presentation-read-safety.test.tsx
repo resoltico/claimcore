@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
@@ -82,14 +83,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
     return response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: value,
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     });

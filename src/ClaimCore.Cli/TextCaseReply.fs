@@ -106,21 +106,5 @@ module internal TextCaseReply =
         @ nextLines language page.NextCursor
 
     let casePage language (page: CaseSummaryPage) =
-        (page.Items
-         |> List.map (fun item ->
-             let status =
-                 match item.State with
-                 | CaseState.Active status
-                 | CaseState.Voided status -> term language CaseStatus.vocabulary status
-                 | CaseState.Erased -> "—"
-
-             String.concat
-                 "  "
-                 [
-                     CaseReference.format item.Reference
-                     Revision.format item.Revision
-                     term language Lifecycle.vocabulary (CaseState.lifecycle item.State)
-                     + "  "
-                     + status
-                 ]))
+        CaseListRows.textHeader language :: CaseListRows.textRows language page.Items
         @ nextLines language page.NextCursor

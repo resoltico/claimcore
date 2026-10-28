@@ -82,27 +82,6 @@ module ResponseCodecs =
             })
         |> named "CaseFields"
 
-    let private stateCodec name fields =
-        tagged
-            name
-            [
-                variant
-                    "ACTIVE"
-                    CaseState.Active
-                    (function
-                    | CaseState.Active value -> Some value
-                    | _ -> None)
-                    fields
-                variant
-                    "VOIDED"
-                    CaseState.Voided
-                    (function
-                    | CaseState.Voided value -> Some value
-                    | _ -> None)
-                    fields
-                unitVariant "ERASED" CaseState.Erased
-            ]
-
     let liveState =
         let fields = record id |> field "fields" id caseFields
 
@@ -125,7 +104,8 @@ module ResponseCodecs =
                     fields
             ]
 
-    let caseState = stateCodec "CaseState" (record id |> field "fields" id caseFields)
+    let caseState =
+        CaseStateCodecs.state "CaseState" (record id |> field "fields" id caseFields)
 
     let caseSnapshot =
         (record (fun reference revision view ->
@@ -420,28 +400,7 @@ module ResponseCodecs =
         |> build
         |> named "Session"
 
-    let caseSummary =
-        let state =
-            stateCodec
-                "CaseSummaryState"
-                (record id
-                 |> field
-                     (BusinessField.key BusinessField.Status)
-                     id
-                     (VocabularyCodec.create CaseStatus.vocabulary))
-
-        (record (fun reference revision state ->
-            {
-                CaseSummary.Reference = reference
-                Revision = revision
-                State = state
-            })
-        : Fields<CaseSummary, _>)
-        |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
-        |> field "revision" _.Revision positiveRevision
-        |> field "state" _.State state
-        |> build
-        |> named "CaseSummary"
+    let caseSummary = ReadRowCodecs.caseSummary
 
     let casesPage =
         (record (fun items next offers ->

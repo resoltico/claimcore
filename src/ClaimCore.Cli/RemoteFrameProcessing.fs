@@ -78,6 +78,14 @@ type RemoteFrameProcessor
     ) =
     let delivery = ClaimCore.Cli.FrameDelivery(output, errors, language, render)
 
+    let exchange frame stopped =
+        delivery.Prepare frame
+
+        task {
+            let! reply = invoke frame (fun () -> delivery.BeforeDispatch frame) stopped
+            return CliReply.forAttempt frame reply.Frame.Delivery reply
+        }
+
     let interpret frame stopped =
         match frame with
         | InputFrame.EndOfInput -> None
@@ -86,13 +94,7 @@ type RemoteFrameProcessor
             match Frames.admit bytes with
             | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
             | Ok frame ->
-                delivery.Prepare frame
-
-                Some(
-                    invoke frame (fun () -> delivery.BeforeDispatch frame) stopped
-                    |> fun (value: Task<CliReply>) -> value.GetAwaiter().GetResult()
-                    |> fun reply -> CliReply.forAttempt frame reply.Frame.Delivery reply
-                )
+                Some(exchange frame stopped |> fun value -> value.GetAwaiter().GetResult())
 
     new(input, output, errors, language, render) =
         let holder = new RemoteSessionHolder()
@@ -122,6 +124,14 @@ type RemoteFrameProcessor
                 member _.Dispose() = ()
             }
         )
+
+    /// Multi-step CLI flows share authentication and the same frozen-delivery state.
+    member internal _.Exchange(frame, stopped) =
+        delivery.BeginFrame()
+        exchange frame stopped
+
+    member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
+    member internal _.Failure(error) = delivery.Failure error
 
     member _.Interrupt() = delivery.Interrupt()
 

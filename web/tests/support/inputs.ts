@@ -1,3 +1,4 @@
+import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type { Principal, Registration } from "@contracts/client";
 
 import { inventory } from "./inventory";
@@ -26,3 +27,27 @@ export const principal = (changes: Partial<Principal> = {}): Principal => ({
   subject: "synthetic-owner",
   ...changes,
 });
+
+// Response seeds are inputs to browser behavior, not generated expectations for product code.
+
+type LiveSummary = Extract<Summary["state"], { kind: "ACTIVE" | "VOIDED" }>;
+type SummarySeed = Partial<Omit<Summary, "state">> & {
+  state?: { kind: "ERASED" } | (Pick<LiveSummary, "kind" | "status"> & Partial<LiveSummary>);
+};
+export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
+  const state = changes.state ?? { kind: "ACTIVE", status: "OPENED" };
+  const live: Omit<LiveSummary, "kind" | "status"> = {
+    claimantName: "Synthetic claimant",
+    insurerName: "Synthetic insurer",
+    claimed: { amount: "12.34", currency: "EUR" },
+    payable: null,
+    progress: "UNDECIDED",
+  };
+  return {
+    caseReference: "SYNTHETIC-001",
+    revision: 1,
+    changedAt: "2026-09-01T12:00:00.000000Z",
+    ...changes,
+    state: state.kind === "ERASED" ? state : { ...live, ...state },
+  };
+};

@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -31,14 +32,11 @@ const queueListPages = () => {
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: "CASE-1",
           revision: 1,
-        },
+        }),
       ],
       nextCursor: "next",
     }),
@@ -47,14 +45,11 @@ const queueListPages = () => {
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "CLOSED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "CLOSED" },
           caseReference: "CASE-2",
           revision: 2,
-        },
+        }),
       ],
       nextCursor: null,
     }),
@@ -225,14 +220,11 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: "CASE-1",
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     }),
@@ -241,14 +233,11 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: "CASE-1",
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     }),

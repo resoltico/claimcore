@@ -1,11 +1,23 @@
 namespace ClaimCore.Domain
 
+open System
+
+type CaseSummaryFacts =
+    {
+        Status: CaseStatus
+        ClaimantName: PartyName
+        InsurerName: PartyName
+        Claimed: Money
+        Payable: Money option
+        Progress: CaseProgress
+    }
 
 type CaseSummary =
     {
         Reference: CaseReference
         Revision: Revision
-        State: CaseState<CaseStatus>
+        ChangedAt: DateTimeOffset
+        State: CaseState<CaseSummaryFacts>
     }
 
 type CaseSummaryPage =

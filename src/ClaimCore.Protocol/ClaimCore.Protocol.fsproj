@@ -32,6 +32,8 @@
     <Compile Include="Wire/DiagnosticCodecs.fs" />
     <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/LedgerCodecs.fs" />
+    <Compile Include="Wire/CaseStateCodecs.fs" />
+    <Compile Include="Wire/ReadRowCodecs.fs" />
     <Compile Include="Wire/ResponseCodecs.fs" />
     <Compile Include="Wire/ReceiptCodecs.fs" />
     <Compile Include="Wire/ReplyCodecs.fs" />

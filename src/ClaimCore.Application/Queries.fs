@@ -128,8 +128,27 @@ module internal Queries =
             {
                 CaseSummary.Reference = record.Snapshot.Reference
                 Revision = record.Snapshot.Revision
+                ChangedAt = record.Index.ChangedAt
                 State =
-                    CaseState.map (fun (fields: CaseFields) -> fields.Status) record.Snapshot.State
+                    CaseState.map
+                        (fun (fields: CaseFields) ->
+                            {
+                                Status = fields.Status
+                                ClaimantName =
+                                    Registration.value
+                                        BusinessField.ClaimantName
+                                        fields.Registration
+                                    |> FieldValue.name
+                                InsurerName =
+                                    Registration.value
+                                        BusinessField.InsurerName
+                                        fields.Registration
+                                    |> FieldValue.name
+                                Claimed = Registration.claimed fields.Registration
+                                Payable = fields.Decision |> Option.map Decision.payable
+                                Progress = CaseProgress.ofPayment fields.Progress
+                            })
+                        record.Snapshot.State
             })
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
