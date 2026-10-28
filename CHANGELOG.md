@@ -4,6 +4,8 @@ Implemented release summaries are recorded here, with changes awaiting release u
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-28
+
 - Initialize a fresh installation; the SQL baseline checksum changes. Earlier installations are refused untouched; preserve them with matching software. No migration or reader is supplied.
 - Deploy matching service, CLI and browser builds; wire tokens, input diagnostics and locale keys change. Regenerate integrations from the checked contracts.
 - Input refusals carry a nonempty INVALID_INPUT.issues array; each issue has field, code and declared parameters. Replace single-target scalar diagnostics in integrations.
