@@ -104,7 +104,7 @@ let private remote streams session language render =
         else
             processor.Call CancellationToken.None)
 
-let private verb output errors arguments =
+let private preparedVerb output errors arguments =
     match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
     | Error issues ->
         let language = CliInvocations.usageLanguage arguments
@@ -180,6 +180,55 @@ let private verb output errors arguments =
                 false
                 prepared.Language
                 (fun reply -> reply.Bytes)
+
+let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments =
+    let console =
+        {
+            IsInteractive = not Console.IsInputRedirected && not Console.IsOutputRedirected
+            ReadLine = fun () -> Console.ReadLine() |> Option.ofObj
+            Write =
+                fun bytes ->
+                    output.Write(bytes: byte array)
+                    output.Flush()
+        }
+
+    match InteractiveReview.prepare console arguments with
+    | Error issues ->
+        writeText
+            errors
+            (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
+
+        ExitCode.value ExitCode.Usage
+    | Ok None -> preparedVerb output errors arguments
+    | Ok(Some draft) ->
+        use input = new System.IO.MemoryStream()
+
+        withRemote
+            {
+                Input = input
+                Output = output
+                Errors = errors
+            }
+            draft.Language
+            (fun reply -> reply.Bytes)
+            (fun processor ->
+                let transport =
+                    {
+                        Exchange = fun frame token -> processor.Exchange(frame, token)
+                        Deliver =
+                            fun frame reply ->
+                                processor.Deliver(
+                                    (fun response ->
+                                        TextReply.bytesFor
+                                            draft.Language
+                                            (Some frame)
+                                            response.Frame),
+                                    reply
+                                )
+                    }
+
+                InteractiveReview.run Guid.NewGuid console transport draft CancellationToken.None
+                |> fun value -> value.GetAwaiter().GetResult())
 
 let private dispatch output errors argv =
     try

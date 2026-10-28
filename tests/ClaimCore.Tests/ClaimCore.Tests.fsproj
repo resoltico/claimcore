@@ -122,6 +122,7 @@
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
+    <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />

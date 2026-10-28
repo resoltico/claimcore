@@ -48,8 +48,7 @@ module internal TextOperationReply =
             RequestCodecs.operationInput.Read "$" (Frames.input invocation)
             |> Result.toOption)
 
-    let reviewIdentity language request review =
-        let input = requestInput request
+    let private reviewIdentity language input review =
 
         let act =
             input
@@ -77,7 +76,35 @@ module internal TextOperationReply =
 
         act + " " + target
 
+    let private changeAction =
+        function
+        | Change.Keep -> CorrectionGroupAction.Keep
+        | Change.Replace _ -> CorrectionGroupAction.Replace
+        | Change.Clear -> CorrectionGroupAction.Clear
+
+    let private correctionActions language input =
+        match input with
+        | Some(OperationInput.Case { Act = CaseAct.Correct correction }) ->
+            let registration =
+                match correction.Registration with
+                | Amendment.Keep -> CorrectionGroupAction.Keep
+                | Amendment.Replace _ -> CorrectionGroupAction.Replace
+
+            [
+                RecordGroup.Registration, registration
+                RecordGroup.Decision, changeAction correction.Decision
+                RecordGroup.Payment, changeAction correction.Payment
+            ]
+            |> List.map (fun (group, action) ->
+                line
+                    language
+                    (Vocabulary.messageKey RecordGroup.vocabulary group "label")
+                    (term language CorrectionGroupAction.vocabulary action))
+        | _ -> []
+
     let reviewLines language request review =
+        let input = requestInput request
+
         let changes =
             match review with
             | OperationReview.Authority value -> authorityChanges language value.Before value.After
@@ -108,8 +135,8 @@ module internal TextOperationReply =
         line
             language
             (CliMessages.key CliMessage.ReviewTitle)
-            (reviewIdentity language request review)
-        :: changes
+            (reviewIdentity language input review)
+        :: (correctionActions language input @ changes)
 
     let previewLines language request (reply: PreviewReply) =
         readLines

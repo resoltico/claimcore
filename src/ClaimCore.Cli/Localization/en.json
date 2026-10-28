@@ -33,6 +33,7 @@
   "cli.help.schema": "Inspect the request and response schemas. Schema output is JSON.",
   "cli.help.session": "call: one UTF-8 JSON document, multiline allowed; close stdin (EOF).\nsession: NDJSON, one complete frame per physical line; process-local sign-in reuse, no saved credentials.\nInvocation bytes ≤ {maximumInvocationBytes}; request input bytes ≤ {maximumRequestBytes}; response bytes ≤ {maximumResponseBytes}\nPreserve original request bytes, operationId and expectedRevision. Unknown outcome is not refusal. Retry only the exact request.",
   "cli.help.version": "Show the client version.",
+  "cli.review.confirm": "Record these changes? [y/N] ",
   "cli.text.code": "Code",
   "cli.text.cursorReached": "Stopped at cursor {cursor}.",
   "cli.text.grants": "Grants",

@@ -140,13 +140,28 @@ module CliInvocations =
             | None -> Ok(CliInvocation.Verb arguments)
 
     let usageLanguage arguments =
-        arguments
-        |> List.pairwise
-        |> List.choose (fun (flag, value) ->
-            if flag = "--language" && List.contains value LocalizationPolicy.languages then
-                Some value
-            else
-                None)
-        |> function
-            | [ language ] -> language
-            | _ -> "en"
+        let separate =
+            arguments
+            |> List.pairwise
+            |> List.choose (fun (flag, value) ->
+                if flag = "--language" && List.contains value LocalizationPolicy.languages then
+                    Some value
+                else
+                    None)
+
+        let assigned =
+            arguments
+            |> List.choose (fun (argument: string) ->
+                if argument.StartsWith("--language=", System.StringComparison.Ordinal) then
+                    let value = argument.Substring(11)
+
+                    if List.contains value LocalizationPolicy.languages then
+                        Some value
+                    else
+                        None
+                else
+                    None)
+
+        match separate @ assigned with
+        | [ language ] -> language
+        | _ -> "en"

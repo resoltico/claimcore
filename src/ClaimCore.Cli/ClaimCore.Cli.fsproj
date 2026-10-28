@@ -48,6 +48,7 @@
     <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
     <Compile Include="CaseListCommand.fs" />
+    <Compile Include="InteractiveReview.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
