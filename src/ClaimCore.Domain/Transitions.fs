@@ -206,16 +206,9 @@ module internal Transitions =
         let admission =
             match evidence with
             | Applicable.Correcting(before, correction) ->
-                CaseCorrections.proposed before.Facts before.Progress correction
+                CaseCorrections.proposedGroups before.Facts before.Progress correction
                 |> Result.mapError Refusal.Case
-                |> Result.bind (fun (facts, progress) ->
-                    StateValidation.admit
-                        today
-                        (Some before)
-                        { before with
-                            Facts = facts
-                            Progress = progress
-                        })
+                |> Result.bind (StateValidation.admitGroups today (Some before))
             | Applicable.Voiding _
             | Applicable.Reinstating _
             | Applicable.Erasing -> Ok()

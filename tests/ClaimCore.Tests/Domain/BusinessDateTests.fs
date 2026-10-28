@@ -198,6 +198,38 @@ let private correctionIncidentIsBounded =
         |> applyAt (DateOnly(2026, 7, 31)) act
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
+let private incompleteCorrectionAccumulatesAssertions =
+    testCase
+        "incomplete paid corrections retain acknowledgement and independent assertion issues"
+        (fun () ->
+            let correction =
+                AuthoredCaseAct.Correct
+                    {
+                        Registration =
+                            Amendment.Replace
+                                { registration with
+                                    IncidentDate = "2026-08-02"
+                                    ClaimantName = " New claimant "
+                                }
+                        Decision = Change.Clear
+                        Payment = Change.Replace { PaymentDate = "2026-08-21" }
+                    }
+
+            match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
+            | Error(Refusal.InvalidInput issues) ->
+                Expect.equal
+                    (InputIssues.toList issues
+                     |> List.map (fun issue -> issue.Target, issue.Violation))
+                    [
+                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                        InputTarget.Field BusinessField.ClaimantName,
+                        Violation.SurroundingWhitespace
+                        InputTarget.Group RecordGroup.Payment, Violation.PaymentClearRequired
+                        InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate
+                    ]
+                    "An incomplete proposal neither hides acknowledgement nor drops new assertions"
+            | other -> failtestf "Expected accumulated issues, got %A" other)
+
 let private spellingDoesNotRevise =
     testCase "equivalent amount spelling remains a correction no-op after rollback" (fun () ->
         let act =
@@ -236,6 +268,7 @@ let private corrections =
         [
             closedCorrectionRetainsDates
             correctionIncidentIsBounded
+            incompleteCorrectionAccumulatesAssertions
             spellingDoesNotRevise
         ]
 

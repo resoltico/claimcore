@@ -32,7 +32,11 @@ module internal StateValidation =
                 else
                     Ok())
 
-    let admit today (before: Claim option) (after: Claim) =
+    let admitGroups
+        today
+        (before: Claim option)
+        (facts: Registration, decision: Decision option, payment)
+        =
         let assertedDate field previous candidate =
             match candidate with
             | None -> Ok()
@@ -50,31 +54,43 @@ module internal StateValidation =
 
         Admission.collect
             [
-                progress after.Facts after.Progress
+                // An incomplete correction is refused by its acknowledgement/change checks.
+                // Its independently asserted values must still contribute input issues.
+                match PaymentProgress.fromGroups decision payment with
+                | Ok proposed -> progress facts proposed
+                | Error() -> Ok()
                 assertedDate
                     BusinessField.IncidentDate
                     (before |> Option.map _.Facts.IncidentDate)
-                    (Some after.Facts.IncidentDate)
+                    (Some facts.IncidentDate)
                 assertedDate
                     BusinessField.IncidentNotificationDate
                     (before |> Option.map _.Facts.IncidentNotificationDate)
-                    (Some after.Facts.IncidentNotificationDate)
+                    (Some facts.IncidentNotificationDate)
                 assertedDate
                     BusinessField.PaymentDecisionDate
                     (before
                      |> Option.bind (fun claim -> PaymentProgress.decision claim.Progress)
                      |> Option.map _.PaymentDecisionDate)
-                    (PaymentProgress.decision after.Progress |> Option.map _.PaymentDecisionDate)
+                    (decision |> Option.map _.PaymentDecisionDate)
                 assertedDate
                     BusinessField.PaymentDate
                     (before |> Option.bind (fun claim -> PaymentProgress.paymentDate claim.Progress))
-                    (PaymentProgress.paymentDate after.Progress)
+                    payment
                 assertedName
                     BusinessField.ClaimantName
                     (before |> Option.map _.Facts.ClaimantName)
-                    after.Facts.ClaimantName
+                    facts.ClaimantName
                 assertedName
                     BusinessField.InsurerName
                     (before |> Option.map _.Facts.InsurerName)
-                    after.Facts.InsurerName
+                    facts.InsurerName
             ]
+
+    let admit today before (after: Claim) =
+        admitGroups
+            today
+            before
+            (after.Facts,
+             PaymentProgress.decision after.Progress,
+             PaymentProgress.paymentDate after.Progress)
