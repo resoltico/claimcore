@@ -3,13 +3,12 @@
 ## [Unreleased]
 
 - Initialize a fresh installation: cases now store exact snapshot bytes. The SQL checksum changes; earlier installations are refused untouched, with no migration.
-- Catalog choices and groups include vocabulary, constants include nullable vocabulary, and correction inputs include adviceGroup. Regenerate catalog consumers.
-- Source APIs use typed IDs and positions, nested refusals and BusinessField.describe; schema consumers must handle vocabulary annotations.
-- Business field metadata and newly asserted-value admission have one owner. Existing wire examples and permanent record bytes remain unchanged.
+- Catalog choices/groups name their vocabulary; constants carry nullable vocabulary and inputs nullable adviceGroup. Regenerate catalog consumers.
+- Source APIs use typed IDs and positions, refusal families and BusinessField.describe; Schema interpreters must handle Vocabulary annotations.
+- BusinessField.describe owns field metadata; StateValidation centralizes newly asserted-value admission. Wire examples and permanent record bytes remain unchanged.
 - Browser forms use catalog vocabulary and correction advice; the selected catalog entry supplies request constants.
-- Protocol sources are grouped by responsibility; [source vocabulary](docs/contributing.md#source-vocabulary) explains implementation terms.
+- Protocol source paths follow Wire, Api, Catalog, Messages, Presentation and CommandLine responsibilities.
 - Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.
-- Foundation and refactoring reviews use five manual [change probes](docs/contributing.md#change-probes), with measured misses and follow-ups recorded in PRs.
 
 ## [0.13.0] - 2026-10-28
 
