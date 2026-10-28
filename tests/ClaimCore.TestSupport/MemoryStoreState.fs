@@ -42,3 +42,25 @@ let internal copyEntry (entry: StoredEntry) =
         Payload = entry.Payload |> Option.map Array.copy
         PayloadNonce = entry.PayloadNonce |> Option.map Array.copy
     }
+
+exception CorruptProjection
+
+let internal readCase installationId (record: StoredCase) =
+    let identity =
+        CaseReferenceId.encode installationId (CaseReference.format record.Snapshot.Reference)
+
+    let valid =
+        match record.Snapshot.State with
+        | CaseState.Erased -> Array.isEmpty record.SnapshotBytes
+        | CaseState.Active _
+        | CaseState.Voided _ ->
+            match CaseRecord.decodeSnapshot record.SnapshotBytes with
+            | Ok snapshot -> snapshot = record.Snapshot
+            | Error _ -> false
+
+    if identity <> record.CaseId || not valid then
+        raise CorruptProjection
+
+    { record with
+        SnapshotBytes = Array.copy record.SnapshotBytes
+    }

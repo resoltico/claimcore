@@ -11,7 +11,7 @@ open ClaimCore.Domain
 
 open ClaimCore.TestSupport.MemoryStoreState
 
-type internal Reader(get: unit -> State, observed, read: unit -> unit) =
+type internal Reader(get: unit -> State, installationId, observed, read: unit -> unit) =
     interface IReadTx with
         member _.ObservedAt = observed
 
@@ -75,7 +75,7 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
 
         member _.FindCase id =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Cases)
+            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase installationId))
 
         member _.FindEntry id =
             read ()
@@ -145,7 +145,10 @@ type internal Reader(get: unit -> State, observed, read: unit -> unit) =
                 |> Seq.toList
 
             Task.FromResult(
-                page limit (fun record -> CaseReference.identity record.Snapshot.Reference) rows
+                page
+                    limit
+                    (fun record -> CaseReference.identity record.Snapshot.Reference)
+                    (rows |> List.map (readCase installationId))
             )
 
         member _.HistoryPage

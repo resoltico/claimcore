@@ -86,19 +86,6 @@ let private calendarBounds (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
 
-        for value in [ "0001-01-01 BC"; "10000-01-01"; "infinity"; "-infinity" ] do
-            do!
-                rejected
-                    database
-                    "UPDATE claimcore.cases SET incident_date=$1::date,incident_notification_date=$1::date,payment_decision_date=$1::date,payable_amount=1,payable_currency='EUR',payment_date=$1::date"
-                    [| box value |]
-
-        for value in [ "0001-01-01"; "9999-12-31" ] do
-            do!
-                sql
-                    database
-                    "UPDATE claimcore.cases SET incident_date=$1::date,incident_notification_date=$1::date,payment_decision_date=$1::date,payable_amount=1,payable_currency='EUR',payment_date=$1::date"
-                    [| box value |]
         // The ledger business date has no chronology constraint to mask its own range check.
         let insert =
             "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),1,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex') FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id='80000000-0000-4000-8000-000000000001'"
@@ -107,59 +94,13 @@ let private calendarBounds (database: PostgresFixture.Database) =
             do! rejected database insert [| box value |]
     }
 
-let private unicodeAndPolicy (database: PostgresFixture.Database) =
+let private actorUnicode (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-
-        for value in [ "A‮B"; String.replicate 201 "A"; " leading"; "A‍B" ] do
-            do!
-                sql
-                    database
-                    "UPDATE claimcore.cases SET claimant_name=$1,insurer_name=$1"
-                    [| box value |]
 
         for scalar in [ 0xFDD0; 0xFDEF; 0xFFFE; 0xFFFF; 0x1FFFE; 0x1FFFF; 0x10FFFE; 0x10FFFF ] do
             let value = "A" + Char.ConvertFromUtf32 scalar + "B"
-            do! rejected database "UPDATE claimcore.cases SET claimant_name=$1" [| box value |]
-            do! rejected database "UPDATE claimcore.cases SET insurer_name=$1" [| box value |]
             do! rejected database "UPDATE claimcore.actors SET subject=$1" [| box value |]
-
-
-        let! rows =
-            task {
-                use! connection = database.OwnerSource.OpenConnectionAsync()
-                let! _ = DatabaseSession.execute connection "SET DateStyle='SQL, DMY'" [||] token
-
-                return!
-                    DatabaseSession.namedRows
-                        connection
-                        ($"SELECT {Projections.caseColumns} FROM claimcore.cases")
-                        [||]
-                        token
-            }
-
-        let record = Projections.caseRow rows.Head
-
-        Expect.equal
-            (CaseReference.format record.Snapshot.Reference)
-            "synthetic-a"
-            "Projection dates parse independently of server DateStyle"
-    }
-
-let private textByteBounds (database: PostgresFixture.Database) =
-    task {
-        let! _ = populated database
-
-        for value in [ String('a', 1024); String.replicate 256 "😀"; String(char 1, 1024) ] do
-            do!
-                sql
-                    database
-                    "UPDATE claimcore.cases SET claimant_name=$1,insurer_name=$1"
-                    [| box value |]
-
-        for value in [ String('a', 1025); String.replicate 257 "😀" ] do
-            do! rejected database "UPDATE claimcore.cases SET claimant_name=$1" [| box value |]
-            do! rejected database "UPDATE claimcore.cases SET insurer_name=$1" [| box value |]
     }
 
 [<Tests>]
@@ -168,15 +109,10 @@ let tests =
         "schema format and append-only boundaries"
         [
             testCaseAsync
-                "names enforce permanent UTF-8 byte bounds independently of admission"
-                (run textByteBounds)
-            testCaseAsync
                 "all runtime and owner SQLSTATE controls and state assertions execute"
                 (run structuralScenarios)
             testCaseAsync
-                "case and ledger dates reject BC extended years and infinities but accept finite endpoints"
+                "ledger dates reject BC extended years and infinities"
                 (run calendarBounds)
-            testCaseAsync
-                "SQL checks permanent Unicode while retained text ignores current admission policy"
-                (run unicodeAndPolicy)
+            testCaseAsync "actor SQL checks permanent Unicode" (run actorUnicode)
         ]

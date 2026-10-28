@@ -17,7 +17,11 @@ type StoreFailure =
     | CommitOutcomeUnknown
 
 type StoredCase =
-    { CaseId: Guid; Snapshot: CaseSnapshot }
+    {
+        CaseId: Guid
+        Snapshot: CaseSnapshot
+        SnapshotBytes: byte array
+    }
 
 [<RequireQualifiedAccess>]
 type EntryTarget =

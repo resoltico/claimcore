@@ -107,7 +107,13 @@ module internal CaseExecution =
                     calendar.DateAt view.ObservedAt
                 )
             Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            Current = Some { CaseId = id; Snapshot = snapshot }
+            Current =
+                Some
+                    {
+                        CaseId = id
+                        Snapshot = snapshot
+                        SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+                    }
             Projection = projection
         }
 

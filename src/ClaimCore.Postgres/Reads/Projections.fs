@@ -17,102 +17,48 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let private date field row =
-        DatabaseSession.namedCalendarDate (CaseProjectionLayout.name field) row
-        |> CalendarDate.ofDate
+    let caseColumns = "case_id,case_reference,revision,state,snapshot"
 
-    let private field<'T> field row =
-        DatabaseSession.namedValue<'T> (CaseProjectionLayout.name field) row
-
-    let private optionalField<'T> field row =
-        DatabaseSession.namedOptional<'T> (CaseProjectionLayout.name field) row
-
-    let private optionalDate field row =
-        DatabaseSession.namedOptional<string> (CaseProjectionLayout.name field) row
-        |> Option.map (fun _ -> date field row)
-
-    let caseColumns = CaseProjectionLayout.select
-
-    let private fields reference row : CaseFields =
-        let decision =
-            match
-                optionalDate BusinessField.PaymentDecisionDate row,
-                optionalField<string> BusinessField.PayableAmount row,
-                optionalField<string> BusinessField.PayableCurrency row
-            with
-            | None, None, None -> None
-            | Some date, Some amount, Some currency ->
-                Some
-                    {
-                        PaymentDecisionDate = date
-                        PayableAmount = Money.parse amount currency |> parsed
-                    }
-            | _ -> raise (RecordCorruptException "Incomplete stored decision.")
-
-        {
-            CaseReference = reference
-            Status =
-                CaseStatus.parse (field<string> BusinessField.Status row)
-                |> Option.defaultWith (fun () ->
-                    raise (RecordCorruptException "Invalid stored status."))
-            Registration =
-                {
-                    IncidentDate = date BusinessField.IncidentDate row
-                    IncidentNotificationDate = date BusinessField.IncidentNotificationDate row
-                    IncidentCountry =
-                        field<string> BusinessField.IncidentCountry row
-                        |> CountryCode.parse
-                        |> parsed
-                    ClaimantName =
-                        field<string> BusinessField.ClaimantName row |> PartyName.parse |> parsed
-                    InsurerName =
-                        field<string> BusinessField.InsurerName row |> PartyName.parse |> parsed
-                    ClaimedAmount =
-                        Money.parse
-                            (field<string> BusinessField.ClaimedAmount row)
-                            (field<string> BusinessField.ClaimedCurrency row)
-                        |> parsed
-                }
-            Progress =
-                PaymentProgress.fromGroups decision (optionalDate BusinessField.PaymentDate row)
-                |> Result.defaultWith (fun () ->
-                    raise (RecordCorruptException "Payment lacks a decision."))
-        }
-
-    let caseRow (row: Map<string, obj>) : StoredCase =
+    let caseRow installationId (row: Map<string, obj>) : StoredCase =
         let reference =
-            field<string> BusinessField.CaseReference row |> CaseReference.parse |> parsed
+            DatabaseSession.namedValue<string> "case_reference" row
+            |> CaseReference.parse
+            |> parsed
 
-        let view =
-            match DatabaseSession.namedValue<string> "state" row with
-            | "ERASED" ->
-                if
-                    CaseProjectionLayout.payloadColumns
-                    |> List.exists (fun name ->
-                        not (Convert.IsDBNull(DatabaseSession.namedValue<obj> name row)))
-                then
-                    raise (RecordCorruptException "Erased projection retains business fields.")
-
-                CaseState.Erased
-            | "ACTIVE" -> CaseState.Active(fields reference row)
-            | "VOIDED" -> CaseState.Voided(fields reference row)
-            | _ -> raise (RecordCorruptException "Invalid stored state.")
+        let revision = DatabaseSession.namedValue<int64> "revision" row
+        let state = DatabaseSession.namedValue<string> "state" row
+        let id = DatabaseSession.namedValue<Guid> "case_id" row
+        let bytes = DatabaseSession.namedOptional<byte array> "snapshot" row
 
         let snapshot =
-            {
-                Reference = reference
-                Revision = DatabaseSession.namedValue<int64> "revision" row
-                State = view
-            }
+            match state, bytes with
+            | "ERASED", None ->
+                {
+                    Reference = reference
+                    Revision = revision
+                    State = CaseState.Erased
+                }
+            | ("ACTIVE" | "VOIDED"), Some bytes when bytes.Length > 0 && bytes.Length <= 32768 ->
+                ClaimCore.RecordFormat.CaseRecord.decodeSnapshot bytes |> parsed
+            | _ -> raise (RecordCorruptException "Invalid stored snapshot shape.")
+
+        if
+            snapshot.Reference <> reference
+            || snapshot.Revision <> revision
+            || CaseState.token snapshot.State <> state
+            || CaseReferenceId.encode installationId (CaseReference.format reference) <> id
+        then
+            raise (RecordCorruptException "Stored snapshot disagrees with projection identity.")
 
         Case.ofAccepted snapshot |> parsed |> ignore
 
         {
-            CaseId = DatabaseSession.namedValue "case_id" row
+            CaseId = id
             Snapshot = snapshot
+            SnapshotBytes = bytes |> Option.defaultValue Array.empty
         }
 
-    let caseById connection id token =
+    let caseById connection installationId id token =
         task {
             let! rows =
                 DatabaseSession.namedRows
@@ -123,7 +69,7 @@ module internal Projections =
 
             match rows with
             | [] -> return None
-            | [ row ] -> return Some(caseRow row)
+            | [ row ] -> return Some(caseRow installationId row)
             | _ -> return raise (RecordCorruptException "Duplicate case projection.")
         }
 

@@ -419,7 +419,7 @@ let tests =
                         let! _ =
                             DatabaseSession.execute
                                 holder
-                                "UPDATE claimcore.cases SET claimant_name='Changed synthetic'; DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
+                                "UPDATE claimcore.cases SET snapshot=convert_to(replace(convert_from(snapshot,'UTF8'), 'Synthetic Party', 'Changed synthetic'),'UTF8'); DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'"
                                 [||]
                                 token
 

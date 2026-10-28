@@ -23,7 +23,7 @@ module internal TransactionPages =
                     None
         }
 
-    let cases connection (query: CasePageQuery) token =
+    let cases connection installation (query: CasePageQuery) token =
         let visibility = query.Visibility
         let actor = query.ActorId
         let roles = query.ReadRoles
@@ -48,7 +48,7 @@ module internal TransactionPages =
 
             return
                 rows
-                |> List.map Projections.caseRow
+                |> List.map (Projections.caseRow installation)
                 |> page limit (fun record -> CaseReference.identity record.Snapshot.Reference)
         }
 
@@ -140,13 +140,13 @@ type private ReadTx
             }
 
         member _.FindCase id =
-            Projections.caseById connection id token
+            Projections.caseById connection installation id token
 
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
         member _.CasePage query =
-            TransactionPages.cases connection query token
+            TransactionPages.cases connection installation query token
 
         member _.HistoryPage query =
             TransactionPages.history connection installation query token

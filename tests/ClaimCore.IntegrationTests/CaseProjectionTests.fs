@@ -34,6 +34,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
         Snapshot = snapshot
+        SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
 let private history (snapshot: CaseSnapshot) : CaseHistory =
@@ -205,110 +206,225 @@ let private projectionFields: CaseFields =
     }
 
 
-// Independent SQL row, with distinct values for every interchangeable date/text/amount.
-let private projectionRow id : objnull array =
-    [|
-        box id
-        box "synthetic-layout"
-        box 4L
-        box "VOIDED"
-        box "2026-08-01 AD"
-        box "2026-08-03 AD"
-        box "LV"
-        box "Synthetic claimant"
-        box "Synthetic insurer"
-        box "1234.5678"
-        box "EUR"
-        box "2026-08-04 AD"
-        box "987.6543"
-        box "USD"
-        box "2026-08-05 AD"
-        box "CLOSED"
-    |]
-
-
-// This header is authored independently of the production declaration and SQL builder.
-let private namedProjectionRow values =
-    let names =
-        [|
-            "case_id"
-            "case_reference"
-            "revision"
-            "state"
-            "incident_date"
-            "incident_notification_date"
-            "incident_country"
-            "claimant_name"
-            "insurer_name"
-            "claimed_amount"
-            "claimed_currency"
-            "payment_decision_date"
-            "payable_amount"
-            "payable_currency"
-            "payment_date"
-            "status"
-        |]
-
-    Array.zip names (Array.map nonNull values) |> Map.ofArray
-
 let private projectionBindings () =
-    let fields = projectionFields
-
     let snapshot =
         {
-            Reference = fields.CaseReference
+            Reference = projectionFields.CaseReference
             Revision = 4L
-            State = CaseState.Voided(fields)
+            State = CaseState.Voided projectionFields
         }
 
-    let id =
-        CaseReferenceId.encode installation (CaseReference.format fields.CaseReference)
+    let expected = stored snapshot
 
-    let row = projectionRow id
+    let row =
+        Map.ofList
+            [
+                "case_id", box expected.CaseId
+                "case_reference", box "synthetic-layout"
+                "revision", box 4L
+                "state", box "VOIDED"
+                "snapshot", box expected.SnapshotBytes
+            ]
 
-    Expect.equal
-        (Projections.caseRow (namedProjectionRow row))
-        { CaseId = id; Snapshot = snapshot }
-        "Every decoded field has its own value"
-
-    let expected = Array.copy row
-
-    for index in [ 4; 5; 11; 14 ] do
-        expected[index] <-
-            box (
-                DateOnly.ParseExact(
-                    unbox<string> row[index],
-                    "yyyy-MM-dd 'AD'",
-                    Globalization.CultureInfo.InvariantCulture
-                )
-            )
-
-    for index in [ 9; 12 ] do
-        expected[index] <-
-            box (
-                Decimal.Parse(unbox<string> row[index], Globalization.CultureInfo.InvariantCulture)
-            )
+    let row = row |> Map.map (fun _ value -> nonNull value)
 
     Expect.equal
-        (CaseProjectionLayout.parameters id snapshot)
+        (Projections.caseRow installation row)
         expected
-        "Every bound parameter matches its SQL column"
+        "Snapshot bytes round-trip with their independent metadata"
 
-    let swapped = Array.copy row
-    swapped[7] <- row[8]
-    swapped[8] <- row[7]
+    for name, value in
+        [
+            "case_reference", box "different"
+            "revision", box 5L
+            "state", box "ACTIVE"
+            "case_id", box (Guid.NewGuid())
+            "snapshot", box [| 0uy |]
+        ] do
+        Expect.throwsT<RecordCorruptException>
+            (fun () ->
+                Projections.caseRow installation (Map.add name (nonNull value) row) |> ignore)
+            "Every identity and snapshot mismatch is an integrity fault"
 
-    Expect.notEqual
-        (Projections.caseRow (namedProjectionRow swapped)).Snapshot
-        snapshot
-        "Swapped text bindings are observable"
+    let histories =
+        Map.ofList
+            [
+                expected.CaseId,
+                { history snapshot with
+                    State = CaseState.Voided()
+                }
+            ]
+
+    let noncanonical = Array.append [| byte ' ' |] expected.SnapshotBytes
+    Expect.isOk (CaseRecord.decodeSnapshot noncanonical) "Whitespace retains snapshot meaning"
+
+    Expect.equal
+        (CaseFold.projection
+            installation
+            histories
+            [
+                { expected with
+                    SnapshotBytes = noncanonical
+                }
+            ])
+        mismatch
+        "Verification compares stored bytes, not only decoded values"
+
+let private storedRead (database: PostgresFixture.Database) =
+    let id = CaseReferenceId.encode database.Fixture.InstallationId "synthetic-a"
+
+    database.Fixture.Store.Read
+        {
+            Work = (fun tx -> tx.FindCase id)
+            CancellationToken = VerificationSupport.token
+        }
+
+let private corruptReads database =
+    task {
+        let! _ = VerificationSupport.populated database
+        let! original = storedRead database
+        let record = original |> Result.defaultWith (string >> failtest) |> Option.get
+        let different = CaseFixtures.reference "different"
+
+        let wrongReference =
+            { record.Snapshot with
+                Reference = different
+                State =
+                    CaseState.map
+                        (fun fields ->
+                            { fields with
+                                CaseReference = different
+                            })
+                        record.Snapshot.State
+            }
+
+        let wrongState =
+            { record.Snapshot with
+                State = CaseState.Voided(CaseState.fields record.Snapshot.State |> Option.get)
+            }
+
+        for bytes in
+            [
+                [| 0uy |]
+                CaseRecord.encodeSnapshot wrongReference
+                CaseRecord.encodeSnapshot { record.Snapshot with Revision = 2L }
+                CaseRecord.encodeSnapshot wrongState
+            ] do
+            do!
+                VerificationSupport.sql
+                    database
+                    "UPDATE claimcore.cases SET snapshot=$1"
+                    [| box bytes |]
+
+            let! read = storedRead database
+
+            Expect.equal
+                read
+                (Error StoreFailure.Integrity)
+                "Real store read rejects corrupt bytes or metadata disagreement"
+
+            do! VerificationSupport.finding VerificationFinding.CaseProjection database
+
+        let noncanonical = Array.append [| byte ' ' |] record.SnapshotBytes
+
+        do!
+            VerificationSupport.sql
+                database
+                "UPDATE claimcore.cases SET snapshot=$1"
+                [| box noncanonical |]
+
+        let! decoded = storedRead database
+
+        Expect.equal
+            (decoded |> Result.map (Option.map _.Snapshot))
+            (Ok(Some record.Snapshot))
+            "The read can decode an equivalent representation"
+
+        do! VerificationSupport.finding VerificationFinding.CaseProjection database
+    }
+
+let private roundTrips database =
+    task {
+        let! actor = VerificationSupport.populated database
+
+        let! grant =
+            ClaimCore.TestSupport.StoreFixtures.grant
+                actor
+                (ClaimCore.TestSupport.StoreFixtures.id 920000)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        ClaimCore.TestSupport.StoreFixtures.acceptedAuthority grant
+
+        let check expectedState revision =
+            task {
+                let! result = storedRead database
+                let record = result |> Result.defaultWith (string >> failtest) |> Option.get
+
+                Expect.equal
+                    (CaseState.token record.Snapshot.State)
+                    expectedState
+                    "Round-trip lifecycle"
+
+                Expect.equal record.Snapshot.Revision revision "Round-trip revision"
+
+                Expect.equal
+                    record.SnapshotBytes
+                    (CaseRecord.encodeSnapshot record.Snapshot)
+                    "Projection retains the exact committed snapshot bytes"
+
+                let! _ = VerificationSupport.verified database
+                return ()
+            }
+
+        do! check "ACTIVE" 1L
+
+        for number, revision, act, state in
+            [
+                11,
+                1L,
+                AuthoredCaseAct.AmendRegistration
+                    { Inputs.registration with
+                        ClaimantName = "Changed synthetic"
+                    },
+                "ACTIVE"
+                12, 2L, AuthoredCaseAct.Void "Synthetic correction", "VOIDED"
+                13, 3L, AuthoredCaseAct.Erase, "ERASED"
+            ] do
+            let! result =
+                Service.execute
+                    actor
+                    (OperationInput.Case(
+                        ClaimCore.TestSupport.StoreFixtures.request
+                            number
+                            "synthetic-a"
+                            revision
+                            act
+                    ))
+                    VerificationSupport.token
+
+            ClaimCore.TestSupport.StoreFixtures.accepted result |> ignore
+            do! check state (revision + 1L)
+    }
 
 [<Tests>]
 let tests =
     testList
         "case projection collection"
         [
-            testCase "binds and decodes every field in the SQL projection" projectionBindings
+            testCase
+                "decodes snapshots and checks every projection identity column"
+                projectionBindings
+            testCaseAsync
+                "real reads reject corrupted and mismatched snapshots while verification compares exact bytes"
+                (VerificationSupport.run corruptReads)
+            testCaseAsync
+                "insert update void and erase round-trip exact snapshot bytes"
+                (VerificationSupport.run roundTrips)
             testCase "requires complete unique case membership" collection
             testCase "preserves live identity revision state and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState

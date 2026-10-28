@@ -75,10 +75,6 @@ let private domain () =
          |> Set.ofArray)
         "Every business field has a table row"
 
-    let retained =
-        CaseFields.declarations |> List.filter _.RetainedOnErasure |> List.map _.Field
-
-    Expect.equal retained [ BusinessField.CaseReference ] "Only the reference survives erasure"
 
 let private diagnosticGroups () =
     let actual =

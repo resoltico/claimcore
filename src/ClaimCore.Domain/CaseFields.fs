@@ -218,7 +218,6 @@ type FieldDescriptor =
         Group: RecordGroup option
         AllowsAbsence: bool
         IsAuthored: bool
-        RetainedOnErasure: bool
         Value: CaseFields -> string option
     }
 
@@ -237,7 +236,6 @@ module BusinessField =
             Group = group
             AllowsAbsence = allowsAbsence
             IsAuthored = field <> BusinessField.Status
-            RetainedOnErasure = field = BusinessField.CaseReference
             Value = value
         }
 

@@ -10,21 +10,8 @@ open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Postgres
 
-let private column (key: string) =
-    key
-    |> Seq.collect (fun c ->
-        if Char.IsAsciiLetterUpper c then
-            [ '_'; Char.ToLowerInvariant c ]
-        else
-            [ c ])
-    |> Array.ofSeq
-    |> String
-
 let private expected =
-    CaseFields.declarations
-    |> List.map (fun row -> column row.Key)
-    |> Set.ofList
-    |> Set.union (set [ "case_id"; "revision"; "state" ])
+    set [ "case_id"; "case_reference"; "revision"; "state"; "snapshot" ]
 
 let private columns (source: NpgsqlDataSource) =
     task {
@@ -51,7 +38,7 @@ let private projection () =
 
         try
             let! actual = columns database.OwnerSource |> Async.AwaitTask
-            Expect.equal actual expected "SQL has exactly the business fields and technical columns"
+            Expect.equal actual expected "SQL has exactly the snapshot and identity columns"
 
             use! connection =
                 database.OwnerSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask
@@ -73,6 +60,4 @@ let private projection () =
 
 [<Tests>]
 let tests =
-    testCaseAsync
-        "SQL column coverage follows the record declaration and rejects extras"
-        (projection ())
+    testCaseAsync "SQL snapshot column coverage rejects extras" (projection ())

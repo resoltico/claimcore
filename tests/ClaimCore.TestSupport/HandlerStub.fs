@@ -134,7 +134,7 @@ type Stub() =
 
     member _.InvocationContext principal =
         let store =
-            new MemoryStore.Store(DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
+            new MemoryStore.Store(operationId, DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero))
 
         store.ReadFailure <- Some StoreFailure.Unavailable
         store.WriteFailure <- Some StoreFailure.Unavailable

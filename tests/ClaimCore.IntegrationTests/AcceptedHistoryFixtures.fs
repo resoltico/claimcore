@@ -87,7 +87,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
                     Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
                 }
 
-        let current: StoredCase = { CaseId = id; Snapshot = snapshot }
+        let current: StoredCase =
+            {
+                CaseId = id
+                Snapshot = snapshot
+                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            }
 
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)

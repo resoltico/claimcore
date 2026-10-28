@@ -150,7 +150,12 @@ let created n reference =
 
     let current =
         match projection with
-        | CaseProjection.Insert(id, snapshot) -> { CaseId = id; Snapshot = snapshot }
+        | CaseProjection.Insert(id, snapshot) ->
+            {
+                CaseId = id
+                Snapshot = snapshot
+                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            }
         | _ -> failtest "Opening inserts a case"
 
     request, LedgerEntries.stored entry, current, receipt

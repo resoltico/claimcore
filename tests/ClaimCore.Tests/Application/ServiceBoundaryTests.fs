@@ -11,7 +11,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 let private unavailable () =
-    let store = new ClaimCore.TestSupport.MemoryStore.Store(instant)
+    let store = new ClaimCore.TestSupport.MemoryStore.Store(installation, instant)
     store.ReadFailure <- Some StoreFailure.Unavailable
     store.WriteFailure <- Some StoreFailure.Unavailable
     store
@@ -156,7 +156,7 @@ let private cancelled () =
 let private committed () =
     async {
         for input in inputs () do
-            use memory = new ClaimCore.TestSupport.MemoryStore.Store(instant)
+            use memory = new ClaimCore.TestSupport.MemoryStore.Store(installation, instant)
 
             memory.SeedActor
                 worker.Actor.Value

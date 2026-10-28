@@ -232,7 +232,12 @@ let private wireSpelling () =
 
     let current =
         match projection with
-        | CaseProjection.Insert(id, snapshot) -> { CaseId = id; Snapshot = snapshot }
+        | CaseProjection.Insert(id, snapshot) ->
+            {
+                CaseId = id
+                Snapshot = snapshot
+                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            }
         | _ -> failtest "Insert"
 
     let replayView = locked worker (Some current) (Some(LedgerEntries.stored draft))

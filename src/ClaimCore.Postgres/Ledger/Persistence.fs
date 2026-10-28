@@ -58,6 +58,15 @@ module internal Persistence =
             |]
             token
 
+    let private caseParameters id (snapshot: CaseSnapshot) =
+        [|
+            box id
+            box (CaseReference.format snapshot.Reference)
+            box snapshot.Revision
+            box (CaseState.token snapshot.State)
+            box (CaseRecord.encodeSnapshot snapshot)
+        |]
+
     let case connection projection token =
         task {
             match projection with
@@ -65,8 +74,8 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.insert
-                        (CaseProjectionLayout.parameters id snapshot)
+                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot) VALUES ($1,$2,$3,$4,$5)"
+                        (caseParameters id snapshot)
                         token
 
                 return ()
@@ -74,8 +83,8 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.update
-                        (CaseProjectionLayout.parameters id snapshot)
+                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5 WHERE case_id=$1"
+                        (caseParameters id snapshot)
                         token
 
                 if changed <> 1 then
@@ -91,7 +100,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        CaseProjectionLayout.erase
+                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL WHERE case_id=$1"
                         [| box id; box revision |]
                         token
 

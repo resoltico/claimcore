@@ -250,58 +250,12 @@ CREATE TABLE claimcore.cases (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     state text NOT NULL CHECK (state IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
-    -- Business payload columns follow Domain Record.fields; case_reference above survives erasure.
-    incident_date date CHECK (incident_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-    incident_notification_date date CHECK (incident_notification_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-    incident_country text,
-    claimant_name text,
-    insurer_name text,
-    claimed_amount numeric,
-    claimed_currency text,
-    payment_decision_date date CHECK (payment_decision_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-    payable_amount numeric,
-    payable_currency text,
-    payment_date date CHECK (payment_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-    status text CHECK (status IN ('OPENED', 'CLOSED')),
+    snapshot bytea,
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]{1,80}$'),
-    CONSTRAINT erased_shape CHECK (
-        (state = 'ERASED' AND num_nonnulls(
-            incident_date, incident_notification_date, incident_country, claimant_name,
-            insurer_name, claimed_amount, claimed_currency, payment_decision_date,
-            payable_amount, payable_currency, payment_date, status) = 0)
-        OR (state <> 'ERASED' AND num_nulls(
-            incident_date, incident_notification_date, incident_country, claimant_name,
-            insurer_name, claimed_amount, claimed_currency, status) = 0)
-    ),
-    CONSTRAINT text_present CHECK (
-        claimant_name <> '' AND insurer_name <> ''
-        AND octet_length(claimant_name) <= 1024 AND octet_length(insurer_name) <= 1024
-        AND claimcore.is_interchange_text(claimant_name)
-        AND claimcore.is_interchange_text(insurer_name)
-    ),
-    -- ISO 3166-1 alpha-2 syntax; membership is not checked.
-    CONSTRAINT country_shape CHECK (incident_country COLLATE "C" ~ '^[A-Z]{2}$'),
-    CONSTRAINT claimed_money CHECK (
-        claimed_amount >= 0 AND claimed_amount <= 999999999999999999.9999
-        AND scale(claimed_amount) <= 4 AND claimed_currency COLLATE "C" ~ '^[A-Z]{3}$'
-    ),
-    CONSTRAINT decision_group CHECK (
-        num_nonnulls(payment_decision_date, payable_amount, payable_currency) IN (0, 3)
-    ),
-    CONSTRAINT payable_money CHECK (
-        payable_amount >= 0 AND payable_amount <= 999999999999999999.9999
-        AND scale(payable_amount) <= 4 AND payable_currency COLLATE "C" ~ '^[A-Z]{3}$'
-    ),
-    CONSTRAINT chronology CHECK (
-        incident_notification_date >= incident_date
-        AND payment_decision_date >= incident_notification_date
-        AND payment_date >= payment_decision_date
-    ),
-    CONSTRAINT paid_requires_positive_decision CHECK (
-        payment_date IS NULL OR (payment_decision_date IS NOT NULL AND payable_amount > 0)
-    )
+    CONSTRAINT erased_shape CHECK ((state = 'ERASED') = (snapshot IS NULL)),
+    CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
 -- One case per reference regardless of ASCII letter case; also the list order and keyset.

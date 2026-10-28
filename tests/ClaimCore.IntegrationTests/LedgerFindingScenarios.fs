@@ -302,7 +302,7 @@ let internal caseProjection (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.cases SET claimant_name='Tampered synthetic' WHERE case_reference='synthetic-a'"
+                "UPDATE claimcore.cases SET snapshot=set_byte(snapshot,0,0) WHERE case_reference='synthetic-a'"
                 [||]
 
         do! finding VerificationFinding.CaseProjection database

@@ -13,7 +13,7 @@ open ClaimCore.TestSupport.MemoryStoreState
 open ClaimCore.TestSupport.MemoryReadTransaction
 open ClaimCore.TestSupport.MemoryWriteTransaction
 
-type Store(observed: DateTimeOffset) =
+type Store(installationId: Guid, observed: DateTimeOffset) =
     let gate = new SemaphoreSlim(1, 1)
     let events = ResizeArray<string>()
 
@@ -70,6 +70,7 @@ type Store(observed: DateTimeOffset) =
                                 work (
                                     Reader(
                                         (fun () -> snapshot),
+                                        installationId,
                                         observed,
                                         (fun () -> events.Add "read")
                                     )
@@ -77,8 +78,9 @@ type Store(observed: DateTimeOffset) =
                                 )
 
                             return Ok result
-                        with :? OperationCanceledException ->
-                            return Error StoreFailure.Cancelled
+                        with
+                        | CorruptProjection -> return Error StoreFailure.Integrity
+                        | :? OperationCanceledException -> return Error StoreFailure.Cancelled
                     finally
                         gate.Release() |> ignore
             }
@@ -107,6 +109,7 @@ type Store(observed: DateTimeOffset) =
                                 {
                                     Get = (fun () -> pending)
                                     Set = (fun value -> pending <- value)
+                                    InstallationId = installationId
                                     Observed = observed
                                     Head = state.Head
                                     Nonce = RandomNumberGenerator.GetBytes 32
@@ -126,6 +129,7 @@ type Store(observed: DateTimeOffset) =
 
                             return Ok verdict
                         with
+                        | CorruptProjection -> return Error StoreFailure.Integrity
                         | :? OperationCanceledException -> return Error StoreFailure.Cancelled
                         | _ -> return Error StoreFailure.Internal
                     finally

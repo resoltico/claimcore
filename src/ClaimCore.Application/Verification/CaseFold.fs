@@ -134,12 +134,18 @@ module internal CaseFold =
             let state =
                 match record.Snapshot.State with
                 | CaseState.Erased ->
-                    history.State = CaseState.Erased && history.MissingPayloadAt.IsSome
+                    history.State = CaseState.Erased
+                    && history.MissingPayloadAt.IsSome
+                    && Array.isEmpty record.SnapshotBytes
                 | CaseState.Active _
                 | CaseState.Voided _ ->
                     history.State <> CaseState.Erased
                     && history.MissingPayloadAt.IsNone
                     && history.Snapshot = Some record.Snapshot
+                    && (history.Snapshot
+                        |> Option.exists (fun snapshot ->
+                            ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot =
+                                record.SnapshotBytes))
                     && CaseState.map ignore record.Snapshot.State = history.State
 
             identity && record.Snapshot.Revision = history.Revision && state

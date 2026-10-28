@@ -63,7 +63,7 @@ module internal VerificationRows =
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
                     {
-                        Read = DatabaseSession.namedRow >> Projections.caseRow
+                        Read = DatabaseSession.namedRow >> Projections.caseRow installationId
                         Append = (ProjectionVerification.caseProjection installationId histories)
                         Initial = Set.empty
                         Finding = VerificationFinding.CaseProjection

@@ -265,7 +265,12 @@ let private scopedAdvice () =
             installation
             (CaseReference.format snapshot.Reference)
 
-    let record: StoredCase = { CaseId = target; Snapshot = snapshot }
+    let record: StoredCase =
+        {
+            CaseId = target
+            Snapshot = snapshot
+            SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+        }
 
     for role, expectedGroups, expectedHistory in
         [
@@ -348,7 +353,12 @@ let private noUsableCorrectionOffer () =
             installation
             (CaseReference.format snapshot.Reference)
 
-    let record: StoredCase = { CaseId = target; Snapshot = snapshot }
+    let record: StoredCase =
+        {
+            CaseId = target
+            Snapshot = snapshot
+            SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+        }
 
     let authority =
         actor
