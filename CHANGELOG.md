@@ -1,8 +1,14 @@
 # Changelog
 
-Implemented release summaries are recorded here, with changes awaiting release under Unreleased.
-
 ## [Unreleased]
+
+- Initialize a fresh installation: cases now store exact snapshot bytes. The SQL checksum changes; earlier installations are refused untouched, with no migration.
+- Catalog choices and groups include vocabulary, constants include nullable vocabulary, and correction inputs include adviceGroup. Regenerate catalog consumers.
+- Source APIs use typed IDs and positions, nested refusals and BusinessField.describe; schema consumers must handle vocabulary annotations.
+- Business field metadata and newly asserted-value admission have one owner. Existing wire examples and permanent record bytes remain unchanged.
+- Browser forms use catalog vocabulary and correction advice; the selected catalog entry supplies request constants.
+- Protocol sources are grouped by responsibility; [source vocabulary](docs/contributing.md#source-vocabulary) explains implementation terms.
+- Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.
 
 ## [0.13.0] - 2026-10-28
 

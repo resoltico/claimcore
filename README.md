@@ -16,6 +16,8 @@ bash eng/verify.sh --fast
 ```
 
 The [contribution guide](docs/contributing.md) distinguishes fast checks, complete qualification and growth.
+Its [project boundaries](docs/contributing.md#project-boundaries) and
+[source vocabulary](docs/contributing.md#source-vocabulary) explain the implementation responsibilities.
 
 ## Find your task
 
