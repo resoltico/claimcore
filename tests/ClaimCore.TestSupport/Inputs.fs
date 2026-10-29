@@ -206,3 +206,63 @@ let authorityActs grants =
         | AuthorityActSlot.Bare act -> [ act, token ]
         | AuthorityActSlot.Grant(inject, _) ->
             grants |> List.map (fun grant -> inject grant, token))
+
+// Positive JSON seeds are authored overrides, not expectations. Missing fields come from the
+// same input builders; unknown members and supplied values are never discarded or normalized.
+let private groupBaselines =
+    Map.ofList
+        [
+            "registration", RequestCodecs.registration.Write registration
+            "decision", RequestCodecs.decision.Write decision
+            "payment", RequestCodecs.payment.Write payment
+        ]
+
+let private groupOverride group members =
+    match groupBaselines[group] with
+    | JsonValue.Object baseline ->
+        let supplied = Map.ofList members
+        let keys = baseline |> List.map fst |> Set.ofList
+
+        JsonValue.Object(
+            (baseline
+             |> List.map (fun (key, value) ->
+                 key, Map.tryFind key supplied |> Option.defaultValue value))
+            @ (members |> List.filter (fun (key, _) -> not (Set.contains key keys)))
+        )
+    | _ -> failtest "A group builder must produce an object."
+
+let private payloadGroup group members =
+    match members |> List.tryFind (fst >> (=) "kind") |> Option.map snd with
+    | Some(JsonValue.String "REPLACE") -> group
+    | Some(JsonValue.String token) ->
+        Inventory.rows "caseActs"
+        |> List.tryFind (fun row -> row.GetProperty("token").GetString() = token)
+        |> Option.map (fun row ->
+            row.GetProperty("payload").GetString() |> nonNull |> _.ToLowerInvariant())
+        |> Option.filter (fun group -> Map.containsKey group groupBaselines)
+    | _ -> None
+
+let positiveValue value =
+    let rec complete group =
+        function
+        | JsonValue.Object members ->
+            let payload = payloadGroup group members
+
+            let fields =
+                members
+                |> List.map (fun (key, value) ->
+                    let child =
+                        if key = "values" then payload
+                        elif Map.containsKey key groupBaselines then Some key
+                        else None
+
+                    key, complete child value)
+
+            match group with
+            | Some group when not (members |> List.exists (fst >> (=) "kind")) ->
+                groupOverride group fields
+            | _ -> JsonValue.Object fields
+        | JsonValue.Array values -> JsonValue.Array(List.map (complete None) values)
+        | value -> value
+
+    complete None value

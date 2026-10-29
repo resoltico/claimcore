@@ -84,7 +84,8 @@ let private example name =
         |> Seq.find (fun row -> row.GetProperty("name").GetString() = name)
 
     row.GetProperty("endpoint").GetString() |> nonNull,
-    JsonNode.Parse(row.GetProperty("value").GetRawText()) |> nonNull
+    JsonNode.Parse(WireWriter.bytes (ClaimCore.TestSupport.PositiveExamples.value row))
+    |> nonNull
 
 let private memberPath (path: string list) (root: JsonNode) =
     path |> List.fold (fun (node: JsonNode) key -> node[key] |> nonNull) root

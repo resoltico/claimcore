@@ -51,3 +51,44 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     state: state.kind === "ERASED" ? state : { ...live, ...state },
   };
 };
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+type Group = keyof typeof inventory.groups;
+const isGroup = (key: string): key is Group => Object.hasOwn(inventory.groups, key);
+const groupInput = (group: Group): Record<string, unknown> =>
+  group === "registration"
+    ? { ...registration() }
+    : Object.fromEntries(inventory.groups[group].map(({ key, kind }) => [key, samples[kind]]));
+const payloadGroup = (group: Group | undefined, kind: unknown): Group | undefined => {
+  if (kind === "REPLACE") {
+    return group;
+  }
+  const payload = inventory.caseActs.find(({ token }) => token === kind)?.payload.toLowerCase();
+  return payload !== undefined && isGroup(payload) ? payload : undefined;
+};
+// Authored positive examples override builder defaults. Unknown members remain for strict admission.
+const childGroup = (key: string, payload: Group | undefined): Group | undefined => {
+  if (key === "values") {
+    return payload;
+  }
+  return isGroup(key) ? key : undefined;
+};
+export const positiveValue = (seed: unknown): unknown => {
+  const complete = (value: unknown, group?: Group): unknown => {
+    if (Array.isArray(value)) {
+      return value.map((child: unknown) => complete(child));
+    }
+    if (!isObject(value)) {
+      return value;
+    }
+    const payload = payloadGroup(group, value["kind"]);
+    const members = Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, complete(child, childGroup(key, payload))]),
+    );
+    return group !== undefined && value["kind"] === undefined
+      ? { ...groupInput(group), ...members }
+      : members;
+  };
+  return complete(seed);
+};

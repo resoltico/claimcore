@@ -291,6 +291,22 @@ fail when that corpus is invalid; do not turn those failures into skips.
 
 ## Change probes
 
+Positive behavior examples are authored overrides on the inventory-driven input builders, including
+wire seed groups. Keep the values under test literal. Invalid examples and permanent-format vectors
+stay independently authored. The `goldens` list in
+[inventory.json](../tests/fixtures/inventory.json) declares the wire request/response examples and
+CLI frames. Review their diffs after an intentional local update:
+
+```sh
+CLAIMCORE_UPDATE_GOLDENS=1 bash eng/verify.sh unit
+```
+
+Update mode refuses when `CI` is set, including an empty value. It writes only declared fixture
+basenames and always refuses the three permanent vector files. It supplies omitted positive fields
+from the builders and prepares CLI frames from their authored arguments; it leaves invalid examples
+unchanged. Run the ordinary gate afterwards. Updating goldens never resolves permanent-format failures.
+
+
 Use change probes to test claims about the cost of representative future changes, including work
 outside the refactored code. They are experiments, not a general certification of extensibility.
 They do not replace or relax [required product verification](#verification), CI or release checks.

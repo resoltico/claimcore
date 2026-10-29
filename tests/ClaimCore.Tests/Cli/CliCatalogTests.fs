@@ -24,7 +24,9 @@ let private oracle () =
         let cells = row.Split('\t', 2)
 
         let arguments =
-            cells[0].Split(' ', StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+            cells[0].Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            |> List.ofArray
+            |> CliExamples.complete
 
         let actual =
             Grammar.prepare
@@ -87,22 +89,14 @@ let private byteLimits () =
 let private operationId = "10000000-0000-4000-8000-000000000001"
 
 let private registration =
-    [
-        "--incident-date"
-        "2026-08-01"
-        "--incident-notification-date"
-        "2026-08-03"
-        "--incident-country"
-        "LV"
-        "--claimant-name"
-        "Synthetic claimant"
-        "--insurer-name"
-        "Synthetic insurer"
-        "--claimed-amount"
-        "1.0000"
-        "--claimed-currency"
-        "EUR"
-    ]
+    ClaimCore.TestSupport.Inputs.registrationWith
+        [
+            BusinessField.ClaimantName, "Synthetic claimant"
+            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.ClaimedAmount, "1.0000"
+        ]
+        ClaimCore.TestSupport.Inputs.registration
+    |> CliExamples.registrationArguments
 
 let private prepare args =
     Grammar.prepare (fun () -> operationId) args

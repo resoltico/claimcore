@@ -116,11 +116,7 @@ let internal examples filename =
     |> Seq.map (fun sample ->
         let endpoint = sample.GetProperty("endpoint").GetString() |> nonNull
 
-        let value =
-            sample.GetProperty("value").GetRawText()
-            |> Encoding.UTF8.GetBytes
-            |> StrictJson.read Limits.MaximumResponseBytes
-            |> admitted
+        let value = PositiveExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst

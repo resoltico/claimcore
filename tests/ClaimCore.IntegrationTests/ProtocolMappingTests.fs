@@ -50,6 +50,7 @@ let private applicationExamples () =
             |> Encoding.UTF8.GetBytes
             |> StrictJson.read Limits.MaximumRequestBytes
             |> admitted
+            |> Inputs.positiveValue
 
         endpoint, input)
     |> Seq.filter (fun (endpoint, _) ->

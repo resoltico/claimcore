@@ -24,49 +24,30 @@ let position: LedgerPosition =
              |> EntryHash.ofBytes
              |> Option.get)
     }
-// Independently authored valid OPEN exercises dispatch as well as shape.
+
+let private registration =
+    Inputs.registrationWith
+        [
+            BusinessField.ClaimantName, "Synthetic claimant"
+            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.ClaimedAmount, "1.00"
+        ]
+        Inputs.registration
+
+let private request reference =
+    {
+        OperationId = operationId
+        CaseReference = reference
+        ExpectedRevision = 0L
+        Act = AuthoredCaseAct.Open registration
+    }
+
 let commandInput =
-    System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-        {|
-            kind = "CASE"
-            operationId = operationId.ToString("D")
-            caseReference = "WEB-001"
-            expectedRevision = 0L
-            act =
-                {|
-                    kind = "OPEN"
-                    values =
-                        {|
-                            incidentDate = "2026-08-01"
-                            incidentNotificationDate = "2026-08-03"
-                            incidentCountry = "LV"
-                            claimantName = "Synthetic claimant"
-                            insurerName = "Synthetic insurer"
-                            claimedAmount = "1.00"
-                            claimedCurrency = "EUR"
-                        |}
-                |}
-        |}
+    RequestCodecs.operationInput.Write(OperationInput.Case(request "WEB-001"))
+    |> ClaimCore.Json.WireWriter.bytes
 
 let view reference =
-    let request =
-        {
-            OperationId = operationId
-            CaseReference = reference
-            ExpectedRevision = 0L
-            Act =
-                (AuthoredCaseAct.Open(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [
-                            BusinessField.ClaimantName, ("Synthetic claimant")
-                            BusinessField.InsurerName, ("Synthetic insurer")
-                            BusinessField.ClaimedAmount, ("1.00")
-                        ]
-                        (Inputs.registration)
-                ))
-        }
-
-    CaseFixtures.decide (DateOnly(2026, 10, 13)) request None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) (request reference) None
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 

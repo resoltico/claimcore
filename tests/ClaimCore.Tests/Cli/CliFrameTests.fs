@@ -270,7 +270,13 @@ let private exampleFrames () =
     let mutable current = None
 
     for index, path in Array.indexed files do
-        let invocation = Frames.admit (File.ReadAllBytes path) |> Fixtures.accepted
+        let input =
+            StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
+            |> Fixtures.accepted
+            |> ClaimCore.TestSupport.Inputs.positiveValue
+            |> WireWriter.bytes
+
+        let invocation = Frames.admit input |> Fixtures.accepted
 
         Expect.equal
             (frameEndpoint invocation |> Api.id)

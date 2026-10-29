@@ -238,11 +238,7 @@ let private localizedReplyRendering () =
 
     for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
         if example.GetProperty("valid").GetBoolean() then
-            let reply =
-                StrictJson.read
-                    Limits.MaximumResponseBytes
-                    (Encoding.UTF8.GetBytes(example.GetProperty("value").GetRawText()))
-                |> Result.defaultWith (fun _ -> failtest "Frozen JSON")
+            let reply = ClaimCore.TestSupport.PositiveExamples.value example
 
             let frame =
                 {

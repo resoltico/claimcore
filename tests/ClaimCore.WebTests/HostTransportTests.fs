@@ -27,18 +27,9 @@ let private body name =
     elif name = "session" || name = "session.logout" || name = "context" then
         Encoding.UTF8.GetBytes "{}"
     else
-        let root = ClaimCore.TestSupport.RepositoryRoot.find ()
-
-        use document =
-            JsonDocument.Parse(
-                System.IO.File.ReadAllBytes(
-                    System.IO.Path.Combine(root, "tests/fixtures/wire-request-examples.json")
-                )
-            )
-
-        document.RootElement.GetProperty("cases").EnumerateArray()
-        |> Seq.find (fun item -> item.GetProperty("endpoint").GetString() = name)
-        |> fun item -> item.GetProperty("value").GetRawText() |> Encoding.UTF8.GetBytes
+        ClaimCore.TestSupport.PositiveExamples.forEndpoint "wire-request-examples.json" name
+        |> List.head
+        |> WireWriter.bytes
 
 let private parse bytes = JsonDocument.Parse(bytes: byte array)
 

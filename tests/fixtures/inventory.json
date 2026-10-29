@@ -424,5 +424,10 @@
     "input",
     "caseOrder",
     "progress"
+  ],
+  "goldens": [
+    "wire-request-examples.json",
+    "wire-response-examples.json",
+    "cli-frames.tsv"
   ]
 }
