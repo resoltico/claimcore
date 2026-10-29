@@ -363,6 +363,14 @@ let closedFlagsBeforeInput =
                 ]
 
             for index, arguments in List.indexed (captured @ host) do
+                // Only closed command words are logged; the index identifies the complete fixture.
+                let words = arguments |> List.truncate 2 |> String.concat " "
+                let command = words.Substring(0, min 80 words.Length)
+                let flag = "--undeclared-flag-" + string index
+
+                let context =
+                    $"Closed CLI syntax probe index={index}; command={command}; flag={flag}."
+
                 let start =
                     System.Diagnostics.ProcessStartInfo(
                         "dotnet",
@@ -375,16 +383,22 @@ let closedFlagsBeforeInput =
                 CliProcessEnvironment.clearInherited start
                 start.ArgumentList.Add cli
 
-                for argument in arguments @ [ "--undeclared-flag-" + string index ] do
+                for argument in arguments @ [ flag ] do
                     start.ArgumentList.Add argument
                 // None deliberately leaves the redirected writer open: reading stdin would block.
-                let result = BoundedProcess.run start None 1_048_576 8_000
+                let result =
+                    try
+                        BoundedProcess.run start None 1_048_576 8_000
+                    with :? BoundedProcessFailure as error ->
+                        raise (InvalidOperationException(context + " " + error.Message, error))
 
                 Expect.equal
                     result.ExitCode
                     64
-                    "Every verb refuses the unknown flag before stdin or dispatch"
+                    (context + " Every verb refuses the unknown flag before stdin or dispatch")
 
-                Expect.isEmpty result.StandardOutput "Refused syntax emits no request or reply"
+                Expect.isEmpty
+                    result.StandardOutput
+                    (context + " Refused syntax emits no request or reply")
         finally
             directory.Delete true)

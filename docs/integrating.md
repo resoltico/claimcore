@@ -12,8 +12,8 @@ entries; `schema ENDPOINT request|response` exposes a wire schema. The generated
 [catalog](../contracts/catalog.json) describes operation meaning and input bindings without CLI synopsis
 text. CLI grammar derives command words, flags and usage separately.
 
-Catalog `CHOICE` and `GROUP` input kinds supply `vocabulary` and `options`; use the vocabulary name to
-render option labels. Each constant supplies nullable `vocabulary`, and each input supplies nullable
+Catalog `CHOICE`, `CHOICES` and `GROUP` input kinds supply `vocabulary` and `options`; use the vocabulary
+name to render option labels. `CHOICES` permits a collection of selected tokens, as used by worklist facets. Each constant supplies nullable `vocabulary`, and each input supplies nullable
 `adviceGroup`. A non-null `adviceGroup` identifies the registration, decision or payment correction group
 whose current advice constrains the input's choices. These identities come from the catalog, not member
 path spellings.
@@ -23,7 +23,7 @@ and inputs using their declared `path` and `branches`; form values do not select
 remain part of the submitted wire request. The browser follows this model; custom clients can use the
 [catalog model](../src/ClaimCore.Protocol/Catalog/Metadata.fs) and generated contracts as references.
 
-Dates and amounts travel as strings. Keep authored names, reasons, amount spelling and references intact;
+Dates and amounts travel as strings. Wire clients keep authored names, reasons, amount spelling and references intact;
 use the supplied input descriptors and current server guidance when preparing changes. A preview is advisory.
 
 Case advice contains act kinds, optional `correction` choices exactly when `CORRECT` is offered, and
@@ -36,7 +36,9 @@ metadata publishes `unknownCode`; consumers use that value rather than choosing 
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
 Field and technical-target labels use `field.*`; group labels use `group.*`. Scope, actor-ID and
-history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`. Principal input
+history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`; worklist facet/order
+labels also use their catalog-supplied `input.*` keys. Always consume the declared label identity rather
+than guessing it from a wire path. Principal input
 identities are `principal.kind`, `principal.issuer` and `principal.subject`; their wire paths remain
 `target.kind`, `target.issuer` and `target.subject`. CLI grammar owns the flag spellings.
 
@@ -95,11 +97,22 @@ claimcore describe case open
 claimcore authority list
 ```
 
-Case and authority mutation verbs generate an ID unless `--operation-id` is supplied. Existing-case work
-requires an explicit expected revision; the CLI does not fetch or rebase it. `--preview` requests review,
-and `--dry-run` prints the prepared frame without authentication. Verbs default to text; `--format json`
-selects structured output and `--language` selects interface language. Authored business values remain
-unchanged. Output does not change with TTY detection.
+Case and authority mutation verbs generate an ID unless `--operation-id` is supplied. When stdin and
+stdout are terminals, a text-format existing-case mutation without `--preview` or `--dry-run` can omit
+the expected revision. The CLI fetches the case, previews that revision with the prepared operation ID,
+shows the localized review and asks for confirmation with a default of No. Confirmation executes the
+same ID and revision. Declining does not execute. A concurrent change still causes the normal revision
+refusal; the CLI does not rebase the request. Omitted correction groups default to KEEP in this path and
+the review shows their actions.
+
+Explicit `--preview` in a terminal can fetch an omitted revision, prints review and stops without prompting
+or executing. `--dry-run` remains offline and requires the revision for an existing-case change. A declined
+or empty confirmation does not execute.
+
+Automation, redirected input/output and `--format json` require `--expected-revision` for existing-case
+changes. Interactive review has no skip-confirmation flag. `--preview` requests review, and `--dry-run`
+prints the prepared frame without authentication. Verbs default to text; `--format json` selects a
+structured reply and `--language` selects interface language. Authored business values remain unchanged.
 
 `call` reads one `{ "endpoint": ..., "input": ... }` document. `session` reads NDJSON frames and reuses
 process-local authentication. Reply frames contain nullable `endpoint` and `operationId`, a `delivery` tag,
@@ -109,7 +122,93 @@ Configure service URL, issuer, client ID and authentication mode using `help con
 Interactive login uses PKCE and a one-use loopback callback. Automation uses a registered service actor,
 client credentials and its private secret file. Tokens remain process-local. Optional explicit service/IdP
 trust-root files replace system roots while retaining hostname and validity checks. The
-[walkthrough](getting-started.md#configure-the-human-owner-cli-and-grant-case-work) shows local setup.
+[walkthrough](getting-started.md#optional-cli-setup) shows local setup.
+
+## Worklist queries and summary rows
+
+`case.list` uses one page request with optional facets and order. Omitted facets are unfiltered; omitted
+order is `REFERENCE`. For example:
+
+```json
+{
+  "limit": 50,
+  "lifecycle": ["ACTIVE"],
+  "status": ["OPENED"],
+  "progress": ["UNDECIDED"],
+  "text": "Rīgas",
+  "order": "RECENT"
+}
+```
+
+| Member | Meaning |
+| --- | --- |
+| `lifecycle` | Set of ACTIVE, VOIDED and ERASED. |
+| `status` | Set of OPENED and CLOSED; erased cases have no status. |
+| `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
+| `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
+| `order` | REFERENCE, or RECENT for last accepted change first. |
+| `cursor` | Opaque continuation bound to the admitted filters and order. |
+| `limit` | Bounded page size from the catalog and contract. |
+
+Search admission follows names' whitespace/control/format-character rules before NFKC normalization and
+invariant lowercase. Stored searchable values use the same normalization, joined with U+001F. Percent,
+underscore and backslash match literally. Search does not remove accents or use date/amount ranges.
+
+REFERENCE orders by the ASCII-case-folded reference. RECENT orders by the latest accepted case ledger
+entry's `recorded_at` descending, then folded reference ascending. A continuation encodes those keyset
+positions and its canonical filters/order. Replaying it with different filters or order refuses as
+`InvalidCursor`. Discard cursors from the earlier case-list format; history, actor and grant cursors keep
+their own formats. Every page still authorizes under current rights and uses one snapshot.
+
+A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
+contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
+(`amount`/`currency`) and `progress`. The amount strings are canonical; an undecided case has null payable.
+An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
+requires the same `ReadCase` capability as `case.get`. Names, amounts, status and progress agree with the
+same actor's current case read. `changedAt` comes from the latest accepted case ledger/history entry;
+`case.get` itself has no timestamp member.
+
+```sh
+claimcore case list --lifecycle active --status opened --progress undecided --order recent
+claimcore case list --lifecycle active --lifecycle voided --text 'Rīgas'
+claimcore case list --format csv --all
+```
+
+Facet flags are repeatable and derive their choices from the catalog. CSV is UTF-8 without a BOM, uses
+CRLF line endings and RFC 4180 quoting, and writes one header row of actual qualified wire field paths
+(such as `state.claimed.amount` and `state.progress`). Null/unrecorded/erased values use empty cells.
+The header order is:
+
+```text
+caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,changedAt
+```
+
+Amounts and timestamps use their canonical wire values; tokens and references are not localized. `--all` follows continuations to the end, emits the header once and stops on refusal, reporting the cursor
+reached. Each page is its own snapshot; the complete export is not an installation-wide snapshot.
+
+## Browser routes and presentation
+
+The browser supports worklist URLs under `/cases`, case links under `/cases/:reference`, act editors at
+`/cases/:reference/acts/:act`, operation lookup under `/operations/:operationId`, and authority actor links
+under `/authority/:actorId`. `/cases/new` opens a new case. Worklist query parameters carry selected view,
+filters, search and order; page cursors are not stored in the URL. Back/forward, reload and sign-in return
+preserve the intended same-origin path.
+
+Use the client's link builder for exact references. Ordinary reference segments use `encodeURIComponent`:
+`A/B` becomes `/cases/A%2FB`. Exact `new`, `.` and `..`, and references beginning with `~`, instead use a
+`~` prefix followed by unpadded base64url of the UTF-8 reference. Examples are `/cases/~bmV3` for `new`,
+`/cases/~Lg` for `.`, `/cases/~Li4` for `..` and `/cases/~fg` for `~`. `NEW` remains `/cases/NEW`. This
+avoids route keywords, dot-segment normalization and prefix collisions without changing case identity.
+
+Authority actor links bind offered actions to the disclosed actor. A retained request keeps its original
+principal and operation identity until the user explicitly discards it to begin the selected actor's
+action. Preview and exact-request confirmation still precede execution.
+
+Language, display locale and SYSTEM/LIGHT/DARK theme are independent preferences. The version-2 stored
+format resets older preferences. Locale date/amount controls prepare canonical wire values for preview;
+the server remains responsible for admission. Unambiguous locale amounts normalize before preview;
+ambiguous text reaches server admission as authored. Country/currency suggestions allow free entry under
+the wire grammar. The review shows canonical values before execution.
 
 ## Delivery recovery
 
@@ -132,8 +231,8 @@ uncertainty. A complete OS write and flush do not prove downstream persistence.
 The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
 
 The browser's Send again uses the frozen request; Check outcome uses final resolution. A reload retains
-only the unresolved ID, subject and act in session storage, so only Check outcome remains. It stores no
-submitted body or business values. Faults leave uncertainty visible; storage failure preserves the current
+only the unresolved ID, subject and act in its session-stored delivery-recovery record, so only Check
+outcome remains. That record has no submitted body or business values. Faults leave uncertainty visible; storage failure preserves the current
 page's flow.
 
 ## Disclosure and cursors
@@ -141,6 +240,11 @@ page's flow.
 Current rights govern every disclosure. Current snapshots need case read; superseded snapshots need full
 history. Receipts distinguish `DISCLOSED`, `WITHHELD` and `ERASED`. Access/session changes clear disclosed
 views, and stale replies cannot populate a different actor or resource context.
+
+`case.history` returns newest revisions first. Start without a cursor, then follow `nextCursor` for older
+revisions. Its cursor encoding is unchanged; the revision keyset now moves backwards. The browser loads
+bounded pages and compares adjacent disclosed full receipts for changed fields; it does not fetch the
+complete history before displaying the timeline. Withheld or erased fields are never inferred.
 
 Treat continuation strings as opaque positions for their issuing endpoint and resource. Follow non-null
 `nextCursor`, even after a short page. Each page authorizes again before decoding a cursor and uses its own

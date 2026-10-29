@@ -79,25 +79,30 @@ Closed code sets use the shared [Vocabulary](../src/ClaimCore.Domain/Vocabulary/
 ### Value module
 
 [Values.fs](../src/ClaimCore.Domain/Values.fs) owns permanent parsing and formatting for calendar dates,
-countries, money, party names, reasons and references. Current admission exists where a value has current
-rules: dates, party names and reasons. Money owns amount and currency together.
+countries, party names, reasons and references. [MoneyValues.fs](../src/ClaimCore.Domain/MoneyValues.fs)
+owns amount and currency values and assembles them as `Money` for named business rules. Each value module
+owns its current admission; date and text admission apply current business-date and text rules.
 [Identifiers.fs](../src/ClaimCore.Domain/Identifiers.fs) owns nonempty operation, actor and case IDs and
 bounded revisions and sequences. Authored requests and reply correlation fields retain raw values;
 admitted commands and stored identity/position fields use typed values.
 
 ### Declaration
 
-[BusinessField.describe](../src/ClaimCore.Domain/CaseFields.fs) exhaustively supplies field structure and
-value projections. Field/group inventories and authored input targets derive from that description.
+[BusinessField.describe](../src/ClaimCore.Domain/CaseFields.fs) exhaustively supplies each field's kind,
+group, searchability and amount/currency relationship. Field/group inventories and authored input targets
+derive from that description.
 `CaseAct.slot` and `AuthorityAct.slot` pair typed injection with projection. Protocol owns endpoint and
 interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
 annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
 
-Registration formatting in [CaseAct](../src/ClaimCore.Domain/CaseActs.fs), parsing/construction in
-[Validation](../src/ClaimCore.Domain/Validation.fs), and asserted-value admission in
-[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) remain explicit. Keep those operations and
-the authored/admitted records aligned when changing fields; `describe` does not construct or admit
-a registration value.
+Private registration, decision and payment wrappers hold complete `GroupValues<Authored>` or
+`GroupValues<Admitted>` in [CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs). Their constructors check
+exact membership and admitted value kinds against the declarations. Group formatting and parsing iterate
+those fields through [FieldValue](../src/ClaimCore.Domain/FieldValues.fs), which dispatches to the owning
+value module. [Validation](../src/ClaimCore.Domain/Validation.fs) maps field failures to input issues;
+[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) admits newly asserted values generically.
+Named accessors retain date-order, payable and payment-acknowledgement rules. Adding a declared field
+does not require parallel authored/admitted record members or per-field codec and admission branches.
 
 [StateValidation](../src/ClaimCore.Domain/StateValidation.fs) owns admission of newly asserted dates and
 names and progress invariants. Corrections retain proposed groups until acknowledgement and admission
@@ -134,8 +139,8 @@ Application handles a request. A rejected gate produces a transport failure.
 
 ### Runtime leases
 
-Leases own work using a runtime resource. Closing leases stops new acquisition; active work keeps its
-lease until provider cleanup finishes.
+The Web runtime grants a lease to each admitted operation, including session-storage calls. Shutdown
+stops new leases and waits for current holders to finish provider cleanup before disposing storage.
 
 ## Transactions and durable formats
 
@@ -230,7 +235,8 @@ union to values, with no nested branching. Put a concrete reason comment immedia
 responsibilities; this exception does not apply to them. Other lint suppressions remain prohibited.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
-lives in [web/prettier.config.mjs](../web/prettier.config.mjs). Inline named exceptions need concrete reasons.
+lives in [web/prettier.config.mjs](../web/prettier.config.mjs). The permitted total-table suppression needs
+the concrete reason described above.
 
 ## Verification
 
@@ -273,6 +279,13 @@ mode explicitly reports incomplete qualification. Native report directories unde
 `artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
 
+Independent closed inventories live in [inventory.json](../tests/fixtures/inventory.json), authored by hand
+rather than generated from product declarations. Input builders belong to
+[Inputs.fs](../tests/ClaimCore.TestSupport/Inputs.fs) and
+[inputs.ts](../web/tests/support/inputs.ts); expected outputs and rule witnesses remain independent.
+The authored seed-corpus admission test identifies missing positive examples. Dependent properties still
+fail when that corpus is invalid; do not turn those failures into skips.
+
 ## Change probes
 
 Run these five manual probes at the end of every foundation or refactoring PR, before marking it
@@ -281,16 +294,17 @@ outside the code being refactored.
 
 | Probe | Change | Invariants to assess |
 | --- | --- | --- |
-| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/` or PostgreSQL source changes; no renderer changes; in Domain, only the one field-description function (`BusinessField.describe`) changes. |
+| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. In Domain, only the new `BusinessField` case and its `describe` entry in `CaseFields.fs` change; no record, parsing, formatting, admission or other Domain function changes. |
 | P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
-| P-ROLE | Add a role with one existing capability. | No renderer changes; SQL changes only the durable `grants.role` token list. |
-| P-READ | Add a read-only endpoint over existing case data. | No renderer changes; CLI verb and catalog entry derive; one store-port method implemented by PostgreSQL and the memory double. |
+| P-ROLE | Add a role with one existing capability. | No renderer or `db/` changes; growing vocabularies are decoded by their permanent-name owner. |
+| P-READ | Add a read-only endpoint over existing case data. | No renderer changes except the one exhaustive endpoint-to-handler line in `src/ClaimCore.Web/ApiRoutes.fs` `route`. CLI verb/catalog derive; one store-port method is implemented by PostgreSQL and memory. |
 | P-MESSAGE | Add a case refusal and its message. | Only Domain refusal/producer, diagnostic mapping and three locale files change; no renderer changes. |
 
 Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
 `generated/`. Generated contracts and documentation are recorded separately from authored production
-files. Assess P-FIELD's Domain criterion across field mapping, parsing and admission as well as
-metadata and projection. Consolidating metadata in
+files. P-READ's sole renderer exception is that composition line; all other Web-host, CLI and browser
+source must remain untouched. Assess P-FIELD's Domain criterion across field mapping, parsing and admission
+as well as metadata and projection. Consolidating metadata in
 [CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs) alone does not establish that criterion.
 
 Start each probe from the same candidate commit on its own throwaway local `probe/<id>` branch.
@@ -299,7 +313,8 @@ the solution, regenerate contracts and add one temporary test exercising the new
 real path. A passing test must demonstrate the feature, including the relevant boundary or store,
 rather than merely compiling it. Record production files and added/deleted lines, generated files,
 test and fixture updates required, every gate failure, and each invariant as met or missed with its
-cause. Run the normal fast gate to expose costs beyond the focused test; preserve failures even when
+cause. Group failures by root cause and list every edited test file under that cause; failure counts alone
+do not describe change cost. Run the normal fast gate to expose costs beyond the focused test; preserve failures even when
 a later check passes. Keep these experiments isolated from the delivered feature set.
 
 A miss alone does not block merging. Fix defects within the PR's scope and rerun the affected probe;
@@ -310,11 +325,12 @@ is the single authority for the procedure; no maintained script applies the prob
 
 ## Growth
 
-Run `bash eng/verify.sh growth` before a release and on demand. Its nine profiles, cardinality comparisons,
-contention controls and report fields are owned by
-[GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs). Selecting one
-`CLAIMCORE_GROWTH_PROFILE` marks qualification incomplete. Report actual counts, throughput, latency and
-verifier memory/time; measurements establish neither an SLA nor constant total-system memory.
+Run `bash eng/verify.sh growth` before a release and on demand. It retains nine write-contention profiles
+and three cardinality comparisons, and adds search/filtered read workloads at 1k, 10k and 100k cases.
+[GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
+and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
+incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
+establish neither an SLA nor constant total-system memory.
 
 The gate bounds managed completed-report retention, not total caches, image or artifact use. Protect active
 runs, measure resource use and reclaim only owned temporary resources. Locked NuGet/npm restore and audits
