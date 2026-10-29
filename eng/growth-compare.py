@@ -82,6 +82,11 @@ def validate_completion(state, preparation):
     return expected_reads
 
 
+def retain_failed_reports(growth, destination):
+    if growth.exists():
+        shutil.copytree(growth, destination, ignore=shutil.ignore_patterns("keys-*"))
+
+
 def collect(root, destination, preparation):
     growth = root / "artifacts/verification/growth"
     states = list(growth.glob("*/run.json"))
@@ -125,8 +130,7 @@ def run_workloads(checkout, destination, environment, preparation):
             f"--settings={checkout / 'eng/expecto.integration.runsettings'}",
         ], checkout, destination / "test.log", selected)
     except BaseException:
-        if growth.exists():
-            shutil.copytree(growth, destination / "growth-failure")
+        retain_failed_reports(growth, destination / "growth-failure")
         raise
     return collect(checkout, destination, preparation)
 

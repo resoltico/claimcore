@@ -37,6 +37,21 @@ def runs():
 
 
 class GrowthComparisonTests(unittest.TestCase):
+    def test_interrupted_evidence_keeps_reports_and_excludes_transient_key_rings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            growth = root / "growth"
+            run = growth / "run-id"
+            keys = growth / "keys-owned-test"
+            run.mkdir(parents=True)
+            keys.mkdir()
+            (run / "run.json").write_text('{"result":"incomplete"}\n')
+            (keys / "key.xml").write_text("synthetic private-material fixture\n")
+            destination = root / "retained"
+            stage.retain_failed_reports(growth, destination)
+            self.assertEqual((destination / "run-id/run.json").read_text(), '{"result":"incomplete"}\n')
+            self.assertFalse((destination / "keys-owned-test").exists())
+
     def test_candidate_snapshot_preserves_uncommitted_control_and_exact_provenance(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
