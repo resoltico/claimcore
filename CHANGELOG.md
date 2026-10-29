@@ -23,6 +23,7 @@
 - Field/act declarations drive shared processing; private constructors enforce complete typed groups while permanent ledger encodings stay unchanged.
 - Browser forms use catalog vocabulary, correction advice and selected-entry constants; core labels remain owned by their declared vocabularies.
 - Tests share a hand-authored independent inventory and one input-builder owner per language; seed-corpus failures name their shared cause without skipping properties.
+- Select change probes by affected responsibilities and reuse evidence after impact review; report locality, behavior and adaptation separately. Required product verification remains unchanged.
 - Protocol source paths follow Wire, Api, Catalog, Messages, Presentation and CommandLine responsibilities.
 - Total exhaustive tables may justify complexity suppressions; rule bodies and product/test code retain the existing lint limits and controls.
 - Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.

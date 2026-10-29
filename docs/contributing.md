@@ -288,11 +288,28 @@ fail when that corpus is invalid; do not turn those failures into skips.
 
 ## Change probes
 
-Run these five manual probes at the end of every foundation or refactoring PR, before marking it
-ready, and whenever the owner asks. They measure representative future changes, including costs
-outside the code being refactored.
+Use change probes to test claims about the cost of representative future changes, including work
+outside the refactored code. They are experiments, not a general certification of extensibility.
+They do not replace or relax [required product verification](#verification), CI or release checks.
+Explicit owner requests and stricter task commitments still govern; this procedure does not waive them.
 
-| Probe | Change | Invariants to assess |
+### Select the experiments
+
+Before marking a foundation or refactoring PR ready, assess the five probes below against the changed
+responsibilities and affected producers, consumers, generation and test support. Cover all five for broad
+foundation changes, running experiments or reusing applicable evidence as described below. For narrower
+changes, cover the relevant probes and briefly explain exclusions in the PR. Investigate uncertain
+relevance; include a probe if uncertainty remains. Documentation or presentation edits do not automatically
+require all five, but changes to rendering or generation can affect them.
+Procedure-only documentation changes need no hypothetical feature implementation.
+
+Keep the representative changes and locality targets below stable for comparisons. State the exact
+experiment: a READ reusing existing request/result types measures registration cost, not a novel query
+design. Disclose any changed experiment or target and its reason; compare like for like or mark the
+results incomparable. A locality miss is diagnostic and alone does not block merging. Fewer edits do not
+justify generic machinery, weaker types, shared production/oracle answers or removed safeguards.
+
+| Probe | Change | Locality target |
 | --- | --- | --- |
 | P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. In Domain, only the new `BusinessField` case and its `describe` entry in `CaseFields.fs` change; no record, parsing, formatting, admission or other Domain function changes. |
 | P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
@@ -302,26 +319,64 @@ outside the code being refactored.
 
 Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
 `generated/`. Generated contracts and documentation are recorded separately from authored production
-files. P-READ's sole renderer exception is that composition line; all other Web-host, CLI and browser
-source must remain untouched. Assess P-FIELD's Domain criterion across field mapping, parsing and admission
-as well as metadata and projection. Consolidating metadata in
+files. P-READ's target permits only that composition line in renderer source. Assess P-FIELD's Domain
+target across field mapping, parsing and admission as well as metadata and projection. Consolidating metadata in
 [CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs) alone does not establish that criterion.
 
-Start each probe from the same candidate commit on its own throwaway local `probe/<id>` branch.
-Never push these branches; delete them afterwards. Apply the representative change manually, build
-the solution, regenerate contracts and add one temporary test exercising the new element through its
-real path. A passing test must demonstrate the feature, including the relevant boundary or store,
-rather than merely compiling it. Record production files and added/deleted lines, generated files,
-test and fixture updates required, every gate failure, and each invariant as met or missed with its
-cause. Group failures by root cause and list every edited test file under that cause; failure counts alone
-do not describe change cost. Run the normal fast gate to expose costs beyond the focused test; preserve failures even when
-a later check passes. Keep these experiments isolated from the delivered feature set.
+### Run an experiment
 
-A miss alone does not block merging. Fix defects within the PR's scope and rerun the affected probe;
-otherwise explain the cause and propose follow-up work. Preserve safeguards and existing gate limits.
-Future foundation proposals must cite the latest probe results, a concrete defect or a stated
-requirement. Put measurements, failures and follow-up proposals in PR bodies, not repository files. This section
-is the single authority for the procedure; no maintained script applies the probes automatically.
+Start newly run probes from one recorded candidate commit, each in its own isolated, source-stable
+worktree on a task-specific local branch. Never push experimental branches. Apply the representative
+change manually; a saved manually authored patch may be replayed after reviewing its applicability.
+Build the solution, [regenerate and check contracts](#generated-contracts), and add a temporary test
+exercising the new element through its real path, including relevant refusal or boundary behavior.
+Use real PostgreSQL when claiming store behavior; compilation or a memory double alone cannot prove it.
+
+Run `bash eng/verify.sh --fast` for each new or materially changed experimental implementation to expose
+maintenance costs beyond the focused proof. Focused iteration checks do not establish a complete fast-gate
+pass. A known, unchanged failure need not be repeatedly rediscovered when the evidence below still applies;
+keep its failure status and name unrun stages. Fix established defects within the PR's scope and rerun
+affected checks or probes; otherwise report the cause and proposed follow-up. Preserve independent semantic
+expectations and existing safeguards. Retain useful failure evidence before removing only owned experimental
+branches, worktrees and temporary resources; keep hypothetical features out of the delivered product.
+
+### Report outcomes and cost
+
+Keep a short summary in the PR with links to patches and check evidence. Record the candidate, exact
+representative change, environment, commands and exercised scope. Report these conclusions separately:
+
+- Locality: each target met or missed, with its cause.
+- Behavior: the paths and conditions proved, failed or not exercised; do not infer unrun results.
+- Adaptation: complete or incomplete, including applicable compatibility commitments, downstream consumers,
+  generated output, tests and fixtures. Claim completion only with a passing complete fast gate and any
+  relevant integration checks; targeted fixes after a failed gate alone cannot establish completion.
+
+Count authored production, generated and test/fixture files and added/deleted lines separately. Group
+failures by root cause and name affected test files; failure counts alone do not describe change cost.
+Record observed implementation/adaptation effort, check elapsed time and reasons for reruns; label estimates
+or unavailable measurements. Distinguish avoidable duplication from necessary independent-oracle, composition
+and compatibility work. Assess any added abstraction's ongoing cost as well as the experimental diff size.
+
+### Reuse applicable evidence
+
+A later candidate alone does not invalidate an earlier experiment. Review the intervening changes against
+the specific conclusion and check inputs, including affected producer/consumer paths, shared fixtures,
+generation, build configuration, dependencies, toolchain and relevant execution conditions. Source equality
+or unchanged filenames alone do not establish applicability. Keep this a short, evidence-backed rationale
+per probe rather than a separate dependency inventory.
+
+Retain the original candidate, patch, environment, check scopes, results and material failures. Record the
+revision now assessed and why those conclusions still apply; never relabel an old execution as run on it.
+Rerun affected proofs or checks when their basis changes or applicability remains uncertain. A renderer edit
+can invalidate rendering evidence while leaving an unrelated Domain conclusion applicable. Preserve unproven
+or incomplete outcomes when reusing evidence; a targeted pass cannot convert an earlier failed full gate
+into a full pass. These reuse rules concern hypothetical probes only and do not waive required clean,
+independent or final-product verification.
+
+Future foundation proposals must cite applicable probe results, a concrete defect or a stated requirement.
+Keep measurements and follow-up proposals in PR evidence, not repository progress files. This section is the
+single authority for the procedure; existing Git, generation and verification commands suffice. Representative
+changes and expected behavior remain manually authored; no maintained script applies the probes automatically.
 
 ## Growth
 
