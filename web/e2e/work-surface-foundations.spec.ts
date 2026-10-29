@@ -15,11 +15,16 @@ const settleAcceptedClose = async (page: Page, operationId: string) => {
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
     await expect(page.getByRole("alert")).toContainText("unknown");
-    const stored = await page.evaluate(
-      () =>
-        JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
-    );
-    expect(stored).toEqual({ operationId, subject: "CASE", act: "CLOSE" });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            JSON.parse(
+              sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null",
+            ) as unknown,
+        ),
+      )
+      .toEqual({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
       response.url().endsWith("/api/operation.resolve"),
     );

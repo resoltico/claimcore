@@ -30,11 +30,16 @@ for (const reload of [false, true]) {
     await expect(
       page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }),
     ).toBeVisible();
-    const stored = await page.evaluate(
-      () =>
-        JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
-    );
-    expect(stored).toEqual({ operationId, subject: "CASE", act: "CLOSE" });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            JSON.parse(
+              sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null",
+            ) as unknown,
+        ),
+      )
+      .toEqual({ operationId, subject: "CASE", act: "CLOSE" });
     if (reload) {
       await page.reload();
       await expect(
