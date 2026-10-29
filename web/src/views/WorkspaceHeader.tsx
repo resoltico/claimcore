@@ -1,3 +1,4 @@
+import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import { useState } from "react";
 import { Modal, ModalOverlay } from "react-aria-components/Modal";
 import { Dialog } from "react-aria-components/Dialog";
@@ -70,7 +71,13 @@ const Settings = ({ open, close }: { open: boolean; close: () => void }) => {
             <details>
               <summary>{p.text("ui.technicalDetails")}</summary>
               <p>{p.text("ui.productVersion", { version: productMetadata.productVersion })}</p>
-              <p>{p.text("ui.webIdentity", { digest: productMetadata.contractIdentity })}</p>
+              <p>
+                <IdentifierMessage
+                  id="ui.webIdentity"
+                  values={{ digest: productMetadata.contractIdentity }}
+                  argument="digest"
+                />
+              </p>
             </details>
           </section>
           <button type="button" onClick={close}>

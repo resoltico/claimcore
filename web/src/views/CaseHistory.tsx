@@ -1,3 +1,4 @@
+import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import type { Notice } from "../protocol/notices";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
@@ -16,6 +17,18 @@ const historyPage = (response: ServiceResponse<"case.history">) =>
       }
     : null;
 type HistoryPage = NonNullable<ReturnType<typeof historyPage>>;
+const ReceiptAttribution = ({ operationId, actor }: { operationId: string; actor: string }) => {
+  const p = usePresentation();
+  return (
+    <p>
+      <IdentifierMessage
+        id="ui.receiptAttribution"
+        values={{ operationId, actor, state: p.text("ui.accepted") }}
+        argument="operationId"
+      />
+    </p>
+  );
+};
 const HistoryReceipt = ({
   receipt,
   fields,
@@ -37,13 +50,7 @@ const HistoryReceipt = ({
           timestamp: receipt.recordedAt,
         })}
       </summary>
-      <p>
-        {p.text("ui.receiptAttribution", {
-          operationId: receipt.operationId,
-          actor: receipt.recordedBy,
-          state: p.text("ui.accepted"),
-        })}
-      </p>
+      <ReceiptAttribution operationId={receipt.operationId} actor={receipt.recordedBy} />
       <HistoryChanges
         receipt={receipt}
         previous={previous}
@@ -53,9 +60,15 @@ const HistoryReceipt = ({
       <ReceiptFields
         subject={receipt.subject}
         fields={fields}
-        context={p.text("ui.historyContext", {
-          operationId: receipt.operationId,
-        })}
+        context={
+          <IdentifierMessage
+            id="ui.historyContext"
+            values={{
+              operationId: receipt.operationId,
+            }}
+            argument="operationId"
+          />
+        }
       />
     </details>
   );
@@ -92,13 +105,7 @@ const Entry = ({
           timestamp: change.recordedAt,
         })}
       </p>
-      <p>
-        {p.text("ui.receiptAttribution", {
-          operationId: change.operationId,
-          actor: change.recordedBy,
-          state: p.text("ui.accepted"),
-        })}
-      </p>
+      <ReceiptAttribution operationId={change.operationId} actor={change.recordedBy} />
     </>
   );
 };

@@ -17,6 +17,9 @@ it("keeps Arabic-formatted numbers and references LTR while names retain automat
     const field = productMetadata.catalog.fields.find((candidate) => candidate.name === name)!;
     const view = render(<BusinessValue value={value} field={field} />);
     expect(view.container.querySelector("bdi")).toHaveAttribute("dir", direction);
+    expect(view.container.querySelector("bdi")?.classList.contains("identifier-value")).toBe(
+      name === "caseReference",
+    );
     if (name === "claimedAmount") {
       expect(view.container.querySelector("bdi")).toHaveTextContent("١٢");
     }

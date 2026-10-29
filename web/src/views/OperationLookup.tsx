@@ -1,3 +1,4 @@
+import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
@@ -28,11 +29,15 @@ const ReceiptView = ({
   return (
     <>
       <p>
-        {p.text("ui.observedReceipt", {
-          operationId: receipt.operationId,
-          act: p.term("act", receipt.subject.act),
-          actor: receipt.recordedBy,
-        })}
+        <IdentifierMessage
+          id="ui.observedReceipt"
+          values={{
+            operationId: receipt.operationId,
+            act: p.term("act", receipt.subject.act),
+            actor: receipt.recordedBy,
+          }}
+          argument="operationId"
+        />
       </p>
       {receipt.subject.kind === "AUTHORITY" ? (
         <p>
@@ -45,9 +50,15 @@ const ReceiptView = ({
         <ReceiptFields
           subject={receipt.subject}
           fields={definition.catalog.fields}
-          context={p.text("ui.observedContext", {
-            operationId: receipt.operationId,
-          })}
+          context={
+            <IdentifierMessage
+              id="ui.observedContext"
+              values={{
+                operationId: receipt.operationId,
+              }}
+              argument="operationId"
+            />
+          }
         />
       )}
     </>
@@ -86,7 +97,7 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
       >
         <TextField value={operationId} onChange={setOperationId} isInvalid={invalid}>
           <Label>{p.text("ui.exactOperationId")}</Label>
-          <Input ref={input} autoComplete="off" dir="ltr" />
+          <Input ref={input} className="identifier-value" autoComplete="off" dir="ltr" />
           {!invalid || message === null ? null : (
             <FieldError>
               <NoticeView value={message} />

@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../components/IdentifierValue";
 import { useCallback, useEffect, useRef } from "react";
 import type { Notice } from "../protocol/notices";
 import { type ServiceResponse } from "../api/service";
@@ -25,7 +26,9 @@ const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
           key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseReference : ""}`}
         >
           {p.term("role", grant.role)} · {p.term("scope", grant.scope.kind)}{" "}
-          {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
+          {grant.scope.kind === "CASE" ? (
+            <IdentifierValue value={grant.scope.caseReference} />
+          ) : null}
         </li>
       ))}
     </ul>

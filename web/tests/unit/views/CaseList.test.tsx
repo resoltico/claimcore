@@ -3,6 +3,7 @@ import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
+import { navigate } from "../../../src/routing/navigation";
 import { context, response, unavailable } from "../../support/service-ui.fixtures";
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
@@ -17,6 +18,52 @@ const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
     nextCursor,
   });
 afterEach(() => vi.unstubAllGlobals());
+it("opens an exact reference match using ASCII case identity", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page(false, null)));
+  navigate("/cases?q=advised-case", true);
+  const select = vi.fn();
+  render(<CaseList onOpen={vi.fn()} onSelect={select} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Open ADVISED-CASE" }));
+  expect(select).toHaveBeenCalledWith("ADVISED-CASE");
+});
+it("does not expand non-ASCII search text into a reference identity", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      response("case.list", "SUCCEEDED", {
+        items: [caseSummaryInput({ caseReference: "S" })],
+        offers: [],
+        nextCursor: null,
+      }),
+    ),
+  );
+  navigate("/cases?q=%C5%BF", true);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByRole("link", { name: "S" });
+  expect(screen.queryByRole("button", { name: "Open S" })).toBeNull();
+});
+it.each([
+  ["open-undecided", "Open and undecided"],
+  ["decided-unpaid", "Decided and unpaid"],
+  ["recent", "Recently changed"],
+  ["closed", "Closed"],
+  ["voided", "Voided"],
+  ["all", "All"],
+])("names the empty %s saved worklist", async (view, label) => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        response("case.list", "SUCCEEDED", { items: [], offers: [], nextCursor: null }),
+      ),
+  );
+  navigate(`/cases?view=${view}`, true);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByText(`No cases in the “${label}” view.`);
+  expect(screen.queryByText("No accessible cases returned.")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Clear filters" }) !== null).toBe(view !== "all");
+});
 it("uses only the page snapshot's offers and clears advice while a fresh page loads", async () => {
   let finish: (value: Response) => void = () => undefined;
   const fetch = vi

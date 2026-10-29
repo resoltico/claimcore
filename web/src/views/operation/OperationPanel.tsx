@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../../components/IdentifierValue";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
@@ -35,6 +36,26 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
       : []),
   ];
 };
+const PendingMetadata = ({ metadata }: { metadata: ReturnType<typeof pendingMetadata> }) => {
+  const p = usePresentation();
+  return (
+    <dl>
+      {metadata.map(([name, value]) => (
+        <div key={name}>
+          <dt>{p.fieldLabel(name)}</dt>
+          <dd>
+            {["caseReference", "operationId"].includes(name) ? (
+              <IdentifierValue value={value} />
+            ) : (
+              <bdi>{value}</bdi>
+            )}{" "}
+            <CopyValue label={p.fieldLabel(name)} value={value} />
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
 const UnknownOperation = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -58,16 +79,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
           }}
         />
       </h2>
-      <dl>
-        {metadata.map(([name, value]) => (
-          <div key={name}>
-            <dt>{p.fieldLabel(name)}</dt>
-            <dd>
-              <bdi>{value}</bdi> <CopyValue label={p.fieldLabel(name)} value={value} />
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <PendingMetadata metadata={metadata} />
       <p>{p.text("ui.retryExactDescription")}</p>
       {notice === null ? null : (
         <p>

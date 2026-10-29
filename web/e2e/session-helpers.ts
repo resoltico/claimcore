@@ -183,16 +183,20 @@ export const expectHostFailure = (reply: BrowserReply, status: number, code: str
 
 const awaitOidcReturn = async (
   page: Page,
-  applicationOrigin: string,
+  requestedAddress: URL,
   callbackStatus: () => number,
   submitted: ReturnType<typeof observeOidcSubmission>,
   issuerOrigin: string,
 ): Promise<void> => {
+  const applicationOrigin = requestedAddress.origin;
+  const requestedPath = requestedAddress.pathname + requestedAddress.search;
   try {
-    await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
-      timeout: 10_000,
-      waitUntil: "commit",
-    });
+    await page.waitForURL(
+      (url) =>
+        url.origin === applicationOrigin &&
+        (url.pathname === "/" || url.pathname + url.search === requestedPath),
+      { timeout: 10_000, waitUntil: "commit" },
+    );
   } catch {
     const current = new URL(page.url());
     let location = "other";
@@ -311,7 +315,8 @@ export const login = async (
     return;
   }
   await progress("login-anon");
-  const applicationOrigin = new URL(page.url()).origin;
+  const requestedAddress = new URL(page.url());
+  const applicationOrigin = requestedAddress.origin;
   const owner = await syntheticCredentials(username);
   await awaitLoginAdmission(page, signIn, applicationOrigin);
   await page.locator('input[name="username"]').or(authenticated).first().waitFor();
@@ -326,7 +331,7 @@ export const login = async (
   const callbackStatus = trackOidcCallback(page, applicationOrigin);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await progress("oidc-submitted");
-  await awaitOidcReturn(page, applicationOrigin, callbackStatus, submitted, issuerOrigin);
+  await awaitOidcReturn(page, requestedAddress, callbackStatus, submitted, issuerOrigin);
   await progress("oidc-callback-returned");
   await expect(authenticated).toBeVisible();
   await progress("login-ready");

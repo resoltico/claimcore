@@ -325,6 +325,81 @@ let private layoutControls () =
             (result |> List.forall ((=) "ERROR"))
             "Only the existing generic category may survive rejected marker text"
 
+let private targetGeometryControls () =
+    let row =
+        "    Error: E2E_TARGET_GEOMETRY tag=BUTTON width=23.00 height=23.50 min=24"
+
+    let geometry text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.targetGeometry
+
+    Expect.equal
+        (geometry (row + "\n" + row))
+        [ "BUTTON:23.00x23.50:min24" ]
+        "Only distinct whitelisted tag and bounded geometry survive"
+
+    for tag in
+        [
+            "BUTTON"
+            "A"
+            "INPUT"
+            "SELECT"
+            "TEXTAREA"
+            "SUMMARY"
+            "DIV"
+            "SPAN"
+            "OTHER"
+        ] do
+        Expect.equal
+            (geometry (row.Replace("BUTTON", tag)))
+            [ tag + ":23.00x23.50:min24" ]
+            "Every closed public tag retains its safe geometry"
+
+    Expect.equal
+        (geometry ("\u001b[31m" + row + "\u001b[0m"))
+        (geometry row)
+        "Terminal color never becomes public geometry"
+
+    Expect.equal
+        (geometry "E2E_TARGET_GEOMETRY tag=SELECT width=9999.99 height=0.00 min=44\r\n")
+        [ "SELECT:9999.99x0.00:min44" ]
+        "Bare continuation markers retain only bounded finite decimals and fixed minima"
+
+    for invalid in
+        [
+            "private-token " + row
+            row + " private-token https://private.invalid/token"
+            row.Replace("BUTTON", "private-token")
+            row.Replace("width=23.00", "width=-1.00")
+            row.Replace("width=23.00", "width=10000.00")
+            row.Replace("width=23.00", "width=01.00")
+            row.Replace("width=23.00", "width=NaN")
+            row.Replace("height=23.50", "height=Infinity")
+            row.Replace("height=23.50", "height=1e3")
+            row.Replace("height=23.50", "height=23.500")
+            row.Replace("height=23.50", "height=23,50")
+            row.Replace("min=24", "min=23")
+            row.Replace("min=24", "min=44private-token")
+            row.Replace("tag=BUTTON", "tag=BUTTON\rprivate-token")
+            "    Error: E2E_TARGET_GEOMETRY_UNAVAILABLE"
+        ] do
+        Expect.isEmpty (geometry invalid) "Private, malformed and unbounded detail is omitted"
+
+    let many =
+        [ 1..8 ]
+        |> List.map (fun value -> row.Replace("width=23.00", $"width={value}.00"))
+        |> String.concat "\n"
+
+    Expect.equal
+        (geometry many)
+        [
+            "BUTTON:1.00x23.50:min24"
+            "BUTTON:2.00x23.50:min24"
+            "BUTTON:3.00x23.50:min24"
+            "BUTTON:4.00x23.50:min24"
+            "BUTTON:5.00x23.50:min24"
+        ]
+        "Public target evidence is capped at five values"
+
 let private browserMetadataControls () =
     progressControls ()
     locationControls ()
@@ -333,6 +408,7 @@ let private browserMetadataControls () =
     durationControls ()
     timeoutControls ()
     layoutControls ()
+    targetGeometryControls ()
 
 let private controls () =
     cleanupControls ()

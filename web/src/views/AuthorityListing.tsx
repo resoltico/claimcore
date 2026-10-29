@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../components/IdentifierValue";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
 import type { Notice } from "../protocol/notices";
@@ -14,7 +15,7 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
     <dl className="actor-summary">
       <dt>{p.text("ui.actor")}</dt>
       <dd>
-        <bdi dir="ltr">{actor.actorId}</bdi>
+        <IdentifierValue value={actor.actorId} />
       </dd>
       <dt>{p.text("ui.principal")}</dt>
       <dd>

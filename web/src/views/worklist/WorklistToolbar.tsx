@@ -3,27 +3,7 @@ import { useEffect, useState } from "react";
 import { usePresentation } from "../../presentation/context";
 import { savedViews, viewQuery, type WorklistQuery } from "../../routing/worklistQuery";
 import { WorklistFilters } from "./WorklistFilters";
-const viewLabels = {
-  "open-undecided": "ui.viewOpenUndecided",
-  "decided-unpaid": "ui.viewDecidedUnpaid",
-
-  all: "ui.viewAll",
-} as const;
-const savedLabel = (
-  p: ReturnType<typeof usePresentation>,
-  view: (typeof savedViews)[number],
-): string => {
-  switch (view) {
-    case "recent":
-      return p.term("caseOrder", "RECENT");
-    case "closed":
-      return p.term("status", "CLOSED");
-    case "voided":
-      return p.term("lifecycle", "VOIDED");
-    default:
-      return p.text(viewLabels[view]);
-  }
-};
+import { savedViewLabel } from "./savedViewLabel";
 type Props = {
   query: WorklistQuery;
   onChange: (query: WorklistQuery) => void;
@@ -104,6 +84,7 @@ const ExactLookup = ({ onSelect }: Pick<Props, "onSelect">) => {
         </label>
         <input
           id="case-lookup"
+          className="identifier-value"
           value={reference}
           onChange={(event) => {
             setReference(event.target.value);
@@ -149,7 +130,7 @@ export const WorklistToolbar = (props: Props) => {
               props.onChange(viewQuery(view));
             }}
           >
-            {savedLabel(p, view)}
+            {savedViewLabel(p, view)}
           </button>
         ))}
       </nav>

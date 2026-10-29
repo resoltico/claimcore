@@ -126,6 +126,7 @@
   "ui.viewDecidedUnpaid": "صدر قرارها ولم تُدفع",
   "ui.viewAll": "الكل",
   "ui.noCasesForView": "لا توجد ملفات تطابق طريقة العرض هذه.",
+  "ui.noCasesForSavedView": "لا توجد ملفات في طريقة العرض «{view}».",
   "ui.openExactCase": "فتح {reference}",
   "ui.moreCaseActions": "إجراءات إضافية",
   "ui.caseStewardship": "إدارة الملف",

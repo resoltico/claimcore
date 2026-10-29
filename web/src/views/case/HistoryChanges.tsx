@@ -9,6 +9,35 @@ type Props = {
   fields: CatalogDocument["fields"];
   loadPrevious?: (() => void) | undefined;
 };
+type LiveLifecycle = Extract<
+  CaseReceipt["subject"]["snapshot"],
+  { kind: "DISCLOSED" }
+>["view"]["kind"];
+const LifecycleChange = ({
+  before,
+  after,
+}: {
+  before: LiveLifecycle | undefined;
+  after: LiveLifecycle;
+}) => {
+  const p = usePresentation();
+  return (
+    <dl>
+      <dt>{p.text("input.lifecycle.label")}</dt>
+      <dd>
+        <span>
+          {p.text("ui.before", {
+            value: before === undefined ? p.text("ui.notRecorded") : p.term("lifecycle", before),
+          })}
+        </span>
+        <span className="review-arrow" aria-hidden="true">
+          {" → "}
+        </span>
+        <span>{p.text("ui.after", { value: p.term("lifecycle", after) })}</span>
+      </dd>
+    </dl>
+  );
+};
 const DisclosedChanges = ({ receipt, previous, fields }: Omit<Props, "loadPrevious">) => {
   const p = usePresentation();
   const after = receipt.subject.snapshot;
@@ -27,20 +56,7 @@ const DisclosedChanges = ({ receipt, previous, fields }: Omit<Props, "loadPrevio
   const lifecycleChanged = prior?.kind !== after.view.kind;
   return (
     <>
-      {lifecycleChanged ? (
-        <dl>
-          <dt>{p.text("input.lifecycle.label")}</dt>
-          <dd>
-            <span>
-              {p.text("ui.before", {
-                value: prior === null ? p.text("ui.notRecorded") : p.term("lifecycle", prior.kind),
-              })}
-            </span>
-            <span aria-hidden="true"> → </span>
-            <span>{p.text("ui.after", { value: p.term("lifecycle", after.view.kind) })}</span>
-          </dd>
-        </dl>
-      ) : null}
+      {lifecycleChanged ? <LifecycleChange before={prior?.kind} after={after.view.kind} /> : null}
       {changes.length === 0 && !lifecycleChanged ? <p>{p.text("ui.historyNoChanges")}</p> : null}
       <dl className="review-values history-changes">
         {changes.map((change) => (
@@ -48,7 +64,9 @@ const DisclosedChanges = ({ receipt, previous, fields }: Omit<Props, "loadPrevio
             <dt>{p.fieldLabel(change.field.name)}</dt>
             <dd>
               <BusinessValue value={change.before} field={change.field} context="ui.before" />
-              <span aria-hidden="true"> → </span>
+              <span className="review-arrow" aria-hidden="true">
+                {" → "}
+              </span>
               <BusinessValue value={change.after} field={change.field} context="ui.after" />
             </dd>
           </div>

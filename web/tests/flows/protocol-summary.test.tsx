@@ -31,6 +31,15 @@ it("localizes generated enum tokens while preserving identical authored principa
     }),
   ).toBeVisible();
   expect(
+    screen
+      .getByText("10000000-0000-4000-8000-000000000001", { exact: true })
+      .classList.contains("identifier-value"),
+  ).toBe(true);
+  expect(screen.getByText("10000000-0000-4000-8000-000000000001", { exact: true })).toHaveAttribute(
+    "dir",
+    "ltr",
+  );
+  expect(
     screen.getAllByText("HUMAN", {
       exact: true,
     }),

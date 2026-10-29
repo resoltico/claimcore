@@ -126,6 +126,7 @@
   "ui.viewDecidedUnpaid": "Decided and unpaid",
   "ui.viewAll": "All",
   "ui.noCasesForView": "No cases match this view.",
+  "ui.noCasesForSavedView": "No cases in the “{view}” view.",
   "ui.openExactCase": "Open {reference}",
   "ui.moreCaseActions": "More actions",
   "ui.caseStewardship": "Case stewardship",

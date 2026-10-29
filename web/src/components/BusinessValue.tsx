@@ -33,13 +33,22 @@ export const BusinessValue = ({
   return (
     <span>
       {context === undefined ? (
-        <bdi dir={valueDirection(field)}>{display}</bdi>
+        <bdi
+          dir={valueDirection(field)}
+          className={field.name === "caseReference" ? "identifier-value" : undefined}
+        >
+          {display}
+        </bdi>
       ) : (
         renderIsolatedValue(
           p,
           context,
           { value: display },
-          <bdi key="value" dir={valueDirection(field)}>
+          <bdi
+            key="value"
+            dir={valueDirection(field)}
+            className={field.name === "caseReference" ? "identifier-value" : undefined}
+          >
             {display}
           </bdi>,
           "value",

@@ -1,3 +1,4 @@
+import { IdentifierMessage } from "./IdentifierMessage";
 import type { Notice } from "../protocol/notices";
 import { usePresentation } from "./context";
 import type { MessageArgs, MessageKey, Values } from "./types";
@@ -17,7 +18,15 @@ export const NoticeView = ({ value }: { value: Notice }) => {
   const p = usePresentation();
   return (
     <>
-      {p.notice(value)}
+      {value.kind === "accepted" ? (
+        <IdentifierMessage
+          id="notice.accepted"
+          values={{ operationId: value.operationId }}
+          argument="operationId"
+        />
+      ) : (
+        p.notice(value)
+      )}
       {value.kind === "local" && value.reason === "definitionMismatch" ? (
         <button
           type="button"

@@ -140,8 +140,14 @@ it("shows current fields, server act labels, full expandable history and retryab
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(current, "CLOSE");
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
-  await user.click((await screen.findAllByText(/Open a case · revision/u))[0]!);
-  expect(screen.getAllByText(/10000000-0000-4000-8000-000000000001/u)).toHaveLength(3);
+  const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
+  await user.click(entrySummary);
+  const entry = entrySummary.closest("details");
+  expect(entry).toHaveTextContent(
+    "Operation 10000000-0000-4000-8000-000000000001 · recorded by 10000000-0000-4000-8000-000000000001 · accepted",
+  );
+  expect(entry?.querySelector("p .identifier-value")?.textContent).toBe(operationId);
+  expect(entry?.querySelector("h2 .identifier-value")?.textContent).toBe(operationId);
   expect(document.body).toHaveTextContent("accepted");
   await user.click(getButton("Load more history"));
   await user.click(getButton("Back to cases"));

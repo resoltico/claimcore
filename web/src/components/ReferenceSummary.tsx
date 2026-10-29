@@ -1,3 +1,4 @@
+import { IdentifierValue } from "./IdentifierValue";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import { renderIsolatedValue } from "../presentation/messages";
@@ -15,11 +16,7 @@ export const ReferenceSummary = <K extends ReferenceMessage>({
   values: MessageArgs[K];
 }) => {
   const p = usePresentation();
-  const reference = (
-    <bdi key="reference" dir="ltr">
-      {values.reference}
-    </bdi>
-  );
+  const reference = <IdentifierValue key="reference" value={values.reference} />;
   return (
     <span>
       {renderIsolatedValue(p, id, values, reference)}

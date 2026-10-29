@@ -18,6 +18,9 @@ type CatalogFieldProps = {
   disabled?: boolean;
   onChange: (value: string) => void;
 };
+const referenceAppearance = (field: FieldCatalogEntry) =>
+  field.name === "caseReference" ? { className: "identifier-value" } : {};
+
 export const CatalogField = ({
   field,
   value,
@@ -50,6 +53,7 @@ export const CatalogField = ({
       <Label>{p.fieldLabel(field.name)}</Label>
       <Input
         name={inputName ?? field.name}
+        {...referenceAppearance(field)}
         data-field-name={field.name}
         type="text"
         inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}

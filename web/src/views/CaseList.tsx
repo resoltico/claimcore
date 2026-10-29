@@ -15,6 +15,7 @@ import {
 } from "../routing/worklistQuery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { CaseRow } from "./worklist/CaseRow";
+import { savedViewLabel } from "./worklist/savedViewLabel";
 type Props = { onSelect: (caseReference: string) => void; onOpen: () => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
@@ -54,11 +55,34 @@ const WorklistColumns = () => {
   );
 };
 type Page = ReturnType<typeof useWorklist>;
+const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
+  const p = usePresentation();
+  const emptyMessage =
+    page.query.view === undefined
+      ? p.text("ui.noCasesForView")
+      : p.text("ui.noCasesForSavedView", { view: savedViewLabel(p, page.query.view) });
+  return (
+    <p>
+      {emptyMessage}{" "}
+      {filtered ? (
+        <button
+          type="button"
+          onClick={() => {
+            page.change({});
+          }}
+        >
+          {p.text("ui.clearFilters")}
+        </button>
+      ) : null}
+    </p>
+  );
+};
 const WorklistFeedback = ({ page }: { page: Page }) => {
   const p = usePresentation();
   const filtered = Object.keys(page.query).some(
     (key) => key !== "view" || page.query.view !== "all",
   );
+  const customEmpty = filtered || page.query.view !== undefined;
   return (
     <>
       {page.message === null ? null : (
@@ -77,22 +101,12 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
       {page.page !== null && !page.loading && page.message === null ? (
         <>
           <PageStatus
-            empty={page.items.length === 0}
+            empty={page.items.length === 0 && !customEmpty}
             cursor={page.cursor}
             emptyMessage="ui.noAccessibleCases"
           />
-          {page.items.length === 0 && filtered ? (
-            <p>
-              {p.text("ui.noCasesForView")}{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  page.change({});
-                }}
-              >
-                {p.text("ui.clearFilters")}
-              </button>
-            </p>
+          {page.items.length === 0 && customEmpty ? (
+            <WorklistEmpty page={page} filtered={filtered} />
           ) : null}
         </>
       ) : null}
@@ -108,10 +122,13 @@ const WorklistLoading = ({ page }: { page: Page }) => {
     </>
   ) : null;
 };
+const referenceSearchKey = (text: string | undefined) =>
+  text?.replace(/[a-z]/gu, (letter) => letter.toUpperCase());
 const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
   const p = usePresentation();
   const exact =
-    page.items.length === 1 && page.query.text === page.items[0]?.caseReference
+    page.items.length === 1 &&
+    referenceSearchKey(page.query.text) === referenceSearchKey(page.items[0]?.caseReference)
       ? (page.items[0] ?? null)
       : null;
   return (

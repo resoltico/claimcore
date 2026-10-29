@@ -126,6 +126,7 @@
   "ui.viewDecidedUnpaid": "Ar lēmumu, neapmaksātas",
   "ui.viewAll": "Visas",
   "ui.noCasesForView": "Šim skatam nav atbilstošu lietu.",
+  "ui.noCasesForSavedView": "Skatā “{view}” nav lietu.",
   "ui.openExactCase": "Atvērt {reference}",
   "ui.moreCaseActions": "Citas darbības",
   "ui.caseStewardship": "Lietas pārvaldība",

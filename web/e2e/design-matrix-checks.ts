@@ -303,7 +303,21 @@ export const checkFrame = async (page: Page, dimension: Dimension) => {
   await expectAccessible(page);
   await compactActionGeometry(page, dimension);
   expect(await page.evaluate(factCardReadability)).toEqual([]);
-  expect(await page.evaluate(smallTargets)).toEqual([]);
+  const targets = await page.evaluate(smallTargets);
+  const tags = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA", "SUMMARY", "DIV", "SPAN"]);
+  const finiteDimension = (value: number) =>
+    Number.isFinite(value) && value >= 0 && value <= 9999.99;
+  const geometry = targets
+    .filter(
+      ({ width, height, minimum }) =>
+        finiteDimension(width) && finiteDimension(height) && (minimum === 24 || minimum === 44),
+    )
+    .slice(0, 5)
+    .map(
+      ({ tag, width, height, minimum }) =>
+        `E2E_TARGET_GEOMETRY tag=${tags.has(tag) ? tag : "OTHER"} width=${width.toFixed(2)} height=${height.toFixed(2)} min=${minimum}`,
+    );
+  expect(targets, geometry.join("\n") || "E2E_TARGET_GEOMETRY_UNAVAILABLE").toEqual([]);
   await noHorizontalOverflow(page, dimension.zoom === undefined ? "narrow" : "zoom");
   if (dimension.language === "en-XA" || dimension.zoom !== undefined) {
     expect(await page.evaluate(clippedText)).toEqual([]);

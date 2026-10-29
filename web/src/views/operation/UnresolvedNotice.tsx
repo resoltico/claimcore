@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../../components/IdentifierValue";
 import { useCredential } from "../../session/SessionContext";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { unresolvedOperation } from "./unresolvedOperation";
@@ -51,7 +52,7 @@ export const UnresolvedNotice = () => {
         <>
           <p>{p.text("notice.outcomeUnknown")}</p>
           <p>
-            <bdi>{operation.operationId}</bdi>
+            <IdentifierValue value={operation.operationId} />
             {operation.subject === "CASE"
               ? p.actLabel(operation.act)
               : p.authorityLabel(operation.act)}

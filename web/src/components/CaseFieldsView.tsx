@@ -1,5 +1,5 @@
 import { caseFieldValue } from "../protocol/caseFields";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { CaseFields, CatalogDocument } from "../api/service";
 import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
@@ -13,7 +13,7 @@ type CaseFieldsViewProps = {
   values: CaseFields;
   revision: number;
   fields: ReadonlyArray<FieldCatalogEntry>;
-  context: string;
+  context: ReactNode;
 };
 const acceptedSummary = (
   p: Presentation,

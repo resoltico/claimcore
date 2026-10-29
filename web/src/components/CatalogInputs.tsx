@@ -111,6 +111,10 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     </fieldset>
   );
 };
+const scalarInputAppearance = (input: CatalogInput) =>
+  input.source === "OPERATION_IDENTITY"
+    ? { className: "identifier-value", dir: "ltr" }
+    : { dir: "auto" };
 const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
@@ -140,7 +144,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         name={path}
         type="text"
         autoComplete="off"
-        dir="auto"
+        {...scalarInputAppearance(input)}
         value={String(props.values[path] ?? "")}
         disabled={props.disabled}
         aria-invalid={props.fieldErrors[path] !== undefined || undefined}
