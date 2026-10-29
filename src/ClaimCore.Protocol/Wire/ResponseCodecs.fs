@@ -168,7 +168,7 @@ module ResponseCodecs =
         |> field
             "acts"
             (fun (acts, _, _) -> acts)
-            (list 12 (VocabularyCodec.create CaseActKind.vocabulary))
+            (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
         |> optionalField "correction" (fun (_, correction, _) -> correction) correctionAdvice
         |> field "history" (fun (_, _, history) -> history) (list 2 historyDetail)
         |> build
