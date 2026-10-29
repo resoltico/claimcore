@@ -43,3 +43,29 @@ let complete arguments =
             prepare (remaining - 1) (arguments @ additions)
 
     prepare Inventory.fieldCount arguments
+
+let private queryInput (input: CatalogDerivedInput) =
+    let key = InteractionInput.key input.Name
+    let sample = Map.tryFind key Inventory.cliSamples
+    let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+
+    match input.Argument, sample with
+    | CatalogArgument.Implicit, _ -> []
+    | _, None when input.Binding.Required && input.Binding.Default.IsNone ->
+        failtestf "Independent CLI inventory needs a sample for required input %s" key
+    | _, None -> []
+    | CatalogArgument.Operand, Some value -> [ value ]
+    | CatalogArgument.Named, Some value ->
+        match input.Atom with
+        | CatalogAtom.Switch(off, on) ->
+            if value = off then
+                []
+            elif value = on then
+                [ flag ]
+            else
+                failtestf "Invalid independent switch sample for %s" key
+        | _ -> [ flag; value ]
+
+let queryArguments operation =
+    let inputs, _ = CommandGrammar.derive operation
+    CommandGrammar.words operation @ (inputs |> List.collect queryInput)

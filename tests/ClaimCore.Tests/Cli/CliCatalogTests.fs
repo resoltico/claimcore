@@ -149,7 +149,7 @@ let tests =
     testList
         "CLI catalog behavior"
         [
-            testCase "typed CLI produces all thirty independently captured frames" oracle
+            testCase "typed CLI produces all independently captured frames" oracle
             testCase "prepared frames enforce exact and multibyte request size bounds" byteLimits
             testCase "correction replacement retains authored values" replacement
             testCase "a dotted unknown verb cannot alias a known verb" (fun () ->

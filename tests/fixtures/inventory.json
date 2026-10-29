@@ -429,5 +429,18 @@
     "wire-request-examples.json",
     "wire-response-examples.json",
     "cli-frames.tsv"
-  ]
+  ],
+  "cliSamples": {
+    "caseReference": "SYNTHETIC",
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "actorId": "10000000-0000-4000-8000-000000000001",
+    "limit": "5",
+    "cursor": "synthetic",
+    "detail": "FULL",
+    "lifecycle": "ACTIVE",
+    "status": "OPENED",
+    "progress": "UNDECIDED",
+    "text": "synthetic",
+    "order": "REFERENCE"
+  }
 }

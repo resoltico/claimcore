@@ -34,6 +34,16 @@ let private expectedExit =
     | _ -> failtest "The authored reply requires a declared outcome kind."
 
 let private examples () =
+    for definition in Api.definitions do
+        let work =
+            definition.Accept
+                { new IEndpointVisitor<System.Action> with
+                    member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
+                        System.Action(fun () -> ResponseExamples.defaultReply endpoint |> ignore)
+                }
+
+        work.Invoke()
+
     let path =
         Path.Combine(RepositoryRoot.find (), "tests/fixtures/wire-response-examples.json")
 

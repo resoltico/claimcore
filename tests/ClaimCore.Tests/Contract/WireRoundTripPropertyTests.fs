@@ -51,31 +51,12 @@ let private endpointProperty response (endpoint: Endpoint<'Input, 'Output>) =
     else
         codecProperty false endpoint.Input seeds.Value.Requests[endpoint.Token]
 
-let private actorProperty response actor =
-    match actor with
-    | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
-        endpointProperty response Api.operationPreview
-    | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
-        endpointProperty response Api.operationExecute
-    | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> endpointProperty response Api.caseGet
-    | (ActorEndpoint.Query QueryEndpoint.CaseList) -> endpointProperty response Api.caseList
-    | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> endpointProperty response Api.caseHistory
-    | (ActorEndpoint.Query QueryEndpoint.Observe) -> endpointProperty response Api.operationObserve
-    | (ActorEndpoint.Query QueryEndpoint.Resolve) -> endpointProperty response Api.operationResolve
-    | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-        endpointProperty response Api.authorityList
-    | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-        endpointProperty response Api.authorityGrants
-    | (ActorEndpoint.Query QueryEndpoint.Context) -> endpointProperty response Api.context
-
-let private propertyFor response (route: ClaimCore.Protocol.Route) =
-    match route.Id with
-    | EndpointId.Host HostEndpoint.Session -> endpointProperty response Api.session
-    | EndpointId.Host HostEndpoint.Logout -> endpointProperty response Api.logout
-    | EndpointId.Actor actor -> actorProperty response actor
-
-let private requestProperty route = propertyFor false route
-let private replyProperty route = propertyFor true route
+let private propertyFor response (definition: IEndpointDefinition) =
+    definition.Accept
+        { new IEndpointVisitor<Property<bool>> with
+            member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
+                endpointProperty response endpoint
+        }
 
 let private closedUnionCoverage (source: Seeds) =
     let missing =
@@ -145,10 +126,12 @@ let tests =
                     (Inventory.tokens "endpoints" |> Set.ofList)
                     "Every inventoried endpoint has authored reply seeds")
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
-            for endpoint in Api.all do
+            for definition in Api.definitions do
+                let endpoint = ClaimCore.Protocol.Route.ofDefinition definition
+
                 testCase (Api.id endpoint + " request DTO property") (fun () ->
-                    run (wireName endpoint false) (requestProperty endpoint))
+                    run (wireName endpoint false) (propertyFor false definition))
 
                 testCase (Api.id endpoint + " reply DTO property") (fun () ->
-                    run (wireName endpoint true) (replyProperty endpoint))
+                    run (wireName endpoint true) (propertyFor true definition))
         ]
