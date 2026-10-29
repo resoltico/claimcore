@@ -1,10 +1,8 @@
 module ClaimCore.Tests.CaseListCommandTests
 
 open System
-open System.Diagnostics
 open System.IO
 open System.Text
-open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
@@ -81,36 +79,18 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
 
     code, output.ToArray(), errors.ToArray(), List.ofSeq calls
 
-let private parseCsv bytes =
-    let start =
-        ProcessStartInfo(
-            "python3",
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        )
+let private parseCsv (bytes: byte array) =
+    use input = new StringReader(Encoding.UTF8.GetString bytes)
+    use parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(input)
+    parser.SetDelimiters [| "," |]
+    parser.HasFieldsEnclosedInQuotes <- true
+    parser.TrimWhiteSpace <- false
+    let rows = ResizeArray<string list>()
 
-    start.ArgumentList.Add "-c"
+    while not parser.EndOfData do
+        rows.Add(parser.ReadFields() |> nonNull |> Array.toList)
 
-    start.ArgumentList.Add
-        "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.buffer.read().decode('utf-8'), newline=''), strict=True)), ensure_ascii=False))"
-
-    use child = Process.Start start |> nonNull
-    child.StandardInput.Write(Encoding.UTF8.GetString(bytes: byte array))
-    child.StandardInput.Close()
-    let output = child.StandardOutput.ReadToEnd()
-    let errors = child.StandardError.ReadToEnd()
-    child.WaitForExit()
-    Expect.equal child.ExitCode 0 ("Independent RFC 4180 parser: " + errors)
-    use document = JsonDocument.Parse output
-
-    document.RootElement.EnumerateArray()
-    |> Seq.map (fun row ->
-        row.EnumerateArray()
-        |> Seq.map (fun value -> value.GetString() |> nonNull)
-        |> Seq.toList)
-    |> Seq.toList
+    List.ofSeq rows
 
 [<Tests>]
 let tests =
