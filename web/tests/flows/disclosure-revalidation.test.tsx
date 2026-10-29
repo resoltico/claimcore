@@ -88,7 +88,7 @@ for (const retainCurrent of [false, true]) {
           onAct={vi.fn()}
         />,
       );
-      await screen.findByText(fields.registration.claimantName);
+      await screen.findAllByText(fields.registration.claimantName);
       await user.selectOptions(
         screen.getByRole("combobox", {
           name: "History detail",

@@ -40,7 +40,7 @@ it("reload notice retains identity only and resolves without sending a mutation"
       name: /retry exact|send again/iu,
     }),
   ).toBeNull();
-  await userEvent.click(getButton(/^Check outcome /u));
+  await userEvent.click(getButton("Check unresolved operation"));
   expect(resolve).toHaveBeenCalledExactlyOnceWith(identity.operationId, "token");
   expect(execute).not.toHaveBeenCalled();
   expect(unresolvedOperation.read()).toBeNull();
@@ -137,7 +137,7 @@ it("resolve acceptance returns the stored receipt", async () => {
     },
   });
   render(<UnresolvedNotice />);
-  await userEvent.click(getButton(/^Check outcome /u));
+  await userEvent.click(getButton("Check unresolved operation"));
   await waitFor(() => {
     expect(unresolvedOperation.read()).toBeNull();
   });

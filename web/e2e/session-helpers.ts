@@ -7,7 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -107,6 +107,21 @@ export const expectAccessible = async (page: Page): Promise<void> => {
   if (result.violations.length === 0) {
     return;
   }
+  const diagnostics = result.violations.map((violation) => ({
+    id: violation.id,
+    nodes: violation.nodes.map((node) => ({
+      target: node.target,
+      failureSummary: node.failureSummary,
+    })),
+  }));
+  const report = test.info().outputPath("axe-violations.json");
+  await writeFile(
+    report,
+    `${JSON.stringify(diagnostics, null, 2)}
+`,
+    { mode: 0o600 },
+  );
+  await test.info().attach("axe-violations", { path: report, contentType: "application/json" });
   const ruleIds = result.violations
     .map((violation) => violation.id.replace(/[^a-zA-Z0-9]+/gu, "_").toUpperCase())
     .sort()

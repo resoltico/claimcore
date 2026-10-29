@@ -101,7 +101,7 @@ module internal TransactionPages =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND case_revision>$2 ORDER BY case_revision LIMIT $3")
+                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND ($2=0 OR case_revision<$2) ORDER BY case_revision DESC LIMIT $3")
                     [| box (CaseId.value id); box (Revision.value after); box (limit + 1) |]
                     token
 

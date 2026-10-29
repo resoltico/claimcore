@@ -1,3 +1,4 @@
+import "./workspace.css";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { UnresolvedNotice } from "./operation/UnresolvedNotice";
 import { RoutedContent } from "./RoutedContent";
@@ -32,7 +33,7 @@ const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>) => {
   }, [route, views]);
 };
 const useRouteHeading = (route: Route) => {
-  const identity = JSON.stringify(route);
+  const identity = route.screen === "cases" ? "cases" : JSON.stringify(route);
   const content = useRef<HTMLDivElement>(null);
   const focused = useRef<string | null>(null);
   useEffect(() => {
@@ -86,6 +87,51 @@ const WorkspaceStatus = ({ context }: { context: ReturnType<typeof useEndpoint<"
       )}
     </>
   );
+};
+const AcceptedToast = ({
+  route,
+  receipt,
+  close,
+}: {
+  route: Route;
+  receipt: CaseReceipt | null;
+  close: () => void;
+}) => {
+  const p = usePresentation();
+  if (
+    receipt === null ||
+    route.screen !== "case" ||
+    route.reference !== receipt.subject.caseReference
+  ) {
+    return null;
+  }
+  return (
+    <div className="success-toast" role="status">
+      {p.text("ui.caseRecorded", {
+        act: p.actLabel(receipt.subject.act),
+        revision: p.integer(receipt.subject.revision),
+      })}
+      <button type="button" onClick={close}>
+        {p.text("ui.close")}
+      </button>
+    </div>
+  );
+};
+const useNavigationLock = (locked: boolean) => {
+  useEffect(() => {
+    setNavigationLock(locked);
+    return () => {
+      setNavigationLock(false);
+    };
+  }, [locked]);
+};
+const useWorkspaceAccess = (route: Route) => {
+  const context = useEndpoint("context", {});
+  const response = context.value ?? (context.loading ? context.previous : null);
+  const views = response?.outcome.kind === "SUCCEEDED" ? response.outcome.data.views : [];
+  const active = category(route);
+  useInitialAllowedRoute(route, views);
+  return { context, response, views, active };
 };
 const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   const p = usePresentation();
@@ -155,32 +201,32 @@ const WorkspaceRoute = ({ views, noViews, ...routing }: WorkspaceRouteProps) => 
 };
 export const Dashboard = () => {
   const route = useRoute();
-  const context = useEndpoint("context", {});
+  const [accepted, setAccepted] = useState<CaseReceipt | null>(null);
+  const { context, response, views, active } = useWorkspaceAccess(route);
   const cache = useEndpointCache();
   const [locked, setLocked] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route);
-  const response = context.value ?? (context.loading ? context.previous : null);
-  const views = response?.outcome.kind === "SUCCEEDED" ? response.outcome.data.views : [];
-  const active = category(route);
-  useInitialAllowedRoute(route, views);
-  useEffect(() => {
-    setNavigationLock(locked);
-    return () => {
-      setNavigationLock(false);
-    };
-  }, [locked]);
+  useNavigationLock(locked);
   const committed = (receipt: CaseReceipt) => {
     setNavigationLock(false);
     setLocked(false);
     cache?.invalidate();
     setRefresh((value) => value + 1);
+    setAccepted(receipt);
     navigate(casePath(receipt.subject.caseReference));
   };
   return (
     <>
       <WorkspaceHeader active={active} views={views} locked={locked} />
       <UnresolvedNotice />
+      <AcceptedToast
+        route={route}
+        receipt={accepted}
+        close={() => {
+          setAccepted(null);
+        }}
+      />
       <main className="app-shell">
         <WorkspaceStatus context={context} />
         <div ref={content}>

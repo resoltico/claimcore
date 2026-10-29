@@ -70,11 +70,11 @@ it.each(["en", "lv", "ar"] as const)(
     );
     for (const name of ["registration", "decision", "payment"] as const) {
       const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
-      const select = group.querySelector("select");
+      const select = group.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(select).toHaveAccessibleName(catalogs[language]["label.action"]);
       expect(select).toHaveAccessibleDescription(catalogs[language][`group.${name}.meaning`]);
       expect(select).not.toHaveAttribute("aria-invalid");
-      expect(select).toHaveValue("KEEP");
+      expect(select.querySelector('input[value="KEEP"]')).toBeChecked();
     }
   },
 );

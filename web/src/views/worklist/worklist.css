@@ -1,0 +1,217 @@
+.worklist {
+  padding-block: var(--space-4);
+}
+.worklist-toolbar,
+.worklist-search,
+.worklist-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.worklist-search {
+  flex: 1;
+}
+.worklist-search input {
+  flex: 1;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.worklist-filters details {
+  position: relative;
+}
+.worklist-filters summary {
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.worklist-filters fieldset {
+  display: grid;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  margin: 0;
+  border: var(--border-width) solid var(--color-border);
+}
+.worklist-filters label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.saved-views {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block: var(--space-4);
+}
+.saved-views button {
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+.exact-lookup {
+  margin-block-end: var(--space-4);
+}
+.exact-lookup summary {
+  display: inline-block;
+  cursor: pointer;
+  color: var(--color-accent);
+}
+.exact-lookup form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding-block: var(--space-3);
+}
+.worklist-table {
+  display: block;
+  inline-size: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.worklist-rows {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.worklist-rows .worklist-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-block: var(--space-3);
+  background: var(--color-surface);
+}
+.worklist-row > td {
+  display: block;
+  min-inline-size: 0;
+}
+.worklist-reference {
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.reference {
+  display: inline-block;
+  min-inline-size: var(--target-minimum);
+  min-block-size: var(--target-minimum);
+  max-inline-size: 100%;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.worklist-reference .copy-value {
+  inline-size: auto;
+}
+.worklist-person {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.worklist-person small {
+  display: block;
+  color: var(--color-text-muted);
+}
+.worklist-money,
+.worklist-row time {
+  font-variant-numeric: tabular-nums;
+}
+.worklist-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.badge {
+  display: inline-block;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  background: var(--color-neutral-bg);
+}
+.worklist-columns {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.worklist-columns th {
+  text-align: start;
+  font-size: var(--text-sm);
+}
+
+.worklist-skeleton {
+  min-block-size: var(--space-7);
+  margin-block: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+.filter-sheet {
+  inline-size: 100%;
+  max-inline-size: var(--breakpoint-compact);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.sheet-overlay {
+  align-items: end;
+}
+@media (width >= 64rem) {
+  .worklist-filters details[open] fieldset {
+    position: absolute;
+    z-index: 1;
+    min-inline-size: max-content;
+    box-shadow: var(--shadow-2);
+  }
+}
+@media (width >= 64rem) {
+  .worklist-table {
+    display: table;
+  }
+  .worklist-rows {
+    display: table-row-group;
+  }
+  .worklist-columns {
+    display: table-header-group;
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .worklist-rows .worklist-row,
+  .worklist-columns tr {
+    display: table-row;
+  }
+  .worklist-row > td,
+  .worklist-columns th {
+    display: table-cell;
+    padding: var(--space-3);
+    vertical-align: top;
+    border-block-end: var(--border-width) solid var(--color-border);
+    text-align: start;
+  }
+  .worklist-columns th:first-child {
+    inline-size: 20%;
+  }
+  .worklist-columns th:nth-child(2) {
+    inline-size: 24%;
+  }
+  .worklist-reference .copy-value {
+    display: block;
+    margin-block-start: var(--space-2);
+  }
+  .worklist-badges .badge {
+    margin: var(--space-1);
+  }
+  .compact-label {
+    display: none;
+  }
+}

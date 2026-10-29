@@ -364,9 +364,16 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
             | _ -> failtest "full"
 
         Expect.equal
+            (first.Entries |> List.map revision)
+            (List.rev [ 4L .. 53L ])
+            "First FULL page contains the newest fifty accepted revisions"
+
+        Expect.isNone rest.NextCursor "The oldest page ends at opening revision"
+
+        Expect.equal
             (rest.Entries |> List.map revision)
-            [ 51L; 52L; 53L ]
-            "Continuation follows last included row"
+            [ 3L; 2L; 1L ]
+            "Newest-first continuation follows the last included revision"
 
         let! summary =
             (Service.history

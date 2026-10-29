@@ -188,10 +188,12 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 |> Map.values
                 |> Seq.choose (fun entry ->
                     match entry.Subject with
-                    | EntryTarget.Case(caseId, revision, _, _) when caseId = id && revision > after ->
+                    | EntryTarget.Case(caseId, revision, _, _) when
+                        caseId = id && (after = Revision.zero || revision < after)
+                        ->
                         Some(revision, copyEntry entry)
                     | _ -> None)
-                |> Seq.sortBy fst
+                |> Seq.sortByDescending fst
                 |> Seq.map snd
                 |> Seq.toList
 

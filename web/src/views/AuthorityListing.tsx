@@ -11,15 +11,18 @@ type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
 export const ActorSummary = ({ actor }: { actor: Actor }) => {
   const p = usePresentation();
   return (
-    <dl>
+    <dl className="actor-summary">
       <dt>{p.text("ui.actor")}</dt>
       <dd>
-        <bdi>{actor.actorId}</bdi>
+        <bdi dir="ltr">{actor.actorId}</bdi>
       </dd>
       <dt>{p.text("ui.principal")}</dt>
       <dd>
-        {p.term("principalKind", actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
-        <bdi>{actor.principal.subject}</bdi>
+        {p.term("principalKind", actor.principal.kind)} ·{" "}
+        <bdi dir="ltr" className="principal-issuer" title={actor.principal.issuer}>
+          {actor.principal.issuer}
+        </bdi>{" "}
+        · <bdi>{actor.principal.subject}</bdi>
       </dd>
       <dt>{p.text("label.enabled")}</dt>
       <dd>{p.text(actor.enabled ? "ui.yes" : "ui.no")}</dd>
@@ -61,7 +64,7 @@ export const AuthorityListing = (props: ListingProps) => {
       <h2 id="authority-actors-title" tabIndex={-1}>
         {p.text("ui.actors")}
       </h2>
-      <ul>
+      <ul className="authority-rows">
         {page.items.map((actor) => (
           <li key={actor.actorId}>
             <ActorSummary actor={actor} />

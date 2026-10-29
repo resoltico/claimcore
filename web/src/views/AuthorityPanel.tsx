@@ -1,10 +1,13 @@
+import type { ActorSummary } from "@contracts/client";
+import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
+import { ActorOperation } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { useRoute } from "../routing/useRoute";
 import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
 import { useCredential } from "../session/SessionContext";
 import { useUnresolvedOperation } from "./operation/unresolvedOperation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
@@ -73,9 +76,11 @@ const ContextStatus = ({
 const SelectedActorGrants = ({
   actorId,
   refused,
+  onActor,
 }: {
   actorId: string | null;
   refused: (notice?: Notice) => void;
+  onActor: (actor: ActorSummary) => void;
 }) =>
   actorId === null ? null : (
     <AuthorityGrants
@@ -88,6 +93,7 @@ const SelectedActorGrants = ({
         navigate("/authority", false, target?.id);
       }}
       onDisclosureRefused={refused}
+      onActor={onActor}
     />
   );
 const AuthorityDirectory = ({
@@ -96,19 +102,25 @@ const AuthorityDirectory = ({
   available,
   onSelect,
   mayReadGrants,
+  onActor,
 }: {
   selectedActorId: string | null;
   disclosure: Disclosure;
   available: boolean;
   onSelect: (id: string) => void;
   mayReadGrants: boolean;
+  onActor: (actor: ActorSummary) => void;
 }) => {
   if (!available) {
     return null;
   }
   return (
     <>
-      <SelectedActorGrants actorId={selectedActorId} refused={disclosure.refused} />
+      <SelectedActorGrants
+        actorId={selectedActorId}
+        refused={disclosure.refused}
+        onActor={onActor}
+      />
       <AuthorityListing
         mayReadGrants={mayReadGrants}
         onSelect={onSelect}
@@ -118,15 +130,7 @@ const AuthorityDirectory = ({
     </>
   );
 };
-const AuthorityWorkspace = ({
-  model,
-  disclosure,
-  disclosureAvailable,
-}: {
-  model: OperationModel;
-  disclosure: Disclosure;
-  disclosureAvailable: boolean;
-}) => {
+const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) => {
   const route = useRoute();
   const selectedActorId =
     route.screen === "authority" && route.actorId !== "" ? route.actorId : null;
@@ -134,31 +138,66 @@ const AuthorityWorkspace = ({
     navigate(actorId === null ? "/authority" : `/authority/${encodeURIComponent(actorId)}`);
   };
   const context = useAuthorityContext(disclosure);
-  const offered = productMetadata.catalog.entries
-    .filter((entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute")
-    .filter(
-      (act) =>
-        context.value?.offers.some(
-          (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === act.kind,
-        ) === true,
-    )
-    .map((act) => act.kind);
+  const offered = useMemo(
+    () =>
+      productMetadata.catalog.entries
+        .filter((entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute")
+        .filter(
+          (act) =>
+            context.value?.offers.some(
+              (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === act.kind,
+            ) === true,
+        )
+        .map((act) => act.kind),
+    [context.value],
+  );
+  const { observe } = target;
+  const onActor = useCallback(
+    (actor: ActorSummary) => {
+      observe(actor, offered);
+    },
+    [observe, offered],
+  );
+  return { selectedActorId, setSelectedActorId, context, offered, onActor };
+};
+const AuthorityWorkspace = ({
+  model,
+  disclosure,
+  disclosureAvailable,
+  target,
+}: {
+  model: OperationModel;
+  disclosure: Disclosure;
+  disclosureAvailable: boolean;
+  target: AuthorityTarget;
+}) => {
+  const { selectedActorId, setSelectedActorId, context, offered, onActor } = useAuthorityWorkspace(
+    disclosure,
+    target,
+  );
   return (
     <>
-      <OperationPanel
-        model={model}
-        current={null}
-        offered={offered}
-        disclosureAvailable={disclosureAvailable}
-      />
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      <AuthorityDirectory
-        selectedActorId={selectedActorId}
-        disclosure={disclosure}
-        available={disclosureAvailable}
-        onSelect={setSelectedActorId}
-        mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
-      />
+      <div className="authority-workspace">
+        <div>
+          <AuthorityDirectory
+            selectedActorId={selectedActorId}
+            disclosure={disclosure}
+            available={disclosureAvailable}
+            onSelect={setSelectedActorId}
+            mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
+            onActor={onActor}
+          />
+        </div>
+        <section className="authority-editor">
+          <ActorOperation
+            model={model}
+            target={target}
+            offered={offered}
+            available={disclosureAvailable}
+          />
+        </section>
+      </div>
     </>
   );
 };
@@ -183,10 +222,11 @@ type RecordedAuthority = { credential: string; id: string } | null;
 type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
 type AuthorityLayoutProps = {
   model: OperationModel;
+  target: AuthorityTarget;
   disclosure: Disclosure;
   recorded: RecordedAuthority;
-  onClose: () => void;
   disclosureAvailable: boolean;
+  onClose: () => void;
 };
 const AuthorityTitle = ({ selected, available }: { selected: boolean; available: boolean }) => {
   const p = usePresentation();
@@ -228,6 +268,7 @@ const AuthorityLayout = ({
   recorded,
   onClose,
   disclosureAvailable,
+  target,
 }: AuthorityLayoutProps) => {
   const route = useRoute();
   const selected = route.screen === "authority" && route.actorId !== "";
@@ -251,6 +292,7 @@ const AuthorityLayout = ({
           model={model}
           disclosure={disclosure}
           disclosureAvailable={disclosureAvailable}
+          target={target}
         />
       ) : (
         <AuthorityUnavailable
@@ -337,12 +379,19 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
 };
 export const AuthorityPanel = (props: AuthorityPanelProps) => {
   const state = useAuthorityOperation(props);
-  const navigation = useOperationNavigation(state.model, undefined, "/authority");
+  const target = useAuthorityTarget(
+    state.model,
+    state.disclosure.revision,
+    (props.disclosureAvailable ?? true) && state.disclosure.active,
+  );
+  const navigation = useOperationNavigation(target.model, undefined, "/authority");
   return (
     <AuthorityLayout
       {...state}
-      disclosureAvailable={props.disclosureAvailable ?? true}
+      model={target.model}
+      target={target}
       onClose={navigation.close}
+      disclosureAvailable={props.disclosureAvailable ?? true}
     />
   );
 };

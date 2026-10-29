@@ -105,6 +105,6 @@ it("invalidates the pending current read synchronously on a second history refus
     latest.release(current);
     await latest.promise;
   });
-  expect(await screen.findByText(fields.registration.claimantName)).toBeVisible();
+  expect((await screen.findAllByText(fields.registration.claimantName))[0]).toBeVisible();
   expect(get).toHaveBeenCalledTimes(3);
 });

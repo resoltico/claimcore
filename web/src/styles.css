@@ -58,7 +58,6 @@ textarea:focus-visible {
   padding: var(--space-6) 0 var(--space-7);
 }
 
-.app-shell > header,
 .section-heading,
 .app-shell nav,
 .actions,
@@ -70,13 +69,8 @@ textarea:focus-visible {
   align-items: center;
 }
 
-:is(.app-shell > header, .section-heading) {
+.section-heading {
   justify-content: space-between;
-}
-
-.app-shell > header > div {
-  min-inline-size: 0;
-  overflow-wrap: anywhere;
 }
 
 .app-shell > :is(header, section),
@@ -170,7 +164,7 @@ button:disabled {
 .lookup input,
 .operation-editor select,
 .authority-panel select,
-.authority-panel input:not([type="checkbox"]),
+.authority-panel input:not([type="checkbox"], [type="radio"]),
 .copy-value textarea {
   inline-size: 100%;
   min-inline-size: 0;
@@ -354,15 +348,6 @@ button,
   opacity: 0.6;
   cursor: not-allowed;
 }
-.workspace-settings {
-  max-inline-size: 100%;
-}
-.workspace-settings[open] {
-  flex-basis: 100%;
-  padding: var(--space-4);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
 @media (width < 40rem) {
   .workspace-header nav {
     order: 3;
@@ -452,4 +437,14 @@ button,
     min-inline-size: var(--target-minimum);
     min-block-size: var(--target-minimum);
   }
+}
+
+@media (width < 64rem) {
+  .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+select {
+  block-size: var(--target-primary);
 }

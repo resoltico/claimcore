@@ -56,13 +56,8 @@ export const UnresolvedNotice = () => {
               ? p.actLabel(operation.act)
               : p.authorityLabel(operation.act)}
           </p>
-          <button
-            type="button"
-            aria-label={`${p.text("ui.checkOutcome")} ${operation.operationId}`}
-            disabled={busy}
-            onClick={() => void check()}
-          >
-            {p.text("ui.checkOutcome")}
+          <button type="button" disabled={busy} onClick={() => void check()}>
+            {p.text("ui.checkUnresolvedOperation")}
           </button>
         </>
       )}

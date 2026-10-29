@@ -9,9 +9,32 @@ const fieldControl = (target: HTMLElement | string): HTMLElement => {
     screen.getByLabelText(target, { exact: true })
   );
 };
+const changeChoice = (control: HTMLElement, value: string): boolean => {
+  const group = control.matches('[role="radiogroup"]')
+    ? control
+    : control.closest('[role="radiogroup"]');
+  if (group === null) {
+    return false;
+  }
+  const option = [...group.querySelectorAll<HTMLInputElement>('input[type="radio"]')].find(
+    (input) => input.value === value,
+  );
+  if (option === undefined) {
+    throw new Error(`Missing radio choice ${value}.`);
+  }
+  fireEvent.click(option);
+  return true;
+};
+const liveSegment = (control: HTMLElement, type: string): HTMLElement =>
+  (document.getElementById(control.id) ?? control).querySelector<HTMLElement>(
+    `[data-type=${type}]`,
+  )!;
 /** Exercise segmented dates through keyboard events and ordinary inputs through change events. */
 export const changeField = (target: HTMLElement | string, value: string): void => {
   const control = fieldControl(target);
+  if (changeChoice(control, value)) {
+    return;
+  }
   const segments = control.querySelectorAll<HTMLElement>("[role=spinbutton]");
   if (segments.length === 0) {
     fireEvent.change(control, { target: { value } });
@@ -34,9 +57,7 @@ export const changeField = (target: HTMLElement | string, value: string): void =
       }
     }
     if (digits !== undefined) {
-      const live = (document.getElementById(control.id) ?? control).querySelector<HTMLElement>(
-        `[data-type=${type}]`,
-      )!;
+      const live = liveSegment(control, type);
       live.focus();
       fireEvent(
         live,

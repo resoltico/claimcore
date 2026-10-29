@@ -149,7 +149,7 @@ let private summaries () =
                     | Outcome.Succeeded value -> value.Entries
                     | _ -> failtest "Reader has summary history"
 
-                match List.last entries with
+                match List.head entries with
                 | HistoryEntry.SummaryEntry entry ->
                     Expect.equal
                         row.ChangedAt

@@ -6,57 +6,67 @@ export const catalogs = { en, lv, ar } as const;
 export type MessageArgs = {
   "ui.about": Readonly<Record<string, never>>;
   "ui.accepted": Readonly<Record<string, never>>;
-  "ui.acceptedContext": { readonly operationId: string };
+  "ui.acceptedContext": { readonly "operationId": string };
   "ui.acceptedHistory": Readonly<Record<string, never>>;
   "ui.acceptedOperation": Readonly<Record<string, never>>;
   "ui.acceptedSummary": Readonly<Record<string, never>>;
   "ui.act": Readonly<Record<string, never>>;
-  "ui.actDescription": { readonly label: string; readonly meaning: string };
+  "ui.actDescription": { readonly "label": string; readonly "meaning": string };
   "ui.actor": Readonly<Record<string, never>>;
   "ui.actorGrants": Readonly<Record<string, never>>;
+  "ui.actorRequestRetained": Readonly<Record<string, never>>;
   "ui.actors": Readonly<Record<string, never>>;
-  "ui.after": { readonly value: string };
+  "ui.after": { readonly "value": string };
+  "ui.amountEntryHint": { readonly "maximumFractionDigits": string };
   "ui.authorityAction": Readonly<Record<string, never>>;
-  "ui.authorityReceipt": { readonly act: string; readonly actor: string };
+  "ui.authorityReceipt": { readonly "act": string; readonly "actor": string };
   "ui.backToActors": Readonly<Record<string, never>>;
   "ui.backToCase": Readonly<Record<string, never>>;
   "ui.backToCases": Readonly<Record<string, never>>;
-  "ui.before": { readonly value: string };
+  "ui.before": { readonly "value": string };
   "ui.calendar": Readonly<Record<string, never>>;
   "ui.canonicalCopyHint": Readonly<Record<string, never>>;
   "ui.caseDetail": Readonly<Record<string, never>>;
-  "ui.caseRow": { readonly revision: string; readonly status: string };
+  "ui.caseRecorded": { readonly "act": string; readonly "revision": string };
+  "ui.caseRow": { readonly "revision": string; readonly "status": string };
+  "ui.caseStewardship": Readonly<Record<string, never>>;
   "ui.cases": Readonly<Record<string, never>>;
   "ui.changeActDescription": Readonly<Record<string, never>>;
   "ui.changeActTitle": Readonly<Record<string, never>>;
   "ui.checkOutcome": Readonly<Record<string, never>>;
-  "ui.copied": { readonly label: string };
-  "ui.copy": { readonly label: string };
-  "ui.copyFallback": { readonly label: string };
+  "ui.checkUnresolvedOperation": Readonly<Record<string, never>>;
+  "ui.clearFilters": Readonly<Record<string, never>>;
+  "ui.close": Readonly<Record<string, never>>;
+  "ui.continueAuthorityRequest": Readonly<Record<string, never>>;
+  "ui.copied": { readonly "label": string };
+  "ui.copy": { readonly "label": string };
+  "ui.copyFallback": { readonly "label": string };
   "ui.correctionHint": Readonly<Record<string, never>>;
-  "ui.countryName": { readonly code: string; readonly name: string };
-  "ui.countryUnassigned": { readonly code: string };
+  "ui.countryName": { readonly "code": string; readonly "name": string };
+  "ui.countryUnassigned": { readonly "code": string };
   "ui.currentCase": Readonly<Record<string, never>>;
+  "ui.dateEntryHint": Readonly<Record<string, never>>;
   "ui.discardAndChange": Readonly<Record<string, never>>;
   "ui.discardAndLeave": Readonly<Record<string, never>>;
   "ui.discardUnknownDescription": Readonly<Record<string, never>>;
   "ui.displayLocale": Readonly<Record<string, never>>;
   "ui.emptyInput": Readonly<Record<string, never>>;
-  "ui.exactCaseReference": { readonly label: string };
+  "ui.exactCaseReference": { readonly "label": string };
   "ui.exactOperationId": Readonly<Record<string, never>>;
-  "ui.exactReference": { readonly label: string; readonly reference: string };
+  "ui.exactReference": { readonly "label": string; readonly "reference": string };
   "ui.fieldHelp": Readonly<Record<string, never>>;
+  "ui.filters": Readonly<Record<string, never>>;
   "ui.findCase": Readonly<Record<string, never>>;
   "ui.grantsEnd": Readonly<Record<string, never>>;
   "ui.grantsPartial": Readonly<Record<string, never>>;
-  "ui.historyContext": { readonly operationId: string };
+  "ui.historyChanges": Readonly<Record<string, never>>;
+  "ui.historyComparisonUnavailable": Readonly<Record<string, never>>;
+  "ui.historyContext": { readonly "operationId": string };
   "ui.historyDetail": Readonly<Record<string, never>>;
   "ui.historyHint": Readonly<Record<string, never>>;
-  "ui.historySummary": {
-    readonly act: string;
-    readonly revision: string;
-    readonly timestamp: string;
-  };
+  "ui.historyNoChanges": Readonly<Record<string, never>>;
+  "ui.historyPreviousNeeded": Readonly<Record<string, never>>;
+  "ui.historySummary": { readonly "act": string; readonly "revision": string; readonly "timestamp": string };
   "ui.incompleteResponse": Readonly<Record<string, never>>;
   "ui.keepEditing": Readonly<Record<string, never>>;
   "ui.language": Readonly<Record<string, never>>;
@@ -70,6 +80,7 @@ export type MessageArgs = {
   "ui.lookingUp": Readonly<Record<string, never>>;
   "ui.menu": Readonly<Record<string, never>>;
   "ui.moreActors": Readonly<Record<string, never>>;
+  "ui.moreCaseActions": Readonly<Record<string, never>>;
   "ui.moreCases": Readonly<Record<string, never>>;
   "ui.moreGrants": Readonly<Record<string, never>>;
   "ui.moreHistory": Readonly<Record<string, never>>;
@@ -78,16 +89,14 @@ export type MessageArgs = {
   "ui.noAccessibleActors": Readonly<Record<string, never>>;
   "ui.noAccessibleCases": Readonly<Record<string, never>>;
   "ui.noAccessibleHistory": Readonly<Record<string, never>>;
+  "ui.noCasesForView": Readonly<Record<string, never>>;
   "ui.noViews": Readonly<Record<string, never>>;
   "ui.notRecorded": Readonly<Record<string, never>>;
   "ui.observeOperation": Readonly<Record<string, never>>;
-  "ui.observedContext": { readonly operationId: string };
-  "ui.observedReceipt": {
-    readonly act: string;
-    readonly actor: string;
-    readonly operationId: string;
-  };
-  "ui.operationAccepted": { readonly operationId: string };
+  "ui.observedContext": { readonly "operationId": string };
+  "ui.observedReceipt": { readonly "act": string; readonly "actor": string; readonly "operationId": string };
+  "ui.openExactCase": { readonly "reference": string };
+  "ui.operationAccepted": { readonly "operationId": string };
   "ui.operationLookup": Readonly<Record<string, never>>;
   "ui.operations": Readonly<Record<string, never>>;
   "ui.pageEnd": Readonly<Record<string, never>>;
@@ -99,14 +108,10 @@ export type MessageArgs = {
   "ui.previousMonth": Readonly<Record<string, never>>;
   "ui.primary": Readonly<Record<string, never>>;
   "ui.principal": Readonly<Record<string, never>>;
-  "ui.productVersion": { readonly version: string };
+  "ui.productVersion": { readonly "version": string };
   "ui.pseudo": Readonly<Record<string, never>>;
-  "ui.receiptAttribution": {
-    readonly actor: string;
-    readonly operationId: string;
-    readonly state: string;
-  };
-  "ui.reference": { readonly label: string; readonly reference: string };
+  "ui.receiptAttribution": { readonly "actor": string; readonly "operationId": string; readonly "state": string };
+  "ui.reference": { readonly "label": string; readonly "reference": string };
   "ui.registerLabel": Readonly<Record<string, never>>;
   "ui.reloadActors": Readonly<Record<string, never>>;
   "ui.reloadCases": Readonly<Record<string, never>>;
@@ -118,7 +123,9 @@ export type MessageArgs = {
   "ui.returnToCase": Readonly<Record<string, never>>;
   "ui.returnToEdit": Readonly<Record<string, never>>;
   "ui.reviewDescription": Readonly<Record<string, never>>;
-  "ui.revision": { readonly revision: string };
+  "ui.revision": { readonly "revision": string };
+  "ui.savedViews": Readonly<Record<string, never>>;
+  "ui.search": Readonly<Record<string, never>>;
   "ui.settings": Readonly<Record<string, never>>;
   "ui.signIn": Readonly<Record<string, never>>;
   "ui.signOut": Readonly<Record<string, never>>;
@@ -133,130 +140,13 @@ export type MessageArgs = {
   "ui.themeSystem": Readonly<Record<string, never>>;
   "ui.tryAgain": Readonly<Record<string, never>>;
   "ui.unchangedUntilSubmit": Readonly<Record<string, never>>;
+  "ui.viewAll": Readonly<Record<string, never>>;
+  "ui.viewDecidedUnpaid": Readonly<Record<string, never>>;
   "ui.viewGrants": Readonly<Record<string, never>>;
-  "ui.webIdentity": { readonly digest: string };
+  "ui.viewOpenUndecided": Readonly<Record<string, never>>;
+  "ui.webIdentity": { readonly "digest": string };
+  "ui.worklistSearch": Readonly<Record<string, never>>;
   "ui.yes": Readonly<Record<string, never>>;
 };
 export type MessageKey = keyof MessageArgs;
-export const messageShapes = {
-  "ui.about": {},
-  "ui.accepted": {},
-  "ui.acceptedContext": { operationId: "string" },
-  "ui.acceptedHistory": {},
-  "ui.acceptedOperation": {},
-  "ui.acceptedSummary": {},
-  "ui.act": {},
-  "ui.actDescription": { label: "string", meaning: "string" },
-  "ui.actor": {},
-  "ui.actorGrants": {},
-  "ui.actors": {},
-  "ui.after": { value: "string" },
-  "ui.authorityAction": {},
-  "ui.authorityReceipt": { act: "string", actor: "string" },
-  "ui.backToActors": {},
-  "ui.backToCase": {},
-  "ui.backToCases": {},
-  "ui.before": { value: "string" },
-  "ui.calendar": {},
-  "ui.canonicalCopyHint": {},
-  "ui.caseDetail": {},
-  "ui.caseRow": { revision: "string", status: "string" },
-  "ui.cases": {},
-  "ui.changeActDescription": {},
-  "ui.changeActTitle": {},
-  "ui.checkOutcome": {},
-  "ui.copied": { label: "string" },
-  "ui.copy": { label: "string" },
-  "ui.copyFallback": { label: "string" },
-  "ui.correctionHint": {},
-  "ui.countryName": { code: "string", name: "string" },
-  "ui.countryUnassigned": { code: "string" },
-  "ui.currentCase": {},
-  "ui.discardAndChange": {},
-  "ui.discardAndLeave": {},
-  "ui.discardUnknownDescription": {},
-  "ui.displayLocale": {},
-  "ui.emptyInput": {},
-  "ui.exactCaseReference": { label: "string" },
-  "ui.exactOperationId": {},
-  "ui.exactReference": { label: "string", reference: "string" },
-  "ui.fieldHelp": {},
-  "ui.findCase": {},
-  "ui.grantsEnd": {},
-  "ui.grantsPartial": {},
-  "ui.historyContext": { operationId: "string" },
-  "ui.historyDetail": {},
-  "ui.historyHint": {},
-  "ui.historySummary": { act: "string", revision: "string", timestamp: "string" },
-  "ui.incompleteResponse": {},
-  "ui.keepEditing": {},
-  "ui.language": {},
-  "ui.leaveDraftDescription": {},
-  "ui.loading": {},
-  "ui.loadingCases": {},
-  "ui.loadingCurrentCase": {},
-  "ui.loadingHistory": {},
-  "ui.loadingSession": {},
-  "ui.loginInstructions": {},
-  "ui.lookingUp": {},
-  "ui.menu": {},
-  "ui.moreActors": {},
-  "ui.moreCases": {},
-  "ui.moreGrants": {},
-  "ui.moreHistory": {},
-  "ui.nextMonth": {},
-  "ui.no": {},
-  "ui.noAccessibleActors": {},
-  "ui.noAccessibleCases": {},
-  "ui.noAccessibleHistory": {},
-  "ui.noViews": {},
-  "ui.notRecorded": {},
-  "ui.observeOperation": {},
-  "ui.observedContext": { operationId: "string" },
-  "ui.observedReceipt": { act: "string", actor: "string", operationId: "string" },
-  "ui.operationAccepted": { operationId: "string" },
-  "ui.operationLookup": {},
-  "ui.operations": {},
-  "ui.pageEnd": {},
-  "ui.pagePartial": {},
-  "ui.preferencesChanged": {},
-  "ui.preferencesHint": {},
-  "ui.preferencesNotSaved": {},
-  "ui.previewing": {},
-  "ui.previousMonth": {},
-  "ui.primary": {},
-  "ui.principal": {},
-  "ui.productVersion": { version: "string" },
-  "ui.pseudo": {},
-  "ui.receiptAttribution": { actor: "string", operationId: "string", state: "string" },
-  "ui.reference": { label: "string", reference: "string" },
-  "ui.registerLabel": {},
-  "ui.reloadActors": {},
-  "ui.reloadCases": {},
-  "ui.reloadContract": {},
-  "ui.reloadGrants": {},
-  "ui.reloadHistory": {},
-  "ui.retryExact": {},
-  "ui.retryExactDescription": {},
-  "ui.returnToCase": {},
-  "ui.returnToEdit": {},
-  "ui.reviewDescription": {},
-  "ui.revision": { revision: "string" },
-  "ui.settings": {},
-  "ui.signIn": {},
-  "ui.signOut": {},
-  "ui.snapshotWithheld": {},
-  "ui.startAnotherOperation": {},
-  "ui.submitExact": {},
-  "ui.submitting": {},
-  "ui.technicalDetails": {},
-  "ui.theme": {},
-  "ui.themeDark": {},
-  "ui.themeLight": {},
-  "ui.themeSystem": {},
-  "ui.tryAgain": {},
-  "ui.unchangedUntilSubmit": {},
-  "ui.viewGrants": {},
-  "ui.webIdentity": { digest: "string" },
-  "ui.yes": {},
-} as const;
+export const messageShapes = {"ui.about":{},"ui.accepted":{},"ui.acceptedContext":{"operationId":"string"},"ui.acceptedHistory":{},"ui.acceptedOperation":{},"ui.acceptedSummary":{},"ui.act":{},"ui.actDescription":{"label":"string","meaning":"string"},"ui.actor":{},"ui.actorGrants":{},"ui.actorRequestRetained":{},"ui.actors":{},"ui.after":{"value":"string"},"ui.amountEntryHint":{"maximumFractionDigits":"string"},"ui.authorityAction":{},"ui.authorityReceipt":{"act":"string","actor":"string"},"ui.backToActors":{},"ui.backToCase":{},"ui.backToCases":{},"ui.before":{"value":"string"},"ui.calendar":{},"ui.canonicalCopyHint":{},"ui.caseDetail":{},"ui.caseRecorded":{"act":"string","revision":"string"},"ui.caseRow":{"revision":"string","status":"string"},"ui.caseStewardship":{},"ui.cases":{},"ui.changeActDescription":{},"ui.changeActTitle":{},"ui.checkOutcome":{},"ui.checkUnresolvedOperation":{},"ui.clearFilters":{},"ui.close":{},"ui.continueAuthorityRequest":{},"ui.copied":{"label":"string"},"ui.copy":{"label":"string"},"ui.copyFallback":{"label":"string"},"ui.correctionHint":{},"ui.countryName":{"code":"string","name":"string"},"ui.countryUnassigned":{"code":"string"},"ui.currentCase":{},"ui.dateEntryHint":{},"ui.discardAndChange":{},"ui.discardAndLeave":{},"ui.discardUnknownDescription":{},"ui.displayLocale":{},"ui.emptyInput":{},"ui.exactCaseReference":{"label":"string"},"ui.exactOperationId":{},"ui.exactReference":{"label":"string","reference":"string"},"ui.fieldHelp":{},"ui.filters":{},"ui.findCase":{},"ui.grantsEnd":{},"ui.grantsPartial":{},"ui.historyChanges":{},"ui.historyComparisonUnavailable":{},"ui.historyContext":{"operationId":"string"},"ui.historyDetail":{},"ui.historyHint":{},"ui.historyNoChanges":{},"ui.historyPreviousNeeded":{},"ui.historySummary":{"act":"string","revision":"string","timestamp":"string"},"ui.incompleteResponse":{},"ui.keepEditing":{},"ui.language":{},"ui.leaveDraftDescription":{},"ui.loading":{},"ui.loadingCases":{},"ui.loadingCurrentCase":{},"ui.loadingHistory":{},"ui.loadingSession":{},"ui.loginInstructions":{},"ui.lookingUp":{},"ui.menu":{},"ui.moreActors":{},"ui.moreCaseActions":{},"ui.moreCases":{},"ui.moreGrants":{},"ui.moreHistory":{},"ui.nextMonth":{},"ui.no":{},"ui.noAccessibleActors":{},"ui.noAccessibleCases":{},"ui.noAccessibleHistory":{},"ui.noCasesForView":{},"ui.noViews":{},"ui.notRecorded":{},"ui.observeOperation":{},"ui.observedContext":{"operationId":"string"},"ui.observedReceipt":{"act":"string","actor":"string","operationId":"string"},"ui.openExactCase":{"reference":"string"},"ui.operationAccepted":{"operationId":"string"},"ui.operationLookup":{},"ui.operations":{},"ui.pageEnd":{},"ui.pagePartial":{},"ui.preferencesChanged":{},"ui.preferencesHint":{},"ui.preferencesNotSaved":{},"ui.previewing":{},"ui.previousMonth":{},"ui.primary":{},"ui.principal":{},"ui.productVersion":{"version":"string"},"ui.pseudo":{},"ui.receiptAttribution":{"actor":"string","operationId":"string","state":"string"},"ui.reference":{"label":"string","reference":"string"},"ui.registerLabel":{},"ui.reloadActors":{},"ui.reloadCases":{},"ui.reloadContract":{},"ui.reloadGrants":{},"ui.reloadHistory":{},"ui.retryExact":{},"ui.retryExactDescription":{},"ui.returnToCase":{},"ui.returnToEdit":{},"ui.reviewDescription":{},"ui.revision":{"revision":"string"},"ui.savedViews":{},"ui.search":{},"ui.settings":{},"ui.signIn":{},"ui.signOut":{},"ui.snapshotWithheld":{},"ui.startAnotherOperation":{},"ui.submitExact":{},"ui.submitting":{},"ui.technicalDetails":{},"ui.theme":{},"ui.themeDark":{},"ui.themeLight":{},"ui.themeSystem":{},"ui.tryAgain":{},"ui.unchangedUntilSubmit":{},"ui.viewAll":{},"ui.viewDecidedUnpaid":{},"ui.viewGrants":{},"ui.viewOpenUndecided":{},"ui.webIdentity":{"digest":"string"},"ui.worklistSearch":{},"ui.yes":{}} as const;

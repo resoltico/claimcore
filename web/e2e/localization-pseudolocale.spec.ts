@@ -68,7 +68,8 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
     .getByRole("dialog")
     .getByRole("button", { name: "⟦Rëëcöörd chààngëës⟧", exact: true })
     .click();
-  await expect(page.locator("section.receipt")).toBeVisible();
+  await expect(page.locator("section.case-detail")).toBeVisible();
+  await expect(page.locator(".success-toast")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 720 });
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
@@ -87,9 +88,9 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await amount.locator("details > summary").click();
   await amount.getByRole("button").click();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
-  const revision = await page.locator("section.receipt").textContent();
+  const revision = await page.locator(".success-toast").textContent();
   await selectLanguage(page, "en");
-  await expect(page.locator("section.receipt")).toContainText("Recorded change");
+  await expect(page.locator(".success-toast")).toContainText("Open a case recorded at revision ١.");
   expect(revision).not.toBeNull();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText("١");

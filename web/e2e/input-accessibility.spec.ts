@@ -1,3 +1,4 @@
+import { goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { syntheticPrincipals } from "./authority-setup";
@@ -27,7 +28,7 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
 };
 const openAuthority = async (page: Page, language: "en" | "lv" | "ar") => {
   await openAuthenticated(page);
-  await page.getByRole("link", { name: "Authority", exact: true }).click();
+  await goToView(page, "authority");
   await selectLanguage(page, language);
 };
 for (const language of ["en", "lv", "ar"] as const) {
@@ -87,8 +88,8 @@ for (const language of ["en", "lv", "ar"] as const) {
       }
       await page.locator('[name="target.issuer"]').fill(source.issuer);
       await page.locator('[name="target.subject"]').fill(source.ownerSubject);
-      await page.locator('[name="act.role"]').selectOption("CASE_READER");
-      await page.locator('[name="act.scope.kind"]').selectOption("CASE");
+      await chooseChoice(page, "act.role", "CASE_READER");
+      await chooseChoice(page, "act.scope.kind", "CASE");
       await reference.fill("");
       await previewRefusal(page, reference, "caseReference", "TEXT_REQUIRED");
       await expect(reference).toHaveAccessibleName(

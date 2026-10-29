@@ -40,7 +40,7 @@ test("protects exact amendment edits on action change and Back while untouched d
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 });
 
-test("review blocks authoring and accepted OPEN shows only receipt with a usable Return path", async ({
+test("review blocks authoring and accepted OPEN returns to the recorded case with a revision notice", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -55,12 +55,13 @@ test("review blocks authoring and accepted OPEN shows only receipt with a usable
   }
   await page.getByText("I confirm these changes.", { exact: true }).click();
   await page.getByRole("button", { name: "Record changes" }).click();
-  const receipt = page.getByRole("heading", { name: "Recorded change", exact: true });
-  await expect(receipt).toBeVisible();
-  await expect(receipt).toBeFocused();
+  const detail = page.getByRole("heading", { name: "Case detail", exact: true });
+  await expect(detail).toBeVisible();
+  await expect(detail).toBeFocused();
+  await expect(page.locator(".success-toast")).toContainText("Open a case recorded at revision 1.");
   await expect(page.locator(".operation-editor form")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Return to case" }).click();
+  await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
+  await expect(page.locator("section.receipt")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Amend registration:/u })).toBeVisible();
 });

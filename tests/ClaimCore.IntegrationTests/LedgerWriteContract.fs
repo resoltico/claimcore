@@ -239,7 +239,31 @@ let internal caseUpdate fixture =
         let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 1
         let page = storedPage rows
         Expect.equal page.Entries.Length 1 "Bounded page"
-        Expect.equal page.Next (Some(CaseFixtures.revision (1L))) "Continuation"
+
+        Expect.equal
+            page.Next
+            (Some(CaseFixtures.revision 2L))
+            "Newest included revision owns continuation"
+
+        let revisions (entries: StoredEntry list) =
+            entries
+            |> List.map (fun entry ->
+                match entry.Subject with
+                | EntryTarget.Case(_, revision, _, _) -> Revision.value revision
+                | _ -> failtest "Expected case history")
+
+        Expect.equal (revisions page.Entries) [ 2L ] "First page contains newest revision"
+        let! continued = history fixture "CONTRACT-001" page.Next.Value 1
+        let continued = storedPage continued
+
+        Expect.equal
+            (revisions continued.Entries)
+            [ 1L ]
+            "Continuation returns preceding revision without duplicates"
+
+        Expect.isNone continued.Next "Last page has no continuation"
+        let! exhausted = history fixture "CONTRACT-001" (CaseFixtures.revision 1L) 1
+        Expect.isEmpty (storedPage exhausted).Entries "Continuation below opening revision is empty"
 
         let! operation =
             inspectOperation

@@ -41,7 +41,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
     }),
   );
   expect(
-    screen.queryByRole("button", {
+    screen.queryByRole("link", {
       name: "ADVISED-CASE",
     }),
   ).toBeNull();
@@ -55,7 +55,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
       finish(page(false, null));
     }),
   );
-  await screen.findByRole("button", {
+  await screen.findByRole("link", {
     name: "ADVISED-CASE",
   });
   expect(
@@ -97,7 +97,7 @@ it.each(["access", "session"])(
     );
     await screen.findByRole("alert");
     expect(
-      screen.queryByRole("button", {
+      screen.queryByRole("link", {
         name: "ADVISED-CASE",
       }),
     ).toBeNull();
@@ -131,7 +131,7 @@ it("retains the last accepted page advice after a request-local failure", async 
     expect(screen.getByRole("alert")).toBeVisible();
   });
   expect(
-    screen.getByRole("button", {
+    screen.getByRole("link", {
       name: "ADVISED-CASE",
     }),
   ).toBeVisible();

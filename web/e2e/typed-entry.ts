@@ -1,4 +1,4 @@
-import { type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /** Drive the same segmented calendar control as a person, without editing hidden wire inputs. */
 export const fillControl = async (control: Locator, value: string): Promise<void> => {
@@ -43,4 +43,4 @@ export const fillNamedField = async (page: Page, name: string, value: string): P
   await fillControl(page.getByLabel(name, { exact: true }), value);
 };
 export const fillBusinessField = (page: Page, name: string, value: string): Promise<void> =>
-  fillControl(page.locator(`[data-field-name="${name}"]`), value);
+  fillControl(page.locator(`[data-field-name="${name}"]:not(.field-row)`), value);

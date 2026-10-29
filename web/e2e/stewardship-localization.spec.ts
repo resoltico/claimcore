@@ -1,3 +1,4 @@
+import { showExactLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase } from "./case-workflow";
@@ -25,8 +26,9 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     const steward = await context.newPage();
     await seedPresentation(steward, "en-XA", "ar-EG");
     await openAuthenticated(steward, "⟦Cààsëës⟧", "narrow-authenticated-state.json");
-    await steward.locator("#case-lookup").fill(reference);
-    await steward.locator("form.lookup button[type=submit]").click();
+    const lookup = await showExactLookup(steward);
+    await lookup.fill(reference);
+    await lookup.press("Enter");
     await steward.getByRole("button", { name: /Vööïïd/u }).click();
     const reason = "Exact 1.0000 العربية";
     await steward.locator('input[name="act.reason"]').fill(reason);

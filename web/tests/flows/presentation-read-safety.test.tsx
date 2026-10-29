@@ -136,7 +136,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       onAct={vi.fn()}
     />,
   );
-  assertSafe(view.container.querySelector(".section-heading + p")!, value, points);
+  assertSafe(view.container.querySelector(".section-heading")!, value, points);
   if (!missing) {
     await waitFor(() => {
       expect(view.container.querySelector("select")).not.toBeNull();
@@ -150,7 +150,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
     const directStatus = view.container.querySelectorAll(
-      'section[aria-labelledby="case-detail-title"] > p[role="status"]',
+      'section[aria-labelledby="case-detail-title"] > .case-lifecycle p[role="status"]',
     );
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
@@ -185,9 +185,9 @@ it.each(languages)(
       );
       const list = render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
       await waitFor(() => {
-        expect(list.container.querySelector("li")).not.toBeNull();
+        expect(list.container.querySelector(".worklist-row")).not.toBeNull();
       });
-      assertSafe(list.container.querySelector("li")!, value, points);
+      assertSafe(list.container.querySelector(".worklist-row")!, value, points);
       list.unmount();
       await checkDetail(value, points, false);
       await checkDetail(value, points, true);

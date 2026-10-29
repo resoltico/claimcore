@@ -19,8 +19,8 @@ test("records supplementary scalar boundaries through Web for published native r
   const identity = await reviewDraft(page);
   await expectAccessible(page);
   await recordReviewed(page);
-  await expect(page.locator("section.receipt section.case-fields")).toContainText(name);
-  await expect(page.locator("section.receipt section.case-fields")).toContainText(reference);
+  await expect(page.locator("section.case-detail section.case-fields")).toContainText(name);
+  await expect(page.locator("section.case-detail section.case-fields")).toContainText(reference);
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
   if (output === undefined) {
     throw new Error("Private cross-client fixture output is missing.");

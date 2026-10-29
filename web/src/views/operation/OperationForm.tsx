@@ -10,6 +10,7 @@ import { operationEntry } from "../../operation/operationForm";
 export type OperationFormProps = {
   model: OperationModel;
   current: CurrentCase | null;
+  fixedTarget?: boolean;
   offered: ReadonlyArray<string>;
   onAct: (kind: string) => void;
   onClose?: () => void;
@@ -36,7 +37,7 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
     </label>
   );
 };
-const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
+const OperationInputs = ({ model, current, offered, fixedTarget }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
   const act = operationEntry(model.entry);
@@ -62,6 +63,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           entry={act}
           current={current}
           values={model.values}
+          {...(fixedTarget === undefined ? {} : { fixedTarget })}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}

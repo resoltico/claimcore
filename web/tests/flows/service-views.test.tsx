@@ -70,7 +70,7 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   render(<CaseList onSelect={select} onOpen={open} />);
   await user.click(
     await screen.findByRole(
-      "button",
+      "link",
       {
         name: "CASE-1",
       },
@@ -83,7 +83,8 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   await user.click(getButton("Open a case"));
   expect(open).toHaveBeenCalledOnce();
   await user.click(getButton("Load more cases"));
-  expect(await findButton("CASE-2")).toBeVisible();
+  expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
+  await user.click(screen.getByText("Find case", { selector: "summary" }));
   await user.click(getButton("Find case"));
   expect(select).toHaveBeenCalledTimes(1);
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
@@ -252,7 +253,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     }),
   ).toBeVisible();
   await user.click(getButton("Back to cases"));
-  await user.click(getButton("CASE-1"));
+  await user.click(screen.getByRole("link", { name: "CASE-1" }));
   expect(
     await screen.findByRole("heading", {
       name: "Case detail",

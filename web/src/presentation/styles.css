@@ -13,12 +13,6 @@
   overflow-x: clip;
 }
 
-.presentation-bar {
-  inline-size: min(100% - var(--space-6), 72rem);
-  margin-inline: auto;
-  padding-block: var(--space-4);
-}
-
 .presentation-controls {
   display: flex;
   flex-wrap: wrap;

@@ -117,7 +117,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable([]));
   vi.stubGlobal("fetch", fetch);
   render(detail());
-  await screen.findByText(fields.registration.claimantName);
+  await screen.findAllByText(fields.registration.claimantName);
   expect(
     screen.queryByRole("heading", {
       name: "Case history",
@@ -217,7 +217,7 @@ it("appends an authorized next history page without dropping current advice", as
   await waitFor(() => {
     expect(document.querySelectorAll(".history-list li")).toHaveLength(2);
   });
-  expect(screen.getByText(fields.registration.claimantName)).toBeVisible();
+  expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
   expect(
     screen.queryByRole("button", {
       name: "Load more history",

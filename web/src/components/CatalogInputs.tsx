@@ -1,3 +1,4 @@
+import { CorrectionInputs } from "./CorrectionInputs";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import type { CatalogEntry } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
@@ -15,6 +16,7 @@ type Props = {
   values: FormValues;
   current: CurrentCase | null;
   disabled: boolean;
+  fixedTarget?: boolean;
   fieldErrors: Readonly<Record<string, Notice>>;
   onChange: (path: string, value: FormValue) => void;
 };
@@ -52,46 +54,59 @@ const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice
     </>
   );
 };
+const choiceLabel = (
+  p: ReturnType<typeof usePresentation>,
+  input: CatalogInput,
+  value: string,
+): string => {
+  const vocabulary =
+    input.kind.kind === "CHOICE" || input.kind.kind === "GROUP" ? input.kind.vocabulary : null;
+  return vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, value)
+    ? p.term(vocabulary, value)
+    : value;
+};
 const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
   const group = input.kind.kind === "GROUP";
   const error = inputError(input, props);
+  const options = permittedOptions(input, props);
+  const label = renderCatalogKey(p, input.labelId);
   return (
-    <fieldset>
-      {group ? <legend>{renderCatalogKey(p, input.labelId)}</legend> : null}
-      <label>
-        {group ? p.text("label.action") : renderCatalogKey(p, input.labelId)}
-        <select
-          name={path}
-          id={
-            group && input.diagnosticTargets[0] !== undefined
-              ? `correction-${input.diagnosticTargets[0]}-mode`
-              : input.identity
-          }
-          disabled={props.disabled}
-          value={String(props.values[path] ?? "")}
-          aria-invalid={props.fieldErrors[path] !== undefined || undefined}
-          aria-describedby={descriptionIds(input, error)}
-          onChange={(event) => {
-            props.onChange(path, event.target.value);
-          }}
-        >
-          {permittedOptions(input, props).map((value) => (
-            <option key={value} value={value}>
-              {(() => {
-                const vocabulary =
-                  input.kind.kind === "CHOICE" || input.kind.kind === "GROUP"
-                    ? input.kind.vocabulary
-                    : null;
-                return vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, value)
-                  ? p.term(vocabulary, value)
-                  : value;
-              })()}
-            </option>
-          ))}
-        </select>
-      </label>
+    <fieldset className={group ? "correction-card" : "choice-card"}>
+      <legend>{label}</legend>
+      <div
+        role="radiogroup"
+        className={options.length <= 4 ? "segmented-choice" : "radio-choice"}
+        aria-label={group ? p.text("label.action") : label}
+        id={
+          group && input.diagnosticTargets[0] !== undefined
+            ? `correction-${input.diagnosticTargets[0]}-mode`
+            : input.identity
+        }
+        aria-invalid={error !== null || undefined}
+        aria-describedby={descriptionIds(input, error)}
+      >
+        {options.map((value) => (
+          <label
+            key={value}
+            className={String(props.values[path] ?? "") === value ? "selected" : ""}
+          >
+            <input
+              type="radio"
+              name={path}
+              value={value}
+              checked={props.values[path] === value}
+              disabled={props.disabled}
+              aria-describedby={descriptionIds(input, error)}
+              onChange={() => {
+                props.onChange(path, value);
+              }}
+            />
+            {choiceLabel(p, input, value)}
+          </label>
+        ))}
+      </div>
       <InputDescription input={input} error={error} />
     </fieldset>
   );
@@ -212,10 +227,53 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     <ScalarInput {...props} input={input} />
   );
 };
-export const CatalogInputs = (props: Props) => (
-  <>
-    {visibleOperationInputs(props.entry, props.values, props.current).map((input) => (
-      <BindingInput key={input.identity} input={input} {...props} />
-    ))}
-  </>
+const CorrectionGroup = ({
+  input,
+  children,
+  ...props
+}: Props & { input: CatalogInput; children: ReadonlyArray<CatalogInput> }) => (
+  <section className="correction-group">
+    <ChoiceInput input={input} {...props} />
+    {children.length === 0 ? null : (
+      <CorrectionInputs group={input.adviceGroup} current={props.current}>
+        {children.map((child) => (
+          <BindingInput key={child.identity} input={child} {...props} />
+        ))}
+      </CorrectionInputs>
+    )}
+  </section>
 );
+export const CatalogInputs = (props: Props) => {
+  const visible = visibleOperationInputs(props.entry, props.values, props.current);
+  const groups = visible.filter((input) => input.kind.kind === "GROUP");
+  const prefix = (input: CatalogInput) => `${input.path.slice(0, -1).join(".")}.`;
+  const children = (group: CatalogInput) =>
+    visible.filter((input) => input !== group && bindingPath(input).startsWith(prefix(group)));
+  return (
+    <>
+      {visible
+        .filter(
+          (input) =>
+            !groups.some(
+              (group) => group !== input && bindingPath(input).startsWith(prefix(group)),
+            ),
+        )
+        .map((input) =>
+          input.kind.kind === "GROUP" ? (
+            <CorrectionGroup key={input.identity} input={input} {...props}>
+              {children(input)}
+            </CorrectionGroup>
+          ) : (
+            <BindingInput
+              key={input.identity}
+              input={input}
+              {...props}
+              disabled={
+                props.disabled || (props.fixedTarget === true && input.path[0] === "target")
+              }
+            />
+          ),
+        )}
+    </>
+  );
+};

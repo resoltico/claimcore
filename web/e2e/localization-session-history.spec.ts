@@ -17,9 +17,12 @@ test("updates visible detail and expanded history immediately with independent f
 }) => {
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
-  await openCase(page, reference);
+  const opening = await openCase(page, reference);
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
-  const history = page.locator(".history-list > li > details").first();
+  const history = page
+    .locator(".history-list > li > details")
+    .filter({ hasText: opening.operationId });
+  await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
   await history.locator(":scope > summary").click();
   await expect(history).toHaveAttribute("open", "");

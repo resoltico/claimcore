@@ -1,5 +1,6 @@
+import { CaseFieldsView } from "../components/CaseFieldsView";
 import { normalizeAmountValues } from "../presentation/amountEntry";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useCredential } from "../session/SessionContext";
 import { useUnresolvedOperation } from "./operation/unresolvedOperation";
@@ -32,7 +33,38 @@ const useCaseOperation = (props: OperationEditorProps) => {
     },
     [navigation, props],
   );
+  useEffect(() => {
+    if (model.receipt?.subject.kind === "CASE") {
+      commit({ ...model.receipt, subject: model.receipt.subject });
+    }
+  }, [model.receipt, commit]);
   return { model, navigation, commit };
+};
+const CurrentFacts = ({
+  model,
+  current,
+  definition,
+}: OperationEditorProps & { model: ReturnType<typeof useOperation> }) => {
+  const p = usePresentation();
+  if (
+    current === null ||
+    !model.disclosureCurrent ||
+    model.disclosureRefused ||
+    model.contextChanged ||
+    model.priorUncertain
+  ) {
+    return null;
+  }
+  return (
+    <aside className="editor-current">
+      <CaseFieldsView
+        values={current.state.fields}
+        revision={current.revision}
+        fields={definition.catalog.fields}
+        context={p.text("ui.currentCase")}
+      />
+    </aside>
+  );
 };
 export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();
@@ -53,13 +85,18 @@ export const OperationEditor = (props: OperationEditorProps) => {
       <h1 id="operation-title">{p.actLabel(model.entry.kind)}</h1>
       <p>{p.actMeaning(model.entry.kind)}</p>
       <p>{p.text("ui.unchangedUntilSubmit")}</p>
-      <OperationDiscard model={model} onClose={navigation.close} />
-      <OperationPanel
-        model={model}
-        current={props.current}
-        offered={offered}
-        onClose={navigation.close}
-      />
+      <div className="editor-layout">
+        <div>
+          <OperationDiscard model={model} onClose={navigation.close} />
+          <OperationPanel
+            model={model}
+            current={props.current}
+            offered={offered}
+            onClose={navigation.close}
+          />
+        </div>
+        <CurrentFacts {...props} model={model} />
+      </div>
     </section>
   );
 };

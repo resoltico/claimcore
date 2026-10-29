@@ -41,7 +41,7 @@ const openPreferences = async (page: Page): Promise<boolean> => {
   }
   const settings = page.locator("[data-settings-button]");
   if (!(await settings.isVisible())) {
-    await page.locator("header .compact-menu > summary").click();
+    await page.locator(".workspace-header button[aria-expanded]").click();
   }
   await settings.click();
   return true;

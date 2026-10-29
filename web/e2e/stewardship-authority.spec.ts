@@ -1,3 +1,4 @@
+import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
@@ -25,7 +26,7 @@ const stewardAct = async (page: Page, label: string, reason?: string) => {
     throw new Error("Missing stewardship response.");
   }
   expect(value.outcome.kind).toBe("ACCEPTED");
-  await page.getByRole("button", { name: "Return to case", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
 };
 test("browser renders void, reinstatement and live payload erasure through authoritative preview", async ({
   page,
@@ -41,7 +42,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   try {
     const steward = await context.newPage();
     await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
-    await steward.getByLabel("Handler's case reference (exact)").fill(reference);
+    await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Find case", exact: true }).click();
     await stewardAct(steward, "Void case record", "Synthetic entry error");
     await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
@@ -55,7 +56,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   }
 });
 const authorityTarget = async (page: Page, issuer: string, subject: string) => {
-  await page.locator('[name="target.kind"]').selectOption("SERVICE");
+  await chooseChoice(page, "target.kind", "SERVICE");
   await page.locator('[name="target.issuer"]').fill(issuer);
   await page.locator('[name="target.subject"]').fill(subject);
 };
@@ -110,14 +111,14 @@ test("browser registers service principals, changes scoped grants and enablement
   const source = await syntheticPrincipals();
   const reference = `AUTHORITY-${randomUUID()}`;
   await openCase(page, reference);
-  await page.getByRole("link", { name: "Authority", exact: true }).click();
+  await goToView(page, "authority");
   const subject = `browser-service-${randomUUID()}`;
   await authorityTarget(page, source.issuer, subject);
   await submitAuthority(page, "ACCEPTED");
   await selectAuthorityAct(page, "GRANT");
   await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.role"]').selectOption("CASE_READER");
-  await page.locator('[name="act.scope.kind"]').selectOption("CASE");
+  await chooseChoice(page, "act.role", "CASE_READER");
+  await chooseChoice(page, "act.scope.kind", "CASE");
   await page.locator('[name="act.scope.caseReference"]').fill(reference);
   await submitAuthority(page, "ACCEPTED");
   await selectAuthorityAct(page, "DISABLE");
@@ -125,7 +126,7 @@ test("browser registers service principals, changes scoped grants and enablement
   await submitAuthority(page, "ACCEPTED");
   await selectAuthorityAct(page, "GRANT");
   await authorityTarget(page, source.issuer, subject);
-  await page.locator('[name="act.role"]').selectOption("OWNER");
+  await chooseChoice(page, "act.role", "OWNER");
   await submitAuthority(page, "REJECTED");
   await expect(page.getByRole("alert")).toBeVisible();
   await expectAccessible(page);

@@ -329,12 +329,9 @@ let private revokedFullHistory
     (actor: ServiceContext)
     (query: HistoryRequest)
     (first: HistoryResultPage)
+    (original: OperationReceipt)
     =
     task {
-        let original =
-            match List.head first.Entries with
-            | HistoryEntry.FullEntry receipt -> receipt
-            | _ -> failtest "Original FULL receipt"
 
         Expect.equal
             original.OperationId
@@ -413,8 +410,8 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         Expect.equal
             revisions
-            [ 1L .. 60L ]
-            "Every retained revision traverses without omissions or duplicates"
+            (List.rev [ 1L .. 60L ])
+            "Every retained revision traverses newest-first without omissions or duplicates"
 
         assertRetained name entries
 
@@ -430,7 +427,16 @@ let private retainedPages (database: PostgresFixture.Database) =
         | Outcome.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
         | _ -> failtest "Retained summary page"
 
-        do! revokedFullHistory database actor query first
+        let original =
+            entries
+            |> List.pick (function
+                | HistoryEntry.FullEntry({ Subject = ReceiptSubject.Case c } as receipt) when
+                    Revision.value c.Revision = 1L
+                    ->
+                    Some receipt
+                | _ -> None)
+
+        do! revokedFullHistory database actor query first original
 
         let! _ = verified database
         return ()

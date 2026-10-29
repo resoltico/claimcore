@@ -38,8 +38,8 @@ type Options = {
 };
 const targetKey = (options: Options): string =>
   `${options.subject}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
-const fresh = (options: Options, kind = options.kind): OperationState => {
-  const values = initialOperationValues(options.subject, kind, options.current);
+const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
+  const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
   return {
     target: targetKey(options),
     entry: { subject: options.subject, kind },
@@ -284,11 +284,11 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
-    discard: (acknowledgedUncertainty = false, kind = options.kind) => {
+    discard: (acknowledgedUncertainty = false, kind = options.kind, prefill?: FormValues) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
           type: "RESET",
-          state: fresh(options, kind),
+          state: fresh(options, kind, prefill),
           abandon: acknowledgedUncertainty,
         });
       }

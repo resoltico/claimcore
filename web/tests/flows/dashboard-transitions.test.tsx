@@ -85,7 +85,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   renderDashboard();
   await user.click(
     await screen.findByRole(
-      "button",
+      "link",
       {
         name: "CASE-1",
       },
@@ -111,7 +111,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   queueDefinitionAndList();
   queueDetail();
   renderDashboard();
-  await user.click(await findButton("CASE-1"));
+  await user.click(await screen.findByRole("link", { name: "CASE-1" }));
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   await user.click(await findButton(/Close the case/u));
   expect(
@@ -183,7 +183,6 @@ it("returns an accepted open operation to Dashboard through its committed transi
     }),
   );
   await user.click(getButton("Record changes"));
-  await user.click(await findButton("Return to case"));
 
   expect(
     await screen.findByRole("heading", {

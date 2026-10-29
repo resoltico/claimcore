@@ -6,6 +6,7 @@ import type { CatalogDocument, HistoryEntry, CaseReceipt, ServiceResponse } from
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
+import { HistoryChanges } from "./case/HistoryChanges";
 import { ReceiptFields } from "../components/ReceiptFields";
 const historyPage = (response: ServiceResponse<"case.history">) =>
   response.outcome.kind === "SUCCEEDED"
@@ -14,12 +15,17 @@ const historyPage = (response: ServiceResponse<"case.history">) =>
         nextCursor: response.outcome.data.nextCursor,
       }
     : null;
+type HistoryPage = NonNullable<ReturnType<typeof historyPage>>;
 const HistoryReceipt = ({
   receipt,
   fields,
+  previous,
+  loadPrevious,
 }: {
   receipt: CaseReceipt;
   fields: CatalogDocument["fields"];
+  previous: CaseReceipt | undefined;
+  loadPrevious: (() => void) | undefined;
 }) => {
   const p = usePresentation();
   return (
@@ -38,6 +44,12 @@ const HistoryReceipt = ({
           state: p.text("ui.accepted"),
         })}
       </p>
+      <HistoryChanges
+        receipt={receipt}
+        previous={previous}
+        fields={fields}
+        loadPrevious={loadPrevious}
+      />
       <ReceiptFields
         subject={receipt.subject}
         fields={fields}
@@ -48,10 +60,27 @@ const HistoryReceipt = ({
     </details>
   );
 };
-const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument["fields"] }) => {
+const Entry = ({
+  entry,
+  fields,
+  previous,
+  loadPrevious,
+}: {
+  entry: HistoryEntry;
+  fields: CatalogDocument["fields"];
+  previous: HistoryEntry | undefined;
+  loadPrevious: (() => void) | undefined;
+}) => {
   const p = usePresentation();
   if (entry.kind === "FULL") {
-    return <HistoryReceipt receipt={entry.receipt} fields={fields} />;
+    return (
+      <HistoryReceipt
+        receipt={entry.receipt}
+        fields={fields}
+        previous={previous?.kind === "FULL" ? previous.receipt : undefined}
+        loadPrevious={loadPrevious}
+      />
+    );
   }
   const { change } = entry;
   return (
@@ -76,14 +105,21 @@ const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument
 const HistoryEntries = ({
   items,
   fields,
+  loadPrevious,
 }: {
   items: ReadonlyArray<HistoryEntry>;
   fields: CatalogDocument["fields"];
+  loadPrevious: (() => void) | undefined;
 }) => (
-  <ol className="history-list">
-    {items.map((entry) => (
+  <ol className="history-list case-timeline">
+    {items.map((entry, index) => (
       <li key={entry.kind === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
-        <Entry entry={entry} fields={fields} />
+        <Entry
+          entry={entry}
+          fields={fields}
+          previous={items[index + 1]}
+          loadPrevious={loadPrevious}
+        />
       </li>
     ))}
   </ol>
@@ -177,6 +213,16 @@ const HistoryPageActions = ({
     </>
   );
 };
+const precedingPage = (page: {
+  cursor: string | null;
+  loading: boolean;
+  load: (cursor: string | null) => Promise<void>;
+}) =>
+  page.cursor === null || page.loading
+    ? undefined
+    : () => {
+        void page.load(page.cursor);
+      };
 export const CaseHistory = ({
   caseReference,
   fields,
@@ -198,15 +244,19 @@ export const CaseHistory = ({
   const { items, cursor, message, loading, load, page } = useEndpointPage<
     "case.history",
     HistoryEntry,
-    NonNullable<ReturnType<typeof historyPage>>
+    HistoryPage
   >("case.history", input, historyPage, onDisclosureRefused);
 
   return (
-    <section aria-labelledby="history-title">
+    <section className="case-history" aria-labelledby="history-title">
       <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
       <HistoryModePicker detail={requestedDetail} onChange={setDetail} modes={modes} />
       <p>{p.text("ui.historyHint")}</p>
-      <HistoryEntries items={items} fields={fields} />
+      <HistoryEntries
+        items={items}
+        fields={fields}
+        loadPrevious={precedingPage({ cursor, loading, load })}
+      />
       <HistoryPageStatus
         loading={loading}
         loaded={page !== null}

@@ -15,7 +15,11 @@ export const ReferenceSummary = <K extends ReferenceMessage>({
   values: MessageArgs[K];
 }) => {
   const p = usePresentation();
-  const reference = <bdi key="reference">{values.reference}</bdi>;
+  const reference = (
+    <bdi key="reference" dir="ltr">
+      {values.reference}
+    </bdi>
+  );
   return (
     <span>
       {renderIsolatedValue(p, id, values, reference)}

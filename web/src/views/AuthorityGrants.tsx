@@ -14,6 +14,7 @@ type Props = {
 
   onBack: () => void;
   onDisclosureRefused: (notice?: Notice) => void;
+  onActor?: ((actor: GrantPage["actor"]) => void) | undefined;
 };
 const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
   const p = usePresentation();
@@ -30,7 +31,14 @@ const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
     </ul>
   );
 };
-export const AuthorityGrants = ({ actorId, onBack, onDisclosureRefused }: Props) => {
+const useActorDisclosure = (actor: GrantPage["actor"] | null, onActor: Props["onActor"]) => {
+  useEffect(() => {
+    if (actor !== null) {
+      onActor?.(actor);
+    }
+  }, [actor, onActor]);
+};
+export const AuthorityGrants = ({ actorId, onBack, onDisclosureRefused, onActor }: Props) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -46,6 +54,8 @@ export const AuthorityGrants = ({ actorId, onBack, onDisclosureRefused }: Props)
     grantPage,
     onDisclosureRefused,
   );
+
+  useActorDisclosure(page.page?.actor ?? null, onActor);
 
   return (
     <section aria-labelledby="actor-grants-title">

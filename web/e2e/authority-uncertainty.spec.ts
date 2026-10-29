@@ -1,3 +1,4 @@
+import { chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
@@ -20,7 +21,7 @@ const ownerGrant = async (page: Page, active: boolean) => {
   });
 };
 const prepareRegistration = async (page: Page, issuer: string, subject: string) => {
-  await page.locator('[name="target.kind"]').selectOption("SERVICE");
+  await chooseChoice(page, "target.kind", "SERVICE");
   await page.locator('[name="target.issuer"]').fill(issuer);
   await page.locator('[name="target.subject"]').fill(subject);
   await page

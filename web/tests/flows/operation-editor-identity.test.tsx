@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
@@ -173,7 +174,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   if (registration === null) {
     throw new Error("Expected a registration correction selector.");
   }
-  await user.selectOptions(registration, "REPLACE");
+  await chooseOption(user, registration, "REPLACE");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
   });

@@ -142,17 +142,9 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   );
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
-  fireEvent.change(document.querySelector('[name="target.kind"]')!, {
-    target: {
-      value: "HUMAN",
-    },
-  });
+  input("target.kind", "HUMAN");
   if (kind === "GRANT" || kind === "REVOKE") {
-    fireEvent.change(document.querySelector('[name="act.role"]')!, {
-      target: {
-        value: "CASE_READER",
-      },
-    });
+    input("act.role", "CASE_READER");
   }
 };
 it.each(authorityActs)(

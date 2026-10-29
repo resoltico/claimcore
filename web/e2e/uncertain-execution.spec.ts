@@ -115,5 +115,5 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(second.data.operationId).toBe(identity.operationId);
   expect(second.data.subject.kind === "CASE" ? second.data.subject.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);
-  await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 });

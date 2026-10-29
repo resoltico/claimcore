@@ -126,13 +126,18 @@ for (const language of ["en", "lv", "ar"] as const) {
     first.release();
     await confirmReview(page);
     await page.getByRole("button", { name: "Record changes" }).click();
-    await page.getByRole("button", { name: "Return to case" }).click();
+    await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+    await expect(page.locator(".success-toast")).toContainText(
+      "Close the case recorded at revision 2.",
+    );
     await startAct(page, "Correct case facts");
     await selectLanguage(page, language);
-    const mode = page.locator('[name="act.groups.decision.kind"]');
+    const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
+    await expect(mode).toHaveCount(1);
     await expect(mode).toHaveValue("KEEP");
-    await expect(mode.locator("option")).toHaveCount(1);
+    await expect(mode).toBeChecked();
     await forgedCorrection(page, reference);
     await expect(mode).toHaveValue("KEEP");
+    await expect(mode).toBeChecked();
   });
 }

@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
@@ -30,7 +31,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
   page,
 }) => {
   await openAuthenticated(page);
-  await page.getByRole("link", { name: "Authority", exact: true }).click();
+  await goToView(page, "authority");
   await page.locator('[name="target.subject"]').fill(`repair-${randomUUID()}`);
   const event = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();

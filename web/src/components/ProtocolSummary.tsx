@@ -76,7 +76,7 @@ const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
       <>
         <span>{p.term(vocabulary, value)}</span>{" "}
         <code>
-          <bdi>{value}</bdi>
+          <bdi dir="ltr">{value}</bdi>
         </code>
       </>
     );
@@ -110,7 +110,7 @@ const SummaryValue = ({ value, path, bindings }: ValueProps) => {
   if (!known(bindings, path)) {
     return (
       <pre>
-        <bdi>{JSON.stringify(value, null, 2)}</bdi>
+        <bdi dir="ltr">{JSON.stringify(value, null, 2)}</bdi>
       </pre>
     );
   }

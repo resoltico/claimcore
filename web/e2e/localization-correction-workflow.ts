@@ -1,3 +1,4 @@
+import { showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
@@ -126,18 +127,16 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
     recordedBy = acceptedActor;
     revision = acceptedRevision;
   }
-  await page.getByLabel("Handler's case reference (exact)").fill(reference);
+  await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Find case", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
-  await expect(
-    page.locator("section.case-fields").first().getByText(`Revision ${revision}`),
-  ).toBeVisible();
+  await expect(page.locator(".case-lifecycle").getByText(`Revision ${revision}`)).toBeVisible();
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
   await startAct(page, "Correct case facts");
   await selectLanguage(page, language);
   for (const [group, mode] of Object.entries(modes)) {
-    await page.locator(`[name="act.groups.${group}.kind"]`).selectOption(mode);
+    await chooseChoice(page, `act.groups.${group}.kind`, mode);
   }
   const replacements = {
     registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
@@ -151,7 +150,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   for (const group of ["registration", "decision", "payment"] as const) {
     if (modes[group] === "REPLACE") {
       for (const [name, value] of Object.entries(replacements[group])) {
-        await fillControl(page.locator(`[data-field-name="${name}"]`), value);
+        await fillControl(page.locator(`[data-field-name="${name}"]:not(.field-row)`), value);
       }
     }
   }

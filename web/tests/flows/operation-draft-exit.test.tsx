@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -46,7 +47,7 @@ it("leaves an untouched prefilled amendment directly", async () => {
 it("switches an untouched amendment without discarding authored work", async () => {
   const user = userEvent.setup();
   open();
-  await user.selectOptions(screen.getByLabelText("Case action"), "CLOSE");
+  await chooseOption(user, screen.getByLabelText("Case action"), "CLOSE");
   expect(
     screen.getByRole("heading", {
       name: "Close the case",
@@ -60,7 +61,7 @@ it("protects an amendment changed to all empty strings on switch and Back", asyn
   for (const input of screen.getAllByRole("textbox")) {
     await user.clear(input);
   }
-  await user.selectOptions(screen.getByLabelText("Case action"), "CLOSE");
+  await chooseOption(user, screen.getByLabelText("Case action"), "CLOSE");
   expect(
     await screen.findByRole("dialog", {
       name: "Discard these draft changes?",
@@ -116,13 +117,13 @@ it("protects hidden correction replacement edits after returning its mode to KEE
   const user = userEvent.setup();
   const close = open("CORRECT");
   const mode = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
-  await user.selectOptions(mode, "REPLACE");
+  await chooseOption(user, mode, "REPLACE");
   await user.clear(
     screen.getByLabelText("Claimant name", {
       exact: true,
     }),
   );
-  await user.selectOptions(mode, "KEEP");
+  await chooseOption(user, mode, "KEEP");
   await user.click(
     screen.getByRole("button", {
       name: "Back to case",
@@ -139,8 +140,8 @@ it("leaves a correction whose mode was changed and reverted without value edits"
   const user = userEvent.setup();
   const close = open("CORRECT");
   const mode = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
-  await user.selectOptions(mode, "CLEAR");
-  await user.selectOptions(mode, "KEEP");
+  await chooseOption(user, mode, "CLEAR");
+  await chooseOption(user, mode, "KEEP");
   await user.click(
     screen.getByRole("button", {
       name: "Back to case",

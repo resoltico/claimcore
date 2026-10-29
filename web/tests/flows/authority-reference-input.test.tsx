@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { catalogs as coreCatalogs } from "@contracts/messages";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -87,12 +88,13 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
     }),
     "synthetic-target",
   );
-  await user.selectOptions(
+  await chooseOption(
+    user,
     within(
       screen.getByRole("group", {
         name: locale.authority["input.scope.label"],
       }),
-    ).getByRole("combobox"),
+    ).getByRole("radiogroup"),
     "CASE",
   );
   const reference = screen.getByRole("textbox", {

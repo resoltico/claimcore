@@ -1,5 +1,4 @@
 import { expect, it, vi } from "vitest";
-import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { ReceiptFields } from "../../src/components/ReceiptFields";
 import { OperationLookup } from "../../src/views/OperationLookup";
@@ -38,11 +37,6 @@ it("observes authority receipts as attributed metadata without assuming a case s
     vi.fn().mockResolvedValueOnce(response("operation.observe", "SUCCEEDED", source.data)),
   );
   render(<OperationLookup definition={definition} initialOperationId={source.data.operationId} />);
-  await userEvent.setup().click(
-    screen.getByRole("button", {
-      name: "Look up recorded result",
-    }),
-  );
   expect(
     await screen.findByText(
       `Authority act Provision owner for actor ${source.data.subject.targetActorId}.`,

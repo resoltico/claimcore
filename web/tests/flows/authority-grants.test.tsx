@@ -136,7 +136,7 @@ it("keeps only the same actor's page on a transient error and follows server con
   expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
 
-const prepare = async () => {
+const authorTarget = async () => {
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
@@ -146,6 +146,9 @@ const prepare = async () => {
   fireEvent.change(document.querySelector('[name="target.subject"]')!, {
     target: { value: "authored-subject" },
   });
+};
+const prepare = async () => {
+  await authorTarget();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox"));
 };
@@ -228,6 +231,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
     });
   });
   render(<AuthorityPanel onLockChange={vi.fn()} />);
+  await authorTarget();
   fireEvent.click((await screen.findAllByRole("button", { name: "View grants" }))[0]!);
   await waitFor(() => {
     expect(request).toHaveBeenCalledTimes(1);

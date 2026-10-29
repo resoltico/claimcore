@@ -13,6 +13,12 @@ export const CharacterWarning = ({ value }: { value: string | null }) => {
   );
 };
 
+const valueDirection = (field: FieldCatalogEntry): "ltr" | "auto" =>
+  field.name === "caseReference" ||
+  field.scalar.kind === "AMOUNT" ||
+  field.scalar.kind === "CALENDAR_DATE"
+    ? "ltr"
+    : "auto";
 export const BusinessValue = ({
   value,
   field,
@@ -27,13 +33,15 @@ export const BusinessValue = ({
   return (
     <span>
       {context === undefined ? (
-        <bdi>{display}</bdi>
+        <bdi dir={valueDirection(field)}>{display}</bdi>
       ) : (
         renderIsolatedValue(
           p,
           context,
           { value: display },
-          <bdi key="value">{display}</bdi>,
+          <bdi key="value" dir={valueDirection(field)}>
+            {display}
+          </bdi>,
           "value",
         )
       )}

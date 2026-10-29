@@ -1,3 +1,4 @@
+import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -14,7 +15,7 @@ import {
 } from "./narrow-role-fixture";
 
 const findCase = async (page: Page, reference: string) => {
-  await page.getByLabel("Handler's case reference (exact)").fill(reference);
+  await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Find case", exact: true }).click();
 };
 

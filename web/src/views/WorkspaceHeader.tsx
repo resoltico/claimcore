@@ -12,10 +12,12 @@ const Navigation = ({
   active,
   views,
   locked,
+  onNavigate,
 }: {
   active: string;
   views: ReadonlyArray<string>;
   locked: boolean;
+  onNavigate?: () => void;
 }) => {
   const p = usePresentation();
   const labels = {
@@ -35,7 +37,9 @@ const Navigation = ({
             aria-disabled={locked || undefined}
             onClick={(event) => {
               event.preventDefault();
-              navigate(`/${name}`);
+              if (navigate(`/${name}`)) {
+                onNavigate?.();
+              }
             }}
           >
             {p.text(labels[name])}
@@ -70,7 +74,7 @@ const Settings = ({ open, close }: { open: boolean; close: () => void }) => {
             </details>
           </section>
           <button type="button" onClick={close}>
-            {p.text("ui.backToCases")}
+            {p.text("ui.close")}
           </button>
         </Dialog>
       </Modal>
@@ -99,35 +103,78 @@ const HeaderTools = ({ locked, settings }: { locked: boolean; settings: () => vo
     </>
   );
 };
-const HeaderNavigation = ({
-  compact,
+const MenuTrigger = ({ open, show }: { open: boolean; show: () => void }) => {
+  const p = usePresentation();
+  return (
+    <button type="button" aria-expanded={open} onClick={show}>
+      {p.text("ui.menu")}
+    </button>
+  );
+};
+const CompactNavigation = ({
   active,
   views,
   locked,
   settings,
 }: {
-  compact: boolean;
   active: string;
   views: ReadonlyArray<string>;
   locked: boolean;
   settings: () => void;
 }) => {
   const p = usePresentation();
-  const nav = <Navigation active={active} views={views} locked={locked} />;
-  const tools = <HeaderTools locked={locked} settings={settings} />;
-  return compact ? (
-    <details className="compact-menu">
-      <summary>{p.text("ui.menu")}</summary>
-      {nav}
-      {tools}
-    </details>
-  ) : (
+  const [open, setOpen] = useState(false);
+  const close = () => {
+    setOpen(false);
+  };
+  const openSettings = () => {
+    close();
+    settings();
+  };
+  return (
     <>
-      {nav}
-      {tools}
+      <MenuTrigger
+        open={open}
+        show={() => {
+          setOpen(true);
+        }}
+      />
+      <ModalOverlay
+        className="modal-overlay sheet-overlay"
+        isOpen={open}
+        isDismissable
+        onOpenChange={setOpen}
+      >
+        <Modal className="navigation-sheet">
+          <Dialog aria-label={p.text("ui.menu")}>
+            <Heading slot="title">{p.text("ui.menu")}</Heading>
+            <Navigation active={active} views={views} locked={locked} onNavigate={close} />
+            <HeaderTools locked={locked} settings={openSettings} />
+            <button type="button" onClick={close}>
+              {p.text("ui.close")}
+            </button>
+          </Dialog>
+        </Modal>
+      </ModalOverlay>
     </>
   );
 };
+type HeaderNavigationProps = {
+  compact: boolean;
+  active: string;
+  views: ReadonlyArray<string>;
+  locked: boolean;
+  settings: () => void;
+};
+const HeaderNavigation = ({ compact, ...props }: HeaderNavigationProps) =>
+  compact ? (
+    <CompactNavigation {...props} />
+  ) : (
+    <>
+      <Navigation active={props.active} views={props.views} locked={props.locked} />
+      <HeaderTools locked={props.locked} settings={props.settings} />
+    </>
+  );
 export const WorkspaceHeader = ({
   active,
   views,

@@ -1,4 +1,4 @@
-import { useCredential } from "../session/SessionContext";
+import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
 import { useEffect, useRef } from "react";
@@ -60,10 +60,9 @@ const ObservationFeedback = ({ message }: { message: Notice | null }) =>
     </p>
   );
 export const OperationLookup = ({ definition, initialOperationId }: OperationLookupProps) => {
-  const credential = useCredential();
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
-    useOperationObservation(credential, initialOperationId);
+    useOperationObservation(initialOperationId);
   const invalid = message?.kind === "diagnostic" && message.diagnostic.code === "INPUT_INVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -78,7 +77,11 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
         className="lookup"
         onSubmit={(event) => {
           event.preventDefault();
-          void observe();
+          if (initialOperationId === undefined) {
+            void observe();
+          } else {
+            navigate(`/operations/${encodeURIComponent(operationId)}`);
+          }
         }}
       >
         <TextField value={operationId} onChange={setOperationId} isInvalid={invalid}>
