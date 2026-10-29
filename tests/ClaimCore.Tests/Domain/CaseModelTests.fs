@@ -77,104 +77,46 @@ let private retained revision view =
 let private live status decided paid =
     CaseState.Active(fields status decided paid)
 
-let private acts =
+let private states =
     [
-        CaseActKind.Open, (AuthoredCaseAct.Open registration)
-        CaseActKind.AmendRegistration,
-        (AuthoredCaseAct.AmendRegistration(
-            ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.ClaimantName, ("Changed Party") ]
-                (registration)
-        ))
-        CaseActKind.Correct,
-        (AuthoredCaseAct.Correct
-            {
-                Registration =
-                    Amendment.Replace(
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, ("Changed Party") ]
-                            (registration)
-                    )
-                Decision = Change.Keep
-                Payment = Change.Keep
-            })
-        CaseActKind.Decide,
-        (AuthoredCaseAct.Decide(
-            ClaimCore.TestSupport.Inputs.decisionFrom
-                [
-                    BusinessField.PaymentDecisionDate, ("2026-08-15")
-                    BusinessField.PayableAmount, ("750")
-                    BusinessField.PayableCurrency, ("EUR")
-                ]
-        ))
-        CaseActKind.WithdrawDecision, (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        CaseActKind.RecordPayment,
-        (AuthoredCaseAct.RecordPayment(
-            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
-        ))
-        CaseActKind.ClearPayment, (AuthoredCaseAct.Bare BareAct.ClearPayment)
-        CaseActKind.Close, (AuthoredCaseAct.Bare BareAct.Close)
-        CaseActKind.Reopen, (AuthoredCaseAct.Bare BareAct.Reopen)
-        CaseActKind.Void, (AuthoredCaseAct.Void "Entry error")
-        CaseActKind.Reinstate, (AuthoredCaseAct.Reinstate "Entry confirmed")
-        CaseActKind.Erase, (AuthoredCaseAct.Bare BareAct.Erase)
-    ]
-
-let private stateExpectations =
-    [
-        "absent", None, [ "OPEN" ]
-        "erased", Some CaseState.Erased, []
-        "voided",
-        Some(CaseState.Voided(fields CaseStatus.Opened false false)),
-        [ "REINSTATE"; "ERASE" ]
-        "open undecided",
-        Some(live CaseStatus.Opened false false),
-        [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE"; "VOID"; "ERASE" ]
-        "open decided",
-        Some(live CaseStatus.Opened true false),
-        [
-            "CORRECT"
-            "DECIDE"
-            "WITHDRAW_DECISION"
-            "RECORD_PAYMENT"
-            "CLOSE"
-            "VOID"
-            "ERASE"
-        ]
-        "open paid",
-        Some(live CaseStatus.Opened true true),
-        [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE"; "VOID"; "ERASE" ]
-        "closed undecided",
-        Some(live CaseStatus.Closed false false),
-        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
-        "closed decided",
-        Some(live CaseStatus.Closed true false),
-        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
-        "closed paid",
-        Some(live CaseStatus.Closed true true),
-        [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
+        "absent", None
+        "erased", Some CaseState.Erased
+        "voided", Some(CaseState.Voided(fields CaseStatus.Opened false false))
+        "open undecided", Some(live CaseStatus.Opened false false)
+        "open decided", Some(live CaseStatus.Opened true false)
+        "open paid", Some(live CaseStatus.Opened true true)
+        "closed undecided", Some(live CaseStatus.Closed false false)
+        "closed decided", Some(live CaseStatus.Closed true false)
+        "closed paid", Some(live CaseStatus.Closed true true)
     ]
 
 let private matrix =
     testCase "independent state table governs all inventoried acts and advertisements" (fun () ->
-        Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Complete act vocabulary"
+        Expect.equal
+            TransitionOracle.samples.Length
+            (Inventory.tokens "caseActs").Length
+            "Complete act vocabulary"
 
-        for _, view, expected in stateExpectations do
+        for _, view in states do
             let current = view |> Option.map (retained 1L)
             let revision = if view.IsSome then 1L else 0L
 
-            for kind, act in acts do
-                let allowed = List.contains (CaseActKind.token kind) expected
+            for act, _ in TransitionOracle.samples do
                 let result = CaseFixtures.decide today (request revision act) current
-                Expect.equal (Result.isOk result) allowed "Independent transition expectation"
+
+                Expect.equal
+                    (Result.isOk result)
+                    (TransitionOracle.allows view act)
+                    "Independent transition expectation"
 
             match current with
             | None -> ()
             | Some value ->
                 let actual = Case.eligibleActs value |> List.map CaseActKind.token |> Set.ofList
 
-                Expect.isTrue
-                    (actual = Set.ofList expected)
+                Expect.equal
+                    actual
+                    (TransitionOracle.offered (Case.snapshot value).State |> Set.ofList)
                     "Independent advertisement expectation")
 
 let private allKeep = AuthoredCaseAct.Correct Inputs.correction

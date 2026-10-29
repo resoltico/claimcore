@@ -161,6 +161,22 @@ let tests =
                 )
 
             let expected = System.IO.File.ReadAllLines path
+            let states = Map.ofList classes
+            let witnesses = Map.ofList acts
+
+            for row in expected |> Array.skip 1 do
+                let cells = row.Split '\t'
+
+                let offered =
+                    states[cells[0]]
+                    |> Option.exists (fun snapshot ->
+                        TransitionOracle.allows (Some snapshot.State) witnesses[cells[1]])
+
+                Expect.equal
+                    offered
+                    (Boolean.Parse cells[2])
+                    "The oracle independently agrees with every existing-act advertisement cell"
+
             let actual = matrix ()
 
             Expecto.Expect.equal

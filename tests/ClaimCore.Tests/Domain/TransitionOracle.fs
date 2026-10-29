@@ -32,6 +32,48 @@ let private eligible (fields: CaseFields) act =
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields act
 
+/// Positive witnesses cover the independent inventory; correction witnesses replace registration
+/// only, so this oracle's synthetic state model does not invent arbitrary correction payloads.
+let samples =
+    let registration =
+        Inputs.registrationWith
+            [
+                BusinessField.ClaimantName, "Changed Party"
+                BusinessField.ClaimedAmount, "1000"
+            ]
+            Inputs.exampleRegistration
+
+    let decision =
+        Inputs.decisionWith [ BusinessField.PayableAmount, "750" ] Inputs.decision
+
+    Inputs.caseActs registration decision Inputs.payment "Entry error"
+    |> List.map (fun (act, token) ->
+        match act with
+        | AuthoredCaseAct.Correct _ ->
+            AuthoredCaseAct.Correct
+                {
+                    Registration = Amendment.Replace registration
+                    Decision = Change.Keep
+                    Payment = Change.Keep
+                },
+            token
+        | _ -> act, token)
+
+let allows state act =
+    match state, act with
+    | None, AuthoredCaseAct.Open _ -> true
+    | None, _
+    | Some CaseState.Erased, _ -> false
+    | Some(CaseState.Active _), AuthoredCaseAct.Void _ -> true
+    | Some(CaseState.Voided _), AuthoredCaseAct.Reinstate _ -> true
+    | Some(CaseState.Active _ | CaseState.Voided _), AuthoredCaseAct.Bare BareAct.Erase -> true
+    | Some(CaseState.Active fields), act -> eligible fields act
+    | Some(CaseState.Voided _), _ -> false
+
+let offered state =
+    samples
+    |> List.choose (fun (act, token) -> if allows (Some state) act then Some token else None)
+
 let private registration (value: RegistrationInput) (fields: CaseFields) =
     { fields with
         Registration =

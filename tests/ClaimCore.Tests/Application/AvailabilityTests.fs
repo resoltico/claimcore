@@ -9,30 +9,7 @@ open ClaimCore.Tests.Fixtures
 let private availableActs record =
     Case.eligibleActs record |> List.map CaseActKind.token
 
-let private candidates =
-    [
-        AuthoredCaseAct.Open registration
-        AuthoredCaseAct.AmendRegistration registration
-        AuthoredCaseAct.Correct
-            {
-                Registration =
-                    Amendment.Replace(
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, ("Corrected Synthetic Claimant") ]
-                            (registration)
-                    )
-                Decision = Change.Keep
-                Payment = Change.Keep
-            }
-        AuthoredCaseAct.Decide decision
-        (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        AuthoredCaseAct.RecordPayment(
-            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
-        )
-        (AuthoredCaseAct.Bare BareAct.ClearPayment)
-        (AuthoredCaseAct.Bare BareAct.Close)
-        (AuthoredCaseAct.Bare BareAct.Reopen)
-    ]
+let private candidates = TransitionOracle.samples |> List.map fst
 
 let private stateActions =
     testCase "each state advertises and enforces the specified act set" (fun () ->
@@ -47,38 +24,23 @@ let private stateActions =
             )
             |> accepted
 
-        let cases =
-            [
-                (opened (), [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ])
-                (decided (),
-                 [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ])
-                (paid (), [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE" ])
-                (zero, [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ])
-            ]
-
-        for (state, expected) in cases do
+        for state in [ opened (); decided (); paid (); zero ] do
+            let expected = TransitionOracle.offered (Case.snapshot state).State |> Set.ofList
             let actions = availableActs state |> Set.ofList
+            Expect.equal actions expected "Advertised actions match the independent oracle"
 
-            Expect.equal
-                actions
-                (Set.ofList (expected @ [ "VOID"; "ERASE" ]))
-                "Advertised actions match the domain contract"
-
-            candidates
-            |> List.iter (fun act ->
-                let result = apply act state
-
+            for act in candidates do
                 Expect.equal
-                    (Result.isOk result)
-                    (Set.contains (CaseActKind.token (CaseAct.kind act)) actions)
-                    "No separately invented UI state machine")
+                    (apply act state |> Result.isOk)
+                    (TransitionOracle.allows (Some((Case.snapshot state).State)) act)
+                    "Execution and advertisement follow the oracle"
 
             let closed = apply (AuthoredCaseAct.Bare BareAct.Close) state |> accepted
 
             Expect.equal
-                (availableActs closed)
-                [ "CORRECT"; "REOPEN"; "VOID"; "ERASE" ]
-                "Closed cases can correct facts or reopen")
+                (availableActs closed |> Set.ofList)
+                (TransitionOracle.offered (Case.snapshot closed).State |> Set.ofList)
+                "Closed case advertisements follow the oracle")
 
 let private edgeActions =
     testList

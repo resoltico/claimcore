@@ -13,46 +13,10 @@ open ClaimCore.Tests.PropertyHarness
 
 type private Step = { Act: AuthoredCaseAct; Stale: bool }
 
-let private businessActs =
-    [
-        AuthoredCaseAct.Open registration
-        AuthoredCaseAct.AmendRegistration(
-            ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.ClaimantName, ("Amended Synthetic Name") ]
-                (registration)
-        )
-        AuthoredCaseAct.Correct
-            {
-                Registration =
-                    Amendment.Replace(
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, ("Corrected Synthetic Name") ]
-                            (registration)
-                    )
-                Decision = Change.Keep
-                Payment = Change.Keep
-            }
-        AuthoredCaseAct.Decide decision
-        AuthoredCaseAct.Decide(
-            ClaimCore.TestSupport.Inputs.decisionWith
-                [ BusinessField.PayableAmount, ("0") ]
-                (decision)
-        )
-        (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        AuthoredCaseAct.RecordPayment(
-            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
-        )
-        (AuthoredCaseAct.Bare BareAct.ClearPayment)
-        (AuthoredCaseAct.Bare BareAct.Close)
-        (AuthoredCaseAct.Bare BareAct.Reopen)
-    ]
-
 let private acts =
-    businessActs
+    (TransitionOracle.samples |> List.map fst)
     @ [
-        AuthoredCaseAct.Void "Entry error"
-        AuthoredCaseAct.Reinstate "Entry confirmed"
-        (AuthoredCaseAct.Bare BareAct.Erase)
+        AuthoredCaseAct.Decide(Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision)
     ]
 
 let private stepGenerator =
@@ -248,23 +212,6 @@ let private reach state =
             (Some(opened ()))
         |> accepted
 
-let private expectedBusiness =
-    function
-    | OpenUndecided -> [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ]
-    | OpenDecided -> [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
-    | OpenZeroDecision -> [ "CORRECT"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ]
-    | OpenPaid -> [ "CORRECT"; "CLEAR_PAYMENT"; "CLOSE" ]
-    | ClosedUndecided
-    | ClosedDecided
-    | ClosedPaid -> [ "CORRECT"; "REOPEN" ]
-    | Voided
-    | Erased -> []
-
-let private expectedActs state =
-    match state with
-    | Voided -> [ "REINSTATE"; "ERASE" ]
-    | Erased -> []
-    | _ -> expectedBusiness state @ [ "VOID"; "ERASE" ]
 
 let private executionMatchesAdvertisement claim expected =
     let view = Case.snapshot claim
@@ -296,7 +243,7 @@ let private availabilityProperty =
                 ]
 
         let claim = reach state
-        let expected = expectedActs state |> Set.ofList
+        let expected = TransitionOracle.offered (Case.snapshot claim).State |> Set.ofList
         let actual = (Case.eligibleActs claim |> List.map CaseActKind.token) |> Set.ofList
         return actual = expected && executionMatchesAdvertisement claim expected
     }
