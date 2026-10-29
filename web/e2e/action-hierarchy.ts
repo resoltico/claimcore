@@ -27,8 +27,23 @@ const checkCaseActions = async (page: Page) => {
   }
 };
 
+const checkSavedViewSelection = async (page: Page) => {
+  const selected = page.locator('.saved-views button[aria-pressed="true"]');
+  if ((await selected.count()) === 0) {
+    return;
+  }
+  const fill = await background(selected);
+  for (const button of await page.locator('.saved-views button[aria-pressed="false"]').all()) {
+    expect(
+      await background(button),
+      "The selected saved view must remain visually distinct",
+    ).not.toBe(fill);
+  }
+};
+
 export const checkActionHierarchy = async (page: Page) => {
   await checkCaseActions(page);
+  await checkSavedViewSelection(page);
   const primary = page.locator("main button.primary, main button[type=submit]").first();
   if ((await primary.count()) === 0) {
     return;
