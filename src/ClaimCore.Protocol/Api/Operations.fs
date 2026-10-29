@@ -16,6 +16,7 @@ type QueryEndpoint =
     | Resolve
     | AuthorityList
     | AuthorityGrants
+    | AuthorityHistory
     | Context
 
 [<RequireQualifiedAccess>]
@@ -38,6 +39,7 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.Resolve)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityList)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityHistory)
                 (ActorEndpoint.Query QueryEndpoint.Context)
             ]
             (function
@@ -50,6 +52,7 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) -> "authority.history"
              | (ActorEndpoint.Query QueryEndpoint.Context) -> "context")
 
     let all = Vocabulary.all vocabulary

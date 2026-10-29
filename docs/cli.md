@@ -9,7 +9,7 @@ Use `--dry-run` to print the prepared JSON frame without authentication. This ch
 Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
 
 Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--order reference|recent` selects the page order. A continuation cursor is bound to those filters and order.
-`case list --format csv` emits UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+`case list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case and previews with that revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
 
@@ -468,7 +468,23 @@ claimcore authority grants ACTOR-ID [--cursor VALUE] [--limit N]
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `ACTOR-ID` | Actor ID — The registered actor whose grants are being read. |  |  |
+| `ACTOR-ID` | Actor ID — The registered actor selected for grant review or authority history. |  |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## authority history
+
+Authority history
+
+Review authority changes, newest first, optionally filtered by target actor.
+
+```sh
+claimcore authority history [--actor-id VALUE] [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--actor-id` | Actor ID — The registered actor selected for grant review or authority history. |  |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

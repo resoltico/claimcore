@@ -436,7 +436,10 @@ stays at the recorded commit. The comparison removes its worktrees, build output
 containers on success or failure, while preserving reports and failure output.
 
 Run `bash eng/verify.sh growth` before a release and on demand. It includes nine write-contention profiles,
-three cardinality comparisons and search/filtered read workloads at 1k, 10k and 100k cases.
+three cardinality comparisons and search/filtered read workloads at 1k, 10k and 100k cases. At the
+100k case population, global and actor-filtered authority-history reads also run after 100k additional
+grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
+their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements

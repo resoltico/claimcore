@@ -284,12 +284,12 @@ module ResponseCodecs =
         |> build
         |> named "ActorSummary"
 
-    let authorityGrant =
+    let internal authorityGrantFields =
         (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
-        |> build
-        |> named "AuthorityGrant"
+
+    let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
     let grantsPage =
         (record (fun v0 v1 v2 ->

@@ -106,6 +106,11 @@ CREATE TABLE claimcore.ledger (
     CONSTRAINT ledger_case_revision_unique UNIQUE (subject_id, case_revision)
 );
 
+CREATE INDEX ledger_authority_sequence ON claimcore.ledger (sequence DESC)
+    WHERE subject_kind = 'AUTHORITY';
+CREATE INDEX ledger_authority_actor ON claimcore.ledger (subject_id, sequence DESC)
+    WHERE subject_kind = 'AUTHORITY';
+
 CREATE TABLE claimcore.ledger_head (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     sequence bigint NOT NULL CHECK (sequence BETWEEN 0 AND 9007199254740991),

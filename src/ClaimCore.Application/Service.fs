@@ -230,6 +230,7 @@ module Service =
     let resolve = Resolution.run
     let actors = Queries.actors
     let grants = Queries.grants
+    let authorityHistory = Queries.authorityHistory
 
     let provisionOwner services operationId token =
         AuthorityExecution.provisionStore services operationId token

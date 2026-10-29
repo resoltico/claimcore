@@ -18,6 +18,15 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "authority history preserves typed facts and filtered newest-first pages"
+                (withFixture factory AuthorityHistoryContract.factsAndPaging)
+            testCaseAsync
+                "authority history requires installation read authority on every snapshot"
+                (withFixture factory AuthorityHistoryContract.permissions)
+            testCaseAsync
+                "authority history rejects tampered payloads and malformed store pages"
+                (withFixture factory AuthorityHistoryContract.integrity)
+            testCaseAsync
                 "authority grant review shows only touched facts and writes nothing"
                 (withFixture factory AuthorityReviewContract.authorityGrantReview)
             testCaseAsync

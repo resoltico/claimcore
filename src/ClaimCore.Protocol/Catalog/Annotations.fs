@@ -156,9 +156,8 @@ module CatalogAnnotations =
                 yield (owner, BusinessField.key BusinessField.CaseReference), caseReference
             for owner in [ RequestSchemas.ObserveRequest; RequestSchemas.ResolveRequest ] do
                 yield (owner, WireMembers.OperationId), operationIdentity
-            yield
-                (RequestSchemas.GrantsRequest, WireMembers.ActorId),
-                constant (annotation InteractionInput.ActorId)
+            for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
+                yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)
             yield (RequestSchemas.HistoryRequest, WireMembers.Detail), detail
             for owner in
                 [
@@ -166,6 +165,7 @@ module CatalogAnnotations =
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest
                     RequestSchemas.GrantsRequest
+                    RequestSchemas.AuthorityHistoryRequest
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
                 yield (owner, WireMembers.Limit), limit

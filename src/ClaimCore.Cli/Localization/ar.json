@@ -61,5 +61,6 @@
   "cli.usage.synopsis": "الاستخدام: {synopsis}",
   "cli.usage.unknownCommand": "أمر غير معروف: {command}.",
   "cli.usage.unknownOption": "خيار غير معروف: {flag}.",
-  "cli.usage.versionOptions": "يقبل version الخيار --json فقط."
+  "cli.usage.versionOptions": "يقبل version الخيار --json فقط.",
+  "cli.text.authorityHistoryEmpty": "لا توجد تغييرات صلاحيات مطابقة لهذا الاختيار."
 }

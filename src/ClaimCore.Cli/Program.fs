@@ -151,8 +151,17 @@ let private preparedVerb output errors arguments =
                                 errors.Flush()
                     }
 
-                CaseListCommand.run io prepared CancellationToken.None
-                |> fun value -> value.GetAwaiter().GetResult())
+                let frame =
+                    Frames.admit prepared.Bytes
+                    |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
+
+                let pending =
+                    if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
+                        AuthorityHistoryCommand.run io prepared CancellationToken.None
+                    else
+                        CaseListCommand.run io prepared CancellationToken.None
+
+                pending.GetAwaiter().GetResult())
     | Ok prepared ->
         use input = new System.IO.MemoryStream(prepared.Bytes, false)
 

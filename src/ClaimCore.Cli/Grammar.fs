@@ -322,7 +322,9 @@ module Grammar =
             let listing = entry.Endpoint = ActorEndpoint.Query QueryEndpoint.CaseList
 
             let formats =
-                if listing then
+                if
+                    listing || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                then
                     [ "text"; "json"; "csv" ]
                 else
                     [ "text"; "json" ]

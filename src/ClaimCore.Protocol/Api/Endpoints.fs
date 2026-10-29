@@ -252,6 +252,13 @@ module Api =
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
 
+    let authorityHistory =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory))
+            HttpMethod.Post
+            RequestCodecs.authorityHistoryRequest
+            (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
+
     let private defineHost =
         function
         | HostEndpoint.Session -> EndpointDefinition.create session
@@ -273,6 +280,8 @@ module Api =
             EndpointDefinition.create authorityList
         | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
             EndpointDefinition.create authorityGrants
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
+            EndpointDefinition.create authorityHistory
 
     let definitions =
         (HostEndpoint.all |> List.map defineHost)

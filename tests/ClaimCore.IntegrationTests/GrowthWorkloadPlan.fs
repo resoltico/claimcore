@@ -218,3 +218,32 @@ let readFingerprint cases filter =
             warmupRequests = warmupRequests
             measuredRequests = measuredRequests
         |}
+
+let authorityEntries = 100000
+let authorityOperationStart = 2000000
+let authorityRole = Role.Auditor
+let authorityOwner = CaseFixtures.actorId (StoreFixtures.id 1)
+let readProfileCount = readPopulations.Length * 2 + 2
+
+let authorityFingerprint cases target =
+    fingerprint
+        {|
+            cases = cases
+            caseSeed = readFingerprint cases CaseListFilter.empty<string>
+            authorityEntries = authorityEntries
+            initialAuthorityEntries = 3
+            operationStart = authorityOperationStart
+            actCycle = [ "GRANT"; "REVOKE" ]
+            role = Role.token authorityRole
+            scope = "INSTALLATION"
+            query =
+                element
+                    Api.authorityHistory.Input
+                    {
+                        TargetActorId = target |> Option.map ActorId.value
+                        AfterCursor = None
+                        Limit = readLimit
+                    }
+            warmupRequests = warmupRequests
+            measuredRequests = measuredRequests
+        |}

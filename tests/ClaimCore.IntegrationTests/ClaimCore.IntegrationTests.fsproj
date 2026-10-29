@@ -9,6 +9,7 @@
     <Compile Include="CaseDisclosureContract.fs" />
     <Compile Include="ScopedAuthorityContract.fs" />
     <Compile Include="AuthorityReviewContract.fs" />
+    <Compile Include="AuthorityHistoryContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />

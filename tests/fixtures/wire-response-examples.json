@@ -3179,6 +3179,143 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "authority.history-all-facts",
+      "endpoint": "authority.history",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "sequence": 6,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "DISABLE"
+                }
+              },
+              {
+                "sequence": 5,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "ENABLE"
+                }
+              },
+              {
+                "sequence": 4,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "REVOKE",
+                  "role": "CASE_READER",
+                  "scope": {
+                    "kind": "CASE",
+                    "caseReference": "HISTORY-001"
+                  }
+                }
+              },
+              {
+                "sequence": 3,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "GRANT",
+                  "role": "CASE_READER",
+                  "scope": {
+                    "kind": "CASE",
+                    "caseReference": "HISTORY-001"
+                  }
+                }
+              },
+              {
+                "sequence": 2,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "REGISTER",
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "history-owner"
+                  }
+                }
+              },
+              {
+                "sequence": 1,
+                "recordedAt": "2026-01-01T00:00:00.000000Z",
+                "recordedBy": "10000000-0000-4000-8000-000000000001",
+                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "act": {
+                  "kind": "PROVISION_OWNER",
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "history-owner"
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.history-empty",
+      "endpoint": "authority.history",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.history-rejected",
+      "endpoint": "authority.history",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "incidentDate",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.history-failed",
+      "endpoint": "authority.history",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

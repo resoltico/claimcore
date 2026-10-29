@@ -948,6 +948,25 @@
         "text": "Rīga",
         "order": "RECENT"
       }
+    },
+    {
+      "id": "authority.history-all",
+      "endpoint": "authority.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "authority.history-actor",
+      "endpoint": "authority.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "actorId": "10000000-0000-4000-8000-000000000001",
+        "limit": 1
+      }
     }
   ]
 }

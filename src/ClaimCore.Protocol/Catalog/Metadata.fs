@@ -95,7 +95,7 @@ type CatalogOperation =
         | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseHistory) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Authority _)
-        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants) ->
+        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
         | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation

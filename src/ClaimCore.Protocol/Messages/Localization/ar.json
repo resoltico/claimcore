@@ -191,7 +191,7 @@
   "host.RESPONSE_FAILED": "تعذر تسليم استجابة العملية المكتملة.",
   "host.SESSION_REJECTED": "رُفضت المصادقة.",
   "input.actorId.label": "معرّف الجهة",
-  "input.actorId.meaning": "الجهة المسجلة التي تُقرأ صلاحياتها.",
+  "input.actorId.meaning": "الجهة المسجلة المحددة لمراجعة الصلاحيات أو سجل تغييراتها.",
   "input.detail.label": "السجل الكامل",
   "input.detail.meaning": "تضمين اللقطات المقبولة إذا كان السجل الكامل مرئياً للجهة.",
   "input.lifecycle.label": "دورة حياة الملف",
@@ -254,5 +254,7 @@
   "status.CLOSED.label": "مغلق",
   "status.OPENED.label": "مفتوح",
   "subject.AUTHORITY.label": "الصلاحيات",
-  "subject.CASE.label": "قضية"
+  "subject.CASE.label": "قضية",
+  "endpoint.authority.history.label": "سجل الصلاحيات",
+  "endpoint.authority.history.meaning": "عرض تغييرات الصلاحيات من الأحدث إلى الأقدم، مع إمكانية تصفيتها حسب الجهة المستهدفة."
 }

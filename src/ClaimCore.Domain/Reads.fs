@@ -28,6 +28,13 @@ type GrantsRequest =
         Limit: int
     }
 
+type AuthorityHistoryRequest =
+    {
+        TargetActorId: Guid option
+        AfterCursor: string option
+        Limit: int
+    }
+
 type CaseGetRequest = { CaseReference: string }
 
 type OperationLookup = { OperationId: Guid }

@@ -973,6 +973,96 @@
         }
       }
     },
+    "/api/authority.history": {
+      "post": {
+        "operationId": "authority.history",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorityHistoryReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorityHistoryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/context": {
       "post": {
         "operationId": "context",
@@ -1980,6 +2070,318 @@
         "required": [
           "role",
           "scope"
+        ]
+      },
+      "AuthorityHistoryEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "recordedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "targetActorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "act": {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts"
+          }
+        },
+        "required": [
+          "sequence",
+          "recordedAt",
+          "recordedBy",
+          "targetActorId",
+          "act"
+        ]
+      },
+      "AuthorityHistoryFacts": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.PROVISION_OWNER"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.REGISTER"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.GRANT"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.REVOKE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.ENABLE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.DISABLE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "PROVISION_OWNER": "#/components/schemas/AuthorityHistoryFacts.PROVISION_OWNER",
+            "REGISTER": "#/components/schemas/AuthorityHistoryFacts.REGISTER",
+            "GRANT": "#/components/schemas/AuthorityHistoryFacts.GRANT",
+            "REVOKE": "#/components/schemas/AuthorityHistoryFacts.REVOKE",
+            "ENABLE": "#/components/schemas/AuthorityHistoryFacts.ENABLE",
+            "DISABLE": "#/components/schemas/AuthorityHistoryFacts.DISABLE"
+          }
+        }
+      },
+      "AuthorityHistoryFacts.DISABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityHistoryFacts.ENABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ENABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityHistoryFacts.GRANT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "GRANT"
+          },
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "kind",
+          "role",
+          "scope"
+        ]
+      },
+      "AuthorityHistoryFacts.PROVISION_OWNER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PROVISION_OWNER"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          }
+        },
+        "required": [
+          "kind",
+          "principal"
+        ]
+      },
+      "AuthorityHistoryFacts.REGISTER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REGISTER"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          }
+        },
+        "required": [
+          "kind",
+          "principal"
+        ]
+      },
+      "AuthorityHistoryFacts.REVOKE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REVOKE"
+          },
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "kind",
+          "role",
+          "scope"
+        ]
+      },
+      "AuthorityHistoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorityHistoryEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "nextCursor"
+        ]
+      },
+      "AuthorityHistoryReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "AuthorityHistoryReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/AuthorityHistoryReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AuthorityHistoryReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AuthorityHistoryReply.Outcome.FAILED"
+          }
+        }
+      },
+      "AuthorityHistoryReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AuthorityHistoryReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AuthorityHistoryReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AuthorityHistoryPage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AuthorityHistoryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "limit"
         ]
       },
       "AuthorityState": {

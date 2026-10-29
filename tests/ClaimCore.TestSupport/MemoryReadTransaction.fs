@@ -204,6 +204,25 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
 
             Task.FromResult(page limit revision rows)
 
+        member _.AuthorityHistoryPage(query: AuthorityHistoryPageQuery) =
+            read ()
+
+            let rows =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    match entry.Subject with
+                    | EntryTarget.Authority(target, _) ->
+                        (query.TargetActorId |> Option.forall ((=) target))
+                        && (query.BeforeSequence
+                            |> Option.forall (fun before -> entry.Sequence < before))
+                    | _ -> false)
+                |> Seq.sortByDescending _.Sequence
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit (fun entry -> entry.Sequence) rows)
+
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after

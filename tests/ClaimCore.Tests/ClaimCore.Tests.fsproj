@@ -84,6 +84,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/CaseDisclosureContract.fs" Link="Application/CaseDisclosureContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
     <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
@@ -135,6 +136,7 @@
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/WorklistGrammarTests.fs" />
     <Compile Include="Cli/CaseListCommandTests.fs" />
+    <Compile Include="Cli/AuthorityHistoryTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

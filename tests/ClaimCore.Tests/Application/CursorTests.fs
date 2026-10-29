@@ -96,6 +96,23 @@ let private accepted () =
                         "Independent grant position"
 
                     Cursors.encodeGrants (CaseFixtures.actorId (actor)) expected
+                | "authority.history" ->
+                    let target = json.RootElement.GetProperty "actor"
+
+                    let actor =
+                        if target.ValueKind = JsonValueKind.Null then
+                            None
+                        else
+                            Some(CaseFixtures.actorId (Guid.Parse(target.GetString() |> nonNull)))
+
+                    let expected = CaseFixtures.sequence (position.GetInt64())
+
+                    Expect.equal
+                        (Cursors.decodeAuthorityHistory actor encoded)
+                        (Ok expected)
+                        "Independent authority-history position and target"
+
+                    Cursors.encodeAuthorityHistory actor expected
                 | _ -> failtest "Unknown fixture endpoint"
 
             Expect.equal actual encoded "Encoder reproduces committed owner bytes")

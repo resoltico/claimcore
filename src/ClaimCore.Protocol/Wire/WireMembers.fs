@@ -116,4 +116,7 @@ module RequestSchemas =
     let GrantsRequest = "GrantsRequest"
 
     [<Literal>]
+    let AuthorityHistoryRequest = "AuthorityHistoryRequest"
+
+    [<Literal>]
     let Empty = "Empty"

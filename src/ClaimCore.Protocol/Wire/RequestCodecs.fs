@@ -260,6 +260,12 @@ module RequestCodecs =
             Fields = fields.Fields |> field WireMembers.ActorId get uuid
         }
 
+    let private actorFilter get (fields: ReadFields<'request, Guid option -> 'rest>) =
+        {
+            Inputs = fields.Inputs @ [ ReadInput.ActorFilter ]
+            Fields = fields.Fields |> optionalField WireMembers.ActorId get uuid
+        }
+
     let private detail get (fields: ReadFields<'request, HistoryDetail -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.Detail ]
@@ -420,3 +426,15 @@ module RequestCodecs =
         |> finishRead RequestSchemas.GrantsRequest QueryEndpoint.AuthorityGrants
 
     let empty = read () |> finishRead RequestSchemas.Empty QueryEndpoint.Context
+
+    let authorityHistoryRequest =
+        (read (fun actor cursor limit ->
+            {
+                AuthorityHistoryRequest.TargetActorId = actor
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<AuthorityHistoryRequest, _>)
+        |> actorFilter _.TargetActorId
+        |> page _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.AuthorityHistoryRequest QueryEndpoint.AuthorityHistory

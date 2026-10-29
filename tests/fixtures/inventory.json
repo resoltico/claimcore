@@ -281,6 +281,11 @@
       "token": "authority.grants",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "authority.history",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -331,7 +336,7 @@
     "progress",
     "order"
   ],
-  "cliFrameCount": 30,
+  "cliFrameCount": 31,
   "readInputs": {
     "case.get": [
       "caseReference"
@@ -366,7 +371,12 @@
       "limit",
       "cursor"
     ],
-    "context": []
+    "context": [],
+    "authority.history": [
+      "actorId",
+      "limit",
+      "cursor"
+    ]
   },
   "caseLifecycles": [
     "ACTIVE",

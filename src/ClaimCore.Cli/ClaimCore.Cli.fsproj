@@ -43,12 +43,15 @@
     <Compile Include="TextDiagnosticReply.fs" />
     <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
+    <Compile Include="AuthorityHistoryRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
     <Compile Include="TextOperationReply.fs" />
     <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
+    <Compile Include="ReadPageIO.fs" />
     <Compile Include="CaseListCommand.fs" />
+    <Compile Include="AuthorityHistoryCommand.fs" />
     <Compile Include="InteractiveReview.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

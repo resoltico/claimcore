@@ -194,6 +194,9 @@ type internal PausedPageStore
                                             }
                                         )
 
+                                    member _.AuthorityHistoryPage query =
+                                        tx.AuthorityHistoryPage query
+
                                     member _.ActorPage
                                         ({
                                              ActorPageQuery.AfterActorId = after

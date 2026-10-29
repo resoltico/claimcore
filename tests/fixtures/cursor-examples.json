@@ -29,6 +29,18 @@
    "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":null,\"role\":\"OWNER\"},\"kind\":\"GRANTS\",\"v\":1}",
    "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6bnVsbCwicm9sZSI6Ik9XTkVSIn0sImtpbmQiOiJHUkFOVFMiLCJ2IjoxfQ",
    "tokenLength": 146
+  },
+  {
+   "endpoint": "authority.history",
+   "canonicalJson": "{\"actor\":null,\"after\":50,\"kind\":\"AUTHORITY_HISTORY\",\"v\":1}",
+   "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJraW5kIjoiQVVUSE9SSVRZX0hJU1RPUlkiLCJ2IjoxfQ",
+   "tokenLength": 78
+  },
+  {
+   "endpoint": "authority.history",
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":50,\"kind\":\"AUTHORITY_HISTORY\",\"v\":1}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjo1MCwia2luZCI6IkFVVEhPUklUWV9ISVNUT1JZIiwidiI6MX0",
+   "tokenLength": 123
   }
  ],
  "refused": [

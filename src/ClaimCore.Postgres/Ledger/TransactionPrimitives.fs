@@ -115,6 +115,27 @@ module internal TransactionPages =
             return page limit revision entries
         }
 
+    let authorityHistory connection installation (query: AuthorityHistoryPageQuery) token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='AUTHORITY' AND ($1::uuid IS NULL OR subject_id=$1) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
+                    [|
+                        DatabaseSession.parameter (query.TargetActorId |> Option.map ActorId.value)
+                        DatabaseSession.parameter (
+                            query.BeforeSequence |> Option.map Sequence.value
+                        )
+                        box (query.Limit + 1)
+                    |]
+                    token
+
+            return
+                rows
+                |> List.map (StoredEntries.decode installation >> _.Entry)
+                |> page query.Limit (fun entry -> entry.Sequence)
+        }
+
     let actors connection after limit token =
         task {
             let! rows =
@@ -195,6 +216,9 @@ type private ReadTx
 
         member _.HistoryPage query =
             TransactionPages.history connection installation query token
+
+        member _.AuthorityHistoryPage query =
+            TransactionPages.authorityHistory connection installation query token
 
         member _.ActorPage
             ({

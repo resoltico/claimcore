@@ -61,5 +61,6 @@
   "cli.usage.synopsis": "Lietojums: {synopsis}",
   "cli.usage.unknownCommand": "Nezināma komanda: {command}.",
   "cli.usage.unknownOption": "Nezināma opcija: {flag}.",
-  "cli.usage.versionOptions": "Version pieņem tikai --json."
+  "cli.usage.versionOptions": "Version pieņem tikai --json.",
+  "cli.text.authorityHistoryEmpty": "Šai atlasei nav atbilstošu pilnvaru izmaiņu."
 }

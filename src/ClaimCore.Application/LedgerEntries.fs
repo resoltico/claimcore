@@ -239,6 +239,30 @@ module LedgerEntries =
                     Content = content
                 })
 
+    /// Only a validated authority payload can supply typed audit facts.
+    let internal authorityHistory (validated: ValidatedEntry) =
+        let entry = validated.Entry
+
+        match entry.Subject, validated.Content with
+        | EntryTarget.Authority(target, act), EntryContent.Authority request ->
+            AuthorityRequests.fromRecord request
+            |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+            |> Result.bind (fun command ->
+                let facts = AuthorityHistoryFacts.ofCommand command
+
+                if AuthorityHistoryFacts.kind facts <> act then
+                    Error CoreFault.StoreIntegrityError
+                else
+                    Ok
+                        {
+                            AuthorityHistoryEntry.Sequence = entry.Sequence
+                            RecordedAt = entry.RecordedAt
+                            RecordedBy = entry.ActorId
+                            TargetActorId = target
+                            Facts = facts
+                        })
+        | _ -> Error CoreFault.StoreIntegrityError
+
     /// Comparison bytes are canonical; retained ledger payloads remain authored.
     let internal identityBytes validated =
         match validated.Content with

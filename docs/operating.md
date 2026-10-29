@@ -47,6 +47,14 @@ With installation OWNER or AUDITOR, list actors and inspect each selected actor'
 continuation; an actor summary is not a complete grant inventory. Disabled actors remain reviewable. Each
 page checks current rights and uses a separate snapshot.
 
+Use `claimcore authority history` to audit authority changes newest first. Installation OWNER and
+AUDITOR may read the history; a case-scoped grant does not grant installation authority review.
+Use `--actor-id ID` to select the target actor, rather than the executing actor. Each entry retains
+its ledger sequence, UTC recording time, executor, target and typed principal or grant facts. Follow
+`nextCursor` to continue. Every page rechecks current rights inside its read snapshot, including after
+revocation. History payloads are permanent authority records; erasing a case does not erase its grants
+or authority history. CSV export protects formula-leading cells; JSON preserves exact values.
+
 Selecting an actor starts its offered GRANT action when available, with the disclosed principal bound
 to that actor. Review the target, role and scope before confirming. Selecting another actor does not
 rewrite an authored, prepared or unresolved request. Starting that actor's action requires the normal

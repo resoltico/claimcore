@@ -61,5 +61,6 @@
   "cli.usage.synopsis": "Usage: {synopsis}",
   "cli.usage.unknownCommand": "Unknown command: {command}.",
   "cli.usage.unknownOption": "Unknown option: {flag}.",
-  "cli.usage.versionOptions": "Version accepts only --json."
+  "cli.usage.versionOptions": "Version accepts only --json.",
+  "cli.text.authorityHistoryEmpty": "No authority changes match this selection."
 }

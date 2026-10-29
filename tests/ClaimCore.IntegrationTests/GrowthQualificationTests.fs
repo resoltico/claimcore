@@ -210,7 +210,7 @@ let private qualify () =
                     expected = selected.Length
                     requiredProfiles = 9
                     completedReadProfiles = readCount
-                    requiredReadProfiles = GrowthWorkloadPlan.readPopulations.Length * 2
+                    requiredReadProfiles = GrowthWorkloadPlan.readProfileCount
                     completeQualification = selected.Length = 9
                     kind =
                         if GrowthWorkloadPlan.comparison then
@@ -231,6 +231,9 @@ let private qualify () =
                                                 Actors = GrowthWorkloadPlan.writeActors
                                             })
                                 readPopulations = GrowthWorkloadPlan.readPopulations
+                                authorityHistory =
+                                    [ None; Some GrowthWorkloadPlan.authorityOwner ]
+                                    |> List.map (GrowthWorkloadPlan.authorityFingerprint 100000)
                                 cardinality =
                                     GrowthWorkloadPlan.cardinalityCases
                                     |> List.map GrowthWorkloadPlan.cardinalityFingerprint
@@ -262,8 +265,8 @@ let private qualify () =
 
                 Expect.equal
                     readCount
-                    (GrowthWorkloadPlan.readPopulations.Length * 2)
-                    "Every required search/filtered population produced a report"
+                    (GrowthWorkloadPlan.readProfileCount)
+                    "Every required case and authority query population produced a report"
 
             let! resources = cardinality () |> Async.AwaitTask
             atomic "cardinality.json" resources

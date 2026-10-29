@@ -86,10 +86,10 @@ let private read actor filter =
         | _ -> return failtestf "Read growth workload failed: %A" result
     }
 
-let private measure actor cases (name, filter, expectedItems) =
+let private measure cases (name, order, expectedItems, fingerprint) read =
     task {
         for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
-            let! found = read actor filter
+            let! found = read ()
             Expect.equal found expectedItems "Warmup observes the independent seeded population"
 
         let durations = ResizeArray<double>()
@@ -98,7 +98,7 @@ let private measure actor cases (name, filter, expectedItems) =
 
         for _ in 1 .. GrowthWorkloadPlan.measuredRequests do
             let watch = Stopwatch.StartNew()
-            let! found = read actor filter
+            let! found = read ()
             durations.Add watch.Elapsed.TotalMilliseconds
 
             Expect.equal
@@ -116,7 +116,7 @@ let private measure actor cases (name, filter, expectedItems) =
                 cases = cases
                 requests = latencies.Length
                 warmupRequests = GrowthWorkloadPlan.warmupRequests
-                order = CaseListOrder.token filter.Order
+                order = order
                 limit = GrowthWorkloadPlan.readLimit
                 expectedItems = expectedItems
                 returnedItems = returned
@@ -125,8 +125,75 @@ let private measure actor cases (name, filter, expectedItems) =
                 p95Milliseconds = latencies[int (float (latencies.Length - 1) * 0.95)]
                 p99Milliseconds = latencies[int (float (latencies.Length - 1) * 0.99)]
                 maximumMilliseconds = Array.last latencies
-                workloadFingerprint = GrowthWorkloadPlan.readFingerprint cases filter
+                workloadFingerprint = fingerprint
             |}
+    }
+
+let private authorityProfiles (database: PostgresFixture.Database) actor cases =
+    task {
+        for index in 0 .. GrowthWorkloadPlan.authorityEntries - 1 do
+            let! reply =
+                grant
+                    actor
+                    (id (GrowthWorkloadPlan.authorityOperationStart + index))
+                    database.Fixture.Owner
+                    {
+                        Role = GrowthWorkloadPlan.authorityRole
+                        Scope = GrantTarget.Installation
+                    }
+                    (index % 2 = 0)
+
+            acceptedAuthority reply
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! counts =
+            ClaimCore.Postgres.DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='AUTHORITY'"
+                [||]
+                token
+
+        Expect.equal
+            (ClaimCore.Postgres.DatabaseSession.value<int64> 0 counts.Head)
+            (int64 (GrowthWorkloadPlan.authorityEntries + 3))
+            "History qualification contains the declared actual authority entry population"
+
+        let reports = ResizeArray<_>()
+
+        for name, target in
+            [
+                "authority-history", None
+                "authority-history-actor", Some GrowthWorkloadPlan.authorityOwner
+            ] do
+            let query =
+                {
+                    TargetActorId = target |> Option.map ActorId.value
+                    AfterCursor = None
+                    Limit = GrowthWorkloadPlan.readLimit
+                }
+
+            let read () =
+                task {
+                    let! result = Service.authorityHistory actor query token
+
+                    match result with
+                    | Outcome.Succeeded page -> return page.Entries.Length
+                    | _ -> return failtestf "Authority history growth failed: %A" result
+                }
+
+            let! report =
+                measure
+                    cases
+                    (name,
+                     "SEQUENCE",
+                     GrowthWorkloadPlan.readLimit,
+                     GrowthWorkloadPlan.authorityFingerprint cases target)
+                    read
+
+            reports.Add report
+
+        return reports.ToArray()
     }
 
 let profile cases =
@@ -161,9 +228,23 @@ let profile cases =
 
             let reports = ResizeArray<_>()
 
-            for workload in workloads do
-                let! report = measure actor cases workload
+            for name, filter, expectedItems in workloads do
+                let! report =
+                    measure
+                        cases
+                        (name,
+                         CaseListOrder.token filter.Order,
+                         expectedItems,
+                         GrowthWorkloadPlan.readFingerprint cases filter)
+                        (fun () -> read actor filter)
+
                 reports.Add report
+
+            // Seed authority events only after the existing query measurements; their declared
+            // inputs and fingerprints remain unchanged for historical comparisons.
+            if cases = 100000 then
+                let! history = authorityProfiles database actor cases
+                reports.AddRange history
 
             return
                 {|

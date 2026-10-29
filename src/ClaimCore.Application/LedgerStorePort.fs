@@ -113,6 +113,13 @@ type HistoryPageQuery =
         Limit: int
     }
 
+type AuthorityHistoryPageQuery =
+    {
+        TargetActorId: ActorId option
+        BeforeSequence: Sequence option
+        Limit: int
+    }
+
 type ActorPageQuery =
     {
         AfterActorId: ActorId option
@@ -148,6 +155,7 @@ type IReadTx =
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
 
     abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
+    abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
     abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>

@@ -370,3 +370,4 @@ module internal Queries =
     let actors = AuthorityQueries.actors
     let selectGrants = AuthorityQueries.selectGrants
     let grants = AuthorityQueries.grants
+    let authorityHistory = AuthorityQueries.history

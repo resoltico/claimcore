@@ -191,7 +191,7 @@
   "host.RESPONSE_FAILED": "Pabeigtās darbības atbildi neizdevās piegādāt.",
   "host.SESSION_REJECTED": "Autentifikācija ir atteikta.",
   "input.actorId.label": "Dalībnieka ID",
-  "input.actorId.meaning": "Reģistrētais dalībnieks, kura pilnvaras tiek lasītas.",
+  "input.actorId.meaning": "Reģistrētais dalībnieks, kas atlasīts pilnvaru pārskatīšanai vai pilnvaru vēsturei.",
   "input.detail.label": "Pilna vēsture",
   "input.detail.meaning": "Iekļaut pieņemtos momentuzņēmumus, ja dalībniekam ir redzama pilna vēsture.",
   "input.lifecycle.label": "Dzīves cikls",
@@ -254,5 +254,7 @@
   "status.CLOSED.label": "SLĒGTA",
   "status.OPENED.label": "ATVĒRTA",
   "subject.AUTHORITY.label": "Pilnvaras",
-  "subject.CASE.label": "Lieta"
+  "subject.CASE.label": "Lieta",
+  "endpoint.authority.history.label": "Pilnvaru vēsture",
+  "endpoint.authority.history.meaning": "Pārskatīt pilnvaru izmaiņas, sākot ar jaunākajām, pēc izvēles atlasot mērķa dalībnieku."
 }

@@ -3844,6 +3844,81 @@
       "constants": []
     },
     {
+      "endpoint": "authority.history",
+      "subject": "AUTHORITY",
+      "kind": "authority.history",
+      "labelId": "endpoint.authority.history.label",
+      "meaningId": "endpoint.authority.history.meaning",
+      "confirmationId": null,
+      "inputs": [
+        {
+          "identity": "actorId",
+          "field": null,
+          "path": [
+            "actorId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.actorId.label",
+          "meaningId": "input.actorId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
       "endpoint": "context",
       "subject": "CONTEXT",
       "kind": "context",

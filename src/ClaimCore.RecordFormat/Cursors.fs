@@ -268,3 +268,32 @@ module Cursors =
                 grant role caseId
             | _ -> None)
             token
+
+    let encodeAuthorityHistory (actor: ActorId option) sequence =
+        encode
+            [
+                DurableNames.Actor,
+                actor
+                |> Option.map (ActorId.format >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
+                DurableNames.After, JsonValue.Integer(Sequence.value sequence)
+                DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
+                DurableNames.V, JsonValue.Integer 1L
+            ]
+
+    let decodeAuthorityHistory (actor: ActorId option) token =
+        let expected =
+            actor
+            |> Option.map (ActorId.format >> JsonValue.String)
+            |> Option.defaultValue JsonValue.Null
+
+        decode
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ DurableNames.Actor, target
+                                 DurableNames.After, JsonValue.Integer sequence
+                                 DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
+                                 DurableNames.V, JsonValue.Integer 1L ] when target = expected ->
+                Sequence.create sequence
+            | _ -> None)
+            token

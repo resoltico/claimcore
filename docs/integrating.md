@@ -124,6 +124,21 @@ client credentials and its private secret file. Tokens remain process-local. Opt
 trust-root files replace system roots while retaining hostname and validity checks. The
 [walkthrough](getting-started.md#optional-cli-setup) shows local setup.
 
+## Authority history
+
+`authority.history` accepts `limit` (1–50), optional `cursor` and optional `actorId` selecting the
+target actor. It requires installation `ReadAuthority` within the same snapshot used for the page.
+Entries are newest first by ledger sequence, with `sequence`, `recordedAt`, `recordedBy`,
+`targetActorId` and a tagged `act`. REGISTER and PROVISION_OWNER carry `principal`; GRANT and REVOKE
+carry `role` and `scope`; ENABLE and DISABLE carry no additional facts. These are decoded from the
+permanent authority payload and checked against its commitment and metadata.
+
+The response has `entries` and nullable `nextCursor`. A cursor binds the target filter; restarting
+with a different actor selection requires a fresh request. The CLI equivalent is
+`claimcore authority history [--actor-id ID] [--limit N] [--cursor TOKEN] --format text|json|csv`.
+CSV has canonical column headers and neutralizes formula-leading values before RFC 4180 quoting.
+A continuation is printed separately on stderr; JSON carries it in the typed result.
+
 ## Worklist queries and summary rows
 
 `case.list` uses one page request with optional facets and order. Omitted facets are unfiltered; omitted
