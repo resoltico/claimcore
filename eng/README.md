@@ -1,12 +1,14 @@
 # Engineering commands
 
 Run `bash eng/verify.sh` at the repository root for the required gate. Use `--fast` or named stages for
-iteration. Run `bash eng/verify.sh growth` separately before release or on demand. The
+iteration. Run `bash eng/verify.sh growth` and `bash eng/verify.sh growth-compare REF` separately
+before release or on demand. Comparison uses committed, isolated inputs and retains all six runs. The
 [development guide](../docs/contributing.md) explains prerequisites, stage scopes and evidence.
 
 | Tool | Responsibility |
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and bounded native report retention |
+| [growth-compare.py](growth-compare.py) | Alternating same-host growth measurements, workload identity and relative budgets |
 | [ProtocolGenerator](ClaimCore.ProtocolGenerator/Program.fs) | Contracts, CLI reference and browser chrome messages; [generation instructions](../docs/contributing.md#generated-contracts) |
 | [Check-FSharpLint.sh](Check-FSharpLint.sh) | F# rules, collecting failures across source roots |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |

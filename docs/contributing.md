@@ -268,6 +268,7 @@ execute in order and stop at failure:
 | browsers | Install the locked Playwright engines and required system dependencies |
 | acceptance | Published service/CLI, deployment image and real browsers |
 | growth | Separate synthetic contention and verifier qualification |
+| growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
 Pure tests run in Debug without optimization for visible compiled negative controls; production is built
 in Release. Shared store-contract scenarios run against both the memory double and PostgreSQL. Native
@@ -381,6 +382,31 @@ single authority for the procedure; existing Git, generation and verification co
 changes and expected behavior remain manually authored; no maintained script applies the probes automatically.
 
 ## Growth
+
+Run `bash eng/verify.sh growth-compare REF` from a clean, committed candidate to compare against a
+commit. It builds both commits in disposable detached worktrees with locked restore and alternates
+reference → candidate three times. Each workload uses a fresh PostgreSQL container. The compared set
+is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and search/REFERENCE
+and filtered/RECENT reads at 100k cases. Reads added after a reference are reported as not applicable.
+The full observational `growth` run below remains required for release qualification too.
+
+Comparison fails when a candidate median's write/read throughput is below 0.85×, or its p95, p99 or verification
+time exceeds 1.30× the reference. Reports retain all six raw runs, medians, ratios and workload
+fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*` (or beneath
+`CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
+Different workload fingerprints refuse comparison, naming the differing members.
+
+References that predate fingerprints require a recorded manual review of act cycles, populations,
+authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
+`reference` and `candidate` commit IDs, a `workloads` array of reviewed keys (for example
+`write/10000/1`, `write/100000/1`, `write/100000/16`, `cardinality/1000`, `read/search/100000`,
+`read/filtered/100000`), and a `review` explaining the evidence. Missing or mismatched reviews refuse
+before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
+
+Only the disposable test harnesses receive an ownership label; historical harnesses also receive the
+comparison workload selection. Every adaptation is retained as a patch in the report. Product code
+stays at the recorded commit. The comparison removes its worktrees, build outputs and labelled
+containers on success or failure, while preserving reports and failure output.
 
 Run `bash eng/verify.sh growth` before a release and on demand. It includes nine write-contention profiles,
 three cardinality comparisons and search/filtered read workloads at 1k, 10k and 100k cases.

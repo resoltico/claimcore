@@ -45,6 +45,7 @@
     <Compile Include="GrowthEnvironment.fs" />
     <Compile Include="GrowthControls.fs" />
     <Compile Include="GrowthSessions.fs" />
+    <Compile Include="GrowthWorkloadPlan.fs" />
     <Compile Include="GrowthMeasurements.fs" />
     <Compile Include="GrowthReadWorkloads.fs" />
     <Compile Include="GrowthQualificationTests.fs" />

@@ -18,13 +18,7 @@ open ClaimCore.TestSupport.StoreFixtures
 
 let internal token = CancellationToken.None
 
-type internal Workload =
-    {
-        Writes: int
-        Cases: int
-        Actors: int
-        Writers: int
-    }
+open ClaimCore.IntegrationTests.GrowthWorkloadPlan
 
 let internal subjects count =
     [
@@ -47,15 +41,7 @@ let internal authority (actor: ServiceContext) principals =
             acceptedAuthority registered
 
 
-            let grants =
-                [
-                    yield Role.CaseHandler, GrantTarget.Installation
-                    for target in 0..8 ->
-                        Role.CaseReader,
-                        GrantTarget.CaseReference("synthetic-growth-" + string target)
-                    if index < 7 then
-                        yield Role.Auditor, GrantTarget.Installation
-                ]
+            let grants = authorityGrants index
 
             for offset, (role, scope) in grants |> List.indexed do
                 let! granted =
@@ -79,7 +65,7 @@ let internal openCases (actor: ServiceContext) count =
                     (OperationInput.Case(
                         request
                             (1000 + index)
-                            ("synthetic-growth-" + string index)
+                            (reference index)
                             0L
                             (AuthoredCaseAct.Open registration)
                     ))
@@ -88,39 +74,6 @@ let internal openCases (actor: ServiceContext) count =
             accepted result |> ignore
 
     }
-
-let internal act revision =
-    let amended =
-        (ClaimCore.TestSupport.Inputs.registrationWith
-            [ BusinessField.ClaimantName, ("Synthetic revision " + string revision) ]
-            (registration))
-
-    match (revision - 1L) % 8L with
-    | 0L -> AuthoredCaseAct.AmendRegistration amended
-    | 1L ->
-        AuthoredCaseAct.Decide(
-            ClaimCore.TestSupport.Inputs.decisionFrom
-                [
-                    BusinessField.PaymentDecisionDate, ("2026-08-04")
-                    BusinessField.PayableAmount, ("100.00")
-                    BusinessField.PayableCurrency, ("EUR")
-                ]
-        )
-    | 2L ->
-        AuthoredCaseAct.RecordPayment(
-            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-05") ]
-        )
-    | 3L -> (AuthoredCaseAct.Bare BareAct.ClearPayment)
-    | 4L ->
-        AuthoredCaseAct.Correct
-            {
-                Registration = Amendment.Replace amended
-                Decision = Change.Keep
-                Payment = Change.Keep
-            }
-    | 5L -> (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-    | 6L -> (AuthoredCaseAct.Bare BareAct.Close)
-    | _ -> (AuthoredCaseAct.Bare BareAct.Reopen)
 
 let internal writeLane (actor: ServiceContext) workload lane =
     task {
@@ -136,12 +89,7 @@ let internal writeLane (actor: ServiceContext) workload lane =
             let target = targets[turn % targets.Length]
             let revision = revisions[target]
 
-            let authored =
-                request
-                    (200000 + index)
-                    ("synthetic-growth-" + string target)
-                    revision
-                    (act revision)
+            let authored = request (200000 + index) (reference target) revision (act revision)
 
             let watch = Stopwatch.StartNew()
 
@@ -390,6 +338,7 @@ let internal measure keyRing workload (database: PostgresFixture.Database) =
                 protection = "ASP.NET Core DataProtection with an owned filesystem key ring"
                 databaseBefore = databaseBefore
                 databaseAfter = databaseAfter
+                workloadFingerprint = writeFingerprint workload
                 business = report workload elapsed latencies timeoutMilliseconds verification
                 sessions = sessions
                 controls = controls

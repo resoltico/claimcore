@@ -16,19 +16,8 @@ let private token = CancellationToken.None
 let private seed actor count =
     task {
         for index in 0 .. count - 1 do
-            let reference = sprintf "READ-GROWTH-%07d" index
-
-            let registration =
-                Inputs.registrationWith
-                    [
-                        BusinessField.ClaimantName,
-                        (if index = count - 1 then
-                             "Target needle"
-                         else
-                             "Growth claimant " + string (index % 100))
-                        BusinessField.InsurerName, "Growth insurer"
-                    ]
-                    Inputs.registration
+            let reference = GrowthWorkloadPlan.readReference index
+            let registration = GrowthWorkloadPlan.readRegistration count index
 
             let! opened =
                 Service.execute
@@ -45,7 +34,7 @@ let private seed actor count =
             accepted opened |> ignore
             let mutable revision = 1L
 
-            if index % 5 = 0 then
+            if index % GrowthWorkloadPlan.decideEvery = 0 then
                 let! decided =
                     Service.execute
                         actor
@@ -61,7 +50,7 @@ let private seed actor count =
                 accepted decided |> ignore
                 revision <- revision + 1L
 
-            if index % 2 = 0 then
+            if index % GrowthWorkloadPlan.closeEvery = 0 then
                 let! closed =
                     Service.execute
                         actor
@@ -83,7 +72,11 @@ let private read actor filter =
             Service.list
                 actor
                 {
-                    Page = { AfterCursor = None; Limit = 50 }
+                    Page =
+                        {
+                            AfterCursor = None
+                            Limit = GrowthWorkloadPlan.readLimit
+                        }
                     Filter = filter
                 }
                 token
@@ -95,7 +88,7 @@ let private read actor filter =
 
 let private measure actor cases (name, filter, expectedItems) =
     task {
-        for _ in 1..5 do
+        for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
             let! found = read actor filter
             Expect.equal found expectedItems "Warmup observes the independent seeded population"
 
@@ -103,7 +96,7 @@ let private measure actor cases (name, filter, expectedItems) =
         let mutable returned = 0
         let elapsed = Stopwatch.StartNew()
 
-        for _ in 1..100 do
+        for _ in 1 .. GrowthWorkloadPlan.measuredRequests do
             let watch = Stopwatch.StartNew()
             let! found = read actor filter
             durations.Add watch.Elapsed.TotalMilliseconds
@@ -122,9 +115,9 @@ let private measure actor cases (name, filter, expectedItems) =
                 name = name
                 cases = cases
                 requests = latencies.Length
-                warmupRequests = 5
+                warmupRequests = GrowthWorkloadPlan.warmupRequests
                 order = CaseListOrder.token filter.Order
-                limit = 50
+                limit = GrowthWorkloadPlan.readLimit
                 expectedItems = expectedItems
                 returnedItems = returned
                 seconds = elapsed.Elapsed.TotalSeconds
@@ -132,6 +125,7 @@ let private measure actor cases (name, filter, expectedItems) =
                 p95Milliseconds = latencies[int (float (latencies.Length - 1) * 0.95)]
                 p99Milliseconds = latencies[int (float (latencies.Length - 1) * 0.99)]
                 maximumMilliseconds = Array.last latencies
+                workloadFingerprint = GrowthWorkloadPlan.readFingerprint cases filter
             |}
     }
 
@@ -183,7 +177,7 @@ let profile cases =
 
 let run completed =
     async {
-        for cases in [ 1000; 10000; 100000 ] do
+        for cases in GrowthWorkloadPlan.readPopulations do
             let! report = profile cases |> Async.AwaitTask
 
             for workload in report.workloads do
