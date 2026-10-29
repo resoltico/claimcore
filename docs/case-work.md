@@ -89,9 +89,9 @@ request content cannot replay. [Operations](operating.md#erasure-limits) explain
 
 ## Review, confirmation and delivery
 
-Available acts reflect current state and resource rights. Case-scoped handling does not grant installation
-creation. Advice and preview grant no commit authority: execution rechecks rights, state and expected
-revision against the locked current case.
+Available acts reflect current state and resource rights. Opening a case requires installation-scope
+registration rights; a case-scoped handling grant does not suffice. Advice and preview grant no commit
+authority: execution rechecks rights, state and expected revision against the locked current case.
 
 Browser forms use the catalog's field kinds and help. Date controls provide localized segments and a
 calendar; country/currency suggestions still permit free entry. Unambiguous locale amounts normalize
@@ -103,10 +103,10 @@ flight. Follow [delivery recovery](integrating.md#delivery-recovery) if submissi
 
 ## Business record
 
-The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) owns each field's meaning, kind,
-group and searchable status. Technical IDs, revisions, timestamps and advice remain separate from business
-facts. The view places complete groups under `registration`, `decision` and `payment`; null means the
-whole group is unrecorded.
+The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) owns each field's kind, group and
+searchable status. Catalog label and meaning identities select the core labels and explanations.
+Technical IDs, revisions, timestamps and advice remain separate from business facts. The view places
+complete groups under `registration`, `decision` and `payment`; null means the whole group is unrecorded.
 
 ## Scalars
 

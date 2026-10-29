@@ -9,7 +9,8 @@ TLS, storage, identity provider and monitoring.
 Use [getting started](getting-started.md) for a separate local installation. For another deployment, prepare
 HTTPS, an OIDC issuer/audience, a protected Web key ring, and separate database-owner and runtime credentials.
 The [Compose definition](../deployment/compose.yaml) and [image build](../deployment/Dockerfile) show the
-required inputs. Keep service, CLI and browser on matching builds.
+required inputs. Keep service, CLI and browser on matching builds and regenerate integration consumers
+from the checked contracts.
 
 Initialize an empty database with `claimcore-database initialize ZONE`. The canonical IANA business zone is
 fixed for that installation. Provision its first human owner with `claimcore-database provision-owner`, then
@@ -35,7 +36,9 @@ faults alongside the shared [exit-code reference](cli.md#exit-codes).
 
 The [SQL baseline](../db/baseline.sql), its checksum, installation identity and business zone are checked
 when storage opens. Repeating initialization requires the matching baseline and zone. Partial, unknown or
-incompatible schemas are refused unchanged. Supported PostgreSQL versions and image pins are owned by
+incompatible schemas are refused unchanged. Initialization does not migrate or adopt a different schema;
+only the matching baseline and durable formats are supported. Supported PostgreSQL versions and image pins
+are owned by
 [postgresql-baseline.json](../db/postgresql-baseline.json).
 
 ## Access review and sessions
@@ -84,28 +87,18 @@ newer acceptance existed elsewhere.
 Check later erasures and affected copies before using a restored database. A pre-erasure backup can bring
 back erased content. ClaimCore does not orchestrate backup, restore, replication, copy custody or approvals.
 
-## Upgrade with a fresh installation
-
-This SQL baseline requires a fresh database. Preserve an incompatible installation with its matching
-software; there is no migration, schema adoption or earlier-format reader. Create and initialize a separate
-installation, configure access, then qualify it before use. An old full backup remains recovery material
-for its matching baseline, not an input to the new schema.
-
-Deploy matching service, CLI and browser builds and regenerate integration consumers from the checked
-contracts. Discard earlier case-list cursors. Stored browser presentation preferences reset when their
-stored version changes.
-
 ## Monitoring
 
-The server publishes the `ClaimCore` meter through `System.Diagnostics.Metrics`. Find its process with
-`dotnet-counters ps`, then run:
+The server publishes the `ClaimCore` meter through `System.Diagnostics.Metrics`. Install `dotnet-counters`
+using the [dotnet-counters reference](https://learn.microsoft.com/en/dotnet/core/diagnostics/dotnet-counters).
+Run it as the server's operating-system user; on Linux/macOS it must share the server's `TMPDIR`.
+For a container outside the tool's process namespace, follow the reference's diagnostic-port setup.
+Find the server process with `dotnet-counters ps`, then run:
 
 ```sh
 dotnet-counters monitor --process-id PID --counters ClaimCore
 ```
 
-Run the tool as the server's operating-system user. See the
-[dotnet-counters reference](https://learn.microsoft.com/en/dotnet/core/diagnostics/dotnet-counters).
 Counters restart with the process; they are operational observations, not a ledger inventory.
 
 | Instrument | Unit | Tags |
@@ -124,8 +117,8 @@ deletion count. Starts carry no ending reason. Tags contain no actor, operation,
 Ledger histograms measure append attempts and the database head-lock call, including failed waits.
 
 For export, configure a .NET runtime metrics agent to subscribe to `ClaimCore` and send observations to your
-OpenTelemetry-compatible collector. OpenTelemetry .NET automatic instrumentation supports
-`OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES=ClaimCore`; follow its
+OpenTelemetry-compatible collector. OpenTelemetry .NET automatic instrumentation exposes the experimental
+setting `OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES=ClaimCore`; follow its
 [configuration guide](https://opentelemetry.io/docs/zero-code/dotnet/configuration/) for agent installation
 and exporter settings. ClaimCore adds no exporter dependency.
 
