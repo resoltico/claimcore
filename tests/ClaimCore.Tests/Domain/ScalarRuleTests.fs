@@ -217,10 +217,11 @@ let grammarDiagnostics =
                 else
                     { request with
                         Act =
-                            AuthoredCaseAct.Open
-                                { Fixtures.registration with
-                                    IncidentCountry = value
-                                }
+                            AuthoredCaseAct.Open(
+                                ClaimCore.TestSupport.Inputs.registrationWith
+                                    [ BusinessField.IncidentCountry, (value) ]
+                                    (Fixtures.registration)
+                            )
                     }
 
             Expect.equal

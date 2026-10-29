@@ -5,13 +5,13 @@ import { review } from "./service-foundation.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
 export const effect = (id = "preview"): EffectIdentity => ({
   id,
-  token: "token",
+  credential: "token",
   target: "CASE:CASE-SERIALIZATION",
 });
 export const initial = (): OperationState => ({
   entry: { subject: "CASE", kind: "CLOSE" },
   target: "CASE:CASE-SERIALIZATION",
-  context: { token: "token", target: "CASE:CASE-SERIALIZATION" },
+  context: { credential: "token", target: "CASE:CASE-SERIALIZATION" },
   disclosureToken: "token",
   disclosureRefused: false,
   values: valuesFor(),

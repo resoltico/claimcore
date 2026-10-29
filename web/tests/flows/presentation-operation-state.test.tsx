@@ -1,3 +1,4 @@
+import { changeField } from "../support/field-entry";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -24,14 +25,19 @@ it("preserves authored content, DOM selection and operation identity across lang
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language: "en-XA", displayLocale: "en-GB" }),
+    JSON.stringify({
+      version: 2,
+      language: "en-XA",
+      displayLocale: "en-GB",
+      theme: "SYSTEM" as const,
+    }),
   );
   render(editor({ current: null, initialAct: "OPEN" }));
   fillRegistrationInputs({ claimantName: " " });
   const name = document.querySelector<HTMLInputElement>('input[data-field-name="claimantName"]')!;
-  const date = document.querySelector<HTMLInputElement>('input[data-field-name="incidentDate"]')!;
+  const date = document.querySelector<HTMLElement>('[data-field-name="incidentDate"]')!;
   fireEvent.change(name, { target: { value: "A\u0308 <unchanged> العربية" } });
-  fireEvent.change(date, { target: { value: "2026-02-30" } });
+  changeField(date, "2026-02-28");
   name.setSelectionRange(1, 3);
   const before = ids.mock.calls.length;
   const selector = languageControl();
@@ -43,13 +49,13 @@ it("preserves authored content, DOM selection and operation identity across lang
   expect(name.selectionEnd).toBe(3);
   expect(screen.getByLabelText("Claimant name", { exact: true })).toBe(name);
   expect(name).toHaveValue("A\u0308 <unchanged> العربية");
-  expect(date).toHaveValue("2026-02-30");
-  expect(date).toHaveAttribute("type", "text");
+  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
+  expect(date.querySelectorAll('[role="spinbutton"]')).toHaveLength(3);
   expect(globalThis.fetch).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(draftAt(0).act.kind).toBe("OPEN");
-  expect(date).toHaveValue("2026-02-30");
+  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
 });
 
 it("renders a delayed review in the selected language without replay or confirmation loss", async () => {
@@ -112,7 +118,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
     }),
   );
   await waitFor(() => {
-    expect(name).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
   expect(name).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");

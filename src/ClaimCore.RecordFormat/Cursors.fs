@@ -3,7 +3,24 @@ namespace ClaimCore.RecordFormat
 open ClaimCore.Json
 
 open System
+open System.Globalization
 open ClaimCore.Domain
+
+[<RequireQualifiedAccess>]
+type CaseListPosition =
+    | Reference of string
+    | Recent of changedAt: DateTimeOffset * reference: string
+
+module CaseListPosition =
+    let reference =
+        function
+        | CaseListPosition.Reference reference
+        | CaseListPosition.Recent(_, reference) -> reference
+
+    let create order changedAt reference =
+        match order with
+        | CaseListOrder.Reference -> CaseListPosition.Reference(CaseReference.key reference)
+        | CaseListOrder.Recent -> CaseListPosition.Recent(changedAt, CaseReference.key reference)
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
@@ -25,10 +42,10 @@ module Cursors =
         || character = '-'
         || character = '_'
 
-    let private decode read (token: string) =
+    let private decode maximum read (token: string) =
         if
             String.IsNullOrEmpty token
-            || token.Length > MaximumTokenCharacters
+            || token.Length > maximum
             || token.Length % 4 = 1
             || not (Seq.forall alphabet token)
         then
@@ -41,7 +58,7 @@ module Cursors =
 
                 let bytes = Convert.FromBase64String padded
 
-                match StrictJson.read MaximumTokenCharacters bytes with
+                match StrictJson.read maximum bytes with
                 | Error _ -> Error Refusal.InvalidCursor
                 | Ok value ->
                     if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
@@ -69,21 +86,96 @@ module Cursors =
         | true, id when id.ToString("D") = value -> create id
         | _ -> None
 
-    let encodeCases after =
-        encode
+    let private caseFilters (filter: CaseListFilter<CaseSearchText>) =
+        JsonValue.Object
             [
-                DurableNames.After, JsonValue.String(CaseReference.key after)
-                DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 1L
+                "lifecycle",
+                JsonValue.Array(
+                    filter.Lifecycles |> List.map (DurableNames.lifecycle >> JsonValue.String)
+                )
+                "status",
+                JsonValue.Array(
+                    filter.Statuses |> List.map (DurableNames.status >> JsonValue.String)
+                )
+                "progress",
+                JsonValue.Array(
+                    filter.Progress |> List.map (DurableNames.progress >> JsonValue.String)
+                )
+                "text",
+                filter.Text
+                |> Option.map (CaseSearchText.value >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
+                "order", JsonValue.String(DurableNames.caseOrder filter.Order)
             ]
 
-    let decodeCases token =
+    let private instant (value: string) =
+        match
+            DateTimeOffset.TryParseExact(
+                value,
+                "O",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None
+            )
+        with
+        | true, parsed when
+            parsed.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) = value
+            && RecordedInstant.hasMicrosecondPrecision parsed
+            ->
+            Some parsed
+        | _ -> None
+
+    let encodeCases (filter: CaseListFilter<CaseSearchText>) position =
+        let after =
+            match filter.Order, position with
+            | CaseListOrder.Reference, CaseListPosition.Reference reference ->
+                JsonValue.Object [ "reference", JsonValue.String(CaseReference.key reference) ]
+            | CaseListOrder.Recent, CaseListPosition.Recent(changedAt, reference) ->
+                if not (RecordedInstant.hasMicrosecondPrecision changedAt) then
+                    invalidArg (nameof position) "Use microsecond precision."
+
+                JsonValue.Object
+                    [
+                        "reference", JsonValue.String(CaseReference.key reference)
+                        "changedAt",
+                        JsonValue.String(
+                            changedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
+                        )
+                    ]
+            | _ -> invalidArg (nameof position) "The position must match the selected order."
+
+        encode
+            [
+                DurableNames.After, after
+                "filters", caseFilters filter
+                DurableNames.Kind, JsonValue.String "CASES"
+                DurableNames.V, JsonValue.Integer 2L
+            ]
+
+    let private casePosition order =
+        function
+        | JsonValue.Object [ "reference", JsonValue.String after ] when
+            order = CaseListOrder.Reference && reference after
+            ->
+            Some(CaseListPosition.Reference after)
+        | JsonValue.Object [ "changedAt", JsonValue.String changedAt
+                             "reference", JsonValue.String after ] when
+            order = CaseListOrder.Recent && reference after
+            ->
+            instant changedAt
+            |> Option.map (fun time -> CaseListPosition.Recent(time, after))
+        | _ -> None
+
+    let decodeCases (filter: CaseListFilter<CaseSearchText>) token =
         decode
+            Paging.MaximumCaseCursorCharacters
             (function
-            | JsonValue.Object [ DurableNames.After, JsonValue.String after
+            | JsonValue.Object [ DurableNames.After, after
+                                 "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 1L ] when reference after ->
-                Some after
+                                 DurableNames.V, JsonValue.Integer 2L ] when
+                CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
+                ->
+                casePosition filter.Order after
             | _ -> None)
             token
 
@@ -98,6 +190,7 @@ module Cursors =
 
     let decodeHistory requested token =
         decode
+            MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.After, JsonValue.Integer after
                                  DurableNames.Case, JsonValue.String target
@@ -122,6 +215,7 @@ module Cursors =
 
     let decodeActors token =
         decode
+            MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.After, JsonValue.String after
                                  DurableNames.Kind, JsonValue.String "ACTORS"
@@ -161,6 +255,7 @@ module Cursors =
 
     let decodeGrants actorId token =
         decode
+            MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.Actor, JsonValue.String target
                                  DurableNames.After,

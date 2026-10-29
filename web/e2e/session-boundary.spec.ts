@@ -102,7 +102,7 @@ const expectAnonymousSession = async (page: Page) => {
 test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({ page }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const antiforgeryToken = await expectAnonymousSessionBoundary(page);
   await expectSessionRejection(page, antiforgeryToken);

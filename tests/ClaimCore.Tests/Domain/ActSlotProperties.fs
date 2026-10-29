@@ -1,6 +1,7 @@
 module ClaimCore.Tests.ActSlotProperties
 
 open Expecto
+open ClaimCore.TestSupport
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Domain
@@ -8,21 +9,10 @@ open ClaimCore.Tests.PropertyHarness
 
 let private values = Gen.int32 (Range.constant -1_000_000 1_000_000)
 
-let private caseActs value correction =
-    [
-        CaseAct.Open value
-        CaseAct.AmendRegistration value
-        CaseAct.Correct correction
-        CaseAct.Decide value
-        CaseAct.WithdrawDecision
-        CaseAct.RecordPayment value
-        CaseAct.ClearPayment
-        CaseAct.Close
-        CaseAct.Reopen
-        CaseAct.Void value
-        CaseAct.Reinstate value
-        CaseAct.Erase
-    ]
+let private caseActs value =
+    Inputs.caseActs Inputs.registration Inputs.decision Inputs.payment "reason"
+    |> List.map (fun (act, _) ->
+        CaseAct.map (fun _ -> value) (fun _ -> value) (fun _ -> value) (fun _ -> value) act)
 
 let private caseRoundTrip expected kind (inject, project) candidates =
     project (inject expected) = Some expected
@@ -42,7 +32,7 @@ let private caseProperty =
                 Payment = Change.Clear
             }
 
-        let candidates = caseActs value correction
+        let candidates = caseActs value
 
         return
             CaseActKind.all
@@ -62,20 +52,12 @@ let private authorityProperty =
     property {
         let! value = values
 
-        let candidates =
-            [
-                AuthorityAct.ProvisionOwner
-                AuthorityAct.Register
-                AuthorityAct.Grant value
-                AuthorityAct.Revoke(value + 1)
-                AuthorityAct.Enable
-                AuthorityAct.Disable
-            ]
+        let candidates = Inputs.authorityActs [ value; value + 1 ] |> List.map fst
 
         return
             AuthorityKind.all
             |> List.forall (fun kind ->
-                match (AuthorityAct.slot kind: AuthorityActSlot<int>) with
+                match (AuthorityKind.describe kind: AuthorityActSlot<int>) with
                 | AuthorityActSlot.Bare act ->
                     AuthorityAct.kind act = kind && List.contains act candidates
                 | AuthorityActSlot.Grant(inject, project) ->
@@ -86,11 +68,50 @@ let private authorityProperty =
                         |> List.forall (project >> Option.isNone)))
     }
 
+let private descriptions () =
+    for row in Inventory.rows "caseActs" do
+        let token = row.GetProperty("token").GetString() |> nonNull
+        let kind = CaseActKind.parse token |> Option.get
+        let description = CaseActKind.describe kind
+
+        let family =
+            match description.Family with
+            | ActFamily.Business -> "BUSINESS"
+            | ActFamily.Stewardship -> "STEWARDSHIP"
+
+        let payload =
+            match description.Payload with
+            | ActPayload.Bare _ -> "BARE"
+            | ActPayload.Registration -> "REGISTRATION"
+            | ActPayload.Decision -> "DECISION"
+            | ActPayload.Payment -> "PAYMENT"
+            | ActPayload.Reason -> "REASON"
+            | ActPayload.Correction -> "CORRECTION"
+
+        Expect.equal
+            family
+            (row.GetProperty("family").GetString() |> nonNull)
+            "Independent act family"
+
+        Expect.equal
+            payload
+            (row.GetProperty("payload").GetString() |> nonNull)
+            "Independent act payload"
+
+        Expect.equal
+            description.Revision
+            (if token = "OPEN" then
+                 RevisionInput.New
+             else
+                 RevisionInput.Expected)
+            "Only opening creates a new case"
+
 [<Tests>]
 let tests =
     testList
         "typed act slots"
         [
+            testCase "descriptions agree with the independent act inventory" descriptions
             testCase "case act slots round trip and reject other kinds" (fun () ->
                 run "case act slots" caseProperty)
             testCase "authority act slots round trip and reject other kinds" (fun () ->

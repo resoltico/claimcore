@@ -516,7 +516,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PageRequest"
+                "$ref": "#/components/schemas/CaseListRequest"
               }
             }
           }
@@ -2431,6 +2431,69 @@
           "caseReference"
         ]
       },
+      "CaseListRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "lifecycle": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ACTIVE",
+                "VOIDED",
+                "ERASED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "status": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPENED",
+                "CLOSED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
+          },
+          "progress": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "UNDECIDED",
+                "DECIDED",
+                "PAID"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "text": {
+            "type": "string"
+          },
+          "order": {
+            "enum": [
+              "REFERENCE",
+              "RECENT"
+            ]
+          }
+        },
+        "required": [
+          "limit"
+        ]
+      },
       "CasePageReply": {
         "type": "object",
         "additionalProperties": false,
@@ -2789,6 +2852,13 @@
             "minimum": 1,
             "maximum": 9007199254740991
           },
+          "changedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
           "state": {
             "$ref": "#/components/schemas/CaseSummaryState"
           }
@@ -2796,6 +2866,7 @@
         "required": [
           "caseReference",
           "revision",
+          "changedAt",
           "state"
         ]
       },
@@ -2832,11 +2903,46 @@
               "OPENED",
               "CLOSED"
             ]
+          },
+          "claimantName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "insurerName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "claimed": {
+            "$ref": "#/components/schemas/SummaryMoney"
+          },
+          "payable": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SummaryMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "PAID"
+            ]
           }
         },
         "required": [
           "kind",
-          "status"
+          "status",
+          "claimantName",
+          "insurerName",
+          "claimed",
+          "payable",
+          "progress"
         ]
       },
       "CaseSummaryState.ERASED": {
@@ -2863,11 +2969,46 @@
               "OPENED",
               "CLOSED"
             ]
+          },
+          "claimantName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "insurerName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "claimed": {
+            "$ref": "#/components/schemas/SummaryMoney"
+          },
+          "payable": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SummaryMoney"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "PAID"
+            ]
           }
         },
         "required": [
           "kind",
-          "status"
+          "status",
+          "claimantName",
+          "insurerName",
+          "claimed",
+          "payable",
+          "progress"
         ]
       },
       "CaseView": {
@@ -2916,7 +3057,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 512
+                "maxLength": 16384
               },
               {
                 "type": "null"
@@ -4390,7 +4531,8 @@
           "principal.subject",
           "role",
           "limit",
-          "cursor"
+          "cursor",
+          "text"
         ]
       },
       "InstallationOffer": {
@@ -5716,6 +5858,28 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "SummaryMoney": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 23
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+            "minLength": 3,
+            "maxLength": 3
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
         ]
       },
       "Uuid": {

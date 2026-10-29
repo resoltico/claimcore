@@ -242,10 +242,11 @@ let internal frameResponseBounds () =
 
             let frame = Frames.decode reply.Bytes |> Fixtures.accepted
 
-            Expect.equal
-                frame.Result
-                (FrameResult.LocalFailure CliFailure.InvalidResponse)
-                "An invalid response produces a bounded local failure."
+            match frame.Result with
+            | FrameResult.LocalFailure CliFailure.InvalidResponse -> ()
+            | _ ->
+                failtest "An invalid response must produce a bounded InvalidResponse local failure."
+
 
             Expect.equal
                 frame.Delivery

@@ -89,14 +89,12 @@ CREATE TABLE claimcore.ledger (
         (subject_kind = 'CASE'
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
-            AND act IN ('OPEN', 'AMEND_REGISTRATION', 'CORRECT', 'DECIDE',
-                        'WITHDRAW_DECISION', 'RECORD_PAYMENT', 'CLEAR_PAYMENT', 'CLOSE',
-                        'REOPEN', 'VOID', 'REINSTATE', 'ERASE'))
+            AND act ~ '^[A-Z][A-Z_]{0,39}$')
         OR (subject_kind = 'AUTHORITY'
             AND case_revision IS NULL
             AND business_date IS NULL
             AND payload IS NOT NULL
-            AND act IN ('PROVISION_OWNER', 'REGISTER', 'GRANT', 'REVOKE', 'ENABLE', 'DISABLE'))
+            AND act ~ '^[A-Z][A-Z_]{0,39}$')
     ),
     CONSTRAINT ledger_payload_shape CHECK (
         (payload IS NULL AND payload_nonce IS NULL)
@@ -251,20 +249,35 @@ CREATE TABLE claimcore.cases (
     state text NOT NULL CHECK (state IN ('ACTIVE', 'VOIDED', 'ERASED')),
 
     snapshot bytea,
+    status text CHECK (status ~ '^[A-Z][A-Z_]{0,39}$'),
+    progress text CHECK (progress ~ '^[A-Z][A-Z_]{0,39}$'),
+    changed_at timestamptz NOT NULL CHECK (
+        changed_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z'
+                       AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
+    ),
+    search_text text CHECK (search_text IS NULL OR octet_length(search_text) BETWEEN 1 AND 1048576),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]{1,80}$'),
-    CONSTRAINT erased_shape CHECK ((state = 'ERASED') = (snapshot IS NULL)),
+    CONSTRAINT erased_shape CHECK (
+        ((state = 'ERASED') = (snapshot IS NULL))
+        AND ((state = 'ERASED') = (status IS NULL))
+        AND ((state = 'ERASED') = (progress IS NULL))
+        AND ((state = 'ERASED') = (search_text IS NULL))
+    ),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
 -- One case per reference regardless of ASCII letter case; also the list order and keyset.
 CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference COLLATE "C"));
 
+CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
+CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
+
 CREATE TABLE claimcore.actors (
     -- The operation ID of the authority entry that registered the actor.
     actor_id uuid PRIMARY KEY CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
-    principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN', 'SERVICE')),
+    principal_kind text NOT NULL CHECK (principal_kind ~ '^[A-Z][A-Z_]{0,39}$'),
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
     enabled boolean NOT NULL,
@@ -274,10 +287,7 @@ CREATE TABLE claimcore.actors (
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
     -- Role tokens only; the role-to-capability matrix lives in one F# table and never in SQL.
-    role text NOT NULL CHECK (role IN (
-        'OWNER', 'CASE_READER', 'CASE_REGISTRAR', 'CASE_HANDLER', 'PAYMENT_RECORDER',
-        'DATA_STEWARD', 'AUDITOR'
-    )),
+    role text NOT NULL CHECK (role ~ '^[A-Z][A-Z_]{0,39}$'),
     -- NULL grants the role across the installation; otherwise only on this case.
     case_id uuid REFERENCES claimcore.cases (case_id),
     CONSTRAINT grants_unique UNIQUE NULLS NOT DISTINCT (actor_id, role, case_id)

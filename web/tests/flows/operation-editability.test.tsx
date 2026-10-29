@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -91,10 +92,8 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
       }),
     );
     if (act === "CORRECT") {
-      await user.selectOptions(
-        document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,
-        "REPLACE",
-      );
+      const mode = document.querySelector<HTMLElement>("#correction-registration-mode")!;
+      await chooseOption(user, mode, "REPLACE");
     }
     await user.click(
       screen.getByRole("button", {

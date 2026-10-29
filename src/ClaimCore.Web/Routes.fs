@@ -12,7 +12,8 @@ open ClaimCore.Json
 type PreparedRoute =
     {
         OperationId: System.Guid option
-        Invoke: ServiceContext option -> CancellationToken -> (unit -> unit) -> Task<JsonValue>
+        Invoke:
+            ServiceContext option -> CancellationToken -> (unit -> unit) -> Task<ClassifiedReply>
     }
 
 [<NoEquality; NoComparison>]
@@ -26,8 +27,6 @@ module Route =
     /// Input, handler and output meet here while their types are still known to the compiler.
     let bind
         (endpoint: Endpoint<'Input, 'Output>)
-        (operationId: 'Input -> System.Guid option)
-        (unavailable: 'Input -> 'Output)
         (invoke: ServiceContext -> 'Input -> CancellationToken -> Task<'Output>)
         : Route =
         {
@@ -37,19 +36,20 @@ module Route =
                     endpoint.Input.Read "$" value
                     |> Result.map (fun input ->
                         {
-                            OperationId = operationId input
+                            OperationId = endpoint.Correlation input
                             Invoke =
                                 fun context cancellation completed ->
                                     task {
                                         match context with
-                                        | None -> return endpoint.Output.Write(unavailable input)
+                                        | None ->
+                                            return
+                                                Endpoint.reply
+                                                    endpoint
+                                                    (endpoint.Unavailable input)
                                         | Some context ->
                                             let! reply = invoke context input cancellation
                                             completed ()
-                                            return endpoint.Output.Write reply
+                                            return Endpoint.reply endpoint reply
                                     }
                         })
         }
-
-    let read endpoint operationId invoke =
-        bind endpoint operationId (fun _ -> Outcome.Failed CoreFault.StoreUnavailable) invoke

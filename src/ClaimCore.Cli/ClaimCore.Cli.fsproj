@@ -14,6 +14,7 @@
     <Compile Include="ServiceReply.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="Schemas.fs" />
+    <Compile Include="VerbOptions.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />
@@ -38,7 +39,16 @@
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
+    <Compile Include="TextReplyFormat.fs" />
+    <Compile Include="TextDiagnosticReply.fs" />
+    <Compile Include="CaseListRows.fs" />
+    <Compile Include="TextCaseReply.fs" />
+    <Compile Include="TextAuthorityReply.fs" />
+    <Compile Include="TextOperationReply.fs" />
+    <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
+    <Compile Include="CaseListCommand.fs" />
+    <Compile Include="InteractiveReview.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

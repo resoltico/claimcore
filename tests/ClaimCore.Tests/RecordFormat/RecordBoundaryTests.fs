@@ -67,9 +67,9 @@ let private textFormats () =
     let oldFields =
         { viewFields original with
             Registration =
-                { (viewFields original).Registration with
-                    ClaimantName = CaseFixtures.name "A‮B"
-                }
+                (ClaimCore.TestSupport.Inputs.registrationStateWith
+                    [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name "A‮B") ]
+                    ((viewFields original).Registration))
         }
 
     let snapshot =
@@ -85,10 +85,17 @@ let private textFormats () =
     let reaffirm =
         request
             1L
-            (AuthoredCaseAct.AmendRegistration
-                { registration with
-                    ClaimantName = PartyName.format oldFields.Registration.ClaimantName
-                })
+            (AuthoredCaseAct.AmendRegistration(
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [
+                        BusinessField.ClaimantName,
+                        (PartyName.format (
+                            Registration.value BusinessField.ClaimantName (oldFields.Registration)
+                            |> FieldValue.name
+                        ))
+                    ]
+                    (registration)
+            ))
 
     Expect.equal
         (RequestRecord.decode 65536 (CaseFixtures.encode reaffirm))
@@ -163,13 +170,13 @@ let private envelope () =
         "Durable format is not a wire member"
 
     let authored =
-        { request 1L AuthoredCaseAct.Close with
+        { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
             CaseReference = "unit-001"
         }
 
     Expect.isTrue
         (CaseFixtures.encode authored
-         <> CaseFixtures.encode (request 1L AuthoredCaseAct.Close))
+         <> CaseFixtures.encode (request 1L (AuthoredCaseAct.Bare BareAct.Close)))
         "Canonical request identity preserves authored reference case"
 
 let private culture () =
@@ -296,27 +303,7 @@ let private independentNames () =
         "Oversized encoding is an internal fault"
 
 let private kindRoundTrips () =
-    let cases: (AuthoredCaseAct * string) list =
-        [
-            AuthoredCaseAct.Open registration, "OPEN"
-            AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
-            AuthoredCaseAct.Correct
-                {
-                    Registration = Amendment.Keep
-                    Decision = Change.Keep
-                    Payment = Change.Keep
-                },
-            "CORRECT"
-            AuthoredCaseAct.Decide Fixtures.decision, "DECIDE"
-            AuthoredCaseAct.WithdrawDecision, "WITHDRAW_DECISION"
-            AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, "RECORD_PAYMENT"
-            AuthoredCaseAct.ClearPayment, "CLEAR_PAYMENT"
-            AuthoredCaseAct.Close, "CLOSE"
-            AuthoredCaseAct.Reopen, "REOPEN"
-            AuthoredCaseAct.Void "boundary", "VOID"
-            AuthoredCaseAct.Reinstate "boundary", "REINSTATE"
-            AuthoredCaseAct.Erase, "ERASE"
-        ]
+    let cases = Inputs.caseActs registration Fixtures.decision Inputs.payment "boundary"
 
     Expect.equal
         (cases |> List.map (fst >> CaseAct.kind) |> Set.ofList)
@@ -324,6 +311,16 @@ let private kindRoundTrips () =
         "Every case kind is independently authored"
 
     for act, token in cases do
+        Expect.equal
+            (DurableNames.caseAct (CaseAct.kind act))
+            token
+            "Independent permanent act token"
+
+        Expect.equal
+            (DurableNames.tryCaseAct token)
+            (Some(CaseAct.kind act))
+            "Permanent act inverse"
+
         let command = request 1L act |> CaseFixtures.command
         let bytes = RequestRecord.encode command
 
@@ -343,15 +340,7 @@ let private kindRoundTrips () =
             Scope = GrantTarget.Installation
         }
 
-    let acts: (AuthoredAuthorityAct * string) list =
-        [
-            AuthoredAuthorityAct.ProvisionOwner, "PROVISION_OWNER"
-            AuthoredAuthorityAct.Register, "REGISTER"
-            AuthoredAuthorityAct.Grant grant, "GRANT"
-            AuthoredAuthorityAct.Revoke grant, "REVOKE"
-            AuthoredAuthorityAct.Enable, "ENABLE"
-            AuthoredAuthorityAct.Disable, "DISABLE"
-        ]
+    let acts = Inputs.authorityActs [ grant ]
 
     Expect.equal
         (acts |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)
@@ -359,6 +348,16 @@ let private kindRoundTrips () =
         "Every authority kind is independently authored"
 
     for act, token in acts do
+        Expect.equal
+            (DurableNames.authorityAct (AuthorityAct.kind act))
+            token
+            "Independent permanent authority token"
+
+        Expect.equal
+            (DurableNames.tryAuthorityAct token)
+            (Some(AuthorityAct.kind act))
+            "Permanent authority inverse"
+
         let record: AuthorityRequestRecord =
             {
                 OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"

@@ -12,6 +12,7 @@
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />
+    <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />
@@ -22,11 +23,16 @@
     <Compile Include="FixtureDisposalTests.fs" />
     <Compile Include="PostgresReadinessTests.fs" />
     <Compile Include="StoreTests.fs" />
+    <Compile Include="WorklistFixtures.fs" />
+    <Compile Include="WorklistQueryTests.fs" />
+    <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="PaginationScenarios.fs" />
     <Compile Include="PositionPaginationTests.fs" />
+    <Compile Include="AuthorityContinuationTests.fs" />
     <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="DiagnosticWitnesses.fs" />
+    <Compile Include="DiagnosticEvidence.fs" />
     <Compile Include="DiagnosticReachabilityTests.fs" />
     <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />
@@ -40,8 +46,11 @@
     <Compile Include="GrowthControls.fs" />
     <Compile Include="GrowthSessions.fs" />
     <Compile Include="GrowthMeasurements.fs" />
+    <Compile Include="GrowthReadWorkloads.fs" />
     <Compile Include="GrowthQualificationTests.fs" />
+    <Compile Include="ReadGrowthHarnessTests.fs" />
     <Compile Include="CaseProjectionTests.fs" />
+    <Compile Include="SummaryDisclosureTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="BaselineRefusalTests.fs" />
     <Compile Include="PaginationTests.fs" />

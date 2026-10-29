@@ -5,7 +5,7 @@ import {
 } from "@contracts/client";
 import { useId } from "react";
 import { usePresentation } from "./context";
-import { resolveDisplayLocale, resolveLanguage } from "./preferences";
+import { resolveDisplayLocale, resolveLanguage, resolveTheme, themes } from "./preferences";
 
 const preferencesStatus = (p: ReturnType<typeof usePresentation>): string => {
   if (p.persistenceFailed) {
@@ -69,6 +69,32 @@ const DisplayControl = ({ id }: { id: string }) => {
   );
 };
 
+const themeLabels = {
+  SYSTEM: "ui.themeSystem",
+  LIGHT: "ui.themeLight",
+  DARK: "ui.themeDark",
+} as const;
+const ThemeControl = ({ id }: { id: string }) => {
+  const p = usePresentation();
+  return (
+    <div>
+      <label htmlFor={`${id}-theme`}>{p.text("ui.theme")}</label>
+      <select
+        id={`${id}-theme`}
+        value={p.theme}
+        onChange={(event) => {
+          p.setPreferences({ kind: "THEME", theme: resolveTheme(event.target.value) });
+        }}
+      >
+        {themes.map((theme) => (
+          <option key={theme} value={theme}>
+            {p.text(themeLabels[theme])}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 export const PresentationControls = () => {
   const p = usePresentation();
   const id = useId();
@@ -76,6 +102,7 @@ export const PresentationControls = () => {
     <section className="presentation-controls" aria-label={p.text("ui.language")}>
       <LanguageControl id={id} />
       <DisplayControl id={id} />
+      <ThemeControl id={id} />
       <small id={`${id}-hint`}>{p.text("ui.preferencesHint")}</small>
       <span aria-live="polite" className="presentation-status">
         {preferencesStatus(p)}

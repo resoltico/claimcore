@@ -79,9 +79,9 @@ let internal createHistory (actor: ServiceContext) =
 
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
-                { registration with
-                    ClaimantName = "Party " + string n
-                }
+                (ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimantName, ("Party " + string n) ]
+                    (registration))
 
             let! amended =
                 (Service.execute
@@ -137,9 +137,9 @@ let internal appendHistory (actor: ServiceContext) =
         for revision in 1L .. 52L do
             let act =
                 if revision % 2L = 1L then
-                    AuthoredCaseAct.Close
+                    (AuthoredCaseAct.Bare BareAct.Close)
                 else
-                    AuthoredCaseAct.Reopen
+                    (AuthoredCaseAct.Bare BareAct.Reopen)
 
             let! result =
                 (Service.execute

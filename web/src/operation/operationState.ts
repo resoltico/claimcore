@@ -9,7 +9,6 @@ import {
   type OperationAction,
   type LocalSource,
 } from "./operationTypes";
-export { operationSource } from "./operationTypes";
 export type {
   EffectIdentity,
   OperationEffect,
@@ -23,7 +22,7 @@ const operationBusy = (state: OperationState): boolean =>
 const canEdit = (state: OperationState): boolean =>
   state.operation.kind === "EDITING" || state.operation.kind === "REVIEWING";
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
-  state.context.token === identity.token && state.context.target === identity.target;
+  state.context.credential === identity.credential && state.context.target === identity.target;
 const completing = (state: OperationState, identity: EffectIdentity): boolean =>
   current(state, identity) &&
   operationBusy(state) &&
@@ -139,7 +138,7 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     phase.kind === "REVIEWING" &&
     phase.confirmed &&
     !state.disclosureRefused &&
-    state.disclosureToken === identity.token;
+    state.disclosureToken === identity.credential;
   if (operationBusy(state) || (phase.kind !== "UNRESOLVED" && !reviewed)) {
     return state;
   }
@@ -243,7 +242,7 @@ const record = (
       },
       pendingDiscard: null,
       notice: null,
-      disclosureToken: action.identity.token,
+      disclosureToken: action.identity.credential,
       disclosureRefused: false,
     },
     {
@@ -273,7 +272,7 @@ const reviewed = (
       review: action.review,
       confirmed: false,
     },
-    disclosureToken: action.identity.token,
+    disclosureToken: action.identity.credential,
     disclosureRefused: false,
   };
 };
@@ -286,12 +285,12 @@ const contextChanged = (
     }
   >,
 ): OperationState =>
-  state.context.token === action.token && state.context.target === action.target
+  state.context.credential === action.credential && state.context.target === action.target
     ? state
     : {
         ...invalidate(state, false),
         context: {
-          token: action.token,
+          credential: action.credential,
           target: action.target,
         },
       };

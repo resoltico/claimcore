@@ -14,8 +14,11 @@ module internal CaseExecution =
         Case.ofAccepted record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun value ->
+            let indexed = CaseIndex.create record.Index.ChangedAt record.Snapshot
+
             if
-                CaseReferenceId.encode
+                indexed = record.Index
+                && CaseReferenceId.encode
                     installationId
                     (CaseReference.format record.Snapshot.Reference)
                     =
@@ -91,9 +94,10 @@ module internal CaseExecution =
 
         let projection =
             match snapshot.State, view.Case with
-            | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision)
-            | _, None -> CaseProjection.Insert(id, snapshot)
-            | _ -> CaseProjection.Update(id, snapshot)
+            | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
+            | _, None ->
+                CaseProjection.Insert(id, snapshot, CaseIndex.create view.ObservedAt snapshot)
+            | _ -> CaseProjection.Update(id, snapshot, CaseIndex.create view.ObservedAt snapshot)
 
         {
             OperationId = request.OperationId
@@ -112,6 +116,7 @@ module internal CaseExecution =
                     {
                         CaseId = id
                         Snapshot = snapshot
+                        Index = CaseIndex.create view.ObservedAt snapshot
                         SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
                     }
             Projection = projection

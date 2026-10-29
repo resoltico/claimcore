@@ -29,6 +29,17 @@ module DurableNames =
         | AuthorityKind.Enable -> "ENABLE"
         | AuthorityKind.Disable -> "DISABLE"
 
+    let progress =
+        function
+        | CaseProgress.Undecided -> "UNDECIDED"
+        | CaseProgress.Decided -> "DECIDED"
+        | CaseProgress.Paid -> "PAID"
+
+    let caseOrder =
+        function
+        | CaseListOrder.Reference -> "REFERENCE"
+        | CaseListOrder.Recent -> "RECENT"
+
     let status =
         function
         | CaseStatus.Opened -> "OPENED"
@@ -90,6 +101,8 @@ module DurableNames =
         | GrantTarget.Installation -> "INSTALLATION"
         | GrantTarget.CaseReference _ -> "CASE"
 
+    // A total table preserves the permanent spelling of every closed input target.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let inputTarget =
         function
         | InputTarget.Field value -> field value
@@ -103,6 +116,7 @@ module DurableNames =
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
+        | InputTarget.Text -> "text"
 
     let private values<'value> () =
         FSharpType.GetUnionCases(typeof<'value>)
@@ -112,8 +126,21 @@ module DurableNames =
     let caseKinds = values<CaseActKind>()
     let authorityKinds = values<AuthorityKind>()
 
+    let tryCaseAct token =
+        caseKinds |> List.tryFind (fun value -> caseAct value = token)
+
+    let tryAuthorityAct token =
+        authorityKinds |> List.tryFind (fun value -> authorityAct value = token)
+
     let statusEntries =
         values<CaseStatus>() |> List.map (fun value -> value, status value)
+
+    let tryStatus token =
+        statusEntries
+        |> List.tryPick (fun (value, name) -> if name = token then Some value else None)
+
+    let tryProgress token =
+        values<CaseProgress>() |> List.tryFind (fun value -> progress value = token)
 
     let principalKindEntries =
         values<PrincipalKind>() |> List.map (fun value -> value, principalKind value)
@@ -149,15 +176,6 @@ module DurableNames =
     let CaseReference = "caseReference"
 
     [<Literal>]
-    let ClaimantName = "claimantName"
-
-    [<Literal>]
-    let ClaimedAmount = "claimedAmount"
-
-    [<Literal>]
-    let ClaimedCurrency = "claimedCurrency"
-
-    [<Literal>]
     let Decision = "decision"
 
     [<Literal>]
@@ -173,18 +191,6 @@ module DurableNames =
     let Groups = "groups"
 
     [<Literal>]
-    let IncidentCountry = "incidentCountry"
-
-    [<Literal>]
-    let IncidentDate = "incidentDate"
-
-    [<Literal>]
-    let IncidentNotificationDate = "incidentNotificationDate"
-
-    [<Literal>]
-    let InsurerName = "insurerName"
-
-    [<Literal>]
     let Issuer = "issuer"
 
     [<Literal>]
@@ -194,22 +200,10 @@ module DurableNames =
     let OperationId = "operationId"
 
     [<Literal>]
-    let PayableAmount = "payableAmount"
-
-    [<Literal>]
-    let PayableCurrency = "payableCurrency"
-
-    [<Literal>]
     let PayloadCommitment = "payloadCommitment"
 
     [<Literal>]
     let Payment = "payment"
-
-    [<Literal>]
-    let PaymentDate = "paymentDate"
-
-    [<Literal>]
-    let PaymentDecisionDate = "paymentDecisionDate"
 
     [<Literal>]
     let PreviousHash = "previousHash"

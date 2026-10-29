@@ -24,10 +24,6 @@ module internal RequestValidation =
         | Change.Clear -> Ok Change.Clear
         | Change.Replace value -> parse value |> Result.map Change.Replace
 
-    let private payment (input: PaymentInput) =
-        Validation.date BusinessField.PaymentDate input.PaymentDate
-        |> Result.map (fun date -> { Payment.PaymentDate = date })
-
     let private act (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
         match input with
         | CaseAct.Correct value ->
@@ -43,8 +39,14 @@ module internal RequestValidation =
                     (fun registration decision -> registration, decision)
                     (amend Validation.registration value.Registration)
                     (change Validation.decision value.Decision))
-                (change payment value.Payment)
-        | input -> CaseAct.traverse Validation.registration Validation.decision payment reason input
+                (change Validation.payment value.Payment)
+        | input ->
+            CaseAct.traverse
+                Validation.registration
+                Validation.decision
+                Validation.payment
+                reason
+                input
 
     let parse (request: UnvalidatedCaseRequest) =
         let identity =

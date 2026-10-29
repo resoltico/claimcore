@@ -83,6 +83,7 @@ let private row payload =
 let private history: CaseHistory =
     {
         Revision = CaseFixtures.revision 1L
+        ChangedAt = instant
         Snapshot = None
         Reference = Some(CaseFixtures.reference "SYNTHETIC")
         State = CaseState.Active()
@@ -318,6 +319,71 @@ let private duplicatePrecedence () =
         (append (LedgerVerification.initial None (Some(CaseFixtures.sequence 2L))) entry metadata)
         "A later duplicate cannot hide an earlier valid row"
 
+let private indexChecks =
+    let snapshot = Case.snapshot (opened ())
+
+    let caseId =
+        CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
+
+    let index = CaseIndex.create instant snapshot
+
+    let record: StoredCase =
+        {
+            CaseId = caseId
+            Snapshot = snapshot
+            SnapshotBytes = CaseRecord.encodeSnapshot snapshot
+            Index = index
+        }
+
+    let caseHistory: CaseHistory =
+        {
+            Revision = snapshot.Revision
+            ChangedAt = instant
+            Snapshot = Some snapshot
+            Reference = Some snapshot.Reference
+            State = CaseState.map ignore snapshot.State
+            MissingPayloadAt = None
+            PresentPayloadAt = Some(CaseFixtures.sequence 1L)
+            ErasedAt = None
+        }
+
+    let histories = Map.ofList [ caseId, caseHistory ]
+
+    let check mutate () =
+        Expect.isOk
+            (ProjectionVerification.caseProjection installation histories Set.empty record)
+            "Valid independent projection control"
+
+        ProjectionVerification.caseProjection
+            installation
+            histories
+            Set.empty
+            { record with Index = mutate index }
+        |> unitResult
+
+    [
+        VerificationFinding.CaseStatusProjection,
+        check (fun index ->
+            { index with
+                Status = Some CaseStatus.Closed
+            })
+        VerificationFinding.CaseProgressProjection,
+        check (fun index ->
+            { index with
+                Progress = Some CaseProgress.Paid
+            })
+        VerificationFinding.CaseChangedAtProjection,
+        check (fun index ->
+            { index with
+                ChangedAt = instant.AddSeconds 1.
+            })
+        VerificationFinding.CaseSearchProjection,
+        check (fun index ->
+            { index with
+                SearchText = Some "tampered"
+            })
+    ]
+
 let private invalidProjectionRows () =
     let row: Actor =
         {
@@ -374,7 +440,7 @@ let private invalidProjectionRows () =
 
 [<Tests>]
 let tests =
-    let cases = ledgerChecks @ caseChecks @ authorityChecks
+    let cases = ledgerChecks @ caseChecks @ authorityChecks @ indexChecks
 
     testList
         "pure verification findings"

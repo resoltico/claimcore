@@ -33,16 +33,29 @@ let private request mask : UnvalidatedCaseRequest =
         CaseReference = value 1 "SYNTHETIC-ACCUMULATION"
         ExpectedRevision = if invalid 2 then -1L else 1L
         Act =
-            CaseAct.AmendRegistration
-                {
-                    IncidentDate = value 3 original.IncidentDate
-                    IncidentNotificationDate = value 4 original.IncidentNotificationDate
-                    IncidentCountry = value 5 original.IncidentCountry
-                    ClaimantName = value 6 original.ClaimantName
-                    InsurerName = value 7 original.InsurerName
-                    ClaimedAmount = value 8 original.ClaimedAmount
-                    ClaimedCurrency = value 9 original.ClaimedCurrency
-                }
+            CaseAct.AmendRegistration(
+                ClaimCore.TestSupport.Inputs.registrationFrom
+                    [
+                        BusinessField.IncidentDate,
+                        (value 3 (RegistrationInput.value BusinessField.IncidentDate (original)))
+                        BusinessField.IncidentNotificationDate,
+                        (value
+                            4
+                            (RegistrationInput.value
+                                BusinessField.IncidentNotificationDate
+                                (original)))
+                        BusinessField.IncidentCountry,
+                        (value 5 (RegistrationInput.value BusinessField.IncidentCountry (original)))
+                        BusinessField.ClaimantName,
+                        (value 6 (RegistrationInput.value BusinessField.ClaimantName (original)))
+                        BusinessField.InsurerName,
+                        (value 7 (RegistrationInput.value BusinessField.InsurerName (original)))
+                        BusinessField.ClaimedAmount,
+                        (value 8 (RegistrationInput.value BusinessField.ClaimedAmount (original)))
+                        BusinessField.ClaimedCurrency,
+                        (value 9 (RegistrationInput.value BusinessField.ClaimedCurrency (original)))
+                    ]
+            )
     }
 
 let private expected mask =
@@ -116,25 +129,33 @@ let phase2 =
             let original = Inputs.registration
 
             let registration =
-                { original with
-                    IncidentDate = "2026-10-01"
-                    IncidentNotificationDate = "2026-10-02"
-                    ClaimantName = String('A', 201)
-                    InsurerName = String('B', 201)
-                }
+                (ClaimCore.TestSupport.Inputs.registrationWith
+                    [
+                        BusinessField.IncidentDate, ("2026-10-01")
+                        BusinessField.IncidentNotificationDate, ("2026-10-02")
+                        BusinessField.ClaimantName, (String('A', 201))
+                        BusinessField.InsurerName, (String('B', 201))
+                    ]
+                    (original))
 
             let correction: AuthoredCaseAct =
                 CaseAct.Correct
                     {
                         Registration = Amendment.Replace registration
                         Decision =
-                            Change.Replace
-                                {
-                                    PaymentDecisionDate = "2026-10-01"
-                                    PayableAmount = "750"
-                                    PayableCurrency = "EUR"
-                                }
-                        Payment = Change.Replace { PaymentDate = "2026-09-30" }
+                            Change.Replace(
+                                ClaimCore.TestSupport.Inputs.decisionFrom
+                                    [
+                                        BusinessField.PaymentDecisionDate, ("2026-10-01")
+                                        BusinessField.PayableAmount, ("750")
+                                        BusinessField.PayableCurrency, ("EUR")
+                                    ]
+                            )
+                        Payment =
+                            Change.Replace(
+                                ClaimCore.TestSupport.Inputs.paymentFrom
+                                    [ BusinessField.PaymentDate, ("2026-09-30") ]
+                            )
                     }
 
             let request =

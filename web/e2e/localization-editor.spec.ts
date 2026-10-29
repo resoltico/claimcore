@@ -1,3 +1,5 @@
+import { registration } from "../tests/support/inputs";
+import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -70,20 +72,53 @@ const unacceptedCase = async (page: Page, reference: string) => {
     expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
   }
 };
+// Segmented dates cannot author malformed text; the API still has to reject it.
+const malformedCalendarBoundary = async (page: Page, reference: string) => {
+  for (const incidentDate of ["2026-02-30", "٢٠٢٦-٠٩-٠١"]) {
+    const reply = await browserRequest(page, "/api/operation.preview", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-ClaimCore-Antiforgery": await sessionToken(page),
+      },
+      body: JSON.stringify({
+        kind: "CASE",
+        operationId: randomUUID(),
+        caseReference: reference,
+        expectedRevision: 0,
+        act: { kind: "OPEN", values: registration({ incidentDate }) },
+      }),
+    });
+    expect(reply.status).toBe(200);
+    if (
+      !isResponse("operation.preview", reply.payload) ||
+      reply.payload.outcome.kind !== "REJECTED"
+    ) {
+      throw new Error("Expected malformed calendar refusal.");
+    }
+    expect(reply.payload.outcome.data).toMatchObject({
+      code: "INVALID_INPUT",
+      issues: [{ field: "incidentDate", code: "CALENDAR_DATE_REQUIRED" }],
+    });
+  }
+};
 const invalidCalendar = async (page: Page, requests: string[]) => {
   await expectBusinessFormatRefusal(page, "incidentDate", "CALENDAR_DATE_REQUIRED", () =>
     page.getByRole("button", { name: "Review changes" }).click(),
   );
-  await expect(page.locator('input[data-field-name="incidentDate"]')).toBeFocused();
-  await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveAttribute(
-    "aria-invalid",
-    "true",
-  );
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator("[data-error-summary]").getByRole("link").click();
+  await expect(
+    page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
+  ).toBeFocused();
+  await expect(
+    page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
+  ).toHaveAttribute("aria-invalid", "true");
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expectInputRefusal(
       page,
-      page.locator('input[data-field-name="incidentDate"]'),
+      page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
       language,
       {
         meaning: issueMeanings[language].incidentDate,
@@ -91,7 +126,9 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
       },
     );
   }
-  await expect(page.locator('input[data-field-name="incidentDate"]')).toHaveValue("2026-02-30");
+  await expect(page.locator('[data-field-name="incidentDate"] input[type="hidden"]')).toHaveValue(
+    "",
+  );
   await expect(page.locator('input[data-field-name="claimantName"]')).toHaveValue(
     "A\u0308 / العربية",
   );
@@ -102,7 +139,7 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
 const policyRefusal = async (page: Page, requests: string[]) => {
   const name = page.locator('input[data-field-name="claimantName"]');
   const authored = `A\u0308 / العربية${"x".repeat(201)}`;
-  await page.locator('input[data-field-name="incidentDate"]').fill("2026-09-01");
+  await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
@@ -118,6 +155,8 @@ const policyRefusal = async (page: Page, requests: string[]) => {
     }
     await selectLanguage(page, "lv");
     pending.release();
+    await expect(page.locator("[data-error-summary]")).toBeFocused();
+    await page.locator("[data-error-summary]").getByRole("link").click();
     await expect(name).toBeFocused();
     await expect(name).toHaveAttribute("aria-invalid", "true");
     for (const [language, text] of [
@@ -139,15 +178,16 @@ const policyRefusal = async (page: Page, requests: string[]) => {
   }
 };
 
-test("preserves authored Unicode and malformed calendar input, then localizes a real policy refusal", async ({
+test("preserves authored Unicode and cleared calendar input, then localizes a real policy refusal", async ({
   page,
 }) => {
   const reference = `LOCALE-VALIDATE-${randomUUID()}`;
   await openAuthenticated(page);
   await startOpen(page, reference);
+  await malformedCalendarBoundary(page, reference);
   const name = page.locator('input[data-field-name="claimantName"]');
   await name.fill("A\u0308 / العربية");
-  await page.locator('input[data-field-name="incidentDate"]').fill("2026-02-30");
+  await fillBusinessField(page, "incidentDate", "");
   await name.evaluate((element: HTMLInputElement) => {
     element.setSelectionRange(1, 3);
   });

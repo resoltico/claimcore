@@ -48,7 +48,14 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
       exact: true,
     }),
   ).toBeFocused();
-  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeDisabled();
+  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  await expect(signOut).toBeEnabled();
+  await signOut.click();
+  const consent = page.getByRole("dialog", { name: "Discard these draft changes?" });
+  await expect(consent).toBeVisible();
+  await consent.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(consent).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Back to case", exact: true })).toHaveCount(0);
   await page.unroute("**/api/operation.execute");
   await page.route("**/api/operation.execute", async (route) => {
@@ -108,5 +115,5 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(second.data.operationId).toBe(identity.operationId);
   expect(second.data.subject.kind === "CASE" ? second.data.subject.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);
-  await expect(page.getByRole("heading", { name: "Recorded change" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 });

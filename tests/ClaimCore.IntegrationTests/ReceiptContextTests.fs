@@ -47,10 +47,11 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         11
                         "PROBE-1"
                         1L
-                        (AuthoredCaseAct.AmendRegistration
-                            { registration with
-                                ClaimantName = "Later Party"
-                            })
+                        (AuthoredCaseAct.AmendRegistration(
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimantName, ("Later Party") ]
+                                (registration)
+                        ))
 
                 let! amended =
                     (Service.execute admin (OperationInput.Case amendment) (CancellationToken.None))
@@ -91,8 +92,13 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (PartyName.format (disclosedFields receipt).Registration.ClaimantName)
-            registration.ClaimantName
+            (PartyName.format (
+                Registration.value
+                    BusinessField.ClaimantName
+                    ((disclosedFields receipt).Registration)
+                |> FieldValue.name
+            ))
+            (RegistrationInput.value BusinessField.ClaimantName (registration))
             "Disclosure uses the write's locked context"
 
         Expect.equal receipt.RecordedBy ((CaseFixtures.actorId (id 3))) "Original executor"

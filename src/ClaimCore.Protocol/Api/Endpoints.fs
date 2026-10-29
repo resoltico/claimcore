@@ -54,6 +54,9 @@ type Endpoint<'In, 'Out> =
         Effect: EndpointEffect
         Input: Codec<'In>
         Output: Codec<'Out>
+        Classify: 'Out -> ReplyClass
+        Correlation: 'In -> System.Guid option
+        Unavailable: 'In -> 'Out
     }
 
     member this.Token = EndpointIds.token this.Id
@@ -70,6 +73,7 @@ type Route =
         OutputDefinitions: Map<string, Schema>
         NormalizeInput: JsonValue -> Result<JsonValue, Problem>
         NormalizeOutput: JsonValue -> Result<JsonValue, Problem>
+        ClassifyOutput: JsonValue -> Result<ReplyClass, Problem>
     }
 
     member this.Token = EndpointIds.token this.Id
@@ -86,118 +90,145 @@ module Route =
             OutputDefinitions = endpoint.Output.Definitions
             NormalizeInput =
                 fun value -> endpoint.Input.Read "$" value |> Result.map endpoint.Input.Write
+            ClassifyOutput =
+                fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Classify
             NormalizeOutput =
                 fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
         }
 
+module Endpoint =
+    let reply (endpoint: Endpoint<'Input, 'Output>) value : ClassifiedReply =
+        {
+            Wire = endpoint.Output.Write value
+            Class = endpoint.Classify value
+        }
+
 module Api =
-    let private endpoint id method effect input output =
+    let private read id method input output =
         {
             Id = id
             Method = method
-            Effect = effect
+            Effect = EndpointEffect.Read
             Input = input
             Output = output
+            Classify = OutcomePresentation.classify
+            Correlation = fun _ -> None
+            Unavailable = fun _ -> Outcome.Failed CoreFault.StoreUnavailable
         }
 
     let session =
-        endpoint
+        read
             (EndpointId.Host HostEndpoint.Session)
             HttpMethod.Get
-            EndpointEffect.Read
             RequestCodecs.empty
             (ReplyCodecs.readReply "SessionReply" ResponseCodecs.session)
 
     let logout =
-        endpoint
-            (EndpointId.Host HostEndpoint.Logout)
-            HttpMethod.Post
-            EndpointEffect.OperationalWrite
-            RequestCodecs.empty
-            (ReplyCodecs.readReply "LogoutReply" Codec.nullValue)
+        { read
+              (EndpointId.Host HostEndpoint.Logout)
+              HttpMethod.Post
+              RequestCodecs.empty
+              (ReplyCodecs.readReply "LogoutReply" Codec.nullValue) with
+            Effect = EndpointEffect.OperationalWrite
+        }
 
     let context =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
             HttpMethod.Post
-            EndpointEffect.Read
             RequestCodecs.empty
             (ReplyCodecs.readReply "ContextReply" ResponseCodecs.actorContext)
 
     let caseGet =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
             HttpMethod.Post
-            EndpointEffect.Read
             RequestCodecs.caseGetRequest
             (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
 
     let caseList =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
             HttpMethod.Post
-            EndpointEffect.Read
-            RequestCodecs.pageRequest
+            RequestCodecs.caseListRequest
             (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
 
     let caseHistory =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseHistory))
             HttpMethod.Post
-            EndpointEffect.Read
             RequestCodecs.historyRequest
             (ReplyCodecs.readReply
                 "HistoryReply"
                 (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
 
     let operationPreview =
-        endpoint
-            (EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview))
-            HttpMethod.Post
-            EndpointEffect.Read
-            RequestCodecs.operationInput
-            ReplyCodecs.preview
+        {
+            Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
+            Method = HttpMethod.Post
+            Effect = EndpointEffect.Read
+            Input = RequestCodecs.operationInput
+            Output = ReplyCodecs.preview
+            Classify = OutcomePresentation.classifyPreview
+            Correlation = OperationInput.operationId >> Some
+            Unavailable =
+                fun input ->
+                    {
+                        PreviewReply.OperationId = OperationInput.operationId input
+                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
+                    }
+        }
 
     let operationExecute =
-        endpoint
-            (EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute))
-            HttpMethod.Post
-            EndpointEffect.LedgerExecution
-            RequestCodecs.operationInput
-            ReplyCodecs.execute
+        {
+            Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
+            Method = HttpMethod.Post
+            Effect = EndpointEffect.LedgerExecution
+            Input = RequestCodecs.operationInput
+            Output = ReplyCodecs.execute
+            Classify = fun reply -> OutcomePresentation.classifyExecute reply.Outcome
+            Correlation = OperationInput.operationId >> Some
+            Unavailable =
+                fun input ->
+                    {
+                        ExecuteReply.OperationId = OperationInput.operationId input
+                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                    }
+        }
 
     let operationResolve =
-        endpoint
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
-            HttpMethod.Post
-            EndpointEffect.OperationalWrite
-            ResolutionCodecs.request
-            ResolutionCodecs.reply
+        { read
+              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
+              HttpMethod.Post
+              ResolutionCodecs.request
+              ResolutionCodecs.reply with
+            Effect = EndpointEffect.OperationalWrite
+            Classify = OutcomePresentation.classifyResolve
+            Correlation = fun input -> Some input.OperationId
+        }
 
     let operationObserve =
-        endpoint
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe))
-            HttpMethod.Post
-            EndpointEffect.Read
-            RequestCodecs.observeRequest
-            (ReplyCodecs.readReply "ObservationReply" ReceiptCodecs.receipt)
+        { read
+              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe))
+              HttpMethod.Post
+              RequestCodecs.observeRequest
+              (ReplyCodecs.readReply "ObservationReply" ReceiptCodecs.receipt) with
+            Correlation = fun input -> Some input.OperationId
+        }
 
     let authorityList =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList))
             HttpMethod.Post
-            EndpointEffect.Read
             RequestCodecs.pageRequest
             (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
 
     let authorityGrants =
-        endpoint
+        read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants))
             HttpMethod.Post
-            EndpointEffect.Read
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
-
 
     let forHost =
         function

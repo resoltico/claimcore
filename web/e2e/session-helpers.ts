@@ -7,7 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -107,6 +107,21 @@ export const expectAccessible = async (page: Page): Promise<void> => {
   if (result.violations.length === 0) {
     return;
   }
+  const diagnostics = result.violations.map((violation) => ({
+    id: violation.id,
+    nodes: violation.nodes.map((node) => ({
+      target: node.target,
+      failureSummary: node.failureSummary,
+    })),
+  }));
+  const report = test.info().outputPath("axe-violations.json");
+  await writeFile(
+    report,
+    `${JSON.stringify(diagnostics, null, 2)}
+`,
+    { mode: 0o600 },
+  );
+  await test.info().attach("axe-violations", { path: report, contentType: "application/json" });
   const ruleIds = result.violations
     .map((violation) => violation.id.replace(/[^a-zA-Z0-9]+/gu, "_").toUpperCase())
     .sort()
@@ -168,16 +183,20 @@ export const expectHostFailure = (reply: BrowserReply, status: number, code: str
 
 const awaitOidcReturn = async (
   page: Page,
-  applicationOrigin: string,
+  requestedAddress: URL,
   callbackStatus: () => number,
   submitted: ReturnType<typeof observeOidcSubmission>,
   issuerOrigin: string,
 ): Promise<void> => {
+  const applicationOrigin = requestedAddress.origin;
+  const requestedPath = requestedAddress.pathname + requestedAddress.search;
   try {
-    await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
-      timeout: 10_000,
-      waitUntil: "commit",
-    });
+    await page.waitForURL(
+      (url) =>
+        url.origin === applicationOrigin &&
+        (url.pathname === "/" || url.pathname + url.search === requestedPath),
+      { timeout: 10_000, waitUntil: "commit" },
+    );
   } catch {
     const current = new URL(page.url());
     let location = "other";
@@ -296,7 +315,8 @@ export const login = async (
     return;
   }
   await progress("login-anon");
-  const applicationOrigin = new URL(page.url()).origin;
+  const requestedAddress = new URL(page.url());
+  const applicationOrigin = requestedAddress.origin;
   const owner = await syntheticCredentials(username);
   await awaitLoginAdmission(page, signIn, applicationOrigin);
   await page.locator('input[name="username"]').or(authenticated).first().waitFor();
@@ -311,7 +331,7 @@ export const login = async (
   const callbackStatus = trackOidcCallback(page, applicationOrigin);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await progress("oidc-submitted");
-  await awaitOidcReturn(page, applicationOrigin, callbackStatus, submitted, issuerOrigin);
+  await awaitOidcReturn(page, requestedAddress, callbackStatus, submitted, issuerOrigin);
   await progress("oidc-callback-returned");
   await expect(authenticated).toBeVisible();
   await progress("login-ready");
@@ -324,7 +344,7 @@ export const logout = async (page: Page): Promise<void> => {
   await page.getByRole("button", { name: "Sign out" }).click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {

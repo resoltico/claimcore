@@ -44,14 +44,14 @@ module HostRoutes =
                 let token = antiforgery.GetAndStoreTokens(context).RequestToken |> Option.ofObj
 
                 return
-                    Api.session.Output.Write(
-                        Outcome.Succeeded
+                    Endpoint.reply
+                        Api.session
+                        (Outcome.Succeeded
                             {
                                 Authenticated = authenticated
                                 ContractIdentity = ContractIdentity.value
                                 AntiforgeryToken = token
-                            }
-                    )
+                            })
                     |> fun reply -> RouteSupport.reply reply context
         }
 
@@ -85,7 +85,7 @@ module HostRoutes =
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
                                 return
-                                    Api.logout.Output.Write(Outcome.Succeeded())
+                                    Endpoint.reply Api.logout (Outcome.Succeeded())
                                     |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }
@@ -181,5 +181,8 @@ module HostRoutes =
             )
             .RequireRateLimiting("login")
         |> ignore
+
+        for pattern in [ "/cases/{**path}"; "/operations/{**path}"; "/authority/{**path}" ] do
+            application.MapFallback(pattern, RequestDelegate(fallback assets)) |> ignore
 
         application.MapFallback(RequestDelegate(fallback assets)) |> ignore

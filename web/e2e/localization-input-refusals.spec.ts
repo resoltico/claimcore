@@ -1,3 +1,4 @@
+import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
@@ -12,6 +13,7 @@ import {
   expectBusinessFormatRefusal,
   trackRequests,
   selectLanguage,
+  selectFormat,
   ui,
 } from "./localization-support";
 
@@ -48,11 +50,21 @@ const forgedCorrection = async (page: Page, reference: string) => {
   }
 };
 const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
-  await page.locator('input[data-field-name="claimedAmount"]').fill("0.10");
+  const samples = {
+    en: ["en-GB", "0.10"],
+    lv: ["lv-LV", "0,10"],
+    ar: ["ar-EG", "٠٫١٠"],
+  } as const;
+  const [locale, amount] = samples[language];
+  await selectFormat(page, locale);
+  await fillBusinessField(page, "claimedAmount", amount);
+  const sent = page.waitForRequest((request) => request.url().endsWith("/api/operation.preview"));
   const pending = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );
   await page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click();
+  const draft: unknown = (await sent).postDataJSON();
+  expect(draft).toMatchObject({ act: { kind: "OPEN", values: { claimedAmount: "0.10" } } });
   const value: unknown = await (await pending).json();
   expect(isResponse("operation.preview", value)).toBe(true);
   if (!isResponse("operation.preview", value)) {
@@ -62,7 +74,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
 };
 
 for (const language of ["en", "lv", "ar"] as const) {
-  test(`refuses localized authoring digits and currency alphabets in ${language}`, async ({
+  test(`normalizes declared locale amounts and refuses malformed syntax in ${language}`, async ({
     page,
   }) => {
     await openAuthenticated(page);
@@ -70,32 +82,33 @@ for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     const requests = trackRequests(page);
     for (const [name, value, diagnostic] of [
-      ["claimedAmount", "١٢٫٥٠", "DECIMAL_FORMAT"],
-      ["claimedAmount", "125,50", "DECIMAL_FORMAT"],
       ["claimedAmount", "00.10", "DECIMAL_FORMAT"],
-      ["incidentDate", "٢٠٢٦-٠٩-٠١", "CALENDAR_DATE_REQUIRED"],
+      ["incidentDate", "", "CALENDAR_DATE_REQUIRED"],
       ["claimedCurrency", "ĀBC", "CURRENCY_FORMAT"],
     ] as const) {
-      await page.locator(`input[data-field-name="${name}"]`).fill(value);
+      await fillBusinessField(page, name, value);
+      const field = page.locator(`[data-field-name="${name}"]`);
+      const control = name === "incidentDate" ? field.getByRole("spinbutton").first() : field;
       const before = requests.length;
       await expectBusinessFormatRefusal(page, name, diagnostic, () =>
         page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
       );
-      await expectInputRefusal(page, page.locator(`input[data-field-name="${name}"]`), language, {
+      await expectInputRefusal(page, control, language, {
         meaning: issueMeanings[language][name],
         issue: businessFormatRefusalText[diagnostic][language],
       });
-      await expect(page.locator(`input[data-field-name="${name}"]`)).toBeFocused();
-      await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveAttribute(
-        "aria-invalid",
-        "true",
-      );
+      await expect(page.locator("[data-error-summary]")).toBeFocused();
+      await page.locator("[data-error-summary]").getByRole("link").click();
+      await expect(control).toBeFocused();
+      await expect(control).toHaveAttribute("aria-invalid", "true");
       expect(requests.slice(before)).toEqual(["POST /api/operation.preview"]);
-      await expect(page.locator(`input[data-field-name="${name}"]`)).toHaveValue(value);
+      await expect(
+        name === "incidentDate" ? field.locator('input[type="hidden"]') : control,
+      ).toHaveValue(value);
       await expect(page.locator("section.receipt")).toHaveCount(0);
       await page.locator('input[data-field-name="claimedAmount"]').fill("1200.50");
-      await page.locator('input[data-field-name="incidentDate"]').fill("2026-09-01");
-      await page.locator('input[data-field-name="claimedCurrency"]').fill("EUR");
+      await fillBusinessField(page, "incidentDate", "2026-09-01");
+      await fillBusinessField(page, "claimedCurrency", "EUR");
     }
     await reviewDecimal(page, language);
   });
@@ -113,13 +126,18 @@ for (const language of ["en", "lv", "ar"] as const) {
     first.release();
     await confirmReview(page);
     await page.getByRole("button", { name: "Record changes" }).click();
-    await page.getByRole("button", { name: "Return to case" }).click();
+    await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+    await expect(page.locator(".success-toast")).toContainText(
+      "Close the case recorded at revision 2.",
+    );
     await startAct(page, "Correct case facts");
     await selectLanguage(page, language);
-    const mode = page.locator('[name="act.groups.decision.kind"]');
+    const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
+    await expect(mode).toHaveCount(1);
     await expect(mode).toHaveValue("KEEP");
-    await expect(mode.locator("option")).toHaveCount(1);
+    await expect(mode).toBeChecked();
     await forgedCorrection(page, reference);
     await expect(mode).toHaveValue("KEEP");
+    await expect(mode).toBeChecked();
   });
 }

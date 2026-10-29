@@ -71,7 +71,7 @@ it("formats only read-only scalar displays and leaves technical text and currenc
   expect(displayField("12.5000", field("claimedAmount"), "lv-LV")).toBe("12,5000");
   expect(displayField("2026-09-22", field("incidentDate"), "en-GB")).toBe("22/09/2026");
   expect(displayField("EUR", field("claimedCurrency"), "ar-EG")).toBe("EUR");
-  const p = createPresenter({ language: "ar", displayLocale: "lv-LV" });
+  const p = createPresenter({ language: "ar", displayLocale: "lv-LV", theme: "SYSTEM" as const });
   expect(p.fieldValue(null, field("claimedAmount"))).not.toBe(
     p.fieldValue("0", field("claimedAmount")),
   );

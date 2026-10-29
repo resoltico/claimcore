@@ -1,8 +1,9 @@
+import { inventory } from "../support/inventory";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { getButton, fireEvent, render, screen } from "../support/presentation-test-support";
+import { getButton, render, screen } from "../support/presentation-test-support";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
@@ -66,11 +67,7 @@ const authorCase = (kind: ActKind) => {
       input("claimantName", "Synthetic replacement");
       break;
     case "CORRECT":
-      fireEvent.change(document.querySelector('[name="act.groups.registration.kind"]')!, {
-        target: {
-          value: "REPLACE",
-        },
-      });
+      input("act.groups.registration.kind", "REPLACE");
       input("claimantName", "Synthetic correction");
       break;
     case "DECIDE":
@@ -225,13 +222,12 @@ const assertInputMetadata = () => {
 it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
   async (act) => {
-    expect(acts).toHaveLength(12);
+    expect(acts).toHaveLength(inventory.caseActs.length);
     assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));
     render(
       <OperationEditor
-        token="token"
         definition={productMetadata}
         current={act.kind === "OPEN" ? null : currentFor(act.kind)}
         initialAct={act.kind}

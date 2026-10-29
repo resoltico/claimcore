@@ -127,8 +127,8 @@ let private reply result delivery =
 
 let private frameRoundTrip frame =
     Expect.equal
-        (Frames.encode frame |> Frames.decode)
-        (Ok frame)
+        (Frames.encode frame |> Frames.decode |> Result.map CliReplies.frameFacts)
+        (Ok(CliReplies.frameFacts frame))
         "The minimal frame retains its facts."
 
 let private results () =

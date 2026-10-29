@@ -44,10 +44,9 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await page.keyboard.press("Space");
   await review.getByRole("button", { name: "Record changes" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
   await progress("a11y-receipt");
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Return to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await page.locator(".history-list summary").first().click();
@@ -61,7 +60,10 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();
   await page.reload({ waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toHaveCount(0);
+  await expect(page.locator("section.receipt")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);
 });

@@ -6,6 +6,7 @@ import { withinResponseDeadline } from "./responseDeadline";
 import { localNotice } from "../protocol/notices";
 import {
   type EndpointId,
+  type RequestByEndpoint,
   endpoints,
   strictByteProfile,
   consumerContractIdentity,
@@ -46,7 +47,7 @@ const result = async <K extends EndpointId>(
 };
 const send = async <K extends EndpointId>(
   id: K,
-  token: string | undefined,
+  credential: string | undefined,
   body: string | undefined,
   signal: AbortSignal,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
@@ -65,8 +66,8 @@ const send = async <K extends EndpointId>(
     Accept: "application/json",
     "ClaimCore-Contract": consumerContractIdentity,
   };
-  if (token !== undefined) {
-    headers["X-ClaimCore-Antiforgery"] = token;
+  if (credential !== undefined) {
+    headers["X-ClaimCore-Antiforgery"] = credential;
   }
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -80,22 +81,28 @@ const send = async <K extends EndpointId>(
 };
 const request = <K extends EndpointId>(
   id: K,
-  token: string | undefined,
+  credential: string | undefined,
   body: object | undefined,
   signal?: AbortSignal,
 ) =>
   withinResponseDeadline(
-    (owned) => send(id, token, body === undefined ? undefined : JSON.stringify(body), owned),
+    (owned) => send(id, credential, body === undefined ? undefined : JSON.stringify(body), owned),
     signal,
   );
+export const requestEndpoint = <K extends EndpointId>(
+  id: K,
+  credential: string,
+  input: RequestByEndpoint[K],
+  signal?: AbortSignal,
+) => request(id, credential, input, signal);
 export const service = {
   session: () => request("session", undefined, undefined),
-  logout: (token: string) => request("session.logout", token, {}),
-  context: (token: string, signal?: AbortSignal) => request("context", token, {}, signal),
-  get: (caseReference: string, token: string, signal?: AbortSignal) =>
-    request("case.get", token, { caseReference }, signal),
-  list: (cursor: string | null, limit: number, token: string, signal?: AbortSignal) =>
-    request("case.list", token, { ...(cursor === null ? {} : { cursor }), limit }, signal),
+  logout: (credential: string) => request("session.logout", credential, {}),
+  context: (credential: string, signal?: AbortSignal) => request("context", credential, {}, signal),
+  get: (caseReference: string, credential: string, signal?: AbortSignal) =>
+    request("case.get", credential, { caseReference }, signal),
+  list: (cursor: string | null, limit: number, credential: string, signal?: AbortSignal) =>
+    request("case.list", credential, { ...(cursor === null ? {} : { cursor }), limit }, signal),
   history: (
     input: {
       caseReference: string;
@@ -103,12 +110,12 @@ export const service = {
       limit: number;
       detail?: "SUMMARY" | "FULL";
     },
-    token: string,
+    credential: string,
     signal?: AbortSignal,
   ) =>
     request(
       "case.history",
-      token,
+      credential,
       {
         caseReference: input.caseReference,
         ...(input.cursor === null ? {} : { cursor: input.cursor }),
@@ -117,21 +124,31 @@ export const service = {
       },
       signal,
     ),
-  observe: (operationId: string, token: string, signal?: AbortSignal) =>
-    request("operation.observe", token, { operationId }, signal),
-  authorityList: (cursor: string | null, token: string, signal?: AbortSignal) =>
-    request("authority.list", token, { ...(cursor === null ? {} : { cursor }), limit: 50 }, signal),
-  authorityGrants: (actorId: string, cursor: string | null, token: string, signal?: AbortSignal) =>
+  observe: (operationId: string, credential: string, signal?: AbortSignal) =>
+    request("operation.observe", credential, { operationId }, signal),
+  authorityList: (cursor: string | null, credential: string, signal?: AbortSignal) =>
+    request(
+      "authority.list",
+      credential,
+      { ...(cursor === null ? {} : { cursor }), limit: 50 },
+      signal,
+    ),
+  authorityGrants: (
+    actorId: string,
+    cursor: string | null,
+    credential: string,
+    signal?: AbortSignal,
+  ) =>
     request(
       "authority.grants",
-      token,
+      credential,
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
-  resolve: (operationId: string, token: string) =>
-    request("operation.resolve", token, { operationId }),
-  preview: (prepared: PreparedRequest<"operation.execute">, token: string) =>
-    withinResponseDeadline((owned) => send("operation.preview", token, prepared.bytes, owned)),
-  execute: (prepared: PreparedRequest<"operation.execute">, token: string) =>
-    withinResponseDeadline((owned) => send(prepared.endpoint, token, prepared.bytes, owned)),
+  resolve: (operationId: string, credential: string) =>
+    request("operation.resolve", credential, { operationId }),
+  preview: (prepared: PreparedRequest<"operation.execute">, credential: string) =>
+    withinResponseDeadline((owned) => send("operation.preview", credential, prepared.bytes, owned)),
+  execute: (prepared: PreparedRequest<"operation.execute">, credential: string) =>
+    withinResponseDeadline((owned) => send(prepared.endpoint, credential, prepared.bytes, owned)),
 };

@@ -15,46 +15,23 @@ open ClaimCore.Web.Composition
 module internal ApiRoutes =
     let route =
         function
-        | (ActorEndpoint.Query QueryEndpoint.Context) ->
-            Route.read Api.context (fun _ -> None) Service.context
-        | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
-            Route.read Api.caseGet (fun _ -> None) Service.get
-        | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            Route.read Api.caseList (fun _ -> None) Service.list
-        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
-            Route.read Api.caseHistory (fun _ -> None) Service.history
-        | (ActorEndpoint.Query QueryEndpoint.Observe) ->
-            Route.read Api.operationObserve (fun input -> Some input.OperationId) Service.observe
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            Route.read Api.authorityList (fun _ -> None) Service.actors
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            Route.read Api.authorityGrants (fun _ -> None) Service.grants
-        | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            Route.bind
-                Api.operationPreview
-                (fun input -> Some(OperationInput.operationId input))
-                (fun input ->
-                    {
-                        PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
-                    })
-                Service.preview
-        | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            Route.bind
-                Api.operationExecute
-                (fun input -> Some(OperationInput.operationId input))
-                (fun input ->
-                    {
-                        ExecuteReply.OperationId = OperationInput.operationId input
-                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
-                    })
-                Service.execute
-        | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
-            Route.bind
-                Api.operationResolve
-                (fun input -> Some input.OperationId)
-                (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
-                Service.resolve
+        | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
+        | ActorEndpoint.Query QueryEndpoint.CaseGet -> Route.bind Api.caseGet Service.get
+        | ActorEndpoint.Query QueryEndpoint.CaseList -> Route.bind Api.caseList Service.list
+        | ActorEndpoint.Query QueryEndpoint.CaseHistory ->
+            Route.bind Api.caseHistory Service.history
+        | ActorEndpoint.Query QueryEndpoint.Observe ->
+            Route.bind Api.operationObserve Service.observe
+        | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
+            Route.bind Api.authorityList Service.actors
+        | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
+            Route.bind Api.authorityGrants Service.grants
+        | ActorEndpoint.Operation OperationEndpoint.Preview ->
+            Route.bind Api.operationPreview Service.preview
+        | ActorEndpoint.Operation OperationEndpoint.Execute ->
+            Route.bind Api.operationExecute Service.execute
+        | ActorEndpoint.Query QueryEndpoint.Resolve ->
+            Route.bind Api.operationResolve Service.resolve
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with

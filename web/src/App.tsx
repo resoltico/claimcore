@@ -1,15 +1,13 @@
-import { UnresolvedNotice } from "./views/operation/UnresolvedNotice";
 import { LoginScreen } from "./views/LoginScreen";
 import { Dashboard } from "./views/Dashboard";
-import { useSession } from "./hooks/useSession";
+import { useSessionContext } from "./session/SessionContext";
+import { SessionProvider } from "./session/SessionProvider";
 import { Message, NoticeView } from "./presentation/Message";
-import { PresentationControls } from "./presentation/PresentationControls";
-
 const SessionContent = () => {
-  const { state, logout, refresh } = useSession();
+  const { state, refresh } = useSessionContext();
   if (state.kind === "loading") {
     return (
-      <main className="loading">
+      <main className="loading" role="status">
         <Message id="ui.loadingSession" />
       </main>
     );
@@ -27,20 +25,12 @@ const SessionContent = () => {
     );
   }
   if (state.kind === "authenticated") {
-    return (
-      <>
-        <UnresolvedNotice key={`notice:${state.epoch}`} token={state.token} />
-        <Dashboard key={`dashboard:${state.epoch}`} token={state.token} onLogout={logout} />
-      </>
-    );
+    return <Dashboard key={`dashboard:${state.epoch}`} />;
   }
   return <LoginScreen message={state.message} />;
 };
 export const App = () => (
-  <>
-    <header className="presentation-bar">
-      <PresentationControls />
-    </header>
+  <SessionProvider>
     <SessionContent />
-  </>
+  </SessionProvider>
 );

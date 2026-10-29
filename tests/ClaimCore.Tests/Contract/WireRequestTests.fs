@@ -98,7 +98,9 @@ let private structure () =
             "{\"limit\":51}"
             "{\"limit\":1,\"extra\":true}"
             "{\"limit\":1,\"cursor\":\"\"}"
-            "{\"limit\":1,\"cursor\":\"" + String('A', 513) + "\"}"
+            "{\"limit\":1,\"cursor\":\""
+            + String('A', Paging.MaximumCaseCursorCharacters + 1)
+            + "\"}"
         ] do
         Expect.isError
             (admit (endpoint "case.list") raw)

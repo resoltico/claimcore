@@ -22,7 +22,6 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
   <>
     <PresentationControls />
     <OperationEditor
-      token="token"
       definition={definition}
       current={current}
       initialAct="CLOSE"

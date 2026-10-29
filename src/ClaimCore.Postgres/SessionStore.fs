@@ -6,14 +6,31 @@ open System.Threading
 open System.Threading.Tasks
 open Npgsql
 
+[<RequireQualifiedAccess>]
+type SessionEndReason =
+    | Logout
+    | Expired
+    | Invalid
+
+/// Committed operational changes are returned to the host that owns session telemetry.
+type SessionChanges<'value> =
+    {
+        Value: 'value
+        Ended: SessionEndReason list
+    }
+
+module SessionChanges =
+    let unchanged value = { Value = value; Ended = [] }
+
 /// Operational authentication storage, independent of ledger ordering and authority.
 type ISessionStore =
     abstract Create:
-        byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken -> Task<string>
+        byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken ->
+            Task<SessionChanges<string>>
 
-    abstract Retrieve: string * CancellationToken -> Task<byte array option>
-    abstract Renew: string * byte array * CancellationToken -> Task<unit>
-    abstract Remove: string * CancellationToken -> Task<unit>
+    abstract Retrieve: string * CancellationToken -> Task<SessionChanges<byte array option>>
+    abstract Renew: string * byte array * CancellationToken -> Task<SessionChanges<unit>>
+    abstract Remove: string * SessionEndReason * CancellationToken -> Task<SessionChanges<unit>>
 
 module internal SessionRows =
     let maximumPayload = 1048576
@@ -42,9 +59,7 @@ module internal SessionRows =
             [| box key |]
             token
 
-    let valid instant row =
-        let activity = DatabaseSession.instant 3 row
-        let expiry = DatabaseSession.instant 2 row
+    let private wellFormed row =
         let idle = DatabaseSession.value<double> 4 row
         let payload = DatabaseSession.value<byte array> 0 row
 
@@ -53,6 +68,19 @@ module internal SessionRows =
         && payload.Length <= maximumPayload
         && Double.IsFinite idle
         && idle > 0.
+
+    let private endReason instant row =
+        if not (wellFormed row) || instant < DatabaseSession.instant 3 row then
+            SessionEndReason.Invalid
+        else
+            SessionEndReason.Expired
+
+    let valid instant row =
+        let activity = DatabaseSession.instant 3 row
+        let expiry = DatabaseSession.instant 2 row
+        let idle = DatabaseSession.value<double> 4 row
+
+        wellFormed row
         && instant >= activity
         && instant < expiry
         && (instant - activity).TotalSeconds < idle
@@ -71,8 +99,23 @@ module internal SessionRows =
 
                     let! result =
                         match rows with
-                        | [ row ] when valid instant row -> action connection instant row
-                        | _ -> task { let! _ = remove connection key token in return None }
+                        | [ row ] when valid instant row ->
+                            task {
+                                let! value = action connection instant row
+                                return SessionChanges.unchanged value
+                            }
+                        | [ row ] ->
+                            task {
+                                let! removed = remove connection key token
+
+                                return
+                                    {
+                                        Value = None
+                                        Ended = List.replicate removed (endReason instant row)
+                                    }
+                            }
+                        | [] -> Task.FromResult(SessionChanges.unchanged None)
+                        | _ -> invalidOp "A session key must identify at most one row."
 
                     do! transaction.CommitAsync token
                     return result
@@ -118,7 +161,7 @@ type internal SessionStore(source: NpgsqlDataSource) =
                         if deadline <= instant then
                             invalidOp "The session ticket has expired."
 
-                        let! _ = SessionRows.cleanup connection instant token
+                        let! expired = SessionRows.cleanup connection instant token
 
                         let! counts =
                             DatabaseSession.rows
@@ -146,7 +189,12 @@ type internal SessionStore(source: NpgsqlDataSource) =
                                 token
 
                         do! transaction.CommitAsync token
-                        return key
+
+                        return
+                            {
+                                Value = key
+                                Ended = List.replicate expired SessionEndReason.Expired
+                            }
                     })
 
         member _.Retrieve(key, token) =
@@ -166,7 +214,7 @@ type internal SessionStore(source: NpgsqlDataSource) =
             task {
                 SessionRows.admitPayload payload
 
-                let! _ =
+                let! changes =
                     SessionRows.withRow source key token (fun connection _ _ ->
                         task {
                             let! _ =
@@ -179,10 +227,10 @@ type internal SessionStore(source: NpgsqlDataSource) =
                             return Some()
                         })
 
-                return ()
+                return { Value = (); Ended = changes.Ended }
             }
 
-        member _.Remove(key, token) =
+        member _.Remove(key, reason, token) =
             DatabaseSession.transaction
                 source
                 Data.IsolationLevel.ReadCommitted
@@ -190,7 +238,12 @@ type internal SessionStore(source: NpgsqlDataSource) =
                 (fun connection transaction ->
                     task {
                         let! _ = Transactions.configure connection Transactions.timeouts token
-                        let! _ = SessionRows.remove connection key token
+                        let! removed = SessionRows.remove connection key token
                         do! transaction.CommitAsync token
-                        return ()
+
+                        return
+                            {
+                                Value = ()
+                                Ended = List.replicate removed reason
+                            }
                     })

@@ -27,6 +27,12 @@ let private roundTrip codec value =
         (Ok value)
         "The shared model crosses its codec unchanged."
 
+let rec private inputMembers definitions =
+    function
+    | Schema.Ref name -> inputMembers definitions (Map.find name definitions)
+    | Schema.Object(members, _) -> members |> List.map fst |> Set.ofList
+    | _ -> failtest "Inventoried read inputs require an object schema."
+
 let private registry () =
     let rows =
         Api.all
@@ -34,40 +40,27 @@ let private registry () =
 
 
     let expected =
-        [
-            "session"
-            "session.logout"
-            "context"
-            "case.get"
-            "case.list"
-            "case.history"
-            "operation.preview"
-            "operation.execute"
-            "operation.observe"
-            "operation.resolve"
-            "authority.list"
-            "authority.grants"
-        ]
+        Inventory.rows "endpoints"
+        |> List.map (fun row ->
+            row.GetProperty("token").GetString() |> nonNull,
+            row.GetProperty("method").GetString() |> nonNull,
+            row.GetProperty("effect").GetString() |> nonNull)
 
     Expect.equal
-        (rows |> List.map (fun (id, _, _) -> id) |> List.sort)
+        (rows
+         |> List.map (fun (token, method, effect) -> token, method, string effect)
+         |> List.sort)
         (List.sort expected)
-        "The registry contains each adopted endpoint exactly once."
+        "The registry contains exactly the independently inventoried methods and effects."
 
-    for endpoint, method, effect in rows do
-        Expect.equal
-            method
-            (if endpoint = "session" then "GET" else "POST")
-            "Transport method is explicit."
+    for KeyValue(token, expected) in Inventory.readInputs do
+        let route = Api.tryFind token |> Option.get
 
         Expect.equal
-            effect
-            (match endpoint with
-             | "operation.execute" -> EndpointEffect.LedgerExecution
-             | "operation.resolve"
-             | "session.logout" -> EndpointEffect.OperationalWrite
-             | _ -> EndpointEffect.Read)
-            "Operational writes and ledger execution have distinct delivery effects."
+            (inputMembers route.InputDefinitions route.InputSchema)
+            expected
+            ("Read input inventory: " + token)
+
 
 let private readReplies () =
     let codec = ReplyCodecs.readReply "BooleanReply" Codec.boolean
@@ -229,7 +222,7 @@ let tests =
     testList
         "typed endpoint registry"
         [
-            testCase "the twelve endpoints own method and mutation classification" registry
+            testCase "inventoried endpoints own method and mutation classification" registry
             testCase "one read envelope carries success, refusal and fault" readReplies
             testCase "preview and execution share receipt and refusal models" mutationReplies
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity
@@ -249,60 +242,43 @@ let handlerBindings =
 
 [<Tests>]
 let handlerCallTypes =
-    testCase "handler calls tie nominal input and output to the registered endpoint" (fun () ->
-        let method =
+    testCase "handler calls and endpoint behavior retain nominal input and output types" (fun () ->
+        let methodInfo =
             typeof<ClaimCore.Web.Route>.Assembly.GetTypes()
             |> Array.collect (fun kind ->
                 kind.GetMethods(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Static))
-            |> Array.find (fun method ->
-                let parameters = method.GetParameters()
+            |> Array.find (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
 
-                method.Name = "bind"
-                && parameters.Length = 4
+                methodInfo.Name = "bind"
+                && parameters.Length = 2
                 && parameters[0].ParameterType.IsGenericType
                 && parameters[0].ParameterType.GetGenericTypeDefinition() =
                     typedefof<Endpoint<_, _>>)
 
+        let parameters = methodInfo.GetParameters()
+        let endpoint = parameters[0].ParameterType
+        let endpointTypes = endpoint.GetGenericArguments()
 
-        let parameters = method.GetParameters()
-        let endpointTypes = parameters[0].ParameterType.GetGenericArguments()
-        let identity = parameters[1].ParameterType.GetGenericArguments()
+        let correlation =
+            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()
+
+        Expect.equal correlation[0] endpointTypes[0] "Correlation receives the typed input"
 
         Expect.equal
-            identity[0]
-            endpointTypes[0]
-            "Logging identity receives the typed endpoint input"
-
-        Expect.equal
-            identity[1]
+            correlation[1]
             typeof<Guid option>
-            "Logging receives an optional admitted operation id"
+            "Correlation returns an optional operation id"
 
-        let unavailable = parameters[2].ParameterType.GetGenericArguments()
+        let unavailable =
+            (endpoint.GetProperty("Unavailable") |> nonNull).PropertyType.GetGenericArguments()
 
-        Expect.equal
-            (unavailable[0])
-            (endpointTypes[0])
-            "The unavailable response receives this endpoint's exact input"
-
-        Expect.equal
-            (unavailable[1])
-            (endpointTypes[1])
-            "The unavailable response has this endpoint's exact output"
-
+        Expect.equal unavailable[0] endpointTypes[0] "Unavailable receives this exact input"
+        Expect.equal unavailable[1] endpointTypes[1] "Unavailable returns this exact output"
         let arguments (kind: Type) = kind.GetGenericArguments()
-        let invocation = parameters[3].ParameterType |> arguments
+        let invocation = parameters[1].ParameterType |> arguments
         let input = invocation[1] |> arguments
-
-        Expect.equal
-            (input[0])
-            (endpointTypes[0])
-            "The invocation receives this endpoint's exact input"
-
+        Expect.equal input[0] endpointTypes[0] "Invocation receives this exact input"
         let cancellation = input[1] |> arguments
         let output = cancellation[1] |> arguments
-
-        Expect.equal
-            (output[0])
-            (endpointTypes[1])
-            "The invocation returns this endpoint's exact output")
+        Expect.equal output[0] endpointTypes[1] "Invocation returns this exact output")

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openApplication, openAuthenticated } from "./session-helpers";
 import {
+  expectPreferences,
   selectLanguage,
   trackRequests,
   ui,
@@ -48,10 +49,7 @@ const visibleLanguage = async (
   language: "en" | "lv" | "ar",
   authenticated: boolean,
 ) => {
-  await expect(page.getByRole("combobox").and(page.locator('select[id$="-language"]'))).toHaveValue(
-    language,
-  );
-  await expect(page.getByText(ui(language, "ui.preferencesHint"), { exact: true })).toBeVisible();
+  await expectPreferences(page, { language });
   if (authenticated) {
     await expect(
       page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true }),
@@ -87,13 +85,13 @@ for (const authenticated of [false, true]) {
           const requests = trackRequests(page);
           await selectLanguage(page, target);
           await visibleLanguage(page, target, authenticated);
-          await expect(page.locator('select[id$="-format"]')).toHaveValue(displayLocale);
+          await expectPreferences(page, { displayLocale });
           expect(
             await page.evaluate(
               (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
               preferenceKey,
             ),
-          ).toEqual({ version: 1, language: target, displayLocale });
+          ).toEqual({ version: 2, language: target, displayLocale, theme: "SYSTEM" });
           expect(requests).toHaveLength(0);
         });
       }

@@ -35,7 +35,7 @@ let tests =
                 let invocation = frame "operation.execute"
 
                 Expect.equal
-                    (CliReply.result invocation JsonValue.Null)
+                    (CliReply.result invocation JsonValue.Null |> Result.map _.Bytes)
                     (Error CliFailure.InvalidResponse)
                     "Untrusted validation failure must not throw or deliver a reply")
             testCase "fresh attempts retain definite refusals" (fun () ->

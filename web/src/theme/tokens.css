@@ -1,0 +1,68 @@
+:root {
+  color-scheme: light dark;
+  --color-bg: light-dark(#f6f7f9, #0f141a);
+  --color-surface: light-dark(#ffffff, #161d25);
+  --color-surface-2: light-dark(#eef1f5, #1d2630);
+  --color-border: light-dark(#d5dbe3, #2c3846);
+  --color-text: light-dark(#16202a, #e6ebf1);
+  --color-text-muted: light-dark(#4a5868, #a3b0bf);
+  --color-accent: light-dark(#0b5cad, #6aa8ff);
+  --color-on-accent: light-dark(#ffffff, #0b1520);
+  --color-focus: light-dark(#1f6feb, #8ab8ff);
+  --color-success: light-dark(#1d6b3a, #5fcf8a);
+  --color-success-bg: light-dark(#e6f4ea, #16301f);
+  --color-warning: light-dark(#8a5a00, #f0b84d);
+  --color-warning-bg: light-dark(#fdf3dc, #33270f);
+  --color-danger: light-dark(#b42318, #ff8a80);
+  --color-danger-bg: light-dark(#fde8e7, #3a1715);
+  --color-neutral-bg: light-dark(#eceff3, #232d38);
+  --color-scrim: rgb(0 0 0 / 65%);
+  --font-body:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --line-body: 1.5;
+  --line-heading: 1.25;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-2: 0 4px 16px rgb(0 0 0 / 0.12);
+  --motion: 150ms ease-out;
+  --border-width: 1px;
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --target-primary: 44px;
+  --target-minimum: 24px;
+  --content-max: 80rem;
+  --breakpoint-compact: 40rem;
+  --breakpoint-wide: 64rem;
+  --gutter: var(--space-4);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+@media (width >= 40rem) {
+  :root {
+    --gutter: var(--space-6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion: none;
+  }
+}

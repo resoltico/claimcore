@@ -116,3 +116,28 @@ let failureCategories bytes =
             "ERROR")
     |> Set.ofSeq
     |> Set.toList
+
+/// Only fixed tags and bounded decimal geometry cross into public failure summaries.
+let targetGeometry bytes =
+    let dimension = @"(?:0|[1-9][0-9]{0,3})\.[0-9]{2}"
+
+    Regex.Matches(
+        plain bytes,
+        @"(?m)^[ \t]*(?:Error: )?E2E_TARGET_GEOMETRY tag=(?<tag>BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY|DIV|SPAN|OTHER) width=(?<width>"
+        + dimension
+        + @") height=(?<height>"
+        + dimension
+        + @") min=(?<minimum>24|44)[ \t]*\r?$",
+        RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+    )
+    |> Seq.map (fun row ->
+        row.Groups["tag"].Value
+        + ":"
+        + row.Groups["width"].Value
+        + "x"
+        + row.Groups["height"].Value
+        + ":min"
+        + row.Groups["minimum"].Value)
+    |> Seq.distinct
+    |> Seq.truncate 5
+    |> Seq.toList

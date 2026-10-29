@@ -1,6 +1,6 @@
 import { productMetadata } from "../protocol/productMetadata";
 import { buildRequest } from "../protocol/client";
-import type { FormValues } from "../protocol/forms";
+import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
 import {
   atPath,
@@ -39,6 +39,8 @@ const initialValue = (input: CatalogInput, current: CurrentCase | null, id: stri
   switch (input.kind.kind) {
     case "BOOLEAN":
       return false;
+    case "CHOICES":
+      return [];
     case "CHOICE":
     case "GROUP":
       return input.kind.options[0] ?? "";
@@ -53,7 +55,7 @@ export const initialOperationValues = (
   id = crypto.randomUUID(),
 ): FormValues => {
   const definition = operationEntry({ subject, kind });
-  const values: Record<string, string | boolean> = {};
+  const values: Record<string, FormValue> = {};
   for (const input of definition.inputs) {
     values[bindingPath(input)] = initialValue(input, current, id);
   }

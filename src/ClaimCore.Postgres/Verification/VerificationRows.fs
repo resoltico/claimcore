@@ -67,8 +67,53 @@ module internal VerificationRows =
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
                     {
-                        Read = DatabaseSession.namedRow >> Projections.caseRow installationId
-                        Append = (ProjectionVerification.caseProjection installationId histories)
+                        Read = DatabaseSession.namedRow
+                        Append =
+                            fun seen row ->
+                                result {
+                                    let! status =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseStatusProjection
+                                            (fun () -> Projections.caseStatus row)
+
+                                    let! progress =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseProgressProjection
+                                            (fun () -> Projections.caseProgress row)
+
+                                    let! changedAt =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseChangedAtProjection
+                                            (fun () -> Projections.caseChangedAt row)
+
+                                    let! searchText =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseSearchProjection
+                                            (fun () -> Projections.caseSearchText row)
+
+                                    let index: CaseIndex =
+                                        {
+                                            Status = status
+                                            Progress = progress
+                                            ChangedAt = changedAt
+                                            SearchText = searchText
+                                        }
+
+                                    let! record =
+                                        capture None VerificationFinding.CaseProjection (fun () ->
+                                            Projections.caseRowWithIndex installationId index row)
+
+                                    return!
+                                        ProjectionVerification.caseProjection
+                                            installationId
+                                            histories
+                                            seen
+                                            record
+                                }
                         Initial = Set.empty
                         Finding = VerificationFinding.CaseProjection
                     }

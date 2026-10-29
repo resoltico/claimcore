@@ -1,3 +1,4 @@
+import { caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
@@ -40,9 +41,10 @@ const preferences = (language: (typeof languages)[number]) => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 1,
+      version: 2,
       language,
       displayLocale: "lv-LV",
+      theme: "SYSTEM" as const,
     }),
   );
 };
@@ -82,14 +84,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
     return response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: value,
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     });
@@ -130,7 +129,6 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   );
   const view = render(
     <CaseDetail
-      token="token"
       caseReference={value}
       reloadSignal={0}
       definition={definition.catalog}
@@ -138,7 +136,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       onAct={vi.fn()}
     />,
   );
-  assertSafe(view.container.querySelector(".section-heading + p")!, value, points);
+  assertSafe(view.container.querySelector(".section-heading")!, value, points);
   if (!missing) {
     await waitFor(() => {
       expect(view.container.querySelector("select")).not.toBeNull();
@@ -152,7 +150,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
     const directStatus = view.container.querySelectorAll(
-      'section[aria-labelledby="case-detail-title"] > p[role="status"]',
+      'section[aria-labelledby="case-detail-title"] > .case-lifecycle p[role="status"]',
     );
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
@@ -185,11 +183,11 @@ it.each(languages)(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),
       );
-      const list = render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
+      const list = render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
       await waitFor(() => {
-        expect(list.container.querySelector("li")).not.toBeNull();
+        expect(list.container.querySelector(".worklist-row")).not.toBeNull();
       });
-      assertSafe(list.container.querySelector("li")!, value, points);
+      assertSafe(list.container.querySelector(".worklist-row")!, value, points);
       list.unmount();
       await checkDetail(value, points, false);
       await checkDetail(value, points, true);

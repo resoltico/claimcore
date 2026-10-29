@@ -2,12 +2,29 @@
 
 ## [Unreleased]
 
-- Initialize a fresh installation: cases now store exact snapshot bytes. The SQL checksum changes; earlier installations are refused untouched, with no migration.
-- Catalog choices/groups name their vocabulary; constants carry nullable vocabulary and inputs nullable adviceGroup. Regenerate catalog consumers.
-- Source APIs use typed IDs and positions, refusal families and BusinessField.describe; Schema interpreters must handle Vocabulary annotations.
-- BusinessField.describe owns field metadata; StateValidation centralizes newly asserted-value admission. Wire examples and permanent record bytes remain unchanged.
-- Browser forms use catalog vocabulary and correction advice; the selected catalog entry supplies request constants.
+- Use a fresh database: snapshot and worklist projections change the SQL checksum. Earlier installations are refused unchanged; no migration or earlier-format reader is supplied.
+- Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
+- Discard earlier case-list cursors; continuations bind canonical filters and order. History, actor and grant cursor formats remain unchanged.
+- Stored browser preferences reset; version 2 adds independent SYSTEM, LIGHT and DARK themes.
+- Update source callers for typed IDs/positions, private complete field groups, act descriptions and endpoint reply classification; Schema interpreters handle Vocabulary annotations.
+- Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
+- Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.
+- Case-list rows add claimant, insurer, canonical claimed/payable amounts, progress and last-change time; erased rows expose only retained metadata.
+- Export case lists as RFC 4180 CSV; --all follows per-page snapshots and stops with the reached cursor on refusal.
+- Terminal text verbs can fetch an omitted revision, preview and ask before execution; automation still supplies a revision and omitted correction groups default to KEEP interactively.
+- Browser routes preserve worklist queries, deep links and sign-in return; reserved references use reversible prefixed escaping.
+- Browser inputs use locale dates/amounts and currency/country suggestions; linked error summaries focus first, and the server remains authoritative.
+- The responsive work surface adds saved worklists, grouped facts, progress/history and contextual case/authority actions with distinct primary actions in both themes and en/lv/ar.
+- Accepted browser case changes return to the current case with an act/revision notice; uncertain delivery retains exact retry and final-resolution controls.
+- Authority actor actions bind the selected principal; retained requests need explicit discard consent before a fresh request can target another actor.
+- Stored act, role and principal kinds use permanent decoders; unknown tokens fail reads and diverge verification even when SQL accepts their shape.
+- Erasure also clears searchable text and status/progress projections while retaining reference, revision, last-change time and ledger metadata.
+- One ClaimCore meter exposes bounded request, ledger and session observations; verification replies include elapsedMilliseconds and administrative heads support genesis.
+- Field/act declarations drive shared processing; private constructors enforce complete typed groups while permanent ledger encodings stay unchanged.
+- Browser forms use catalog vocabulary, correction advice and selected-entry constants; core labels remain owned by their declared vocabularies.
+- Tests share a hand-authored independent inventory and one input-builder owner per language; seed-corpus failures name their shared cause without skipping properties.
 - Protocol source paths follow Wire, Api, Catalog, Messages, Presentation and CommandLine responsibilities.
+- Total exhaustive tables may justify complexity suppressions; rule bodies and product/test code retain the existing lint limits and controls.
 - Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.
 
 ## [0.13.0] - 2026-10-28

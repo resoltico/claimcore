@@ -17,7 +17,7 @@ module internal RouteSupport =
 
     let hostFailure context reason =
         HttpHeaders.noStore context
-        RequestLog.outcome "HOST_FAILURE" context
+        RequestLog.hostFailure context
         WebWire.hostFailure reason
 
     let gateFailure context =
@@ -44,15 +44,12 @@ module internal RouteSupport =
             | JsonValue.String text -> Some text
             | _ -> None)
 
-    let reply value context =
+    let reply (reply: ClassifiedReply) context =
+        let value = reply.Wire
         let outcome = JsonValue.tryMember "outcome" value
+        let tag = ReplyKind.token reply.Class.Kind
 
-        let tag =
-            outcome
-            |> Option.bind (memberText "kind")
-            |> Option.defaultWith (fun () -> invalidOp "Missing typed outcome.")
-
-        RequestLog.outcome tag context
+        RequestLog.reply reply.Class context
 
         if tag = "ACCEPTED" then
             outcome

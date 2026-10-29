@@ -1,12 +1,8 @@
+import { changeField } from "../support/field-entry";
+import { caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import {
-  findButton,
-  getButton,
-  fireEvent,
-  render,
-  screen,
-} from "../support/presentation-test-support";
+import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
@@ -31,8 +27,7 @@ if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;
-const renderDashboard = () =>
-  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
+const renderDashboard = () => render(<Dashboard />);
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
   stubDashboardContext();
@@ -43,14 +38,11 @@ const queueDefinitionAndList = () => {
     response("case.list", "SUCCEEDED", {
       offers: context.offers,
       items: [
-        {
-          state: {
-            kind: "ACTIVE",
-            status: "OPENED",
-          },
+        caseSummaryInput({
+          state: { kind: "ACTIVE", status: "OPENED" },
           caseReference: "CASE-1",
           revision: 1,
-        },
+        }),
       ],
       nextCursor: null,
     }),
@@ -93,7 +85,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   renderDashboard();
   await user.click(
     await screen.findByRole(
-      "button",
+      "link",
       {
         name: "CASE-1",
       },
@@ -119,15 +111,19 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   queueDefinitionAndList();
   queueDetail();
   renderDashboard();
-  await user.click(await findButton("CASE-1"));
+  await user.click(await screen.findByRole("link", { name: "CASE-1" }));
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   await user.click(await findButton(/Close the case/u));
   expect(
     screen.getByRole("heading", {
       name: "Close the case",
     }),
   ).toBeVisible();
-  expect(getButton("Operations")).toBeDisabled();
-  expect(getButton("Sign out")).toBeDisabled();
+  expect(screen.getByRole("link", { name: "Operations" })).not.toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  expect(getButton("Sign out")).not.toBeDisabled();
   await user.click(getButton("Back to case"));
   expect(
     await screen.findByRole("heading", {
@@ -169,21 +165,17 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueDetail();
   renderDashboard();
   await user.click(await findButton("Open a case"));
-  const fill = (label: RegExp, value: string): void => {
-    fireEvent.change(screen.getByLabelText(label), {
-      target: {
-        value,
-      },
-    });
+  const fill = (label: string, value: string): void => {
+    changeField(label, value);
   };
-  fill(/Handler's case reference/u, "CASE-1");
-  fill(/^Incident date/u, "2026-09-01");
-  fill(/Incident notification date/u, "2026-09-02");
-  fill(/Country of incident/u, "LV");
-  fill(/Claimant name/u, "Synthetic claimant");
-  fill(/Responsible insurer/u, "Synthetic insurer");
-  fill(/Amount claimed/u, "12.34");
-  fill(/Currency of claimed amount/u, "EUR");
+  fill("Handler's case reference", "CASE-1");
+  fill("Incident date", "2026-09-01");
+  fill("Incident notification date (FNOL)", "2026-09-02");
+  fill("Country of incident (ISO alpha-2 code)", "LV");
+  fill("Claimant name", "Synthetic claimant");
+  fill("Responsible insurer", "Synthetic insurer");
+  fill("Amount claimed", "12.34");
+  fill("Currency of claimed amount", "EUR");
   await user.click(getButton("Review changes"));
   await user.click(
     await screen.findByRole("checkbox", {
@@ -191,7 +183,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
     }),
   );
   await user.click(getButton("Record changes"));
-  await user.click(await findButton("Return to case"));
+
   expect(
     await screen.findByRole("heading", {
       name: "Case detail",

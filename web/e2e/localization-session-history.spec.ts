@@ -3,7 +3,13 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase } from "./case-workflow";
 import { login, logout, openAuthenticated } from "./session-helpers";
-import { selectLanguage, selectFormat, trackRequests, ui } from "./localization-support";
+import {
+  selectLanguage,
+  selectFormat,
+  trackRequests,
+  ui,
+  expectPreferences,
+} from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
 
 test("updates visible detail and expanded history immediately with independent format and no new reads", async ({
@@ -11,9 +17,12 @@ test("updates visible detail and expanded history immediately with independent f
 }) => {
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
-  await openCase(page, reference);
+  const opening = await openCase(page, reference);
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
-  const history = page.locator(".history-list > li > details").first();
+  const history = page
+    .locator(".history-list > li > details")
+    .filter({ hasText: opening.operationId });
+  await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
   await history.locator(":scope > summary").click();
   await expect(history).toHaveAttribute("open", "");
@@ -34,7 +43,7 @@ test("updates visible detail and expanded history immediately with independent f
     ).toBeVisible();
     await expect(history).toHaveAttribute("open", "");
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
-    await expect(page.locator('select[id$="-format"]')).toHaveValue("ar-EG");
+    await expectPreferences(page, { displayLocale: "ar-EG" });
     await expect(history.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText(
       "١٬٢٠٠٫٥",
     );
@@ -61,10 +70,10 @@ test("preserves language and independent display preferences through real logout
   expect((await logoutResponse).status()).toBe(200);
   await expect(page.getByRole("link", { name: ui("ar", "ui.signIn"), exact: true })).toBeVisible();
   await expect(page.getByText(ui("ar", "ui.loginInstructions"), { exact: true })).toBeVisible();
-  await expect(page.locator('select[id$="-format"]')).toHaveValue("lv-LV");
+  await expectPreferences(page, { displayLocale: "lv-LV" });
   await login(page, ui("ar", "ui.cases"), ui("ar", "ui.signIn"));
-  await expect(page.locator('select[id$="-language"]')).toHaveValue("ar");
-  await expect(page.locator('select[id$="-format"]')).toHaveValue("lv-LV");
+  await expectPreferences(page, { language: "ar" });
+  await expectPreferences(page, { displayLocale: "lv-LV" });
   await expect(
     page.getByRole("heading", { name: ui("ar", "ui.cases"), exact: true }),
   ).toBeVisible();
@@ -73,7 +82,7 @@ test("preserves language and independent display preferences through real logout
       (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
       preferenceKey,
     ),
-  ).toEqual({ version: 1, language: "ar", displayLocale: "lv-LV" });
+  ).toEqual({ version: 2, language: "ar", displayLocale: "lv-LV", theme: "SYSTEM" });
   await selectLanguage(page, "en");
   await logout(page);
 });

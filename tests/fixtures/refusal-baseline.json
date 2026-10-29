@@ -424,6 +424,36 @@
       "code": "OPERATION_RESOLVED",
       "action": "ReadCurrent",
       "target": "operationId"
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "text",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "text",
+          "code": "MALFORMED_UNICODE"
+        },
+        {
+          "field": "text",
+          "code": "SURROUNDING_WHITESPACE"
+        },
+        {
+          "field": "text",
+          "code": "CONTROL_CHARACTERS"
+        },
+        {
+          "field": "text",
+          "code": "FORMATTING_CHARACTER"
+        },
+        {
+          "field": "text",
+          "code": "TOO_LONG"
+        }
+      ]
     }
   ]
 }

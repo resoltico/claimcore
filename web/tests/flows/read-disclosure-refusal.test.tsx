@@ -1,9 +1,23 @@
+import { caseSummaryInput } from "../support/inputs";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, CaseSummary, ServiceResponse } from "../../src/api/service";
 import { isDisclosureRefused } from "../../src/api/outcomes";
 import { localNotice } from "../../src/protocol/notices";
-import { useRetryablePage } from "../../src/hooks/useRead";
+import { useEndpointPage } from "../../src/hooks/useEndpointPage";
+import * as api from "../../src/api/service";
+import { TestProviders } from "../support/presentation-test-support";
+const pageInput = (cursor: string | null) => ({
+  limit: 50,
+  ...(cursor === null ? {} : { cursor }),
+});
+const connect = (
+  request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<ListResponse>>,
+) => {
+  vi.spyOn(api, "requestEndpoint").mockImplementation((_endpoint, _credential, body, signal) =>
+    request("cursor" in body ? (body.cursor ?? null) : null, signal!),
+  );
+};
 type ListResponse = ServiceResponse<"case.list">;
 const initial: ApiResult<ListResponse> = {
   kind: "outcome",
@@ -14,14 +28,11 @@ const initial: ApiResult<ListResponse> = {
       data: {
         offers: [],
         items: [
-          {
-            state: {
-              kind: "ACTIVE",
-              status: "OPENED",
-            },
+          caseSummaryInput({
+            state: { kind: "ACTIVE", status: "OPENED" },
             caseReference: "SYNTHETIC-PRIVATE",
             revision: 1,
-          },
+          }),
         ],
         nextCursor: "continuation",
       },
@@ -53,7 +64,16 @@ const sessionRejected: ApiResult<ListResponse> = {
 };
 const loadAfter = async (next: ApiResult<ListResponse>) => {
   const request = vi.fn().mockResolvedValueOnce(initial).mockResolvedValueOnce(next);
-  const { result } = renderHook(() => useRetryablePage<ListResponse, CaseSummary>(request, select));
+  connect(request);
+  const { result } = renderHook(
+    () =>
+      useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof select>>>(
+        "case.list",
+        pageInput,
+        select,
+      ),
+    { wrapper: TestProviders },
+  );
   await waitFor(() => {
     expect(result.current.items).toHaveLength(1);
     expect(result.current.cursor).toBe("continuation");
@@ -107,29 +127,38 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
     }),
   ).toBe(false);
 });
-it("resets an invalid continuation locally and waits for a deliberate fresh reload", async () => {
-  const refused = vi.fn();
-  const invalid: ApiResult<ListResponse> = {
-    kind: "outcome",
-    status: 200,
-    value: {
-      outcome: {
-        kind: "REJECTED",
-        data: {
-          code: "INVALID_CURSOR",
-          action: "READ_CURRENT",
-          target: "cursor",
-        },
+const invalid: ApiResult<ListResponse> = {
+  kind: "outcome",
+  status: 200,
+  value: {
+    outcome: {
+      kind: "REJECTED",
+      data: {
+        code: "INVALID_CURSOR",
+        action: "READ_CURRENT",
+        target: "cursor",
       },
     },
-  };
+  },
+};
+
+it("resets an invalid continuation locally and waits for a deliberate fresh reload", async () => {
+  const refused = vi.fn();
   const request = vi
     .fn()
     .mockResolvedValueOnce(initial)
     .mockResolvedValueOnce(invalid)
     .mockResolvedValueOnce(initial);
-  const { result } = renderHook(() =>
-    useRetryablePage<ListResponse, CaseSummary>(request, select, refused),
+  connect(request);
+  const { result } = renderHook(
+    () =>
+      useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof select>>>(
+        "case.list",
+        pageInput,
+        select,
+        refused,
+      ),
+    { wrapper: TestProviders },
   );
   await waitFor(() => {
     expect(result.current.items).toHaveLength(1);

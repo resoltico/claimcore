@@ -278,6 +278,13 @@ module CatalogCodecs =
                     | _ -> None)
                     enumerationKindFields
                 variant
+                    "CHOICES"
+                    BindingKind.Choices
+                    (function
+                    | BindingKind.Choices(vocabulary, options) -> Some(vocabulary, options)
+                    | _ -> None)
+                    enumerationKindFields
+                variant
                     "GROUP"
                     BindingKind.Group
                     (function

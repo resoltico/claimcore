@@ -1152,23 +1152,42 @@
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "OPENED"
-                }
+                  "status": "OPENED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": null,
+                  "progress": "UNDECIDED"
+                },
+                "changedAt": "2026-09-07T12:00:00.000000Z"
               },
               {
                 "caseReference": "CASE-002",
                 "revision": 2,
                 "state": {
                   "kind": "VOIDED",
-                  "status": "CLOSED"
-                }
+                  "status": "CLOSED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": null,
+                  "progress": "UNDECIDED"
+                },
+                "changedAt": "2026-09-07T12:00:00.000000Z"
               },
               {
                 "caseReference": "CASE-003",
                 "revision": 3,
                 "state": {
                   "kind": "ERASED"
-                }
+                },
+                "changedAt": "2026-09-07T12:00:00.000000Z"
               }
             ],
             "nextCursor": "x",
@@ -3084,6 +3103,82 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case.list-search-input-issues",
+      "endpoint": "case.list",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "text",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.list-rich-financial-rows",
+      "endpoint": "case.list",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "caseReference": "WORK-DECIDED",
+                "revision": 2,
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "state": {
+                  "kind": "ACTIVE",
+                  "status": "OPENED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": {
+                    "amount": "750",
+                    "currency": "EUR"
+                  },
+                  "progress": "DECIDED"
+                }
+              },
+              {
+                "caseReference": "WORK-PAID",
+                "revision": 4,
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "state": {
+                  "kind": "ACTIVE",
+                  "status": "CLOSED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": {
+                    "amount": "750",
+                    "currency": "EUR"
+                  },
+                  "progress": "PAID"
+                }
+              }
+            ],
+            "nextCursor": null,
+            "offers": []
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

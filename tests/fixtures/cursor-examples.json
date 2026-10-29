@@ -2,9 +2,9 @@
  "accepted": [
   {
    "endpoint": "case.list",
-   "canonicalJson": "{\"after\":\"DEMO-0050\",\"kind\":\"CASES\",\"v\":1}",
-   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9",
-   "tokenLength": 56
+   "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null},\"kind\":\"CASES\",\"v\":2}",
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9",
+   "tokenLength": 188
   },
   {
    "endpoint": "case.history",
@@ -34,19 +34,19 @@
  "refused": [
   {
    "name": "padding",
-   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9="
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9="
   },
   {
    "name": "non-canonical member order",
-   "token": "eyJ2IjoxLCJraW5kIjoiQ0FTRVMiLCJhZnRlciI6IkRFTU8tMDA1MCJ9"
+   "token": "eyJ2IjoyLCJraW5kIjoiQ0FTRVMiLCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsfSwiYWZ0ZXIiOnsicmVmZXJlbmNlIjoiREVNTy0wMDUwIn19"
   },
   {
    "name": "unknown member",
-   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjEsIngiOjF9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjIsIngiOjF9"
   },
   {
    "name": "wrong version",
-   "token": "eyJhZnRlciI6IkRFTU8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjJ9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjF9"
   },
   {
    "name": "kind for another endpoint (used on case.list)",
@@ -58,7 +58,7 @@
   },
   {
    "name": "folded reference not uppercase",
-   "token": "eyJhZnRlciI6ImRlbW8tMDA1MCIsImtpbmQiOiJDQVNFUyIsInYiOjF9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9"
   },
   {
    "name": "revision zero",
@@ -66,7 +66,7 @@
   },
   {
    "name": "standard base64 alphabet",
-   "token": "eyJhZnRlciI6IkRFTU8tMDA1MD8+Iiwia2luZCI6IkNBU0VTIiwidiI6MX0"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTA+PiJ9LCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsfSwia2luZCI6IkNBU0VTIiwidiI6Mn0"
   }
  ]
 }

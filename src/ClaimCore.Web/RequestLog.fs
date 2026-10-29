@@ -15,6 +15,8 @@ open ClaimCore.Web.Composition
 type internal RequestLogEntry =
     {
         Endpoint: string
+        MetricEndpoint: EndpointId option
+        mutable MetricResult: RequestMetricResult
         mutable Outcome: string
         mutable ActorId: ActorId option
         mutable OperationId: OperationId option
@@ -26,7 +28,9 @@ module internal RequestLog =
     let start endpoint (context: HttpContext) =
         let entry =
             {
-                Endpoint = endpoint
+                Endpoint = endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown"
+                MetricEndpoint = endpoint
+                MetricResult = RequestMetricResult.HostFailure
                 Outcome = "HOST_FAILURE"
                 ActorId = None
                 OperationId = None
@@ -40,8 +44,17 @@ module internal RequestLog =
         | true, (:? RequestLogEntry as value) -> Some value
         | _ -> None
 
-    let outcome tag context =
-        entry context |> Option.iter (fun value -> value.Outcome <- tag)
+    let hostFailure context =
+        entry context
+        |> Option.iter (fun value ->
+            value.Outcome <- "HOST_FAILURE"
+            value.MetricResult <- RequestMetricResult.HostFailure)
+
+    let reply classification context =
+        entry context
+        |> Option.iter (fun value ->
+            value.Outcome <- ReplyKind.token classification.Kind
+            value.MetricResult <- WebMetrics.result classification.Kind)
 
     let operation id context =
         OperationId.create id
@@ -90,8 +103,7 @@ module internal RequestLog =
                     Api.all
                     |> List.tryFind (fun e ->
                         Some(Api.path e) = Option.ofObj context.Request.Path.Value)
-                    |> Option.map Api.id
-                    |> Option.defaultValue "unknown"
+                    |> Option.map _.Id
 
                 let value = start endpoint context
                 let started = Stopwatch.GetTimestamp()
@@ -99,7 +111,9 @@ module internal RequestLog =
                 try
                     do! next.Invoke context
                 finally
-                    let duration = Stopwatch.GetElapsedTime(started).TotalMilliseconds
+                    let elapsed = Stopwatch.GetElapsedTime started
+                    let duration = elapsed.TotalMilliseconds
+                    WebMetrics.request value.MetricEndpoint value.MetricResult elapsed
 
                     let line =
                         JsonSerializer.Serialize

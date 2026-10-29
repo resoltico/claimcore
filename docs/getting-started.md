@@ -1,48 +1,30 @@
 # Getting started
 
-This walkthrough takes a fresh checkout to a signed-in browser and one accepted synthetic case. It creates
-a separate PostgreSQL installation, HTTPS identity provider and Web service. Use fictional data: the included
-certificates and identity configuration are for evaluation. Read [Operations](operating.md) before using real data.
+This walkthrough creates a separate local evaluation installation, grants its owner case rights, records
+one synthetic case and finds its worklist row. Use fictional data with the supplied evaluation certificates
+and identity configuration. Read [Operations](operating.md) before using real data.
 
 ## Prerequisites
 
-Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the .NET SDK in
-[`global.json`](../global.json), and Node/npm versions declared by [`.node-version`](../.node-version) and
-[`web/package.json`](../web/package.json). Use your intended local Docker engine. Downloads require network
-access. The local CLI build uses the pinned .NET SDK. For isolated browser trust, also install the NSS
-certificate utility `certutil` before starting.
+Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the Node/npm versions declared
+by [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json). Downloads need network
+access. Install the NSS certificate utility `certutil` for an isolated trusted Firefox profile. The optional
+CLI section also needs the .NET SDK pinned in [`global.json`](../global.json).
 
-Choose a new absolute checkout location, then publish the CLI and install the locked browser tools. Compose
-builds the Web and administration images. The example uses `$HOME/claimcore-first-run`; use the same chosen
-path in both terminals if you select another location:
+Choose a new absolute checkout path and install the locked browser tools:
 
 ```sh
 claimcore_source="$HOME/claimcore-first-run"
 git clone https://github.com/resoltico/claimcore.git "$claimcore_source"
 cd "$claimcore_source"
-dotnet restore src/ClaimCore.Cli/ClaimCore.Cli.fsproj --locked-mode
-dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore \
-  --output "$claimcore_source/artifacts/local-cli"
-export PATH="$claimcore_source/artifacts/local-cli:$PATH"
 npm --prefix web ci
 ```
 
-Keep the complete `artifacts/local-cli` publish directory together. The commands below use its `claimcore`
-apphost through the terminal-local `PATH` setting.
-
-Before signing in, explore offline `help configuration`, `help call` and `help delivery`.
-`describe case open` shows inputs, and `case open ... --dry-run` prints a request without credentials.
-
-The [CLI reference](cli.md) lists every supported verb and flag. Dry-run checks protocol shape and byte
-limits; the service still checks domain rules, authority and current revision.
-
 ## Start a fresh installation
 
-Choose an absolute configuration path that does not exist, an IANA business time zone, and two unused loopback
-ports. The example uses 7443 and 7444. The time zone becomes immutable at initialization. Paths containing
-carriage returns or line feeds are refused before creation; other path characters remain literal in the
-generated Compose inputs and printed Bash command. Do not reuse an existing database, configuration directory
-or volume.
+Choose an absolute configuration path that does not exist, an IANA business zone and two unused loopback
+ports. This example uses 7443 and 7444. The zone becomes immutable at initialization. Do not reuse an
+existing database, configuration directory or volume.
 
 ```sh
 claimcore_config="$HOME/claimcore-first-run-config"
@@ -51,18 +33,20 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
-Compose waits for IdP readiness before Web; its management listener is container-loopback only. Require
-successful initializer exit and healthy Web; repeat `ps -a` during startup. PostgreSQL has no host port. Web
-has a read-only root/configuration, bounded ephemeral `/tmp`, and a protected persistent key-ring
-directory (protected session tickets are in PostgreSQL). The producer configures your UID/GID for ClaimCore; PostgreSQL/Keycloak retain required ownership.
-Preserve/protect keys across restarts under the [session policy](operating.md#access-review-and-sessions).
-Initialization refuses unsupported schemas untouched; configuration generation refuses existing paths.
+Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
+Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
+listener is container-loopback only. The service uses a read-only root/configuration, bounded temporary
+storage and a protected persistent key ring. Tickets live in PostgreSQL.
 
-## Trust the certificate and sign in
+Configuration generation refuses existing paths and paths containing carriage returns or line feeds.
+Initialization refuses unsupported schemas unchanged. Keep the database and key ring together under the
+[session policy](operating.md#access-review-and-sessions).
 
-Use a separate Firefox profile for evaluation trust. Import only this installation's CA, then install the
-locked Firefox engine into this new configuration directory. On Linux, the installer also installs required
-browser system libraries and may require administrator access:
+## Trust the evaluation certificate
+
+Create a separate Firefox profile, import this installation's public CA, and install the locked Firefox
+engine into the new configuration directory. On Linux the browser installer also installs system
+libraries and may require administrator access:
 
 ```sh
 mkdir -m 700 "$claimcore_config/browser-profile"
@@ -79,69 +63,76 @@ claimcore_firefox="$(cd web && node --input-type=module -e 'import { firefox } f
 "$claimcore_firefox" --no-remote --profile "$claimcore_config/browser-profile"
 ```
 
-Require SSL trust `C`; never bypass certificate/hostname warnings. Leaves expire after 30 days, the CA after a
-year. This profile changes no system trust. Keep Firefox open for CLI login in a second terminal, then close
-it after the walkthrough.
+Require SSL trust `C` and valid hostnames/certificates. This profile changes no system trust. Evaluation
+leaves expire after 30 days and the CA after a year; do not bypass warnings.
 
-Open `https://localhost:7443`. Choose sign in. The generated identity provider is
-`https://identity.localhost:7444/realms/claimcore`. Sign in as `owner`; obtain its password locally from
-`owner-login.password` in your configuration directory. Do not copy credentials into terminal commands, logs
-or public reports. After authentication, installation context selects the views that current grants allow. An
-owner can administer authority; owner status alone grants no case viewing or editing. Cases become available
-after a case role is granted.
+## Sign in and grant case rights
 
-## Configure the human owner CLI and grant case work
+Open `https://localhost:7443/authority` in that Firefox profile and sign in as `owner`. Read its generated
+password locally from `owner-login.password` in the configuration directory. Keep credentials out of
+commands, logs and public reports. The identity provider is
+`https://identity.localhost:7444/realms/claimcore` for these example ports.
 
-Keep the trusted evaluation Firefox open. In a second terminal, select the checkout and the same configuration
-directory. The following URLs match the example ports; substitute your chosen ports if different. The CLI
-needs its own HTTPS trust and interactive OIDC configuration; browser trust alone is insufficient. Use the
-generated public CA, never its private key or a client secret:
+Select the fresh installation's sole human owner, then add an installation-scope CASE_HANDLER grant.
+Review the target, role and scope and confirm. OWNER administers authority but grants no case work by
+itself. CASE_HANDLER permits opening, registration, decisions and closing; grant PAYMENT_RECORDER
+separately when that person also records or clears payment facts.
+
+Reload the browser page to obtain current rights, then open Cases. Authority and case grants remain separate
+from membership in the identity provider.
+
+## Record a case and find its row
+
+Choose OPEN and enter synthetic values. Use dates no later than the current business date, for example:
+
+| Input | Value |
+| --- | --- |
+| Reference | START-0001 |
+| Incident | 1 September 2026 |
+| First notification | 2 September 2026 |
+| Country | LV |
+| Claimant | Synthetic claimant |
+| Insurer | Synthetic insurer |
+| Claimed amount | 100.00 |
+| Currency | EUR |
+
+Review the canonical proposal and confirm. Expect a success notice naming revision 1 and a case page
+showing the registration facts. Return to Cases and search for `START-0001`; its row shows the claimant,
+claimed amount, Undecided progress and last-change time. The Open and undecided view includes it.
+
+You now have one accepted case and a worklist that can find it. [Case work](case-work.md) explains decisions,
+payments, correction and stewardship; [Integrating](integrating.md#delivery-recovery) explains recovery
+from interrupted submission.
+
+## Optional CLI setup
+
+Keep the complete publish directory together. In a terminal using the same checkout and configuration
+paths, publish the CLI with the pinned SDK and configure its own HTTPS trust and interactive login:
 
 ```sh
-claimcore_source="$HOME/claimcore-first-run"
-cd "$claimcore_source"
+dotnet restore src/ClaimCore.Cli/ClaimCore.Cli.fsproj --locked-mode
+dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore \
+  --output "$claimcore_source/artifacts/local-cli"
 export PATH="$claimcore_source/artifacts/local-cli:$PATH"
-claimcore_config="$HOME/claimcore-first-run-config"
 export CLAIMCORE_SERVICE_URL="https://localhost:7443/"
 export CLAIMCORE_OIDC_ISSUER="https://identity.localhost:7444/realms/claimcore"
 export CLAIMCORE_OIDC_CLIENT_ID=claimcore-cli
 export CLAIMCORE_CLI_AUTH_MODE=interactive
 export CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="$claimcore_config/ca.pem"
 export CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE="$claimcore_config/ca.pem"
-umask 077
-mkdir -m 700 "$claimcore_config/cli"
+claimcore case list --text START-0001
 ```
 
-Each CLI process opens PKCE in the system browser. If outside the trusted profile, copy the full authorization
-URL into trusted Firefox and finish login as owner there. Keep URLs out of logs; never bypass TLS or install
-machine-wide trust. The one-use 127.0.0.1 callback alone uses HTTP; service/issuer traffic stays HTTPS and
-tokens remain process-local.
+Use the generated public CA, not its private key or a client secret. CLI PKCE opens the system browser;
+if it opens outside the trusted profile, copy the complete authorization URL into trusted Firefox and
+finish login there. The one-use 127.0.0.1 callback uses HTTP; service and issuer traffic stays HTTPS.
+Tokens remain process-local. Keep authorization URLs out of logs.
 
-List the fresh installation's sole owner and use its human issuer/subject to grant case work:
-
-```sh
-claimcore authority list
-claimcore authority grant \
-  --principal-kind HUMAN --issuer "$CLAIMCORE_OIDC_ISSUER" --subject '<owner subject from listing>' \
-  --role CASE_HANDLER --preview
-```
-
-Review the target and installation grant, then run the same verb without `--preview` to execute. The CLI
-prepares a fresh operation ID; use explicit `--operation-id` when automation needs a chosen stable ID.
-Inspect the typed result. For interrupted delivery, follow [delivery recovery](integrating.md#delivery-recovery).
-`CASE_HANDLER` permits
-registration, decisions and closing. Grant PAYMENT_RECORDER separately when the human also records/clears
-payments. OWNER alone never grants case work. Use `--dry-run` to inspect a frame without authentication;
-[examples](../examples/README.md) show case verbs and equivalent frames. These are synthetic evaluation
-operations only.
-
-In the trusted Firefox window, return to `https://localhost:7443`.
-
-Reload Cases to obtain current capability advice. Choose Open a case and use synthetic values: reference
-`START-0001`, incident `2026-09-01`, notification `2026-09-02`, country `LV`, claimant `Synthetic claimant`,
-insurer `Synthetic insurer`, amount `100.00`, currency `EUR`. Review, confirm and record the change. Expect an
-accepted receipt at revision 1 and the case fields on return to the case. The installation has an explicitly
-granted human actor and one accepted synthetic case.
+Offline `help`, `help configuration`, `help call`, `help delivery` and `describe case open` need no
+credentials. `--dry-run` prints the prepared frame; the service still checks business rules and rights.
+Use the [generated CLI reference](cli.md) for flags and choices, and
+[examples](../examples/README.md) for synthetic exact frames. Existing-case text verbs can fetch the
+revision and show an interactive review in a terminal; automation supplies `--expected-revision`.
 
 ## Stop and retain data
 
@@ -149,16 +140,12 @@ granted human actor and one accepted synthetic case.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml down
 ```
 
-This removes this project's containers and network while retaining its PostgreSQL, identity and Web key-ring
-volumes. The key-ring volume binds to `key-ring` inside the configuration directory. Preserve that directory
-and the database and identity volumes together if you intend to start the installation again. Never use
-host-wide prune commands to clean up an installation. To discard a wholly disposable installation, explicitly
-remove only its own volumes after confirming their project labels, and remove its configuration only when
-the retained keys and private inputs are no longer needed.
+This removes this project's containers and network while retaining its database, identity and Web key-ring
+volumes. The key-ring volume binds to `key-ring` in the configuration directory. Preserve that directory
+and the retained volumes together if you intend to restart. To discard an entirely disposable installation,
+remove only its own labelled volumes after confirming they are no longer needed. Host-wide prune commands
+can remove unrelated work.
 
-If startup or login fails, inspect only this project's status and private diagnostics. Check ports,
-certificate trust and expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
-redacted reporting. See [Operations](operating.md) for backups, trusted checkpoints and the limits of
-live-database erasure.
-
-See the [glossary](glossary.md) for project terminology.
+For startup or login problems, inspect this project's status and private diagnostics. Check ports,
+certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
+redacted reporting and [Operations](operating.md) for backups and erasure limits.

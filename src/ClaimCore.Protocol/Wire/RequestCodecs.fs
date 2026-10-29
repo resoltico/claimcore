@@ -17,50 +17,27 @@ module RequestCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let private inputField name get fields =
-        Codec.field (BusinessField.key name) get Codec.text fields
+    let private inputGroup group create values =
+        CaseFields.ofGroup group
+        |> List.map (fun field -> field, BusinessField.key field, Codec.text)
+        |> Codec.fieldMap
+        |> Codec.mapResult
+            (fun path fields ->
+                create (Map.toList fields)
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> Map.ofList)
 
     let registration =
-        (Codec.record (fun incident notification country claimant insurer amount currency ->
-            {
-                RegistrationInput.IncidentDate = incident
-                IncidentNotificationDate = notification
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            })
-        : Fields<RegistrationInput, _>)
-        |> inputField BusinessField.IncidentDate _.IncidentDate
-        |> inputField BusinessField.IncidentNotificationDate _.IncidentNotificationDate
-        |> inputField BusinessField.IncidentCountry _.IncidentCountry
-        |> inputField BusinessField.ClaimantName _.ClaimantName
-        |> inputField BusinessField.InsurerName _.InsurerName
-        |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
-        |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
-        |> Codec.build
-        |> Codec.named RequestSchemas.Registration
+        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
+        |> Codec.named "Registration"
 
     let decision =
-        (Codec.record (fun date amount currency ->
-            {
-                DecisionInput.PaymentDecisionDate = date
-                PayableAmount = amount
-                PayableCurrency = currency
-            })
-        : Fields<DecisionInput, _>)
-        |> inputField BusinessField.PaymentDecisionDate _.PaymentDecisionDate
-        |> inputField BusinessField.PayableAmount _.PayableAmount
-        |> inputField BusinessField.PayableCurrency _.PayableCurrency
-        |> Codec.build
-        |> Codec.named RequestSchemas.Decision
+        inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
+        |> Codec.named "Decision"
 
     let payment =
-        (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
-        |> inputField BusinessField.PaymentDate _.PaymentDate
-        |> Codec.build
-        |> Codec.named RequestSchemas.Payment
+        inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
+        |> Codec.named "Payment"
 
     let registrationGroup =
         tagged
@@ -210,7 +187,7 @@ module RequestCodecs =
         |> List.map (fun kind ->
             let token = AuthorityKind.token kind
 
-            match AuthorityAct.slot kind with
+            match AuthorityKind.describe kind with
             | AuthorityActSlot.Bare act -> unitVariant token act
             | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
 
@@ -291,17 +268,24 @@ module RequestCodecs =
                 |> field WireMembers.Detail get (VocabularyCodec.create HistoryDetail.vocabulary)
         }
 
-    let private page cursor limit (fields: ReadFields<'request, string option -> int -> 'rest>) =
+    let private pageWith
+        maximum
+        cursor
+        limit
+        (fields: ReadFields<'request, string option -> int -> 'rest>)
+        =
         {
             Inputs = fields.Inputs @ [ ReadInput.Page ]
             Fields =
                 fields.Fields
-                |> optionalField WireMembers.Cursor cursor (boundedText 1 512)
+                |> optionalField WireMembers.Cursor cursor (boundedText 1 maximum)
                 |> field
                     WireMembers.Limit
                     limit
                     (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
+
+    let private page cursor limit fields = pageWith 512 cursor limit fields
 
     let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
         let declaration =
@@ -321,7 +305,7 @@ module RequestCodecs =
         |> caseOperand _.CaseReference
         |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
-    let pageRequest =
+    let private pageFields =
         (read (fun cursor limit ->
             {
                 PageRequest.AfterCursor = cursor
@@ -329,7 +313,67 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.PageRequest QueryEndpoint.CaseList
+
+    let pageRequest =
+        pageFields |> finishRead RequestSchemas.PageRequest QueryEndpoint.AuthorityList
+
+    let private optionalChoices name get vocabulary fields =
+        fields
+        |> optionalField
+            name
+            (get
+             >> function
+                 | [] -> None
+                 | values -> Some values)
+            (list (Vocabulary.all vocabulary |> List.length) (VocabularyCodec.create vocabulary))
+
+    let private filterFields =
+        (record (fun lifecycles statuses progress text order ->
+            CaseListFilter.create
+                (defaultArg lifecycles [])
+                (defaultArg statuses [])
+                (defaultArg progress [])
+                text
+                (defaultArg order CaseListOrder.Reference))
+        : Fields<CaseListFilter<string>, _>)
+        |> optionalChoices "lifecycle" _.Lifecycles Lifecycle.vocabulary
+        |> optionalChoices "status" _.Statuses CaseStatus.vocabulary
+        |> optionalChoices "progress" _.Progress CaseProgress.vocabulary
+        |> optionalField "text" _.Text text
+        |> optionalField
+            "order"
+            (fun value ->
+                if value.Order = CaseListOrder.Reference then
+                    None
+                else
+                    Some value.Order)
+            (VocabularyCodec.create CaseListOrder.vocabulary)
+
+    let caseListRequest =
+        let paging =
+            (read (fun cursor limit ->
+                {
+                    PageRequest.AfterCursor = cursor
+                    Limit = limit
+                })
+            : ReadFields<PageRequest, _>)
+            |> pageWith Paging.MaximumCaseCursorCharacters _.AfterCursor _.Limit
+
+        let fields =
+            (record (fun page filter ->
+                {
+                    CaseListRequest.Page = page
+                    Filter = filter
+                })
+            : Fields<CaseListRequest, _>)
+            |> flatten _.Page paging.Fields
+            |> flatten _.Filter filterFields
+
+        {
+            Inputs = paging.Inputs @ [ ReadInput.Worklist ]
+            Fields = fields
+        }
+        |> finishRead RequestSchemas.CaseListRequest QueryEndpoint.CaseList
 
     let historyRequest =
         (read (fun reference detail cursor limit ->

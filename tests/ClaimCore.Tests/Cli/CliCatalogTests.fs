@@ -14,7 +14,11 @@ let private oracle () =
         Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "tests/fixtures/cli-frames.tsv")
 
     let rows = File.ReadAllLines path
-    Expect.equal rows.Length 30 "All captured invocations remain exercised"
+
+    Expect.equal
+        rows.Length
+        ClaimCore.TestSupport.Inventory.cliFrameCount
+        "All captured invocations remain exercised"
 
     for row in rows do
         let cells = row.Split('\t', 2)
@@ -135,10 +139,13 @@ let private replacement () =
                                                                 Registration = Amendment.Replace value
                                                             }
                           } ->
-        Expect.equal value.ClaimedAmount "1.0000" "Authored amount spelling is preserved"
+        Expect.equal
+            (RegistrationInput.value BusinessField.ClaimedAmount (value))
+            "1.0000"
+            "Authored amount spelling is preserved"
 
         Expect.equal
-            value.ClaimantName
+            (RegistrationInput.value BusinessField.ClaimantName (value))
             "Synthetic claimant"
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"

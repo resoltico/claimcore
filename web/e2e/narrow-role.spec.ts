@@ -1,3 +1,4 @@
+import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -14,7 +15,7 @@ import {
 } from "./narrow-role-fixture";
 
 const findCase = async (page: Page, reference: string) => {
-  await page.getByLabel("Handler's case reference (exact)").fill(reference);
+  await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Find case", exact: true }).click();
 };
 
@@ -109,7 +110,7 @@ for (const [name, role, scoped] of cases) {
     await test.step("Open narrow actor session", () =>
       openAuthenticated(
         narrow,
-        role === null ? "ClaimCore" : "Cases",
+        role === null ? "No workspace views are available to this actor." : "Cases",
         "narrow-authenticated-state.json",
       ));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));

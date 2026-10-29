@@ -32,7 +32,6 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   const user = userEvent.setup();
   const view = render(
     <CaseHistory
-      token="token"
       caseReference="CASE-1"
       fields={definition.catalog.fields}
       modes={["SUMMARY", "FULL"]}
@@ -79,7 +78,6 @@ it("recovers a refused continuation with a fresh no-cursor request without repor
   const user = userEvent.setup();
   const view = render(
     <CaseHistory
-      token="token"
       caseReference="CASE-1"
       fields={definition.catalog.fields}
       onDisclosureRefused={refused}

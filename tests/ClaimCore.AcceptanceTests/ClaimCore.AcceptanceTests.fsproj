@@ -38,6 +38,7 @@
     <Compile Include="CliDescriptions.fs" />
     <Compile Include="CliDiscovery.fs" />
     <Compile Include="PublishedTests.fs" />
+    <Compile Include="MetricsTests.fs" />
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserCompletion.fs" />

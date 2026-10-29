@@ -1,7 +1,8 @@
+import { IdentifierValue } from "../components/IdentifierValue";
 import { useCallback, useEffect, useRef } from "react";
 import type { Notice } from "../protocol/notices";
-import { service, type ServiceResponse } from "../api/service";
-import { useRetryablePage } from "../hooks/useRead";
+import { type ServiceResponse } from "../api/service";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { ActorSummary } from "./AuthorityListing";
@@ -11,9 +12,10 @@ const grantPage = (response: ServiceResponse<"authority.grants">) =>
 type GrantPage = NonNullable<ReturnType<typeof grantPage>>;
 type Props = {
   actorId: string;
-  token: string;
+
   onBack: () => void;
   onDisclosureRefused: (notice?: Notice) => void;
+  onActor?: ((actor: GrantPage["actor"]) => void) | undefined;
 };
 const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
   const p = usePresentation();
@@ -24,33 +26,45 @@ const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
           key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseReference : ""}`}
         >
           {p.term("role", grant.role)} · {p.term("scope", grant.scope.kind)}{" "}
-          {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
+          {grant.scope.kind === "CASE" ? (
+            <IdentifierValue value={grant.scope.caseReference} />
+          ) : null}
         </li>
       ))}
     </ul>
   );
 };
-export const AuthorityGrants = ({ actorId, token, onBack, onDisclosureRefused }: Props) => {
+const useActorDisclosure = (actor: GrantPage["actor"] | null, onActor: Props["onActor"]) => {
+  useEffect(() => {
+    if (actor !== null) {
+      onActor?.(actor);
+    }
+  }, [actor, onActor]);
+};
+export const AuthorityGrants = ({ actorId, onBack, onDisclosureRefused, onActor }: Props) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, []);
-  const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) =>
-      service.authorityGrants(actorId, cursor, token, signal),
-    [actorId, token],
+  const input = useCallback(
+    (cursor: string | null) => ({ actorId, ...(cursor === null ? {} : { cursor }), limit: 50 }),
+    [actorId],
   );
-  const page = useRetryablePage<
-    ServiceResponse<"authority.grants">,
-    GrantPage["items"][number],
-    GrantPage
-  >(request, grantPage, onDisclosureRefused);
+  const page = useEndpointPage<"authority.grants", GrantPage["items"][number], GrantPage>(
+    "authority.grants",
+    input,
+    grantPage,
+    onDisclosureRefused,
+  );
+
+  useActorDisclosure(page.page?.actor ?? null, onActor);
+
   return (
     <section aria-labelledby="actor-grants-title">
-      <h3 id="actor-grants-title" tabIndex={-1} ref={heading}>
+      <h1 id="actor-grants-title" tabIndex={-1} ref={heading}>
         {p.text("ui.actorGrants")}
-      </h3>
+      </h1>
       <button type="button" onClick={onBack}>
         {p.text("ui.backToActors")}
       </button>

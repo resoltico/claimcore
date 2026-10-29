@@ -1,3 +1,4 @@
+import { goToView, showExactLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
@@ -12,11 +13,11 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await openAuthenticated(page);
   await expect(page.getByRole("button", { name: "Reload cases", exact: true })).toBeEnabled();
   const requests = trackRequests(page);
-  await page.getByLabel("Handler's case reference (exact)").fill("");
+  await (await showExactLookup(page)).fill("");
   await expect(page.getByRole("button", { name: "Find case", exact: true })).toBeDisabled();
-  await page.getByLabel("Handler's case reference (exact)").press("Enter");
+  await (await showExactLookup(page)).press("Enter");
   expect(requests).toHaveLength(0);
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await goToView(page, "operations");
   const operation = page
     .locator('section[aria-labelledby="operation-lookup-title"]')
     .getByRole("textbox");
@@ -48,14 +49,14 @@ test("hides absent case and operation identities behind neutral access refusals"
   page,
 }) => {
   await openAuthenticated(page);
-  await page.getByLabel("Handler's case reference (exact)").fill(`ABSENT-${randomUUID()}`);
-  await page.getByLabel("Handler's case reference (exact)").press("Enter");
+  await (await showExactLookup(page)).fill(`ABSENT-${randomUUID()}`);
+  await (await showExactLookup(page)).press("Enter");
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await expect(page.getByRole("alert").first()).toBeVisible();
   await expect(page.getByText("Case was not found.", { exact: true })).toHaveCount(0);
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await goToView(page, "operations");
   await page.getByLabel("Exact operation ID").fill(randomUUID());
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();

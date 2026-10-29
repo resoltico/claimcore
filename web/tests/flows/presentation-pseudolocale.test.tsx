@@ -11,7 +11,12 @@ it("offers real languages normally and a truthful current diagnostic option only
   normal.unmount();
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language: "en-XA", displayLocale: "ar-EG" }),
+    JSON.stringify({
+      version: 2,
+      language: "en-XA",
+      displayLocale: "ar-EG",
+      theme: "SYSTEM" as const,
+    }),
   );
   render(<PresentationControls />);
   const language = document.querySelector<HTMLSelectElement>('select[id$="-language"]')!;

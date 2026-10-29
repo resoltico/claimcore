@@ -34,12 +34,14 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
         Snapshot = snapshot
+        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
 let private history (snapshot: CaseSnapshot) : CaseHistory =
     {
         Revision = snapshot.Revision
+        ChangedAt = DateTimeOffset.UnixEpoch
         Snapshot = Some snapshot
         Reference = Some snapshot.Reference
         State = CaseState.Active()
@@ -61,17 +63,17 @@ let private collection () =
     let histories =
         Map.ofList [ a.CaseId, history a.Snapshot; b.CaseId, history b.Snapshot ]
 
-    Expect.equal (CaseFold.projection installation Map.empty []) (Ok()) "Empty coverage"
+    Expect.equal (ProjectionVerification.cases installation Map.empty []) (Ok()) "Empty coverage"
 
     for rows in [ [ a; b ]; [ b; a ] ] do
         Expect.equal
-            (CaseFold.projection installation histories rows)
+            (ProjectionVerification.cases installation histories rows)
             (Ok())
             "Exact unordered coverage"
 
     for rows in [ [ a; a ]; [ a ]; [ a; b; a ]; [ a; stored (snapshot "unknown") ] ] do
         Expect.equal
-            (CaseFold.projection installation histories rows)
+            (ProjectionVerification.cases installation histories rows)
             mismatch
             "Exact collection finding"
 
@@ -121,16 +123,29 @@ let private liveState () =
                             CaseState.Active(
                                 { fields with
                                     Registration =
-                                        { fields.Registration with
-                                            ClaimedAmount = CaseFixtures.money "2000.00" "EUR"
-                                        }
+                                        (ClaimCore.TestSupport.Inputs.registrationStateWith
+                                            [
+                                                BusinessField.ClaimedAmount,
+                                                Admitted.Amount(
+                                                    Money.amount (
+                                                        CaseFixtures.money "2000.00" "EUR"
+                                                    )
+                                                )
+                                                BusinessField.ClaimedCurrency,
+                                                Admitted.Currency(
+                                                    Money.currencyValue (
+                                                        CaseFixtures.money "2000.00" "EUR"
+                                                    )
+                                                )
+                                            ]
+                                            (fields.Registration))
                                 }
                             )
                     }
             }
         ] do
         Expect.equal
-            (CaseFold.projection installation histories [ changed ])
+            (ProjectionVerification.cases installation histories [ changed ])
             mismatch
             "Live mismatch"
 
@@ -157,7 +172,7 @@ let private erasedState () =
         }
 
     let check (history: CaseHistory) (row: StoredCase) =
-        CaseFold.projection installation (Map.ofList [ row.CaseId, history ]) [ row ]
+        ProjectionVerification.cases installation (Map.ofList [ row.CaseId, history ]) [ row ]
 
     Expect.equal (check accepted row) (Ok()) "Erased identity and revision remain covered"
 
@@ -195,23 +210,34 @@ let private projectionFields: CaseFields =
         CaseReference = CaseFixtures.reference "synthetic-layout"
         Status = CaseStatus.Closed
         Registration =
-            CaseFixtures.registration
-                { Inputs.registration with
-                    ClaimantName = "Synthetic claimant"
-                    InsurerName = "Synthetic insurer"
-                    ClaimedAmount = "1234.5678"
-                }
+            CaseFixtures.registration (
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [
+                        BusinessField.ClaimantName, ("Synthetic claimant")
+                        BusinessField.InsurerName, ("Synthetic insurer")
+                        BusinessField.ClaimedAmount, ("1234.5678")
+                    ]
+                    (Inputs.registration)
+            )
         Progress =
             ClaimCore.TestSupport.CaseFixtures.progress
-                (Some
-                    {
-                        Decision.PaymentDecisionDate = CaseFixtures.date "2026-08-04"
-                        PayableAmount = CaseFixtures.money "987.6543" "USD"
-                    })
-                (Some
-                    {
-                        PaymentDate = CaseFixtures.date "2026-08-05"
-                    })
+                (Some(
+                    ClaimCore.TestSupport.Inputs.decisionStateFrom
+                        [
+                            BusinessField.PaymentDecisionDate,
+                            Admitted.Date(CaseFixtures.date "2026-08-04")
+                            BusinessField.PayableAmount,
+                            Admitted.Amount(Money.amount (CaseFixtures.money "987.6543" "USD"))
+                            BusinessField.PayableCurrency,
+                            Admitted.Currency(
+                                Money.currencyValue (CaseFixtures.money "987.6543" "USD")
+                            )
+                        ]
+                ))
+                (Some(
+                    ClaimCore.TestSupport.Inputs.paymentStateFrom
+                        [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-05") ]
+                ))
     }
 
 
@@ -233,6 +259,10 @@ let private projectionBindings () =
                 "revision", box 4L
                 "state", box "VOIDED"
                 "snapshot", box expected.SnapshotBytes
+                "status", box "CLOSED"
+                "progress", box "PAID"
+                "changed_at", box "1970-01-01T00:00:00.000000Z AD"
+                "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)
@@ -249,6 +279,10 @@ let private projectionBindings () =
             "state", box "ACTIVE"
             "case_id", box (Guid.NewGuid())
             "snapshot", box [| 0uy |]
+            "status", box "UNKNOWN"
+            "progress", box "UNKNOWN"
+            "changed_at", box "invalid"
+            "search_text", box 44
         ] do
         Expect.throwsT<RecordCorruptException>
             (fun () ->
@@ -268,7 +302,7 @@ let private projectionBindings () =
     Expect.isOk (CaseRecord.decodeSnapshot noncanonical) "Whitespace retains snapshot meaning"
 
     Expect.equal
-        (CaseFold.projection
+        (ProjectionVerification.cases
             installation
             histories
             [
@@ -402,13 +436,14 @@ let private roundTrips database =
             [
                 11,
                 1L,
-                AuthoredCaseAct.AmendRegistration
-                    { Inputs.registration with
-                        ClaimantName = "Changed synthetic"
-                    },
+                AuthoredCaseAct.AmendRegistration(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimantName, ("Changed synthetic") ]
+                        (Inputs.registration)
+                ),
                 "ACTIVE"
                 12, 2L, AuthoredCaseAct.Void "Synthetic correction", "VOIDED"
-                13, 3L, AuthoredCaseAct.Erase, "ERASED"
+                13, 3L, (AuthoredCaseAct.Bare BareAct.Erase), "ERASED"
             ] do
             let! result =
                 Service.execute

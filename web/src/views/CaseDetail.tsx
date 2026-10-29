@@ -1,56 +1,27 @@
+import { useCredential } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
-import { CaseFieldsView } from "../components/CaseFieldsView";
-import { ReferenceSummary } from "../components/ReferenceSummary";
+import { CaseFacts } from "./case/CaseFacts";
+import { CaseActions } from "./case/CaseActions";
+import { CaseProgress } from "./case/CaseProgress";
+import { CharacterWarning } from "../components/BusinessValue";
+import "./case.css";
 import { CopyValue } from "../components/CopyValue";
-import { isCaseAct, type ActKind } from "../operation/metadata";
+import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
 
 type CaseDetailProps = {
-  token: string;
   caseReference: string;
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
   onAct: (current: CurrentCase, act: ActKind) => void;
-};
-
-const AvailableActs = ({
-  current,
-  onAct,
-}: {
-  current: CurrentCase;
-  definition: CatalogDocument;
-  onAct: (act: ActKind) => void;
-}) => {
-  const p = usePresentation();
-  return (
-    <section aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("label.availableActs")}</h2>
-      <div className="actions">
-        {current.advice.acts.filter(isCaseAct).map((act) => (
-          <Button
-            key={act}
-            onPress={() => {
-              onAct(act);
-            }}
-            aria-label={p.text("ui.actDescription", {
-              label: p.actLabel(act),
-              meaning: p.actMeaning(act),
-            })}
-          >
-            {p.actLabel(act)}
-          </Button>
-        ))}
-      </div>
-    </section>
-  );
 };
 
 const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading: boolean }) => {
@@ -75,26 +46,28 @@ const CurrentPresentation = ({
   current: CurrentCase;
   definition: CatalogDocument;
   onAct: (current: CurrentCase, act: ActKind) => void;
-}) => {
-  const p = usePresentation();
-  return (
-    <>
-      <CaseFieldsView
+}) => (
+  <>
+    <p className="case-claimant">
+      <bdi>{current.state.fields.registration.claimantName}</bdi>
+      <CharacterWarning value={current.state.fields.registration.claimantName} />
+    </p>
+    <CaseProgress current={current} definition={definition} />
+    <div className="case-workspace">
+      <CaseFacts
         values={current.state.fields}
         revision={current.revision}
         fields={definition.fields}
-        context={p.text("ui.currentCase")}
       />
-      <AvailableActs
+      <CaseActions
         current={current}
-        definition={definition}
         onAct={(act) => {
           onAct(current, act);
         }}
       />
-    </>
-  );
-};
+    </div>
+  </>
+);
 
 const CaseHeader = ({
   caseReference,
@@ -105,26 +78,26 @@ const CaseHeader = ({
   return (
     <>
       <div className="section-heading">
-        <h2 id="case-detail-title" tabIndex={-1}>
-          {p.text("ui.caseDetail")}
-        </h2>
+        <h1 id="case-detail-title" tabIndex={-1} aria-label={p.text("ui.caseDetail")}>
+          <bdi dir="ltr">{caseReference}</bdi>
+          <CharacterWarning value={caseReference} />
+        </h1>
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
-        <ReferenceSummary id="ui.exactReference" values={{ label, reference: caseReference }} />{" "}
         <CopyValue label={label} value={caseReference} />
       </p>
     </>
   );
 };
 
-const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: CaseDetailProps) => {
+const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetailProps) => {
   const p = usePresentation();
-  const current = useCaseDisclosure(caseReference, token);
+  const current = useCaseDisclosure(caseReference);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
-    <section aria-labelledby="case-detail-title">
+    <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader caseReference={caseReference} onBack={onBack} />
       <CurrentFeedback message={current.message} loading={current.loading} />
       {current.message === null ? null : (
@@ -137,18 +110,23 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
           {p.text("ui.tryAgain")}
         </Button>
       )}
+      {state === null ? null : (
+        <div className={`case-lifecycle case-lifecycle-${state.state.kind.toLowerCase()}`}>
+          <LifecycleStatus value={state} />
+          <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
+        </div>
+      )}
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
       )}
-      {state === null ? null : <LifecycleStatus value={state} />}
       {state?.state.kind === "ERASED" ? (
         <p role="status">
-          {state.caseReference} · {state.revision}
+          <bdi dir="ltr">{state.caseReference}</bdi> ·{" "}
+          <bdi dir="ltr">{p.integer(state.revision)}</bdi>
         </p>
       ) : null}
       {current.historyModes.length ? (
         <CaseHistory
-          token={token}
           caseReference={caseReference}
           fields={definition.fields}
           modes={current.historyModes}
@@ -159,9 +137,12 @@ const CaseDisclosure = ({ token, caseReference, definition, onBack, onAct }: Cas
   );
 };
 
-export const CaseDetail = (props: CaseDetailProps) => (
-  <CaseDisclosure
-    key={JSON.stringify([props.caseReference, props.token, props.reloadSignal])}
-    {...props}
-  />
-);
+export const CaseDetail = (props: CaseDetailProps) => {
+  const credential = useCredential();
+  return (
+    <CaseDisclosure
+      key={JSON.stringify([props.caseReference, credential, props.reloadSignal])}
+      {...props}
+    />
+  );
+};

@@ -189,6 +189,7 @@ let private qualify () =
 
         let selected = profiles ()
         let mutable count = 0
+        let mutable readCount = 0
 
         let nativeRun =
             Environment.GetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY")
@@ -203,6 +204,8 @@ let private qualify () =
                     completed = count
                     expected = selected.Length
                     requiredProfiles = 9
+                    completedReadProfiles = readCount
+                    requiredReadProfiles = 6
                     completeQualification = selected.Length = 9
                     nativeRun = nativeRun
                 |}
@@ -215,6 +218,24 @@ let private qualify () =
                     atomic (sprintf "workload-%02d.json" count) report
                     count <- count + 1
                     state "incomplete")
+
+            if selected.Length = 9 then
+                do!
+                    GrowthReadWorkloads.run (fun environment report ->
+                        atomic
+                            (sprintf "read-workload-%02d.json" readCount)
+                            {|
+                                environment = environment
+                                workload = report
+                            |}
+
+                        readCount <- readCount + 1
+                        state "incomplete")
+
+                Expect.equal
+                    readCount
+                    6
+                    "Every required search/filtered population produced a report"
 
             let! resources = cardinality () |> Async.AwaitTask
             atomic "cardinality.json" resources

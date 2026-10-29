@@ -102,7 +102,7 @@ let internal start (database: PostgresFixture.Database) =
             |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
             |> updateCase
                 { request with
-                    Act = AuthoredCaseAct.Close
+                    Act = (AuthoredCaseAct.Bare BareAct.Close)
                 }
                 { snapshot with State = view }
 
@@ -117,7 +117,9 @@ let internal stateSequence (database: PostgresFixture.Database) =
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L AuthoredCaseAct.Close))
+                (OperationInput.Case(
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
                 (token))
 
         let position = (accepted closed).Position.Sequence
@@ -161,7 +163,9 @@ let internal erasure (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(actRequest 11 "synthetic-a" 1L (AuthoredCaseAct.Erase)))
+                (OperationInput.Case(
+                    actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
+                ))
                 (token))
 
         accepted erased |> ignore
@@ -367,6 +371,13 @@ let internal expected (database: PostgresFixture.Database) =
             "External checkpoint differs"
     }
 
+let private indexFinding expected statement database =
+    task {
+        let! _ = populated database
+        do! sql database statement [||]
+        do! finding expected database
+    }
+
 let internal findingCases =
     [
         VerificationFinding.Link, link
@@ -383,6 +394,22 @@ let internal findingCases =
         VerificationFinding.HumanRequired, human
         VerificationFinding.OwnerRequired, owner
         VerificationFinding.CaseProjection, caseProjection
+        VerificationFinding.CaseStatusProjection,
+        indexFinding
+            VerificationFinding.CaseStatusProjection
+            "UPDATE claimcore.cases SET status='CLOSED'"
+        VerificationFinding.CaseProgressProjection,
+        indexFinding
+            VerificationFinding.CaseProgressProjection
+            "UPDATE claimcore.cases SET progress='PAID'"
+        VerificationFinding.CaseChangedAtProjection,
+        indexFinding
+            VerificationFinding.CaseChangedAtProjection
+            "UPDATE claimcore.cases SET changed_at=changed_at+interval '1 second'"
+        VerificationFinding.CaseSearchProjection,
+        indexFinding
+            VerificationFinding.CaseSearchProjection
+            "UPDATE claimcore.cases SET search_text='tampered'"
         VerificationFinding.AuthorityProjection, authorityProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected

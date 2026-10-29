@@ -115,31 +115,21 @@ module CatalogValidation =
         let required = presentationIds ()
         let tokens = renderedTerms ()
 
+        // Rendered vocabulary namespaces come from their validated registry, not a second inventory.
         let families =
             [
                 "label"
                 "endpoint"
-                "field"
-                "act"
-                "group"
                 "authority"
-                "input"
                 "diagnostic"
                 "fault"
                 "host"
                 "notice"
-                "status"
-                "lifecycle"
-                "role"
-                "principalKind"
-                "correction"
-                "scope"
-                "historyDetail"
-                "subject"
                 "scalar"
                 "ui"
                 "cli"
             ]
+            @ (Terms.all |> List.map _.Name)
 
         for key in keys do
             if

@@ -11,7 +11,7 @@ import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
-import type { FormValues } from "../../protocol/forms";
+import type { FormValues, FormValue } from "../../protocol/forms";
 import {
   initialOperationValues,
   assembleOperation,
@@ -20,7 +20,6 @@ import {
 import {
   operationReducer,
   operationView,
-  operationSource,
   type OperationState,
   type OperationEffect,
   type OperationAction,
@@ -31,23 +30,24 @@ type Options = {
   subject: "CASE" | "AUTHORITY";
   kind: string;
   current: CurrentCase | null;
-  token: string;
+  credential: string;
+  normalizeValues?: (values: FormValues, entry: ReturnType<typeof operationEntry>) => FormValues;
   onLockChange: (locked: boolean) => void;
   onRecorded?: (receipt: OperationReceipt) => void;
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
   `${options.subject}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
-const fresh = (options: Options, kind = options.kind): OperationState => {
-  const values = initialOperationValues(options.subject, kind, options.current);
+const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
+  const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
   return {
     target: targetKey(options),
     entry: { subject: options.subject, kind },
     context: {
-      token: options.token,
+      credential: options.credential,
       target: targetKey(options),
     },
-    disclosureToken: options.token,
+    disclosureToken: options.credential,
     disclosureRefused: false,
     values,
     baseline: values,
@@ -64,7 +64,7 @@ const fresh = (options: Options, kind = options.kind): OperationState => {
 };
 const identity = (options: Options): EffectIdentity => ({
   id: crypto.randomUUID(),
-  token: options.token,
+  credential: options.credential,
   target: targetKey(options),
 });
 const dirtyValues = (left: FormValues, right: FormValues): boolean =>
@@ -122,7 +122,7 @@ const runNetwork = async (
   if (effect.kind === "RESOLVE") {
     const result = await service.resolve(
       effect.source.prepared.input.operationId,
-      effect.identity.token,
+      effect.identity.credential,
     );
     if (result.kind === "outcome") {
       if (result.value.outcome.kind === "ACCEPTED") {
@@ -152,8 +152,8 @@ const runNetwork = async (
   return completion(
     effect,
     effect.kind === "PREVIEW"
-      ? await service.preview(effect.source.prepared, effect.identity.token)
-      : await service.execute(effect.source.prepared, effect.identity.token),
+      ? await service.preview(effect.source.prepared, effect.identity.credential)
+      : await service.execute(effect.source.prepared, effect.identity.credential),
   );
 };
 const useEffects = (
@@ -183,7 +183,7 @@ const useEffects = (
         id: effect.identity.id,
       });
       if (
-        effect.identity.token !== options.token ||
+        effect.identity.credential !== options.credential ||
         effect.identity.target !== targetKey(options)
       ) {
         continue;
@@ -203,9 +203,7 @@ const useEffects = (
   }, [state, dispatch, options]);
 };
 const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) => {
-  const locked =
-    state.operation.kind !== "ACCEPTED" &&
-    (operationSource(state.operation) !== null || dirtyValues(state.values, state.baseline));
+  const { busy: locked } = operationView(state);
   useEffect(() => {
     onLockChange(locked);
     return () => {
@@ -227,7 +225,10 @@ const previewDraft = (
         "operation.execute",
         buildRequest(
           "operation.execute",
-          assembleOperation(operationEntry(state.entry), state.values),
+          assembleOperation(
+            operationEntry(state.entry),
+            options.normalizeValues?.(state.values, operationEntry(state.entry)) ?? state.values,
+          ),
         ),
       );
     dispatch({
@@ -258,7 +259,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
     view.phase === "ACCEPTED" ||
     state.target !== targetKey(options);
   return {
-    edit: (path: string, value: string | boolean) => {
+    edit: (path: string, value: FormValue) => {
       if (!blocked) {
         dispatch({
           type: "EDIT",
@@ -283,11 +284,11 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
-    discard: (acknowledgedUncertainty = false, kind = options.kind) => {
+    discard: (acknowledgedUncertainty = false, kind = options.kind, prefill?: FormValues) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
           type: "RESET",
-          state: fresh(options, kind),
+          state: fresh(options, kind, prefill),
           abandon: acknowledgedUncertainty,
         });
       }
@@ -335,15 +336,17 @@ export const useOperation = (options: Options) => {
   useLayoutEffect(() => {
     dispatch({
       type: "CONTEXT",
-      token: options.token,
+      credential: options.credential,
       target,
     });
-  }, [options.token, target]);
+  }, [options.credential, target]);
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);
   const disclosureCurrent =
-    state.disclosureToken === options.token && state.target === target && !state.disclosureRefused;
+    state.disclosureToken === options.credential &&
+    state.target === target &&
+    !state.disclosureRefused;
   return {
     ...view,
     ...actions(state, dispatch, options),

@@ -61,7 +61,7 @@ type private RemoteStreams =
         Errors: System.IO.Stream
     }
 
-let private remote streams session language render =
+let private withRemote streams language render action =
     let input = streams.Input
     let output = streams.Output
     let errors = streams.Errors
@@ -89,15 +89,22 @@ let private remote streams session language render =
     Console.CancelKeyPress.AddHandler interrupt
 
     try
-        if session then
-            processor.Session CancellationToken.None
-        else
-            processor.Call CancellationToken.None
+        try
+            action processor
+        with error ->
+            processor.Failure error
     finally
         Console.CancelKeyPress.RemoveHandler interrupt
         registrations |> List.iter _.Dispose()
 
-let private verb output errors arguments =
+let private remote streams session language render =
+    withRemote streams language render (fun processor ->
+        if session then
+            processor.Session CancellationToken.None
+        else
+            processor.Call CancellationToken.None)
+
+let private preparedVerb output errors arguments =
     match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
     | Error issues ->
         let language = CliInvocations.usageLanguage arguments
@@ -106,10 +113,50 @@ let private verb output errors arguments =
     | Ok prepared when prepared.DryRun ->
         writeBytes output prepared.Bytes
         ExitCode.value ExitCode.Success
+    | Ok prepared when prepared.All || prepared.Format = VerbFormat.Csv ->
+        use input = new System.IO.MemoryStream()
+
+        withRemote
+            {
+                Input = input
+                Output = output
+                Errors = errors
+            }
+            prepared.Language
+            (fun reply -> reply.Bytes)
+            (fun processor ->
+                let io =
+                    {
+                        Exchange = fun frame token -> processor.Exchange(frame, token)
+                        Deliver =
+                            fun frame reply ->
+                                processor.Deliver(
+                                    (fun response ->
+                                        if prepared.Format = VerbFormat.Json then
+                                            response.Bytes
+                                        else
+                                            TextReply.bytesFor
+                                                prepared.Language
+                                                (Some frame)
+                                                response.Frame),
+                                    reply
+                                )
+                        Output =
+                            fun bytes ->
+                                output.Write(bytes: byte array)
+                                output.Flush()
+                        Errors =
+                            fun bytes ->
+                                errors.Write(bytes: byte array)
+                                errors.Flush()
+                    }
+
+                CaseListCommand.run io prepared CancellationToken.None
+                |> fun value -> value.GetAwaiter().GetResult())
     | Ok prepared ->
         use input = new System.IO.MemoryStream(prepared.Bytes, false)
 
-        if prepared.Text then
+        if prepared.Format = VerbFormat.Text then
             let invocation =
                 Frames.admit prepared.Bytes
                 |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
@@ -133,6 +180,55 @@ let private verb output errors arguments =
                 false
                 prepared.Language
                 (fun reply -> reply.Bytes)
+
+let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments =
+    let console =
+        {
+            IsInteractive = not Console.IsInputRedirected && not Console.IsOutputRedirected
+            ReadLine = fun () -> Console.ReadLine() |> Option.ofObj
+            Write =
+                fun bytes ->
+                    output.Write(bytes: byte array)
+                    output.Flush()
+        }
+
+    match InteractiveReview.prepare console arguments with
+    | Error issues ->
+        writeText
+            errors
+            (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
+
+        ExitCode.value ExitCode.Usage
+    | Ok None -> preparedVerb output errors arguments
+    | Ok(Some draft) ->
+        use input = new System.IO.MemoryStream()
+
+        withRemote
+            {
+                Input = input
+                Output = output
+                Errors = errors
+            }
+            draft.Language
+            (fun reply -> reply.Bytes)
+            (fun processor ->
+                let transport =
+                    {
+                        Exchange = fun frame token -> processor.Exchange(frame, token)
+                        Deliver =
+                            fun frame reply ->
+                                processor.Deliver(
+                                    (fun response ->
+                                        TextReply.bytesFor
+                                            draft.Language
+                                            (Some frame)
+                                            response.Frame),
+                                    reply
+                                )
+                    }
+
+                InteractiveReview.run Guid.NewGuid console transport draft CancellationToken.None
+                |> fun value -> value.GetAwaiter().GetResult())
 
 let private dispatch output errors argv =
     try

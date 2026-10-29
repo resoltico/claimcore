@@ -1,9 +1,10 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { completeAct, openCase } from "./case-workflow";
+import { completeAct, openCase, lookupCase } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const reference = (): string => `BROWSER-${randomUUID()}`;
@@ -27,7 +28,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   });
   await decide(page);
   await completeAct(page, "Withdraw payment decision");
-  await expect(page.locator("section.case-fields").first().getByText("Revision 4")).toBeVisible();
+  await expect(page.locator(".case-lifecycle").getByText("Revision 4")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(4);
   const opening = page
@@ -39,7 +40,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await goToView(page, "operations");
   await page.getByLabel("Exact operation ID").fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
@@ -47,9 +48,8 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   ).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole("button", { name: "Cases", exact: true }).click();
-  await page.getByLabel("Handler's case reference (exact)").fill(caseReference);
-  await page.getByLabel("Handler's case reference (exact)").press("Enter");
+  await goToView(page, "cases");
+  await lookupCase(page, caseReference);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await expect(page.getByText("Synthetic amended claimant").first()).toBeVisible();
 });
@@ -66,7 +66,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await completeAct(page, "Close the case");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "Reopen the case");
-  await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
+  await expect(page.locator(".case-lifecycle").getByText("Revision 6")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(6);
   await expectAccessible(page);

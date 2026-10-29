@@ -10,11 +10,7 @@ open ClaimCore.Domain
 
 let today = DateOnly(2026, 9, 7)
 
-let registration =
-    { Inputs.registration with
-        ClaimantName = "Example Claimant Ltd"
-        InsurerName = "Example Alleged Insurer"
-    }
+let registration = Inputs.exampleRegistration
 
 let decision = Inputs.decision
 
@@ -53,7 +49,7 @@ let isInvalid result =
     | _ -> false
 
 let actRequest revision act =
-    { request revision AuthoredCaseAct.Close with
+    { request revision (AuthoredCaseAct.Bare BareAct.Close) with
         Act = act
     }
 

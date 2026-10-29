@@ -30,11 +30,16 @@ for (const reload of [false, true]) {
     await expect(
       page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }),
     ).toBeVisible();
-    const stored = await page.evaluate(
-      () =>
-        JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
-    );
-    expect(stored).toEqual({ operationId, subject: "CASE", act: "CLOSE" });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            JSON.parse(
+              sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null",
+            ) as unknown,
+        ),
+      )
+      .toEqual({ operationId, subject: "CASE", act: "CLOSE" });
     if (reload) {
       await page.reload();
       await expect(
@@ -48,7 +53,10 @@ for (const reload of [false, true]) {
     const resolved = page.waitForResponse((reply) =>
       reply.url().endsWith("/api/operation.resolve"),
     );
-    await page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }).click();
+    const check = reload
+      ? page.getByRole("status").filter({ hasText: operationId }).getByRole("button")
+      : page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true });
+    await check.click();
     expect((await resolved).status()).toBe(200);
     await expect
       .poll(() => page.evaluate(() => sessionStorage.getItem("claimcore.unresolvedOperation")))

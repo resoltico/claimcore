@@ -94,10 +94,12 @@ let private retainedHistory (database: PostgresFixture.Database) =
         do! readRetained host csrf name
 
         let values =
-            { registration with
-                ClaimantName = name
-                InsurerName = "Corrected insurer"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [
+                    BusinessField.ClaimantName, (name)
+                    BusinessField.InsurerName, ("Corrected insurer")
+                ]
+                (registration))
 
         let reaffirm =
             request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
@@ -116,10 +118,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 12
                 "HISTORICAL-1"
                 2L
-                (AuthoredCaseAct.AmendRegistration
-                    { values with
-                        ClaimantName = name + "B"
-                    })
+                (AuthoredCaseAct.AmendRegistration(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimantName, (name + "B") ]
+                        (values)
+                ))
 
         let! status, response = host.Call("operation.execute", httpRequest changed, csrf)
 

@@ -35,8 +35,8 @@ let private transitions =
         (CaseState.Voided()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())
-        (CaseState.Active()), AuthoredCaseAct.Erase, Ok CaseState.Erased
-        (CaseState.Voided()), AuthoredCaseAct.Erase, Ok CaseState.Erased
+        (CaseState.Active()), (AuthoredCaseAct.Bare BareAct.Erase), Ok CaseState.Erased
+        (CaseState.Voided()), (AuthoredCaseAct.Bare BareAct.Erase), Ok CaseState.Erased
     ]
 
 let private invalidReasons =
@@ -61,7 +61,7 @@ let private revisionProperty =
         let result =
             CaseFixtures.decide
                 today
-                (request revision AuthoredCaseAct.Erase)
+                (request revision (AuthoredCaseAct.Bare BareAct.Erase))
                 (Some(current revision state))
 
         return
@@ -140,7 +140,7 @@ let private vocabulary () =
         [
             AuthoredCaseAct.Void "Reason", CaseActKind.Void
             AuthoredCaseAct.Reinstate "Reason", CaseActKind.Reinstate
-            AuthoredCaseAct.Erase, CaseActKind.Erase
+            (AuthoredCaseAct.Bare BareAct.Erase), CaseActKind.Erase
         ] do
         Expect.equal
             (CaseAct.kind (action))

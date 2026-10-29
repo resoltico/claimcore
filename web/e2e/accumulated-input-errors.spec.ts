@@ -1,3 +1,4 @@
+import { fillBusinessField } from "./typed-entry";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { startOpen } from "./case-workflow";
@@ -5,15 +6,15 @@ import { isResponse } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { trackRequests } from "./localization-support";
 
-test("one submit reports every malformed input inline and focuses the first in catalog order", async ({
+test("one submit reports every invalid input in summary order and links to its field", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `ACCUMULATE-${randomUUID()}`);
-  const incident = page.getByLabel("Incident date", { exact: true });
+  const incident = page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first();
   const amount = page.getByLabel("Amount claimed", { exact: true });
-  const currency = page.getByLabel("Currency of claimed amount", { exact: true });
-  await incident.fill("not-a-date");
+  const currency = page.getByRole("combobox", { name: "Currency of claimed amount", exact: true });
+  await fillBusinessField(page, "incidentDate", "");
   await amount.fill("00.10");
   await currency.fill("euros");
   const requests = trackRequests(page);
@@ -43,6 +44,11 @@ test("one submit reports every malformed input inline and focuses the first in c
   await expect(incident).toHaveAccessibleDescription(/calendar date/u);
   await expect(amount).toHaveAccessibleDescription(/decimal/u);
   await expect(currency).toHaveAccessibleDescription(/currency/u);
+  const summary = page.locator("[data-error-summary]");
+  await expect(summary).toBeFocused();
+  await expect(summary.getByRole("link")).toHaveCount(3);
+  await expect(summary.getByRole("link").first()).toContainText("Incident date");
+  await summary.getByRole("link").first().click();
   await expect(incident).toBeFocused();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator("section.receipt")).toHaveCount(0);

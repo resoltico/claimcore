@@ -154,10 +154,11 @@ let created n reference =
 
     let current =
         match projection with
-        | CaseProjection.Insert(id, snapshot) ->
+        | CaseProjection.Insert(id, snapshot, index) ->
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = index
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
         | _ -> failtest "Opening inserts a case"

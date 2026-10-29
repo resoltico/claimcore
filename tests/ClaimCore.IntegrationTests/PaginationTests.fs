@@ -66,7 +66,10 @@ let private setup (database: PostgresFixture.Database) =
 let private revocation (database: PostgresFixture.Database) =
     task {
         let! admin, principal, actor = setup database
-        let! first = (Service.list actor (query None 1) (token))
+
+        let! first =
+            (Service.list actor ((ClaimCore.TestSupport.Inputs.caseListPage (query None 1))) (token))
+
         let cursor = (page first).NextCursor
         Expect.isSome cursor "Real database issues a continuation"
 
@@ -82,7 +85,12 @@ let private revocation (database: PostgresFixture.Database) =
                 false
 
         acceptedAuthority revoked
-        let! next = (Service.list actor (query cursor 2) (token))
+
+        let! next =
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage (query cursor 2)))
+                (token))
 
         Expect.equal
             next
@@ -154,7 +162,8 @@ type internal PausedPageStore
                                              ActorId = actor
                                              ReadRoles = roles
                                              ForbiddenRoles = invalid
-                                             AfterReference = after
+                                             AfterPosition = after
+                                             Filter = filter
                                              Limit = limit
                                          })
                                         =
@@ -164,7 +173,8 @@ type internal PausedPageStore
                                                 ActorId = actor
                                                 ReadRoles = roles
                                                 ForbiddenRoles = invalid
-                                                AfterReference = after
+                                                AfterPosition = after
+                                                Filter = filter
                                                 Limit = limit
                                             }
                                         )
@@ -226,13 +236,21 @@ let private freshAdvice (actor: ServiceContext) cursor current =
             ((page current).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Paused rows retain the same registrar snapshot advice"
 
-        let! fresh = (Service.list actor (query None 50) (token))
+        let! fresh =
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage (query None 50)))
+                (token))
 
         Expect.isFalse
             ((page fresh).Offers |> List.exists (fun o -> o = InstallationOffer.Open))
             "Fresh reader page has no OPEN advice"
 
-        let! next = (Service.list actor (query cursor 50) (token))
+        let! next =
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage (query cursor 50)))
+                (token))
 
         Expect.isFalse
             ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
@@ -255,7 +273,10 @@ let private snapshot (database: PostgresFixture.Database) =
                 true
 
         acceptedAuthority promoted
-        let! first = (Service.list actor (query None 1) (token))
+
+        let! first =
+            (Service.list actor ((ClaimCore.TestSupport.Inputs.caseListPage (query None 1))) (token))
+
         let cursor = (page first).NextCursor
 
         let entered =
@@ -276,7 +297,10 @@ let private snapshot (database: PostgresFixture.Database) =
         let reading =
             Task.Run<Outcome<CaseSummaryPage>>(
                 Func<Task<Outcome<CaseSummaryPage>>>(fun () ->
-                    (Service.list facade (query cursor 50) (token)))
+                    (Service.list
+                        facade
+                        ((ClaimCore.TestSupport.Inputs.caseListPage (query cursor 50)))
+                        (token)))
             )
 
         try

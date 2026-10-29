@@ -15,89 +15,50 @@ module ResponseCodecs =
 
     let private scope = RequestCodecs.scope
 
-    let private moneyProblem amountField currencyField path =
-        function
-        | MoneyViolation.Amount _ ->
-            {
-                Path = path + "." + amountField
-                Reason = "value outside its wire grammar"
-            }
-        | MoneyViolation.Currency _ ->
-            {
-                Path = path + "." + currencyField
-                Reason = "value outside its wire grammar"
-            }
+    let private scalar kind =
+        let codec =
+            match kind with
+            | FieldValueKind.CalendarDate -> date
+            | FieldValueKind.Country -> country
+            | FieldValueKind.PartyName -> nonempty
+            | FieldValueKind.Amount -> amount
+            | FieldValueKind.Currency -> currency
+            | FieldValueKind.Reference
+            | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains business values."
+
+        codec
+        |> mapResult
+            (fun path raw ->
+                FieldValue.parse kind raw
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "value outside its wire grammar"
+                    }))
+            FieldValue.format
+
+    let private group group create values =
+        CaseFields.ofGroup group
+        |> List.map (fun field ->
+            field, BusinessField.key field, scalar (BusinessField.describe field).Kind)
+        |> Codec.fieldMap
+        |> mapResult
+            (fun path fields ->
+                create (Map.toList fields)
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> Map.ofList)
 
     let private registration =
-        (record (fun incident notification country claimant insurer amount currency ->
-            Money.parse amount currency
-            |> Result.map (fun money ->
-                {
-                    Registration.IncidentDate = incident
-                    IncidentNotificationDate = notification
-                    IncidentCountry = country
-                    ClaimantName = claimant
-                    InsurerName = insurer
-                    ClaimedAmount = money
-                }))
-        : Fields<Registration, _>)
-        |> field (BusinessField.key BusinessField.IncidentDate) _.IncidentDate calendarDate
-        |> field
-            (BusinessField.key BusinessField.IncidentNotificationDate)
-            _.IncidentNotificationDate
-            calendarDate
-        |> field (BusinessField.key BusinessField.IncidentCountry) _.IncidentCountry countryCode
-        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
-        |> field (BusinessField.key BusinessField.InsurerName) _.InsurerName partyName
-        |> field
-            (BusinessField.key BusinessField.ClaimedAmount)
-            (fun value -> Money.format value.ClaimedAmount)
-            amount
-        |> field
-            (BusinessField.key BusinessField.ClaimedCurrency)
-            (fun value -> Money.currency value.ClaimedAmount)
-            currency
-        |> buildResult (
-            moneyProblem
-                (BusinessField.key BusinessField.ClaimedAmount)
-                (BusinessField.key BusinessField.ClaimedCurrency)
-        )
+        group RecordGroup.Registration Registration.create Registration.values
 
-    let private decision =
-        (record (fun date amount currency ->
-            Money.parse amount currency
-            |> Result.map (fun money ->
-                {
-                    Decision.PaymentDecisionDate = date
-                    PayableAmount = money
-                }))
-        : Fields<Decision, _>)
-        |> field
-            (BusinessField.key BusinessField.PaymentDecisionDate)
-            _.PaymentDecisionDate
-            calendarDate
-        |> field
-            (BusinessField.key BusinessField.PayableAmount)
-            (fun value -> Money.format value.PayableAmount)
-            amount
-        |> field
-            (BusinessField.key BusinessField.PayableCurrency)
-            (fun value -> Money.currency value.PayableAmount)
-            currency
-        |> buildResult (
-            moneyProblem
-                (BusinessField.key BusinessField.PayableAmount)
-                (BusinessField.key BusinessField.PayableCurrency)
-        )
-
-    let private payment =
-        (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
-        |> field (BusinessField.key BusinessField.PaymentDate) _.PaymentDate calendarDate
-        |> build
+    let private decision = group RecordGroup.Decision Decision.create Decision.values
+    let private payment = group RecordGroup.Payment Payment.create Payment.values
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            PaymentProgress.fromGroups
+                decision
+                (payment |> Option.map (fun (value: Payment) -> (Payment.date (value))))
             |> Result.map (fun progress ->
                 {
                     CaseFields.CaseReference = reference
@@ -121,27 +82,6 @@ module ResponseCodecs =
             })
         |> named "CaseFields"
 
-    let private stateCodec name fields =
-        tagged
-            name
-            [
-                variant
-                    "ACTIVE"
-                    CaseState.Active
-                    (function
-                    | CaseState.Active value -> Some value
-                    | _ -> None)
-                    fields
-                variant
-                    "VOIDED"
-                    CaseState.Voided
-                    (function
-                    | CaseState.Voided value -> Some value
-                    | _ -> None)
-                    fields
-                unitVariant "ERASED" CaseState.Erased
-            ]
-
     let liveState =
         let fields = record id |> field "fields" id caseFields
 
@@ -164,7 +104,8 @@ module ResponseCodecs =
                     fields
             ]
 
-    let caseState = stateCodec "CaseState" (record id |> field "fields" id caseFields)
+    let caseState =
+        CaseStateCodecs.state "CaseState" (record id |> field "fields" id caseFields)
 
     let caseSnapshot =
         (record (fun reference revision view ->
@@ -227,7 +168,7 @@ module ResponseCodecs =
         |> field
             "acts"
             (fun (acts, _, _) -> acts)
-            (list 12 (VocabularyCodec.create CaseActKind.vocabulary))
+            (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
         |> optionalField "correction" (fun (_, correction, _) -> correction) correctionAdvice
         |> field "history" (fun (_, _, history) -> history) (list 2 historyDetail)
         |> build
@@ -459,28 +400,7 @@ module ResponseCodecs =
         |> build
         |> named "Session"
 
-    let caseSummary =
-        let state =
-            stateCodec
-                "CaseSummaryState"
-                (record id
-                 |> field
-                     (BusinessField.key BusinessField.Status)
-                     id
-                     (VocabularyCodec.create CaseStatus.vocabulary))
-
-        (record (fun reference revision state ->
-            {
-                CaseSummary.Reference = reference
-                Revision = revision
-                State = state
-            })
-        : Fields<CaseSummary, _>)
-        |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
-        |> field "revision" _.Revision positiveRevision
-        |> field "state" _.State state
-        |> build
-        |> named "CaseSummary"
+    let caseSummary = ReadRowCodecs.caseSummary
 
     let casesPage =
         (record (fun items next offers ->
@@ -491,7 +411,10 @@ module ResponseCodecs =
             })
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
-        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> build
         |> named "CasesPage"

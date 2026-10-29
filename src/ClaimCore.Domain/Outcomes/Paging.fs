@@ -6,3 +6,6 @@ module Paging =
 
     [<Literal>]
     let MaximumPageSize = 50
+
+    [<Literal>]
+    let MaximumCaseCursorCharacters = 16384

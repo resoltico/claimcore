@@ -55,12 +55,15 @@ let view reference =
             CaseReference = reference
             ExpectedRevision = 0L
             Act =
-                (AuthoredCaseAct.Open
-                    { Inputs.registration with
-                        ClaimantName = "Synthetic claimant"
-                        InsurerName = "Synthetic insurer"
-                        ClaimedAmount = "1.00"
-                    })
+                (AuthoredCaseAct.Open(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [
+                            BusinessField.ClaimantName, ("Synthetic claimant")
+                            BusinessField.InsurerName, ("Synthetic insurer")
+                            BusinessField.ClaimedAmount, ("1.00")
+                        ]
+                        (Inputs.registration)
+                ))
         }
 
     CaseFixtures.decide (DateOnly(2026, 10, 13)) request None
@@ -159,72 +162,50 @@ type Stub() =
     member this.Handlers =
         function
         | (ActorEndpoint.Query QueryEndpoint.Context) ->
-            Route.read Api.context (fun _ -> None) (fun _ () _ ->
+            Route.bind Api.context (fun _ () _ ->
                 this.Invoke "context" (Outcome.Succeeded description))
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            Route.bind
-                Api.operationPreview
-                (fun input -> Some(OperationInput.operationId input))
-                (fun input ->
+            Route.bind Api.operationPreview (fun _ input _ ->
+                let outcome =
+                    match input with
+                    | OperationInput.Case request ->
+                        (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
+                            receipt request.OperationId request.CaseReference
+                        )
+                    | OperationInput.Authority request ->
+                        (Previewed.AlreadyAccepted >> Outcome.Succeeded) (authorityReceipt request)
+
+                this.Invoke
+                    "operation.preview"
                     {
                         PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
+                        Outcome = outcome
                     })
-                (fun _ input _ ->
-                    let outcome =
-                        match input with
-                        | OperationInput.Case request ->
-                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                receipt request.OperationId request.CaseReference
-                            )
-                        | OperationInput.Authority request ->
-                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                authorityReceipt request
-                            )
-
-                    this.Invoke
-                        "operation.preview"
-                        {
-                            PreviewReply.OperationId = OperationInput.operationId input
-                            Outcome = outcome
-                        })
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            Route.bind
-                Api.operationExecute
-                (fun input -> Some(OperationInput.operationId input))
-                (fun input ->
-                    {
-                        ExecuteReply.OperationId = OperationInput.operationId input
-                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
-                    })
-                (fun _ input token ->
-                    task {
-                        match this.Error with
-                        | Some error -> return raise error
-                        | None ->
-                            calls.Add "operation.execute"
+            Route.bind Api.operationExecute (fun _ input token ->
+                task {
+                    match this.Error with
+                    | Some error -> return raise error
+                    | None ->
+                        calls.Add "operation.execute"
 
-                            let! outcome =
-                                match input with
-                                | OperationInput.Case request -> this.Execute(request, token)
-                                | OperationInput.Authority request ->
-                                    this.ExecuteAuthority(request, token)
+                        let! outcome =
+                            match input with
+                            | OperationInput.Case request -> this.Execute(request, token)
+                            | OperationInput.Authority request ->
+                                this.ExecuteAuthority(request, token)
 
-                            return
-                                {
-                                    ExecuteReply.OperationId = OperationInput.operationId input
-                                    Outcome = outcome
-                                }
-                    })
+                        return
+                            {
+                                ExecuteReply.OperationId = OperationInput.operationId input
+                                Outcome = outcome
+                            }
+                })
         | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
-            Route.bind
-                Api.operationResolve
-                (fun input -> Some input.OperationId)
-                (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
-                (fun _ _ _ ->
-                    this.Invoke "operation.resolve" (Outcome.Succeeded Resolved.NotAccepted))
+            Route.bind Api.operationResolve (fun _ _ _ ->
+                this.Invoke "operation.resolve" (Outcome.Succeeded Resolved.NotAccepted))
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
-            Route.read Api.caseGet (fun _ -> None) (fun _ request _ ->
+            Route.bind Api.caseGet (fun _ request _ ->
                 this.Invoke
                     "case.get"
                     (Outcome.Succeeded
@@ -233,7 +214,7 @@ type Stub() =
                             Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                         }))
         | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            Route.read Api.caseList (fun _ -> None) (fun _ _ _ ->
+            Route.bind Api.caseList (fun _ _ _ ->
                 this.Invoke
                     "case.list"
                     (Outcome.Succeeded
@@ -243,18 +224,15 @@ type Stub() =
                             Offers = []
                         }))
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
-            Route.read Api.caseHistory (fun _ -> None) (fun _ _ _ ->
+            Route.bind Api.caseHistory (fun _ _ _ ->
                 this.Invoke "case.history" (Outcome.Succeeded { Entries = []; NextCursor = None }))
         | (ActorEndpoint.Query QueryEndpoint.Observe) ->
-            Route.read
-                Api.operationObserve
-                (fun input -> Some input.OperationId)
-                (fun _ request _ ->
-                    this.Invoke
-                        "operation.observe"
-                        (Outcome.Succeeded(receipt request.OperationId "WEB-001")))
+            Route.bind Api.operationObserve (fun _ request _ ->
+                this.Invoke
+                    "operation.observe"
+                    (Outcome.Succeeded(receipt request.OperationId "WEB-001")))
         | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            Route.read Api.authorityGrants (fun _ -> None) (fun _ request _ ->
+            Route.bind Api.authorityGrants (fun _ request _ ->
                 let principal =
                     PrincipalKey.human "https://identity.example/" "synthetic-target"
                     |> Result.defaultWith (string >> failwith)
@@ -273,5 +251,5 @@ type Stub() =
                             NextCursor = None
                         }))
         | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            Route.read Api.authorityList (fun _ -> None) (fun _ _ _ ->
+            Route.bind Api.authorityList (fun _ _ _ ->
                 this.Invoke "authority.list" (Outcome.Succeeded { Items = []; NextCursor = None }))

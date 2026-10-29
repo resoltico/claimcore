@@ -128,8 +128,9 @@ let internal executeOutcomes () =
                 }
 
             Expect.equal
-                (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode frame))
-                (Ok frame)
+                (ClaimCore.Cli.Frames.decode (ClaimCore.Cli.Frames.encode frame)
+                 |> Result.map CliReplies.frameFacts)
+                (Ok(CliReplies.frameFacts frame))
                 "CLI frames share mutation outcomes"
 
             Expect.equal

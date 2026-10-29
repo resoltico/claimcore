@@ -1,60 +1,38 @@
-import { useEffect, useRef, useState } from "react";
-import type { Notice } from "../protocol/notices";
-import { resultNotice, service, type OperationReceipt } from "../api/service";
-
-type ObservationFeedback = {
-  receipt: OperationReceipt | null;
-  message: Notice | null;
-  loading: boolean;
-};
-const emptyFeedback: ObservationFeedback = {
-  receipt: null,
-  message: null,
-  loading: false,
-};
-
-export const useOperationObservation = (token: string, initialOperationId = "") => {
+import { useState } from "react";
+import { useEndpoint } from "./useEndpoint";
+export const useOperationObservation = (initialOperationId = "") => {
   const [operationId, setOperationId] = useState(initialOperationId);
-  const controller = useRef<AbortController | null>(null);
-  const [feedback, setFeedback] = useState(emptyFeedback);
-  useEffect(
-    () => () => {
-      controller.current?.abort();
-    },
-    [],
+  const [submitted, setSubmitted] = useState<string | null>(
+    initialOperationId === "" ? null : initialOperationId,
+  );
+  const query = useEndpoint(
+    "operation.observe",
+    { operationId: submitted ?? "" },
+    submitted !== null,
   );
   const changeOperationId = (value: string): void => {
-    controller.current?.abort();
-    controller.current = null;
     setOperationId(value);
-    setFeedback(emptyFeedback);
+    setSubmitted(null);
   };
-  const observe = async (): Promise<void> => {
-    if (controller.current !== null || operationId === "") {
-      return;
+  const observe = (): Promise<void> => {
+    if (operationId !== "") {
+      if (submitted === operationId && !query.loading) {
+        query.reload();
+      } else if (submitted !== operationId) {
+        setSubmitted(operationId);
+      }
     }
-    const current = new AbortController();
-    controller.current = current;
-    setFeedback({ ...emptyFeedback, loading: true });
-    const result = await service.observe(operationId, token, current.signal);
-    if (current.signal.aborted) {
-      return;
-    }
-    controller.current = null;
-    const found =
-      result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"
-        ? result.value.outcome.data
-        : null;
-    setFeedback({
-      receipt: found,
-      loading: false,
-      message: found === null ? resultNotice(result) : null,
-    });
+    return Promise.resolve();
   };
   return {
     operationId,
     setOperationId: changeOperationId,
-    ...feedback,
+    receipt:
+      submitted !== null && query.value?.outcome.kind === "SUCCEEDED"
+        ? query.value.outcome.data
+        : null,
+    message: submitted === null ? null : query.message,
+    loading: submitted !== null && query.loading,
     observe,
   };
 };

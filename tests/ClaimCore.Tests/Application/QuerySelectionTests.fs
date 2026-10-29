@@ -21,7 +21,7 @@ let private authorityAndCursor () =
     let read = ungranted
 
     Expect.equal
-        (Queries.selectCases owner page read)
+        (Queries.selectCases owner (ClaimCore.TestSupport.Inputs.caseListPage (page)) read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Visibility precedes token parsing"
 

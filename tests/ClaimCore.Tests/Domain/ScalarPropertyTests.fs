@@ -99,10 +99,11 @@ let private amountProperty =
         let candidate =
             request
                 0L
-                (AuthoredCaseAct.Open
-                    { registration with
-                        ClaimedAmount = sample.Raw
-                    })
+                (AuthoredCaseAct.Open(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimedAmount, (sample.Raw) ]
+                        (registration)
+                ))
 
         let result = CaseFixtures.decide today candidate None
 
@@ -125,7 +126,7 @@ let private invalidCurrency =
 let private currencyProperty =
     property {
         let! sample = Gen.frequency [ 3, validCurrency; 2, invalidCurrency ]
-        return Result.isOk (Money.parse "1" sample.Raw) = sample.Accepted
+        return Result.isOk (Currency.parse sample.Raw) = sample.Accepted
     }
 
 type private TextTarget =
@@ -147,17 +148,17 @@ let private validateText target value =
     let facts =
         match target with
         | Country ->
-            { registration with
-                IncidentCountry = value
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.IncidentCountry, (value) ]
+                (registration))
         | Claimant ->
-            { registration with
-                ClaimantName = value
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, (value) ]
+                (registration))
         | Insurer ->
-            { registration with
-                InsurerName = value
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.InsurerName, (value) ]
+                (registration))
         | Reference -> registration
 
     let candidate = request 0L (AuthoredCaseAct.Open facts)

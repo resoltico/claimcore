@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../../components/IdentifierValue";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
@@ -35,6 +36,26 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
       : []),
   ];
 };
+const PendingMetadata = ({ metadata }: { metadata: ReturnType<typeof pendingMetadata> }) => {
+  const p = usePresentation();
+  return (
+    <dl>
+      {metadata.map(([name, value]) => (
+        <div key={name}>
+          <dt>{p.fieldLabel(name)}</dt>
+          <dd>
+            {["caseReference", "operationId"].includes(name) ? (
+              <IdentifierValue value={value} />
+            ) : (
+              <bdi>{value}</bdi>
+            )}{" "}
+            <CopyValue label={p.fieldLabel(name)} value={value} />
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
 const UnknownOperation = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -58,16 +79,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
           }}
         />
       </h2>
-      <dl>
-        {metadata.map(([name, value]) => (
-          <div key={name}>
-            <dt>{p.fieldLabel(name)}</dt>
-            <dd>
-              <bdi>{value}</bdi> <CopyValue label={p.fieldLabel(name)} value={value} />
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <PendingMetadata metadata={metadata} />
       <p>{p.text("ui.retryExactDescription")}</p>
       {notice === null ? null : (
         <p>
@@ -77,13 +89,13 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
       <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
         {p.text("ui.retryExact")}
       </button>
-      <button type="button" disabled={model.busy} onClick={model.resolve}>
+      <button className="primary" type="button" disabled={model.busy} onClick={model.resolve}>
         {p.text("ui.checkOutcome")}
       </button>
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onAct">;
+type Props = Omit<OperationFormProps, "onAct"> & { disclosureAvailable?: boolean };
 type DiscardProps = {
   model: OperationModel;
   onClose?: () => void;
@@ -131,19 +143,27 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
     </AccessibleModal>
   );
 };
-const UnavailableDisclosure = ({ model }: { model: OperationModel }) => {
+const UnavailableDisclosure = ({
+  model,
+  available = true,
+}: {
+  model: OperationModel;
+  available?: boolean;
+}) => {
   const p = usePresentation();
   return (
     <section role="alert">
       <NoticeView
         value={
-          model.notice ?? {
-            kind: "local",
-            reason: "incomplete",
-          }
+          available
+            ? (model.notice ?? { kind: "local", reason: "incomplete" })
+            : {
+                kind: "diagnostic",
+                diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
+              }
         }
       />
-      {!model.disclosureRefused && !model.contextChanged ? (
+      {available && !model.disclosureRefused && !model.contextChanged ? (
         <button type="button" disabled={model.busy} onClick={() => void model.preview()}>
           {p.text("label.reviewTitle")}
         </button>
@@ -151,27 +171,8 @@ const UnavailableDisclosure = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-export const OperationPanel = (props: Props) => {
+const EditableOperation = (props: Props) => {
   const { model, onClose } = props;
-  const p = usePresentation();
-  if (model.phase === "ACCEPTED") {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          model.discard();
-        }}
-      >
-        {p.text("ui.startAnotherOperation")}
-      </button>
-    );
-  }
-  if (model.priorUncertain) {
-    return <UnknownOperation model={model} />;
-  }
-  if (model.disclosureRefused || model.contextChanged || !model.disclosureCurrent) {
-    return <UnavailableDisclosure model={model} />;
-  }
   const requestChange = (kind: string) => {
     if (model.dirty || model.prepared !== null) {
       model.requestDiscard(kind);
@@ -201,15 +202,44 @@ export const OperationPanel = (props: Props) => {
     </>
   );
 };
+
+export const OperationPanel = (props: Props) => {
+  const { model, disclosureAvailable = true } = props;
+  const p = usePresentation();
+  if (model.phase === "ACCEPTED") {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          model.discard();
+        }}
+      >
+        {p.text("ui.startAnotherOperation")}
+      </button>
+    );
+  }
+  if (model.priorUncertain) {
+    return <UnknownOperation model={model} />;
+  }
+  if (
+    !disclosureAvailable ||
+    model.disclosureRefused ||
+    model.contextChanged ||
+    !model.disclosureCurrent
+  ) {
+    return <UnavailableDisclosure model={model} available={disclosureAvailable} />;
+  }
+  return <EditableOperation {...props} />;
+};
 /** Mutation consent stays mounted when independently authorized read panes are replaced. */
 export const OperationDiscard = (props: DiscardProps) => {
-  const { model, onClose } = props;
+  const { model } = props;
   const show =
     model.priorUncertain ||
     model.disclosureRefused ||
     model.contextChanged ||
     !model.disclosureCurrent ||
-    (onClose === undefined && model.dirty);
+    model.dirty;
   return (
     <>
       <DiscardButton

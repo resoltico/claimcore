@@ -1,12 +1,13 @@
+import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import type { Notice } from "../protocol/notices";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import type { CatalogDocument, HistoryEntry, CaseReceipt, ServiceResponse } from "../api/service";
-import { service } from "../api/service";
-import { useRetryablePage } from "../hooks/useRead";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
+import { HistoryChanges } from "./case/HistoryChanges";
 import { ReceiptFields } from "../components/ReceiptFields";
 const historyPage = (response: ServiceResponse<"case.history">) =>
   response.outcome.kind === "SUCCEEDED"
@@ -15,12 +16,29 @@ const historyPage = (response: ServiceResponse<"case.history">) =>
         nextCursor: response.outcome.data.nextCursor,
       }
     : null;
+type HistoryPage = NonNullable<ReturnType<typeof historyPage>>;
+const ReceiptAttribution = ({ operationId, actor }: { operationId: string; actor: string }) => {
+  const p = usePresentation();
+  return (
+    <p>
+      <IdentifierMessage
+        id="ui.receiptAttribution"
+        values={{ operationId, actor, state: p.text("ui.accepted") }}
+        argument="operationId"
+      />
+    </p>
+  );
+};
 const HistoryReceipt = ({
   receipt,
   fields,
+  previous,
+  loadPrevious,
 }: {
   receipt: CaseReceipt;
   fields: CatalogDocument["fields"];
+  previous: CaseReceipt | undefined;
+  loadPrevious: (() => void) | undefined;
 }) => {
   const p = usePresentation();
   return (
@@ -32,27 +50,50 @@ const HistoryReceipt = ({
           timestamp: receipt.recordedAt,
         })}
       </summary>
-      <p>
-        {p.text("ui.receiptAttribution", {
-          operationId: receipt.operationId,
-          actor: receipt.recordedBy,
-          state: p.text("ui.accepted"),
-        })}
-      </p>
+      <ReceiptAttribution operationId={receipt.operationId} actor={receipt.recordedBy} />
+      <HistoryChanges
+        receipt={receipt}
+        previous={previous}
+        fields={fields}
+        loadPrevious={loadPrevious}
+      />
       <ReceiptFields
         subject={receipt.subject}
         fields={fields}
-        context={p.text("ui.historyContext", {
-          operationId: receipt.operationId,
-        })}
+        context={
+          <IdentifierMessage
+            id="ui.historyContext"
+            values={{
+              operationId: receipt.operationId,
+            }}
+            argument="operationId"
+          />
+        }
       />
     </details>
   );
 };
-const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument["fields"] }) => {
+const Entry = ({
+  entry,
+  fields,
+  previous,
+  loadPrevious,
+}: {
+  entry: HistoryEntry;
+  fields: CatalogDocument["fields"];
+  previous: HistoryEntry | undefined;
+  loadPrevious: (() => void) | undefined;
+}) => {
   const p = usePresentation();
   if (entry.kind === "FULL") {
-    return <HistoryReceipt receipt={entry.receipt} fields={fields} />;
+    return (
+      <HistoryReceipt
+        receipt={entry.receipt}
+        fields={fields}
+        previous={previous?.kind === "FULL" ? previous.receipt : undefined}
+        loadPrevious={loadPrevious}
+      />
+    );
   }
   const { change } = entry;
   return (
@@ -64,27 +105,28 @@ const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument
           timestamp: change.recordedAt,
         })}
       </p>
-      <p>
-        {p.text("ui.receiptAttribution", {
-          operationId: change.operationId,
-          actor: change.recordedBy,
-          state: p.text("ui.accepted"),
-        })}
-      </p>
+      <ReceiptAttribution operationId={change.operationId} actor={change.recordedBy} />
     </>
   );
 };
 const HistoryEntries = ({
   items,
   fields,
+  loadPrevious,
 }: {
   items: ReadonlyArray<HistoryEntry>;
   fields: CatalogDocument["fields"];
+  loadPrevious: (() => void) | undefined;
 }) => (
-  <ol className="history-list">
-    {items.map((entry) => (
+  <ol className="history-list case-timeline">
+    {items.map((entry, index) => (
       <li key={entry.kind === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
-        <Entry entry={entry} fields={fields} />
+        <Entry
+          entry={entry}
+          fields={fields}
+          previous={items[index + 1]}
+          loadPrevious={loadPrevious}
+        />
       </li>
     ))}
   </ol>
@@ -151,7 +193,7 @@ const summaryModes: ReadonlyArray<HistoryMode> = ["SUMMARY"];
 type CaseHistoryProps = {
   modes?: ReadonlyArray<HistoryMode>;
   onDisclosureRefused?: () => void;
-  token: string;
+
   caseReference: string;
   fields: CatalogDocument["fields"];
 };
@@ -178,8 +220,17 @@ const HistoryPageActions = ({
     </>
   );
 };
+const precedingPage = (page: {
+  cursor: string | null;
+  loading: boolean;
+  load: (cursor: string | null) => Promise<void>;
+}) =>
+  page.cursor === null || page.loading
+    ? undefined
+    : () => {
+        void page.load(page.cursor);
+      };
 export const CaseHistory = ({
-  token,
   caseReference,
   fields,
   modes = summaryModes,
@@ -188,30 +239,31 @@ export const CaseHistory = ({
   const p = usePresentation();
   const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
-  const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) =>
-      service.history(
-        {
-          caseReference,
-          cursor,
-          limit: 50,
-          detail: requestedDetail,
-        },
-        token,
-        signal,
-      ),
-    [caseReference, token, requestedDetail],
+  const input = useCallback(
+    (cursor: string | null) => ({
+      caseReference,
+      ...(cursor === null ? {} : { cursor }),
+      limit: 50,
+      detail: requestedDetail,
+    }),
+    [caseReference, requestedDetail],
   );
-  const { items, cursor, message, loading, load, page } = useRetryablePage<
-    ServiceResponse<"case.history">,
-    HistoryEntry
-  >(request, historyPage, onDisclosureRefused);
+  const { items, cursor, message, loading, load, page } = useEndpointPage<
+    "case.history",
+    HistoryEntry,
+    HistoryPage
+  >("case.history", input, historyPage, onDisclosureRefused);
+
   return (
-    <section aria-labelledby="history-title">
+    <section className="case-history" aria-labelledby="history-title">
       <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
       <HistoryModePicker detail={requestedDetail} onChange={setDetail} modes={modes} />
       <p>{p.text("ui.historyHint")}</p>
-      <HistoryEntries items={items} fields={fields} />
+      <HistoryEntries
+        items={items}
+        fields={fields}
+        loadPrevious={precedingPage({ cursor, loading, load })}
+      />
       <HistoryPageStatus
         loading={loading}
         loaded={page !== null}

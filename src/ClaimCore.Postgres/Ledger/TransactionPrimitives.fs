@@ -23,33 +23,73 @@ module internal TransactionPages =
                     None
         }
 
+    let private caseSql order =
+        let key = "upper(c.case_reference COLLATE \"C\")"
+
+        let after, sorting =
+            match order with
+            | CaseListOrder.Reference -> key + " > $1 COLLATE \"C\"", key + " ASC"
+            | CaseListOrder.Recent ->
+                "(c.changed_at < $11 OR (c.changed_at = $11 AND "
+                + key
+                + " > $1 COLLATE \"C\"))",
+                "c.changed_at DESC," + key + " ASC"
+
+        let search =
+            "($10::text IS NULL OR c.search_text LIKE '%' || $10 || '%' ESCAPE chr(92))"
+
+        $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE ($1::text IS NULL OR {after}) AND ($2 OR c.case_id IN (SELECT g.case_id FROM claimcore.grants g WHERE g.actor_id=$3 AND g.role=ANY($4::text[]) AND g.case_id IS NOT NULL)) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$3 AND bad.case_id=c.case_id AND bad.role=ANY($5::text[])) AND (cardinality($7::text[])=0 OR c.state=ANY($7::text[])) AND (cardinality($8::text[])=0 OR c.status=ANY($8::text[])) AND (cardinality($9::text[])=0 OR c.progress=ANY($9::text[])) AND {search} ORDER BY {sorting} LIMIT $6"
+
+    let private afterPosition (query: CasePageQuery) =
+        match query.Filter.Order, query.AfterPosition with
+        | _, None -> None, None
+        | CaseListOrder.Reference, Some(CaseListPosition.Reference reference) ->
+            Some reference, None
+        | CaseListOrder.Recent, Some(CaseListPosition.Recent(changedAt, reference)) ->
+            Some reference, Some changedAt
+        | _ -> invalidArg (nameof query) "The page position must match its order."
+
+    let private escapeSearch (value: string) =
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")
+
     let cases connection installation (query: CasePageQuery) token =
-        let visibility = query.Visibility
-        let actor = query.ActorId
-        let roles = query.ReadRoles
-        let forbidden = query.ForbiddenRoles
-        let after = query.AfterReference
-        let limit = query.Limit
+        let after, changedAt = afterPosition query
+        let filter = query.Filter
+
+        let parameters =
+            [|
+                DatabaseSession.parameter after
+                box (query.Visibility = CaseVisibility.Every)
+                box (ActorId.value query.ActorId)
+                box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
+                box (query.ForbiddenRoles |> List.map DurableNames.role |> List.toArray)
+                box (query.Limit + 1)
+                box (filter.Lifecycles |> List.map DurableNames.lifecycle |> List.toArray)
+                box (filter.Statuses |> List.map DurableNames.status |> List.toArray)
+                box (filter.Progress |> List.map DurableNames.progress |> List.toArray)
+                DatabaseSession.parameter (
+                    filter.Text |> Option.map (CaseSearchText.value >> escapeSearch)
+                )
+            |]
+
+        let parameters =
+            if filter.Order = CaseListOrder.Recent then
+                Array.append parameters [| DatabaseSession.parameter changedAt |]
+            else
+                parameters
 
         task {
             let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE ($1::text IS NULL OR upper(case_reference COLLATE \"C\") > $1 COLLATE \"C\") AND ($2 OR c.case_id IN (SELECT g.case_id FROM claimcore.grants g WHERE g.actor_id=$3 AND g.role=ANY($4::text[]) AND g.case_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($5::text[])))) ORDER BY upper(case_reference COLLATE \"C\") LIMIT $6")
-                    [|
-                        DatabaseSession.parameter after
-                        box (visibility = CaseVisibility.Every)
-                        box (ActorId.value actor)
-                        box (roles |> List.map Role.token |> List.toArray)
-                        box (forbidden |> List.map Role.token |> List.toArray)
-                        box (limit + 1)
-                    |]
-                    token
+                DatabaseSession.namedRows connection (caseSql filter.Order) parameters token
 
             return
                 rows
                 |> List.map (Projections.caseRow installation)
-                |> page limit (fun record -> CaseReference.identity record.Snapshot.Reference)
+                |> page query.Limit (fun record ->
+                    CaseListPosition.create
+                        filter.Order
+                        record.Index.ChangedAt
+                        (CaseReference.format record.Snapshot.Reference))
         }
 
     let history connection installation (query: HistoryPageQuery) token =
@@ -61,7 +101,7 @@ module internal TransactionPages =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND case_revision>$2 ORDER BY case_revision LIMIT $3")
+                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND ($2=0 OR case_revision<$2) ORDER BY case_revision DESC LIMIT $3")
                     [| box (CaseId.value id); box (Revision.value after); box (limit + 1) |]
                     token
 
@@ -99,7 +139,7 @@ module internal TransactionPages =
                     [|
                         box (ActorId.value target)
                         DatabaseSession.parameter (
-                            after |> Option.map (fun value -> Role.token value.Role)
+                            after |> Option.map (fun value -> DurableNames.role value.Role)
                         )
                         DatabaseSession.parameter (
                             after |> Option.bind _.CaseId |> Option.map CaseId.value
@@ -191,7 +231,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-                        [| box (Role.token Role.Owner) |]
+                        [| box (DurableNames.role Role.Owner) |]
                         token
 
                 return DatabaseSession.value<int> 0 rows.Head
@@ -235,7 +275,15 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
             }
 
         member _.Append entry =
-            task { let! _ = Persistence.entry connection entry token in return () }
+            task {
+                let started = System.Diagnostics.Stopwatch.GetTimestamp()
+
+                try
+                    let! _ = Persistence.entry connection entry token
+                    return ()
+                finally
+                    Service.recordAppend (System.Diagnostics.Stopwatch.GetElapsedTime started)
+            }
 
         member _.ProjectCase projection =
             Persistence.case connection projection token

@@ -25,6 +25,140 @@ type CaseActKind =
     | Erase
 
 [<RequireQualifiedAccess>]
+type BareAct =
+    | WithdrawDecision
+    | ClearPayment
+    | Close
+    | Reopen
+    | Erase
+
+[<RequireQualifiedAccess>]
+type ActFamily =
+    | Business
+    | Stewardship
+
+[<RequireQualifiedAccess>]
+type ActPayload =
+    | Bare of BareAct
+    | Registration
+    | Decision
+    | Payment
+    | Reason
+    | Correction
+
+[<RequireQualifiedAccess>]
+type RevisionInput =
+    | New
+    | Expected
+
+[<RequireQualifiedAccess>]
+type ActCapabilities =
+    | Required of Capability list
+    | CorrectionGroups
+
+type CaseActDescription =
+    {
+        Family: ActFamily
+        Payload: ActPayload
+        Revision: RevisionInput
+        Capabilities: ActCapabilities
+    }
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseActKind =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+    let private description family payload revision capabilities =
+        {
+            Family = family
+            Payload = payload
+            Revision = revision
+            Capabilities = capabilities
+        }
+
+    // One exhaustive table owns the facts of every closed case-act kind.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let describe =
+        function
+        | CaseActKind.Open ->
+            description
+                ActFamily.Business
+                ActPayload.Registration
+                RevisionInput.New
+                (ActCapabilities.Required [ Capability.Register ])
+        | CaseActKind.AmendRegistration ->
+            description
+                ActFamily.Business
+                ActPayload.Registration
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Register ])
+        | CaseActKind.Correct ->
+            description
+                ActFamily.Business
+                ActPayload.Correction
+                RevisionInput.Expected
+                ActCapabilities.CorrectionGroups
+        | CaseActKind.Decide ->
+            description
+                ActFamily.Business
+                ActPayload.Decision
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Decide ])
+        | CaseActKind.WithdrawDecision ->
+            description
+                ActFamily.Business
+                (ActPayload.Bare BareAct.WithdrawDecision)
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Decide ])
+        | CaseActKind.RecordPayment ->
+            description
+                ActFamily.Business
+                ActPayload.Payment
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.RecordPayment ])
+        | CaseActKind.ClearPayment ->
+            description
+                ActFamily.Business
+                (ActPayload.Bare BareAct.ClearPayment)
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.RecordPayment ])
+        | CaseActKind.Close ->
+            description
+                ActFamily.Business
+                (ActPayload.Bare BareAct.Close)
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Close ])
+        | CaseActKind.Reopen ->
+            description
+                ActFamily.Business
+                (ActPayload.Bare BareAct.Reopen)
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Close ])
+        | CaseActKind.Void ->
+            description
+                ActFamily.Stewardship
+                ActPayload.Reason
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Steward ])
+        | CaseActKind.Reinstate ->
+            description
+                ActFamily.Stewardship
+                ActPayload.Reason
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Steward ])
+        | CaseActKind.Erase ->
+            description
+                ActFamily.Stewardship
+                (ActPayload.Bare BareAct.Erase)
+                RevisionInput.Expected
+                (ActCapabilities.Required [ Capability.Steward ])
+
+[<RequireQualifiedAccess>]
 type Amendment<'value> =
     | Keep
     | Replace of 'value
@@ -44,18 +178,14 @@ type Correction<'registration, 'decision, 'payment> =
 
 [<RequireQualifiedAccess>]
 type CaseAct<'registration, 'decision, 'payment, 'reason> =
+    | Bare of BareAct
     | Open of 'registration
     | AmendRegistration of 'registration
     | Correct of Correction<'registration, 'decision, 'payment>
     | Decide of 'decision
-    | WithdrawDecision
     | RecordPayment of 'payment
-    | ClearPayment
-    | Close
-    | Reopen
     | Void of 'reason
     | Reinstate of 'reason
-    | Erase
 
 type AuthoredCaseAct = CaseAct<RegistrationInput, DecisionInput, PaymentInput, string>
 type AuthoredCorrection = Correction<RegistrationInput, DecisionInput, PaymentInput>
@@ -88,18 +218,16 @@ type CaseActSlot<'registration, 'decision, 'payment, 'reason> =
 module CaseAct =
     let kind =
         function
+        | CaseAct.Bare bare ->
+            CaseActKind.all
+            |> List.find (fun kind -> (CaseActKind.describe kind).Payload = ActPayload.Bare bare)
         | CaseAct.Open _ -> CaseActKind.Open
         | CaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
         | CaseAct.Correct _ -> CaseActKind.Correct
         | CaseAct.Decide _ -> CaseActKind.Decide
-        | CaseAct.WithdrawDecision -> CaseActKind.WithdrawDecision
         | CaseAct.RecordPayment _ -> CaseActKind.RecordPayment
-        | CaseAct.ClearPayment -> CaseActKind.ClearPayment
-        | CaseAct.Close -> CaseActKind.Close
-        | CaseAct.Reopen -> CaseActKind.Reopen
         | CaseAct.Void _ -> CaseActKind.Void
         | CaseAct.Reinstate _ -> CaseActKind.Reinstate
-        | CaseAct.Erase -> CaseActKind.Erase
 
     let private amend transform =
         function
@@ -112,8 +240,23 @@ module CaseAct =
         | Change.Clear -> Ok Change.Clear
         | Change.Replace value -> transform value |> Result.map Change.Replace
 
+    let private correction registration decision payment value =
+        amend registration value.Registration
+        |> Result.bind (fun r ->
+            change decision value.Decision
+            |> Result.bind (fun d ->
+                change payment value.Payment
+                |> Result.map (fun p ->
+                    CaseAct.Correct
+                        {
+                            Registration = r
+                            Decision = d
+                            Payment = p
+                        })))
+
     let traverse registration decision payment reason =
         function
+        | CaseAct.Bare bare -> Ok(CaseAct.Bare bare)
         | CaseAct.Open value -> registration value |> Result.map CaseAct.Open
         | CaseAct.AmendRegistration value ->
             registration value |> Result.map CaseAct.AmendRegistration
@@ -121,24 +264,7 @@ module CaseAct =
         | CaseAct.RecordPayment value -> payment value |> Result.map CaseAct.RecordPayment
         | CaseAct.Void value -> reason value |> Result.map CaseAct.Void
         | CaseAct.Reinstate value -> reason value |> Result.map CaseAct.Reinstate
-        | CaseAct.Correct value ->
-            amend registration value.Registration
-            |> Result.bind (fun r ->
-                change decision value.Decision
-                |> Result.bind (fun d ->
-                    change payment value.Payment
-                    |> Result.map (fun p ->
-                        CaseAct.Correct
-                            {
-                                Registration = r
-                                Decision = d
-                                Payment = p
-                            })))
-        | CaseAct.WithdrawDecision -> Ok CaseAct.WithdrawDecision
-        | CaseAct.ClearPayment -> Ok CaseAct.ClearPayment
-        | CaseAct.Close -> Ok CaseAct.Close
-        | CaseAct.Reopen -> Ok CaseAct.Reopen
-        | CaseAct.Erase -> Ok CaseAct.Erase
+        | CaseAct.Correct value -> correction registration decision payment value
 
     let map registration decision payment reason act =
         traverse (registration >> Ok) (decision >> Ok) (payment >> Ok) (reason >> Ok) act
@@ -179,24 +305,29 @@ module CaseAct =
         | CaseAct.Reinstate value -> Some value
         | _ -> None
 
-    let slot<'registration, 'decision, 'payment, 'reason>
-        kind
-        : CaseActSlot<'registration, 'decision, 'payment, 'reason> =
-        match kind with
+    let private registrationSlot =
+        function
         | CaseActKind.Open -> CaseActSlot.Registration(CaseAct.Open, projectOpen)
         | CaseActKind.AmendRegistration ->
             CaseActSlot.Registration(CaseAct.AmendRegistration, projectAmendRegistration)
-        | CaseActKind.Correct -> CaseActSlot.Correction(CaseAct.Correct, projectCorrect)
-        | CaseActKind.Decide -> CaseActSlot.Decision(CaseAct.Decide, projectDecide)
-        | CaseActKind.WithdrawDecision -> CaseActSlot.Bare CaseAct.WithdrawDecision
-        | CaseActKind.RecordPayment ->
-            CaseActSlot.Payment(CaseAct.RecordPayment, projectRecordPayment)
-        | CaseActKind.ClearPayment -> CaseActSlot.Bare CaseAct.ClearPayment
-        | CaseActKind.Close -> CaseActSlot.Bare CaseAct.Close
-        | CaseActKind.Reopen -> CaseActSlot.Bare CaseAct.Reopen
+        | _ -> invalidOp "A registration description requires a registration act."
+
+    let private reasonSlot =
+        function
         | CaseActKind.Void -> CaseActSlot.Reason(CaseAct.Void, projectVoid)
         | CaseActKind.Reinstate -> CaseActSlot.Reason(CaseAct.Reinstate, projectReinstate)
-        | CaseActKind.Erase -> CaseActSlot.Bare CaseAct.Erase
+        | _ -> invalidOp "A reason description requires a reason act."
+
+    let slot<'registration, 'decision, 'payment, 'reason>
+        kind
+        : CaseActSlot<'registration, 'decision, 'payment, 'reason> =
+        match (CaseActKind.describe kind).Payload with
+        | ActPayload.Bare bare -> CaseActSlot.Bare(CaseAct.Bare bare)
+        | ActPayload.Registration -> registrationSlot kind
+        | ActPayload.Decision -> CaseActSlot.Decision(CaseAct.Decide, projectDecide)
+        | ActPayload.Payment -> CaseActSlot.Payment(CaseAct.RecordPayment, projectRecordPayment)
+        | ActPayload.Reason -> reasonSlot kind
+        | ActPayload.Correction -> CaseActSlot.Correction(CaseAct.Correct, projectCorrect)
 
     let probe kind : CaseAct<unit, unit, unit, unit> =
         match slot kind with
@@ -213,28 +344,9 @@ module CaseAct =
                     Payment = Change.Keep
                 }
 
-    let registration (value: Registration) : RegistrationInput =
-        {
-            IncidentDate = CalendarDate.format value.IncidentDate
-            IncidentNotificationDate = CalendarDate.format value.IncidentNotificationDate
-            IncidentCountry = CountryCode.format value.IncidentCountry
-            ClaimantName = PartyName.format value.ClaimantName
-            InsurerName = PartyName.format value.InsurerName
-            ClaimedAmount = Money.format value.ClaimedAmount
-            ClaimedCurrency = Money.currency value.ClaimedAmount
-        }
-
-    let decision (value: Decision) : DecisionInput =
-        {
-            PaymentDecisionDate = CalendarDate.format value.PaymentDecisionDate
-            PayableAmount = Money.format value.PayableAmount
-            PayableCurrency = Money.currency value.PayableAmount
-        }
-
-    let private payment (value: Payment) : PaymentInput =
-        {
-            PaymentDate = CalendarDate.format value.PaymentDate
-        }
+    let registration = Registration.authored
+    let decision = Decision.authored
+    let private payment = Payment.authored
 
     let authored (act: ValidCaseAct) : AuthoredCaseAct =
         map registration decision payment Reason.format act
@@ -270,27 +382,3 @@ module Amendment =
             :?> Amendment<unit>
             |> action)
         |> Array.toList
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CaseActKind =
-    let isStewardship =
-        function
-        | CaseActKind.Void
-        | CaseActKind.Reinstate
-        | CaseActKind.Erase -> true
-        | CaseActKind.Open
-        | CaseActKind.AmendRegistration
-        | CaseActKind.Correct
-        | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision
-        | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment
-        | CaseActKind.Close
-        | CaseActKind.Reopen -> false
-
-    let vocabulary =
-        Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary

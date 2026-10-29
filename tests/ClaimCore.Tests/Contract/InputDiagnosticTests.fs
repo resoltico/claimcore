@@ -60,8 +60,8 @@ let private localDiagnostics () =
             let bytes = ClaimCore.Cli.Frames.encode frame
 
             Expect.equal
-                (ClaimCore.Cli.Frames.decode bytes)
-                (Ok frame)
+                (ClaimCore.Cli.Frames.decode bytes |> Result.map CliReplies.frameFacts)
+                (Ok(CliReplies.frameFacts frame))
                 "Closed configuration facts survive framing"
 
             Expect.equal (ClaimCore.Cli.Frames.exitCode frame) 3 "Definite pre-dispatch failure"

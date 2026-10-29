@@ -9,7 +9,7 @@ it("contract mismatch offers explicit reload and never automatically redispatche
       { status: 409, headers: { "content-type": "application/json" } },
     ),
   );
-  render(<CaseList token="csrf" onSelect={vi.fn()} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
   expect(await screen.findByRole("button", { name: "Reload page" })).toBeVisible();
   expect(fetch).toHaveBeenCalledOnce();
   expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(["/api/case.list"]);

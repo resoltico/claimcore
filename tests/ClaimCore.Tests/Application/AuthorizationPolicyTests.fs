@@ -13,7 +13,7 @@ open ClaimCore.Tests.AuthorityPolicyInputs
 
 
 let private matrix () =
-    Expect.equal Role.all.Length 7 "Seven roles"
+    Expect.equal (Role.all |> List.map Role.token) (Inventory.tokens "roles") "Inventoried roles"
 
     Expect.isTrue
         (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
@@ -124,20 +124,24 @@ let private invalidActors () =
 
     invalidPrincipals ()
 
-let private ordinaryActs () =
+let private caseActCapabilities () =
     let cases =
         [
             AuthoredCaseAct.Open registration, Capability.Register
             AuthoredCaseAct.AmendRegistration registration, Capability.Register
             AuthoredCaseAct.Decide decision, Capability.Decide
-            AuthoredCaseAct.WithdrawDecision, Capability.Decide
-            AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" }, Capability.RecordPayment
-            AuthoredCaseAct.ClearPayment, Capability.RecordPayment
-            AuthoredCaseAct.Close, Capability.Close
-            AuthoredCaseAct.Reopen, Capability.Close
+            (AuthoredCaseAct.Bare BareAct.WithdrawDecision), Capability.Decide
+            AuthoredCaseAct.RecordPayment(
+                ClaimCore.TestSupport.Inputs.paymentFrom
+                    [ BusinessField.PaymentDate, ("2026-08-20") ]
+            ),
+            Capability.RecordPayment
+            (AuthoredCaseAct.Bare BareAct.ClearPayment), Capability.RecordPayment
+            (AuthoredCaseAct.Bare BareAct.Close), Capability.Close
+            (AuthoredCaseAct.Bare BareAct.Reopen), Capability.Close
             AuthoredCaseAct.Void "Reason", Capability.Steward
             AuthoredCaseAct.Reinstate "Reason", Capability.Steward
-            AuthoredCaseAct.Erase, Capability.Steward
+            (AuthoredCaseAct.Bare BareAct.Erase), Capability.Steward
         ]
 
     for act, capability in cases do
@@ -176,7 +180,10 @@ let private replacementCorrection
                  Change.Keep)
         Payment =
             (if paymentChanged then
-                 Change.Replace { PaymentDate = "2026-08-20" }
+                 Change.Replace(
+                     ClaimCore.TestSupport.Inputs.paymentFrom
+                         [ BusinessField.PaymentDate, ("2026-08-20") ]
+                 )
              else
                  Change.Keep)
     }
@@ -224,7 +231,11 @@ let private reaffirmations () =
             {
                 Registration = Amendment.Keep
                 Decision = Change.Keep
-                Payment = Change.Replace { PaymentDate = "2026-08-20" }
+                Payment =
+                    Change.Replace(
+                        ClaimCore.TestSupport.Inputs.paymentFrom
+                            [ BusinessField.PaymentDate, ("2026-08-20") ]
+                    )
             })
 
     Expect.isFalse
@@ -263,6 +274,7 @@ let private scopedAdvice () =
         {
             CaseId = target
             Snapshot = snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
@@ -340,7 +352,11 @@ let private absentCorrectionValues () =
 let private noUsableCorrectionOffer () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
 
-    let snapshot = opened () |> apply AuthoredCaseAct.Close |> accepted |> Case.snapshot
+    let snapshot =
+        opened ()
+        |> apply (AuthoredCaseAct.Bare BareAct.Close)
+        |> accepted
+        |> Case.snapshot
 
     let target =
         ClaimCore.RecordFormat.CaseReferenceId.encode
@@ -351,6 +367,7 @@ let private noUsableCorrectionOffer () =
         {
             CaseId = target
             Snapshot = snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
@@ -380,14 +397,11 @@ let private humanOnlyCapabilities () =
         Role.all
         |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
 
-    Expect.equal
-        (derived Authority.policy)
-        [ Role.Owner; Role.DataSteward ]
-        "Current human-only roles"
+    Expect.equal (derived Authority.policy) humanRoles "Current human-only roles"
 
     Expect.equal
         (Role.all |> List.filter Authority.humanOnlyRole)
-        [ Role.Owner; Role.DataSteward ]
+        humanRoles
         "Production roles derive from capabilities"
 
     let withSteward role =
@@ -400,7 +414,8 @@ let private humanOnlyCapabilities () =
 
     Expect.equal
         (derived withSteward)
-        [ Role.Owner; Role.CaseReader; Role.DataSteward ]
+        (Role.all
+         |> List.filter (fun role -> role = Role.CaseReader || List.contains role humanRoles))
         "Negative control: granting Steward changes the principal restriction"
 
 [<Tests>]
@@ -419,7 +434,7 @@ let tests =
                 invalidActors
             testCase
                 "ordinary business and stewardship acts have independent required capabilities"
-                ordinaryActs
+                caseActCapabilities
             testCase
                 "correction group choices require every selected capability including reaffirmation"
                 corrections

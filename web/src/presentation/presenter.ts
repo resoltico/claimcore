@@ -83,6 +83,17 @@ const correctionTargetGroup = (name: string): string | null => {
 const isGuidanceField = (name: string): name is keyof typeof fieldGuidance =>
   Object.hasOwn(fieldGuidance, name);
 const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
+  if (field.scalar.kind === "AMOUNT") {
+    return translate(preferences, "ui.amountEntryHint", {
+      maximumFractionDigits: exactInteger(
+        String(field.scalar.maximumFractionalDigits),
+        preferences.displayLocale,
+      ),
+    });
+  }
+  if (field.scalar.kind === "CALENDAR_DATE") {
+    return translate(preferences, "ui.dateEntryHint");
+  }
   if (isGuidanceField(field.name)) {
     const guidance = fieldGuidance[field.name];
     const values = Object.fromEntries(

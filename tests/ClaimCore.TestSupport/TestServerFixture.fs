@@ -58,7 +58,7 @@ let configuration certificate =
         Oidc = Some oidc
     }
 
-let private services (builder: WebApplicationBuilder) =
+let private services (builder: WebApplicationBuilder) sessions =
     builder.Logging.ClearProviders() |> ignore
     builder.WebHost.UseTestServer() |> ignore
 
@@ -86,6 +86,29 @@ let private services (builder: WebApplicationBuilder) =
                     context.Response.StatusCode <- 401
                     Task.CompletedTask))
     |> ignore
+
+    sessions
+    |> Option.iter (fun storage ->
+        builder.Services.AddSingleton<
+            Microsoft.Extensions.Options.IPostConfigureOptions<CookieAuthenticationOptions>
+         >
+            (fun provider ->
+                let protection = provider.GetRequiredService<IDataProtectionProvider>()
+
+                Microsoft.Extensions.Options.PostConfigureOptions<CookieAuthenticationOptions>(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    fun options ->
+                        options.SessionStore <-
+                            OidcTicketStore(
+                                TimeSpan.FromMinutes 30.,
+                                TimeSpan.FromHours 8.,
+                                storage,
+                                protection,
+                                ignore
+                            )
+                )
+                :> Microsoft.Extensions.Options.IPostConfigureOptions<CookieAuthenticationOptions>)
+        |> ignore)
 
     builder.Services.AddAuthorization() |> ignore
     RateLimits.configure limits builder.Services
@@ -137,7 +160,12 @@ let private login (context: HttpContext) : Task =
         context.Response.StatusCode <- 200
     }
 
-type Host(ready: bool, ?forActor: PrincipalKey -> ServiceContext) =
+type Host
+    (
+        ready: bool,
+        ?forActor: PrincipalKey -> ServiceContext,
+        ?sessions: ClaimCore.Postgres.ISessionStore
+    ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
     let certificate = ProbeHttpsFixture.certificate ()
@@ -152,7 +180,7 @@ type Host(ready: bool, ?forActor: PrincipalKey -> ServiceContext) =
             "<!doctype html><title>Synthetic ClaimCore</title>"
         )
 
-        services builder
+        services builder sessions
 
     let application = builder.Build()
 

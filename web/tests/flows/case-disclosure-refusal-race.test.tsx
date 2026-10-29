@@ -1,8 +1,9 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
+import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { definition, fields, unavailable } from "../support/service-ui.fixtures";
@@ -64,19 +65,17 @@ it("invalidates the pending current read synchronously on a second history refus
   const earlier = pending<typeof current>();
   const latest = pending<typeof current>();
   const history = pending<typeof refused>();
-  const get = vi
-    .spyOn(service, "get")
+  const get = mockEndpoint("case.get")
     .mockResolvedValueOnce(current)
     .mockReturnValueOnce(earlier.promise)
     .mockReturnValueOnce(latest.promise);
-  vi.spyOn(service, "history")
+  mockEndpoint("case.history")
     .mockResolvedValueOnce(empty)
     .mockResolvedValueOnce(refused)
     .mockReturnValueOnce(history.promise);
   const user = userEvent.setup();
   render(
     <CaseDetail
-      token="token"
       caseReference={fields.caseReference}
       reloadSignal={0}
       definition={definition.catalog}
@@ -106,6 +105,6 @@ it("invalidates the pending current read synchronously on a second history refus
     latest.release(current);
     await latest.promise;
   });
-  expect(await screen.findByText(fields.registration.claimantName)).toBeVisible();
+  expect((await screen.findAllByText(fields.registration.claimantName))[0]).toBeVisible();
   expect(get).toHaveBeenCalledTimes(3);
 });

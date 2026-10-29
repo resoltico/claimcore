@@ -33,7 +33,8 @@ export const expectInputRefusal = async (
   language: keyof typeof summaries,
   expected: { meaning: string; issue: string },
 ) => {
-  await expect(page.getByRole("alert")).toHaveText(summaries[language]);
+  await expect(page.locator("[data-error-summary]")).toContainText(summaries[language]);
+  await expect(page.locator("[data-error-summary]").getByRole("link")).toHaveCount(1);
   await expect(control).toHaveAccessibleDescription(
     new RegExp(`${literal(expected.meaning)}[\\s\\S]*${literal(expected.issue)}`, "u"),
   );

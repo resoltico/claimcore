@@ -1,49 +1,16 @@
+import type { EndpointId, RequestByEndpoint } from "@contracts/client";
+import type { ServiceResponse } from "../api/service";
+import { requestEndpoint } from "../api/service";
+import { useEndpointCache } from "./EndpointProvider";
+import { canonicalInput, typedResult, type EndpointCache } from "./endpointCache";
+import { useCredential } from "../session/SessionContext";
 import type { Notice } from "../protocol/notices";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 
-type ReadState<T> = { value: T | null; message: Notice | null; loading: boolean };
 type Page<T> = { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null };
-
-export const useRead = <R extends EndpointOutcome, T>(
-  request: (signal: AbortSignal) => Promise<ApiResult<R>>,
-  select: (response: R) => T | null,
-  key: string,
-): ReadState<T> & { reload: () => void } => {
-  const [revision, setRevision] = useState(0);
-  const [state, setState] = useState<ReadState<T>>({ value: null, message: null, loading: true });
-  useEffect(() => {
-    const controller = new AbortController();
-    queueMicrotask(() => {
-      if (!controller.signal.aborted) {
-        setState({ value: null, message: null, loading: true });
-      }
-    });
-    void request(controller.signal).then((result) => {
-      if (controller.signal.aborted) {
-        return;
-      }
-      const value = result.kind === "outcome" ? select(result.value) : null;
-      setState(
-        value === null
-          ? { value: null, message: resultNotice(result), loading: false }
-          : { value, message: null, loading: false },
-      );
-    });
-    return () => {
-      controller.abort();
-    };
-    // oxlint-disable-next-line react/exhaustive-effect-dependencies
-  }, [key, request, select, revision]);
-  return {
-    ...state,
-    reload: () => {
-      setRevision((prior) => prior + 1);
-    },
-  };
-};
 
 type PageSinks<T, P> = {
   onDisclosureRefused: ((notice?: Notice) => void) | undefined;
@@ -129,7 +96,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   return { load, abort };
 };
 
-export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
+const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
   onDisclosureRefused?: (notice?: Notice) => void,
@@ -159,4 +126,57 @@ export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T>
   }, [abort, load]);
 
   return { items, cursor, message, loading, page, load };
+};
+
+type PageSource<K extends EndpointId> = {
+  subscribe: EndpointCache["subscribe"];
+  fetch: EndpointCache["fetch"];
+  credential: string;
+  endpoint: K;
+  input: RequestByEndpoint[K];
+  onResult: ((result: ApiResult<ServiceResponse<K>>) => void) | undefined;
+};
+const endpointPage = async <K extends EndpointId>(source: PageSource<K>, signal: AbortSignal) => {
+  const key = `${source.credential}\u001f${source.endpoint}:${canonicalInput(source.input)}`;
+  const release = source.subscribe(key, () => undefined);
+  signal.addEventListener("abort", release, { once: true });
+  try {
+    const raw = await source.fetch(key, (owned) =>
+      requestEndpoint(source.endpoint, source.credential, source.input, owned),
+    );
+    const result = typedResult(source.endpoint, raw);
+    if (result === null) {
+      throw new Error("A completed endpoint request requires a result.");
+    }
+    if (!signal.aborted) {
+      source.onResult?.(result);
+    }
+    return result;
+  } finally {
+    signal.removeEventListener("abort", release);
+    release();
+  }
+};
+export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
+  endpoint: K,
+  input: (cursor: string | null) => RequestByEndpoint[K],
+  select: (response: ServiceResponse<K>) => P | null,
+  onDisclosureRefused?: (notice?: Notice) => void,
+  onResult?: (result: ApiResult<ServiceResponse<K>>) => void,
+) => {
+  const cache = useEndpointCache();
+  const credential = useCredential();
+  if (cache === null) {
+    throw new Error("An endpoint provider is required.");
+  }
+  const { subscribe, fetch: fetchEndpoint } = cache;
+  const request = useCallback(
+    (cursor: string | null, signal: AbortSignal) =>
+      endpointPage(
+        { subscribe, fetch: fetchEndpoint, credential, endpoint, input: input(cursor), onResult },
+        signal,
+      ),
+    [subscribe, fetchEndpoint, credential, endpoint, input, onResult],
+  );
+  return usePages<ServiceResponse<K>, T, P>(request, select, onDisclosureRefused);
 };

@@ -16,6 +16,8 @@ open ClaimCore.TestSupport
 let private text name (value: JsonElement) =
     value.GetProperty(name: string).GetString() |> nonNull
 
+let private filter = CaseListFilter.empty<CaseSearchText>
+
 let private actor = Guid.Parse "a0000000-0000-4000-8000-000000000001"
 
 let private token (json: string) =
@@ -47,14 +49,14 @@ let private accepted () =
             let actual =
                 match text "endpoint" sample with
                 | "case.list" ->
-                    let expected = position.GetString() |> nonNull
+                    let expected = CaseListPosition.Reference(text "reference" position)
 
                     Expect.equal
-                        (Cursors.decodeCases encoded)
+                        (Cursors.decodeCases filter encoded)
                         (Ok expected)
                         "Independent case position"
 
-                    Cursors.encodeCases expected
+                    Cursors.encodeCases filter expected
                 | "case.history" ->
                     Expect.equal
                         (Cursors.decodeHistory "demo-0001" encoded)
@@ -110,22 +112,28 @@ let private refused () =
                 elif name = "revision zero" then
                     Cursors.decodeHistory "DEMO-0001" encoded |> Result.map string
                 else
-                    Cursors.decodeCases encoded
+                    Cursors.decodeCases filter encoded |> Result.map CaseListPosition.reference
 
             Expect.equal decoded (Error Refusal.InvalidCursor) name)
 
 let private boundaries () =
-    for value in [ ""; "!"; "A"; String('A', 513) ] do
-        Expect.equal (Cursors.decodeCases value) (Error Refusal.InvalidCursor) "Token bounds"
+    for value in [ ""; "!"; "A"; String('A', Paging.MaximumCaseCursorCharacters + 1) ] do
+        Expect.equal (Cursors.decodeCases filter value) (Error Refusal.InvalidCursor) "Token bounds"
+
+    let baseJson =
+        examples (fun fixture ->
+            fixture.GetProperty("accepted").EnumerateArray()
+            |> Seq.find (fun row -> text "endpoint" row = "case.list")
+            |> text "canonicalJson")
 
     for json in
         [
-            "{\"after\":\"DEMO\",\"kind\":\"CASES\",\"v\":1.0}"
-            "{\"after\":\"DEMO\",\"after\":\"DEMO\",\"kind\":\"CASES\",\"v\":1}"
-            "{\"after\":\"\\ud800\",\"kind\":\"CASES\",\"v\":1}"
+            baseJson.Replace("\"v\":2", "\"v\":2.0")
+            baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
+            baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
         Expect.equal
-            (Cursors.decodeCases (token json))
+            (Cursors.decodeCases filter (token json))
             (Error Refusal.InvalidCursor)
             "Strict canonical JSON"
 
@@ -169,11 +177,96 @@ let private maximum () =
         (Error Refusal.InvalidCursor)
         "Actor binding"
 
+let private worklistBinding () =
+    let admitted input =
+        CaseListFilter.admit input
+        |> Result.defaultWith (fun _ -> failtest "Search fixture must admit")
+
+    let selected =
+        CaseListFilter.create
+            [ Lifecycle.Active ]
+            []
+            [ CaseProgress.Decided ]
+            (Some "RĪGA")
+            CaseListOrder.Recent
+        |> admitted
+
+    let position =
+        CaseListPosition.Recent(DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero), "CASE-2")
+
+    let encoded = Cursors.encodeCases selected position
+
+    Expect.equal
+        (Cursors.decodeCases selected encoded)
+        (Ok position)
+        "Recent timestamp and tie-break reference survive"
+
+    for changed in
+        [
+            { selected with
+                Lifecycles = [ Lifecycle.Voided ]
+            }
+            { selected with
+                Statuses = [ CaseStatus.Closed ]
+            }
+            { selected with
+                Progress = [ CaseProgress.Paid ]
+            }
+            { selected with Text = None }
+            { selected with
+                Order = CaseListOrder.Reference
+            }
+        ] do
+        Expect.equal
+            (Cursors.decodeCases changed encoded)
+            (Error Refusal.InvalidCursor)
+            "Every filter and order binds the cursor"
+
+    let compatibility =
+        CaseListFilter.create [] [] [] (Some "¨") CaseListOrder.Reference |> admitted
+
+    let cursor = Cursors.encodeCases compatibility (CaseListPosition.Reference "CASE-1")
+
+    Expect.equal
+        (Cursors.decodeCases compatibility cursor)
+        (Ok(CaseListPosition.Reference "CASE-1"))
+        "Normalized compatibility text is compared without re-admitting it as authored input"
+
+let private recentPrecision () =
+    let filter =
+        { CaseListFilter.empty<CaseSearchText> with
+            Order = CaseListOrder.Recent
+        }
+
+    let instant = DateTimeOffset(2026, 10, 28, 0, 0, 0, TimeSpan.Zero)
+    let position = CaseListPosition.Recent(instant, "CASE-1")
+
+    Expect.equal
+        (Cursors.decodeCases filter (Cursors.encodeCases filter position))
+        (Ok position)
+        "Whole-microsecond instants remain valid"
+
+    Expect.throwsT<ArgumentException>
+        (fun () ->
+            Cursors.encodeCases filter (CaseListPosition.Recent(instant.AddTicks 1L, "CASE-1"))
+            |> ignore)
+        "An encoder cannot produce an unsupported recorded instant"
+
+    let raw =
+        """{"after":{"changedAt":"2026-10-28T00:00:00.0000001+00:00","reference":"CASE-1"},"filters":{"lifecycle":[],"order":"RECENT","progress":[],"status":[],"text":null},"kind":"CASES","v":2}"""
+
+    Expect.equal
+        (Cursors.decodeCases filter (token raw))
+        (Error Refusal.InvalidCursor)
+        "A forged canonical cursor cannot introduce sub-microsecond keyset semantics"
+
 [<Tests>]
 let tests =
     testList
         "plain canonical keysets"
         [
+            testCase "worklist filters bind every cursor dimension" worklistBinding
+            testCase "recent positions retain recorded-instant precision" recentPrecision
             testCase "owner accepted examples" accepted
             testCase "owner refused examples" refused
             testCase "strict token and value boundaries" boundaries

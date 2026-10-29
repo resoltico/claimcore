@@ -101,6 +101,9 @@ module RequestSchemas =
     let PageRequest = "PageRequest"
 
     [<Literal>]
+    let CaseListRequest = "CaseListRequest"
+
+    [<Literal>]
     let HistoryRequest = "HistoryRequest"
 
     [<Literal>]

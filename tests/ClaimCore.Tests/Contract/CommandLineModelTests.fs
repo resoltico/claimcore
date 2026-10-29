@@ -23,7 +23,7 @@ let tests =
                     ]
 
                 for outcome, expected in outcomes do
-                    let actual = OutcomePresentation.exitCode outcome
+                    let actual = (OutcomePresentation.classify outcome).ExitCode
                     Expect.equal actual expected "Shared outcome exit meaning"
 
                     Expect.contains
@@ -33,7 +33,7 @@ let tests =
 
                 Expect.contains
                     CliIdentity.supportedExitCodes
-                    (OutcomePresentation.executeExitCode ExecuteResult.OutcomeUnknown)
+                    (OutcomePresentation.classifyExecute ExecuteResult.OutcomeUnknown).ExitCode
                     "Unknown delivery is supported"
 
                 for code in [ ExitCode.Usage; ExitCode.InternalError; ExitCode.Cancelled ] do
@@ -60,7 +60,7 @@ let tests =
                         DatabaseSuccess.Head position
                         DatabaseSuccess.Accepted accepted
                         DatabaseSuccess.AlreadyAccepted accepted
-                        DatabaseSuccess.Verified position
+                        DatabaseSuccess.Verified(position, 12L)
                     ]
 
                 let replies =
@@ -70,11 +70,13 @@ let tests =
                         Reply.Operation(Outcome.Failed CoreFault.StoreUnavailable)
                         Reply.Cancelled
                         Reply.OutcomeUnknown None
-                        Reply.Diverged
+                        Reply.Diverged(
                             {
                                 Sequence = None
                                 Finding = VerificationFinding.Head
-                            }
+                            },
+                            12L
+                        )
                         Reply.Usage
                             {
                                 Issue = UsageError.MissingOperand "TIME_ZONE"

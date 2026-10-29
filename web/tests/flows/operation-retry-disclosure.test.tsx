@@ -120,7 +120,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
   await findButton("Send again");
   return user;
 };
-const expectPendingOnly = (locked: (locked: boolean) => void) => {
+const expectPendingOnly = (locked: (locked: boolean) => void, busy = false) => {
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(
     screen.queryByRole("button", {
@@ -139,7 +139,7 @@ const expectPendingOnly = (locked: (locked: boolean) => void) => {
   ).toBeNull();
   expect(document.body).not.toHaveTextContent(currentCanary);
   expect(document.body).not.toHaveTextContent(reviewCanary);
-  expect(locked).toHaveBeenLastCalledWith(true);
+  expect(locked).toHaveBeenLastCalledWith(busy);
 };
 it.each(["access", "session"] as const)(
   "%s refusal during uncertainty preserves exact retry through in-flight recovery and replay",
@@ -158,7 +158,7 @@ it.each(["access", "session"] as const)(
     await user.click(getButton("Send again"));
     expectPendingOnly(locked);
     await user.click(getButton("Send again"));
-    expectPendingOnly(locked);
+    expectPendingOnly(locked, true);
     expect(getButton("Send again")).toBeDisabled();
     await act(async () => {
       pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));

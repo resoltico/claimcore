@@ -1,24 +1,69 @@
+import { caseSummaryInput } from "../../support/inputs";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
+import { navigate } from "../../../src/routing/navigation";
 import { context, response, unavailable } from "../../support/service-ui.fixtures";
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
     items: [
-      {
-        state: {
-          kind: "ACTIVE",
-          status: "OPENED",
-        },
+      caseSummaryInput({
+        state: { kind: "ACTIVE", status: "OPENED" },
         caseReference: "ADVISED-CASE",
         revision: 1,
-      },
+      }),
     ],
     offers: mayOpen ? context.offers : [],
     nextCursor,
   });
 afterEach(() => vi.unstubAllGlobals());
+it("opens an exact reference match using ASCII case identity", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page(false, null)));
+  navigate("/cases?q=advised-case", true);
+  const select = vi.fn();
+  render(<CaseList onOpen={vi.fn()} onSelect={select} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Open ADVISED-CASE" }));
+  expect(select).toHaveBeenCalledWith("ADVISED-CASE");
+});
+it("does not expand non-ASCII search text into a reference identity", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      response("case.list", "SUCCEEDED", {
+        items: [caseSummaryInput({ caseReference: "S" })],
+        offers: [],
+        nextCursor: null,
+      }),
+    ),
+  );
+  navigate("/cases?q=%C5%BF", true);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByRole("link", { name: "S" });
+  expect(screen.queryByRole("button", { name: "Open S" })).toBeNull();
+});
+it.each([
+  ["open-undecided", "Open and undecided"],
+  ["decided-unpaid", "Decided and unpaid"],
+  ["recent", "Recently changed"],
+  ["closed", "Closed"],
+  ["voided", "Voided"],
+  ["all", "All"],
+])("names the empty %s saved worklist", async (view, label) => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        response("case.list", "SUCCEEDED", { items: [], offers: [], nextCursor: null }),
+      ),
+  );
+  navigate(`/cases?view=${view}`, true);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
+  await screen.findByText(`No cases in the “${label}” view.`);
+  expect(screen.queryByText("No accessible cases returned.")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Clear filters" }) !== null).toBe(view !== "all");
+});
 it("uses only the page snapshot's offers and clears advice while a fresh page loads", async () => {
   let finish: (value: Response) => void = () => undefined;
   const fetch = vi
@@ -31,7 +76,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
         }),
     );
   vi.stubGlobal("fetch", fetch);
-  render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
   await screen.findByRole("button", {
     name: "Open a case",
   });
@@ -43,7 +88,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
     }),
   );
   expect(
-    screen.queryByRole("button", {
+    screen.queryByRole("link", {
       name: "ADVISED-CASE",
     }),
   ).toBeNull();
@@ -57,7 +102,7 @@ it("uses only the page snapshot's offers and clears advice while a fresh page lo
       finish(page(false, null));
     }),
   );
-  await screen.findByRole("button", {
+  await screen.findByRole("link", {
     name: "ADVISED-CASE",
   });
   expect(
@@ -91,7 +136,7 @@ it.each(["access", "session"])(
       "fetch",
       vi.fn().mockResolvedValueOnce(page(true)).mockResolvedValueOnce(failure),
     );
-    render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+    render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
     fireEvent.click(
       await screen.findByRole("button", {
         name: "Load more cases",
@@ -99,7 +144,7 @@ it.each(["access", "session"])(
     );
     await screen.findByRole("alert");
     expect(
-      screen.queryByRole("button", {
+      screen.queryByRole("link", {
         name: "ADVISED-CASE",
       }),
     ).toBeNull();
@@ -123,7 +168,7 @@ it("retains the last accepted page advice after a request-local failure", async 
       .mockResolvedValueOnce(page(true))
       .mockRejectedValueOnce(new Error("Synthetic transport failure")),
   );
-  render(<CaseList token="token" onOpen={vi.fn()} onSelect={vi.fn()} />);
+  render(<CaseList onOpen={vi.fn()} onSelect={vi.fn()} />);
   fireEvent.click(
     await screen.findByRole("button", {
       name: "Load more cases",
@@ -133,7 +178,7 @@ it("retains the last accepted page advice after a request-local failure", async 
     expect(screen.getByRole("alert")).toBeVisible();
   });
   expect(
-    screen.getByRole("button", {
+    screen.getByRole("link", {
       name: "ADVISED-CASE",
     }),
   ).toBeVisible();

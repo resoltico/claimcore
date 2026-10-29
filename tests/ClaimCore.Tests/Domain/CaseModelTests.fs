@@ -11,9 +11,9 @@ open ClaimCore.Domain
 let private today = DateOnly(2026, 9, 7)
 
 let private registration =
-    { Inputs.registration with
-        ClaimedAmount = "1000"
-    }
+    (ClaimCore.TestSupport.Inputs.registrationWith
+        [ BusinessField.ClaimedAmount, ("1000") ]
+        (Inputs.registration))
 
 let private request revision act =
     {
@@ -32,22 +32,24 @@ let private fields status decided paid : CaseFields =
     let decision =
         if decided then
             Some(
-                CaseFixtures.decision
-                    {
-                        PaymentDecisionDate = "2026-08-15"
-                        PayableAmount = "750"
-                        PayableCurrency = "EUR"
-                    }
+                CaseFixtures.decision (
+                    ClaimCore.TestSupport.Inputs.decisionFrom
+                        [
+                            BusinessField.PaymentDecisionDate, ("2026-08-15")
+                            BusinessField.PayableAmount, ("750")
+                            BusinessField.PayableCurrency, ("EUR")
+                        ]
+                )
             )
         else
             None
 
     let payment =
         if paid then
-            Some
-                {
-                    PaymentDate = CaseFixtures.date "2026-08-20"
-                }
+            Some(
+                ClaimCore.TestSupport.Inputs.paymentStateFrom
+                    [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-20") ]
+            )
         else
             None
 
@@ -55,10 +57,11 @@ let private fields status decided paid : CaseFields =
         CaseReference = CaseFixtures.reference "Demo-1"
         Status = status
         Registration =
-            CaseFixtures.registration
-                { registration with
-                    ClaimedAmount = "1000"
-                }
+            CaseFixtures.registration (
+                ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimedAmount, ("1000") ]
+                    (registration)
+            )
         Progress = CaseFixtures.progress decision payment
     }
 
@@ -78,36 +81,43 @@ let private acts =
     [
         CaseActKind.Open, (AuthoredCaseAct.Open registration)
         CaseActKind.AmendRegistration,
-        (AuthoredCaseAct.AmendRegistration
-            { registration with
-                ClaimantName = "Changed Party"
-            })
+        (AuthoredCaseAct.AmendRegistration(
+            ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, ("Changed Party") ]
+                (registration)
+        ))
         CaseActKind.Correct,
         (AuthoredCaseAct.Correct
             {
                 Registration =
-                    Amendment.Replace
-                        { registration with
-                            ClaimantName = "Changed Party"
-                        }
+                    Amendment.Replace(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, ("Changed Party") ]
+                            (registration)
+                    )
                 Decision = Change.Keep
                 Payment = Change.Keep
             })
         CaseActKind.Decide,
-        (AuthoredCaseAct.Decide
-            {
-                PaymentDecisionDate = "2026-08-15"
-                PayableAmount = "750"
-                PayableCurrency = "EUR"
-            })
-        CaseActKind.WithdrawDecision, AuthoredCaseAct.WithdrawDecision
-        CaseActKind.RecordPayment, (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
-        CaseActKind.ClearPayment, AuthoredCaseAct.ClearPayment
-        CaseActKind.Close, AuthoredCaseAct.Close
-        CaseActKind.Reopen, AuthoredCaseAct.Reopen
+        (AuthoredCaseAct.Decide(
+            ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-15")
+                    BusinessField.PayableAmount, ("750")
+                    BusinessField.PayableCurrency, ("EUR")
+                ]
+        ))
+        CaseActKind.WithdrawDecision, (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
+        CaseActKind.RecordPayment,
+        (AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
+        ))
+        CaseActKind.ClearPayment, (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        CaseActKind.Close, (AuthoredCaseAct.Bare BareAct.Close)
+        CaseActKind.Reopen, (AuthoredCaseAct.Bare BareAct.Reopen)
         CaseActKind.Void, (AuthoredCaseAct.Void "Entry error")
         CaseActKind.Reinstate, (AuthoredCaseAct.Reinstate "Entry confirmed")
-        CaseActKind.Erase, AuthoredCaseAct.Erase
+        CaseActKind.Erase, (AuthoredCaseAct.Bare BareAct.Erase)
     ]
 
 let private stateExpectations =
@@ -146,8 +156,8 @@ let private stateExpectations =
     ]
 
 let private matrix =
-    testCase "independent state table governs all twelve acts and advertisements" (fun () ->
-        Expect.equal acts.Length 12 "Complete act vocabulary"
+    testCase "independent state table governs all inventoried acts and advertisements" (fun () ->
+        Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Complete act vocabulary"
 
         for _, view, expected in stateExpectations do
             let current = view |> Option.map (retained 1L)
@@ -226,9 +236,12 @@ let private grandfathering =
             let storedFields =
                 { fields CaseStatus.Opened false false with
                     Registration =
-                        { (fields CaseStatus.Opened false false).Registration with
-                            ClaimantName = CaseFixtures.name oldName
-                        }
+                        (ClaimCore.TestSupport.Inputs.registrationStateWith
+                            [
+                                BusinessField.ClaimantName,
+                                Admitted.Name(CaseFixtures.name oldName)
+                            ]
+                            ((fields CaseStatus.Opened false false).Registration))
                 }
 
             let current = retained 1L (CaseState.Active(storedFields))
@@ -238,20 +251,22 @@ let private grandfathering =
                 "Retained fields are exact"
 
             let reaffirm =
-                (AuthoredCaseAct.AmendRegistration
-                    { registration with
-                        ClaimantName = oldName
-                    })
+                (AuthoredCaseAct.AmendRegistration(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimantName, (oldName) ]
+                        (registration)
+                ))
 
             Expect.isOk
                 (CaseFixtures.decide today (request 1L reaffirm) (Some current))
                 "Unchanged policy violation is grandfathered"
 
             let changed =
-                (AuthoredCaseAct.AmendRegistration
-                    { registration with
-                        ClaimantName = oldName + "x"
-                    })
+                (AuthoredCaseAct.AmendRegistration(
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [ BusinessField.ClaimantName, (oldName + "x") ]
+                        (registration)
+                ))
 
             Expect.isError
                 (CaseFixtures.decide today (request 1L changed) (Some current))
@@ -265,11 +280,13 @@ let private revisionBounds =
     testCase "expected revisions retain their permanent exact-integer format bound" (fun () ->
         for value in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError
-                (CaseFixtures.validate (request value (AuthoredCaseAct.Erase)))
+                (CaseFixtures.validate (request value ((AuthoredCaseAct.Bare BareAct.Erase))))
                 "Expected revision bounds"
 
         Expect.isOk
-            (CaseFixtures.validate (request Revision.Maximum (AuthoredCaseAct.Erase)))
+            (CaseFixtures.validate (
+                request Revision.Maximum ((AuthoredCaseAct.Bare BareAct.Erase))
+            ))
             "Expected M is valid syntax")
 
 let private identifiers =
@@ -304,7 +321,7 @@ let private identifiers =
             let current = retained 1L (live CaseStatus.Opened false false)
 
             let recased =
-                { request 1L (AuthoredCaseAct.Close) with
+                { request 1L ((AuthoredCaseAct.Bare BareAct.Close)) with
                     CaseReference = "DEMO-1"
                 }
 
@@ -318,10 +335,11 @@ let private identifiers =
 
             for country in [ "LV"; "ZZ"; "QQ" ] do
                 let act =
-                    (AuthoredCaseAct.Open
-                        { registration with
-                            IncidentCountry = country
-                        })
+                    (AuthoredCaseAct.Open(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.IncidentCountry, (country) ]
+                            (registration)
+                    ))
 
                 Expect.isOk
                     (CaseFixtures.decide today (request 0L act) None)
@@ -329,10 +347,11 @@ let private identifiers =
 
             for country in [ "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 let act =
-                    (AuthoredCaseAct.Open
-                        { registration with
-                            IncidentCountry = country
-                        })
+                    (AuthoredCaseAct.Open(
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.IncidentCountry, (country) ]
+                            (registration)
+                    ))
 
                 Expect.isError (CaseFixtures.validate (request 0L act)) "Country syntax refusal")
 
@@ -362,14 +381,16 @@ let private refusedScalars =
 
 let private textActs value =
     [
-        (AuthoredCaseAct.Open
-            { registration with
-                ClaimantName = value
-            })
-        (AuthoredCaseAct.Open
-            { registration with
-                InsurerName = value
-            })
+        (AuthoredCaseAct.Open(
+            ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, (value) ]
+                (registration)
+        ))
+        (AuthoredCaseAct.Open(
+            ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.InsurerName, (value) ]
+                (registration)
+        ))
     ]
 
 let private checkText expected scalar =

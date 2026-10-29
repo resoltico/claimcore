@@ -1,3 +1,4 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { service } from "../../src/api/service";
@@ -86,7 +87,7 @@ it("operation observation cannot change a pending editor", async () => {
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  vi.spyOn(service, "observe").mockResolvedValue({
+  mockEndpoint("operation.observe").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: wireReply("operation.observe"),

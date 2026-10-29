@@ -28,7 +28,6 @@ it.each([1, 2])(
     );
     render(
       <OperationEditor
-        token="synthetic-token"
         definition={definition}
         current={null}
         initialAct="OPEN"
@@ -41,7 +40,7 @@ it.each([1, 2])(
     await userEvent.setup().click(getButton("Review changes"));
     const summary = await screen.findByRole("alert");
     expect(summary).toHaveTextContent(`Input problems: ${count}.`);
-    const first = screen.getByLabelText("Incident date", { exact: true });
+    const first = screen.getByRole("group", { name: "Incident date" });
     expect(first).toHaveAttribute("aria-invalid", "true");
     expect(first).toHaveAccessibleDescription(/A non-blank value is required/u);
     const claimant = screen.getByLabelText("Claimant name", { exact: true });
@@ -52,7 +51,7 @@ it.each([1, 2])(
       expect(claimant).not.toHaveAttribute("aria-invalid");
     }
     await waitFor(() => {
-      expect(first).toHaveFocus();
+      expect(summary).toHaveFocus();
     });
   },
 );

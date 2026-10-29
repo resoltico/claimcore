@@ -14,7 +14,7 @@ const error = (field: "issuer" | "subject"): Notice => ({
 const preferences = (language: "en" | "lv" | "ar") => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "en-GB" }),
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
   );
 };
 it.each(["en", "lv", "ar"] as const)(
@@ -70,11 +70,11 @@ it.each(["en", "lv", "ar"] as const)(
     );
     for (const name of ["registration", "decision", "payment"] as const) {
       const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
-      const select = group.querySelector("select");
+      const select = group.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(select).toHaveAccessibleName(catalogs[language]["label.action"]);
       expect(select).toHaveAccessibleDescription(catalogs[language][`group.${name}.meaning`]);
       expect(select).not.toHaveAttribute("aria-invalid");
-      expect(select).toHaveValue("KEEP");
+      expect(select.querySelector('input[value="KEEP"]')).toBeChecked();
     }
   },
 );

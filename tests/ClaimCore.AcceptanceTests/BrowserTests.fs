@@ -263,9 +263,10 @@ let private printFailureSummary root engine bytes =
     let durations = BrowserProgress.failedDurations codeFiles bytes |> String.concat ","
     let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
+    let targets = BrowserProgress.targetGeometry bytes |> String.concat ","
 
     Console.WriteLine(
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}"
     )
 
 let private runBrowser root engine output start =

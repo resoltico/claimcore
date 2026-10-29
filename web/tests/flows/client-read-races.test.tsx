@@ -1,7 +1,8 @@
+import { TestProviders } from "../support/presentation-test-support";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useOperationObservation } from "../../src/hooks/useOperationObservation";
-import { useSession } from "../../src/hooks/useSession";
+import { useSession } from "../../src/session/useSession";
 
 import { deferredResponse } from "../support/presentation-state.fixtures";
 import { operationId, response, unavailable } from "../support/service-ui.fixtures";
@@ -19,7 +20,9 @@ it("coalesces observation and discards an older receipt after changing the opera
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(first.promise);
   fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
-  const { result } = renderHook(() => useOperationObservation("token", operationId));
+  const { result } = renderHook(() => useOperationObservation(operationId), {
+    wrapper: TestProviders,
+  });
   let old: Promise<void> = Promise.resolve();
   act(() => {
     old = result.current.observe();
@@ -52,7 +55,9 @@ it("aborts observation on unmount without delivering a late receipt", async () =
   const pending = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(pending.promise);
-  const { result, unmount } = renderHook(() => useOperationObservation("token", operationId));
+  const { result, unmount } = renderHook(() => useOperationObservation(operationId), {
+    wrapper: TestProviders,
+  });
   let task: Promise<void> = Promise.resolve();
   act(() => {
     task = result.current.observe();

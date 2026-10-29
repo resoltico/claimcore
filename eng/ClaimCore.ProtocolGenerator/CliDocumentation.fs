@@ -38,6 +38,7 @@ module CliDocumentation =
                 match input.Name with
                 | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
                 | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
+                | (InteractionInput.Target InputTarget.Text) -> Some ScalarGuidance.forSearchText
                 | _ -> None
 
             guidance
@@ -75,6 +76,7 @@ module CliDocumentation =
                     |> List.map (fun input ->
                         let choices =
                             match input.Atom with
+                            | CatalogAtom.Choices choices
                             | CatalogAtom.Choice choices ->
                                 choices |> List.map CommandGrammar.kebab |> String.concat ", "
                             | _ -> ""
@@ -113,6 +115,14 @@ module CliDocumentation =
             "A synopsis shows required inputs and brackets optional inputs. Choices use lowercase kebab spelling; exact uppercase wire tokens are also accepted. Mutation operations generate an operation ID when omitted. Keep that ID and the exact prepared frame for retries."
             ""
             "Use `--dry-run` to print the prepared JSON frame without authentication. This checks protocol shape and byte limits; domain admission, authorization and current revision are checked by the service. Use `--preview` with a case or authority act to request a review without recording it."
+            ""
+            "Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling."
+            ""
+            "Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--order reference|recent` selects the page order. A continuation cursor is bound to those filters and order."
+            "`case list --format csv` emits UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached."
+            "When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case, previews with that revision and a new operation ID, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action."
+            ""
+            "`--preview` remains preview-only. `--dry-run` stays offline and requires an explicit revision. Redirected input or output and `--format json` also require an explicit revision; there is no skip-confirmation flag."
             ""
             "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values."
             ""

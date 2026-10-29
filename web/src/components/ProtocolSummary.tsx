@@ -1,3 +1,4 @@
+import { IdentifierValue } from "./IdentifierValue";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
@@ -62,6 +63,10 @@ const primitiveText = (value: unknown, p: ReturnType<typeof usePresentation>): s
   }
   return JSON.stringify(value);
 };
+const isIdentifier = (path: ReadonlyArray<string>, bindings: Bindings): boolean => {
+  const input = bindings.inputs.find((candidate) => samePath(candidate.path, path));
+  return input?.source === "OPERATION_IDENTITY" || input?.field === "caseReference";
+};
 const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
   const p = usePresentation();
   const vocabulary = bindingVocabulary(bindings, path);
@@ -76,7 +81,7 @@ const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
       <>
         <span>{p.term(vocabulary, value)}</span>{" "}
         <code>
-          <bdi>{value}</bdi>
+          <bdi dir="ltr">{value}</bdi>
         </code>
       </>
     );
@@ -89,7 +94,11 @@ const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
   }
   return (
     <span>
-      <bdi style={{ whiteSpace: "pre-wrap" }}>{primitiveText(value, p)}</bdi>
+      {isIdentifier(path, bindings) ? (
+        <IdentifierValue value={primitiveText(value, p)} />
+      ) : (
+        <bdi style={{ whiteSpace: "pre-wrap" }}>{primitiveText(value, p)}</bdi>
+      )}
       {typeof value === "string" ? <CharacterWarning value={value} /> : null}
     </span>
   );
@@ -110,7 +119,7 @@ const SummaryValue = ({ value, path, bindings }: ValueProps) => {
   if (!known(bindings, path)) {
     return (
       <pre>
-        <bdi>{JSON.stringify(value, null, 2)}</bdi>
+        <bdi dir="ltr">{JSON.stringify(value, null, 2)}</bdi>
       </pre>
     );
   }

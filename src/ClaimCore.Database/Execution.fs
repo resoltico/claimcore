@@ -22,8 +22,15 @@ module Execution =
 
                 return Replies.authority result
             | Verify expected ->
+                let started = System.Diagnostics.Stopwatch.GetTimestamp()
                 let! result = administration.Verify(expected, CancellationToken.None)
-                return Replies.verification result
+
+                return
+                    Replies.verification
+                        (int64 (
+                            System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds
+                        ))
+                        result
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 

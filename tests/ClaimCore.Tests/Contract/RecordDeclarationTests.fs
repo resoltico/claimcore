@@ -12,9 +12,11 @@ open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
-    CaseFields.declarations
-    |> List.filter (fun row -> row.Group = group)
-    |> List.map _.Key
+    match group with
+    | Some value -> Inventory.fieldKeys (RecordGroup.token value)
+    | None ->
+        Inventory.rows "specialFields"
+        |> List.map (fun row -> row.GetProperty("key").GetString() |> nonNull)
 
 let rec private members definitions =
     function

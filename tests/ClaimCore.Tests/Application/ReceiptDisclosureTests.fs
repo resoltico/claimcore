@@ -103,7 +103,7 @@ let private foreignScope () =
         { original with
             CaseReference = CaseReference.format caseA.Snapshot.Reference
             ExpectedRevision = 1L
-            Act = AuthoredCaseAct.Close
+            Act = (AuthoredCaseAct.Bare BareAct.Close)
         }
 
     let read = (locked both (Some caseA) (Some entry)).Read
@@ -198,10 +198,11 @@ let private stewardship () =
 
     let voided =
         match projection with
-        | CaseProjection.Update(id, snapshot) ->
+        | CaseProjection.Update(id, snapshot, index) ->
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = index
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
         | _ -> failtest "Update"
@@ -218,10 +219,11 @@ let private stewardship () =
 
     let restored =
         match projection with
-        | CaseProjection.Update(id, snapshot) ->
+        | CaseProjection.Update(id, snapshot, index) ->
             {
                 CaseId = id
                 Snapshot = snapshot
+                Index = index
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
         | _ -> failtest "Update"

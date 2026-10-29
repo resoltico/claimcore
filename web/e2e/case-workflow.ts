@@ -1,3 +1,7 @@
+import type { CaseFields } from "../src/api/service";
+import { showExactLookup } from "./workspace-navigation";
+import { fillNamedField } from "./typed-entry";
+import { businessFieldCount, inventory } from "../tests/support/inventory";
 import { expect, type Page } from "@playwright/test";
 
 import { isResponse } from "../src/protocol/client";
@@ -13,7 +17,7 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
       .replace(/[^a-z0-9]+/gu, "-")
       .slice(0, 58);
     await progress(`fill-${stage}`);
-    await page.getByLabel(label, { exact: true }).fill(value);
+    await fillNamedField(page, label, value);
   }
 };
 
@@ -21,6 +25,10 @@ type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
 
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
 
+const visibleFieldCount = (fields: CaseFields): number =>
+  businessFieldCount -
+  (fields.decision === null ? inventory.groups.decision.length : 0) -
+  (fields.payment === null ? inventory.groups.payment.length : 0);
 export const recordReviewed = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
   await progress("confirm-click-start");
@@ -55,8 +63,15 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   if (outcome.kind !== "ALREADY_ACCEPTED" && outcome.kind !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
-  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
-  await expect(page.locator("section.receipt section.case-fields dl > div")).toHaveCount(13);
+  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator(".success-toast")).toContainText("revision");
+  const receipt = outcome.data;
+  if (receipt.subject.kind !== "CASE") {
+    throw new Error("Expected a case receipt.");
+  }
+  const { snapshot } = receipt.subject;
+  const expected = snapshot.kind === "DISCLOSED" ? visibleFieldCount(snapshot.view.fields) : 0;
+  await expect(page.locator("section.case-fields dl > div")).toHaveCount(expected);
   await progress("accepted-receipt");
 };
 
@@ -78,7 +93,13 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
 };
 
 export const startAct = async (page: Page, label: string): Promise<void> => {
-  await page.getByRole("button", { name: new RegExp(`^${label}:`, "u") }).click();
+  const button = page.getByRole("button", { name: new RegExp(`^${label}:`, "u") });
+  const more = page.locator(".case-more-actions > summary");
+  await button.or(more).first().waitFor({ state: "visible" });
+  if (!(await button.isVisible())) {
+    await more.click();
+  }
+  await button.click();
 };
 
 export const reviewDraft = async (
@@ -120,7 +141,6 @@ export const reviewDraft = async (
 
 const submit = async (page: Page): Promise<void> => {
   await recordReviewed(page);
-  await page.getByRole("button", { name: "Return to case" }).click();
   await progress("returned-to-case");
 };
 
@@ -142,6 +162,14 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await submit(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await progress("open-detail");
-  await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(13);
+  await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(
+    inventory.specialFields.length + inventory.groups.registration.length,
+  );
   return identity;
+};
+
+export const lookupCase = async (page: Page, reference: string): Promise<void> => {
+  const input = await showExactLookup(page);
+  await input.fill(reference);
+  await input.press("Enter");
 };

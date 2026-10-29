@@ -20,7 +20,7 @@ let tests =
                         Outcome.Failed CoreFault.StoreUnavailable, 3, RecommendedAction.RetrySafe
                     ] do
                     Expect.equal
-                        (OutcomePresentation.exitCode outcome |> ExitCode.value)
+                        ((OutcomePresentation.classify outcome).ExitCode |> ExitCode.value)
                         number
                         "Public exit commitment"
 
@@ -47,14 +47,16 @@ let tests =
                         "Unknown delivery is never encoded as a known failure"
 
                     Expect.equal
-                        (OutcomePresentation.executeExitCode value.Outcome |> ExitCode.value)
+                        ((OutcomePresentation.classifyExecute value.Outcome).ExitCode
+                         |> ExitCode.value)
                         4
                         "Unknown delivery keeps its recovery exit"
 
                     Expect.equal
-                        (OutcomePresentation.executeExitCode (
+                        ((OutcomePresentation.classifyExecute (
                             ExecuteResult.Failed CoreFault.StoreUnavailable
-                         )
+                         ))
+                             .ExitCode
                          |> ExitCode.value)
                         3
                         "A known failure has a different exit")

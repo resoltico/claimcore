@@ -106,8 +106,8 @@ it("fences stale execute acceptance after epoch or target change while retaining
     throw new Error("Acceptance example missing");
   }
   for (const context of [
-    { token: "new-epoch", target: submitting.target },
-    { token: "token", target: "CASE:OTHER" },
+    { credential: "new-epoch", target: submitting.target },
+    { credential: "token", target: "CASE:OTHER" },
   ]) {
     const invalidated = operationReducer(submitting, { type: "CONTEXT", ...context });
     expect(invalidated.operation.kind).toBe("UNRESOLVED");
@@ -142,7 +142,7 @@ const controlEvents = (state: OperationState): OperationAction[] => [
   { type: "INVALIDATE", refused: true },
   { type: "RESTORE" },
   { type: "RESET", state: initial(), abandon: false },
-  { type: "CONTEXT", token: state.context.token, target: state.context.target },
+  { type: "CONTEXT", credential: state.context.credential, target: state.context.target },
 ];
 it("200 deterministic event sequences preserve prior uncertainty and cannot schedule cleanup", () => {
   for (let seed = 1; seed <= 200; seed += 1) {

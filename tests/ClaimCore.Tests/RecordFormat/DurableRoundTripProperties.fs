@@ -58,27 +58,28 @@ let private sample =
             + fraction.ToString("D4", CultureInfo.InvariantCulture)
 
         let registration: RegistrationInput =
-            {
-                IncidentDate = date 0
-                IncidentNotificationDate = date gap
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            }
+            (ClaimCore.TestSupport.Inputs.registrationFrom
+                [
+                    BusinessField.IncidentDate, (date 0)
+                    BusinessField.IncidentNotificationDate, (date gap)
+                    BusinessField.IncidentCountry, (country)
+                    BusinessField.ClaimantName, (claimant)
+                    BusinessField.InsurerName, (insurer)
+                    BusinessField.ClaimedAmount, (amount)
+                    BusinessField.ClaimedCurrency, (currency)
+                ])
 
         let decision: DecisionInput =
-            {
-                PaymentDecisionDate = date (gap + decisionGap)
-                PayableAmount = amount
-                PayableCurrency = currency
-            }
+            (ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, (date (gap + decisionGap))
+                    BusinessField.PayableAmount, (amount)
+                    BusinessField.PayableCurrency, (currency)
+                ])
 
         let payment: PaymentInput =
-            {
-                PaymentDate = date (gap + decisionGap + paymentGap)
-            }
+            (ClaimCore.TestSupport.Inputs.paymentFrom
+                [ BusinessField.PaymentDate, (date (gap + decisionGap + paymentGap)) ])
 
         let id =
             if id = Guid.Empty then
@@ -109,43 +110,18 @@ let private tokenAt path expected (bytes: byte array) =
 
     value.GetString() = expected
 
-let private caseActs registration decision payment reason =
-    [
-        AuthoredCaseAct.Open registration, "OPEN"
-        AuthoredCaseAct.AmendRegistration registration, "AMEND_REGISTRATION"
-        AuthoredCaseAct.Correct
-            {
-                Registration = Amendment.Replace registration
-                Decision = Change.Replace decision
-                Payment = Change.Replace payment
-            },
-        "CORRECT"
-        AuthoredCaseAct.Decide decision, "DECIDE"
-        AuthoredCaseAct.WithdrawDecision, "WITHDRAW_DECISION"
-        AuthoredCaseAct.RecordPayment payment, "RECORD_PAYMENT"
-        AuthoredCaseAct.ClearPayment, "CLEAR_PAYMENT"
-        AuthoredCaseAct.Close, "CLOSE"
-        AuthoredCaseAct.Reopen, "REOPEN"
-        AuthoredCaseAct.Void reason, "VOID"
-        AuthoredCaseAct.Reinstate reason, "REINSTATE"
-        AuthoredCaseAct.Erase, "ERASE"
-    ]
+let private caseActs = Inputs.caseActs
 
 let private principalKinds =
-    [ PrincipalKind.Human, "HUMAN"; PrincipalKind.Service, "SERVICE" ]
+    Inventory.tokens "principalKinds"
+    |> List.map (fun token ->
+        Vocabulary.tryParse PrincipalKind.vocabulary token |> Option.get, token)
 
 let private statuses = [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
 let private roles =
-    [
-        Role.Owner, "OWNER"
-        Role.CaseReader, "CASE_READER"
-        Role.CaseRegistrar, "CASE_REGISTRAR"
-        Role.CaseHandler, "CASE_HANDLER"
-        Role.PaymentRecorder, "PAYMENT_RECORDER"
-        Role.DataSteward, "DATA_STEWARD"
-        Role.Auditor, "AUDITOR"
-    ]
+    Inventory.tokens "roles"
+    |> List.map (fun token -> Role.parse token |> Option.get, token)
 
 let private scopes reference =
     [
@@ -155,28 +131,22 @@ let private scopes reference =
 
 let private authorityActs reference =
     [
-        yield AuthorityAct.ProvisionOwner, "PROVISION_OWNER"
-        yield AuthorityAct.Register, "REGISTER"
-        yield AuthorityAct.Enable, "ENABLE"
-        yield AuthorityAct.Disable, "DISABLE"
         for role, _ in roles do
             for scope, _ in scopes reference do
-                let grant =
+                yield
                     {
                         AuthoredGrant.Role = role
                         Scope = scope
                     }
-
-                yield AuthorityAct.Grant grant, "GRANT"
-                yield AuthorityAct.Revoke grant, "REVOKE"
     ]
+    |> Inputs.authorityActs
 
 let private inventories () =
     let registration, decision, payment =
         Inputs.registration, Inputs.decision, Inputs.payment
 
     let acts = caseActs registration decision payment "reason"
-    Expect.equal acts.Length 12 "Twelve independently enumerated case kinds"
+    Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Inventoried case kinds"
 
     Expect.equal
         (acts |> List.map (fst >> CaseAct.kind) |> Set.ofList)
@@ -196,7 +166,7 @@ let private inventories () =
         "Principal inventory"
 
     Expect.equal (roles |> List.map fst |> Set.ofList) (Set.ofList Role.all) "Role inventory"
-    Expect.equal roles.Length 7 "Every role occurs every trial"
+    Expect.equal roles.Length (Inventory.tokens "roles").Length "Every role occurs every trial"
 
     Expect.equal
         (scopes "ref"

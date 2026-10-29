@@ -7,6 +7,15 @@ open ClaimCore.Domain
 
 /// The typed application boundary owns orchestration; hosts supply immutable request dependencies.
 module Service =
+    /// Hosts add their instruments to the single application meter.
+    let metrics = ApplicationMetrics.meter
+
+    /// Storage reports only elapsed head-lock time, with no provider or subject data.
+    let recordHeadWait elapsed = ApplicationMetrics.waited elapsed
+
+    /// Storage reports elapsed append time without leaking provider or subject data.
+    let recordAppend elapsed = ApplicationMetrics.appended elapsed
+
     let create productVersion installationId store calendar principal =
         if String.IsNullOrWhiteSpace productVersion then
             invalidArg (nameof productVersion) "Supply the host's compiled product version."
@@ -60,14 +69,14 @@ module Service =
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> BusinessField.values fields |> Map.ofList
+               } -> CaseFields.values fields |> Map.ofList
         | Some { State = CaseState.Erased } -> Map.empty
 
     let private changes act before after =
         match act with
         | CaseAct.Void _
         | CaseAct.Reinstate _
-        | CaseAct.Erase -> []
+        | (CaseAct.Bare BareAct.Erase) -> []
         | _ ->
             let previous = businessFields before
             let next = businessFields (Some after)

@@ -10,20 +10,24 @@ open ClaimCore.Domain
 let today = DateOnly(2026, 10, 26)
 
 let registration claimant : RegistrationInput =
-    { (Inputs.registrationOn "2026-09-01" "2026-09-02") with
-        ClaimantName = claimant
-        InsurerName = "Synthetic insurer"
-        ClaimedAmount = "100"
-    }
+    (ClaimCore.TestSupport.Inputs.registrationWith
+        [
+            BusinessField.ClaimantName, (claimant)
+            BusinessField.InsurerName, ("Synthetic insurer")
+            BusinessField.ClaimedAmount, ("100")
+        ]
+        ((Inputs.registrationOn "2026-09-01" "2026-09-02")))
 
 let decision amount : ClaimCore.Domain.DecisionInput =
-    {
-        PaymentDecisionDate = "2026-09-03"
-        PayableAmount = amount
-        PayableCurrency = "EUR"
-    }
+    (ClaimCore.TestSupport.Inputs.decisionFrom
+        [
+            BusinessField.PaymentDecisionDate, ("2026-09-03")
+            BusinessField.PayableAmount, (amount)
+            BusinessField.PayableCurrency, ("EUR")
+        ])
 
-let payment: PaymentInput = { PaymentDate = "2026-09-04" }
+let payment: PaymentInput =
+    (ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-09-04") ])
 
 type Progress =
     | Undecided
@@ -78,14 +82,14 @@ let acts =
         "AMEND_REGISTRATION", AuthoredCaseAct.AmendRegistration(registration "Amended claimant")
         "CORRECT", correction
         "DECIDE", AuthoredCaseAct.Decide(decision "60")
-        "WITHDRAW_DECISION", AuthoredCaseAct.WithdrawDecision
+        "WITHDRAW_DECISION", (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         "RECORD_PAYMENT", AuthoredCaseAct.RecordPayment payment
-        "CLEAR_PAYMENT", AuthoredCaseAct.ClearPayment
-        "CLOSE", AuthoredCaseAct.Close
-        "REOPEN", AuthoredCaseAct.Reopen
+        "CLEAR_PAYMENT", (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        "CLOSE", (AuthoredCaseAct.Bare BareAct.Close)
+        "REOPEN", (AuthoredCaseAct.Bare BareAct.Reopen)
         "VOID", AuthoredCaseAct.Void "Entry error"
         "REINSTATE", AuthoredCaseAct.Reinstate "Restored"
-        "ERASE", AuthoredCaseAct.Erase
+        "ERASE", (AuthoredCaseAct.Bare BareAct.Erase)
     ]
 
 let request act revision : UnvalidatedCaseRequest =

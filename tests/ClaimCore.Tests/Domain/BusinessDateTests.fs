@@ -26,9 +26,9 @@ let private openingAccumulatesAssertions =
         "opening reports future dates and surrounding name whitespace in field order"
         (fun () ->
             let facts =
-                { registration with
-                    ClaimantName = " Synthetic claimant "
-                }
+                (ClaimCore.TestSupport.Inputs.registrationWith
+                    [ BusinessField.ClaimantName, (" Synthetic claimant ") ]
+                    (registration))
 
             let outcome =
                 CaseFixtures.decide
@@ -56,9 +56,9 @@ let private amendmentRetainsDates =
         let before = opened ()
 
         let changed =
-            { registration with
-                ClaimantName = "Synthetic amended party"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.ClaimantName, ("Synthetic amended party") ]
+                (registration))
 
         let after =
             applyAt (DateOnly(2026, 7, 31)) (AuthoredCaseAct.AmendRegistration changed) before
@@ -68,16 +68,19 @@ let private amendmentRetainsDates =
         Expect.equal after.Revision (CaseFixtures.revision 2L) "One revision"
 
         Expect.isTrue
-            (CalendarDate.format (viewFields after).Registration.IncidentNotificationDate =
-                registration.IncidentNotificationDate)
+            (CalendarDate.format (
+                Registration.incidentNotificationDate ((viewFields after).Registration)
+            )
+                =
+                (RegistrationInput.value BusinessField.IncidentNotificationDate (registration)))
             "Accepted historical date retained")
 
 let private newIncidentIsBounded =
     testCase "an unchanged notification cannot hide a new future incident" (fun () ->
         let changed =
-            { registration with
-                IncidentDate = "2026-08-02"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.IncidentDate, ("2026-08-02") ]
+                (registration))
 
         opened ()
         |> applyAt (DateOnly(2026, 7, 31)) (AuthoredCaseAct.AmendRegistration changed)
@@ -86,9 +89,9 @@ let private newIncidentIsBounded =
 let private newNotificationIsBounded =
     testCase "newly replaced notification dates are checked independently" (fun () ->
         let changed =
-            { registration with
-                IncidentNotificationDate = "2026-08-04"
-            }
+            (ClaimCore.TestSupport.Inputs.registrationWith
+                [ BusinessField.IncidentNotificationDate, ("2026-08-04") ]
+                (registration))
 
         opened ()
         |> applyAt (DateOnly(2026, 8, 3)) (AuthoredCaseAct.AmendRegistration changed)
@@ -96,7 +99,10 @@ let private newNotificationIsBounded =
 
 let private decisionRetainsDate =
     testCase "decision amount replacement retains its accepted date after rollback" (fun () ->
-        let changed = { decision with PayableAmount = "650" }
+        let changed =
+            (ClaimCore.TestSupport.Inputs.decisionWith
+                [ BusinessField.PayableAmount, ("650") ]
+                (decision))
 
         let after =
             decided ()
@@ -106,24 +112,24 @@ let private decisionRetainsDate =
 
         Expect.isTrue
             (((viewFields after).Decision
-              |> Option.map (fun value -> Money.format value.PayableAmount))
+              |> Option.map (fun value -> Money.format (Decision.payable (value))))
                 =
                 Some "650")
             "Amount replaced"
 
         Expect.isTrue
             (((viewFields after).Decision
-              |> Option.map (fun value -> CalendarDate.format value.PaymentDecisionDate))
+              |> Option.map (fun value -> CalendarDate.format (Decision.date (value))))
                 =
-                Some decision.PaymentDecisionDate)
+                Some(DecisionInput.value BusinessField.PaymentDecisionDate (decision)))
             "Accepted decision date retained")
 
 let private newDecisionDateIsBounded =
     testCase "changing an accepted decision date asserts a new date" (fun () ->
         let changed =
-            { decision with
-                PaymentDecisionDate = "2026-08-14"
-            }
+            (ClaimCore.TestSupport.Inputs.decisionWith
+                [ BusinessField.PaymentDecisionDate, ("2026-08-14") ]
+                (decision))
 
         decided ()
         |> applyAt (DateOnly(2026, 8, 10)) (AuthoredCaseAct.Decide changed)
@@ -138,7 +144,7 @@ let private initialDecisionIsBounded =
 let private withdrawnDateIsAbsent =
     testCase "withdrawing a decision removes its date reaffirmation authority" (fun () ->
         decided ()
-        |> apply AuthoredCaseAct.WithdrawDecision
+        |> apply (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         |> accepted
         |> applyAt (DateOnly(2026, 8, 10)) (AuthoredCaseAct.Decide decision)
         |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
@@ -146,27 +152,35 @@ let private withdrawnDateIsAbsent =
 let private clearedPaymentDateIsAbsent =
     testCase "clearing payment removes its date reaffirmation authority" (fun () ->
         paid ()
-        |> apply AuthoredCaseAct.ClearPayment
+        |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
         |> accepted
         |> applyAt
             (DateOnly(2026, 8, 16))
-            (AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-20" })
+            (AuthoredCaseAct.RecordPayment(
+                ClaimCore.TestSupport.Inputs.paymentFrom
+                    [ BusinessField.PaymentDate, ("2026-08-20") ]
+            ))
         |> future (InputTarget.Field BusinessField.PaymentDate))
 
 let private closedCorrectionRetainsDates =
     testCase "a closed paid correction reaffirms accepted dates after rollback" (fun () ->
-        let before = paid () |> apply AuthoredCaseAct.Close |> accepted
+        let before = paid () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
 
         let act =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Replace
-                            { registration with
-                                ClaimantName = "Synthetic corrected party"
-                            }
+                        Amendment.Replace(
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimantName, ("Synthetic corrected party") ]
+                                (registration)
+                        )
                     Decision = Change.Replace decision
-                    Payment = Change.Replace { PaymentDate = "2026-08-20" }
+                    Payment =
+                        Change.Replace(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        )
                 }
 
         let after =
@@ -176,7 +190,7 @@ let private closedCorrectionRetainsDates =
 
         Expect.isTrue
             (((viewFields after).Payment
-              |> Option.map (fun value -> CalendarDate.format value.PaymentDate))
+              |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
                 =
                 Some "2026-08-20")
             "Reaffirmed accepted payment"
@@ -189,10 +203,11 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Replace
-                            { registration with
-                                IncidentDate = "2026-08-02"
-                            }
+                        Amendment.Replace(
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.IncidentDate, ("2026-08-02") ]
+                                (registration)
+                        )
                     Decision = Change.Keep
                     Payment = Change.Keep
                 }
@@ -209,13 +224,20 @@ let private incompleteCorrectionAccumulatesAssertions =
                 AuthoredCaseAct.Correct
                     {
                         Registration =
-                            Amendment.Replace
-                                { registration with
-                                    IncidentDate = "2026-08-02"
-                                    ClaimantName = " New claimant "
-                                }
+                            Amendment.Replace(
+                                ClaimCore.TestSupport.Inputs.registrationWith
+                                    [
+                                        BusinessField.IncidentDate, ("2026-08-02")
+                                        BusinessField.ClaimantName, (" New claimant ")
+                                    ]
+                                    (registration)
+                            )
                         Decision = Change.Clear
-                        Payment = Change.Replace { PaymentDate = "2026-08-21" }
+                        Payment =
+                            Change.Replace(
+                                ClaimCore.TestSupport.Inputs.paymentFrom
+                                    [ BusinessField.PaymentDate, ("2026-08-21") ]
+                            )
                     }
 
             match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
@@ -240,7 +262,11 @@ let private spellingDoesNotRevise =
                 {
                     Registration = Amendment.Keep
                     Decision = Change.Replace decision
-                    Payment = Change.Replace { PaymentDate = "2026-08-20" }
+                    Payment =
+                        Change.Replace(
+                            ClaimCore.TestSupport.Inputs.paymentFrom
+                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        )
                 }
 
         let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act

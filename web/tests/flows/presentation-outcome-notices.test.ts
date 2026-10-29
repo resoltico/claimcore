@@ -15,8 +15,16 @@ it("diagnostics remain typed and never expose server prose", () => {
     status: 200,
     value: { outcome: { kind: "FAILED", data: fault } },
   });
-  const en = createPresenter({ language: "en", displayLocale: "en-GB" }).notice(notice);
-  const ar = createPresenter({ language: "ar", displayLocale: "en-GB" }).notice(notice);
+  const en = createPresenter({
+    language: "en",
+    displayLocale: "en-GB",
+    theme: "SYSTEM" as const,
+  }).notice(notice);
+  const ar = createPresenter({
+    language: "ar",
+    displayLocale: "en-GB",
+    theme: "SYSTEM" as const,
+  }).notice(notice);
   expect(en).not.toBe(ar);
   expect(en + ar).not.toContain("PRIVATE_PROVIDER_CANARY");
 });

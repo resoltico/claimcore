@@ -158,6 +158,7 @@ module internal ExecutionFacts =
             match verdict with
             | Verdict.Proceed(entry, projection, receipt) ->
                 do! tx.Append entry
+
                 do! project projection
                 return Verdict.Proceed receipt
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other

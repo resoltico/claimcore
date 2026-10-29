@@ -173,7 +173,7 @@ module LedgerEntry =
 
         let ticks = metadata.RecordedAt.UtcTicks - DateTimeOffset.UnixEpoch.UtcTicks
 
-        if ticks % 10L <> 0L then
+        if not (RecordedInstant.hasMicrosecondPrecision metadata.RecordedAt) then
             invalidArg (nameof metadata) "Use microsecond precision."
 
         let subject = subjectBytes metadata.Subject
@@ -189,7 +189,7 @@ module LedgerEntry =
                 [| subject.Kind; subject.Act |]
                 (OperationId.value metadata.OperationId).ToByteArray(bigEndian = true)
                 (ActorId.value metadata.ActorId).ToByteArray(bigEndian = true)
-                i64 (ticks / 10L)
+                i64 (ticks / TimeSpan.TicksPerMicrosecond)
                 subject.Identifier
                 subject.Revision
                 subject.Date

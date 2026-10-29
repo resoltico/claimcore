@@ -77,8 +77,13 @@ module ScalarGuidance =
             "scalar.text.guidance"
             [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
 
+    let forSearchText =
+        message
+            "scalar.text.guidance"
+            [ "maximumCharacters", GuidanceArgument.Count CaseSearchText.MaximumCharacters ]
+
     let all =
         (CaseFields.declarations
          |> List.choose (fun field ->
              forField field.Field |> Option.map (fun guidance -> field.Key, guidance)))
-        @ [ "reason", forReason ]
+        @ [ "reason", forReason; "text", forSearchText ]

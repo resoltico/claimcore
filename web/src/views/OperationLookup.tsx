@@ -1,3 +1,5 @@
+import { IdentifierMessage } from "../presentation/IdentifierMessage";
+import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
 import { useEffect, useRef } from "react";
@@ -12,7 +14,6 @@ import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { ReceiptFields } from "../components/ReceiptFields";
 type OperationLookupProps = {
-  token: string;
   definition: ProductMetadata;
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
@@ -28,11 +29,15 @@ const ReceiptView = ({
   return (
     <>
       <p>
-        {p.text("ui.observedReceipt", {
-          operationId: receipt.operationId,
-          act: p.term("act", receipt.subject.act),
-          actor: receipt.recordedBy,
-        })}
+        <IdentifierMessage
+          id="ui.observedReceipt"
+          values={{
+            operationId: receipt.operationId,
+            act: p.term("act", receipt.subject.act),
+            actor: receipt.recordedBy,
+          }}
+          argument="operationId"
+        />
       </p>
       {receipt.subject.kind === "AUTHORITY" ? (
         <p>
@@ -45,9 +50,15 @@ const ReceiptView = ({
         <ReceiptFields
           subject={receipt.subject}
           fields={definition.catalog.fields}
-          context={p.text("ui.observedContext", {
-            operationId: receipt.operationId,
-          })}
+          context={
+            <IdentifierMessage
+              id="ui.observedContext"
+              values={{
+                operationId: receipt.operationId,
+              }}
+              argument="operationId"
+            />
+          }
         />
       )}
     </>
@@ -59,14 +70,10 @@ const ObservationFeedback = ({ message }: { message: Notice | null }) =>
       <NoticeView value={message} />
     </p>
   );
-export const OperationLookup = ({
-  token,
-  definition,
-  initialOperationId,
-}: OperationLookupProps) => {
+export const OperationLookup = ({ definition, initialOperationId }: OperationLookupProps) => {
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =
-    useOperationObservation(token, initialOperationId);
+    useOperationObservation(initialOperationId);
   const invalid = message?.kind === "diagnostic" && message.diagnostic.code === "INPUT_INVALID";
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -76,17 +83,21 @@ export const OperationLookup = ({
   }, [invalid, loading]);
   return (
     <section aria-labelledby="operation-lookup-title">
-      <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>
+      <h1 id="operation-lookup-title">{p.text("ui.operationLookup")}</h1>
       <Form
         className="lookup"
         onSubmit={(event) => {
           event.preventDefault();
-          void observe();
+          if (initialOperationId === undefined) {
+            void observe();
+          } else {
+            navigate(`/operations/${encodeURIComponent(operationId)}`);
+          }
         }}
       >
         <TextField value={operationId} onChange={setOperationId} isInvalid={invalid}>
           <Label>{p.text("ui.exactOperationId")}</Label>
-          <Input ref={input} autoComplete="off" dir="ltr" />
+          <Input ref={input} className="identifier-value" autoComplete="off" dir="ltr" />
           {!invalid || message === null ? null : (
             <FieldError>
               <NoticeView value={message} />

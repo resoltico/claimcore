@@ -35,37 +35,22 @@ let internal actor principal grants : ActorAuthority =
     }
 
 let internal expectedRoles =
-    [
-        Role.Owner, "OWNER", [ Capability.ManageAuthority; Capability.ReadAuthority ]
-        Role.CaseReader, "CASE_READER", [ Capability.ReadCase; Capability.ReadHistory ]
-        Role.CaseRegistrar,
-        "CASE_REGISTRAR",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
-        Role.CaseHandler,
-        "CASE_HANDLER",
-        [
-            Capability.ReadCase
-            Capability.ReadHistory
-            Capability.ReadHistoryFull
-            Capability.Register
-            Capability.Decide
-            Capability.Close
-        ]
-        Role.PaymentRecorder,
-        "PAYMENT_RECORDER",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
-        Role.DataSteward,
-        "DATA_STEWARD",
-        [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
-        Role.Auditor,
-        "AUDITOR",
-        [
-            Capability.ReadCase
-            Capability.ReadHistory
-            Capability.ReadHistoryFull
-            Capability.ReadAuthority
-        ]
-    ]
+    Inventory.rows "roles"
+    |> List.map (fun row ->
+        let token = row.GetProperty("token").GetString() |> nonNull
+
+        let capabilities =
+            row.GetProperty("capabilities").EnumerateArray()
+            |> Seq.map (fun value -> Capability.parse (value.GetString() |> nonNull) |> Option.get)
+            |> Seq.toList
+
+        Role.parse token |> Option.get, token, capabilities)
+
+let internal humanRoles =
+    Inventory.rows "roles"
+    |> List.filter (fun row -> row.GetProperty("humanOnly").GetBoolean())
+    |> List.map (fun row ->
+        Role.parse (row.GetProperty("token").GetString() |> nonNull) |> Option.get)
 
 let internal allCapabilities =
     [
@@ -90,7 +75,7 @@ type internal PermissionRule =
 let internal expectedPermission (rule: PermissionRule) principal grant resource capability =
     let role = rule.Role
     let capabilities = rule.Capabilities
-    let humanRole = role = Role.Owner || role = Role.DataSteward
+    let humanRole = List.contains role humanRoles
 
     let installationOnly =
         capability = Capability.ManageAuthority || capability = Capability.ReadAuthority

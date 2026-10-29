@@ -1,310 +1,247 @@
+import "./workspace.css";
+import { WorkspaceHeader } from "./WorkspaceHeader";
+import { UnresolvedNotice } from "./operation/UnresolvedNotice";
+import { RoutedContent } from "./RoutedContent";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { CaseReceipt } from "../api/service";
+import { useEndpoint } from "../hooks/useEndpoint";
+import { useEndpointCache } from "../hooks/EndpointProvider";
 import { usePresentation } from "../presentation/context";
-import { Button } from "react-aria-components/Button";
-import { useState, useCallback, useEffect, useRef, type RefObject } from "react";
-import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
-import type { ActKind } from "../operation/metadata";
-import { service, type ServiceResponse } from "../api/service";
-import { useRead } from "../hooks/useRead";
-import { NoticeView } from "../presentation/Message";
-import { productMetadata } from "../protocol/productMetadata";
-import { AuthorityPanel } from "./AuthorityPanel";
-import { CaseDetail } from "./CaseDetail";
-import { CaseList } from "./CaseList";
-import { OperationEditor } from "./OperationEditor";
-import { OperationLookup } from "./OperationLookup";
+import { NoticeView, Message } from "../presentation/Message";
+import { useRoute } from "../routing/useRoute";
+import type { Route } from "../routing/routes";
+import { casePath } from "../routing/routes";
+import { navigate, setNavigationLock, takeRouteFocus } from "../routing/navigation";
+const category = (route: Route): "cases" | "operations" | "authority" =>
+  route.screen === "operations" || route.screen === "authority" ? route.screen : "cases";
 
-type OperationTarget = { current: CurrentCase | null; act: ActKind };
-type DashboardProps = { token: string; onLogout: () => Promise<void> };
-
-const Header = ({
-  definition,
-  locked,
-  onLogout,
-}: {
-  definition: ProductMetadata;
-  locked: boolean;
-  onLogout: () => Promise<void>;
-}) => {
-  const p = usePresentation();
-  return (
-    <header>
-      <div>
-        <p className="eyebrow">{p.text("ui.registerLabel")}</p>
-        <h1>ClaimCore</h1>
-        <details>
-          <summary>{p.text("ui.technicalDetails")}</summary>
-          <p>{p.text("ui.productVersion", { version: definition.productVersion })}</p>
-          <p>{p.text("ui.webIdentity", { digest: definition.contractIdentity })}</p>
-        </details>
-      </div>
-      <Button onPress={() => void onLogout()} isDisabled={locked}>
-        {p.text("ui.signOut")}
-      </Button>
-    </header>
-  );
-};
-
-const DashboardNav = ({
-  active,
-  locked,
-  navigate,
-  views,
-}: {
-  active: string;
-  views: ReadonlyArray<string>;
-  locked: boolean;
-  navigate: (next: "cases" | "operations" | "authority") => void;
-}) => {
-  const p = usePresentation();
-  const labels = {
-    cases: "ui.cases",
-    operations: "ui.operations",
-    authority: "subject.AUTHORITY.label",
-  } as const;
-  return (
-    <nav aria-label={p.text("ui.primary")}>
-      {(["cases", "operations", "authority"] as const)
-        .filter((item) => views.includes(item.toUpperCase()))
-        .map((item) => (
-          <Button
-            key={item}
-            onPress={() => {
-              navigate(item);
-            }}
-            isDisabled={locked}
-            aria-pressed={active === item}
-          >
-            {p.text(labels[item])}
-          </Button>
-        ))}
-    </nav>
-  );
-};
-
-type ContentProps = {
-  token: string;
-  definition: ProductMetadata;
-  active: string;
-  operation: OperationTarget | null;
-  selectedReference: string | null;
-  refresh: number;
-  setOperation: (value: OperationTarget | null) => void;
-  setSelectedReference: (value: string | null) => void;
-  setLocked: (value: boolean) => void;
-  committed: (receipt: CaseReceipt) => void;
-};
-
-type PaneProps = Pick<
-  ContentProps,
-  "token" | "selectedReference" | "refresh" | "setOperation" | "setSelectedReference"
-> & { definition: NonNullable<ContentProps["definition"]> };
-
-const CasesPane = ({
-  token,
-  definition,
-  selectedReference,
-  refresh,
-  setOperation,
-  setSelectedReference,
-}: PaneProps) => {
-  if (selectedReference === null) {
-    return (
-      <CaseList
-        token={token}
-        onSelect={setSelectedReference}
-        onOpen={() => {
-          setOperation({ current: null, act: "OPEN" });
-        }}
-      />
-    );
-  }
-  return (
-    <CaseDetail
-      token={token}
-      caseReference={selectedReference}
-      reloadSignal={refresh}
-      definition={definition.catalog}
-      onBack={() => {
-        setSelectedReference(null);
-      }}
-      onAct={(current, act) => {
-        setOperation({ current, act });
-      }}
-    />
-  );
-};
-
-const DashboardContent = (props: ContentProps) => {
-  const { definition, operation } = props;
-  const workflow = {
-    token: props.token,
-    onMutationLockChange: props.setLocked,
-  };
-  if (operation !== null) {
-    return (
-      <OperationEditor
-        {...workflow}
-        definition={definition}
-        current={operation.current}
-        initialAct={operation.act}
-        onClose={() => {
-          props.setOperation(null);
-        }}
-        onCommitted={props.committed}
-      />
-    );
-  }
-  if (props.active === "authority") {
-    return <AuthorityPanel token={props.token} onLockChange={props.setLocked} />;
-  }
-  if (props.active === "operations") {
-    return (
-      <OperationLookup token={props.token} definition={definition} onLockChange={props.setLocked} />
-    );
-  }
-  return (
-    <CasesPane
-      token={props.token}
-      definition={definition}
-      selectedReference={props.selectedReference}
-      refresh={props.refresh}
-      setOperation={props.setOperation}
-      setSelectedReference={props.setSelectedReference}
-    />
-  );
-};
-
-const useDashboardNavigation = () => {
-  const [active, setActive] = useState<"cases" | "operations" | "authority">("cases");
-  const [selectedReference, setSelectedReference] = useState<string | null>(null);
-  const [operation, setOperation] = useState<OperationTarget | null>(null);
-  const [refresh, setRefresh] = useState(0);
-  const [locked, setLocked] = useState(false);
-  const navigate = (next: "cases" | "operations" | "authority"): void => {
-    if (!locked && operation === null) {
-      setActive(next);
-      setSelectedReference(null);
-    }
-  };
-  const committed = (receipt: CaseReceipt): void => {
-    setOperation(null);
-    setSelectedReference(receipt.subject.caseReference);
-    setRefresh((value) => value + 1);
-  };
-  return {
-    active,
-    selectedReference,
-    operation,
-    refresh,
-    locked,
-    setOperation,
-    setSelectedReference,
-    setLocked,
-    navigate,
-    committed,
-  };
-};
-
-const contextData = (reply: ServiceResponse<"context">) =>
-  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
-
-const useNavigationFocus = (location: string) => {
-  const content = useRef<HTMLDivElement>(null);
-  const previous = useRef(location);
+const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>) => {
+  const selected = useRef(false);
   useEffect(() => {
-    if (previous.current !== location) {
-      const heading = content.current?.querySelector<HTMLElement>("h2");
-      if (heading) {
-        heading.tabIndex = -1;
-        heading.focus();
-      }
-      previous.current = location;
+    if (selected.current || views.length === 0) {
+      return;
     }
-  }, [location]);
+    selected.current = true;
+    if (!views.includes(category(route).toUpperCase())) {
+      const first = (["cases", "authority", "operations"] as const).find((name) =>
+        views.includes(name.toUpperCase()),
+      );
+      if (first !== undefined) {
+        navigate(`/${first}`, true);
+      }
+    }
+  }, [route, views]);
+};
+const useRouteHeading = (route: Route) => {
+  const identity = route.screen === "cases" ? "cases" : JSON.stringify(route);
+  const content = useRef<HTMLDivElement>(null);
+  const focused = useRef<string | null>(null);
+  useEffect(() => {
+    const target = content.current;
+    if (target === null || focused.current === identity) {
+      return;
+    }
+    const focusId = takeRouteFocus();
+    const focus = () => {
+      const heading =
+        focusId === null
+          ? target.querySelector<HTMLElement>("h1")
+          : document.getElementById(focusId);
+      if (heading) {
+        focused.current = identity;
+        if (heading.matches("h1,h2,h3")) {
+          heading.tabIndex = -1;
+        }
+        heading.focus();
+        return true;
+      }
+      return false;
+    };
+    if (focus()) {
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      if (focus()) {
+        observer.disconnect();
+      }
+    });
+    observer.observe(target, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+    };
+  }, [identity]);
   return content;
 };
-
-const useWorkspaceContext = (token: string, destination: RefObject<HTMLDivElement | null>) => {
-  const pendingFocus = useRef<string | null>(null);
-  const requestContext = useCallback(
-    (signal: AbortSignal) => service.context(token, signal),
-    [token],
-  );
-  const context = useRead(requestContext, contextData, token);
-  useEffect(() => {
-    if (pendingFocus.current === token && context.value !== null) {
-      const heading = destination.current?.querySelector<HTMLElement>("h2");
-      if (heading) {
-        heading.tabIndex = -1;
-        heading.focus();
-      }
-      pendingFocus.current = null;
-    }
-  }, [context.value, destination, token]);
-  return {
-    ...context,
-    reload: () => {
-      pendingFocus.current = token;
-      context.reload();
-    },
-  };
-};
-
-const ContextStatus = ({
-  context,
-}: {
-  context: ReturnType<
-    typeof useRead<ServiceResponse<"context">, NonNullable<ReturnType<typeof contextData>>>
-  >;
-}) => {
+const WorkspaceStatus = ({ context }: { context: ReturnType<typeof useEndpoint<"context">> }) => {
   const p = usePresentation();
   return (
     <>
-      {" "}
       {context.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {context.message === null ? null : (
         <div role="alert">
           <NoticeView value={context.message} />
-          <Button onPress={context.reload}>{p.text("ui.tryAgain")}</Button>
+          <button type="button" onClick={context.reload}>
+            {p.text("ui.tryAgain")}
+          </button>
         </div>
       )}
-      {!context.loading && context.value !== null && context.value.views.length === 0 ? (
-        <p>{p.text("ui.noViews")}</p>
-      ) : null}
     </>
   );
 };
-
-export const Dashboard = ({ token, onLogout }: DashboardProps) => {
-  const navigation = useDashboardNavigation();
-  const content = useNavigationFocus(
-    `${navigation.active}:${navigation.selectedReference ?? ""}:${navigation.operation?.act ?? ""}`,
-  );
-  const definition = productMetadata;
-  const context = useWorkspaceContext(token, content);
-  const views: ReadonlyArray<string> = context.value?.views ?? [];
-  const active = views.includes(navigation.active.toUpperCase())
-    ? navigation.active
-    : (["cases", "authority", "operations"] as const).find((item) =>
-        views.includes(item.toUpperCase()),
-      );
-  const locked = navigation.locked || navigation.operation !== null;
-
+const AcceptedToast = ({
+  route,
+  receipt,
+  close,
+}: {
+  route: Route;
+  receipt: CaseReceipt | null;
+  close: () => void;
+}) => {
+  const p = usePresentation();
+  if (
+    receipt === null ||
+    route.screen !== "case" ||
+    route.reference !== receipt.subject.caseReference
+  ) {
+    return null;
+  }
   return (
-    <main className="app-shell">
-      <Header definition={definition} locked={locked} onLogout={onLogout} />
-      <DashboardNav
-        active={active ?? ""}
-        locked={locked}
-        navigate={navigation.navigate}
-        views={views}
+    <div className="success-toast" role="status">
+      {p.text("ui.caseRecorded", {
+        act: p.actLabel(receipt.subject.act),
+        revision: p.integer(receipt.subject.revision),
+      })}
+      <button type="button" onClick={close}>
+        {p.text("ui.close")}
+      </button>
+    </div>
+  );
+};
+const useNavigationLock = (locked: boolean) => {
+  useEffect(() => {
+    setNavigationLock(locked);
+    return () => {
+      setNavigationLock(false);
+    };
+  }, [locked]);
+};
+const useWorkspaceAccess = (route: Route) => {
+  const context = useEndpoint("context", {});
+  const response = context.value ?? (context.loading ? context.previous : null);
+  const views = response?.outcome.kind === "SUCCEEDED" ? response.outcome.data.views : [];
+  const active = category(route);
+  useInitialAllowedRoute(route, views);
+  return { context, response, views, active };
+};
+const WorkspaceUnavailable = ({ route }: { route: Route }) => {
+  const p = usePresentation();
+  let title = p.text("ui.cases");
+  if (route.screen === "operations") {
+    title = p.text("ui.operationLookup");
+  }
+  if (route.screen === "case") {
+    title = p.text("ui.caseDetail");
+  }
+  return (
+    <section>
+      <h1 tabIndex={-1}>{title}</h1>
+      <p role="alert">
+        <Message id="diagnostic.RESOURCE_UNAVAILABLE" />
+      </p>
+    </section>
+  );
+};
+/** Only the authority editor keeps its operation state; fresh context still fences all disclosures. */
+const WorkspaceContents = ({
+  advertised,
+  retainOperation,
+  noViews,
+  fallback,
+  children,
+}: {
+  advertised: boolean;
+  retainOperation: boolean;
+  noViews: boolean;
+  fallback: ReactNode;
+  children: ReactNode;
+}) => {
+  const [opened, setOpened] = useState(advertised);
+  if (advertised && !opened) {
+    setOpened(true);
+  }
+  if (advertised || (retainOperation && opened)) {
+    return children;
+  }
+  if (opened) {
+    return fallback;
+  }
+  return noViews ? (
+    <h1 tabIndex={-1}>
+      <Message id="ui.noViews" />
+    </h1>
+  ) : null;
+};
+type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "authorityAvailable"> & {
+  views: ReadonlyArray<string>;
+  noViews: boolean;
+};
+const WorkspaceRoute = ({ views, noViews, ...routing }: WorkspaceRouteProps) => {
+  const active = category(routing.route);
+  return (
+    <WorkspaceContents
+      key={active}
+      advertised={views.includes(active.toUpperCase())}
+      retainOperation={routing.route.screen === "authority"}
+      noViews={noViews}
+      fallback={<WorkspaceUnavailable route={routing.route} />}
+    >
+      <RoutedContent {...routing} authorityAvailable={views.includes("AUTHORITY")} />
+    </WorkspaceContents>
+  );
+};
+export const Dashboard = () => {
+  const route = useRoute();
+  const [accepted, setAccepted] = useState<CaseReceipt | null>(null);
+  const { context, response, views, active } = useWorkspaceAccess(route);
+  const cache = useEndpointCache();
+  const [locked, setLocked] = useState(false);
+  const [refresh, setRefresh] = useState(0);
+  const content = useRouteHeading(route);
+  useNavigationLock(locked);
+  const committed = (receipt: CaseReceipt) => {
+    setNavigationLock(false);
+    setLocked(false);
+    cache?.invalidate();
+    setRefresh((value) => value + 1);
+    setAccepted(receipt);
+    navigate(casePath(receipt.subject.caseReference));
+  };
+  return (
+    <>
+      <WorkspaceHeader active={active} views={views} locked={locked} />
+      <UnresolvedNotice />
+      <AcceptedToast
+        route={route}
+        receipt={accepted}
+        close={() => {
+          setAccepted(null);
+        }}
       />
-      <ContextStatus context={context} />
-      <div ref={content}>
-        {active === undefined ? null : (
-          <DashboardContent {...navigation} active={active} token={token} definition={definition} />
-        )}
-      </div>
-    </main>
+      <main className="app-shell">
+        <WorkspaceStatus context={context} />
+        <div ref={content}>
+          <WorkspaceRoute
+            route={route}
+            views={views}
+            noViews={
+              !context.loading && response?.outcome.kind === "SUCCEEDED" && views.length === 0
+            }
+            setLocked={setLocked}
+            committed={committed}
+            refresh={refresh}
+          />
+        </div>
+      </main>
+    </>
   );
 };

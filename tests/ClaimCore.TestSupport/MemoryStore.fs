@@ -31,6 +31,8 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
             Fences = Set.empty
         }
 
+    member val ObservedAt = observed with get, set
+
     member val ReadFailure: StoreFailure option = None with get, set
     member val WriteFailure: StoreFailure option = None with get, set
     member val Calls = 0 with get, set
@@ -71,7 +73,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                     Reader(
                                         (fun () -> snapshot),
                                         installationId,
-                                        observed,
+                                        this.ObservedAt,
                                         (fun () -> events.Add "read")
                                     )
                                     :> IReadTx
@@ -110,7 +112,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                     Get = (fun () -> pending)
                                     Set = (fun value -> pending <- value)
                                     InstallationId = installationId
-                                    Observed = observed
+                                    Observed = this.ObservedAt
                                     Head = state.Head
                                     Nonce = RandomNumberGenerator.GetBytes 32
                                     Read = (fun () -> events.Add "read")

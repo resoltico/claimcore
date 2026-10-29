@@ -17,9 +17,41 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
-    let caseColumns = "case_id,case_reference,revision,state,snapshot"
+    let caseColumns =
+        "case_id,case_reference,revision,state,snapshot,status,progress,search_text,"
+        + DatabaseSession.instantExpression "changed_at"
+        + " AS changed_at"
 
-    let caseRow installationId (row: Map<string, obj>) : StoredCase =
+    let caseStatus row =
+        DatabaseSession.namedOptional<string> "status" row
+        |> Option.map (fun value ->
+            DurableNames.tryStatus value
+            |> Option.defaultWith (fun () ->
+                raise (RecordCorruptException "Invalid indexed status.")))
+
+    let caseProgress row =
+        DatabaseSession.namedOptional<string> "progress" row
+        |> Option.map (fun value ->
+            DurableNames.tryProgress value
+            |> Option.defaultWith (fun () ->
+                raise (RecordCorruptException "Invalid indexed progress.")))
+
+    let caseChangedAt row =
+        DatabaseSession.namedRecordedInstant "changed_at" row
+
+    let caseSearchText row =
+        DatabaseSession.namedOptional<string> "search_text" row
+
+    let caseIndex row : CaseIndex =
+        {
+            Status = caseStatus row
+            Progress = caseProgress row
+            ChangedAt = caseChangedAt row
+            SearchText = caseSearchText row
+        }
+
+
+    let caseRowWithIndex installationId index (row: Map<string, obj>) : StoredCase =
         let reference =
             DatabaseSession.namedValue<string> "case_reference" row
             |> CaseReference.parse
@@ -63,7 +95,11 @@ module internal Projections =
             CaseId = id
             Snapshot = snapshot
             SnapshotBytes = bytes |> Option.defaultValue Array.empty
+            Index = index
         }
+
+    let caseRow installationId row =
+        caseRowWithIndex installationId (caseIndex row) row
 
     let caseById connection installationId id token =
         task {
@@ -146,7 +182,7 @@ module internal Projections =
             | None -> return view
             | Some actor ->
                 let forbidden =
-                    Authority.invalidRoles principal |> List.map Role.token |> List.toArray
+                    Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray
 
                 let! rows =
                     DatabaseSession.rows
@@ -154,7 +190,7 @@ module internal Projections =
                         "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
                         [|
                             box (ActorId.value actor.ActorId)
-                            box (readRoles |> List.map Role.token |> List.toArray)
+                            box (readRoles |> List.map DurableNames.role |> List.toArray)
                             box forbidden
                         |]
                         token

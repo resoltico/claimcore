@@ -1,7 +1,6 @@
-import { vi } from "vitest";
-import { service } from "../../src/api/service";
+import { mockEndpoint } from "./endpoint-mocks";
 export const stubDashboardContext = () =>
-  vi.spyOn(service, "context").mockResolvedValue({
+  mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {

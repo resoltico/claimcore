@@ -1,3 +1,4 @@
+import { businessFieldCount, inventory } from "../support/inventory";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
@@ -11,12 +12,12 @@ import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 describe("core act metadata", () => {
   it("prefills registration from catalog and builds scoped input from the root schema", () => {
-    expect(definition.catalog.fields).toHaveLength(13);
+    expect(definition.catalog.fields).toHaveLength(businessFieldCount);
     expect(
       definition.catalog.entries.filter(
         (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
       ),
-    ).toHaveLength(12);
+    ).toHaveLength(inventory.caseActs.length);
     const current = {
       caseReference: fields.caseReference,
       revision: 1,

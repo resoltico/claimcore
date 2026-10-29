@@ -60,8 +60,8 @@ SELECT pg_temp.expect('authority row without payload refused',
     format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'GRANT',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, NULL, NULL)$s$, :h2, :hx, :owner, :owner, :h3), '23514');
-SELECT pg_temp.expect('case act in authority subject_kind refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'VOID',
+SELECT pg_temp.expect('malformed authority act token refused',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 1, 'AUTHORITY', 'invalid',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, %L, %L)$s$, :h2, :hx, :owner, :owner, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('payload without nonce refused',
@@ -110,13 +110,13 @@ SELECT count(*) = 1 AS authority_payload_kept FROM claimcore.ledger
 \endif
 
 -- Snapshot projection invariants ---------------------------------------------------------------
-INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01');
+INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic');
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01')$s$, '23505');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23505');
 SELECT pg_temp.expect('reference with a space refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01')$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01')$s$, '23514');
+    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic')$s$, '23514');
 SELECT pg_temp.expect('erased projection with snapshot refused',
     $s$UPDATE claimcore.cases SET state='ERASED'$s$, '23514');
 SELECT pg_temp.expect('live projection without snapshot refused',
@@ -127,7 +127,7 @@ SELECT pg_temp.expect('oversized snapshot refused',
     $s$UPDATE claimcore.cases SET snapshot=decode(repeat('00',32769),'hex')$s$, '23514');
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
-UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL WHERE case_id=:case1;
+UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,changed_at=TIMESTAMPTZ '2026-09-02T00:00:00Z' WHERE case_id=:case1;
 SELECT snapshot IS NULL AND case_reference='Demo-0001' AND revision=3 AND state='ERASED' AS erased_projection FROM claimcore.cases WHERE case_id=:case1 \gset
 \if :erased_projection
 \echo PASS erased projection keeps only reference, revision and state
@@ -140,8 +140,8 @@ SELECT snapshot IS NULL AND case_reference='Demo-0001' AND revision=3 AND state=
 INSERT INTO claimcore.actors VALUES (:owner, 'HUMAN', 'https://issuer.example/', 'owner', true);
 INSERT INTO claimcore.grants VALUES (:owner, 'OWNER', NULL);
 INSERT INTO claimcore.grants VALUES (:owner, 'PAYMENT_RECORDER', :case1);
-SELECT pg_temp.expect('undeclared role token refused',
-    format($s$INSERT INTO claimcore.grants VALUES (%L, 'SYNTHETIC_UNDECLARED_ROLE', NULL)$s$, :owner), '23514');
+SELECT pg_temp.expect('malformed role token refused',
+    format($s$INSERT INTO claimcore.grants VALUES (%L, 'invalid-role', NULL)$s$, :owner), '23514');
 SELECT pg_temp.expect('duplicate installation grant refused',
     format($s$INSERT INTO claimcore.grants VALUES (%L, 'OWNER', NULL)$s$, :owner), '23505');
 \echo PASS runtime scenarios complete

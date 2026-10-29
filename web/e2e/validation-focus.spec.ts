@@ -27,6 +27,8 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
     meaning: issueMeanings.en.claimedAmount,
     issue: businessFormatRefusalText.DECIMAL_FORMAT.en,
   });
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator("[data-error-summary]").getByRole("link").click();
   await expect(amount).toBeFocused();
   await expect(amount).toHaveAttribute("aria-invalid", "true");
   expect(requests).toEqual(["POST /api/operation.preview"]);
@@ -50,6 +52,8 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
     meaning: issueMeanings.en.claimantName,
     issue: "The value must not exceed 200 Unicode characters.",
   });
+  await expect(page.locator("[data-error-summary]")).toBeFocused();
+  await page.locator("[data-error-summary]").getByRole("link").click();
   await expect(name).toBeFocused();
   await expect(name).toHaveAttribute("aria-invalid", "true");
   await expect(name).toHaveAttribute("aria-describedby", /\S/u);

@@ -91,21 +91,26 @@ let internal openCases (actor: ServiceContext) count =
 
 let internal act revision =
     let amended =
-        { registration with
-            ClaimantName = "Synthetic revision " + string revision
-        }
+        (ClaimCore.TestSupport.Inputs.registrationWith
+            [ BusinessField.ClaimantName, ("Synthetic revision " + string revision) ]
+            (registration))
 
     match (revision - 1L) % 8L with
     | 0L -> AuthoredCaseAct.AmendRegistration amended
     | 1L ->
-        AuthoredCaseAct.Decide
-            {
-                PaymentDecisionDate = "2026-08-04"
-                PayableAmount = "100.00"
-                PayableCurrency = "EUR"
-            }
-    | 2L -> AuthoredCaseAct.RecordPayment { PaymentDate = "2026-08-05" }
-    | 3L -> AuthoredCaseAct.ClearPayment
+        AuthoredCaseAct.Decide(
+            ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-04")
+                    BusinessField.PayableAmount, ("100.00")
+                    BusinessField.PayableCurrency, ("EUR")
+                ]
+        )
+    | 2L ->
+        AuthoredCaseAct.RecordPayment(
+            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-05") ]
+        )
+    | 3L -> (AuthoredCaseAct.Bare BareAct.ClearPayment)
     | 4L ->
         AuthoredCaseAct.Correct
             {
@@ -113,9 +118,9 @@ let internal act revision =
                 Decision = Change.Keep
                 Payment = Change.Keep
             }
-    | 5L -> AuthoredCaseAct.WithdrawDecision
-    | 6L -> AuthoredCaseAct.Close
-    | _ -> AuthoredCaseAct.Reopen
+    | 5L -> (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
+    | 6L -> (AuthoredCaseAct.Bare BareAct.Close)
+    | _ -> (AuthoredCaseAct.Bare BareAct.Reopen)
 
 let internal writeLane (actor: ServiceContext) workload lane =
     task {

@@ -142,17 +142,9 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   );
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
-  fireEvent.change(document.querySelector('[name="target.kind"]')!, {
-    target: {
-      value: "HUMAN",
-    },
-  });
+  input("target.kind", "HUMAN");
   if (kind === "GRANT" || kind === "REVOKE") {
-    fireEvent.change(document.querySelector('[name="act.role"]')!, {
-      target: {
-        value: "CASE_READER",
-      },
-    });
+    input("act.role", "CASE_READER");
   }
 };
 it.each(authorityActs)(
@@ -161,7 +153,7 @@ it.each(authorityActs)(
     expect(authorityActs).toHaveLength(5);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
-    render(<AuthorityPanel token="token" onLockChange={vi.fn()} />);
+    render(<AuthorityPanel onLockChange={vi.fn()} />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));

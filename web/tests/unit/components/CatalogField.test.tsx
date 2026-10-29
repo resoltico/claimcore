@@ -12,10 +12,10 @@ it.each([
 ] as const)("shows a localized country name in %s without changing its code", (language, name) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "en-GB" }),
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
   );
   render(<CatalogField field={country} value="LV" onChange={vi.fn()} />);
-  expect(screen.getByRole("textbox")).toHaveValue("LV");
+  expect(screen.getByRole("combobox")).toHaveValue("LV");
   expect(screen.getByText(new RegExp(name, "u"))).toBeVisible();
 });
 it("warns for an unassigned code without blocking it and explains ZZ", () => {
@@ -23,7 +23,7 @@ it("warns for an unassigned code without blocking it and explains ZZ", () => {
   expect(
     screen.getByText("No country name is available for QQ. Check the intended code."),
   ).toBeVisible();
-  expect(screen.getByRole("textbox")).not.toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-invalid", "true");
   view.rerender(<CatalogField field={country} value="ZZ" onChange={vi.fn()} />);
   expect(screen.getByText("ZZ: Unknown or international")).toBeVisible();
 });

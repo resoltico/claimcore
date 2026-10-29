@@ -1,4 +1,4 @@
-import { fireEvent } from "@testing-library/react";
+import { changeField } from "./field-entry";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { caseFields } from "./service-foundation.fixtures";
 /** Supplies wire-valid authored registration; individual tests override current business admission. */
@@ -15,9 +15,9 @@ export const fillRegistrationInputs = (overrides: Readonly<Record<string, string
   );
   const names = definition.inputs.flatMap((input) => (input.field === null ? [] : [input.field]));
   for (const name of names) {
-    const input = document.querySelector<HTMLInputElement>(`input[data-field-name="${name}"]`);
+    const input = document.querySelector<HTMLElement>(`[data-field-name="${name}"]`);
     if (input !== null) {
-      fireEvent.change(input, { target: { value: authored.get(name) ?? "" } });
+      changeField(input, authored.get(name) ?? "");
     }
   }
 };

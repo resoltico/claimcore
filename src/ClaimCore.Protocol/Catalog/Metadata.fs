@@ -25,11 +25,13 @@ type BindingKind =
     | Integer
     | Boolean
     | Choice of vocabulary: string * options: string list
+    | Choices of vocabulary: string * options: string list
     | Group of vocabulary: string * options: string list
 
 module BindingKind =
     let vocabulary =
         function
+        | BindingKind.Choices(name, _)
         | BindingKind.Choice(name, _)
         | BindingKind.Group(name, _) -> Some name
         | BindingKind.Text

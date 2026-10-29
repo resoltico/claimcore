@@ -17,6 +17,7 @@ type CatalogAtom =
     | Integer
     | Boolean
     | Choice of string list
+    | Choices of string list
     | Switch of off: string * on: string
 
 type CatalogDerivedInput =
@@ -73,6 +74,7 @@ module CommandGrammar =
                 | _, BindingKind.Text -> CatalogAtom.Text
                 | _, BindingKind.Integer -> CatalogAtom.Integer
                 | _, BindingKind.Boolean -> CatalogAtom.Boolean
+                | _, BindingKind.Choices(_, choices) -> CatalogAtom.Choices choices
                 | _, BindingKind.Choice(_, choices)
                 | _, BindingKind.Group(_, choices) -> CatalogAtom.Choice choices
 
@@ -92,6 +94,7 @@ module CommandGrammar =
             | CatalogAtom.Integer -> "N"
             | CatalogAtom.Boolean -> "true|false"
             | CatalogAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
+            | CatalogAtom.Choices choices -> choices |> List.map kebab |> String.concat "|"
             | CatalogAtom.Switch _ -> ""
 
         let inputs, _ = derive operation
@@ -111,11 +114,17 @@ module CommandGrammar =
                         + kebab (inputName input.Name)
                         + (if suffix = "" then "" else " " + suffix)
 
-                    Some(
+                    let syntax =
                         if input.Binding.Required && input.Binding.Branches.IsEmpty then
                             text
                         else
                             "[" + text + "]"
+
+                    Some(
+                        match input.Atom with
+                        | CatalogAtom.Choices _ -> syntax + "..."
+                        | _ -> syntax
                     ))
+
 
         String.concat " " (words operation @ arguments)

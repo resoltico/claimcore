@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
@@ -12,7 +13,7 @@ export const prepareRoleFixture = async (page: Page) => {
   const reference = `NARROW-${randomUUID()}`;
   const unrelated = `UNRELATED-${randomUUID()}`;
   await openCase(page, unrelated);
-  await page.getByRole("button", { name: "Cases", exact: true }).click();
+  await goToView(page, "cases");
   await openCase(page, reference);
   const inventory = await syntheticPrincipals();
   const principal = {

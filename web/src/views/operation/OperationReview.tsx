@@ -1,3 +1,4 @@
+import { IdentifierValue } from "../../components/IdentifierValue";
 import { lifecycleMessageIds } from "../LifecycleStatus";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
@@ -31,7 +32,9 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
                 field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
                 context="ui.before"
               />
-              <span aria-hidden="true"> → </span>
+              <span className="review-arrow" aria-hidden="true">
+                {" → "}
+              </span>
               <BusinessValue
                 value={change.after}
                 field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
@@ -59,7 +62,9 @@ const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }
             <dt>{p.text("input.scope.label")}</dt>
             <dd>
               <span>{p.term("scope", grant.scope.kind)}</span>{" "}
-              {grant.scope.kind === "CASE" ? <bdi>{grant.scope.caseReference}</bdi> : null}
+              {grant.scope.kind === "CASE" ? (
+                <IdentifierValue value={grant.scope.caseReference} />
+              ) : null}
             </dd>
           </dl>
         </li>
@@ -112,6 +117,7 @@ const ReviewConfirmation = ({
         {renderCatalogKey(p, confirmationId)}
       </label>
       <button
+        className="primary"
         type="button"
         disabled={!model.confirmed || model.busy}
         onClick={() => void model.execute()}

@@ -1,7 +1,7 @@
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import { render, screen } from "../support/presentation-test-support";
+import { render, screen, TestSession } from "../support/presentation-test-support";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import {
   current,
@@ -24,10 +24,16 @@ const disclosed = {
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("fences prior actor prefills through token change and discard until a new authorized preview", async () => {
   const user = userEvent.setup();
-  const view = render(editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" }));
+  const view = render(
+    <TestSession credential="token">
+      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+    </TestSession>,
+  );
   expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
   view.rerender(
-    editor({ current: disclosed, initialAct: "AMEND_REGISTRATION", token: "new-token" }),
+    <TestSession credential="new-token">
+      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+    </TestSession>,
   );
   expect(screen.queryByDisplayValue(canary)).toBeNull();
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));

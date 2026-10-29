@@ -26,7 +26,5 @@ it("uses the binding vocabulary to label an option at an unfamiliar catalog path
       onChange={vi.fn()}
     />,
   );
-  expect(screen.getByRole("option", { name: catalogs.en["role.CASE_READER.label"] })).toHaveValue(
-    "CASE_READER",
-  );
+  expect(screen.getByRole("radio", { name: catalogs.en["role.CASE_READER.label"] })).toBeChecked();
 });

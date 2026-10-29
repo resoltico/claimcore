@@ -54,7 +54,7 @@ const languages = [
 const preferences = (language: (typeof languages)[number]["language"]) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "en-GB" }),
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
   );
 };
 it.each(languages)(

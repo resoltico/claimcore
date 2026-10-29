@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { CaseReceipt, CatalogDocument } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { CaseFieldsView } from "./CaseFieldsView";
@@ -9,7 +10,7 @@ export const ReceiptFields = ({
 }: {
   subject: CaseReceipt["subject"];
   fields: CatalogDocument["fields"];
-  context: string;
+  context: ReactNode;
 }) => {
   const p = usePresentation();
   switch (subject.snapshot.kind) {

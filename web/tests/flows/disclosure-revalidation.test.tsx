@@ -81,7 +81,6 @@ for (const retainCurrent of [false, true]) {
       const user = userEvent.setup();
       render(
         <CaseDetail
-          token="token"
           caseReference={fields.caseReference}
           reloadSignal={0}
           definition={definition.catalog}
@@ -89,7 +88,7 @@ for (const retainCurrent of [false, true]) {
           onAct={vi.fn()}
         />,
       );
-      await screen.findByText(fields.registration.claimantName);
+      await screen.findAllByText(fields.registration.claimantName);
       await user.selectOptions(
         screen.getByRole("combobox", {
           name: "History detail",

@@ -1,160 +1,195 @@
+import "./worklist/worklist.css";
+import { useCallback, useMemo } from "react";
 import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { Button } from "react-aria-components/Button";
-import { Form } from "react-aria-components/Form";
-import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
-import { TextField } from "react-aria-components/TextField";
-import { useCallback, useState } from "react";
 import type { CaseSummary, ServiceResponse } from "../api/service";
-import { service } from "../api/service";
-import { CharacterWarning } from "../components/BusinessValue";
-import { CopyValue } from "../components/CopyValue";
-import { useRetryablePage } from "../hooks/useRead";
-
-type CaseListProps = {
-  token: string;
-  onSelect: (caseReference: string) => void;
-  onOpen: () => void;
-};
-
+import { useEndpointPage } from "../hooks/useEndpointPage";
+import { useRoute } from "../routing/useRoute";
+import { navigate } from "../routing/navigation";
+import {
+  parseWorklistQuery,
+  worklistPath,
+  listRequest,
+  type WorklistQuery,
+} from "../routing/worklistQuery";
+import { WorklistToolbar } from "./worklist/WorklistToolbar";
+import { CaseRow } from "./worklist/CaseRow";
+import { savedViewLabel } from "./worklist/savedViewLabel";
+type Props = { onSelect: (caseReference: string) => void; onOpen: () => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
-
-const CaseRow = ({
-  caseView,
-  onSelect,
-}: {
-  caseView: CaseSummary;
-  onSelect: (reference: string) => void;
-}) => {
+const useWorklist = () => {
+  const route = useRoute();
+  const search = route.screen === "cases" ? route.query : "";
+  const query = useMemo(() => parseWorklistQuery(search), [search]);
+  const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
+  const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof casePage>>>(
+    "case.list",
+    input,
+    casePage,
+  );
+  const change = useCallback((next: WorklistQuery) => {
+    navigate(worklistPath(next), true);
+  }, []);
+  return {
+    ...page,
+    query,
+    change,
+    mayOpen: page.page?.offers.some((offer) => offer.kind === "OPEN") ?? false,
+  };
+};
+const WorklistColumns = () => {
   const p = usePresentation();
   return (
-    <li>
-      <Button
-        onPress={() => {
-          onSelect(caseView.caseReference);
-        }}
-      >
-        <bdi>{caseView.caseReference}</bdi>
-      </Button>
-      <CharacterWarning value={caseView.caseReference} />
-      <span>
-        {p.text("ui.caseRow", {
-          status: p.term("lifecycle", caseView.state.kind),
-          revision: p.integer(caseView.revision),
-        })}
-        {caseView.state.kind === "ERASED" ? null : (
-          <> · {p.term("status", caseView.state.status)}</>
-        )}
-      </span>
-      <CopyValue label={p.fieldLabel("caseReference")} value={caseView.caseReference} />
-    </li>
+    <thead className="worklist-columns">
+      <tr>
+        <th scope="col">{p.fieldLabel("caseReference")}</th>
+        <th scope="col">{p.fieldLabel("claimantName")}</th>
+        <th scope="col">{p.fieldLabel("claimedAmount")}</th>
+        <th scope="col">{p.fieldLabel("payableAmount")}</th>
+        <th scope="col">{p.text("input.progress.label")}</th>
+        <th scope="col">{p.text("label.changedAt")}</th>
+      </tr>
+    </thead>
   );
 };
-
-const LookupForm = ({
-  lookup,
-  loading,
-  onChange,
-  onFind,
-  onReload,
-}: {
-  lookup: string;
-  loading: boolean;
-  onChange: (value: string) => void;
-  onFind: () => void;
-  onReload: () => void;
-}) => {
+type Page = ReturnType<typeof useWorklist>;
+const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
   const p = usePresentation();
+  const emptyMessage =
+    page.query.view === undefined
+      ? p.text("ui.noCasesForView")
+      : p.text("ui.noCasesForSavedView", { view: savedViewLabel(p, page.query.view) });
   return (
-    <Form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onFind();
-      }}
-      className="lookup"
-    >
-      <TextField value={lookup} onChange={onChange} isRequired>
-        <Label>{p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })}</Label>
-        <Input id="case-lookup" autoComplete="off" dir="auto" />
-      </TextField>
-      <Button type="submit" isDisabled={lookup === ""}>
-        {p.text("ui.findCase")}
-      </Button>
-      <Button onPress={onReload} isDisabled={loading}>
-        {loading ? p.text("ui.loading") : p.text("ui.reloadCases")}
-      </Button>
-    </Form>
-  );
-};
-
-const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void }) => {
-  const p = usePresentation();
-  return (
-    <div className="section-heading">
-      <h2 id="case-list-title">{p.text("ui.cases")}</h2>
-      {mayOpen ? <Button onPress={onOpen}>{p.actLabel("OPEN")}</Button> : null}
-    </div>
-  );
-};
-
-const useCaseList = (token: string) => {
-  const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => service.list(cursor, 50, token, signal),
-    [token],
-  );
-  const page = useRetryablePage<
-    ServiceResponse<"case.list">,
-    CaseSummary,
-    NonNullable<ReturnType<typeof casePage>>
-  >(request, casePage);
-  const mayOpen = page.page?.offers.some((offer) => offer.kind === "OPEN") ?? false;
-  return { ...page, mayOpen };
-};
-
-export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
-  const p = usePresentation();
-  const [lookup, setLookup] = useState("");
-  const { items, cursor, message, loading, load, mayOpen, page } = useCaseList(token);
-  return (
-    <section aria-labelledby="case-list-title">
-      <CaseHeading mayOpen={mayOpen} onOpen={onOpen} />
-      <LookupForm
-        lookup={lookup}
-        loading={loading}
-        onChange={setLookup}
-        onFind={() => {
-          if (lookup !== "") {
-            onSelect(lookup);
-          }
-        }}
-        onReload={() => void load(null)}
-      />
-      {message === null ? null : (
-        <p className="error" role="alert">
-          <NoticeView value={message} />
-        </p>
-      )}
-      {page !== null && !loading && message === null ? (
-        <PageStatus
-          empty={items.length === 0}
-          cursor={cursor}
-          emptyMessage="ui.noAccessibleCases"
-        />
+    <p>
+      {emptyMessage}{" "}
+      {filtered ? (
+        <button
+          type="button"
+          onClick={() => {
+            page.change({});
+          }}
+        >
+          {p.text("ui.clearFilters")}
+        </button>
       ) : null}
-      <ul className="case-list">
-        {items.map((caseView) => (
-          <CaseRow key={caseView.caseReference} caseView={caseView} onSelect={onSelect} />
-        ))}
-      </ul>
-      {loading ? <p role="status">{p.text("ui.loadingCases")}</p> : null}
-      {cursor === null ? null : (
-        <Button onPress={() => void load(cursor)} isDisabled={loading}>
-          {p.text("ui.moreCases")}
-        </Button>
+    </p>
+  );
+};
+const WorklistFeedback = ({ page }: { page: Page }) => {
+  const p = usePresentation();
+  const filtered = Object.keys(page.query).some(
+    (key) => key !== "view" || page.query.view !== "all",
+  );
+  const customEmpty = filtered || page.query.view !== undefined;
+  return (
+    <>
+      {page.message === null ? null : (
+        <div role="alert">
+          <NoticeView value={page.message} />
+          <button
+            type="button"
+            onClick={() => {
+              void page.load(null);
+            }}
+          >
+            {p.text("ui.tryAgain")}
+          </button>
+        </div>
       )}
+      {page.page !== null && !page.loading && page.message === null ? (
+        <>
+          <PageStatus
+            empty={page.items.length === 0 && !customEmpty}
+            cursor={page.cursor}
+            emptyMessage="ui.noAccessibleCases"
+          />
+          {page.items.length === 0 && customEmpty ? (
+            <WorklistEmpty page={page} filtered={filtered} />
+          ) : null}
+        </>
+      ) : null}
+    </>
+  );
+};
+const WorklistLoading = ({ page }: { page: Page }) => {
+  const p = usePresentation();
+  return page.loading ? (
+    <>
+      <div className="worklist-skeleton" aria-hidden="true" />
+      <p role="status">{p.text("ui.loadingCases")}</p>
+    </>
+  ) : null;
+};
+const referenceSearchKey = (text: string | undefined) =>
+  text?.replace(/[a-z]/gu, (letter) => letter.toUpperCase());
+const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
+  const p = usePresentation();
+  const exact =
+    page.items.length === 1 &&
+    referenceSearchKey(page.query.text) === referenceSearchKey(page.items[0]?.caseReference)
+      ? (page.items[0] ?? null)
+      : null;
+  return (
+    <>
+      {exact === null ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            onSelect(exact.caseReference);
+          }}
+        >
+          {p.text("ui.openExactCase", { reference: exact.caseReference })}
+        </button>
+      )}
+      <table className="worklist-table">
+        <WorklistColumns />
+        <tbody className="case-list worklist-rows">
+          {page.items.map((value) => (
+            <CaseRow key={value.caseReference} value={value} onSelect={onSelect} />
+          ))}
+        </tbody>
+      </table>
+      {page.cursor === null ? null : (
+        <button
+          type="button"
+          disabled={page.loading}
+          onClick={() => {
+            void page.load(page.cursor);
+          }}
+        >
+          {p.text("ui.moreCases")}
+        </button>
+      )}
+    </>
+  );
+};
+export const CaseList = ({ onSelect, onOpen }: Props) => {
+  const p = usePresentation();
+  const page = useWorklist();
+  return (
+    <section aria-labelledby="case-list-title" className="worklist">
+      <div className="section-heading">
+        <h1 id="case-list-title">{p.text("ui.cases")}</h1>
+        {page.mayOpen ? (
+          <button className="primary" type="button" onClick={onOpen}>
+            {p.actLabel("OPEN")}
+          </button>
+        ) : null}
+      </div>
+      <WorklistToolbar
+        query={page.query}
+        onChange={page.change}
+        onSelect={onSelect}
+        loading={page.loading}
+        onReload={() => {
+          void page.load(null);
+        }}
+      />
+      <WorklistFeedback page={page} />
+      <WorklistLoading page={page} />
+      <WorklistResults page={page} onSelect={onSelect} />
     </section>
   );
 };

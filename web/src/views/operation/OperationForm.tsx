@@ -1,7 +1,7 @@
+import { OperationErrors } from "./OperationErrors";
 import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { CatalogInputs } from "../../components/CatalogInputs";
-import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
@@ -10,6 +10,7 @@ import { operationEntry } from "../../operation/operationForm";
 export type OperationFormProps = {
   model: OperationModel;
   current: CurrentCase | null;
+  fixedTarget?: boolean;
   offered: ReadonlyArray<string>;
   onAct: (kind: string) => void;
   onClose?: () => void;
@@ -36,7 +37,7 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
     </label>
   );
 };
-const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
+const OperationInputs = ({ model, current, offered, fixedTarget }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
   const act = operationEntry(model.entry);
@@ -62,15 +63,11 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           entry={act}
           current={current}
           values={model.values}
+          {...(fixedTarget === undefined ? {} : { fixedTarget })}
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
         />
-      )}
-      {model.notice === null ? null : (
-        <p role="alert" tabIndex={-1} data-error-summary>
-          <NoticeView value={model.notice} />
-        </p>
       )}
     </>
   );
@@ -101,11 +98,8 @@ export const OperationForm = (props: OperationFormProps) => {
     if (model.notice === null) {
       return;
     }
-    const input = [
-      ...form.current!.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input,select"),
-    ].find((item) => item.name === Object.keys(model.fieldErrors)[0]);
-    (input ?? form.current?.querySelector<HTMLElement>("[data-error-summary]"))?.focus();
-  }, [model.fieldErrors, model.notice]);
+    form.current?.querySelector<HTMLElement>("[data-error-summary]")?.focus();
+  }, [model.notice]);
   const allowed = offered.includes(model.entry.kind);
   return (
     <form
@@ -117,6 +111,7 @@ export const OperationForm = (props: OperationFormProps) => {
         }
       }}
     >
+      <OperationErrors model={model} />
       <ActPicker {...props} />
       <OperationInputs {...props} />
       <div className="actions">

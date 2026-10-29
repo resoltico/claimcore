@@ -23,13 +23,19 @@ it("resolves explicit language and display-format preferences independently with
   for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "de-DE"]) {
     expect(resolveLanguage(input)).toBe("en");
   }
-  expect(parsePreferences('{"version":1,"language":null,"displayLocale":"lv-LV"}')).toEqual({
+  expect(
+    parsePreferences('{"version":2,"language":null,"displayLocale":"lv-LV","theme":"SYSTEM"}'),
+  ).toEqual({
     language: "en",
     displayLocale: "lv-LV",
+    theme: "SYSTEM" as const,
   });
-  expect(parsePreferences('{"version":1,"language":"ar","displayLocale":null}')).toEqual({
+  expect(
+    parsePreferences('{"version":2,"language":"ar","displayLocale":null,"theme":"SYSTEM"}'),
+  ).toEqual({
     language: "ar",
     displayLocale: "en-GB",
+    theme: "SYSTEM" as const,
   });
   expect(resolveLanguage("LV-lv")).toBe("lv");
   expect(resolveLanguage("ar-EG")).toBe("ar");
@@ -39,8 +45,15 @@ it("resolves explicit language and display-format preferences independently with
   expect(resolveDisplayLocale("ar-EG")).toBe("ar-EG");
   expect(resolveDisplayLocale("de-DE")).toBe("en-GB");
   expect(
-    parsePreferences(JSON.stringify({ version: 1, language: "lv-LV", displayLocale: "ar-EG" })),
-  ).toEqual({ language: "lv", displayLocale: "ar-EG" });
+    parsePreferences(
+      JSON.stringify({
+        version: 2,
+        language: "lv-LV",
+        displayLocale: "ar-EG",
+        theme: "SYSTEM" as const,
+      }),
+    ),
+  ).toEqual({ language: "lv", displayLocale: "ar-EG", theme: "SYSTEM" as const });
 });
 
 it("refuses corrupt, oversized and unknown preference records without retaining arbitrary data", () => {
@@ -59,15 +72,21 @@ it("refuses corrupt, oversized and unknown preference records without retaining 
   ]) {
     expect(parsePreferences(text)).toEqual(defaults);
   }
-  expect(parsePreferences('{"version":1,"language":null,"displayLocale":42}')).toEqual(defaults);
+  expect(
+    parsePreferences('{"version":2,"language":null,"displayLocale":42,"theme":"SYSTEM"}'),
+  ).toEqual(defaults);
   localStorage.setItem(preferenceKey, "private-invalid-text");
   expect(loadPreferences()).toEqual(defaults);
 });
 
 it("persists only presentation preferences and remains usable when storage is denied", () => {
-  const next = { language: "lv" as const, displayLocale: "ar-EG" as const };
+  const next = {
+    language: "lv" as const,
+    displayLocale: "ar-EG" as const,
+    theme: "SYSTEM" as const,
+  };
   expect(savePreferences(next)).toBe(true);
-  expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({ version: 1, ...next });
+  expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({ version: 2, ...next });
   expect(loadPreferences()).toEqual(next);
   vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
     throw new Error("denied");
@@ -85,14 +104,20 @@ it("projects owned preference fields from typed width subtypes", () => {
     displayLocale: "ar-EG",
     version: 2,
     extra: "synthetic-extension",
+    theme: "SYSTEM" as const,
   };
   expect(savePreferences(extended)).toBe(true);
   expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({
-    version: 1,
+    version: 2,
     language: "lv",
     displayLocale: "ar-EG",
+    theme: "SYSTEM" as const,
   });
-  expect(loadPreferences()).toEqual({ language: "lv", displayLocale: "ar-EG" });
+  expect(loadPreferences()).toEqual({
+    language: "lv",
+    displayLocale: "ar-EG",
+    theme: "SYSTEM" as const,
+  });
 });
 
 const Probe = ({ mount }: { mount: () => void }) => {

@@ -6,6 +6,14 @@ A synopsis shows required inputs and brackets optional inputs. Choices use lower
 
 Use `--dry-run` to print the prepared JSON frame without authentication. This checks protocol shape and byte limits; domain admission, authorization and current revision are checked by the service. Use `--preview` with a case or authority act to request a review without recording it.
 
+Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
+
+Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--order reference|recent` selects the page order. A continuation cursor is bound to those filters and order.
+`case list --format csv` emits UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case, previews with that revision and a new operation ID, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
+
+`--preview` remains preview-only. `--dry-run` stays offline and requires an explicit revision. Redirected input or output and `--format json` also require an explicit revision; there is no skip-confirmation flag.
+
 Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values.
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
@@ -374,13 +382,18 @@ List cases
 Read one page of cases visible to the actor.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent]
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+| `--lifecycle` | Lifecycle — Restrict results to the selected lifecycles. Omit this filter to include every lifecycle. | active, voided, erased |  |
+| `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
+| `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
+| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--order` | Order — Order by case reference, or by latest accepted change with case reference as the tie-breaker. | reference, recent | REFERENCE |
 
 ## case history
 

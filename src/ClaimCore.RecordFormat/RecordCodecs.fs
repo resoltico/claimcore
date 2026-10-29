@@ -14,49 +14,26 @@ module internal RecordCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
-    let private inputField name get fields =
-        Codec.field (DurableNames.field name) get Codec.text fields
+    let private inputGroup group create values =
+        CaseFields.ofGroup group
+        |> List.map (fun field -> field, DurableNames.field field, Codec.text)
+        |> Codec.fieldMap
+        |> Codec.mapResult
+            (fun path fields ->
+                create (Map.toList fields)
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> Map.ofList)
 
     let registration =
-        (Codec.record (fun incident notification country claimant insurer amount currency ->
-            {
-                RegistrationInput.IncidentDate = incident
-                IncidentNotificationDate = notification
-                IncidentCountry = country
-                ClaimantName = claimant
-                InsurerName = insurer
-                ClaimedAmount = amount
-                ClaimedCurrency = currency
-            })
-        : Fields<RegistrationInput, _>)
-        |> inputField BusinessField.IncidentDate _.IncidentDate
-        |> inputField BusinessField.IncidentNotificationDate _.IncidentNotificationDate
-        |> inputField BusinessField.IncidentCountry _.IncidentCountry
-        |> inputField BusinessField.ClaimantName _.ClaimantName
-        |> inputField BusinessField.InsurerName _.InsurerName
-        |> inputField BusinessField.ClaimedAmount _.ClaimedAmount
-        |> inputField BusinessField.ClaimedCurrency _.ClaimedCurrency
-        |> Codec.build
+        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
         |> Codec.named "Registration"
 
     let decision =
-        (Codec.record (fun date amount currency ->
-            {
-                DecisionInput.PaymentDecisionDate = date
-                PayableAmount = amount
-                PayableCurrency = currency
-            })
-        : Fields<DecisionInput, _>)
-        |> inputField BusinessField.PaymentDecisionDate _.PaymentDecisionDate
-        |> inputField BusinessField.PayableAmount _.PayableAmount
-        |> inputField BusinessField.PayableCurrency _.PayableCurrency
-        |> Codec.build
+        inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
         |> Codec.named "Decision"
 
     let payment =
-        (Codec.record (fun date -> { PaymentInput.PaymentDate = date }): Fields<PaymentInput, _>)
-        |> inputField BusinessField.PaymentDate _.PaymentDate
-        |> Codec.build
+        inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
         |> Codec.named "Payment"
 
     let registrationGroup =
@@ -229,71 +206,39 @@ module internal RecordCodecs =
                     }))
             format
 
-    let private acceptedDate = scalar CalendarDate.parse CalendarDate.format
     let private acceptedReference = scalar CaseReference.parse CaseReference.format
-    let private acceptedCountry = scalar CountryCode.parse CountryCode.format
-    let private acceptedName = scalar PartyName.parse PartyName.format
 
-    let private moneyProblem amountField currencyField path =
-        function
-        | MoneyViolation.Amount _ ->
-            {
-                Path = path + "." + amountField
-                Reason = "Invalid accepted amount."
-            }
-        | MoneyViolation.Currency _ ->
-            {
-                Path = path + "." + currencyField
-                Reason = "Invalid accepted currency."
-            }
+    let private acceptedGroup group create values =
+        CaseFields.declarations
+        |> List.filter (fun row -> row.Group = Some group)
+        |> List.map (fun row ->
+            row.Field,
+            DurableNames.field row.Field,
+            scalar (FieldValue.parse row.Kind) FieldValue.format)
+        |> Codec.fieldMap
+        |> mapResult
+            (fun path fields ->
+                create (Map.toList fields)
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> Map.ofList)
 
     let private acceptedRegistration =
-        (record (fun incident notification country claimant insurer amount currency ->
-            Money.parse amount currency
-            |> Result.map (fun money ->
-                {
-                    Registration.IncidentDate = incident
-                    IncidentNotificationDate = notification
-                    IncidentCountry = country
-                    ClaimantName = claimant
-                    InsurerName = insurer
-                    ClaimedAmount = money
-                }))
-        : Fields<Registration, _>)
-        |> field DurableNames.IncidentDate _.IncidentDate acceptedDate
-        |> field DurableNames.IncidentNotificationDate _.IncidentNotificationDate acceptedDate
-        |> field DurableNames.IncidentCountry _.IncidentCountry acceptedCountry
-        |> field DurableNames.ClaimantName _.ClaimantName acceptedName
-        |> field DurableNames.InsurerName _.InsurerName acceptedName
-        |> field DurableNames.ClaimedAmount (fun value -> Money.format value.ClaimedAmount) text
-        |> field DurableNames.ClaimedCurrency (fun value -> Money.currency value.ClaimedAmount) text
-        |> buildResult (moneyProblem DurableNames.ClaimedAmount DurableNames.ClaimedCurrency)
+        acceptedGroup RecordGroup.Registration Registration.create Registration.values
         |> named "Registration"
 
     let private acceptedDecision =
-        (record (fun date amount currency ->
-            Money.parse amount currency
-            |> Result.map (fun money ->
-                {
-                    Decision.PaymentDecisionDate = date
-                    PayableAmount = money
-                }))
-        : Fields<Decision, _>)
-        |> field DurableNames.PaymentDecisionDate _.PaymentDecisionDate acceptedDate
-        |> field DurableNames.PayableAmount (fun value -> Money.format value.PayableAmount) text
-        |> field DurableNames.PayableCurrency (fun value -> Money.currency value.PayableAmount) text
-        |> buildResult (moneyProblem DurableNames.PayableAmount DurableNames.PayableCurrency)
+        acceptedGroup RecordGroup.Decision Decision.create Decision.values
         |> named "Decision"
 
     let private acceptedPayment =
-        (record (fun date -> { Payment.PaymentDate = date }): Fields<Payment, _>)
-        |> field DurableNames.PaymentDate _.PaymentDate acceptedDate
-        |> build
+        acceptedGroup RecordGroup.Payment Payment.create Payment.values
         |> named "Payment"
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            PaymentProgress.fromGroups decision (payment |> Option.map _.PaymentDate)
+            PaymentProgress.fromGroups
+                decision
+                (payment |> Option.map (fun (value: Payment) -> (Payment.date (value))))
             |> Result.map (fun progress ->
                 {
                     CaseFields.CaseReference = reference

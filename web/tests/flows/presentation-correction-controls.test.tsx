@@ -1,3 +1,4 @@
+import { chooseOption, selectedOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -26,7 +27,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const user = userEvent.setup();
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 1, language, displayLocale: "en-GB" }),
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
   );
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
   render(
@@ -38,9 +39,9 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
   const decision = document.querySelector<HTMLSelectElement>("#correction-decision-mode")!;
   const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
-  await user.selectOptions(registration, "REPLACE");
-  await user.selectOptions(decision, "CLEAR");
-  await user.selectOptions(payment, "CLEAR");
+  await chooseOption(user, registration, "REPLACE");
+  await chooseOption(user, decision, "CLEAR");
+  await chooseOption(user, payment, "CLEAR");
   const amount = document.querySelector<HTMLInputElement>(
     'input[data-field-name="claimedAmount"]',
   )!;
@@ -50,10 +51,10 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
     '.presentation-controls select[id$="-language"]',
   )!;
   for (const next of ["ar", "lv", "en"]) {
-    await user.selectOptions(languageSelector, next);
-    expect(registration).toHaveValue("REPLACE");
-    expect(decision).toHaveValue("CLEAR");
-    expect(payment).toHaveValue("CLEAR");
+    await chooseOption(user, languageSelector, next);
+    expect(selectedOption(registration)).toBe("REPLACE");
+    expect(selectedOption(decision)).toBe("CLEAR");
+    expect(selectedOption(payment)).toBe("CLEAR");
     expect(amount).toHaveValue("1.0000");
     expect(globalThis.fetch).not.toHaveBeenCalled();
   }
@@ -87,13 +88,14 @@ it("associates payment acknowledgement with the generated mode control", async (
   );
   render(editor({ initialAct: "CORRECT", current: paidCase }));
   const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
-  await user.selectOptions(
+  await chooseOption(
+    user,
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,
     "REPLACE",
   );
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   await waitFor(() => {
-    expect(payment).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
   expect(payment).toHaveAttribute("aria-invalid", "true");
   const description = document.getElementById("act.groups.payment.kind-error");
@@ -102,9 +104,9 @@ it("associates payment acknowledgement with the generated mode control", async (
     "act.groups.payment.kind-error",
   ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
-  await user.selectOptions(screen.getByRole("combobox", { name: "Interface language" }), "lv");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Interface language" }), "lv");
   expect(description).toHaveTextContent("skaidri jāapstiprina");
-  await user.selectOptions(payment, "CLEAR");
+  await chooseOption(user, payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
   expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
   expect(globalThis.fetch).toHaveBeenCalledOnce();

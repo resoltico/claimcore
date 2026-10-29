@@ -1,8 +1,9 @@
+import { IdentifierValue } from "../components/IdentifierValue";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
 import type { Notice } from "../protocol/notices";
-import { service, type ServiceResponse } from "../api/service";
-import { useRetryablePage } from "../hooks/useRead";
+import { type ApiResult, type ServiceResponse } from "../api/service";
+import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
@@ -11,15 +12,18 @@ type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
 export const ActorSummary = ({ actor }: { actor: Actor }) => {
   const p = usePresentation();
   return (
-    <dl>
+    <dl className="actor-summary">
       <dt>{p.text("ui.actor")}</dt>
       <dd>
-        <bdi>{actor.actorId}</bdi>
+        <IdentifierValue value={actor.actorId} />
       </dd>
       <dt>{p.text("ui.principal")}</dt>
       <dd>
-        {p.term("principalKind", actor.principal.kind)} · <bdi>{actor.principal.issuer}</bdi> ·{" "}
-        <bdi>{actor.principal.subject}</bdi>
+        {p.term("principalKind", actor.principal.kind)} ·{" "}
+        <bdi dir="ltr" className="principal-issuer" title={actor.principal.issuer}>
+          {actor.principal.issuer}
+        </bdi>{" "}
+        · <bdi>{actor.principal.subject}</bdi>
       </dd>
       <dt>{p.text("label.enabled")}</dt>
       <dd>{p.text(actor.enabled ? "ui.yes" : "ui.no")}</dd>
@@ -27,31 +31,30 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
   );
 };
 type ListingProps = {
-  token: string;
   mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
   onDisclosureRestored: (source: "listing") => void;
 };
-const useAuthorityPage = ({ token, onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
-  const request = useCallback(
-    async (cursor: string | null, signal: AbortSignal) => {
-      const result = await service.authorityList(cursor, token, signal);
-      if (
-        !signal.aborted &&
-        result.kind === "outcome" &&
-        result.value.outcome.kind === "SUCCEEDED"
-      ) {
+const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
+  const input = useCallback(
+    (cursor: string | null) => ({ ...(cursor === null ? {} : { cursor }), limit: 50 }),
+    [],
+  );
+  const restored = useCallback(
+    (result: ApiResult<ServiceResponse<"authority.list">>) => {
+      if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
         onDisclosureRestored("listing");
       }
-      return result;
     },
-    [token, onDisclosureRestored],
+    [onDisclosureRestored],
   );
-  return useRetryablePage<ServiceResponse<"authority.list">, Actor>(
-    request,
+  return useEndpointPage<"authority.list", Actor, NonNullable<ReturnType<typeof authorityPage>>>(
+    "authority.list",
+    input,
     authorityPage,
     onDisclosureRefused,
+    restored,
   );
 };
 export const AuthorityListing = (props: ListingProps) => {
@@ -59,10 +62,10 @@ export const AuthorityListing = (props: ListingProps) => {
   const page = useAuthorityPage(props);
   return (
     <section>
-      <h3 id="authority-actors-title" tabIndex={-1}>
+      <h2 id="authority-actors-title" tabIndex={-1}>
         {p.text("ui.actors")}
-      </h3>
-      <ul>
+      </h2>
+      <ul className="authority-rows">
         {page.items.map((actor) => (
           <li key={actor.actorId}>
             <ActorSummary actor={actor} />

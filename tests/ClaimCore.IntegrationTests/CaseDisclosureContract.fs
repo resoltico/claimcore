@@ -100,7 +100,7 @@ let internal caseErasure fixture =
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L (AuthoredCaseAct.Erase)
+        let erase = actRequest 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
 
         let! result =
             (Service.execute actor (OperationInput.Case erase) (CancellationToken.None))
@@ -135,7 +135,10 @@ let internal caseVisibility fixture =
             [ "A"; "B" ]
             "Reference-key order"
 
-        Expect.equal first.Next (Some "B") "Last visible key"
+        Expect.equal
+            first.Next
+            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "B"))
+            "Last visible key"
 
         let! principal = assignedReader actor
 
@@ -147,7 +150,12 @@ let internal caseVisibility fixture =
             [ "C" ]
             "Visibility precedes limit"
 
-        let! next = listCases fixture CaseVisibility.Every (Some "B") 2
+        let! next =
+            listCases
+                fixture
+                CaseVisibility.Every
+                (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "B"))
+                2
 
         Expect.equal
             ((storedPage next).Items
@@ -178,7 +186,11 @@ let internal foldedOrdering fixture =
             [ "ref-A" ]
             "Authored spelling with ASCII-key order"
 
-        Expect.equal first.Next (Some "REF-A") "Continuation is folded"
+        Expect.equal
+            first.Next
+            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "REF-A"))
+            "Continuation is folded"
+
         let! second = listCases fixture CaseVisibility.Every first.Next 1
 
         Expect.equal

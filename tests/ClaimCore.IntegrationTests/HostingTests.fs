@@ -67,7 +67,10 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! page =
             call first database.Fixture.Owner (fun actor ->
-                (Service.list actor ({ AfterCursor = None; Limit = 1 }) (token)))
+                (Service.list
+                    actor
+                    ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = None; Limit = 1 })))
+                    (token)))
 
         let cursor =
             match page with
@@ -78,7 +81,12 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! same =
             call first database.Fixture.Owner (fun actor ->
-                (Service.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Service.list
+                    actor
+                    ((ClaimCore.TestSupport.Inputs.caseListPage (
+                        { AfterCursor = cursor; Limit = 2 }
+                    )))
+                    (token)))
 
         match same with
         | Outcome.Succeeded page ->
@@ -92,7 +100,12 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         let! continued =
             call second database.Fixture.Owner (fun actor ->
-                (Service.list actor ({ AfterCursor = cursor; Limit = 2 }) (token)))
+                (Service.list
+                    actor
+                    ((ClaimCore.TestSupport.Inputs.caseListPage (
+                        { AfterCursor = cursor; Limit = 2 }
+                    )))
+                    (token)))
 
         match continued with
         | Outcome.Succeeded page ->

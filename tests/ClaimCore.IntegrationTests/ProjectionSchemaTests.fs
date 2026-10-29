@@ -11,7 +11,18 @@ open ClaimCore.Domain
 open ClaimCore.Postgres
 
 let private expected =
-    set [ "case_id"; "case_reference"; "revision"; "state"; "snapshot" ]
+    set
+        [
+            "case_id"
+            "case_reference"
+            "revision"
+            "state"
+            "snapshot"
+            "status"
+            "progress"
+            "changed_at"
+            "search_text"
+        ]
 
 let private columns (source: NpgsqlDataSource) =
     task {
@@ -38,7 +49,11 @@ let private projection () =
 
         try
             let! actual = columns database.OwnerSource |> Async.AwaitTask
-            Expect.equal actual expected "SQL has exactly the snapshot and identity columns"
+
+            Expect.equal
+                actual
+                expected
+                "SQL has exactly the declared snapshot, identity and worklist columns"
 
             use! connection =
                 database.OwnerSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask

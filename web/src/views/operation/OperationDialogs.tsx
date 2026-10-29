@@ -1,3 +1,4 @@
+import { IdentifierMessage } from "../../presentation/IdentifierMessage";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useEffect, useRef } from "react";
@@ -11,6 +12,11 @@ type AcceptedOperationProps = {
   message: Notice | null;
   onCommitted: (receipt: CaseReceipt) => void;
 };
+const AcceptedIdentity = ({ operationId }: { operationId: string }) => (
+  <p>
+    <IdentifierMessage id="ui.operationAccepted" values={{ operationId }} argument="operationId" />
+  </p>
+);
 export const AcceptedOperation = ({
   definition,
   receipt,
@@ -29,20 +35,22 @@ export const AcceptedOperation = ({
           <NoticeView value={message} />
         </p>
       )}
-      <h2 ref={heading} tabIndex={-1} id="accepted-title">
+      <h1 ref={heading} tabIndex={-1} id="accepted-title">
         {p.text("ui.acceptedOperation")}
-      </h2>
-      <p>
-        {p.text("ui.operationAccepted", {
-          operationId: receipt.operationId,
-        })}
-      </p>
+      </h1>
+      <AcceptedIdentity operationId={receipt.operationId} />
       <ReceiptFields
         subject={receipt.subject}
         fields={definition.catalog.fields}
-        context={p.text("ui.acceptedContext", {
-          operationId: receipt.operationId,
-        })}
+        context={
+          <IdentifierMessage
+            id="ui.acceptedContext"
+            values={{
+              operationId: receipt.operationId,
+            }}
+            argument="operationId"
+          />
+        }
       />
       <Button
         onPress={() => {

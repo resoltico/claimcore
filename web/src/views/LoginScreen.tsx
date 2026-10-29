@@ -1,3 +1,5 @@
+import { PresentationControls } from "../presentation/PresentationControls";
+import { rememberLoginReturn } from "../routing/loginReturn";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
@@ -15,12 +17,13 @@ export const LoginScreen = ({ message }: LoginScreenProps) => {
         <p className="eyebrow">{p.text("ui.registerLabel")}</p>
         <h1 id="login-title">ClaimCore</h1>
         <p>{p.text("ui.loginInstructions")}</p>
+        <PresentationControls />
         {message === null ? null : (
           <p className="error" role="alert">
             <NoticeView value={message} />
           </p>
         )}
-        <a className="login-link" href="/auth/login">
+        <a className="login-link" href="/auth/login" onClick={rememberLoginReturn}>
           {p.text("ui.signIn")}
         </a>
       </section>

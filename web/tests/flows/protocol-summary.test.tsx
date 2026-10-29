@@ -1,5 +1,5 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { CaseHistory } from "../../src/views/CaseHistory";
-import { service } from "../../src/api/service";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -30,6 +30,15 @@ it("localizes generated enum tokens while preserving identical authored principa
       exact: true,
     }),
   ).toBeVisible();
+  expect(
+    screen
+      .getByText("10000000-0000-4000-8000-000000000001", { exact: true })
+      .classList.contains("identifier-value"),
+  ).toBe(true);
+  expect(screen.getByText("10000000-0000-4000-8000-000000000001", { exact: true })).toHaveAttribute(
+    "dir",
+    "ltr",
+  );
   expect(
     screen.getAllByText("HUMAN", {
       exact: true,
@@ -91,7 +100,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 it("a failed history read stops loading without inventing a successful empty page", async () => {
-  vi.spyOn(service, "history").mockResolvedValue({
+  mockEndpoint("case.history").mockResolvedValue({
     kind: "deliveryFailure",
     notice: {
       kind: "local",
@@ -99,13 +108,7 @@ it("a failed history read stops loading without inventing a successful empty pag
     },
     dispatched: false,
   });
-  render(
-    <CaseHistory
-      token="synthetic"
-      caseReference="SYNTHETIC"
-      fields={productMetadata.catalog.fields}
-    />,
-  );
+  render(<CaseHistory caseReference="SYNTHETIC" fields={productMetadata.catalog.fields} />);
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.queryByText("No accessible history entries returned.")).toBeNull();
