@@ -41,6 +41,7 @@
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReplyFormat.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
+    <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />

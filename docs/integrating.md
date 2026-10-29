@@ -177,6 +177,10 @@ claimcore case list --format csv --all
 Facet flags are repeatable and derive their choices from the catalog. CSV is UTF-8 without a BOM, uses
 CRLF line endings and RFC 4180 quoting, and writes one header row of actual qualified wire field paths
 (such as `state.claimed.amount` and `state.progress`). Null/unrecorded/erased values use empty cells.
+CSV is a spreadsheet-safe export: a cell beginning with `=`, `+`, `-`, `@`, TAB or CR, or with one of
+those triggers after leading spaces/TABs, receives an apostrophe before RFC 4180 quoting. This rule
+applies to every column and alters affected cells. Use `--format json` when exact values are required;
+JSON and text output retain authored values.
 The header order is:
 
 ```text

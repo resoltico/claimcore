@@ -1,6 +1,5 @@
 namespace ClaimCore.Cli
 
-open System
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Protocol
@@ -86,14 +85,9 @@ module internal CaseListRows =
             }
         ]
 
-    let private quote (value: string) =
-        if value.IndexOfAny [| ','; '"'; '\r'; '\n' |] >= 0 then
-            "\"" + value.Replace("\"", "\"\"") + "\""
-        else
-            value
-
     let private csv values =
-        String.concat "," (values |> List.map quote) + "\r\n" |> Encoding.UTF8.GetBytes
+        String.concat "," (values |> List.map CsvCell.format) + "\r\n"
+        |> Encoding.UTF8.GetBytes
 
     let csvHeader = columns |> List.map _.Key |> csv
 

@@ -98,6 +98,99 @@ let tests =
         "case-list export and traversal"
         [
             testCase
+                "CSV protects formula-leading references claimant and insurer values"
+                (fun () ->
+                    for prefix in [ "="; "+"; "-"; "@"; "\t"; "\r" ] do
+                        let reference =
+                            if prefix = "\t" || prefix = "\r" then
+                                "SAFE"
+                            else
+                                prefix + "CASE"
+
+                        let claimant = prefix + "call,\"quoted\"\r\nclaimant"
+                        let insurer = prefix + "insurer"
+
+                        let exported =
+                            { row reference with
+                                State =
+                                    CaseState.Active
+                                        { facts with
+                                            ClaimantName = Inputs.name claimant
+                                            InsurerName = Inputs.name insurer
+                                        }
+                            }
+
+                        let code, bytes, _, _ =
+                            run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ exported ] None) ]
+
+                        Expect.equal code 0 "Export succeeds without changing admission"
+                        let cells = (parseCsv bytes)[1]
+
+                        Expect.equal
+                            cells[0]
+                            (if reference = "SAFE" then "SAFE" else "'" + reference)
+                            "Formula-leading references are protected"
+
+                        Expect.equal
+                            cells[4]
+                            ("'" + claimant)
+                            "Claimant protection precedes quoting"
+
+                        Expect.equal
+                            cells[5]
+                            ("'" + insurer)
+                            "Insurer protection uses the same rule")
+            testCase
+                "CSV cell protection handles whitespace and leaves ordinary cells exact"
+                (fun () ->
+                    for authored, expected in
+                        [
+                            "", ""
+                            "ordinary", "ordinary"
+                            "a=1+1", "a=1+1"
+                            "  ordinary", "  ordinary"
+                            "  =1+1", "'  =1+1"
+                            " \t+1", "' \t+1"
+                            "  -1", "'  -1"
+                            " \t@call", "' \t@call"
+                            "\tordinary", "'\tordinary"
+                            "\rordinary", "'\rordinary"
+                            "  \rordinary", "'  \rordinary"
+                            "'=1+1", "'=1+1"
+                            "@call,\"quoted\"\r\nnext", "'@call,\"quoted\"\r\nnext"
+                        ] do
+                        let bytes =
+                            CsvCell.format authored + ",sentinel\r\n" |> Encoding.UTF8.GetBytes
+
+                        Expect.equal
+                            (parseCsv bytes)
+                            [ [ expected; "sentinel" ] ]
+                            "Independent CSV readback")
+            testCase "JSON and text preserve formula-leading authored values" (fun () ->
+                let exported =
+                    { row "=CASE" with
+                        State =
+                            CaseState.Active
+                                { facts with
+                                    ClaimantName = Inputs.name "=1+1"
+                                    InsurerName = Inputs.name "@insurer"
+                                }
+                    }
+
+                for options in [ []; [ "--format"; "json" ] ] do
+                    let code, bytes, _, _ =
+                        run options [ Outcome.Succeeded(page [ exported ] None) ]
+
+                    let rendered = Encoding.UTF8.GetString bytes
+                    Expect.equal code 0 "Exact-value output succeeds"
+
+                    for authored in [ "=CASE"; "=1+1"; "@insurer" ] do
+                        Expect.stringContains rendered authored "Authored spelling remains"
+
+                        Expect.isFalse
+                            (rendered.Contains("'" + authored))
+                            "No CSV apostrophe is added")
+            testCase
                 "CSV is independently parseable with wire headers quoting and erased disclosure"
                 (fun () ->
                     let erased =
