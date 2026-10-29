@@ -68,7 +68,7 @@ reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 
-Change value rules in [Values.fs](../src/ClaimCore.Domain/Values.fs), and record/operation structure in the
+Change value rules in their [owning value module](#value-module), and record/operation structure in the
 [typed declaration](../src/ClaimCore.Domain/CaseFields.fs). The case projection stores exact durable snapshot bytes.
 Web binds endpoint codecs to the public [Service](../src/ClaimCore.Application/Service.fs) through
 [Route.bind](../src/ClaimCore.Web/Routes.fs).
@@ -167,11 +167,13 @@ checksum-bound schema source; its SHA-256 installation identity derives from the
 Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
 identities without modifying them.
 
-The case projection contains identity, revision, lifecycle and a nullable snapshot. Live snapshots store
+The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
+last-change time and normalized search text. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check its reference, revision and lifecycle against the columns and
-its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger and
-compares the projection snapshot bytes exactly. Case progress and business-value invariants belong to Domain
+its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger,
+compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
+text against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts
@@ -380,8 +382,8 @@ changes and expected behavior remain manually authored; no maintained script app
 
 ## Growth
 
-Run `bash eng/verify.sh growth` before a release and on demand. It retains nine write-contention profiles
-and three cardinality comparisons, and adds search/filtered read workloads at 1k, 10k and 100k cases.
+Run `bash eng/verify.sh growth` before a release and on demand. It includes nine write-contention profiles,
+three cardinality comparisons and search/filtered read workloads at 1k, 10k and 100k cases.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements

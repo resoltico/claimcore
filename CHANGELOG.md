@@ -6,10 +6,12 @@
 - Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
 - Discard earlier case-list cursors; continuations bind canonical filters and order. History, actor and grant cursor formats remain unchanged.
 - Stored browser preferences reset; version 2 adds independent SYSTEM, LIGHT and DARK themes.
-- Update source callers for typed IDs/positions, private complete field groups, act descriptions and endpoint reply classification; Schema interpreters handle Vocabulary annotations.
+- Update source callers for typed IDs/positions, complete field groups, grouped refusals, act descriptions and endpoint reply classification; Schema interpreters handle Vocabulary annotations.
+- Handle new CASE_STATUS_PROJECTION, CASE_PROGRESS_PROJECTION, CASE_CHANGED_AT_PROJECTION and CASE_SEARCH_PROJECTION verification findings.
 - Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
 - Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.
 - Case-list rows add claimant, insurer, canonical claimed/payable amounts, progress and last-change time; erased rows expose only retained metadata.
+- Case lists hide cases with corrupt case-scoped human-only grants to the querying service principal, even with installation-wide read access, matching case.get.
 - Export case lists as RFC 4180 CSV; --all follows per-page snapshots and stops with the reached cursor on refusal.
 - Terminal text verbs can fetch an omitted revision, preview and ask before execution; automation still supplies a revision and omitted correction groups default to KEEP interactively.
 - Browser routes preserve worklist queries, deep links and sign-in return; reserved references use reversible prefixed escaping.
@@ -23,7 +25,6 @@
 - Field/act declarations drive shared processing; private constructors enforce complete typed groups while permanent ledger encodings stay unchanged.
 - Browser forms use catalog vocabulary, correction advice and selected-entry constants; core labels remain owned by their declared vocabularies.
 - Tests share a hand-authored independent inventory and one input-builder owner per language; seed-corpus failures name their shared cause without skipping properties.
-- Select change probes by affected responsibilities and reuse evidence after impact review; report locality, behavior and adaptation separately. Required product verification remains unchanged.
 - Protocol source paths follow Wire, Api, Catalog, Messages, Presentation and CommandLine responsibilities.
 - Total exhaustive tables may justify complexity suppressions; rule bodies and product/test code retain the existing lint limits and controls.
 - Built-in lint severities inherit enabled categories; explicit exceptions, configured rules and JavaScript-plugin rules remain in place.

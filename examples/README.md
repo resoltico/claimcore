@@ -1,7 +1,7 @@
 # Synthetic case walkthrough
 
 Work through nine accepted changes on one synthetic case: open, decide, record payment, close, reopen,
-correct, void, reinstate and erase. Use a fresh installation and matching service/CLI.
+clear the payment record, void, reinstate and erase. Use a fresh installation and matching service/CLI.
 [Getting started](../docs/getting-started.md) creates the service, identity provider and protected key ring.
 The CLI uses HTTPS and receives no database credential.
 

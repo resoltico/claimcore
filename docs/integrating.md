@@ -156,9 +156,9 @@ underscore and backslash match literally. Search does not remove accents or use 
 
 REFERENCE orders by the ASCII-case-folded reference. RECENT orders by the latest accepted case ledger
 entry's `recorded_at` descending, then folded reference ascending. A continuation encodes those keyset
-positions and its canonical filters/order. Replaying it with different filters or order refuses as
-`InvalidCursor`. Discard cursors from the earlier case-list format; history, actor and grant cursors keep
-their own formats. Every page still authorizes under current rights and uses one snapshot.
+positions and its canonical filters/order. Use only continuations supported by the issuing endpoint.
+After request admission and authorization, unsupported cursor formats or invalid endpoint/filter/resource
+bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot.
 
 A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
@@ -204,8 +204,9 @@ Authority actor links bind offered actions to the disclosed actor. A retained re
 principal and operation identity until the user explicitly discards it to begin the selected actor's
 action. Preview and exact-request confirmation still precede execution.
 
-Language, display locale and SYSTEM/LIGHT/DARK theme are independent preferences. The version-2 stored
-format resets older preferences. Locale date/amount controls prepare canonical wire values for preview;
+Language, display locale and SYSTEM/LIGHT/DARK theme are independent preferences. Preferences use stored
+format version 2. Unsupported versions or invalid record shapes use defaults; unsupported preference values
+fall back individually. Locale date/amount controls prepare canonical wire values for preview;
 the server remains responsible for admission. Unambiguous locale amounts normalize before preview;
 ambiguous text reaches server admission as authored. Country/currency suggestions allow free entry under
 the wire grammar. The review shows canonical values before execution.
@@ -242,7 +243,7 @@ history. Receipts distinguish `DISCLOSED`, `WITHHELD` and `ERASED`. Access/sessi
 views, and stale replies cannot populate a different actor or resource context.
 
 `case.history` returns newest revisions first. Start without a cursor, then follow `nextCursor` for older
-revisions. Its cursor encoding is unchanged; the revision keyset now moves backwards. The browser loads
+revisions. Each continuation selects revisions older than its last entry. The browser loads
 bounded pages and compares adjacent disclosed full receipts for changed fields; it does not fetch the
 complete history before displaying the timeline. Withheld or erased fields are never inferred.
 
