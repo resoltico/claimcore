@@ -38,8 +38,8 @@ let private stateActions =
             let closed = apply (AuthoredCaseAct.Bare BareAct.Close) state |> accepted
 
             Expect.equal
-                (availableActs closed |> Set.ofList)
-                (TransitionOracle.offered (Case.snapshot closed).State |> Set.ofList)
+                (availableActs closed)
+                (TransitionOracle.offered (Case.snapshot closed).State)
                 "Closed case advertisements follow the oracle")
 
 let private edgeActions =
