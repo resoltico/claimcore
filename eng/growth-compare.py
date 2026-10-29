@@ -2,6 +2,7 @@
 """Run source-stable, isolated, same-host growth comparisons; preserve all evidence."""
 
 import json
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -21,6 +22,19 @@ TEST = "FullyQualifiedName~synthetic write contention and verifier growth qualif
 
 def git(root, *arguments):
     return subprocess.check_output(["git", "-C", str(root), *arguments], text=True).strip()
+
+
+def candidate_snapshot(root):
+    revision = git(root, "rev-parse", "HEAD")
+    if git(root, "ls-files", "--others", "--exclude-standard"):
+        raise ValueError("Stage new candidate source files before comparison; untracked files cannot be snapshotted")
+    arguments = ["git", "-C", str(root), "diff", "--binary", "--no-ext-diff", "--no-textconv",
+                 "--no-color", "--src-prefix=a/", "--dst-prefix=b/", "HEAD"]
+    patch = subprocess.check_output(arguments)
+    if git(root, "rev-parse", "HEAD") != revision or subprocess.check_output(arguments) != patch:
+        raise ValueError("Candidate source changed while capturing its snapshot; retry with stable inputs")
+    digest = hashlib.sha256(patch).hexdigest() if patch else None
+    return revision, patch, digest
 
 
 def execute(arguments, root, log, environment):
@@ -117,7 +131,7 @@ def run_workloads(checkout, destination, environment, preparation):
     return collect(checkout, destination, preparation)
 
 
-def review_equivalence(root, revisions):
+def review_equivalence(root, revisions, patch_digest):
     has_fingerprint = subprocess.run([
         "git", "-C", str(root), "cat-file", "-e",
         revisions["reference"] + ":tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs",
@@ -134,6 +148,8 @@ def review_equivalence(root, revisions):
     review = json.loads(Path(path).read_text())
     if any(review.get(side) != revision for side, revision in revisions.items()):
         raise ValueError("Manual equivalence review is for different source commits")
+    if review.get("candidatePatchSha256") != patch_digest:
+        raise ValueError("Manual equivalence review is for a different candidate source patch")
     if not isinstance(review.get("review"), str) or not review["review"].strip():
         raise ValueError("Manual equivalence review must explain the checked semantics")
     if not isinstance(review.get("workloads"), list) or not review["workloads"]:
@@ -141,13 +157,16 @@ def review_equivalence(root, revisions):
     return review
 
 
-def prepare_checkouts(root, workspace, report, owner):
+def prepare_checkouts(root, workspace, report, owner, candidate_patch):
     preparations = {}
     for side in ("reference", "candidate"):
         checkout = workspace / side
         subprocess.run([
             "git", "-C", str(root), "worktree", "add", "--detach", str(checkout), report[side],
         ], check=True, capture_output=True)
+        if side == "candidate" and candidate_patch:
+            subprocess.run(["git", "-C", str(checkout), "apply", "--binary", "-"],
+                           input=candidate_patch, check=True, capture_output=True)
         preparations[side] = prepare(checkout, owner)
         (Path(report["directory"]) / f"{side}-harness.patch").write_text(preparations[side]["patch"])
         print(f"Building isolated {side} {report[side]}", flush=True)
@@ -186,26 +205,27 @@ def alternate(workspace, report, preparations):
 
 def main(reference):
     root = Path(__file__).resolve().parent.parent
+    candidate, candidate_patch, patch_digest = candidate_snapshot(root)
     revisions = {
         "reference": git(root, "rev-parse", "--verify", "--end-of-options", reference + "^{commit}"),
-        "candidate": git(root, "rev-parse", "HEAD"),
+        "candidate": candidate,
     }
-    if git(root, "status", "--porcelain", "--untracked-files=all"):
-        raise ValueError("Commit the candidate before comparison; both isolated inputs must be source-stable")
     if "CLAIMCORE_GROWTH_PROFILE" in os.environ or "CLAIMCORE_GROWTH_COMPARISON" in os.environ:
         raise ValueError("growth-compare owns workload selection; unset growth selection variables")
-    review = review_equivalence(root, revisions)
+    review = review_equivalence(root, revisions, patch_digest)
     subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], check=True, capture_output=True)
     owner = str(uuid.uuid4())
     directory = Path(os.environ.get("CLAIMCORE_TEST_REPORT_DIRECTORY", root / "artifacts/verification"))
     directory = directory.resolve() / ("growth-compare-" + owner)
     directory.mkdir(parents=True)
-    report = {**revisions, "directory": str(directory), "owner": owner, "manualEquivalence": review}
+    report = {**revisions, "candidatePatchSha256": patch_digest,
+              "directory": str(directory), "owner": owner, "manualEquivalence": review}
+    (directory / "candidate-source.patch").write_bytes(candidate_patch)
     print(f"Comparison evidence: {directory}", flush=True)
     with tempfile.TemporaryDirectory(prefix="claimcore-growth-compare-") as temporary:
         workspace = Path(temporary)
         try:
-            preparations = prepare_checkouts(root, workspace, report, owner)
+            preparations = prepare_checkouts(root, workspace, report, owner, candidate_patch)
             report.update(alternate(workspace, report, preparations))
         except BaseException as error:
             report.update(passed=False, error=str(error) or type(error).__name__)

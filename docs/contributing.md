@@ -383,8 +383,10 @@ changes and expected behavior remain manually authored; no maintained script app
 
 ## Growth
 
-Run `bash eng/verify.sh growth-compare REF` from a clean, committed candidate to compare against a
-commit. It builds both commits in disposable detached worktrees with locked restore and alternates
+Run `bash eng/verify.sh growth-compare REF` to compare against a commit. It captures the candidate's
+HEAD and tracked working changes, retaining the source patch and its SHA-256; stage any new source
+files first. It refuses source changes during capture. Both source-stable inputs build in disposable
+detached worktrees with locked restore. The comparison alternates
 reference → candidate three times. Each workload uses a fresh PostgreSQL container. The compared set
 is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and search/REFERENCE
 and filtered/RECENT reads at 100k cases. Reads added after a reference are reported as not applicable.
@@ -398,7 +400,8 @@ Different workload fingerprints refuse comparison, naming the differing members.
 
 References that predate fingerprints require a recorded manual review of act cycles, populations,
 authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
-`reference` and `candidate` commit IDs, a `workloads` array of reviewed keys (for example
+`reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
+a `workloads` array of reviewed keys (for example
 `write/10000/1`, `write/100000/1`, `write/100000/16`, `cardinality/1000`, `read/search/100000`,
 `read/filtered/100000`), and a `review` explaining the evidence. Missing or mismatched reviews refuse
 before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.

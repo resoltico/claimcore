@@ -2,7 +2,8 @@
 
 Run `bash eng/verify.sh` at the repository root for the required gate. Use `--fast` or named stages for
 iteration. Run `bash eng/verify.sh growth` and `bash eng/verify.sh growth-compare REF` separately
-before release or on demand. Comparison uses committed, isolated inputs and retains all six runs. The
+before release or on demand. Comparison isolates the reference commit and a stable candidate snapshot,
+including tracked working changes, and retains all six runs. The
 [development guide](../docs/contributing.md) explains prerequisites, stage scopes and evidence.
 
 | Tool | Responsibility |

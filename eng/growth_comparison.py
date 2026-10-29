@@ -135,6 +135,7 @@ def markdown(report):
     lines = [
         "# Same-host growth comparison", "",
         f"Reference: `{report['reference']}`; candidate: `{report['candidate']}`.", "",
+        f"Candidate source patch SHA-256: `{report.get('candidatePatchSha256') or 'none (committed source)'}`.", "",
         "Medians of three alternating pairs. This is relative same-session evidence, not an SLA.", "",
         "| Workload | Metric | Reference median | Candidate median | Ratio | Rule | Result |",
         "| --- | --- | ---: | ---: | ---: | --- | --- |",

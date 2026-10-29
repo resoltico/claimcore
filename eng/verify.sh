@@ -4,14 +4,6 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source eng/native-reports.sh
 
-if [[ "${1-}" == growth-compare ]]; then
-  if [[ $# -ne 2 ]]; then
-    echo "Use growth-compare REF as the sole stage." >&2
-    exit 64
-  fi
-  exec python3 eng/growth-compare.py "$2"
-fi
-
 # These assignments are also the inputs each native stage executes.
 unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj)
 postgres_projects=(tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj)
@@ -36,6 +28,14 @@ for project in tests/*/*Tests.fsproj; do
     exit 64
   fi
 done
+
+if [[ "${1-}" == growth-compare ]]; then
+  if [[ $# -ne 2 ]]; then
+    echo "Use growth-compare REF as the sole stage." >&2
+    exit 64
+  fi
+  exec python3 eng/growth-compare.py "$2"
+fi
 
 if [[ $# -eq 0 ]]; then
   stages=(lint unit frontend workflows integration acceptance)

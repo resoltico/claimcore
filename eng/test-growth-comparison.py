@@ -3,13 +3,19 @@
 
 import copy
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 
 from growth_comparison import compare, differences, metric_result, validate_fingerprint
 from growth_reference import prepare, replace_once
+
+specification = importlib.util.spec_from_file_location("growth_stage", Path(__file__).with_name("growth-compare.py"))
+stage = importlib.util.module_from_spec(specification)
+specification.loader.exec_module(stage)
 
 
 def fingerprint(definition):
@@ -31,6 +37,29 @@ def runs():
 
 
 class GrowthComparisonTests(unittest.TestCase):
+    def test_candidate_snapshot_preserves_uncommitted_control_and_exact_provenance(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+            source = root / "source.fs"
+            source.write_text("baseline\n")
+            subprocess.run(["git", "-C", str(root), "add", "source.fs"], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Growth test",
+                            "-c", "user.email=growth@example.test", "-c", "core.hooksPath=/dev/null",
+                            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture baseline"], check=True)
+            revision, patch, digest = stage.candidate_snapshot(root)
+            self.assertEqual(patch, b"")
+            self.assertIsNone(digest)
+            source.write_text("uncommitted intervention\n")
+            after, patch, digest = stage.candidate_snapshot(root)
+            self.assertEqual(after, revision)
+            self.assertEqual(digest, hashlib.sha256(patch).hexdigest())
+            self.assertIn(b"+uncommitted intervention", patch)
+            self.assertEqual(stage.git(root, "rev-list", "--count", "HEAD"), "1")
+            (root / "untracked.fs").write_text("not captured\n")
+            with self.assertRaisesRegex(ValueError, "untracked"):
+                stage.candidate_snapshot(root)
+
     def test_medians_resist_one_outlier_and_retain_all_samples(self):
         row = metric_result("writesPerSecond", [100, 110, 1000], [90, 100, 900])
         self.assertEqual(row["referenceMedian"], 110)
