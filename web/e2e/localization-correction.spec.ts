@@ -1,6 +1,6 @@
 import { chooseChoice, choiceGroup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { ServiceResponse } from "../src/protocol/types";
 import { openAuthenticated } from "./session-helpers";
 import { inputMessage } from "./input-accessibility-messages";
@@ -44,6 +44,35 @@ const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision
       },
     },
   });
+};
+const expectClaimantWarning = async (field: Locator, language: "en" | "lv" | "ar") => {
+  const warning = {
+    en: "Contains U+200D",
+    lv: "Satur U+200D",
+    ar: "يحتوي على \u2068U+200D\u2069",
+  }[language];
+  const authored = "A\u0308 العربية\u200D <tag>";
+  await expect(field.locator(".character-warning")).toBeVisible();
+  await expect(field.locator(".character-warning")).toHaveText(warning);
+  await expect(field.getByText(authored, { exact: true })).toHaveJSProperty(
+    "textContent",
+    authored,
+  );
+};
+const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
+  const field = page
+    .getByRole("dialog")
+    .locator(".review-values > div")
+    .filter({
+      has: page.getByText(ui(language, "field.claimantName.label"), { exact: true }),
+    });
+  await expectClaimantWarning(field, language);
+};
+const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
+  const field = page
+    .getByRole("region", { name: ui(language, "ui.currentCase"), exact: true })
+    .locator('.field-row[data-field-name="claimantName"]');
+  await expectClaimantWarning(field, language);
 };
 const preserveChoice = async (page: Page, modes: Modes) => {
   const requests = trackRequests(page);
@@ -139,6 +168,7 @@ for (const status of ["CLOSED"] as const) {
         pending.release();
         if (refusal === null) {
           expect(captured.reply.outcome.kind).toBe("REVIEWED");
+          await expectReviewedClaimantWarning(page, language);
           await confirmReview(page);
           const recorded = page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/operation.execute",
@@ -149,6 +179,7 @@ for (const status of ["CLOSED"] as const) {
           expect((await recorded).status()).toBe(200);
           await expect(page.locator("#case-detail-title")).toBeVisible();
           await expect(page.locator(".success-toast")).toBeVisible();
+          await expectRecordedClaimantWarning(page, language);
           expectResultFields(before, await currentCase(page, reference), modes);
           const acceptedHistory = await history(page, reference);
           expect(acceptedHistory).toHaveLength(before.revision + 1);
