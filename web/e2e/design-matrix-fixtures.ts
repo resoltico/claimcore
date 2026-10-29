@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { registration as registrationInput } from "../tests/support/inputs";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import {
@@ -251,7 +252,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
   const references = Object.fromEntries(
     states.map((state) => [state, state === "undecided" ? `~${marker}/?#` : `${marker}-${state}`]),
   ) as Record<CaseState, string>;
-  const registration = {
+  const registration = registrationInput({
     incidentDate: date,
     incidentNotificationDate: date,
     incidentCountry: "LV",
@@ -259,7 +260,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     insurerName: "Matrix insurer Apdrošinātājs شركة التأمين",
     claimedAmount: "1234.56",
     claimedCurrency: "EUR",
-  };
+  });
   let operationId = "";
   for (const state of states) {
     const reference = references[state];
