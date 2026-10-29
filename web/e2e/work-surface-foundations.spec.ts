@@ -6,18 +6,37 @@ import { noHorizontalOverflow } from "./layout-support";
 import { actPath, casePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
+import { pauseJsonReply } from "./localization-support";
 
-const pauseExecutionReply = async (page: Page) => {
-  const received = Promise.withResolvers<void>();
-  const released = Promise.withResolvers<void>();
-  await page.route("**/api/operation.execute", async (route) => {
-    const response = await route.fetch({ maxRedirects: 0 });
+const settleAcceptedClose = async (page: Page, operationId: string) => {
+  const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
+  const check = page.getByRole("button", { name: "Check outcome", exact: true });
+  // A canceled document navigation may also cancel Firefox's outstanding fetch.
+  await accepted.or(check).waitFor({ state: "visible" });
+  if (await check.isVisible()) {
+    await expect(page.getByRole("alert")).toContainText("unknown");
+    const stored = await page.evaluate(
+      () =>
+        JSON.parse(sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null") as unknown,
+    );
+    expect(stored).toEqual({ operationId, subject: "CASE", act: "CLOSE" });
+    const resolved = page.waitForResponse((response) =>
+      response.url().endsWith("/api/operation.resolve"),
+    );
+    await check.click();
+    const response = await resolved;
+    const reply: unknown = await response.json();
+    if (!isResponse("operation.resolve", reply) || reply.outcome.kind !== "ACCEPTED") {
+      throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
+    }
     expect(response.status()).toBe(200);
-    received.resolve();
-    await released.promise;
-    await route.fulfill({ response });
-  });
-  return { received: received.promise, release: released.resolve };
+    expect(reply.outcome.data.operationId).toBe(operationId);
+    await expect
+      .poll(() => page.evaluate(() => sessionStorage.getItem("claimcore.unresolvedOperation")))
+      .toBeNull();
+  }
+  await expect(accepted).toBeVisible();
+  await expect(page.locator(".success-toast")).toContainText("revision 2.");
 };
 
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
@@ -27,25 +46,34 @@ test("native beforeunload blocks document navigation only while execution is in 
   const reference = `UNLOAD-${randomUUID()}`;
   await openCase(page, reference);
   await startAct(page, "Close the case");
-  await reviewDraft(page);
-  const execution = await pauseExecutionReply(page);
+  const identity = await reviewDraft(page);
+  const execution = await pauseJsonReply(page, "operation.execute");
   const dialogs: string[] = [];
+  const dismissed = Promise.withResolvers<void>();
   page.on("dialog", async (dialog) => {
     dialogs.push(dialog.type());
     await dialog.dismiss();
+    dismissed.resolve();
   });
   try {
     await page.getByText("I confirm these changes.", { exact: true }).click();
     await page.getByRole("button", { name: "Record changes", exact: true }).click();
-    await execution.received;
+    const { reply } = await execution.ready;
+    expect(reply.outcome.kind).toBe("ACCEPTED");
+    expect(reply.operationId).toBe(identity.operationId);
     await expect(page.getByRole("button", { name: "Recording…", exact: true })).toBeDisabled();
-    // This is a real document navigation; dismissal aborts it in the browser.
-    await page.goto("/operations", { waitUntil: "commit" }).catch(() => null);
+    // Trigger a real document navigation without awaiting a canceled navigation promise.
+    await Promise.all([
+      page.waitForEvent("dialog", { timeout: 5_000 }),
+      page.evaluate(() => {
+        window.location.assign("/operations");
+      }),
+    ]);
+    await dismissed.promise;
     expect(dialogs).toEqual(["beforeunload"]);
     await expect(page).toHaveURL((url) => url.pathname === actPath(reference, "CLOSE"));
     execution.release();
-    await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
-    await expect(page.locator(".success-toast")).toContainText("revision 2.");
+    await settleAcceptedClose(page, identity.operationId);
     await page.goto("/operations", { waitUntil: "commit" });
     await expect(
       page.getByRole("heading", { name: "Operation lookup", exact: true }),
@@ -53,7 +81,6 @@ test("native beforeunload blocks document navigation only while execution is in 
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
     execution.release();
-    await page.unroute("**/api/operation.execute");
   }
 });
 

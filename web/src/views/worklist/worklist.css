@@ -15,7 +15,12 @@
 .worklist-search input {
   flex: 1;
   inline-size: 100%;
-  min-inline-size: 0;
+  min-inline-size: var(--target-minimum);
+}
+@media (width < 40rem) {
+  .worklist-search {
+    flex-basis: 100%;
+  }
 }
 .worklist-filters details {
   position: relative;
