@@ -15,7 +15,11 @@ let private fieldSamples =
     (RegistrationInput.values Inputs.registration
      @ DecisionInput.values Inputs.decision
      @ PaymentInput.values Inputs.payment)
-    |> List.map (fun (field, value) -> "--" + CommandGrammar.kebab (BusinessField.key field), value)
+    |> List.map (fun (field, value) ->
+        // Captured argv columns are space-delimited. Only omitted inputs use this synthetic
+        // single-word default; arguments explicitly authored by a test remain untouched.
+        let sample = if value.Contains(' ') then "Synthetic" else value
+        "--" + CommandGrammar.kebab (BusinessField.key field), sample)
     |> Map.ofList
 
 /// Fill only omitted business inputs. Grammar still owns branch selection and required syntax.

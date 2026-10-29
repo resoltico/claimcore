@@ -89,3 +89,23 @@ let tests =
                         "The actual codec still rejects unknown members"
                 | _ -> failtest "Expected a group object")
         ]
+
+[<Tests>]
+let cliArguments =
+    testCase "omitted CLI business inputs remain reusable captured arguments" (fun () ->
+        let arguments = CliExamples.complete [ "case"; "open"; "SYNTHETIC" ]
+
+        let captured =
+            System.String
+                .Join(" ", arguments)
+                .Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
+            |> Array.toList
+
+        let prepare values =
+            ClaimCore.Cli.Grammar.prepare (fun () -> "11111111-2222-4333-8444-555555555555") values
+            |> Result.map _.Bytes
+
+        Expect.equal
+            (prepare captured)
+            (prepare arguments)
+            "The golden argument column can be read back by its consumers")
