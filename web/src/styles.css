@@ -43,9 +43,15 @@ button,
   border: var(--border-width) solid var(--color-accent);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
+  color: var(--color-accent);
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+button.primary,
+button[type="submit"] {
   color: var(--color-on-accent);
   background: var(--color-accent);
-  overflow-wrap: anywhere;
 }
 
 button:focus-visible,

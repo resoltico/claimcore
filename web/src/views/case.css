@@ -94,7 +94,8 @@
   border-block-start: var(--border-width) solid var(--color-border);
   margin-block-start: var(--space-4);
 }
-.case-action-danger {
+button.primary.case-action-danger,
+button.case-action-danger {
   background: var(--color-danger-bg);
   color: var(--color-danger);
   border-color: var(--color-danger);
@@ -198,12 +199,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-.case-actions button.primary {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  border-color: var(--color-accent);
-}
-
 .case-fact-card .field-row {
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-1);

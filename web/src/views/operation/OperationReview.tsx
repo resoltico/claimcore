@@ -117,6 +117,7 @@ const ReviewConfirmation = ({
         {renderCatalogKey(p, confirmationId)}
       </label>
       <button
+        className="primary"
         type="button"
         disabled={!model.confirmed || model.busy}
         onClick={() => void model.execute()}

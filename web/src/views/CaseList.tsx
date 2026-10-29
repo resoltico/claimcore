@@ -173,7 +173,7 @@ export const CaseList = ({ onSelect, onOpen }: Props) => {
       <div className="section-heading">
         <h1 id="case-list-title">{p.text("ui.cases")}</h1>
         {page.mayOpen ? (
-          <button type="button" onClick={onOpen}>
+          <button className="primary" type="button" onClick={onOpen}>
             {p.actLabel("OPEN")}
           </button>
         ) : null}

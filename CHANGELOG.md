@@ -14,7 +14,7 @@
 - Terminal text verbs can fetch an omitted revision, preview and ask before execution; automation still supplies a revision and omitted correction groups default to KEEP interactively.
 - Browser routes preserve worklist queries, deep links and sign-in return; reserved references use reversible prefixed escaping.
 - Browser inputs use locale dates/amounts and currency/country suggestions; linked error summaries focus first, and the server remains authoritative.
-- The responsive work surface adds saved worklists, grouped facts, progress/history and contextual case/authority actions in both themes and en/lv/ar.
+- The responsive work surface adds saved worklists, grouped facts, progress/history and contextual case/authority actions with distinct primary actions in both themes and en/lv/ar.
 - Accepted browser case changes return to the current case with an act/revision notice; uncertain delivery retains exact retry and final-resolution controls.
 - Authority actor actions bind the selected principal; retained requests need explicit discard consent before a fresh request can target another actor.
 - Stored act, role and principal kinds use permanent decoders; unknown tokens fail reads and diverge verification even when SQL accepts their shape.

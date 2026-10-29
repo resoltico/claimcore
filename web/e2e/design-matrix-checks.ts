@@ -1,3 +1,4 @@
+import { checkActionHierarchy } from "./action-hierarchy";
 import { retainResponseBodies } from "./response-bodies";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -301,6 +302,7 @@ const factCardReadability = () => {
 };
 export const checkFrame = async (page: Page, dimension: Dimension) => {
   await expectAccessible(page);
+  await checkActionHierarchy(page);
   await compactActionGeometry(page, dimension);
   expect(await page.evaluate(factCardReadability)).toEqual([]);
   const targets = await page.evaluate(smallTargets);

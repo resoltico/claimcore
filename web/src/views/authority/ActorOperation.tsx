@@ -31,6 +31,7 @@ const ActorActions = ({ target, busy }: { target: AuthorityTarget; busy: boolean
         {target.offered.map((kind) => (
           <button
             key={kind}
+            className={kind === target.offered[0] ? "primary" : undefined}
             type="button"
             disabled={busy}
             aria-label={p.text("ui.actDescription", {

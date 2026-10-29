@@ -10,7 +10,7 @@ const ActButton = ({ act, primary, onAct }: Action) => {
   const p = usePresentation();
   let className = act === primary ? "primary" : "";
   if (act === "ERASE") {
-    className = "case-action-danger";
+    className = `${className} case-action-danger`.trim();
   }
   return (
     <Button
