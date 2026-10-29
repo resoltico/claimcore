@@ -392,6 +392,13 @@ is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality compari
 and filtered/RECENT reads at 100k cases. Reads added after a reference are reported as not applicable.
 The full observational `growth` run below remains required for release qualification too.
 
+For a targeted diagnostic or an injected-delay control, the existing `CLAIMCORE_GROWTH_PROFILE`
+selector accepts `10000:1`, `100000:1` or `100000:16`. It still runs three alternating pairs and the
+normal growth harness's three cardinality controls, without read workloads. The report states that
+qualification is incomplete: exit 1 means a budget/check failed, and exit 2 means diagnostic budgets
+passed but the required full set was not run. A diagnostic can never return qualification success.
+The default full comparison remains unchanged; reduced runs never replace it.
+
 Comparison fails when a candidate median's write/read throughput is below 0.85×, or its p95, p99 or verification
 time exceeds 1.30× the reference. Reports retain all six raw runs, medians, ratios and workload
 fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*` (or beneath
@@ -405,6 +412,7 @@ a `workloads` array of reviewed keys (for example
 `write/10000/1`, `write/100000/1`, `write/100000/16`, `cardinality/1000`, `read/search/100000`,
 `read/filtered/100000`), and a `review` explaining the evidence. Missing or mismatched reviews refuse
 before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
+Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
 
 Only the disposable test harnesses receive an ownership label; historical harnesses also receive the
 comparison workload selection. Every adaptation is retained as a patch in the report. Product code

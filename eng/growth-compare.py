@@ -12,12 +12,27 @@ import sys
 import tempfile
 import uuid
 
-from growth_comparison import compare, markdown, validate_fingerprint
+from growth_comparison import REQUIRED_WRITES, compare, markdown, validate_fingerprint
 from growth_reference import prepare
 
 
 PROJECT = "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj"
 TEST = "FullyQualifiedName~synthetic write contention and verifier growth qualification"
+
+
+def requested_profile():
+    profile = os.environ.get("CLAIMCORE_GROWTH_PROFILE")
+    if profile is not None and "write/" + profile.replace(":", "/") not in REQUIRED_WRITES:
+        raise ValueError("Diagnostic profile must be one of: 10000:1, 100000:1, 100000:16.")
+    if "CLAIMCORE_GROWTH_COMPARISON" in os.environ:
+        raise ValueError("growth-compare owns comparison mode; unset CLAIMCORE_GROWTH_COMPARISON")
+    return profile
+
+
+def qualification_exit(passed, complete):
+    if not passed:
+        return 1
+    return 0 if complete else 2
 
 
 def git(root, *arguments):
@@ -71,11 +86,12 @@ def clean_containers(owner):
         raise RuntimeError("Owned comparison containers remain after cleanup")
 
 
-def validate_completion(state, preparation):
-    if state["result"] != "completed" or state["completed"] != 3 or state["expected"] != 3:
+def validate_completion(state, preparation, profile):
+    expected_writes = 3 if profile is None else 1
+    if state["result"] != "completed" or state["completed"] != expected_writes or state["expected"] != expected_writes:
         raise ValueError(f"Incomplete comparison write profiles: {state}")
-    expected_reads = state.get("requiredReadProfiles", 0)
-    if preparation["hasReadWorkloads"] and expected_reads < 2:
+    expected_reads = state.get("requiredReadProfiles", 0) if profile is None else 0
+    if profile is None and preparation["hasReadWorkloads"] and expected_reads < 2:
         raise ValueError("The reference or candidate omitted its base read workloads")
     if state.get("completedReadProfiles", 0) != expected_reads:
         raise ValueError(f"Incomplete comparison read profiles: {state}")
@@ -87,14 +103,24 @@ def retain_failed_reports(growth, destination):
         shutil.copytree(growth, destination, ignore=shutil.ignore_patterns("keys-*"))
 
 
-def collect(root, destination, preparation):
+def cardinality_reports(source, workloads, profile):
+    cardinality = json.loads((source / "cardinality.json").read_text())["profiles"]
+    expected = {1000} if profile is None else {1,100,1000}
+    if len(cardinality) != len(expected) or {row["cases"] for row in cardinality} != expected:
+        raise ValueError("Missing or unexpected cardinality comparison")
+    for row in cardinality:
+        workloads[f"cardinality/{row['cases']}"] = row
+    return len(cardinality)
+
+
+def collect(root, destination, preparation, profile):
     growth = root / "artifacts/verification/growth"
     states = list(growth.glob("*/run.json"))
     if len(states) != 1:
         raise ValueError("A comparison run must produce exactly one growth report")
     source = states[0].parent
     shutil.copytree(source, destination / "growth")
-    expected_reads = validate_completion(json.loads(states[0].read_text()), preparation)
+    expected_reads = validate_completion(json.loads(states[0].read_text()), preparation, profile)
     workloads = {}
     for path in sorted(source.glob("workload-*.json")):
         report = json.loads(path.read_text())
@@ -105,22 +131,24 @@ def collect(root, destination, preparation):
         report = json.loads(path.read_text())["workload"]
         report["requestsPerSecond"] = report["requests"] / report["seconds"]
         workloads[f"read/{report['name']}/{report['cases']}"] = report
-    cardinality = json.loads((source / "cardinality.json").read_text())["profiles"]
-    if len(cardinality) != 1 or cardinality[0]["cases"] != 1000:
-        raise ValueError("Missing or unexpected cardinality comparison")
-    workloads["cardinality/1000"] = cardinality[0]
-    if len(workloads) != 4 + expected_reads:
+    cardinality_count = cardinality_reports(source, workloads, profile)
+    expected_writes = 3 if profile is None else 1
+    if len(workloads) != expected_writes + expected_reads + cardinality_count:
         raise ValueError("Duplicated or unexpected comparison workloads")
-    return {"hasReadWorkloads": preparation["hasReadWorkloads"], "workloads": workloads}
+    return {"hasReadWorkloads": preparation["hasReadWorkloads"] and profile is None, "workloads": workloads}
 
 
-def run_workloads(checkout, destination, environment, preparation):
+def run_workloads(checkout, destination, environment, preparation, profile):
     destination.mkdir()
     growth = checkout / "artifacts/verification/growth"
     if growth.exists():
         shutil.rmtree(growth)  # Only the owned, disposable checkout's output.
     selected = dict(environment)
-    selected["CLAIMCORE_GROWTH_COMPARISON"] = "1"
+    if profile is None:
+        selected["CLAIMCORE_GROWTH_COMPARISON"] = "1"
+    else:
+        selected.pop("CLAIMCORE_GROWTH_COMPARISON", None)
+        selected["CLAIMCORE_GROWTH_PROFILE"] = profile
     selected["CLAIMCORE_TEST_REPORT_DIRECTORY"] = str(destination)
     try:
         execute([
@@ -132,7 +160,7 @@ def run_workloads(checkout, destination, environment, preparation):
     except BaseException:
         retain_failed_reports(growth, destination / "growth-failure")
         raise
-    return collect(checkout, destination, preparation)
+    return collect(checkout, destination, preparation, profile)
 
 
 def review_equivalence(root, revisions, patch_digest):
@@ -183,14 +211,14 @@ def prepare_checkouts(root, workspace, report, owner, candidate_patch):
     return preparations
 
 
-def alternate(workspace, report, preparations):
+def alternate(workspace, report, preparations, profile):
     runs = []
     equivalence = report.get("manualEquivalence")
     for pair in range(3):
         for side in ("reference", "candidate"):
             print(f"Growth pair {pair + 1}/3: {side}", flush=True)
             destination = Path(report["directory"]) / f"pair-{pair + 1}-{side}"
-            run = run_workloads(workspace / side, destination, os.environ.copy(), preparations[side])
+            run = run_workloads(workspace / side, destination, os.environ.copy(), preparations[side], profile)
             runs.append({"side": side, **run})
             report["runs"] = runs
             if len(runs) % 2 == 0:
@@ -204,18 +232,18 @@ def alternate(workspace, report, preparations):
                         runs[-2]["workloads"][key], runs[-1]["workloads"][key],
                         report.get("reviewedFingerprints", {}).get(key),
                     )
-    return compare(runs, report.get("reviewedFingerprints", {}))
+    required = REQUIRED_WRITES if profile is None else {"write/" + profile.replace(":", "/")}
+    return compare(runs, report.get("reviewedFingerprints", {}), required)
 
 
 def main(reference):
     root = Path(__file__).resolve().parent.parent
+    profile = requested_profile()
     candidate, candidate_patch, patch_digest = candidate_snapshot(root)
     revisions = {
         "reference": git(root, "rev-parse", "--verify", "--end-of-options", reference + "^{commit}"),
         "candidate": candidate,
     }
-    if "CLAIMCORE_GROWTH_PROFILE" in os.environ or "CLAIMCORE_GROWTH_COMPARISON" in os.environ:
-        raise ValueError("growth-compare owns workload selection; unset growth selection variables")
     review = review_equivalence(root, revisions, patch_digest)
     subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], check=True, capture_output=True)
     owner = str(uuid.uuid4())
@@ -223,6 +251,7 @@ def main(reference):
     directory = directory.resolve() / ("growth-compare-" + owner)
     directory.mkdir(parents=True)
     report = {**revisions, "candidatePatchSha256": patch_digest,
+              "completeQualification": profile is None, "diagnosticProfile": profile,
               "directory": str(directory), "owner": owner, "manualEquivalence": review}
     (directory / "candidate-source.patch").write_bytes(candidate_patch)
     print(f"Comparison evidence: {directory}", flush=True)
@@ -230,7 +259,7 @@ def main(reference):
         workspace = Path(temporary)
         try:
             preparations = prepare_checkouts(root, workspace, report, owner, candidate_patch)
-            report.update(alternate(workspace, report, preparations))
+            report.update(alternate(workspace, report, preparations, profile))
         except BaseException as error:
             report.update(passed=False, error=str(error) or type(error).__name__)
         finally:
@@ -254,7 +283,7 @@ def main(reference):
             table = markdown(report)
             (directory / "comparison.md").write_text(table)
             print(table, flush=True)
-    return 0 if report["passed"] else 1
+    return qualification_exit(report["passed"], report["completeQualification"])
 
 
 def interrupted(_signal, _frame):

@@ -83,11 +83,11 @@ def metric_result(name, reference, candidate):
     }
 
 
-def validate_runs(runs):
+def validate_runs(runs, required_writes):
     if len(runs) != 6 or [run["side"] for run in runs] != ["reference", "candidate"] * 3:
         raise ValueError("Runs must be reference/candidate alternately for three pairs")
     for run in runs:
-        required = REQUIRED_WRITES | REQUIRED_CARDINALITY
+        required = required_writes | REQUIRED_CARDINALITY
         if run["hasReadWorkloads"]:
             required |= BASE_READS
         missing = required - run["workloads"].keys()
@@ -104,8 +104,8 @@ def validate_runs(runs):
     return keys, candidate_keys
 
 
-def compare(runs, equivalence):
-    keys, candidate_keys = validate_runs(runs)
+def compare(runs, equivalence, required_writes=REQUIRED_WRITES):
+    keys, candidate_keys = validate_runs(runs, required_writes)
     results = []
     for key in sorted(keys & candidate_keys):
         witnesses = []
@@ -136,6 +136,8 @@ def markdown(report):
         "# Same-host growth comparison", "",
         f"Reference: `{report['reference']}`; candidate: `{report['candidate']}`.", "",
         f"Candidate source patch SHA-256: `{report.get('candidatePatchSha256') or 'none (committed source)'}`.", "",
+        ("Scope: full qualification." if report.get("completeQualification", True)
+         else "Scope: diagnostic only; this run cannot qualify the candidate."), "",
         "Medians of three alternating pairs. This is relative same-session evidence, not an SLA.", "",
         "| Workload | Metric | Reference median | Candidate median | Ratio | Rule | Result |",
         "| --- | --- | ---: | ---: | ---: | --- | --- |",

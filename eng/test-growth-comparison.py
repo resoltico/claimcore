@@ -5,10 +5,12 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from growth_comparison import compare, differences, metric_result, validate_fingerprint
 from growth_reference import prepare, replace_once
@@ -37,6 +39,51 @@ def runs():
 
 
 class GrowthComparisonTests(unittest.TestCase):
+    def test_profile_selection_refuses_undeclared_or_conflicting_modes(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(stage.requested_profile())
+        for value in ("10000:1", "100000:1", "100000:16"):
+            with patch.dict(os.environ, {"CLAIMCORE_GROWTH_PROFILE":value}, clear=True):
+                self.assertEqual(stage.requested_profile(), value)
+        with patch.dict(os.environ, {"CLAIMCORE_GROWTH_PROFILE":"1000:1"}, clear=True):
+            with self.assertRaises(ValueError):
+                stage.requested_profile()
+        with patch.dict(os.environ, {"CLAIMCORE_GROWTH_COMPARISON":"1"}, clear=True):
+            with self.assertRaises(ValueError):
+                stage.requested_profile()
+
+    def test_full_completion_does_not_accept_diagnostic_counts(self):
+        full = {"result":"completed", "completed":3, "expected":3,
+                "requiredReadProfiles":2, "completedReadProfiles":2}
+        diagnostic = {"result":"completed", "completed":1, "expected":1,
+                      "requiredReadProfiles":6, "completedReadProfiles":0}
+        preparation = {"hasReadWorkloads":True}
+        self.assertEqual(stage.validate_completion(full, preparation, None), 2)
+        self.assertEqual(stage.validate_completion(diagnostic, preparation, "10000:1"), 0)
+        with self.assertRaises(ValueError):
+            stage.validate_completion(diagnostic, preparation, None)
+        with self.assertRaises(ValueError):
+            stage.validate_completion({**full, "completedReadProfiles":0}, preparation, None)
+
+    def test_diagnostic_scope_never_returns_qualification_success(self):
+        self.assertEqual(stage.qualification_exit(True, True), 0)
+        self.assertEqual(stage.qualification_exit(False, True), 1)
+        self.assertEqual(stage.qualification_exit(False, False), 1)
+        self.assertEqual(stage.qualification_exit(True, False), 2)
+
+    def test_explicit_diagnostic_scope_keeps_three_pairs_and_default_gate_closed(self):
+        samples = runs()
+        for run in samples:
+            run["hasReadWorkloads"] = False
+            run["workloads"] = {key:value for key,value in run["workloads"].items()
+                                if key in {"write/10000/1", "cardinality/1000"}}
+        with self.assertRaisesRegex(ValueError, "Missing required"):
+            compare(samples, {})
+        self.assertTrue(compare(samples, {}, {"write/10000/1"})["passed"])
+        for run in samples[1::2]:
+            run["workloads"]["write/10000/1"]["writesPerSecond"] = 30
+        self.assertFalse(compare(samples, {}, {"write/10000/1"})["passed"])
+
     def test_interrupted_evidence_keeps_reports_and_excludes_transient_key_rings(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
