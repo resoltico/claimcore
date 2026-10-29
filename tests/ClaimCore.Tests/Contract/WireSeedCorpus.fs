@@ -48,9 +48,30 @@ let internal recordContext (kind: Type) (field: Reflection.PropertyInfo) =
 let internal unionContext (kind: Type) (case: UnionCaseInfo) (field: Reflection.PropertyInfo) =
     kind.Name + "." + case.Name + "." + field.Name
 
+// Opaque groups expose their field keys through named accessors. Those keys are part of
+// admitted seed structure even before a diagnostic example mentions the field as a value.
+let private groupFields (kind: Type) value =
+    if kind = typeof<RegistrationInput> then
+        RegistrationInput.values (unbox value) |> List.map fst
+    elif kind = typeof<DecisionInput> then
+        DecisionInput.values (unbox value) |> List.map fst
+    elif kind = typeof<PaymentInput> then
+        PaymentInput.values (unbox value) |> List.map fst
+    elif kind = typeof<Registration> then
+        Registration.values (unbox value) |> List.map fst
+    elif kind = typeof<Decision> then
+        Decision.values (unbox value) |> List.map fst
+    elif kind = typeof<Payment> then
+        Payment.values (unbox value) |> List.map fst
+    else
+        []
+
 let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null) =
     add seeds.Values kind value
     add seeds.ContextValues (context, kind) value
+
+    for field in groupFields kind value do
+        collect seeds (context + ".groupField") typeof<BusinessField> (box field)
 
     if kind = typeof<string> then
         add seeds.Tokens context (unbox<string> value)

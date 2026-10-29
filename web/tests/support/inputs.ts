@@ -1,5 +1,5 @@
 import type { CaseSummary as Summary } from "../../src/protocol/types";
-import type { Principal, Registration } from "@contracts/client";
+import type { Principal, Registration, Decision, Payment } from "@contracts/client";
 
 import { inventory } from "./inventory";
 
@@ -18,6 +18,19 @@ export const registration = (changes: Partial<Registration> = {}): Registration 
   ) as Registration),
   incidentNotificationDate: "2026-09-02",
   insurerName: "Synthetic insurer",
+  ...changes,
+});
+
+export const decision = (changes: Partial<Decision> = {}): Decision => ({
+  ...(Object.fromEntries(
+    inventory.groups.decision.map(({ key, kind }) => [key, samples[kind]]),
+  ) as Decision),
+  ...changes,
+});
+export const payment = (changes: Partial<Payment> = {}): Payment => ({
+  ...(Object.fromEntries(
+    inventory.groups.payment.map(({ key, kind }) => [key, samples[kind]]),
+  ) as Payment),
   ...changes,
 });
 
@@ -57,9 +70,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 type Group = keyof typeof inventory.groups;
 const isGroup = (key: string): key is Group => Object.hasOwn(inventory.groups, key);
 const groupInput = (group: Group): Record<string, unknown> =>
-  group === "registration"
-    ? { ...registration() }
-    : Object.fromEntries(inventory.groups[group].map(({ key, kind }) => [key, samples[kind]]));
+  ({ registration, decision, payment })[group]();
 const payloadGroup = (group: Group | undefined, kind: unknown): Group | undefined => {
   if (kind === "REPLACE") {
     return group;
