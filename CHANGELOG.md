@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-30
+
 - Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.
 - Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
 - Context adds actorId/hasAssignedCases, case views add assignedToYou, and catalog roles declare principal-kind admission; regenerate consumers for these required fields.
