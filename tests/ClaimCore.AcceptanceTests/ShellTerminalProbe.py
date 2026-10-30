@@ -133,6 +133,8 @@ def run(cli, home):
             else:
                 terminal.send(ending)
             terminal.finish(expected)
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError(f"Shell did not exit for ending {ending!r}") from error
         finally:
             terminal.close()
 

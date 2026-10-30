@@ -147,6 +147,7 @@ let private terminal root directory cli =
     start.ArgumentList.Add home
     start.Environment["PYTHONDONTWRITEBYTECODE"] <- "1"
     let result = BoundedProcess.run start None 1048576 60000
+
     if result.ExitCode <> 0 then
         // The probe uses synthetic public settings and no network; its traceback identifies the failed terminal step.
         Console.Error.WriteLine(Encoding.UTF8.GetString result.StandardError)
