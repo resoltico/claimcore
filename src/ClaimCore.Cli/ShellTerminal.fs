@@ -11,6 +11,13 @@ type internal ShellLine =
     | Interrupted of hadText: bool
     | End
 
+module internal ShellKeys =
+    let isEndOfInput isEmpty (key: ConsoleKeyInfo) =
+        isEmpty
+        && (key.KeyChar = '\u0004'
+            || (key.Key = ConsoleKey.D
+                && (key.Modifiers &&& ConsoleModifiers.Control) <> enum<ConsoleModifiers> 0))
+
 /// One input worker owns ReadKey throughout the shell, including a cancelled or idle prompt.
 type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
     let gate = obj ()
@@ -88,11 +95,6 @@ type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
             else
                 write (string character)
 
-    let endOfInput (key: ConsoleKeyInfo) =
-        key.Key = ConsoleKey.D
-        && (key.Modifiers &&& ConsoleModifiers.Control) <> enum<ConsoleModifiers> 0
-        && buffer.Length = 0
-
     let key (key: ConsoleKeyInfo) =
         match key.Key with
         | ConsoleKey.Enter -> accepted ()
@@ -100,7 +102,7 @@ type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
         | ConsoleKey.Tab -> append '\t'
         | ConsoleKey.UpArrow when remember -> recall -1
         | ConsoleKey.DownArrow when remember -> recall 1
-        | ConsoleKey.D when endOfInput key ->
+        | _ when ShellKeys.isEndOfInput (buffer.Length = 0) key ->
             write "\n"
             complete ShellLine.End
         | _ when not (Char.IsControl key.KeyChar) -> append key.KeyChar
