@@ -262,7 +262,8 @@ Use the client's link builder for exact references. Ordinary reference segments 
 avoids route keywords, dot-segment normalization and prefix collisions without changing case identity.
 
 The actor directory uses a labelled table on desktop and compact cards on mobile, with kind, subject,
-enabled state and a grant count only when a complete cached grant page is known. Each offered row link
+enabled state and a count from the selected actor's fully loaded grant pages. Partial pages, reloads
+and refused disclosures withhold the count; closing the detail discards it. Each offered row link
 opens the actor detail; listing does not fetch individual grant pages.
 
 Authority actor links bind offered actions to the disclosed actor. A retained request keeps its original

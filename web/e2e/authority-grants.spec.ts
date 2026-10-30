@@ -38,7 +38,7 @@ const expectAuthorityControlsContained = async (page: Page) => {
   expect(geometry.right).toBeLessThanOrEqual(geometry.panelRight + 1);
 };
 
-const checkPresentation = async (page: Page, complete: boolean) => {
+const checkPresentation = async (page: Page, complete: boolean, count: number) => {
   const view = page.locator('section[aria-labelledby="actor-grants-title"]');
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(view.getByRole("heading")).toBeVisible();
@@ -56,6 +56,11 @@ const checkPresentation = async (page: Page, complete: boolean) => {
     await expect(view.getByRole("status")).toHaveText(
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
     );
+    const counts = page.locator(".authority-grant-count").filter({ hasText: /\S/u });
+    await expect(counts).toHaveCount(complete ? 1 : 0);
+    if (complete) {
+      await expect(counts).toContainText(new Intl.NumberFormat("lv-LV").format(count));
+    }
     await noHorizontalOverflow(page, "narrow");
     await expectAuthorityControlsContained(page);
   }
@@ -99,11 +104,12 @@ test("selected authority grants use bounded core pages and survive presentation 
   if (!isResponse("authority.grants", value) || value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected a bounded actor grant page.");
   }
+  const { data } = value.outcome;
   const view = page.locator('section[aria-labelledby="actor-grants-title"]');
   await expect(view.getByRole("heading")).toBeFocused();
-  await expect(view.getByText(value.outcome.data.actor.actorId, { exact: true })).toBeVisible();
-  await expect(view.locator("li")).toHaveCount(value.outcome.data.items.length);
-  await checkPresentation(page, value.outcome.data.nextCursor === null);
+  await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
+  await expect(view.locator("li")).toHaveCount(data.items.length);
+  await checkPresentation(page, data.nextCursor === null, data.items.length);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
   await selectLanguage(page, "en");
@@ -114,7 +120,7 @@ test("selected authority grants use bounded core pages and survive presentation 
     await page.setViewportSize({ width, height: 900 });
     await clickActorKind(page);
     await expect(view.getByRole("heading")).toBeFocused();
-    await expect(view.getByText(value.outcome.data.actor.actorId, { exact: true })).toBeVisible();
+    await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
     await view.getByRole("button", { name: "Back to actors", exact: true }).click();
     await expect(selected).toBeFocused();
   }

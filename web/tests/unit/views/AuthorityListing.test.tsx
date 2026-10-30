@@ -3,10 +3,10 @@ import { fireEvent, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
-import { AuthorityListing } from "../../../src/views/AuthorityListing";
+import { AuthorityListing, type KnownActorGrantCount } from "../../../src/views/AuthorityListing";
 const actorId = "10000000-0000-4000-8000-000000000001";
 const subject = "A long principal subject whose complete value remains accessible";
-const setup = (mayReadGrants: boolean) => {
+const setup = (mayReadGrants: boolean, knownGrantCount: KnownActorGrantCount | null = null) => {
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
@@ -29,6 +29,7 @@ const setup = (mayReadGrants: boolean) => {
   const select = vi.fn();
   render(
     <AuthorityListing
+      knownGrantCount={knownGrantCount}
       mayReadGrants={mayReadGrants}
       onSelect={select}
       onDisclosureRefused={vi.fn()}
@@ -38,7 +39,8 @@ const setup = (mayReadGrants: boolean) => {
   return select;
 };
 it("exposes labelled table columns and one native keyboard link per actor", async () => {
-  const select = setup(true);
+  const grants = mockEndpoint("authority.grants");
+  const select = setup(true, { actorId, count: 0 });
   const table = screen.getByRole("table", { name: "Actors and grants" });
   await within(table).findByText(subject);
   expect(
@@ -52,6 +54,8 @@ it("exposes labelled table columns and one native keyboard link per actor", asyn
   const link = within(table).getByRole("link", { name: `Human · ${subject} Yes` });
   expect(within(table).getAllByRole("link")).toHaveLength(1);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
+  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("Grants: 0");
+  expect(grants).not.toHaveBeenCalled();
   expect(link).toHaveAttribute("href", `/authority/${actorId}`);
   expect(link.querySelector("bdi")).toHaveAttribute("title", subject);
   const user = userEvent.setup();
@@ -64,9 +68,10 @@ it("exposes labelled table columns and one native keyboard link per actor", asyn
   expect(select).not.toHaveBeenCalled();
 });
 it("keeps the same table facts without inventing a link when grants are not offered", async () => {
-  setup(false);
+  setup(false, { actorId, count: 0 });
   const table = screen.getByRole("table", { name: "Actors and grants" });
   await within(table).findByText(subject);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
   expect(within(table).queryByRole("link")).toBeNull();
+  expect(within(table).queryByText("Grants: 0")).toBeNull();
 });

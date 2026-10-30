@@ -1,6 +1,3 @@
-import { useEndpointCache } from "../hooks/EndpointProvider";
-import { cachedEndpointResult } from "../hooks/endpointCache";
-import { useCredential } from "../session/SessionContext";
 import { followLink } from "../routing/followLink";
 import { IdentifierValue } from "../components/IdentifierValue";
 import { PageStatus } from "../components/PageStatus";
@@ -13,6 +10,7 @@ import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
+export type KnownActorGrantCount = { actorId: string; count: number };
 export const ActorSummary = ({ actor }: { actor: Actor }) => {
   const p = usePresentation();
   return (
@@ -35,6 +33,7 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
   );
 };
 type ListingProps = {
+  knownGrantCount?: KnownActorGrantCount | null;
   mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
@@ -61,23 +60,12 @@ const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: Listing
     restored,
   );
 };
-const KnownGrantCount = ({ actorId }: { actorId: string }) => {
+const KnownGrantCount = ({ count }: { count: number | null }) => {
   const p = usePresentation();
-  const cache = useEndpointCache();
-  const credential = useCredential();
-  const result =
-    cache === null
-      ? null
-      : cachedEndpointResult(cache, credential, "authority.grants", { actorId, limit: 50 });
-  const known = result?.kind === "outcome" ? result.value : null;
-  if (known?.outcome.kind !== "SUCCEEDED" || known.outcome.data.nextCursor !== null) {
+  if (count === null) {
     return null;
   }
-  return (
-    <small>
-      {p.text("ui.knownGrantCount", { count: p.integer(known.outcome.data.items.length) })}
-    </small>
-  );
+  return <small>{p.text("ui.knownGrantCount", { count: p.integer(count) })}</small>;
 };
 const ActorSubject = ({
   actor,
@@ -116,6 +104,7 @@ const ActorSubject = ({
 };
 const ActorRow = (props: {
   actor: Actor;
+  knownGrantCount?: KnownActorGrantCount | null;
   onSelect: ListingProps["onSelect"];
   mayReadGrants: boolean;
 }) => {
@@ -133,7 +122,15 @@ const ActorRow = (props: {
         {p.text(props.actor.enabled ? "ui.yes" : "ui.no")}
       </td>
       <td className="authority-grant-count">
-        {props.mayReadGrants ? <KnownGrantCount actorId={props.actor.actorId} /> : null}
+        {props.mayReadGrants ? (
+          <KnownGrantCount
+            count={
+              props.knownGrantCount?.actorId === props.actor.actorId
+                ? props.knownGrantCount.count
+                : null
+            }
+          />
+        ) : null}
       </td>
     </tr>
   );
@@ -141,7 +138,7 @@ const ActorRow = (props: {
 const AuthorityTable = ({
   items,
   ...props
-}: Pick<ListingProps, "mayReadGrants" | "onSelect"> & {
+}: Pick<ListingProps, "mayReadGrants" | "onSelect" | "knownGrantCount"> & {
   items: Actor[];
 }) => {
   const p = usePresentation();
@@ -173,6 +170,7 @@ export const AuthorityListing = (props: ListingProps) => {
       </h2>
       <AuthorityTable
         items={page.items}
+        knownGrantCount={props.knownGrantCount ?? null}
         onSelect={props.onSelect}
         mayReadGrants={props.mayReadGrants}
       />

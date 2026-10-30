@@ -137,6 +137,38 @@ it("keeps only the same actor's page on a transient error and follows server con
   expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
 
+it("counts only complete loaded grants and clears the count while reloading without extra reads", async () => {
+  reads();
+  const reload = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
+  const request = mockEndpoint("authority.grants")
+    .mockResolvedValueOnce(grants(first, "next"))
+    .mockResolvedValueOnce(grants(first, null, "SECOND"))
+    .mockImplementationOnce(() => reload.promise);
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  const actors = await screen.findAllByRole("link", { name: / ·/u });
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(actors[0]!);
+  await screen.findByText("Only part of this actor’s grants is shown.");
+  expect(screen.queryByText(/^Grants:/u)).toBeNull();
+  expect(request).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  await screen.findByText("Grants: 2");
+  expect(request).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
+  await waitFor(() => {
+    expect(screen.queryByText("Grants: 2")).toBeNull();
+  });
+  await act(() =>
+    Promise.resolve().then(() => {
+      reload.finish(grants(first));
+    }),
+  );
+  await screen.findByText("Grants: 1");
+  expect(request).toHaveBeenCalledTimes(3);
+  fireEvent.click(screen.getByRole("button", { name: "Back to actors" }));
+  expect(screen.queryByText(/^Grants:/u)).toBeNull();
+});
+
 const authorTarget = async () => {
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
