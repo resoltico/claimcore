@@ -45,6 +45,7 @@
     <Compile Include="BrowserCompletion.fs" />
     <Compile Include="BrowserTests.fs" />
     <Compile Include="DeploymentConfigurationTests.fs" />
+    <Compile Include="LocalConfigurationProfilesTests.fs" />
     <Compile Include="ProcessFailureTests.fs" />
   </ItemGroup>
   <ItemGroup>

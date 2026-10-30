@@ -14,7 +14,9 @@ for port in "${web_port}" "${identity_port}"; do
   [[ "${port}" =~ ^[1-9][0-9]{0,4}$ && "${port}" -le 65535 ]] || exit 2
 done
 [[ "${web_port}" != "${identity_port}" ]] || exit 2
-for tool in openssl docker; do command -v "${tool}" >/dev/null || exit 2; done
+for tool in openssl docker node; do
+  command -v "${tool}" >/dev/null || { printf 'Required tool is unavailable: %s\n' "${tool}" >&2; exit 2; }
+done
 uuid() {
   local hex
   hex="$(openssl rand -hex 16)"
@@ -86,6 +88,35 @@ dotenv_configuration="${dotenv_configuration//\"/\\\"}"
 dotenv_configuration="${dotenv_configuration//\$/\$\$}"
 printf 'CLAIMCORE_CONFIG_DIR="%s"\n' "${dotenv_configuration}" >"${configuration}/compose.env"
 printf 'CLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${project}" "${zone}" "${web_port}" "${identity_port}" >>"${configuration}/compose.env"
+# Public CLI settings only; argv and JSON serialization preserve the exact host path.
+node --input-type=module - "${configuration}" "${web_port}" "${identity_port}" <<'JAVASCRIPT'
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
+const [configuration, webPort, identityPort] = process.argv.slice(2);
+const profileDirectory = path.join(configuration, "cli", "claimcore");
+mkdirSync(profileDirectory, { recursive: true, mode: 0o700 });
+writeFileSync(path.join(profileDirectory, "profile.json"), JSON.stringify({
+  serviceUrl: `https://localhost:${webPort}/`,
+  issuer: `https://identity.localhost:${identityPort}/realms/claimcore`,
+  clientId: "claimcore-cli",
+  authMode: "interactive",
+  serviceTrustRootFile: path.join(configuration, "ca.pem"),
+  oidcTrustRootFile: path.join(configuration, "ca.pem"),
+}, null, 2) + "\n", { mode: 0o600, flag: "wx" });
+JAVASCRIPT
+if command -v certutil >/dev/null 2>&1; then
+  mkdir -m 700 "${configuration}/browser-profile"
+  certutil -N --empty-password -d "sql:${configuration}/browser-profile"
+  certutil -A -d "sql:${configuration}/browser-profile" -n 'ClaimCore evaluation CA' -t 'C,,' -i "${configuration}/ca.pem"
+  certutil -L -d "sql:${configuration}/browser-profile" -n 'ClaimCore evaluation CA' >/dev/null
+  printf 'Created isolated Firefox profile: %s/browser-profile\n' "${configuration}"
+else
+  printf 'certutil is unavailable. After installing NSS tools, run these exact Bash commands:\n'
+  printf 'mkdir -m 700 %q\n' "${configuration}/browser-profile"
+  printf 'certutil -N --empty-password -d %q\n' "sql:${configuration}/browser-profile"
+  printf 'certutil -A -d %q -n %q -t %q -i %q\n' "sql:${configuration}/browser-profile" 'ClaimCore evaluation CA' 'C,,' "${configuration}/ca.pem"
+  printf 'certutil -L -d %q\n' "sql:${configuration}/browser-profile"
+fi
 claimcore_uid="$(id -u)"
 claimcore_gid="$(id -g)"
 printf 'CLAIMCORE_UID=%s\nCLAIMCORE_GID=%s\n' "${claimcore_uid}" "${claimcore_gid}" >>"${configuration}/compose.env"
@@ -98,5 +129,6 @@ docker run --rm --name "${project}-permissions" --label claimcore.configuration=
   -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
 unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
-printf 'Trust %s/ca.pem in your browser. Leaf certificates expire after 30 days.\n' "${configuration}"
+printf 'Use the isolated browser profile and public CA. Leaf certificates expire after 30 days.\n'
+printf 'CLI setup in Bash: export XDG_CONFIG_HOME=%q; claimcore configure --show\n' "${configuration}/cli"
 printf 'Start in Bash: docker compose --env-file %q -f deployment/compose.yaml up --build -d\n' "${configuration}/compose.env"

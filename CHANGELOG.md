@@ -13,6 +13,7 @@
 - Audit authority changes with installation OWNER or AUDITOR rights using authority.history or the CLI, including typed facts and target-filtered newest-first pages.
 - Select assigned cases and oldest notifications; case.summary counts the current visible filter and returns exact per-currency totals beyond single-amount precision.
 - Erasure clears notification dates and all amount/currency projections; verification identifies divergence in each new column.
+- Local evaluation setup creates an isolated Firefox CA profile when certutil is available and writes ready public CLI settings; installed Firefox is the documented default.
 - Run reviewed commands in claimcore shell with one sign-in; access/refresh tokens and arrow-key history stay in memory, with 15-minute idle discard and no history file.
 - Vocabulary token plans reduce repeated work in case writes and ledger verification while retaining permanent bytes and integrity checks.
 - growth-compare compares three alternating same-host pairs and fails relative throughput, latency or verification regressions using workload fingerprints.

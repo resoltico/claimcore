@@ -277,7 +277,8 @@ bash eng/verify.sh
 
 The fast gate includes clean npm installation, audits, lint, types, tests and builds; it is a checkpoint,
 not a required edit loop. The second command runs all default stages, excluding growth. Before the first
-acceptance run, and after changing the Playwright version, install the locked engines and system dependencies:
+acceptance run, install NSS `certutil` (`libnss3-tools` on Ubuntu, `nss` on Homebrew). The configuration
+acceptance checks inspect actual isolated CA trust. After changing the Playwright version, install the locked engines and system dependencies:
 
 ```sh
 bash eng/verify.sh browsers
