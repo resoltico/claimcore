@@ -21,7 +21,9 @@ let tests =
                 let ordinary = ConsoleKeyInfo('d', ConsoleKey.D, false, false, false)
 
                 Expect.isTrue (ShellKeys.isEndOfInput true control) "Control-D remains supported"
-                Expect.isFalse (ShellKeys.isEndOfInput false unix) "A Unix EOF cannot discard a draft"
+                Expect.isFalse
+                    (ShellKeys.isEndOfInput false unix)
+                    "A Unix EOF cannot discard a draft"
 
                 Expect.isFalse
                     (ShellKeys.isEndOfInput false control)
