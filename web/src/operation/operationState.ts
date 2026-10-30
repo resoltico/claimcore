@@ -1,3 +1,4 @@
+import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "./operationForm";
 import { inputErrors } from "./inputErrors";
 import {
@@ -59,6 +60,12 @@ const edit = (
     values: {
       ...state.values,
       [action.path]: action.value,
+      ...(action.path === "target.kind" &&
+      typeof action.value === "string" &&
+      typeof state.values["act.role"] === "string" &&
+      !roleAdmitted(state.values["act.role"], action.value)
+        ? { "act.role": "" }
+        : {}),
       operationId: source === null ? state.values["operationId"]! : action.id,
     },
     notice: null,

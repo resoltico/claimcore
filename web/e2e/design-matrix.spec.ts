@@ -34,7 +34,12 @@ type Run = {
   captures: string[];
 };
 const recordFrame = async (run: Run, frame: string) => {
-  await checkFrame(run.page, run.dimension);
+  try {
+    await checkFrame(run.page, run.dimension);
+  } catch (error) {
+    await run.page.screenshot({ path: run.info.outputPath(`failed-${frame}.png`), fullPage: true });
+    throw error;
+  }
   run.checked.push(frame);
   const path = await captureFrame(run.page, run.info, run.dimension, frame);
   if (path !== null) {
@@ -81,8 +86,8 @@ const registerDimension = (dimension: Dimension) => {
       for (const route of dataset.routes) {
         await performRoute(route, run);
       }
-      expect(run.loads).toHaveLength(20);
-      expect(run.checked).toHaveLength(21);
+      expect(run.loads).toHaveLength(25);
+      expect(run.checked).toHaveLength(26);
       expect(run.captures).toHaveLength(expectedCaptures(engine, dimension));
     } finally {
       completed.push({
@@ -94,8 +99,8 @@ const registerDimension = (dimension: Dimension) => {
         engine,
         dimension,
         expected: {
-          pageLoads: 20,
-          axeAndReflowChecks: 21,
+          pageLoads: 25,
+          axeAndReflowChecks: 26,
           screenshots: expectedCaptures(engine, dimension),
         },
         actual: {
@@ -113,8 +118,8 @@ const registerDimension = (dimension: Dimension) => {
 const reportEngine = async (info: TestInfo) => {
   const expected =
     engine === "chromium"
-      ? { dimensions: 26, pageLoads: 520, axeAndReflowChecks: 546, screenshots: 105 }
-      : { dimensions: 4, pageLoads: 80, axeAndReflowChecks: 84, screenshots: 0 };
+      ? { dimensions: 26, pageLoads: 650, axeAndReflowChecks: 676, screenshots: 56 }
+      : { dimensions: 4, pageLoads: 100, axeAndReflowChecks: 104, screenshots: 0 };
   const actual = completed.reduce<EngineCounts>(
     (total, value) => ({
       dimensions: total.dimensions + 1,
@@ -136,8 +141,8 @@ test.describe("adopted work surface design matrix", () => {
       throw new Error("E2E_MATRIX_BASE_URL_REQUIRED");
     }
     dataset = await prepareDesignDataset(browser, baseURL);
-    expect(dataset.routes).toHaveLength(20);
-    expect(new Set(dataset.routes.map((route) => route.id)).size).toBe(20);
+    expect(dataset.routes).toHaveLength(25);
+    expect(new Set(dataset.routes.map((route) => route.id)).size).toBe(25);
   });
   test.afterAll(async () => {
     try {

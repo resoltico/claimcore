@@ -4120,5 +4120,54 @@
       "constants": []
     }
   ],
+  "roles": [
+    {
+      "role": "OWNER",
+      "admittedPrincipalKinds": [
+        "HUMAN"
+      ]
+    },
+    {
+      "role": "CASE_READER",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ]
+    },
+    {
+      "role": "CASE_REGISTRAR",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ]
+    },
+    {
+      "role": "CASE_HANDLER",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ]
+    },
+    {
+      "role": "PAYMENT_RECORDER",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ]
+    },
+    {
+      "role": "DATA_STEWARD",
+      "admittedPrincipalKinds": [
+        "HUMAN"
+      ]
+    },
+    {
+      "role": "AUDITOR",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ]
+    }
+  ],
   "productVersion": "0.13.0"
 }

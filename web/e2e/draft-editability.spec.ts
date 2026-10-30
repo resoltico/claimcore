@@ -5,24 +5,25 @@ import { expect, test } from "@playwright/test";
 import { openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
-test("protects exact amendment edits on action change and Back while untouched drafts leave directly", async ({
+test("protects exact routed amendment edits on Back while untouched drafts leave directly", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
   await startAct(page, "Amend registration");
-  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("CLOSE");
+  await expect(page.getByRole("combobox", { name: "Case action", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Back to case", exact: true }).click();
+  await startAct(page, "Close the case");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page
-    .getByRole("combobox", { name: "Case action", exact: true })
-    .selectOption("AMEND_REGISTRATION");
+  await page.getByRole("button", { name: "Back to case", exact: true }).click();
+  await startAct(page, "Amend registration");
   const fields = page.locator(".operation-editor form [data-field-name]");
   await expect(fields).toHaveCount(7);
   for (const name of Object.keys(registration())) {
     await fillBusinessField(page, name, "");
   }
-  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("CLOSE");
+  await page.getByRole("button", { name: "Back to case", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await page.getByRole("button", { name: "Back to case" }).click();
@@ -33,7 +34,7 @@ test("protects exact amendment edits on action change and Back while untouched d
     .click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
-    "1,200.5",
+    "1,200.50",
   );
   await startAct(page, "Amend registration");
   await page.getByRole("button", { name: "Back to case" }).click();

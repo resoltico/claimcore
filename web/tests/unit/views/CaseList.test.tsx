@@ -5,6 +5,8 @@ import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
 import { context, response, unavailable } from "../../support/service-ui.fixtures";
+// The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
+vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
     items: [

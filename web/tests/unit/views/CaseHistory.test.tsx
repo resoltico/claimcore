@@ -41,16 +41,16 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
     expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);
   });
   expectHistoryRequest(fetch.mock.calls[0]?.[1]?.body);
-  expect(view.container.querySelector(".history-list details")).toBeNull();
+  expect(view.container.querySelector(".history-list .history-exact")).toBeNull();
   expect(view.container.querySelector(".case-fields")).toBeNull();
   expect(screen.getByRole("combobox", { name: "History detail" })).toBeVisible();
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
   await waitFor(() => {
-    expect(view.container.querySelector(".history-list details")).not.toBeNull();
+    expect(view.container.querySelector(".history-list .history-exact")).not.toBeNull();
   });
   await user.selectOptions(screen.getByLabelText("History detail"), "SUMMARY");
   await waitFor(() => {
-    expect(view.container.querySelector(".history-list details")).toBeNull();
+    expect(view.container.querySelector(".history-list .history-exact")).toBeNull();
   });
   expect(view.container.querySelectorAll(".history-list li")).toHaveLength(1);
   expect(fetch).toHaveBeenCalledTimes(3);

@@ -1,3 +1,4 @@
+import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
@@ -102,6 +103,7 @@ const author = async () => {
 };
 const prepare = async () => {
   await author();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox"));
 };

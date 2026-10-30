@@ -1,3 +1,7 @@
+import { useEndpointCache } from "../hooks/EndpointProvider";
+import { cachedEndpointResult } from "../hooks/endpointCache";
+import { useCredential } from "../session/SessionContext";
+import { followLink } from "../routing/followLink";
 import { IdentifierValue } from "../components/IdentifierValue";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
@@ -57,6 +61,67 @@ const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: Listing
     restored,
   );
 };
+const KnownGrantCount = ({ actorId }: { actorId: string }) => {
+  const p = usePresentation();
+  const cache = useEndpointCache();
+  const credential = useCredential();
+  const result =
+    cache === null
+      ? null
+      : cachedEndpointResult(cache, credential, "authority.grants", { actorId, limit: 50 });
+  const known = result?.kind === "outcome" ? result.value : null;
+  if (known?.outcome.kind !== "SUCCEEDED" || known.outcome.data.nextCursor !== null) {
+    return null;
+  }
+  return (
+    <small>
+      {p.text("ui.knownGrantCount", { count: p.integer(known.outcome.data.items.length) })}
+    </small>
+  );
+};
+const ActorRow = ({
+  actor,
+  onSelect,
+  mayReadGrants,
+}: {
+  actor: Actor;
+  onSelect: ListingProps["onSelect"];
+  mayReadGrants: boolean;
+}) => {
+  const p = usePresentation();
+  if (!mayReadGrants) {
+    return (
+      <li className="authority-row">
+        <ActorSummary actor={actor} />
+      </li>
+    );
+  }
+  const href = `/authority/${encodeURIComponent(actor.actorId)}`;
+  return (
+    <li className="authority-row">
+      <a
+        href={href}
+        id={`actor-grants-${actor.actorId}`}
+        title={actor.actorId}
+        onClick={(event) => {
+          followLink(event, () => {
+            onSelect(actor.actorId);
+          });
+        }}
+      >
+        <span>
+          {p.term("principalKind", actor.principal.kind)}
+          {" · "}
+        </span>
+        <bdi className="actor-subject" title={actor.principal.subject}>
+          {actor.principal.subject}
+        </bdi>
+        <span> {p.text(actor.enabled ? "ui.yes" : "ui.no")}</span>
+        <KnownGrantCount actorId={actor.actorId} />
+      </a>
+    </li>
+  );
+};
 export const AuthorityListing = (props: ListingProps) => {
   const p = usePresentation();
   const page = useAuthorityPage(props);
@@ -67,20 +132,12 @@ export const AuthorityListing = (props: ListingProps) => {
       </h2>
       <ul className="authority-rows">
         {page.items.map((actor) => (
-          <li key={actor.actorId}>
-            <ActorSummary actor={actor} />
-            {props.mayReadGrants ? (
-              <button
-                type="button"
-                id={`actor-grants-${actor.actorId}`}
-                onClick={() => {
-                  props.onSelect(actor.actorId);
-                }}
-              >
-                {p.text("ui.viewGrants")}
-              </button>
-            ) : null}
-          </li>
+          <ActorRow
+            key={actor.actorId}
+            actor={actor}
+            onSelect={props.onSelect}
+            mayReadGrants={props.mayReadGrants}
+          />
         ))}
       </ul>
       {page.message === null ? null : (

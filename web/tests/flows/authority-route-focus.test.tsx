@@ -33,7 +33,7 @@ it("focuses the selected actor route h1 and restores its originating control on 
   const user = userEvent.setup();
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "Authority" }));
-  const origin = (await screen.findAllByRole("button", { name: "View grants" }))[0]!;
+  const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
   await user.click(origin);
   const heading = await screen.findByRole("heading", { name: "Actor grants", level: 1 });
   await waitFor(() => {

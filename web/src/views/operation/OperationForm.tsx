@@ -17,9 +17,9 @@ export type OperationFormProps = {
 };
 const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
-  return offered.length < 2 ? null : (
+  return model.entry.subject === "CASE" || offered.length < 2 ? null : (
     <label>
-      {p.text(model.entry.subject === "CASE" ? "ui.act" : "ui.authorityAction")}
+      {p.text("ui.authorityAction")}
       <select
         id="act-picker"
         value={model.entry.kind}
@@ -30,7 +30,7 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
       >
         {offered.map((kind) => (
           <option key={kind} value={kind}>
-            {model.entry.subject === "CASE" ? p.actLabel(kind) : p.authorityLabel(kind)}
+            {p.authorityLabel(kind)}
           </option>
         ))}
       </select>

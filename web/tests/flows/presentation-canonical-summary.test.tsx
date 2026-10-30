@@ -1,7 +1,8 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { CaseFieldsView } from "../../src/components/CaseFieldsView";
-import { preferenceKey } from "../../src/presentation/preferences";
+import { createPresenter } from "../../src/presentation/presenter";
+import { defaults, resolveLanguage, preferenceKey } from "../../src/presentation/preferences";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { render, screen } from "../support/presentation-test-support";
 
@@ -33,7 +34,16 @@ it.each(["en", "lv", "ar"])(
         context="synthetic"
       />,
     );
-    await user.click(screen.getAllByRole("button")[0]!);
+    const p = createPresenter({
+      ...defaults,
+      language: resolveLanguage(language),
+      displayLocale: "ar-EG",
+    });
+    await user.click(
+      screen.getByRole("button", {
+        name: p.text("ui.copy", { label: p.text("ui.acceptedSummary") }),
+      }),
+    );
     const value: unknown = copy.mock.calls[0]?.[0];
     expect(typeof value).toBe("string");
     expect(value).toContain("9007199254740991");

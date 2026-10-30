@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { usePresentation } from "../presentation/context";
 
-type CopyValueProps = { label: string; value: string };
+type CopyValueProps = { label: string; value: string; icon?: boolean };
 const useClipboardFeedback = ({ label, value }: CopyValueProps) => {
   const [feedback, setFeedback] = useState<{
     value: string;
@@ -45,19 +45,33 @@ const useClipboardFeedback = ({ label, value }: CopyValueProps) => {
   return { status, copy };
 };
 
-export const CopyValue = ({ label, value }: CopyValueProps) => {
+export const CopyValue = ({ label, value, icon = false }: CopyValueProps) => {
   const p = usePresentation();
   const { status, copy } = useClipboardFeedback({ label, value });
   return (
-    <span className="copy-value">
+    <span className={icon ? "copy-value copy-value-icon" : "copy-value"}>
       <Button
         aria-description={p.text("ui.canonicalCopyHint")}
-        className="copy-button"
+        aria-label={p.text("ui.copy", { label })}
+        className={`copy-button ${icon ? "copy-icon" : ""}`}
         onPress={() => void copy()}
       >
-        <span title={p.text("ui.canonicalCopyHint")}>{p.text("ui.copy", { label })}</span>
+        {icon ? (
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <rect x="8" y="8" width="12" height="13" rx="2" fill="none" stroke="currentColor" />
+            <path
+              d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4"
+              fill="none"
+              stroke="currentColor"
+            />
+          </svg>
+        ) : (
+          <span title={p.text("ui.canonicalCopyHint")}>{p.text("ui.copy", { label })}</span>
+        )}
       </Button>
-      <span aria-live="polite">{status === "copied" ? p.text("ui.copied", { label }) : ""}</span>
+      <span className={icon ? "sr-only" : undefined} aria-live="polite">
+        {status === "copied" ? p.text("ui.copied", { label }) : ""}
+      </span>
       {status === "fallback" ? (
         <span>
           <CharacterWarning value={value} />

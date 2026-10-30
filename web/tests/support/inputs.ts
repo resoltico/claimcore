@@ -15,11 +15,12 @@ export const caseViewInput = <T extends CaseViewSeed>(value: T) => ({
   ...value,
   assignedToYou: value.assignedToYou ?? false,
 });
-type ActorContextSeed = Omit<ActorContext, "hasAssignedCases"> &
-  Partial<Pick<ActorContext, "hasAssignedCases">>;
+type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId"> &
+  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId">>;
 export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   ...value,
   hasAssignedCases: value.hasAssignedCases ?? false,
+  actorId: value.actorId ?? inventory.cliSamples.actorId,
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.

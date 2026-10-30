@@ -98,3 +98,14 @@ it("uses stable metadata identity rather than supplied English labels as catalog
     expect(p.hint(field)).not.toBe("");
   }
 });
+
+it("pads known currency digits without removing authored precision and preserves unknown currencies", async () => {
+  const { exactMoney } = await import("../../src/presentation/format");
+  expect(exactMoney("1200.5", "EUR", "en-GB")).toBe("1,200.50 EUR");
+  expect(exactMoney("1.2345", "JPY", "en-GB")).toBe("1.2345 JPY");
+  expect(exactMoney("1.2", "KWD", "en-GB")).toBe("1.200 KWD");
+  expect(exactMoney("1.20", "ZZZ", "en-GB")).toBe("1.20 ZZZ");
+  expect(exactMoney("9999999999999999999999999999999999999999.9999", "EUR", "en-GB")).toBe(
+    "9,999,999,999,999,999,999,999,999,999,999,999,999,999.9999 EUR",
+  );
+});

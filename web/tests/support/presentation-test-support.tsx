@@ -1,3 +1,5 @@
+import { RequesterContext } from "../../src/hooks/useRequesterContext";
+import { context as requester } from "./service-ui.fixtures";
 import { SessionContext } from "../../src/session/SessionContext";
 import { EndpointProvider } from "../../src/hooks/EndpointProvider";
 import { screen, render as testingRender, type RenderOptions } from "@testing-library/react";
@@ -33,7 +35,9 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
         refresh: () => Promise.resolve(),
       }}
     >
-      <EndpointProvider>{children}</EndpointProvider>
+      <EndpointProvider>
+        <RequesterContext value={requester}>{children}</RequesterContext>
+      </EndpointProvider>
     </SessionContext>
   </PresentationProvider>
 );

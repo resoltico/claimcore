@@ -1,4 +1,5 @@
 import "./workspace.css";
+import { RequesterContext } from "../hooks/useRequesterContext";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { UnresolvedNotice } from "./operation/UnresolvedNotice";
 import { RoutedContent } from "./RoutedContent";
@@ -217,7 +218,7 @@ export const Dashboard = () => {
     navigate(casePath(receipt.subject.caseReference));
   };
   return (
-    <>
+    <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>
       <WorkspaceHeader active={active} views={views} locked={locked} />
       <UnresolvedNotice />
       <AcceptedToast
@@ -242,6 +243,6 @@ export const Dashboard = () => {
           />
         </div>
       </main>
-    </>
+    </RequesterContext>
   );
 };

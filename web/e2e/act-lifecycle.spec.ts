@@ -28,7 +28,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   });
   await decide(page);
   await completeAct(page, "Withdraw payment decision");
-  await expect(page.locator(".case-lifecycle").getByText("Revision 4")).toBeVisible();
+  await expect(page.locator(".case-header-state").getByText("Revision 4")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(4);
   const opening = page
@@ -41,7 +41,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expectAccessible(page);
 
   await goToView(page, "operations");
-  await page.getByLabel("Exact operation ID").fill(opened.operationId);
+  await page.getByLabel("Exact operation ID", { exact: true }).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
     page.getByText(`Accepted operation ${opened.operationId}`, { exact: false }),
@@ -66,7 +66,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await completeAct(page, "Close the case");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "Reopen the case");
-  await expect(page.locator(".case-lifecycle").getByText("Revision 6")).toBeVisible();
+  await expect(page.locator(".case-header-state").getByText("Revision 6")).toBeVisible();
   await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   await expect(page.locator(".history-list > li > details")).toHaveCount(6);
   await expectAccessible(page);

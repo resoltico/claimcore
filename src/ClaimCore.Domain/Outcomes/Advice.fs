@@ -54,6 +54,7 @@ module CaseAdvice =
 
 type ActorContext =
     {
+        ActorId: ActorId
         Runtime: RuntimeContext
         Capability: Capability list
         View: View list

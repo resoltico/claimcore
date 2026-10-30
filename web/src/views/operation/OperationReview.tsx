@@ -147,6 +147,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
       onOpenChange={model.returnToEdit}
     >
       <>
+        <p>{p.text("ui.unchangedUntilSubmit")}</p>
         <h3>
           {input.kind === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
         </h3>

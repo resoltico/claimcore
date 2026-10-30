@@ -73,7 +73,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.getByRole("link").and(page.locator('nav a[href="/authority"]')).click();
-  const selected = page.locator('button[id^="actor-grants-"]').first();
+  const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
   expect(grantRequests).toHaveLength(0);
   const reply = page.waitForResponse((response) =>

@@ -1876,6 +1876,9 @@
             "minItems": 0,
             "maxItems": 6
           },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "hasAssignedCases": {
             "type": "boolean"
           }
@@ -1887,6 +1890,7 @@
           "capabilities",
           "views",
           "offers",
+          "actorId",
           "hasAssignedCases"
         ]
       },

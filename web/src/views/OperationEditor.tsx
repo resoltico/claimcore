@@ -84,7 +84,6 @@ export const OperationEditor = (props: OperationEditorProps) => {
     <section aria-labelledby="operation-title" className="operation-editor">
       <h1 id="operation-title">{p.actLabel(model.entry.kind)}</h1>
       <p>{p.actMeaning(model.entry.kind)}</p>
-      <p>{p.text("ui.unchangedUntilSubmit")}</p>
       <div className="editor-layout">
         <div>
           <OperationDiscard model={model} onClose={navigation.close} />

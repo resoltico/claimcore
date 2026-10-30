@@ -26,7 +26,7 @@ it("renders grouped facts with missing decision and payment and retains help and
   );
   expect(screen.getAllByText("Not recorded")).toHaveLength(2);
   expect(view.container.querySelectorAll(".case-fact-card")).toHaveLength(3);
-  await user.click(screen.getAllByText("Meaning and exact copy")[0]!);
+  await user.click(screen.getAllByRole("button", { name: "Explain fields" })[1]!);
   expect(screen.getAllByRole("button", { name: /Copy/u }).length).toBeGreaterThan(1);
   expect(view.container.querySelector('[data-field-name="claimantName"]')).toHaveTextContent(
     fields.registration.claimantName,
@@ -48,16 +48,19 @@ it("separates stewardship and dispatches only server-advised acts with the first
   expect(screen.queryByRole("button", { name: /Reinstate/u })).toBeNull();
 });
 
-it("opens registration by default in compact facts while absent groups remain collapsible", () => {
+it("keeps compact grouped facts visible with one explanation toggle per group", async () => {
   compact.value = true;
+  const user = userEvent.setup();
   const view = render(
     <CaseFacts values={fields} fields={definition.catalog.fields} revision={2} />,
   );
-  const cards = view.container.querySelectorAll("details.case-fact-card");
+  const cards = view.container.querySelectorAll("section.case-fact-card");
   expect(cards).toHaveLength(3);
-  expect(cards[0]).toHaveAttribute("open");
-  expect(cards[1]).not.toHaveAttribute("open");
-  expect(cards[2]).not.toHaveAttribute("open");
+  const toggle = cards[0]!.querySelector("button")!;
+  expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute("aria-pressed", "true");
+  expect(view.container.querySelectorAll(".case-fact-card button.explain-fields")).toHaveLength(3);
 });
 it("keeps the first compact action available and reveals the remaining advised acts", async () => {
   compact.value = true;

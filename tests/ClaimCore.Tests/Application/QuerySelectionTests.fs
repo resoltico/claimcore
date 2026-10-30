@@ -167,6 +167,11 @@ let private context () =
         Queries.contextResult (DecisionFixtures.services installation calendar owner) instant view
     with
     | Outcome.Succeeded value ->
+        Expect.equal
+            value.ActorId
+            (CaseFixtures.actorId (id 1))
+            "Context identifies its admitted requester"
+
         Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
         Expect.isEmpty value.View "No views before grants"
         Expect.isEmpty value.Offers "No offers before grants"

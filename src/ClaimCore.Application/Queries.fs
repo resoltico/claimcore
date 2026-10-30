@@ -52,11 +52,11 @@ module internal Queries =
         let calendar = services.Calendar
         let principal = services.Principal
 
-        match currentActor principal actor with
-        | Error _ -> unavailable
-        | Ok _ ->
+        match currentActor principal actor, actor.Actor with
+        | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    ActorId = requester.ActorId
                     Runtime =
                         {
                             ProductVersion = productVersion
@@ -71,6 +71,7 @@ module internal Queries =
                         |> List.filter (fun capability ->
                             Authority.can principal actor capability Scope.Installation)
                 }
+        | _ -> unavailable
 
     let context (services: ServiceContext) token =
         let store = services.Store

@@ -5,7 +5,7 @@ import { render, screen } from "../../support/presentation-test-support";
 import { LifecycleStatus } from "../../../src/views/LifecycleStatus";
 import { fields } from "../../support/service-ui.fixtures";
 const fullHistory = { ...caseAdvice([]), history: ["SUMMARY", "FULL"] as const };
-it("renders active voided and erased states from the accepted case view", () => {
+it("renders stewardship meanings for voided and erased accepted states", () => {
   const { rerender } = render(
     <LifecycleStatus
       value={caseViewInput({
@@ -19,7 +19,7 @@ it("renders active voided and erased states from the accepted case view", () => 
       })}
     />,
   );
-  expect(screen.getByRole("status")).toHaveTextContent("Active");
+  expect(screen.queryByRole("status")).toBeNull();
   rerender(
     <LifecycleStatus
       value={caseViewInput({

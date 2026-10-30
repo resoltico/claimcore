@@ -228,10 +228,16 @@ module ResponseCodecs =
 
     let runtimeContext = runtimeFields |> build |> named "RuntimeContext"
 
+    let private contextActor =
+        (record (fun identity assigned -> identity, assigned): Fields<ActorId * bool, _>)
+        |> field "actorId" fst actorId
+        |> field "hasAssignedCases" snd boolean
+
     let actorContext =
-        (record (fun runtime capabilities views offers assigned ->
+        (record (fun runtime capabilities views offers (identity, assigned) ->
             {
-                ActorContext.Runtime = runtime
+                ActorContext.ActorId = identity
+                Runtime = runtime
                 Capability = capabilities
                 View = views
                 Offers = offers
@@ -245,7 +251,7 @@ module ResponseCodecs =
             (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
-        |> field "hasAssignedCases" _.HasAssignedCases boolean
+        |> flatten (fun context -> context.ActorId, context.HasAssignedCases) contextActor
         |> build
         |> named "ActorContext"
 

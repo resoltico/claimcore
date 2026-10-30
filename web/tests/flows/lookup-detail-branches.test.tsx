@@ -1,3 +1,4 @@
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act } from "@testing-library/react";
@@ -122,7 +123,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   await waitFor(() => {
     expect(
       screen.queryByRole("region", {
-        name: "current case",
+        name: "Current case",
       }),
     ).toBeNull();
   });
@@ -132,7 +133,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   });
   expect(
     await screen.findByRole("region", {
-      name: "current case",
+      name: "Current case",
     }),
   ).toBeVisible();
   expect(
@@ -225,11 +226,15 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   const user = userEvent.setup();
   render(<CaseList onSelect={selected} onOpen={vi.fn()} />);
   const find = screen.getByRole("button", {
-    name: "Find case",
+    name: "Open by exact reference",
   });
   expect(find).toBeDisabled();
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith(" REF ");
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

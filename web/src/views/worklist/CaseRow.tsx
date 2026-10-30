@@ -1,9 +1,19 @@
 import type { CaseSummary } from "../../api/service";
 import { CharacterWarning } from "../../components/BusinessValue";
-import { CopyValue } from "../../components/CopyValue";
 import { usePresentation } from "../../presentation/context";
 import { changedTime } from "../../presentation/changedTime";
 import { casePath } from "../../routing/routes";
+import { followLink } from "../../routing/followLink";
+import { CaseStateBadge } from "../../components/CaseStateBadge";
+const RowReference = ({ value }: { value: string }) => {
+  const tail = Math.min(9, Math.floor(value.length / 2));
+  return (
+    <bdi dir="ltr" className="row-reference-text">
+      <span className="reference-prefix">{value.slice(0, value.length - tail)}</span>
+      <span className="reference-suffix">{tail === 0 ? "" : value.slice(-tail)}</span>
+    </bdi>
+  );
+};
 const Changed = ({ value }: { value: string }) => {
   const p = usePresentation();
   const time = changedTime(value, p.displayLocale);
@@ -13,48 +23,31 @@ const Changed = ({ value }: { value: string }) => {
     </time>
   );
 };
-const CaseFacts = ({ value }: { value: CaseSummary }) => {
+type LiveSummary = Exclude<CaseSummary["state"], { kind: "ERASED" }>;
+const CaseRowFacts = ({ live }: { live: LiveSummary | null }) => {
   const p = usePresentation();
-  const { state } = value;
-  if (state.kind === "ERASED") {
-    return (
-      <td colSpan={4}>
-        <span className="badge">{p.term("lifecycle", state.kind)}</span>
-        <span>{p.text("ui.revision", { revision: p.integer(value.revision) })}</span>
-      </td>
-    );
-  }
+  const payable = live?.payable ?? null;
   return (
     <>
       <td className="worklist-person">
-        <bdi>{state.claimantName}</bdi>
-        <CharacterWarning value={state.claimantName} />
-        <small>
-          <bdi>{state.insurerName}</bdi>
-        </small>
-        <CharacterWarning value={state.insurerName} />
-      </td>
-      <td className="worklist-money">
-        <span className="compact-label">{p.fieldLabel("claimedAmount")}: </span>
-        <bdi dir="ltr">
-          {p.amount(state.claimed.amount)} {state.claimed.currency}
-        </bdi>
-      </td>
-      <td className="worklist-money">
-        {state.payable === null ? (
-          p.text("ui.notRecorded")
-        ) : (
-          <bdi dir="ltr">
-            {p.amount(state.payable.amount)} {state.payable.currency}
-          </bdi>
+        {live === null ? null : (
+          <>
+            <bdi>{live.claimantName}</bdi>
+            <CharacterWarning value={live.claimantName} />
+            <small>
+              <bdi>{live.insurerName}</bdi>
+              <CharacterWarning value={live.insurerName} />
+            </small>
+          </>
         )}
       </td>
-      <td className="worklist-badges">
-        {state.kind === "ACTIVE" ? null : (
-          <span className="badge">{p.term("lifecycle", state.kind)}</span>
+      <td className="worklist-money">
+        {live === null ? null : (
+          <bdi dir="ltr">{p.money(live.claimed.amount, live.claimed.currency)}</bdi>
         )}
-        <span className="badge">{p.term("status", state.status)}</span>
-        <span className="badge">{p.term("progress", state.progress)}</span>
+      </td>
+      <td className="worklist-money worklist-payable">
+        {payable === null ? null : <bdi dir="ltr">{p.money(payable.amount, payable.currency)}</bdi>}
       </td>
     </>
   );
@@ -62,35 +55,39 @@ const CaseFacts = ({ value }: { value: CaseSummary }) => {
 export const CaseRow = ({
   value,
   onSelect,
+  businessDate,
 }: {
   value: CaseSummary;
   onSelect: (reference: string) => void;
+  businessDate: string;
 }) => {
   const p = usePresentation();
+  const { state } = value;
+  const live = state.kind === "ERASED" ? null : state;
+  const age = p.age(live?.incidentNotificationDate ?? null, businessDate);
   return (
-    <tr className={`worklist-row ${value.state.kind === "ERASED" ? "erased-row" : ""}`}>
+    <tr className={`worklist-row ${state.kind === "ERASED" ? "erased-row" : ""}`}>
       <td className="worklist-reference">
         <a
-          className="reference"
+          className="reference row-link"
           href={casePath(value.caseReference)}
+          title={value.caseReference}
+          aria-label={value.caseReference}
           onClick={(event) => {
-            event.preventDefault();
-            onSelect(value.caseReference);
+            followLink(event, () => {
+              onSelect(value.caseReference);
+            });
           }}
         >
-          <bdi dir="ltr">{value.caseReference}</bdi>
+          <RowReference value={value.caseReference} />
         </a>
-        <CharacterWarning value={value.caseReference} />
-        <small>
-          {p.text("ui.caseRow", {
-            status: p.term("lifecycle", value.state.kind),
-            revision: p.integer(value.revision),
-          })}
-        </small>
-        <CopyValue label={p.fieldLabel("caseReference")} value={value.caseReference} />
       </td>
-      <CaseFacts value={value} />
-      <td>
+      <CaseRowFacts live={live} />
+      <td className="worklist-badges">
+        <CaseStateBadge state={state} />
+      </td>
+      <td className="worklist-age">{age}</td>
+      <td className="worklist-changed">
         <Changed value={value.changedAt} />
       </td>
     </tr>

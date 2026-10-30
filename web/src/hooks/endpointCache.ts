@@ -1,4 +1,4 @@
-import type { EndpointId } from "@contracts/client";
+import type { EndpointId, RequestByEndpoint } from "@contracts/client";
 import type { ApiResult, EndpointOutcome, ServiceResponse } from "../protocol/types";
 import { isResponse } from "../protocol/client";
 import { localNotice } from "../protocol/notices";
@@ -128,3 +128,14 @@ export class EndpointCache {
     }
   };
 }
+
+/** Read already-known metadata without acquiring a request or keeping an abandoned request alive. */
+export const cachedEndpointResult = <K extends EndpointId>(
+  cache: EndpointCache,
+  credential: string,
+  endpoint: K,
+  input: RequestByEndpoint[K],
+) => {
+  const key = `${credential}\u001f${endpoint}:${canonicalInput(input)}`;
+  return typedResult(endpoint, cache.snapshot(key).result);
+};

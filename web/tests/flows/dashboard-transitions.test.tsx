@@ -1,3 +1,4 @@
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -195,4 +196,8 @@ it("returns an accepted open operation to Dashboard through its committed transi
       caseReference: fields.caseReference,
     },
   );
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

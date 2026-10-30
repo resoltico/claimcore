@@ -21,6 +21,34 @@ let tests =
     testList
         "core operation catalog"
         [
+            testCase
+                "role principal admission metadata matches independent policy witnesses"
+                (fun () ->
+                    let both = [ PrincipalKind.Human; PrincipalKind.Service ]
+
+                    let expected =
+                        [
+                            Role.Owner, [ PrincipalKind.Human ]
+                            Role.CaseReader, both
+                            Role.CaseRegistrar, both
+                            Role.CaseHandler, both
+                            Role.PaymentRecorder, both
+                            Role.DataSteward, [ PrincipalKind.Human ]
+                            Role.Auditor, both
+                        ]
+                        |> Map.ofList
+
+                    let actual =
+                        Catalog.document.Roles
+                        |> List.map (fun role -> role.Role, role.AdmittedPrincipalKinds)
+                        |> Map.ofList
+
+                    Expect.equal actual expected "No UI copy of the human-only grant rule"
+
+                    Expect.equal
+                        (List.length Catalog.document.Roles)
+                        expected.Count
+                        "Every role occurs once")
             testCase "every actor-facing act occurs exactly once" (fun () ->
                 let actual =
                     OperationCatalog.mutations

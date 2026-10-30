@@ -5,7 +5,15 @@ import { productMetadata } from "../protocol/productMetadata";
 import { correctionTargets, fieldGuidance } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
-import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
+import {
+  calendarDate,
+  displayField,
+  exactAmount,
+  exactInteger,
+  exactMoney,
+  caseAge,
+  recordedTime,
+} from "./format";
 import { renderCatalogKey, translate } from "./messages";
 import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
@@ -137,7 +145,14 @@ export const createPresenter = (
     termLabel(preferences, vocabulary, value),
   hint: (field: FieldCatalogEntry) => hint(preferences, field),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
-  amount: (value: string) => exactAmount(value, preferences.displayLocale),
+  amount: (value: string, currency?: string) =>
+    exactAmount(value, preferences.displayLocale, currency),
+  money: (value: string, currency: string) =>
+    exactMoney(value, currency, preferences.displayLocale),
+  age: (notified: string | null, businessDate: string) =>
+    caseAge(notified, businessDate, preferences.displayLocale),
+  recordedTime: (value: string, zone: string) =>
+    recordedTime(value, zone, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
   fieldValue: (value: string | null, field: FieldCatalogEntry) =>
     fieldValueText(preferences, value, field),

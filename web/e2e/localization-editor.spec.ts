@@ -32,7 +32,7 @@ const editorLanguage = async (page: Page) => {
     ).toBeVisible();
     await expect(
       page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
   }
 };
 const reviewLanguage = async (page: Page) => {
@@ -50,6 +50,9 @@ const reviewLanguage = async (page: Page) => {
     ).toBeVisible();
     await expect(
       dialog.getByText(ui(language, "ui.reviewDescription"), { exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
     ).toBeVisible();
     await expect(confirmation).toBeChecked();
   }

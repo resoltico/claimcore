@@ -1,3 +1,4 @@
+import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
 import { actorContextInput } from "../../support/inputs";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { wireReply } from "../../support/contract-corpus.fixtures";
@@ -82,4 +83,8 @@ it("replaces an unavailable initial case route with the first advertised workspa
   expect(window.location.pathname).toBe("/authority");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

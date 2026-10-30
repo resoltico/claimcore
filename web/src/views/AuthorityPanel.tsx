@@ -1,3 +1,5 @@
+import { AuthorityHistory } from "./authority/AuthorityHistory";
+import { followLink } from "../routing/followLink";
 import type { ActorSummary } from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
 import { ActorOperation } from "./authority/ActorOperation";
@@ -377,7 +379,7 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     recorded,
   };
 };
-export const AuthorityPanel = (props: AuthorityPanelProps) => {
+const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
   const state = useAuthorityOperation(props);
   const target = useAuthorityTarget(
     state.model,
@@ -393,5 +395,46 @@ export const AuthorityPanel = (props: AuthorityPanelProps) => {
       onClose={navigation.close}
       disclosureAvailable={props.disclosureAvailable ?? true}
     />
+  );
+};
+
+export const AuthorityPanel = (props: AuthorityPanelProps) => {
+  const p = usePresentation();
+  const route = useRoute();
+  const actorId = route.screen === "authority" ? route.actorId : "";
+  const history = route.screen === "authority" && route.history;
+  const base = actorId === "" ? "/authority" : `/authority/${encodeURIComponent(actorId)}`;
+  return (
+    <>
+      <nav className="authority-tabs" aria-label={p.text("subject.AUTHORITY.label")}>
+        <a
+          href={base}
+          aria-current={history ? undefined : "page"}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(base);
+            });
+          }}
+        >
+          {p.text("ui.actors")}
+        </a>
+        <a
+          href={`${base}?tab=history`}
+          aria-current={history ? "page" : undefined}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(`${base}?tab=history`);
+            });
+          }}
+        >
+          {p.text(actorId === "" ? "endpoint.authority.history.label" : "ui.historyForActor")}
+        </a>
+      </nav>
+      {history && props.disclosureAvailable !== false ? (
+        <AuthorityHistory key={actorId} actorId={actorId} />
+      ) : (
+        <AuthorityEditorPanel {...props} />
+      )}
+    </>
   );
 };

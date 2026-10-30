@@ -16,7 +16,7 @@ import {
 
 const findCase = async (page: Page, reference: string) => {
   await (await showExactLookup(page)).fill(reference);
-  await page.getByRole("button", { name: "Find case", exact: true }).click();
+  await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
 };
 
 const expectContextAccess = async (page: Page) => {
@@ -36,9 +36,14 @@ const expectContextAccess = async (page: Page) => {
 const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scoped: boolean) => {
   await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
-  await expect(page.getByRole("region", { name: "current case", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Current case", exact: true })).toBeVisible();
   await expect(page.locator(".history-list li")).toHaveCount(1);
-  await expect(page.locator(".history-list details")).toHaveCount(0);
+  const history = page.locator(".history-list");
+  await expect(history.locator("details")).toHaveCount(1);
+  await history.locator("details > summary").click();
+  await expect(history.locator(".case-fields, .field-row")).toHaveCount(0);
+  await expect(history).not.toContainText("Synthetic claimant");
+  await expect(history).not.toContainText("Synthetic insurer");
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toHaveCount(
     role === "CASE_HANDLER" ? 1 : 0,
   );
@@ -59,7 +64,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   if (scoped) {
     await page.getByRole("button", { name: "Back to cases", exact: true }).click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
-    await expect(page.getByRole("region", { name: "current case", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Current case", exact: true })).toHaveCount(0);
   }
 };
 

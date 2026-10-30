@@ -1,3 +1,4 @@
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -52,7 +53,7 @@ describe("catalog rendering", () => {
       createPresenter(defaults).fieldMeaning(incident.name),
     );
     expect(screen.getAllByText(createPresenter(defaults).fieldMeaning(incident.name))).toHaveLength(
-      2,
+      1,
     );
     expect(screen.getByText("CASE-1")).toBeVisible();
   });
@@ -192,4 +193,8 @@ describe("service session lifecycle", () => {
   });
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
   it("offers OIDC sign-in, then hydrates an authenticated return and signs out", sessionLifecycle);
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

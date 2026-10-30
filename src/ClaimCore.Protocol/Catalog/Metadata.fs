@@ -146,6 +146,12 @@ type PresentationLimits =
         RequestByteLimit: int
     }
 
+type RolePresentationDefinition =
+    {
+        Role: Role
+        AdmittedPrincipalKinds: PrincipalKind list
+    }
+
 type CatalogDocument =
     {
         Fields: FieldPresentationDefinition list
@@ -153,6 +159,7 @@ type CatalogDocument =
         CharacterWarnings: CharacterWarningDefinition
         Limits: PresentationLimits
         Entries: CatalogEntry list
+        Roles: RolePresentationDefinition list
         ProductVersion: string
     }
 

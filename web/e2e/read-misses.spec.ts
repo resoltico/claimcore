@@ -14,7 +14,9 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expect(page.getByRole("button", { name: "Reload cases", exact: true })).toBeEnabled();
   const requests = trackRequests(page);
   await (await showExactLookup(page)).fill("");
-  await expect(page.getByRole("button", { name: "Find case", exact: true })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Open by exact reference", exact: true }),
+  ).toBeDisabled();
   await (await showExactLookup(page)).press("Enter");
   expect(requests).toHaveLength(0);
   await goToView(page, "operations");
@@ -57,7 +59,7 @@ test("hides absent case and operation identities behind neutral access refusals"
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);
   await goToView(page, "operations");
-  await page.getByLabel("Exact operation ID").fill(randomUUID());
+  await page.getByLabel("Exact operation ID", { exact: true }).fill(randomUUID());
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();
   await expect(page.getByText("Operation was not observed.", { exact: true })).toHaveCount(0);

@@ -45,24 +45,21 @@ it("leaves an untouched prefilled amendment directly", async () => {
   expect(close).toHaveBeenCalledOnce();
   expect(screen.queryByRole("dialog")).toBeNull();
 });
-it("switches an untouched amendment without discarding authored work", async () => {
+it("keeps a routed amendment fixed until returning to the case", async () => {
   const user = userEvent.setup();
-  open();
-  await chooseOption(user, screen.getByLabelText("Case action"), "CLOSE");
-  expect(
-    screen.getByRole("heading", {
-      name: "Close the case",
-    }),
-  ).toBeVisible();
+  const close = open();
+  expect(screen.queryByLabelText("Case action")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Back to case" }));
+  expect(close).toHaveBeenCalledOnce();
   expect(screen.queryByRole("dialog")).toBeNull();
 });
-it("protects an amendment changed to all empty strings on switch and Back", async () => {
+it("protects an amendment changed to all empty strings on Back", async () => {
   const user = userEvent.setup();
   const close = open();
   for (const input of screen.getAllByRole("textbox")) {
     await user.clear(input);
   }
-  await chooseOption(user, screen.getByLabelText("Case action"), "CLOSE");
+  await user.click(screen.getByRole("button", { name: "Back to case" }));
   expect(
     await screen.findByRole("dialog", {
       name: "Discard these draft changes?",

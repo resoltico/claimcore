@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { expect, type Page, type TestInfo, type Response } from "@playwright/test";
+import { expect, type Page, type TestInfo, type Response, type Request } from "@playwright/test";
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
@@ -66,22 +66,29 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator(".case-fields").first()).toBeVisible();
   }
   if (route.id === "case-erased") {
-    await expect(page.locator(".case-lifecycle-erased")).toBeVisible();
+    await expect(page.locator(".case-header-state .badge")).toBeVisible();
     await expect(page.locator(".case-fields")).toHaveCount(0);
   }
   if (route.id.startsWith("cases-")) {
+    await expect(page.locator(".summary-band")).toBeVisible();
+    await expect(page.locator(".summary-band[role=status], .summary-band[role=alert]")).toHaveCount(
+      0,
+    );
     await expect(page.locator('.saved-views button[aria-pressed="true"]')).toHaveCount(
-      route.filtered === true ? 0 : 1,
+      route.filtered === true || route.summaryExpanded === true ? 0 : 1,
     );
   }
   if (route.id.startsWith("case-")) {
     await expect(page.locator(".history-list > li").first()).toBeVisible();
+    await expect(page.locator(".assigned-marker")).toHaveCount(
+      route.id === "case-undecided" ? 1 : 0,
+    );
   }
   if (route.id === "operation-result") {
     await expect(page.locator(".case-fields")).toBeVisible();
   }
   if (route.id === "authority-list") {
-    await expect(page.locator('button[id^="actor-grants-"]').first()).toBeVisible();
+    await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
   }
   if (route.id === "authority-detail") {
     await expect(page.locator('[aria-labelledby="actor-grants-title"] li')).toHaveCount(1);
@@ -111,7 +118,22 @@ const assertReadResponse = async (page: Page, reply: Response, route: MatrixRout
     expect(reply.request().postDataJSON()).toEqual(route.expectedInput);
   }
 };
+const observeApiRequests = (page: Page) => {
+  const requests: string[] = [];
+  const observe = (request: Request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith("/api/")) {
+      requests.push(path);
+    }
+  };
+  page.on("request", observe);
+  return () => {
+    page.off("request", observe);
+    return requests;
+  };
+};
 export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
+  const apiRequests = observeApiRequests(page);
   const response =
     route.endpoint === undefined
       ? null
@@ -126,6 +148,18 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     }, dimension.zoom);
   }
   await ready(page, route);
+  if (route.summaryExpanded === true) {
+    await expect(page.locator(".summary-band")).toBeVisible();
+    await expect(page.locator(".summary-band[role=status]")).toHaveCount(0);
+    const disclosure = page.locator("details.summary-band");
+    if (await disclosure.count()) {
+      await disclosure.locator("summary").click();
+    }
+  }
+  const observed = apiRequests();
+  if (route.id === "not-found") {
+    expect(observed).toEqual([]);
+  }
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
     dimension.language === "en-XA" ? "en" : dimension.language,
@@ -282,8 +316,8 @@ const factCardReadability = () => {
       });
     }
   }
-  for (const summary of document.querySelectorAll(".case-fact-card summary")) {
-    const walker = document.createTreeWalker(summary, NodeFilter.SHOW_TEXT);
+  for (const help of document.querySelectorAll(".case-fact-card .explain-fields")) {
+    const walker = document.createTreeWalker(help, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
       for (const word of (node.textContent ?? "").matchAll(/\S+/gu)) {
         const range = document.createRange();
@@ -291,7 +325,7 @@ const factCardReadability = () => {
         range.setEnd(node, word.index + word[0].length);
         if (lines(range) > 1) {
           failures.push({
-            field: summary.closest<HTMLElement>("[data-field-name]")!.dataset["fieldName"]!,
+            field: help.closest(".case-fact-card")!.querySelector("h3")!.textContent,
             kind: "help-word-wrap",
           });
         }
@@ -300,10 +334,42 @@ const factCardReadability = () => {
   }
   return failures;
 };
+const compactRows = async (page: Page, dimension: Dimension) => {
+  if (dimension.zoom !== undefined || dimension.language === "en-XA") {
+    return;
+  }
+  const heights = await page
+    .locator(".worklist-row")
+    .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
+  const maximum = dimension.width >= 1024 ? 48 : 96;
+  for (const height of heights) {
+    expect(height).toBeLessThanOrEqual(maximum);
+  }
+  if (dimension.width < 640) {
+    const cards = await page
+      .locator(".authority-row > a")
+      .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
+    for (const height of cards) {
+      expect(height).toBeLessThanOrEqual(96);
+    }
+  }
+};
+const savedViewGeometry = async (page: Page) => {
+  const tops = await page
+    .locator(".saved-views button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => Math.round(button.getBoundingClientRect().top)),
+    );
+  if (tops.length > 0) {
+    expect([...new Set(tops)]).toHaveLength(1);
+  }
+};
 export const checkFrame = async (page: Page, dimension: Dimension) => {
   await expectAccessible(page);
   await checkActionHierarchy(page);
   await compactActionGeometry(page, dimension);
+  await compactRows(page, dimension);
+  await savedViewGeometry(page);
   expect(await page.evaluate(factCardReadability)).toEqual([]);
   const targets = await page.evaluate(smallTargets);
   const tags = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA", "SUMMARY", "DIV", "SPAN"]);
@@ -330,7 +396,10 @@ const screenshotDimension = (dimension: Dimension): boolean =>
   ((dimension.language === "en" && [390, 1280].includes(dimension.width)) ||
     (dimension.language === "ar" && dimension.width === 390 && dimension.theme === "light"));
 export const expectedCaptures = (engine: string, dimension: Dimension): number =>
-  engine === "chromium" && screenshotDimension(dimension) ? 21 : 0;
+  engine === "chromium" && screenshotDimension(dimension)
+    ? 11 +
+      Number(dimension.language === "en" && dimension.width === 390 && dimension.theme === "light")
+    : 0;
 export const matrixEvidenceDirectory = async (): Promise<string> => {
   const configured =
     process.env["CLAIMCORE_DESIGN_SCREENSHOT_DIRECTORY"] ??
@@ -359,6 +428,32 @@ export const matrixEvidenceDirectory = async (): Promise<string> => {
   }
   return root;
 };
+const capturesFrame = (frame: string, dimension: Dimension): boolean => {
+  const baselinePair =
+    frame === "cases-open-undecided" &&
+    dimension.language === "en" &&
+    dimension.width === 390 &&
+    dimension.theme === "light";
+  if (
+    !baselinePair &&
+    ![
+      "cases-all",
+      "cases-mine",
+      "cases-summary",
+      "case-decided",
+      "case-voided",
+      "case-erased",
+      "editor-decide",
+      "authority-list",
+      "authority-detail",
+      "authority-history",
+      "not-found",
+    ].includes(frame)
+  ) {
+    return false;
+  }
+  return true;
+};
 export const captureFrame = async (
   page: Page,
   info: TestInfo,
@@ -366,6 +461,9 @@ export const captureFrame = async (
   frame: string,
 ): Promise<string | null> => {
   if (info.project.name !== "chromium" || !screenshotDimension(dimension)) {
+    return null;
+  }
+  if (!capturesFrame(frame, dimension)) {
     return null;
   }
   const root = await matrixEvidenceDirectory();

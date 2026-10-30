@@ -1,3 +1,4 @@
+import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { expect, it, vi } from "vitest";
 import { act, fireEvent } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -33,6 +34,7 @@ it("prefills a deep-linked actor from disclosed identity rather than a stale lis
   render(<Dashboard />);
   await expectBoundActor();
   expect(screen.getByRole("combobox", { name: "Authority action" })).toHaveValue("GRANT");
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
@@ -48,6 +50,7 @@ it("uses an offered alternative instead of inventing GRANT on actor detail", asy
   actorRoute();
   render(<Dashboard />);
   await expectBoundActor();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
@@ -73,6 +76,7 @@ it("declining retarget consent retains the authored principal and returns to its
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
   fireEvent.click(screen.getByRole("button", { name: "Continue current request" }));
   expect(document.querySelector('[name="target.subject"]')).toHaveValue("authored-other");
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
@@ -84,6 +88,7 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
   listRoute();
   render(<Dashboard />);
   await authorDifferentTarget();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("checkbox", { name: "I confirm this exact request." });
   const [previous] = preview.mock.calls[0]!;
@@ -92,6 +97,7 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Discard and change action" }));
   await expectBoundActor();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledTimes(2);
@@ -109,6 +115,7 @@ it("declining an uncertain request retarget preserves the exact request and retr
   listRoute();
   render(<Dashboard />);
   await authorDifferentTarget();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
@@ -132,6 +139,7 @@ it("changing acts retains the bound actor identity after discard consent", async
   actorRoute();
   render(<Dashboard />);
   await expectBoundActor();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("checkbox", { name: "I confirm this exact request." });
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
@@ -140,6 +148,7 @@ it("changing acts retains the bound actor identity after discard consent", async
   });
   fireEvent.click(await screen.findByRole("button", { name: "Discard and change action" }));
   await expectBoundActor();
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledTimes(2);
@@ -160,7 +169,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
     .mockResolvedValue(grantsFor(secondActor));
   listRoute();
   render(<Dashboard />);
-  await screen.findAllByRole("button", { name: "View grants" });
+  await screen.findAllByRole("link", { name: / ·/u });
   await openActor();
   await openActor(secondActor.actorId);
   await expectBoundActor(secondActor.principal.subject);
@@ -168,6 +177,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
     release(grantsFor());
     await pending;
   });
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();

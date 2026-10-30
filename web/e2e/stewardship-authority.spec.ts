@@ -3,7 +3,12 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
 import { openCase, startAct } from "./case-workflow";
-import { expectAccessible, openAuthenticated } from "./session-helpers";
+import {
+  expectAccessible,
+  openAuthenticated,
+  browserRequest,
+  sessionToken,
+} from "./session-helpers";
 import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 
@@ -43,7 +48,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     const steward = await context.newPage();
     await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
     await (await showExactLookup(steward)).fill(reference);
-    await steward.getByRole("button", { name: "Find case", exact: true }).click();
+    await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
     await stewardAct(steward, "Void case record", "Synthetic entry error");
     await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
     await stewardAct(steward, "Reinstate case record", "Synthetic correction");
@@ -104,6 +109,26 @@ const selectAuthorityAct = async (page: Page, act: "GRANT" | "DISABLE") => {
   await expect(option).toBeEnabled();
   await picker.selectOption(act);
 };
+const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: string) => {
+  const response = await browserRequest(page, "/api/operation.preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({
+      kind: "AUTHORITY",
+      operationId: randomUUID(),
+      target: { kind: "SERVICE", issuer, subject },
+      act: { kind: "GRANT", role: "OWNER", scope: { kind: "INSTALLATION" } },
+    }),
+  });
+  const value = response.payload;
+  expect(isResponse("operation.preview", value)).toBe(true);
+  expect(value).toMatchObject({
+    outcome: { kind: "REJECTED", data: { code: "HUMAN_PRINCIPAL_REQUIRED" } },
+  });
+};
 test("browser registers service principals, changes scoped grants and enablement, and renders core refusal", async ({
   page,
 }) => {
@@ -126,7 +151,12 @@ test("browser registers service principals, changes scoped grants and enablement
   await submitAuthority(page, "ACCEPTED");
   await selectAuthorityAct(page, "GRANT");
   await authorityTarget(page, source.issuer, subject);
-  await chooseChoice(page, "act.role", "OWNER");
+  const owner = page.locator('input[name="act.role"][value="OWNER"]');
+  await expect(owner).toBeDisabled();
+  await expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
+  await assertHumanOnlyBoundary(page, source.issuer, subject);
+  await page.locator('[name="target.subject"]').fill(`unregistered-${randomUUID()}`);
+  await chooseChoice(page, "act.role", "CASE_READER");
   await submitAuthority(page, "REJECTED");
   await expect(page.getByRole("alert")).toBeVisible();
   await expectAccessible(page);

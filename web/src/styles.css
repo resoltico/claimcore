@@ -73,7 +73,6 @@ textarea:focus-visible {
 }
 
 .section-heading,
-.app-shell nav,
 .actions,
 .lookup,
 .dialog-actions {
@@ -255,6 +254,18 @@ button:disabled {
   inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
+}
+
+.copy-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-inline-size: var(--target-minimum);
+  min-block-size: var(--target-minimum);
+  padding: 0;
+}
+.copy-value-icon {
+  inline-size: auto;
 }
 
 .copy-value textarea {

@@ -1,3 +1,5 @@
+import { ActorIdentity, OperationIdentity } from "../components/ActorIdentity";
+import { useRequesterContext } from "../hooks/useRequesterContext";
 import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import type { Notice } from "../protocol/notices";
 import { PageStatus } from "../components/PageStatus";
@@ -17,16 +19,31 @@ const historyPage = (response: ServiceResponse<"case.history">) =>
       }
     : null;
 type HistoryPage = NonNullable<ReturnType<typeof historyPage>>;
-const ReceiptAttribution = ({ operationId, actor }: { operationId: string; actor: string }) => {
+const ReceiptAttribution = ({ operationId, actor }: { operationId: string; actor: string }) => (
+  <p className="history-attribution">
+    <ActorIdentity actorId={actor} />
+    <OperationIdentity operationId={operationId} />
+  </p>
+);
+const ReceiptMetadata = ({ receipt }: { receipt: CaseReceipt }) => {
   const p = usePresentation();
   return (
-    <p>
-      <IdentifierMessage
-        id="ui.receiptAttribution"
-        values={{ operationId, actor, state: p.text("ui.accepted") }}
-        argument="operationId"
-      />
-    </p>
+    <>
+      <p>
+        {p.text("ui.exactUtc")}: <time dateTime={receipt.recordedAt}>{receipt.recordedAt}</time>
+      </p>
+      <ReceiptAttribution operationId={receipt.operationId} actor={receipt.recordedBy} />
+      <dl className="history-exact">
+        <dt>{p.fieldLabel("operationId")}</dt>
+        <dd>
+          <bdi dir="ltr">{receipt.operationId}</bdi>
+        </dd>
+        <dt>{p.text("ui.actor")}</dt>
+        <dd>
+          <bdi dir="ltr">{receipt.recordedBy}</bdi>
+        </dd>
+      </dl>
+    </>
   );
 };
 const HistoryReceipt = ({
@@ -41,16 +58,20 @@ const HistoryReceipt = ({
   loadPrevious: (() => void) | undefined;
 }) => {
   const p = usePresentation();
+  const context = useRequesterContext();
   return (
     <details>
       <summary>
         {p.text("ui.historySummary", {
           act: p.term("act", receipt.subject.act),
           revision: p.integer(receipt.subject.revision),
-          timestamp: receipt.recordedAt,
+          timestamp:
+            context === null
+              ? receipt.recordedAt
+              : p.recordedTime(receipt.recordedAt, context.timeZone),
         })}
       </summary>
-      <ReceiptAttribution operationId={receipt.operationId} actor={receipt.recordedBy} />
+      <ReceiptMetadata receipt={receipt} />
       <HistoryChanges
         receipt={receipt}
         previous={previous}
@@ -64,7 +85,7 @@ const HistoryReceipt = ({
           <IdentifierMessage
             id="ui.historyContext"
             values={{
-              operationId: receipt.operationId,
+              operationId: receipt.operationId.slice(0, 8),
             }}
             argument="operationId"
           />
@@ -85,6 +106,7 @@ const Entry = ({
   loadPrevious: (() => void) | undefined;
 }) => {
   const p = usePresentation();
+  const context = useRequesterContext();
   if (entry.kind === "FULL") {
     return (
       <HistoryReceipt
@@ -102,10 +124,21 @@ const Entry = ({
         {p.text("ui.historySummary", {
           act: p.term("act", change.act),
           revision: p.integer(change.revision),
-          timestamp: change.recordedAt,
+          timestamp:
+            context === null
+              ? change.recordedAt
+              : p.recordedTime(change.recordedAt, context.timeZone),
         })}
       </p>
       <ReceiptAttribution operationId={change.operationId} actor={change.recordedBy} />
+      <details>
+        <summary>{p.text("ui.technicalDetails")}</summary>
+        <p>
+          {p.text("ui.exactUtc")}: <time dateTime={change.recordedAt}>{change.recordedAt}</time>
+        </p>
+        <bdi dir="ltr">{change.operationId}</bdi>
+        <bdi dir="ltr">{change.recordedBy}</bdi>
+      </details>
     </>
   );
 };

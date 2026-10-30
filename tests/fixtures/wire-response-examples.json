@@ -109,7 +109,8 @@
               "AUTHORITY",
               "OPERATIONS"
             ],
-            "hasAssignedCases": false
+            "hasAssignedCases": false,
+            "actorId": "10000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -1030,7 +1031,8 @@
               "AUTHORITY",
               "OPERATIONS"
             ],
-            "hasAssignedCases": false
+            "hasAssignedCases": false,
+            "actorId": "10000000-0000-4000-8000-000000000001"
           }
         }
       }

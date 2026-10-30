@@ -1,3 +1,4 @@
+import { roleAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import type { CatalogEntry } from "../protocol/catalogAssembly";
@@ -65,6 +66,42 @@ const choiceLabel = (
     ? p.term(vocabulary, value)
     : value;
 };
+const roleOptionUnavailable = (input: CatalogInput, props: Props, value: string) =>
+  input.kind.kind === "CHOICE" &&
+  input.kind.vocabulary === "role" &&
+  typeof props.values["target.kind"] === "string" &&
+  !roleAdmitted(value, props.values["target.kind"]);
+const ChoiceOption = ({
+  input,
+  value,
+  ...props
+}: Props & { input: CatalogInput; value: string }) => {
+  const p = usePresentation();
+  const path = bindingPath(input);
+  const error = inputError(input, props);
+  const blocked = roleOptionUnavailable(input, props, value);
+  const reason = `${input.identity}-${value}-unavailable`;
+  return (
+    <label className={String(props.values[path] ?? "") === value ? "selected" : ""}>
+      <input
+        type="radio"
+        name={path}
+        value={value}
+        checked={props.values[path] === value}
+        disabled={props.disabled || blocked}
+        aria-describedby={
+          [descriptionIds(input, error), blocked ? reason : undefined].filter(Boolean).join(" ") ||
+          undefined
+        }
+        onChange={() => {
+          props.onChange(path, value);
+        }}
+      />
+      {choiceLabel(p, input, value)}
+      {blocked ? <small id={reason}>{p.text("ui.roleNotAvailableForService")}</small> : null}
+    </label>
+  );
+};
 const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const p = usePresentation();
   const path = bindingPath(input);
@@ -72,6 +109,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const error = inputError(input, props);
   const options = permittedOptions(input, props);
   const label = renderCatalogKey(p, input.labelId);
+  const roleChoice = input.kind.kind === "CHOICE" && input.kind.vocabulary === "role";
   return (
     <fieldset className={group ? "correction-card" : "choice-card"}>
       <legend>{label}</legend>
@@ -88,25 +126,12 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
         aria-describedby={descriptionIds(input, error)}
       >
         {options.map((value) => (
-          <label
-            key={value}
-            className={String(props.values[path] ?? "") === value ? "selected" : ""}
-          >
-            <input
-              type="radio"
-              name={path}
-              value={value}
-              checked={props.values[path] === value}
-              disabled={props.disabled}
-              aria-describedby={descriptionIds(input, error)}
-              onChange={() => {
-                props.onChange(path, value);
-              }}
-            />
-            {choiceLabel(p, input, value)}
-          </label>
+          <ChoiceOption key={value} input={input} value={value} {...props} />
         ))}
       </div>
+      {roleChoice && (props.values[path] === undefined || props.values[path] === "") ? (
+        <p>{p.text("ui.chooseRole")}</p>
+      ) : null}
       <InputDescription input={input} error={error} />
     </fieldset>
   );
