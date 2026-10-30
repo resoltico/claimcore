@@ -92,10 +92,10 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Authority _)
-        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants) ->
+        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
         | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation
@@ -146,6 +146,12 @@ type PresentationLimits =
         RequestByteLimit: int
     }
 
+type RolePresentationDefinition =
+    {
+        Role: Role
+        AdmittedPrincipalKinds: PrincipalKind list
+    }
+
 type CatalogDocument =
     {
         Fields: FieldPresentationDefinition list
@@ -153,6 +159,7 @@ type CatalogDocument =
         CharacterWarnings: CharacterWarningDefinition
         Limits: PresentationLimits
         Entries: CatalogEntry list
+        Roles: RolePresentationDefinition list
         ProductVersion: string
     }
 

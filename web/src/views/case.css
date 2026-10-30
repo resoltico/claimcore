@@ -28,14 +28,14 @@
 .case-lifecycle-erased {
   background: var(--color-neutral-bg);
 }
-.case-progress ol {
+.case-progress [role="list"] {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
   padding: 0;
   gap: var(--space-2);
 }
-.case-progress li {
+.case-progress [role="listitem"] {
   padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -207,4 +207,84 @@ button.case-action-danger {
   .case-detail > .case-workspace > .case-fields > dl > .field-row {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.case-header-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.assigned-marker {
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+}
+.field-row dd {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+.field-row .field-description {
+  flex-basis: 100%;
+}
+
+.field-row .copy-icon {
+  opacity: 0;
+}
+.field-row:hover .copy-icon,
+.field-row:focus-within .copy-icon {
+  opacity: 1;
+}
+.case-fact-card .section-heading {
+  gap: var(--space-2);
+  align-items: center;
+}
+.explain-fields {
+  font-size: var(--text-xs);
+}
+.case-progress [role="list"] {
+  list-style: none;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  counter-reset: case-step;
+}
+.case-progress [role="listitem"] {
+  counter-increment: case-step;
+  border: 0;
+  border-block-end: var(--border-width) solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-2);
+  color: var(--color-text-muted);
+}
+.case-progress [role="listitem"]::before {
+  content: counter(case-step) ". ";
+}
+.case-progress [role="listitem"][aria-current="step"] {
+  color: var(--color-accent);
+  border-block-end: var(--focus-width) solid var(--color-accent);
+  font-weight: 700;
+}
+@media (hover: none), (pointer: coarse) {
+  .field-row .copy-icon {
+    opacity: 1;
+    min-inline-size: var(--target-primary);
+    min-block-size: var(--target-primary);
+  }
+}
+
+.history-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.actor-identity,
+.operation-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }

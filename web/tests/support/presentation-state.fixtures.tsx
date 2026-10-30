@@ -1,3 +1,4 @@
+import { caseViewInput } from "./inputs";
 import { caseAdvice } from "./case-advice.fixtures";
 import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
@@ -6,7 +7,7 @@ import type { OperationDraft, CurrentCase } from "../../src/api/service";
 import { PresentationControls } from "../../src/presentation/PresentationControls";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
-export const current: CurrentCase = {
+export const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -17,7 +18,7 @@ export const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
   <>
     <PresentationControls />

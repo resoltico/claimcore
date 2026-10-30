@@ -1,3 +1,4 @@
+import { actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -42,12 +43,12 @@ const contextReply = (): Response =>
   response("context", {
     outcome: {
       kind: "SUCCEEDED",
-      data: {
+      data: actorContextInput({
         ...runtime,
         capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
         views: ["AUTHORITY", "OPERATIONS"],
         offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-      },
+      }),
     },
   });
 const authorityPreview = (parsed: AuthorityInput) =>
@@ -196,3 +197,27 @@ it.each(authorityActs)(
     }
   },
 );
+
+it("requires an explicit role and disables service-incompatible roles from catalog admission", async () => {
+  const calls: Dispatch<AuthorityInput>[] = [];
+  vi.stubGlobal("fetch", authorityTransport(calls));
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  const user = userEvent.setup();
+  await waitFor(() => {
+    expect(
+      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
+    ).toHaveLength(5);
+  });
+  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "GRANT");
+  const group = screen.getByRole("radiogroup", { name: "Role" });
+  expect(group.querySelector("input:checked")).toBeNull();
+  const owner = screen.getByRole("radio", { name: "Owner" });
+  await user.click(owner);
+  expect(owner).toBeChecked();
+  await user.click(screen.getByRole("radio", { name: "Service" }));
+  expect(owner).toBeDisabled();
+  expect(group.querySelector("input:checked")).toBeNull();
+  expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
+  expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
+  expect(calls).toHaveLength(0);
+});

@@ -152,3 +152,107 @@ module internal AuthorityQueries =
 
                 return readResult result
         }
+
+    let private selectHistory
+        principal
+        actor
+        (request: AuthorityHistoryRequest)
+        (target: ActorId option)
+        =
+        if
+            not (Authority.can principal actor Capability.ReadAuthority Scope.Installation)
+            || (request.TargetActorId.IsSome && target.IsNone)
+        then
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        else
+            currentActor principal actor
+            |> Result.bind (fun _ ->
+                cursor (Cursors.decodeAuthorityHistory target) request.AfterCursor)
+
+    let private historyEntries
+        installation
+        (query: AuthorityHistoryPageQuery)
+        (page: Page<StoredEntry, Sequence>)
+        =
+        let ordered =
+            page.Items
+            |> List.pairwise
+            |> List.forall (fun (first, second) -> first.Sequence > second.Sequence)
+
+        let continued =
+            page.Next
+            |> Option.forall (fun next ->
+                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Sequence = next))
+
+        if page.Items.Length > query.Limit || not ordered || not continued then
+            Error CoreFault.StoreIntegrityError
+        else
+            page.Items
+            |> List.map (fun entry ->
+                LedgerEntries.validate installation entry
+                |> Result.bind LedgerEntries.authorityHistory
+                |> Result.bind (fun value ->
+                    if
+                        (query.TargetActorId |> Option.forall ((=) value.TargetActorId))
+                        && (query.BeforeSequence
+                            |> Option.forall (fun before -> value.Sequence < before))
+                    then
+                        Ok value
+                    else
+                        Error CoreFault.StoreIntegrityError))
+            |> collect
+
+    let history (services: ServiceContext) (request: AuthorityHistoryRequest) token =
+        task {
+            if not (validLimit request.Limit) then
+                return invalidLimit ()
+            else
+                let target = request.TargetActorId |> Option.bind ActorId.create
+
+                let! result =
+                    services.Store.Read(
+                        {
+                            ReadOperation.Work =
+                                fun tx ->
+                                    task {
+                                        let! actor =
+                                            tx.Authority
+                                                {
+                                                    Principal = services.Principal
+                                                    CaseId = None
+                                                }
+
+                                        match
+                                            selectHistory services.Principal actor request target
+                                        with
+                                        | Error refusal -> return Outcome.Rejected refusal
+                                        | Ok before ->
+                                            let query =
+                                                {
+                                                    AuthorityHistoryPageQuery.TargetActorId = target
+                                                    BeforeSequence = before
+                                                    Limit = request.Limit
+                                                }
+
+                                            let! page = tx.AuthorityHistoryPage query
+
+                                            return
+                                                historyEntries services.InstallationId query page
+                                                |> Result.map (fun entries ->
+                                                    {
+                                                        AuthorityHistoryPage.Entries = entries
+                                                        NextCursor =
+                                                            page.Next
+                                                            |> Option.map (
+                                                                Cursors.encodeAuthorityHistory
+                                                                    target
+                                                            )
+                                                    })
+                                                |> succeeded
+                                    }
+                            CancellationToken = token
+                        }
+                    )
+
+                return readResult result
+        }

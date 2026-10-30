@@ -15,8 +15,8 @@ let tests =
 
             Expect.equal
                 (report.workloads |> Array.map _.name |> Set.ofArray)
-                (set [ "search"; "filtered" ])
-                "Both added read workloads execute"
+                (set [ "search"; "filtered"; "notified"; "summary" ])
+                "Every declared case read workload executes"
 
             for workload in report.workloads do
                 Expect.equal workload.cases 1000 "The measured population is exact"

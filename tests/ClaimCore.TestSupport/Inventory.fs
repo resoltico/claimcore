@@ -46,3 +46,8 @@ let readInputs =
         |> Seq.map (fun value -> value.GetString() |> nonNull)
         |> Set.ofSeq)
     |> Map.ofSeq
+
+let cliSamples =
+    source.GetProperty("cliSamples").EnumerateObject()
+    |> Seq.map (fun entry -> entry.Name, entry.Value.GetString() |> nonNull)
+    |> Map.ofSeq

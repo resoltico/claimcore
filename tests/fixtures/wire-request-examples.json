@@ -948,6 +948,43 @@
         "text": "Rīga",
         "order": "RECENT"
       }
+    },
+    {
+      "id": "authority.history-all",
+      "endpoint": "authority.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "authority.history-actor",
+      "endpoint": "authority.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "actorId": "10000000-0000-4000-8000-000000000001",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.list-triage",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1,
+        "order": "NOTIFIED",
+        "assignment": "ASSIGNED_TO_ME"
+      }
+    },
+    {
+      "id": "case.summary-all",
+      "endpoint": "case.summary",
+      "direction": "request",
+      "valid": true,
+      "value": {}
     }
   ]
 }

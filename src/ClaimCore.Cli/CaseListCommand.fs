@@ -7,15 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Protocol
 open ClaimCore.Json
 
-[<NoEquality; NoComparison>]
-type internal CaseListIO =
-    {
-        Exchange: Invocation -> CancellationToken -> Task<CliReply>
-        Deliver: Invocation -> CliReply -> unit
-        Output: byte array -> unit
-        Errors: byte array -> unit
-    }
-
 module internal CaseListCommand =
     let private text =
         function
@@ -43,19 +34,25 @@ module internal CaseListCommand =
         | FrameResult.Reply _ -> invalidOp "A case page must retain its requested endpoint."
         | _ -> None
 
-    let private header io (prepared: PreparedVerb) =
+    let private header (io: ReadPageIO) (prepared: PreparedVerb) =
         match prepared.Format with
         | VerbFormat.Csv -> io.Output CaseListRows.csvHeader
         | VerbFormat.Text -> io.Output(text [ CaseListRows.textHeader prepared.Language ])
         | VerbFormat.Json -> ()
 
-    let private rows io (prepared: PreparedVerb) frame response (page: CaseSummaryPage) =
+    let private rows
+        (io: ReadPageIO)
+        (prepared: PreparedVerb)
+        frame
+        response
+        (page: CaseSummaryPage)
+        =
         match prepared.Format with
         | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Items)
         | VerbFormat.Text -> io.Output(text (CaseListRows.textRows prepared.Language page.Items))
         | VerbFormat.Json -> io.Deliver frame response
 
-    let private failure io (prepared: PreparedVerb) cursor frame response =
+    let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =
         if prepared.Format = VerbFormat.Csv then
             io.Errors(TextReply.bytesFor prepared.Language (Some frame) response.Frame)
         else
@@ -66,7 +63,7 @@ module internal CaseListCommand =
         MessageCatalogs.renderCli prepared.Language (CliMessage.CursorReached reached)
         |> fun value -> io.Errors(text [ value ])
 
-    let run io (prepared: PreparedVerb) (token: CancellationToken) =
+    let run (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
         task {
             let initial =
                 Frames.admit prepared.Bytes

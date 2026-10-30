@@ -7,6 +7,7 @@ type ReadInput =
     | CaseOperand
     | OperationOperand
     | ActorOperand
+    | ActorFilter
     | Page
     | Detail
     | Worklist
@@ -30,6 +31,10 @@ module ReadCatalog =
                 Inputs = [ ReadInput.Page; ReadInput.Worklist ]
             }
             {
+                Endpoint = QueryEndpoint.CaseSummary
+                Inputs = [ ReadInput.Worklist ]
+            }
+            {
                 Endpoint = QueryEndpoint.CaseHistory
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
             }
@@ -48,6 +53,10 @@ module ReadCatalog =
             {
                 Endpoint = QueryEndpoint.AuthorityGrants
                 Inputs = [ ReadInput.ActorOperand; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityHistory
+                Inputs = [ ReadInput.ActorFilter; ReadInput.Page ]
             }
             {
                 Endpoint = QueryEndpoint.Context

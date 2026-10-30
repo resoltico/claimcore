@@ -39,6 +39,7 @@ let private current =
 
 let private caseReply =
     {
+        AssignedToYou = false
         Snapshot = current
         Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
     }

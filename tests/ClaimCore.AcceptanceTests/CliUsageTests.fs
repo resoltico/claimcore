@@ -360,6 +360,8 @@ let closedFlagsBeforeInput =
                     [ "schema"; "invocation" ]
                     [ "call" ]
                     [ "session" ]
+                    [ "shell" ]
+                    [ "configure" ]
                 ]
 
             for index, arguments in List.indexed (captured @ host) do
@@ -381,6 +383,7 @@ let closedFlagsBeforeInput =
                     )
 
                 CliProcessEnvironment.clearInherited start
+                CliProcessEnvironment.isolateProfile start directory.FullName
                 start.ArgumentList.Add cli
 
                 for argument in arguments @ [ flag ] do

@@ -9,6 +9,8 @@
     <Compile Include="CaseDisclosureContract.fs" />
     <Compile Include="ScopedAuthorityContract.fs" />
     <Compile Include="AuthorityReviewContract.fs" />
+    <Compile Include="AuthorityHistoryContract.fs" />
+    <Compile Include="WorklistTriageContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />
@@ -45,6 +47,7 @@
     <Compile Include="GrowthEnvironment.fs" />
     <Compile Include="GrowthControls.fs" />
     <Compile Include="GrowthSessions.fs" />
+    <Compile Include="GrowthWorkloadPlan.fs" />
     <Compile Include="GrowthMeasurements.fs" />
     <Compile Include="GrowthReadWorkloads.fs" />
     <Compile Include="GrowthQualificationTests.fs" />

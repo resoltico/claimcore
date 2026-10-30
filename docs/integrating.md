@@ -35,6 +35,10 @@ the vocabulary name. Scalar guidance comes from core messages and Domain-owned b
 metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
+The catalog's `roles` declares `admittedPrincipalKinds` for each role from Domain admission policy.
+Use it to disable unsuitable choices and require an explicit grant role. Execution independently checks
+current authority and principal kind; catalog admission is presentation guidance.
+
 Field and technical-target labels use `field.*`; group labels use `group.*`. Scope, actor-ID and
 history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`; worklist facet/order
 labels also use their catalog-supplied `input.*` keys. Always consume the declared label identity rather
@@ -118,11 +122,46 @@ structured reply and `--language` selects interface language. Authored business 
 process-local authentication. Reply frames contain nullable `endpoint` and `operationId`, a `delivery` tag,
 and `result`. Delivery tags describe transport progress; inspect the typed result to determine acceptance.
 
-Configure service URL, issuer, client ID and authentication mode using `help configuration`.
+Save public connection settings with `claimcore configure`; `claimcore help configure` lists its flags.
+The Unix profile is `$XDG_CONFIG_HOME/claimcore/profile.json`, defaulting to
+`~/.config/claimcore/profile.json`. Its string members are `serviceUrl`, `issuer`, `clientId`, `authMode`
+and optional `serviceTrustRootFile` and `oidcTrustRootFile`. The writer uses atomic replacement, 0600
+files and a 0700 profile directory. Reads use [private-file admission](operating.md#private-configuration)
+and refuse malformed documents and unknown members, including secret or token members. Environment
+variables override profile values individually; `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` remains
+environment-only. `claimcore configure --show` prints effective values and their sources without opening
+the secret file. Changing the profile takes effect in the next process.
+
+`claimcore shell` requires interactive authentication mode and terminal stdin. Existing verbs, `help`
+and `describe` run in one process and share one sign-in. Quotes and backslashes group arguments;
+metacharacters stay literal, with no expansion or command execution. Arrow-key history, access tokens
+and refresh tokens remain in memory. After 15 idle minutes at a command or confirmation prompt, all
+tokens are discarded; the next authenticated action signs in again. Refresh failure also starts browser
+sign-in again. `exit`, EOF and SIGTERM discard tokens. Ctrl-C cancels the current command and returns
+to the prompt; a second Ctrl-C at an empty prompt exits. Outcomes use stdout; prompts and each command's
+exit code use stderr. Exit 4 prints the frozen retry frame and resolve command, then the shell continues.
+Interactive review still requires terminal stdout. `call` and NDJSON `session` retain their existing
+stop-on-uncertain-delivery behavior.
+
 Interactive login uses PKCE and a one-use loopback callback. Automation uses a registered service actor,
-client credentials and its private secret file. Tokens remain process-local. Optional explicit service/IdP
-trust-root files replace system roots while retaining hostname and validity checks. The
+client credentials and its private secret file. Optional explicit service/IdP trust-root files replace
+system roots while retaining hostname and validity checks. The
 [walkthrough](getting-started.md#optional-cli-setup) shows local setup.
+
+## Authority history
+
+`authority.history` accepts `limit` (1–50), optional `cursor` and optional `actorId` selecting the
+target actor. It requires installation `ReadAuthority` within the same snapshot used for the page.
+Entries are newest first by ledger sequence, with `sequence`, `recordedAt`, `recordedBy`,
+`targetActorId` and a tagged `act`. REGISTER and PROVISION_OWNER carry `principal`; GRANT and REVOKE
+carry `role` and `scope`; ENABLE and DISABLE carry no additional facts. These are decoded from the
+permanent authority payload and checked against its commitment and metadata.
+
+The response has `entries` and nullable `nextCursor`. A cursor binds the target filter; restarting
+with a different actor selection requires a fresh request. The CLI equivalent is
+`claimcore authority history [--actor-id ID] [--limit N] [--cursor TOKEN] --format text|json|csv`.
+CSV has canonical column headers and neutralizes formula-leading values before RFC 4180 quoting.
+A continuation is printed separately on stderr; JSON carries it in the typed result.
 
 ## Worklist queries and summary rows
 
@@ -146,7 +185,8 @@ order is `REFERENCE`. For example:
 | `status` | Set of OPENED and CLOSED; erased cases have no status. |
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
 | `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
-| `order` | REFERENCE, or RECENT for last accepted change first. |
+| `order` | REFERENCE, RECENT for last change first, or NOTIFIED for oldest notification first. |
+| `assignment` | ASSIGNED_TO_ME restricts to valid case-scoped grants with ReadCase; omitted means the whole visible scope. |
 | `cursor` | Opaque continuation bound to the admitted filters and order. |
 | `limit` | Bounded page size from the catalog and contract. |
 
@@ -155,18 +195,30 @@ invariant lowercase. Stored searchable values use the same normalization, joined
 underscore and backslash match literally. Search does not remove accents or use date/amount ranges.
 
 REFERENCE orders by the ASCII-case-folded reference. RECENT orders by the latest accepted case ledger
-entry's `recorded_at` descending, then folded reference ascending. A continuation encodes those keyset
+entry's `recorded_at` descending, then folded reference ascending. NOTIFIED orders by notification date
+ascending, then folded reference; erased rows with no date sort last. A continuation encodes those keyset
 positions and its canonical filters/order. Use only continuations supported by the issuing endpoint.
 After request admission and authorization, unsupported cursor formats or invalid endpoint/filter/resource
 bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot.
 
 A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
-(`amount`/`currency`) and `progress`. The amount strings are canonical; an undecided case has null payable.
+(`amount`/`currency`), `progress` and `incidentNotificationDate`. The amount strings are canonical; an undecided case has null payable.
 An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
 requires the same `ReadCase` capability as `case.get`. Names, amounts, status and progress agree with the
 same actor's current case read. `changedAt` comes from the latest accepted case ledger/history entry;
 `case.get` itself has no timestamp member.
+
+`case.summary` accepts the same filter members, without `cursor` or `limit`. Its `counts` contain
+`total` and `lifecycle`, `status` and `progress` value/count arrays. `claimed` and `payable` contain
+currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string with at most 40 integer
+and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
+count. Visibility, assignment and forbidden-role safeguards match `case.list`, within the summary's
+own read snapshot. Separate list and summary requests can observe different accepted writes.
+`case.get` reports `assignedToYou`; `context` reports `hasAssignedCases` for choosing an assigned worklist
+and the admitted requester's `actorId` for attribution without an authority lookup.
+Case-list continuations use format 3, binding assignment and notification-date keysets as well as
+the other admitted filters. Only that case-list cursor format is supported.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent
@@ -177,10 +229,14 @@ claimcore case list --format csv --all
 Facet flags are repeatable and derive their choices from the catalog. CSV is UTF-8 without a BOM, uses
 CRLF line endings and RFC 4180 quoting, and writes one header row of actual qualified wire field paths
 (such as `state.claimed.amount` and `state.progress`). Null/unrecorded/erased values use empty cells.
+CSV is a spreadsheet-safe export: a cell beginning with `=`, `+`, `-`, `@`, TAB or CR, or with one of
+those triggers after leading spaces/TABs, receives an apostrophe before RFC 4180 quoting. This rule
+applies to every column and alters affected cells. Use `--format json` when exact values are required;
+JSON and text output retain authored values.
 The header order is:
 
 ```text
-caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,changedAt
+caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,changedAt
 ```
 
 Amounts and timestamps use their canonical wire values; tokens and references are not localized. `--all` follows continuations to the end, emits the header once and stops on refusal, reporting the cursor
@@ -194,11 +250,21 @@ under `/authority/:actorId`. `/cases/new` opens a new case. Worklist query param
 filters, search and order; page cursors are not stored in the URL. Back/forward, reload and sign-in return
 preserve the intended same-origin path.
 
+`/authority?tab=history` shows installation authority history; adding `?tab=history` to an actor detail
+filters by that actor. Unknown routes keep their URL and render a localized not-found page without an API
+request. Browser history uses the installation zone and selected locale, retaining exact UTC and IDs in
+entry details. Links to authority details appear only for authority readers.
+
 Use the client's link builder for exact references. Ordinary reference segments use `encodeURIComponent`:
 `A/B` becomes `/cases/A%2FB`. Exact `new`, `.` and `..`, and references beginning with `~`, instead use a
 `~` prefix followed by unpadded base64url of the UTF-8 reference. Examples are `/cases/~bmV3` for `new`,
 `/cases/~Lg` for `.`, `/cases/~Li4` for `..` and `/cases/~fg` for `~`. `NEW` remains `/cases/NEW`. This
 avoids route keywords, dot-segment normalization and prefix collisions without changing case identity.
+
+The actor directory uses a labelled table on desktop and compact cards on mobile, with kind, subject,
+enabled state and a count from the selected actor's fully loaded grant pages. Partial pages, reloads
+and refused disclosures withhold the count; closing the detail discards it. Each offered row link
+opens the actor detail; listing does not fetch individual grant pages.
 
 Authority actor links bind offered actions to the disclosed actor. A retained request keeps its original
 principal and operation identity until the user explicitly discards it to begin the selected actor's
@@ -225,7 +291,7 @@ accepted receipt with current disclosure, or a permanent actor/ID fence and `NOT
 delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. Repeat resolution if
 its response fails. After final non-acceptance, load current state and prepare a new operation with a new ID.
 
-On uncertain CLI exit 4, the last stderr line is the exact prepared call frame; retain it privately.
+For ordinary verbs, call and session, uncertain exit 4 leaves the exact prepared call frame on the last stderr line; retain it privately. In the shell it appears before the next prompt.
 Session processing stops on exit 4 or 130, or an oversized frame. Output loss after dispatch preserves
 uncertainty. A complete OS write and flush do not prove downstream persistence.
 

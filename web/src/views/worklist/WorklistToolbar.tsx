@@ -6,6 +6,7 @@ import { WorklistFilters } from "./WorklistFilters";
 import { savedViewLabel } from "./savedViewLabel";
 type Props = {
   query: WorklistQuery;
+  hasAssignedCases: boolean;
   onChange: (query: WorklistQuery) => void;
   onSelect: (reference: string) => void;
   loading: boolean;
@@ -119,20 +120,23 @@ export const WorklistToolbar = (props: Props) => {
         </button>
       </div>
       <nav className="saved-views" aria-label={p.text("ui.savedViews")}>
-        {savedViews.map((view) => (
-          <button
-            key={view}
-            type="button"
-            aria-pressed={
-              props.query.view === view || (view === "all" && Object.keys(props.query).length === 0)
-            }
-            onClick={() => {
-              props.onChange(viewQuery(view));
-            }}
-          >
-            {savedViewLabel(p, view)}
-          </button>
-        ))}
+        {savedViews
+          .filter((view) => view !== "mine" || props.hasAssignedCases)
+          .map((view) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={
+                props.query.view === view ||
+                (view === "all" && Object.keys(props.query).length === 0)
+              }
+              onClick={() => {
+                props.onChange(viewQuery(view));
+              }}
+            >
+              {savedViewLabel(p, view)}
+            </button>
+          ))}
       </nav>
       <ExactLookup onSelect={props.onSelect} />
     </>

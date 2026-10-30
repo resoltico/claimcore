@@ -88,6 +88,7 @@ module UsageText =
                 CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
             | Some CliCommand.Version, _ -> CliMessage.InvalidVersionOptions
+            | Some CliCommand.Configure, _ -> CliMessage.InvalidConfigureOptions
             | _ -> CliMessage.InvalidInvocation commandText
 
         let hints =

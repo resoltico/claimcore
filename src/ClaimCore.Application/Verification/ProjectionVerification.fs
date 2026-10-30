@@ -111,6 +111,40 @@ module ProjectionVerification =
                     VerificationFinding.CaseSearchProjection
                     (record.Index.SearchText = expected.SearchText)
 
+            do!
+                require
+                    None
+                    VerificationFinding.CaseNotifiedOnProjection
+                    (record.Index.NotifiedOn = expected.NotifiedOn)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseClaimedAmountProjection
+                    (Option.map Money.value record.Index.Claimed =
+                        Option.map Money.value expected.Claimed)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CaseClaimedCurrencyProjection
+                    (Option.map Money.currency record.Index.Claimed =
+                        Option.map Money.currency expected.Claimed)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CasePayableAmountProjection
+                    (Option.map Money.value record.Index.Payable =
+                        Option.map Money.value expected.Payable)
+
+            do!
+                require
+                    None
+                    VerificationFinding.CasePayableCurrencyProjection
+                    (Option.map Money.currency record.Index.Payable =
+                        Option.map Money.currency expected.Payable)
+
             return Set.add record.CaseId seen
         }
 

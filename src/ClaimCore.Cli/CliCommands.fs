@@ -11,6 +11,8 @@ type CliCommand =
     | Schema
     | Call
     | Session
+    | Shell
+    | Configure
 
 [<RequireQualifiedAccess>]
 type HelpTopic =
@@ -21,6 +23,8 @@ type HelpTopic =
     | Schema
     | Call
     | Session
+    | Shell
+    | Configure
     | Configuration
     | Delivery
     | Examples
@@ -70,6 +74,8 @@ module CliCommands =
         | CliCommand.Schema -> CliTopic.Help HelpTopic.Schema
         | CliCommand.Call -> CliTopic.Help HelpTopic.Call
         | CliCommand.Session -> CliTopic.Help HelpTopic.Session
+        | CliCommand.Shell -> CliTopic.Help HelpTopic.Shell
+        | CliCommand.Configure -> CliTopic.Help HelpTopic.Configure
 
     /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
     let synopses =
@@ -81,10 +87,18 @@ module CliCommands =
         | CliCommand.Help -> [ "help [topic] [--language en|lv|ar]" ]
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
+        | CliCommand.Shell -> [ "shell" ]
+        | CliCommand.Configure ->
+            [
+                "configure --show"
+                "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]"
+            ]
 
     let private protocolSynopses =
         [ "schema invocation"; "schema response"; "help call"; "help session" ]
 
+    // Every closed HelpTopic has one syntax value; an added topic must remain a compile-time omission.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private helpSynopses =
         function
         | HelpTopic.Describe -> synopses CliCommand.Describe
@@ -93,6 +107,8 @@ module CliCommands =
         | HelpTopic.Help -> synopses CliCommand.Help
         | HelpTopic.Call -> synopses CliCommand.Call @ protocolSynopses
         | HelpTopic.Session -> synopses CliCommand.Session @ protocolSynopses
+        | HelpTopic.Shell -> synopses CliCommand.Shell
+        | HelpTopic.Configure -> synopses CliCommand.Configure
         | HelpTopic.Examples ->
             [ "describe case open"; "case get REF"; "schema operation.execute request" ]
         | HelpTopic.Overview

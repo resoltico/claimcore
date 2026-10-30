@@ -263,6 +263,11 @@ let private projectionBindings () =
                 "progress", box "PAID"
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
                 "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
+                "notified_on", box "2026-08-03 AD"
+                "claimed_amount", box "1234.5678"
+                "claimed_currency", box "EUR"
+                "payable_amount", box "987.6543"
+                "payable_currency", box "USD"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)

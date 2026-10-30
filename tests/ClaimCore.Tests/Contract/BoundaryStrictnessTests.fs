@@ -17,7 +17,8 @@ let private capturedArguments () =
     File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-frames.tsv"))
     |> Array.map (fun row ->
         (row.Split('\t', 2)[0]).Split(' ', StringSplitOptions.RemoveEmptyEntries)
-        |> List.ofArray)
+        |> List.ofArray
+        |> CliExamples.complete)
     |> Array.toList
 
 let private cliStrictness () =
@@ -100,11 +101,7 @@ let private corpus filename =
     |> Seq.map (fun sample ->
         let endpoint = nonNull (sample.GetProperty("endpoint").GetString())
 
-        let value =
-            sample.GetProperty("value").GetRawText()
-            |> Encoding.UTF8.GetBytes
-            |> StrictJson.read Int32.MaxValue
-            |> Result.defaultWith (fun _ -> failtest "Authored JSON must parse")
+        let value = PositiveExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst

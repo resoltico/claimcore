@@ -20,7 +20,9 @@ module internal Projections =
     let caseColumns =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,"
         + DatabaseSession.instantExpression "changed_at"
-        + " AS changed_at"
+        + " AS changed_at,"
+        + DatabaseSession.dateExpression "notified_on"
+        + " AS notified_on,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -42,12 +44,38 @@ module internal Projections =
     let caseSearchText row =
         DatabaseSession.namedOptional<string> "search_text" row
 
+    let caseNotifiedOn row =
+        DatabaseSession.namedOptionalCalendarDate "notified_on" row
+        |> Option.map CalendarDate.ofDate
+
+    let private amount column row =
+        DatabaseSession.namedOptional<string> column row
+        |> Option.map (Amount.parse >> parsed)
+
+    let private currency column row =
+        DatabaseSession.namedOptional<string> column row
+        |> Option.map (Currency.parse >> parsed)
+
+    let caseClaimedAmount row = amount "claimed_amount" row
+    let caseClaimedCurrency row = currency "claimed_currency" row
+    let casePayableAmount row = amount "payable_amount" row
+    let casePayableCurrency row = currency "payable_currency" row
+
+    let indexedMoney amount currency =
+        match amount, currency with
+        | None, None -> None
+        | Some amount, Some currency -> Some(Money.create amount currency)
+        | _ -> raise (RecordCorruptException "Incomplete indexed amount and currency.")
+
     let caseIndex row : CaseIndex =
         {
             Status = caseStatus row
             Progress = caseProgress row
             ChangedAt = caseChangedAt row
             SearchText = caseSearchText row
+            NotifiedOn = caseNotifiedOn row
+            Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
+            Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
         }
 
 

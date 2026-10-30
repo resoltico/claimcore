@@ -1,3 +1,5 @@
+import { AuthorityHistory } from "./authority/AuthorityHistory";
+import { followLink } from "../routing/followLink";
 import type { ActorSummary } from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
 import { ActorOperation } from "./authority/ActorOperation";
@@ -12,7 +14,7 @@ import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
 import { AuthorityGrants } from "./AuthorityGrants";
-import { AuthorityListing } from "./AuthorityListing";
+import { AuthorityListing, type KnownActorGrantCount } from "./AuthorityListing";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -77,10 +79,12 @@ const SelectedActorGrants = ({
   actorId,
   refused,
   onActor,
+  onGrantCount,
 }: {
   actorId: string | null;
   refused: (notice?: Notice) => void;
   onActor: (actor: ActorSummary) => void;
+  onGrantCount: (count: KnownActorGrantCount | null) => void;
 }) =>
   actorId === null ? null : (
     <AuthorityGrants
@@ -94,6 +98,7 @@ const SelectedActorGrants = ({
       }}
       onDisclosureRefused={refused}
       onActor={onActor}
+      onGrantCount={onGrantCount}
     />
   );
 const AuthorityDirectory = ({
@@ -111,6 +116,7 @@ const AuthorityDirectory = ({
   mayReadGrants: boolean;
   onActor: (actor: ActorSummary) => void;
 }) => {
+  const [knownGrantCount, setKnownGrantCount] = useState<KnownActorGrantCount | null>(null);
   if (!available) {
     return null;
   }
@@ -120,8 +126,10 @@ const AuthorityDirectory = ({
         actorId={selectedActorId}
         refused={disclosure.refused}
         onActor={onActor}
+        onGrantCount={setKnownGrantCount}
       />
       <AuthorityListing
+        knownGrantCount={knownGrantCount?.actorId === selectedActorId ? knownGrantCount : null}
         mayReadGrants={mayReadGrants}
         onSelect={onSelect}
         onDisclosureRefused={disclosure.refused}
@@ -377,7 +385,7 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     recorded,
   };
 };
-export const AuthorityPanel = (props: AuthorityPanelProps) => {
+const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
   const state = useAuthorityOperation(props);
   const target = useAuthorityTarget(
     state.model,
@@ -393,5 +401,46 @@ export const AuthorityPanel = (props: AuthorityPanelProps) => {
       onClose={navigation.close}
       disclosureAvailable={props.disclosureAvailable ?? true}
     />
+  );
+};
+
+export const AuthorityPanel = (props: AuthorityPanelProps) => {
+  const p = usePresentation();
+  const route = useRoute();
+  const actorId = route.screen === "authority" ? route.actorId : "";
+  const history = route.screen === "authority" && route.history;
+  const base = actorId === "" ? "/authority" : `/authority/${encodeURIComponent(actorId)}`;
+  return (
+    <>
+      <nav className="authority-tabs" aria-label={p.text("subject.AUTHORITY.label")}>
+        <a
+          href={base}
+          aria-current={history ? undefined : "page"}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(base);
+            });
+          }}
+        >
+          {p.text("ui.actors")}
+        </a>
+        <a
+          href={`${base}?tab=history`}
+          aria-current={history ? "page" : undefined}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(`${base}?tab=history`);
+            });
+          }}
+        >
+          {p.text(actorId === "" ? "endpoint.authority.history.label" : "ui.historyForActor")}
+        </a>
+      </nav>
+      {history && props.disclosureAvailable !== false ? (
+        <AuthorityHistory key={actorId} actorId={actorId} />
+      ) : (
+        <AuthorityEditorPanel {...props} />
+      )}
+    </>
   );
 };

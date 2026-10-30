@@ -18,6 +18,24 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "triage summary counts and exact sums share the selected scope"
+                (withFixture factory WorklistTriageContract.exactTotals)
+            testCaseAsync
+                "triage notification order pages null dates last and binds assignment"
+                (withFixture factory WorklistTriageContract.oldestPaging)
+            testCaseAsync
+                "triage assignment excludes forbidden roles for installation and scoped visibility"
+                (withFixture factory WorklistTriageContract.assignmentExcludesForbiddenRoles)
+            testCaseAsync
+                "authority history preserves typed facts and filtered newest-first pages"
+                (withFixture factory AuthorityHistoryContract.factsAndPaging)
+            testCaseAsync
+                "authority history requires installation read authority on every snapshot"
+                (withFixture factory AuthorityHistoryContract.permissions)
+            testCaseAsync
+                "authority history rejects tampered payloads and malformed store pages"
+                (withFixture factory AuthorityHistoryContract.integrity)
+            testCaseAsync
                 "authority grant review shows only touched facts and writes nothing"
                 (withFixture factory AuthorityReviewContract.authorityGrantReview)
             testCaseAsync

@@ -1,3 +1,4 @@
+import { actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
@@ -38,7 +39,10 @@ const contextFor = (
     views.includes(offer.kind === "OPEN" ? "CASES" : "AUTHORITY"),
   );
   return outcome({
-    outcome: { kind: "SUCCEEDED", data: { ...source, views, capabilities, offers } },
+    outcome: {
+      kind: "SUCCEEDED",
+      data: actorContextInput({ ...source, views, capabilities, offers }),
+    },
   });
 };
 const deferred = <T,>() => {

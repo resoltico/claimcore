@@ -32,6 +32,7 @@ module internal TextReply =
                 TextOperationReply.receiptLines language "ACCEPTED" receipt)
             read Api.authorityList TextAuthorityReply.actorPage
             read Api.authorityGrants TextAuthorityReply.grantPage
+            read Api.authorityHistory TextAuthorityReply.historyPage
             presenter Api.operationPreview TextOperationReply.previewLines
             presenter Api.operationExecute (fun language _ reply ->
                 TextOperationReply.executeLines language reply)

@@ -7,6 +7,7 @@
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="MoneyValues.fs" />
+    <Compile Include="DecimalTotal.fs" />
     <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
     <Compile Include="CaseFields.fs" />
@@ -38,6 +39,7 @@
     <Compile Include="Outcomes/Verification.fs" />
     <Compile Include="Outcomes/History.fs" />
     <Compile Include="Outcomes/CasePages.fs" />
+    <Compile Include="Outcomes/CaseTotals.fs" />
     <Compile Include="Outcomes/AuthorityPages.fs" />
     <Compile Include="Outcomes/Replies.fs" />
     <Compile Include="Outcomes/Operations.fs" />

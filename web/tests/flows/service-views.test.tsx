@@ -1,4 +1,5 @@
-import { caseSummaryInput } from "../support/inputs";
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
+import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -10,7 +11,7 @@ import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
 import { wireResponse, historyVariants } from "../support/contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -21,7 +22,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
   stubDashboardContext();
@@ -84,11 +85,11 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   expect(open).toHaveBeenCalledOnce();
   await user.click(getButton("Load more cases"));
   expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
-  await user.click(screen.getByText("Find case", { selector: "summary" }));
-  await user.click(getButton("Find case"));
+  await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
+  await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledTimes(1);
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
-  await user.click(getButton("Find case"));
+  await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledWith("CASE-9");
   await user.click(getButton("Reload cases"));
 });
@@ -143,12 +144,9 @@ it("shows current fields, server act labels, full expandable history and retryab
   const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
   await user.click(entrySummary);
   const entry = entrySummary.closest("details");
-  expect(entry).toHaveTextContent(
-    "Operation 10000000-0000-4000-8000-000000000001 · recorded by 10000000-0000-4000-8000-000000000001 · accepted",
-  );
-  expect(entry?.querySelector("p .identifier-value")?.textContent).toBe(operationId);
-  expect(entry?.querySelector("h2 .identifier-value")?.textContent).toBe(operationId);
-  expect(document.body).toHaveTextContent("accepted");
+  expect(entry?.querySelector(".history-attribution")).toHaveTextContent("You");
+  expect(entry?.querySelector(".history-exact")).toHaveTextContent(operationId);
+  expect(entry).toHaveTextContent("Exact UTC instant");
   await user.click(getButton("Load more history"));
   await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
@@ -265,4 +263,8 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       name: "Case detail",
     }),
   ).toBeVisible();
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

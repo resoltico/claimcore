@@ -61,6 +61,21 @@ type Endpoint<'In, 'Out> =
 
     member this.Token = EndpointIds.token this.Id
 
+/// A definition preserves its input/output types when a consumer visits the endpoint registry.
+type IEndpointVisitor<'Result> =
+    abstract Visit<'Input, 'Output> : Endpoint<'Input, 'Output> -> 'Result
+
+type IEndpointDefinition =
+    abstract Id: EndpointId
+    abstract Accept<'Result> : IEndpointVisitor<'Result> -> 'Result
+
+module EndpointDefinition =
+    let create (endpoint: Endpoint<'Input, 'Output>) =
+        { new IEndpointDefinition with
+            member _.Id = endpoint.Id
+            member _.Accept<'Result>(visitor: IEndpointVisitor<'Result>) = visitor.Visit endpoint
+        }
+
 [<NoEquality; NoComparison>]
 type Route =
     {
@@ -95,6 +110,13 @@ module Route =
             NormalizeOutput =
                 fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
         }
+
+    let ofDefinition (definition: IEndpointDefinition) =
+        definition.Accept
+            { new IEndpointVisitor<Route> with
+                member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
+                    describe endpoint
+            }
 
 module Endpoint =
     let reply (endpoint: Endpoint<'Input, 'Output>) value : ClassifiedReply =
@@ -152,6 +174,13 @@ module Api =
             HttpMethod.Post
             RequestCodecs.caseListRequest
             (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
+
+    let caseSummary =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary))
+            HttpMethod.Post
+            RequestCodecs.caseSummaryRequest
+            (ReplyCodecs.readReply "CaseSummaryReply" CaseTotalsCodecs.summary)
 
     let caseHistory =
         read
@@ -230,23 +259,51 @@ module Api =
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
 
-    let forHost =
-        function
-        | HostEndpoint.Session -> Route.describe session
-        | HostEndpoint.Logout -> Route.describe logout
+    let authorityHistory =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory))
+            HttpMethod.Post
+            RequestCodecs.authorityHistoryRequest
+            (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
 
-    let forActor =
+    let private defineHost =
         function
-        | (ActorEndpoint.Query QueryEndpoint.Context) -> Route.describe context
-        | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> Route.describe caseGet
-        | (ActorEndpoint.Query QueryEndpoint.CaseList) -> Route.describe caseList
-        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> Route.describe caseHistory
-        | (ActorEndpoint.Operation OperationEndpoint.Preview) -> Route.describe operationPreview
-        | (ActorEndpoint.Operation OperationEndpoint.Execute) -> Route.describe operationExecute
-        | (ActorEndpoint.Query QueryEndpoint.Resolve) -> Route.describe operationResolve
-        | (ActorEndpoint.Query QueryEndpoint.Observe) -> Route.describe operationObserve
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> Route.describe authorityList
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> Route.describe authorityGrants
+        | HostEndpoint.Session -> EndpointDefinition.create session
+        | HostEndpoint.Logout -> EndpointDefinition.create logout
+
+    let private defineActor =
+        function
+        | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
+        | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
+        | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
+        | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
+        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory
+        | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
+            EndpointDefinition.create operationPreview
+        | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
+            EndpointDefinition.create operationExecute
+        | (ActorEndpoint.Query QueryEndpoint.Resolve) -> EndpointDefinition.create operationResolve
+        | (ActorEndpoint.Query QueryEndpoint.Observe) -> EndpointDefinition.create operationObserve
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
+            EndpointDefinition.create authorityList
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
+            EndpointDefinition.create authorityGrants
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
+            EndpointDefinition.create authorityHistory
+
+    let definitions =
+        (HostEndpoint.all |> List.map defineHost)
+        @ (ActorEndpoint.all |> List.map defineActor)
+
+    let forHost host =
+        definitions
+        |> List.find (fun definition -> definition.Id = EndpointId.Host host)
+        |> Route.ofDefinition
+
+    let forActor actor =
+        definitions
+        |> List.find (fun definition -> definition.Id = EndpointId.Actor actor)
+        |> Route.ofDefinition
 
     let all =
         (HostEndpoint.all |> List.map forHost)

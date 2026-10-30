@@ -15,6 +15,9 @@ import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
+import type { CaseView } from "@contracts/client";
+import { CaseStateBadge } from "../components/CaseStateBadge";
+import { caseProgress } from "../presentation/caseProgress";
 
 type CaseDetailProps = {
   caseReference: string;
@@ -72,20 +75,42 @@ const CurrentPresentation = ({
 const CaseHeader = ({
   caseReference,
   onBack,
-}: Pick<CaseDetailProps, "caseReference" | "onBack">) => {
+  state,
+}: Pick<CaseDetailProps, "caseReference" | "onBack"> & { state: CaseView | null }) => {
   const p = usePresentation();
   const label = p.fieldLabel("caseReference");
   return (
     <>
       <div className="section-heading">
         <h1 id="case-detail-title" tabIndex={-1} aria-label={p.text("ui.caseDetail")}>
-          <bdi dir="ltr">{caseReference}</bdi>
+          <bdi dir="ltr" className="identifier-value">
+            {caseReference}
+          </bdi>
           <CharacterWarning value={caseReference} />
         </h1>
+        {state === null ? null : (
+          <div className="case-header-state">
+            <CaseStateBadge
+              state={
+                state.state.kind === "ERASED"
+                  ? state.state
+                  : {
+                      kind: state.state.kind,
+                      status: state.state.fields.status,
+                      progress: caseProgress(state.state.fields),
+                    }
+              }
+            />
+            <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
+            {state.assignedToYou ? (
+              <span className="assigned-marker">{p.text("ui.assignedToYou")}</span>
+            ) : null}
+          </div>
+        )}
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
-        <CopyValue label={label} value={caseReference} />
+        <CopyValue icon label={label} value={caseReference} />
       </p>
     </>
   );
@@ -98,8 +123,9 @@ const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetail
   const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
-      <CaseHeader caseReference={caseReference} onBack={onBack} />
+      <CaseHeader caseReference={caseReference} onBack={onBack} state={state} />
       <CurrentFeedback message={current.message} loading={current.loading} />
+      {state === null ? null : <LifecycleStatus value={state} />}
       {current.message === null ? null : (
         <Button
           onPress={() => {
@@ -109,12 +135,6 @@ const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetail
         >
           {p.text("ui.tryAgain")}
         </Button>
-      )}
-      {state === null ? null : (
-        <div className={`case-lifecycle case-lifecycle-${state.state.kind.toLowerCase()}`}>
-          <LifecycleStatus value={state} />
-          <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
-        </div>
       )}
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />

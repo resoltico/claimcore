@@ -35,6 +35,9 @@ let internal listBounds (path: string) =
                 "CaseListFilter`1.Lifecycles", (Inventory.tokens "caseLifecycles").Length
                 "CaseListFilter`1.Statuses", (Inventory.tokens "caseStatuses").Length
                 "CaseListFilter`1.Progress", (Inventory.tokens "caseProgress").Length
+                "CaseWorklistCounts.Lifecycles", (Inventory.tokens "caseLifecycles").Length
+                "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
+                "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
                 "AuthorityState.Grants", 1
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
@@ -84,6 +87,40 @@ let internal choose (source: Seeds) context kind =
 
     values |> Seq.toArray |> Gen.item
 
+let private financialValue (kind: Type) =
+    if kind = typeof<Currency> then
+        Some(
+            uppercase Currency.Characters
+            |> Gen.map (Currency.parse >> Result.defaultWith (string >> invalidOp) >> box)
+        )
+    elif kind = typeof<DecimalTotal> then
+        Some(
+            gen {
+                let! digits = Gen.int32 (Range.constant 1 DecimalTotal.MaximumIntegerDigits)
+                let! first = Gen.char '1' '9'
+                let! rest = Gen.string (Range.singleton (digits - 1)) (Gen.char '0' '9')
+
+                let! fraction =
+                    Gen.string
+                        (Range.constant 0 DecimalTotal.MaximumFractionalDigits)
+                        (Gen.char '0' '9')
+
+                let raw = string first + rest + (if fraction = "" then "" else "." + fraction)
+                return DecimalTotal.parse raw |> Result.defaultWith (string >> invalidOp) |> box
+            }
+        )
+    elif kind = typeof<Money> then
+        Some(
+            gen {
+                let! amount = amount
+                let! currency = uppercase 3
+                return box (CaseFixtures.money amount currency)
+            }
+        )
+    else
+        None
+
+
 let private scalarDomainValue (kind: Type) =
     if kind = typeof<CaseReference> then
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
@@ -126,16 +163,8 @@ let private scalarDomainValue (kind: Type) =
                     |> box
             }
         )
-    elif kind = typeof<Money> then
-        Some(
-            gen {
-                let! amount = amount
-                let! currency = uppercase 3
-                return box (CaseFixtures.money amount currency)
-            }
-        )
     else
-        None
+        financialValue kind
 
 let internal domainValue kind =
     match groupValue kind with

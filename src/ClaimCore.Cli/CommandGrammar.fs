@@ -61,7 +61,7 @@ module CommandGrammar =
                     input.Binding.Source <> InputSource.OperationIdentity
                     ->
                     CatalogArgument.Operand
-                | InteractionInput.ActorId -> CatalogArgument.Operand
+                | InteractionInput.ActorId when input.Binding.Required -> CatalogArgument.Operand
                 | _ -> CatalogArgument.Named
 
             let atom =

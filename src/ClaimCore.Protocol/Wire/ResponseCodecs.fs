@@ -180,7 +180,7 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun reference revision view advice ->
+        (record (fun reference revision view advice assigned ->
             {
                 Snapshot =
                     {
@@ -189,12 +189,14 @@ module ResponseCodecs =
                         State = view
                     }
                 Advice = advice
+                AssignedToYou = assigned
             })
         : Fields<CaseReadModel, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
+        |> field "assignedToYou" _.AssignedToYou boolean
         |> build
         |> named "CaseView"
 
@@ -212,7 +214,7 @@ module ResponseCodecs =
                     (record id |> field "act" id authorityKind)
             ]
 
-    let runtimeContext =
+    let private runtimeFields =
         (record (fun version date zone ->
             {
                 ProductVersion = version
@@ -223,32 +225,33 @@ module ResponseCodecs =
         |> field "productVersion" _.ProductVersion nonempty
         |> field "businessDate" _.EffectiveBusinessDate dateValue
         |> field "timeZone" _.TimeZoneId nonempty
-        |> build
-        |> named "RuntimeContext"
+
+    let runtimeContext = runtimeFields |> build |> named "RuntimeContext"
+
+    let private contextActor =
+        (record (fun identity assigned -> identity, assigned): Fields<ActorId * bool, _>)
+        |> field "actorId" fst actorId
+        |> field "hasAssignedCases" snd boolean
 
     let actorContext =
-        (record (fun version date zone capabilities views offers ->
+        (record (fun runtime capabilities views offers (identity, assigned) ->
             {
-                Runtime =
-                    {
-                        ProductVersion = version
-                        EffectiveBusinessDate = date
-                        TimeZoneId = zone
-                    }
+                ActorContext.ActorId = identity
+                Runtime = runtime
                 Capability = capabilities
                 View = views
                 Offers = offers
+                HasAssignedCases = assigned
             })
         : Fields<ActorContext, _>)
-        |> field "productVersion" _.Runtime.ProductVersion nonempty
-        |> field "businessDate" _.Runtime.EffectiveBusinessDate dateValue
-        |> field "timeZone" _.Runtime.TimeZoneId nonempty
+        |> flatten _.Runtime runtimeFields
         |> field
             "capabilities"
             _.Capability
             (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
+        |> flatten (fun context -> context.ActorId, context.HasAssignedCases) contextActor
         |> build
         |> named "ActorContext"
 
@@ -284,12 +287,12 @@ module ResponseCodecs =
         |> build
         |> named "ActorSummary"
 
-    let authorityGrant =
+    let internal authorityGrantFields =
         (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
-        |> build
-        |> named "AuthorityGrant"
+
+    let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
     let grantsPage =
         (record (fun v0 v1 v2 ->

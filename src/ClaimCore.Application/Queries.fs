@@ -52,17 +52,18 @@ module internal Queries =
         let calendar = services.Calendar
         let principal = services.Principal
 
-        match currentActor principal actor with
-        | Error _ -> unavailable
-        | Ok _ ->
+        match currentActor principal actor, actor.Actor with
+        | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    ActorId = requester.ActorId
                     Runtime =
                         {
                             ProductVersion = productVersion
                             EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
+                    HasAssignedCases = actor.HasAssignedCases
                     View = Advice.views principal actor
                     Offers = Advice.installationOffers principal actor
                     Capability =
@@ -70,6 +71,7 @@ module internal Queries =
                         |> List.filter (fun capability ->
                             Authority.can principal actor capability Scope.Installation)
                 }
+        | _ -> unavailable
 
     let context (services: ServiceContext) token =
         let store = services.Store
@@ -147,6 +149,11 @@ module internal Queries =
                                 Claimed = Registration.claimed fields.Registration
                                 Payable = fields.Decision |> Option.map Decision.payable
                                 Progress = CaseProgress.ofPayment fields.Progress
+                                IncidentNotificationDate =
+                                    Registration.value
+                                        BusinessField.IncidentNotificationDate
+                                        fields.Registration
+                                    |> FieldValue.date
                             })
                         record.Snapshot.State
             })
@@ -207,6 +214,39 @@ module internal Queries =
                     )
 
                 return readResult result
+        }
+
+    let caseSummary (services: ServiceContext) (filter: CaseListFilter<string>) token =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! actor =
+                                        tx.Authority
+                                            {
+                                                Principal = services.Principal
+                                                CaseId = None
+                                            }
+
+                                    let request =
+                                        {
+                                            CaseListRequest.Page = { Limit = 1; AfterCursor = None }
+                                            Filter = filter
+                                        }
+
+                                    match selectCases services.Principal request actor with
+                                    | Error refusal -> return Outcome.Rejected refusal
+                                    | Ok selection ->
+                                        let! summary = tx.CaseSummary selection.Selection
+                                        return Outcome.Succeeded summary
+                                }
+                        CancellationToken = token
+                    }
+
+            return readResult result
         }
 
     let selectHistory principal (request: HistoryRequest) actor record =
@@ -370,3 +410,4 @@ module internal Queries =
     let actors = AuthorityQueries.actors
     let selectGrants = AuthorityQueries.selectGrants
     let grants = AuthorityQueries.grants
+    let authorityHistory = AuthorityQueries.history

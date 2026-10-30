@@ -179,6 +179,8 @@ type internal PausedPageStore
                                             }
                                         )
 
+                                    member _.CaseSummary query = tx.CaseSummary query
+
                                     member _.HistoryPage
                                         ({
                                              HistoryPageQuery.CaseId = id
@@ -193,6 +195,9 @@ type internal PausedPageStore
                                                 Limit = limit
                                             }
                                         )
+
+                                    member _.AuthorityHistoryPage query =
+                                        tx.AuthorityHistoryPage query
 
                                     member _.ActorPage
                                         ({

@@ -222,6 +222,7 @@ module Service =
         Queries.get services input.CaseReference ct
 
     let list = Queries.list
+    let caseSummary = Queries.caseSummary
     let history = Queries.history
 
     let observe services (input: OperationLookup) ct =
@@ -230,6 +231,7 @@ module Service =
     let resolve = Resolution.run
     let actors = Queries.actors
     let grants = Queries.grants
+    let authorityHistory = Queries.authorityHistory
 
     let provisionOwner services operationId token =
         AuthorityExecution.provisionStore services operationId token

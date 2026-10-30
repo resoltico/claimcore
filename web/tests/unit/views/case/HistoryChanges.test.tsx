@@ -1,3 +1,4 @@
+import { within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -113,7 +114,9 @@ it("loads the preceding bounded page using only the server-issued cursor when re
   const heading = await screen.findByText(/revision 2/u);
   await user.click(heading);
   expect(fetch).toHaveBeenCalledTimes(1);
-  const expand = view.container.querySelector(".history-list details button")!;
+  const expand = within(heading.closest("details")!).getByRole("button", {
+    name: "Load more history",
+  });
   await user.click(expand);
   await waitFor(() => {
     expect(view.container.querySelector(".history-changes")).toHaveTextContent("Current claimant");

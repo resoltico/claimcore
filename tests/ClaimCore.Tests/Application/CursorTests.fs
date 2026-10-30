@@ -96,6 +96,23 @@ let private accepted () =
                         "Independent grant position"
 
                     Cursors.encodeGrants (CaseFixtures.actorId (actor)) expected
+                | "authority.history" ->
+                    let target = json.RootElement.GetProperty "actor"
+
+                    let actor =
+                        if target.ValueKind = JsonValueKind.Null then
+                            None
+                        else
+                            Some(CaseFixtures.actorId (Guid.Parse(target.GetString() |> nonNull)))
+
+                    let expected = CaseFixtures.sequence (position.GetInt64())
+
+                    Expect.equal
+                        (Cursors.decodeAuthorityHistory actor encoded)
+                        (Ok expected)
+                        "Independent authority-history position and target"
+
+                    Cursors.encodeAuthorityHistory actor expected
                 | _ -> failtest "Unknown fixture endpoint"
 
             Expect.equal actual encoded "Encoder reproduces committed owner bytes")
@@ -128,7 +145,7 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":2", "\"v\":2.0")
+            baseJson.Replace("\"v\":3", "\"v\":3.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
@@ -214,6 +231,9 @@ let private worklistBinding () =
             }
             { selected with Text = None }
             { selected with
+                Assignment = Some CaseAssignment.AssignedToMe
+            }
+            { selected with
                 Order = CaseListOrder.Reference
             }
         ] do
@@ -272,3 +292,27 @@ let tests =
             testCase "strict token and value boundaries" boundaries
             testCase "maximum positions and target binding" maximum
         ]
+
+[<Tests>]
+let triageCursors =
+    testCase "notification cursors retain null dates and authority cursors reject zero" (fun () ->
+        let selected =
+            { CaseListFilter.empty<CaseSearchText> with
+                Order = CaseListOrder.Notified
+                Assignment = Some CaseAssignment.AssignedToMe
+            }
+
+        for date in [ None; Some(CaseFixtures.date "2026-08-03") ] do
+            let expected = CaseListPosition.Notified(date, "CASE-2")
+
+            Expect.equal
+                (Cursors.decodeCases selected (Cursors.encodeCases selected expected))
+                (Ok expected)
+                "Live and erased notification positions round trip"
+
+        let zero = token """{"actor":null,"after":0,"kind":"AUTHORITY_HISTORY","v":1}"""
+
+        Expect.equal
+            (Cursors.decodeAuthorityHistory None zero)
+            (Error Refusal.InvalidCursor)
+            "An empty head is never a history continuation")

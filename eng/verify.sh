@@ -29,6 +29,14 @@ for project in tests/*/*Tests.fsproj; do
   fi
 done
 
+if [[ "${1-}" == growth-compare ]]; then
+  if [[ $# -ne 2 ]]; then
+    echo "Use growth-compare REF as the sole stage." >&2
+    exit 64
+  fi
+  exec python3 eng/growth-compare.py "$2"
+fi
+
 if [[ $# -eq 0 ]]; then
   stages=(lint unit frontend workflows integration acceptance)
 elif [[ "$1" == --fast ]]; then
@@ -168,6 +176,7 @@ lint() {
 
 unit() {
   bash eng/test-native-reports.sh
+  python3 eng/test-growth-comparison.py
   build_native
   local project
   for project in "${unit_projects[@]}"; do

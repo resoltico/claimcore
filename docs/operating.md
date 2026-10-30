@@ -47,6 +47,14 @@ With installation OWNER or AUDITOR, list actors and inspect each selected actor'
 continuation; an actor summary is not a complete grant inventory. Disabled actors remain reviewable. Each
 page checks current rights and uses a separate snapshot.
 
+Use `claimcore authority history` to audit authority changes newest first. Installation OWNER and
+AUDITOR may read the history; a case-scoped grant does not grant installation authority review.
+Use `--actor-id ID` to select the target actor, rather than the executing actor. Each entry retains
+its ledger sequence, UTC recording time, executor, target and typed principal or grant facts. Follow
+`nextCursor` to continue. Every page rechecks current rights inside its read snapshot, including after
+revocation. History payloads are permanent authority records; erasing a case does not erase its grants
+or authority history. CSV export protects formula-leading cells; JSON preserves exact values.
+
 Selecting an actor starts its offered GRANT action when available, with the disclosed principal bound
 to that actor. Review the target, role and scope before confirming. Selecting another actor does not
 rewrite an authored, prepared or unresolved request. Starting that actor's action requires the normal
@@ -127,8 +135,9 @@ elapsed verification time for that invocation, not a response-time guarantee.
 
 ## Erasure limits
 
-ERASE atomically clears every case ledger payload/nonce, its snapshot, and projected status, progress and
-`search_text`. It retains reference, revision, `changed_at` and ledger metadata. Authority history,
+ERASE atomically clears every case ledger payload/nonce, its snapshot, projected status and progress,
+`search_text`, notification date, and claimed/payable amount and currency columns. It retains reference,
+revision, `changed_at` and ledger metadata. Authority history,
 issuer/subject, executor/target attribution and grants remain. The reference itself may identify a person.
 
 Erasure does not reach dead row versions, WAL, replicas, exports, logs, browser history/shared URLs or
@@ -172,6 +181,20 @@ can replace a target during opening; that principal can already replace the secr
 have no hard deadline. File ownership, filesystem behavior and administrators remain trusted. See
 [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) and its real-object tests.
 
+The CLI public profile follows the same admission rules. Its fixed Unix location is
+`$XDG_CONFIG_HOME/claimcore/profile.json`, or `~/.config/claimcore/profile.json` when XDG_CONFIG_HOME
+is unset or empty. A missing profile is normal; an existing refused profile fails even when environment
+variables supply all settings. `claimcore configure` creates a 0700 profile directory, refuses unsafe
+existing directories, and atomically replaces a 0600 file. It accepts only the six public connection
+members documented in [CLI use](integrating.md#cli-use). The client secret file setting remains in the
+environment, and `configure --show` never reads its contents. Environment settings override individual
+profile values. A running CLI session keeps its admitted service/issuer configuration until exit.
+
+The interactive shell keeps access and refresh material and arrow-key history in process memory only.
+It writes neither a token cache nor a history file. Fifteen idle minutes at a command or confirmation
+prompt discard credentials; exit, EOF and SIGTERM also discard them. A refresh failure discards the old
+grant before interactive sign-in. Discard drops the session's references to managed token strings.
+
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
@@ -185,8 +208,8 @@ policy. Unknown stored act, role or principal-kind tokens are corruption; verifi
 are canonical nonnegative integers and hashes are lowercase hexadecimal. The checkpoint must belong to the
 verified chain; the ledger may extend beyond it.
 
-Run [synthetic growth qualification](contributing.md#growth) before release and on demand, then qualify
-actual storage, workloads and concurrency. Read workloads report search and filtered-query percentiles at
-1k, 10k and 100k cases. These measurements establish neither an SLA nor production capacity.
+Select [synthetic growth measurements](contributing.md#growth) for the performance question or agreed
+release scope. Qualify actual storage, workloads and concurrency separately; synthetic measurements
+establish neither an SLA nor production capacity.
 
 See [Integrating](integrating.md) for result handling and [Support](../SUPPORT.md) for redacted reporting.

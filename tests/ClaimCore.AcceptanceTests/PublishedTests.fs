@@ -5,6 +5,7 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
+open ClaimCore.Domain
 open CliCalls
 
 let private verbArguments verb (bytes: byte array) =
@@ -175,8 +176,12 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "caseReference"; "revision"; "state" ]
-        "Erased views expose only identity, revision, state and current advice"
+        [ "advice"; "assignedToYou"; "caseReference"; "revision"; "state" ]
+        "Erased views expose retained identity, assignment metadata and current advice"
+
+    Expect.isFalse
+        (tombstone.GetProperty("assignedToYou").GetBoolean())
+        "Installation stewardship does not invent a case-scoped assignment"
 
     let advice = tombstone.GetProperty "advice"
 
@@ -320,6 +325,19 @@ let private supplementary fixture =
     let reference = Guid.NewGuid().ToString("N") + "-unicode"
     let name = String.replicate 200 "🙂"
 
+    let values =
+        ClaimCore.TestSupport.Inputs.registrationWith
+            [
+                BusinessField.IncidentCountry, "LT"
+                BusinessField.ClaimantName, name
+                BusinessField.InsurerName, name
+                BusinessField.ClaimedAmount, "1.0000"
+            ]
+            ClaimCore.TestSupport.Inputs.registration
+        |> ClaimCore.Json.Codec.encode ClaimCore.Protocol.RequestCodecs.registration
+
+    use registration = JsonDocument.Parse values
+
     let input =
         {|
             kind = "CASE"
@@ -329,16 +347,8 @@ let private supplementary fixture =
             act =
                 {|
                     kind = "OPEN"
-                    values =
-                        {|
-                            incidentDate = "2026-08-01"
-                            incidentNotificationDate = "2026-08-03"
-                            incidentCountry = "LT"
-                            claimantName = name
-                            insurerName = name
-                            claimedAmount = "1.0000"
-                            claimedCurrency = "EUR"
-                        |}
+                    values = registration.RootElement
+
                 |}
         |}
 

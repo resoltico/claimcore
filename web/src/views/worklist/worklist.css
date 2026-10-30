@@ -82,55 +82,114 @@
   margin: 0;
   padding: 0;
 }
+.worklist-row {
+  position: relative;
+}
 .worklist-rows .worklist-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-2);
   border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  margin-block: var(--space-3);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
+  margin-block: var(--space-2);
   background: var(--color-surface);
 }
 .worklist-row > td {
   display: block;
   min-inline-size: 0;
+  padding: 0;
 }
 .worklist-reference {
-  min-inline-size: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+  grid-column: 1;
+  grid-row: 1;
 }
 .reference {
-  display: inline-block;
-  min-inline-size: var(--target-minimum);
+  display: block;
   min-block-size: var(--target-minimum);
   max-inline-size: 100%;
   font-family: var(--font-mono);
-  overflow-wrap: anywhere;
   font-weight: 700;
+  white-space: nowrap;
 }
-.worklist-reference .copy-value {
-  inline-size: auto;
+.row-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.row-reference-text {
+  display: block;
+  max-inline-size: min(100%, 20ch);
+  white-space: nowrap;
+}
+.reference-prefix {
+  display: inline-block;
+  max-inline-size: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+.reference-suffix {
+  display: inline-flex;
+  max-inline-size: 45%;
+  justify-content: flex-end;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.worklist-row:focus-within {
+  outline: var(--focus-width) solid var(--color-accent);
+  outline-offset: var(--space-1);
+}
+.worklist-row:hover {
+  background: var(--color-surface-2);
 }
 .worklist-person {
-  min-inline-size: 0;
-  overflow-wrap: anywhere;
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
-.worklist-person small {
+.worklist-person bdi {
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.worklist-person > small:not(.character-warning) {
+  display: none;
   color: var(--color-text-muted);
 }
-.worklist-money,
-.worklist-row time {
+.worklist-money {
+  grid-column: 1;
+  grid-row: 3;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .worklist-badges {
-  display: flex;
-  flex-wrap: wrap;
+  grid-column: 2;
+  grid-row: 1;
+  text-align: end;
+}
+.worklist-age {
+  grid-column: 2;
+  grid-row: 3;
+  text-align: end;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.worklist-row > .worklist-payable,
+.worklist-row > .worklist-changed {
+  display: none;
+}
+.case-state {
+  display: inline-flex;
+  vertical-align: top;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: var(--space-1);
+}
+.case-state small {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 .badge {
   display: inline-block;
@@ -139,6 +198,7 @@
   font-size: var(--text-xs);
   color: var(--color-text);
   background: var(--color-neutral-bg);
+  white-space: nowrap;
 }
 .worklist-columns {
   position: absolute;
@@ -151,12 +211,72 @@
   text-align: start;
   font-size: var(--text-sm);
 }
-
 .worklist-skeleton {
   min-block-size: var(--space-7);
   margin-block: var(--space-3);
   border-radius: var(--radius-md);
   background: var(--color-surface-2);
+}
+.summary-band {
+  background: var(--color-surface);
+  border-block: var(--border-width) solid var(--color-border);
+  padding: var(--space-2);
+  margin-block: var(--space-2);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+details.summary-band {
+  display: block;
+}
+.summary-band > summary {
+  cursor: pointer;
+}
+.summary-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+}
+.summary-totals > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.summary-totals dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.summary-totals bdi {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.saved-views {
+  scroll-snap-type: inline proximity;
+  padding-block: var(--space-2);
+}
+.saved-views > button {
+  scroll-snap-align: start;
+}
+.saved-views::after {
+  content: "›";
+  position: sticky;
+  inset-inline-end: 0;
+  align-self: center;
+  background: var(--color-surface);
+  padding-inline: var(--space-1);
+}
+[dir="rtl"] .saved-views::after {
+  content: "‹";
+}
+
+@media (40rem <= width < 64rem) {
+  .worklist-rows .worklist-row {
+    max-inline-size: none;
+  }
 }
 .filter-sheet {
   inline-size: 100%;
@@ -195,28 +315,50 @@
   .worklist-columns tr {
     display: table-row;
   }
+  .worklist-rows .worklist-row {
+    block-size: var(--target-primary);
+  }
   .worklist-row > td,
   .worklist-columns th {
     display: table-cell;
-    padding: var(--space-3);
-    vertical-align: top;
+    padding: var(--space-1) var(--space-2);
+    vertical-align: middle;
     border-block-end: var(--border-width) solid var(--color-border);
     text-align: start;
   }
-  .worklist-columns th:first-child {
-    inline-size: 20%;
+  .worklist-person > small:not(.character-warning) {
+    display: block;
+  }
+  .worklist-person {
+    font-size: var(--text-sm);
+  }
+  .worklist-reference {
+    inline-size: 18%;
   }
   .worklist-columns th:nth-child(2) {
-    inline-size: 24%;
+    inline-size: 22%;
   }
-  .worklist-reference .copy-value {
-    display: block;
-    margin-block-start: var(--space-2);
+  .worklist-row > .worklist-payable,
+  .worklist-row > .worklist-changed {
+    display: table-cell;
   }
-  .worklist-badges .badge {
-    margin: var(--space-1);
+  .worklist-changed {
+    font-size: var(--text-sm);
+    white-space: nowrap;
   }
-  .compact-label {
+  .worklist-age {
+    font-size: var(--text-sm);
+  }
+  .case-state {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 0;
+  }
+  .badge {
+    padding-block: 0;
+  }
+  .saved-views::after {
     display: none;
   }
 }

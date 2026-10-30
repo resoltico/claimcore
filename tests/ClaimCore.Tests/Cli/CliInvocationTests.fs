@@ -127,16 +127,11 @@ let grammarTests =
         [ testCase "preparation is exact and malformed flags fail" verbPreparation ]
 
 let private nonLedgerVerbExamples =
-    [
-        [ "case"; "get"; "SYNTHETIC" ], "case.get"
-        [ "case"; "list"; "--limit"; "5"; "--cursor"; "synthetic" ], "case.list"
-        [ "case"; "history"; "SYNTHETIC"; "--full" ], "case.history"
-        [ "operation"; "observe"; "10000000-0000-4000-8000-000000000001" ], "operation.observe"
-        [ "operation"; "resolve"; "10000000-0000-4000-8000-000000000001" ], "operation.resolve"
-        [ "authority"; "list" ], "authority.list"
-        [ "authority"; "grants"; "10000000-0000-4000-8000-000000000001" ], "authority.grants"
-        [ "context" ], "context"
-    ]
+    OperationCatalog.all
+    |> List.filter (fun operation -> operation.SelectedAct.IsNone)
+    |> List.map (fun operation ->
+        ClaimCore.Tests.CliExamples.queryArguments operation,
+        ActorEndpoint.token operation.Endpoint)
 
 let private assertNonLedgerVerbCoverage registry mapped =
     // Session routes are browser transport; preview is selected by a mutation verb option.
@@ -174,15 +169,14 @@ let private nonLedgerVerbs () =
             Expect.equal actual endpoint "A read or operational verb selects its registry endpoint"
 
             let expectedEffect =
-                if endpoint = "operation.resolve" then
-                    EndpointEffect.OperationalWrite
-                else
-                    EndpointEffect.Read
+                ClaimCore.TestSupport.Inventory.rows "endpoints"
+                |> List.find (fun row -> row.GetProperty("token").GetString() = endpoint)
+                |> fun row -> row.GetProperty("effect").GetString() |> nonNull
 
             Expect.equal
-                (Api.effect (Frames.endpoint admitted))
+                (string (Api.effect (Frames.endpoint admitted)))
                 expectedEffect
-                "Declared effect agrees with the verb's actual role"
+                "Independent inventory agrees with the verb's actual effect"
 
             actual)
 
@@ -238,11 +232,7 @@ let private localizedReplyRendering () =
 
     for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
         if example.GetProperty("valid").GetBoolean() then
-            let reply =
-                StrictJson.read
-                    Limits.MaximumResponseBytes
-                    (Encoding.UTF8.GetBytes(example.GetProperty("value").GetRawText()))
-                |> Result.defaultWith (fun _ -> failtest "Frozen JSON")
+            let reply = ClaimCore.TestSupport.PositiveExamples.value example
 
             let frame =
                 {

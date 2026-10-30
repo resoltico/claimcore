@@ -6,6 +6,13 @@ open System.Threading
 open Duende.IdentityModel.OidcClient
 
 module InteractiveAuthorization =
+    [<NoEquality; NoComparison>]
+    type internal Interaction =
+        {
+            Clock: TimeProvider
+            Launch: string -> Result<unit, AccessFailure>
+        }
+
     let private tokenEndpoint (options: OidcClientOptions) () =
         match options.ProviderInformation with
         | null -> None
@@ -29,6 +36,7 @@ module InteractiveAuthorization =
         clock
         (browser: LoopbackBrowser)
         (transport: OidcBackchannel)
+        endpoint
         (result: LoginResult)
         =
         if result.IsError then
@@ -45,17 +53,27 @@ module InteractiveAuthorization =
             match transport.Dispatch with
             | None -> Error AccessFailure.OidcTokenUnavailable
             | Some dispatch ->
-                AccessTokens.fromResponseAt
-                    clock
-                    dispatch.Utc
-                    dispatch.Timestamp
+                AuthorizationGrant.fromResponse
+                    {
+                        Clock = clock
+                        Utc = dispatch.Utc
+                        Timestamp = dispatch.Timestamp
+                    }
+                    endpoint
+                    None
                     result.TokenResponse
 
-    let obtain (handler: HttpMessageHandler) (issuer: Uri) clientId (cancelled: CancellationToken) =
+    let internal obtainWith
+        interaction
+        (handler: HttpMessageHandler)
+        (issuer: Uri)
+        clientId
+        (cancelled: CancellationToken)
+        =
         task {
-            use browser = new LoopbackBrowser()
+            use browser = new LoopbackBrowser(interaction.Launch)
             let options = configuration issuer clientId browser
-            let clock = TimeProvider.System
+            let clock = interaction.Clock
             use transport = new OidcBackchannel(handler, tokenEndpoint options, clock)
             use client = new HttpClient(transport, false)
             client.Timeout <- options.BackchannelTimeout
@@ -66,7 +84,13 @@ module InteractiveAuthorization =
 
             try
                 let! result = oidc.LoginAsync(LoginRequest(), cancelled)
-                return received clock browser transport result
+
+                try
+                    match tokenEndpoint options () with
+                    | Some endpoint -> return received clock browser transport endpoint result
+                    | None -> return Error AccessFailure.OidcMetadataInvalid
+                finally
+                    result.RefreshTokenHandler |> Option.ofObj |> Option.iter _.Dispose()
             with
             | :? OperationCanceledException
             | :? HttpRequestException
@@ -74,3 +98,14 @@ module InteractiveAuthorization =
             | :? InvalidOperationException
             | :? ArgumentException -> return Error AccessFailure.OidcMetadataInvalid
         }
+
+    let internal obtain handler issuer clientId cancelled =
+        obtainWith
+            {
+                Clock = TimeProvider.System
+                Launch = LoopbackTransport.launch
+            }
+            handler
+            issuer
+            clientId
+            cancelled

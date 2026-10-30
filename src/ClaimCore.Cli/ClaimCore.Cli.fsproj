@@ -11,6 +11,9 @@
     <Compile Include="CliIdentity.fs" />
     <Compile Include="CliCommands.fs" />
     <Compile Include="CommandGrammar.fs" />
+    <Compile Include="CliProfile.fs" />
+    <Compile Include="RemoteConfiguration.fs" />
+    <Compile Include="CliConfigure.fs" />
     <Compile Include="ServiceReply.fs" />
     <Compile Include="Frames.fs" />
     <Compile Include="Schemas.fs" />
@@ -24,16 +27,19 @@
     <Compile Include="UsageText.fs" />
     <Compile Include="ContractDiscovery.fs" />
     <Compile Include="Discovery.fs" />
-    <Compile Include="RemoteConfiguration.fs" />
+    <Compile Include="CliDiscovery.fs" />
     <Compile Include="AccessFailure.fs" />
     <Compile Include="RemoteTls.fs" />
     <Compile Include="HttpRequestDeadline.fs" />
     <Compile Include="AccessTokens.fs" />
+    <Compile Include="AuthorizationGrant.fs" />
     <Compile Include="OidcBackchannel.fs" />
     <Compile Include="OidcClient.fs" />
     <Compile Include="LoopbackCallback.fs" />
     <Compile Include="InteractiveAuthorization.fs" />
     <Compile Include="OAuthTokenClient.fs" />
+    <Compile Include="OAuthRefresh.fs" />
+    <Compile Include="MemoryTokenSession.fs" />
     <Compile Include="RemoteAccessSession.fs" />
     <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
@@ -41,14 +47,23 @@
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReplyFormat.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
+    <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
+    <Compile Include="AuthorityHistoryRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
     <Compile Include="TextOperationReply.fs" />
     <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
+    <Compile Include="ReadPageIO.fs" />
     <Compile Include="CaseListCommand.fs" />
+    <Compile Include="AuthorityHistoryCommand.fs" />
     <Compile Include="InteractiveReview.fs" />
+    <Compile Include="VerbRunner.fs" />
+    <Compile Include="ShellTokenizer.fs" />
+    <Compile Include="ShellTerminal.fs" />
+    <Compile Include="Shell.fs" />
+    <Compile Include="ShellRuntime.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

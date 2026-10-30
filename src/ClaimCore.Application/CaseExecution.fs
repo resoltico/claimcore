@@ -85,6 +85,7 @@ module internal CaseExecution =
         after
         =
         let snapshot = Case.snapshot after
+        let index = CaseIndex.create view.ObservedAt snapshot
 
         let id =
             view.Case
@@ -95,9 +96,8 @@ module internal CaseExecution =
         let projection =
             match snapshot.State, view.Case with
             | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
-            | _, None ->
-                CaseProjection.Insert(id, snapshot, CaseIndex.create view.ObservedAt snapshot)
-            | _ -> CaseProjection.Update(id, snapshot, CaseIndex.create view.ObservedAt snapshot)
+            | _, None -> CaseProjection.Insert(id, snapshot, index)
+            | _ -> CaseProjection.Update(id, snapshot, index)
 
         {
             OperationId = request.OperationId
@@ -116,7 +116,7 @@ module internal CaseExecution =
                     {
                         CaseId = id
                         Snapshot = snapshot
-                        Index = CaseIndex.create view.ObservedAt snapshot
+                        Index = index
                         SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
                     }
             Projection = projection

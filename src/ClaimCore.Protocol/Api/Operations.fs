@@ -11,11 +11,13 @@ type OperationEndpoint =
 type QueryEndpoint =
     | CaseGet
     | CaseList
+    | CaseSummary
     | CaseHistory
     | Observe
     | Resolve
     | AuthorityList
     | AuthorityGrants
+    | AuthorityHistory
     | Context
 
 [<RequireQualifiedAccess>]
@@ -33,11 +35,13 @@ module ActorEndpoint =
                 (ActorEndpoint.Operation OperationEndpoint.Execute)
                 (ActorEndpoint.Query QueryEndpoint.CaseGet)
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
                 (ActorEndpoint.Query QueryEndpoint.Observe)
                 (ActorEndpoint.Query QueryEndpoint.Resolve)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityList)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
+                (ActorEndpoint.Query QueryEndpoint.AuthorityHistory)
                 (ActorEndpoint.Query QueryEndpoint.Context)
             ]
             (function
@@ -45,11 +49,13 @@ module ActorEndpoint =
              | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
              | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
              | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
              | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
+             | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) -> "authority.history"
              | (ActorEndpoint.Query QueryEndpoint.Context) -> "context")
 
     let all = Vocabulary.all vocabulary

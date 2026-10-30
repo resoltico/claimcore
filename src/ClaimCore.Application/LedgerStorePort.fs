@@ -22,6 +22,9 @@ type CaseIndex =
         Progress: CaseProgress option
         ChangedAt: DateTimeOffset
         SearchText: string option
+        NotifiedOn: CalendarDate option
+        Claimed: Money option
+        Payable: Money option
     }
 
 module CaseIndex =
@@ -33,6 +36,15 @@ module CaseIndex =
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
             ChangedAt = changedAt
             SearchText = fields |> Option.map CaseSearch.text
+            NotifiedOn =
+                fields
+                |> Option.map (fun fields ->
+                    Registration.value BusinessField.IncidentNotificationDate fields.Registration
+                    |> FieldValue.date)
+            Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
+            Payable =
+                fields
+                |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)
         }
 
 type StoredCase =
@@ -95,6 +107,15 @@ type AuthorityQuery =
         CaseId: CaseId option
     }
 
+type CaseSelection =
+    {
+        Visibility: CaseVisibility
+        ActorId: ActorId
+        ReadRoles: Role list
+        ForbiddenRoles: Role list
+        Filter: CaseListFilter<CaseSearchText>
+    }
+
 type CasePageQuery =
     {
         Visibility: CaseVisibility
@@ -106,10 +127,26 @@ type CasePageQuery =
         Limit: int
     }
 
+    member this.Selection =
+        {
+            CaseSelection.Visibility = this.Visibility
+            ActorId = this.ActorId
+            ReadRoles = this.ReadRoles
+            ForbiddenRoles = this.ForbiddenRoles
+            Filter = this.Filter
+        }
+
 type HistoryPageQuery =
     {
         CaseId: CaseId
         AfterRevision: Revision
+        Limit: int
+    }
+
+type AuthorityHistoryPageQuery =
+    {
+        TargetActorId: ActorId option
+        BeforeSequence: Sequence option
         Limit: int
     }
 
@@ -146,8 +183,10 @@ type IReadTx =
     abstract FindEntry: OperationId -> Task<StoredEntry option>
 
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
+    abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
     abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
+    abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
     abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>

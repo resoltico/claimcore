@@ -10,17 +10,21 @@ open ClaimCore.Domain
 type CaseListPosition =
     | Reference of string
     | Recent of changedAt: DateTimeOffset * reference: string
+    | Notified of notifiedOn: CalendarDate option * reference: string
 
 module CaseListPosition =
     let reference =
         function
         | CaseListPosition.Reference reference
-        | CaseListPosition.Recent(_, reference) -> reference
+        | CaseListPosition.Recent(_, reference)
+        | CaseListPosition.Notified(_, reference) -> reference
 
-    let create order changedAt reference =
+    let create order changedAt notifiedOn reference =
         match order with
         | CaseListOrder.Reference -> CaseListPosition.Reference(CaseReference.key reference)
         | CaseListOrder.Recent -> CaseListPosition.Recent(changedAt, CaseReference.key reference)
+        | CaseListOrder.Notified ->
+            CaseListPosition.Notified(notifiedOn, CaseReference.key reference)
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
@@ -106,6 +110,10 @@ module Cursors =
                 |> Option.map (CaseSearchText.value >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
                 "order", JsonValue.String(DurableNames.caseOrder filter.Order)
+                "assignment",
+                filter.Assignment
+                |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
             ]
 
     let private instant (value: string) =
@@ -141,6 +149,15 @@ module Cursors =
                             changedAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
                         )
                     ]
+            | CaseListOrder.Notified, CaseListPosition.Notified(date, reference) ->
+                JsonValue.Object
+                    [
+                        "notifiedOn",
+                        date
+                        |> Option.map (CalendarDate.format >> JsonValue.String)
+                        |> Option.defaultValue JsonValue.Null
+                        "reference", JsonValue.String(CaseReference.key reference)
+                    ]
             | _ -> invalidArg (nameof position) "The position must match the selected order."
 
         encode
@@ -148,7 +165,7 @@ module Cursors =
                 DurableNames.After, after
                 "filters", caseFilters filter
                 DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 2L
+                DurableNames.V, JsonValue.Integer 3L
             ]
 
     let private casePosition order =
@@ -163,6 +180,16 @@ module Cursors =
             ->
             instant changedAt
             |> Option.map (fun time -> CaseListPosition.Recent(time, after))
+        | JsonValue.Object [ "notifiedOn", date; "reference", JsonValue.String after ] when
+            order = CaseListOrder.Notified && reference after
+            ->
+            match date with
+            | JsonValue.Null -> Some(CaseListPosition.Notified(None, after))
+            | JsonValue.String raw ->
+                CalendarDate.parse raw
+                |> Result.toOption
+                |> Option.map (fun date -> CaseListPosition.Notified(Some date, after))
+            | _ -> None
         | _ -> None
 
     let decodeCases (filter: CaseListFilter<CaseSearchText>) token =
@@ -172,7 +199,7 @@ module Cursors =
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 2L ] when
+                                 DurableNames.V, JsonValue.Integer 3L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after
@@ -266,5 +293,36 @@ module Cursors =
                 uuid ActorId.create target = Some actorId
                 ->
                 grant role caseId
+            | _ -> None)
+            token
+
+    let encodeAuthorityHistory (actor: ActorId option) sequence =
+        encode
+            [
+                DurableNames.Actor,
+                actor
+                |> Option.map (ActorId.format >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
+                DurableNames.After, JsonValue.Integer(Sequence.value sequence)
+                DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
+                DurableNames.V, JsonValue.Integer 1L
+            ]
+
+    let decodeAuthorityHistory (actor: ActorId option) token =
+        let expected =
+            actor
+            |> Option.map (ActorId.format >> JsonValue.String)
+            |> Option.defaultValue JsonValue.Null
+
+        decode
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ DurableNames.Actor, target
+                                 DurableNames.After, JsonValue.Integer sequence
+                                 DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
+                                 DurableNames.V, JsonValue.Integer 1L ] when
+                target = expected && sequence >= 1L
+                ->
+                Sequence.create sequence
             | _ -> None)
             token

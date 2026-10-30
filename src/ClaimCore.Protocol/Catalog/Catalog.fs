@@ -48,6 +48,16 @@ module Catalog =
                     MaximumPageSize = Paging.MaximumPageSize
                     RequestByteLimit = Limits.MaximumRequestBytes
                 }
+            Roles =
+                Role.all
+                |> List.map (fun role ->
+                    {
+                        Role = role
+                        AdmittedPrincipalKinds =
+                            Vocabulary.all PrincipalKind.vocabulary
+                            |> List.filter (fun kind ->
+                                kind = PrincipalKind.Human || not (Authority.humanOnlyRole role))
+                    })
             Entries = OperationCatalog.entries
             ProductVersion = BuildIdentity.current.Version
         }

@@ -1,5 +1,8 @@
 import "./worklist/worklist.css";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
+import type { ActorContext } from "@contracts/client";
+import { useRequesterContext } from "../hooks/useRequesterContext";
+import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -11,6 +14,7 @@ import {
   parseWorklistQuery,
   worklistPath,
   listRequest,
+  viewQuery,
   type WorklistQuery,
 } from "../routing/worklistQuery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
@@ -19,10 +23,19 @@ import { savedViewLabel } from "./worklist/savedViewLabel";
 type Props = { onSelect: (caseReference: string) => void; onOpen: () => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
-const useWorklist = () => {
+const useWorklist = (context: ActorContext) => {
   const route = useRoute();
   const search = route.screen === "cases" ? route.query : "";
-  const query = useMemo(() => parseWorklistQuery(search), [search]);
+  const defaultMine = search === "" && context.hasAssignedCases;
+  const query = useMemo(
+    () => (defaultMine ? viewQuery("mine") : parseWorklistQuery(search)),
+    [search, defaultMine],
+  );
+  useEffect(() => {
+    if (defaultMine) {
+      navigate(worklistPath(viewQuery("mine")), true);
+    }
+  }, [defaultMine]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
   const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof casePage>>>(
     "case.list",
@@ -48,7 +61,8 @@ const WorklistColumns = () => {
         <th scope="col">{p.fieldLabel("claimantName")}</th>
         <th scope="col">{p.fieldLabel("claimedAmount")}</th>
         <th scope="col">{p.fieldLabel("payableAmount")}</th>
-        <th scope="col">{p.text("input.progress.label")}</th>
+        <th scope="col">{p.text("ui.caseState")}</th>
+        <th scope="col">{p.text("ui.age")}</th>
         <th scope="col">{p.text("label.changedAt")}</th>
       </tr>
     </thead>
@@ -124,7 +138,37 @@ const WorklistLoading = ({ page }: { page: Page }) => {
 };
 const referenceSearchKey = (text: string | undefined) =>
   text?.replace(/[a-z]/gu, (letter) => letter.toUpperCase());
-const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
+const ExactResult = ({
+  value,
+  onSelect,
+}: {
+  value: CaseSummary | null;
+  onSelect: Props["onSelect"];
+}) => {
+  const p = usePresentation();
+  if (value === null) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        onSelect(value.caseReference);
+      }}
+    >
+      {p.text("ui.openExactCase", { reference: value.caseReference })}
+    </button>
+  );
+};
+const WorklistResults = ({
+  page,
+  onSelect,
+  businessDate,
+}: {
+  page: Page;
+  onSelect: Props["onSelect"];
+  businessDate: string;
+}) => {
   const p = usePresentation();
   const exact =
     page.items.length === 1 &&
@@ -133,21 +177,17 @@ const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSe
       : null;
   return (
     <>
-      {exact === null ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            onSelect(exact.caseReference);
-          }}
-        >
-          {p.text("ui.openExactCase", { reference: exact.caseReference })}
-        </button>
-      )}
+      <ExactResult value={exact} onSelect={onSelect} />
       <table className="worklist-table">
         <WorklistColumns />
         <tbody className="case-list worklist-rows">
           {page.items.map((value) => (
-            <CaseRow key={value.caseReference} value={value} onSelect={onSelect} />
+            <CaseRow
+              key={value.caseReference}
+              value={value}
+              onSelect={onSelect}
+              businessDate={businessDate}
+            />
           ))}
         </tbody>
       </table>
@@ -165,9 +205,9 @@ const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSe
     </>
   );
 };
-export const CaseList = ({ onSelect, onOpen }: Props) => {
+const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorContext }) => {
   const p = usePresentation();
-  const page = useWorklist();
+  const page = useWorklist(context);
   return (
     <section aria-labelledby="case-list-title" className="worklist">
       <div className="section-heading">
@@ -180,6 +220,7 @@ export const CaseList = ({ onSelect, onOpen }: Props) => {
       </div>
       <WorklistToolbar
         query={page.query}
+        hasAssignedCases={context.hasAssignedCases}
         onChange={page.change}
         onSelect={onSelect}
         loading={page.loading}
@@ -187,9 +228,15 @@ export const CaseList = ({ onSelect, onOpen }: Props) => {
           void page.load(null);
         }}
       />
-      <WorklistFeedback page={page} />
+      <SummaryBand filter={(({ view: _view, ...filters }) => filters)(page.query)} />
       <WorklistLoading page={page} />
-      <WorklistResults page={page} onSelect={onSelect} />
+      <WorklistResults page={page} onSelect={onSelect} businessDate={context.businessDate} />
+      <WorklistFeedback page={page} />
     </section>
   );
+};
+
+export const CaseList = (props: Props) => {
+  const context = useRequesterContext();
+  return context === null ? null : <ReadyCaseList {...props} context={context} />;
 };

@@ -57,6 +57,7 @@ export type MatrixRoute = {
   endpoint?: EndpointId;
   expectedInput?: Readonly<Record<string, unknown>>;
   filtered?: boolean;
+  summaryExpanded?: boolean;
 };
 const views = [
   {
@@ -70,6 +71,28 @@ const views = [
   { id: "all", input: {} },
 ] as const;
 const worklistRoutes = (marker: string): MatrixRoute[] => [
+  {
+    id: "cases-mine",
+    path: "/cases?view=mine",
+    ready: "#case-list-title",
+    endpoint: "case.list",
+    expectedInput: { limit: 50, assignment: "ASSIGNED_TO_ME" },
+  },
+  {
+    id: "cases-notified",
+    path: "/cases?view=all&order=NOTIFIED",
+    ready: "#case-list-title",
+    endpoint: "case.list",
+    expectedInput: { limit: 50, order: "NOTIFIED" },
+  },
+  {
+    id: "cases-summary",
+    path: `/cases?q=${marker}`,
+    ready: "#case-list-title",
+    endpoint: "case.list",
+    expectedInput: { limit: 50, text: marker },
+    summaryExpanded: true,
+  },
   ...views.map((view) => ({
     id: `cases-${view.id}`,
     path: `/cases?view=${view.id}`,
@@ -123,6 +146,14 @@ const routes = (data: {
     ready: "#operation-lookup-title",
     endpoint: "operation.observe",
   },
+  {
+    id: "authority-history",
+    path: "/authority?tab=history",
+    ready: "#authority-history-title",
+    endpoint: "authority.history",
+    expectedInput: { limit: 50 },
+  },
+  { id: "not-found", path: "/not-a-claimcore-page", ready: ".missing-page h1" },
   {
     id: "authority-list",
     path: "/authority",
@@ -292,6 +323,37 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   });
   return registered.subject.targetActorId;
 };
+const assignOwnerCase = async (
+  page: Page,
+  inventory: { issuer: string; ownerSubject: string },
+  reference: string,
+  restore: () => Promise<void>,
+) => {
+  const assignedTarget = {
+    kind: "HUMAN",
+    issuer: inventory.issuer,
+    subject: inventory.ownerSubject,
+  } as const;
+  const assignedScope = { kind: "CASE", caseReference: reference } as const;
+  await applyAuthority(page, {
+    kind: "AUTHORITY",
+    operationId: randomUUID(),
+    target: assignedTarget,
+    act: { kind: "GRANT", role: "CASE_READER", scope: assignedScope },
+  });
+  return async () => {
+    try {
+      await applyAuthority(page, {
+        kind: "AUTHORITY",
+        operationId: randomUUID(),
+        target: assignedTarget,
+        act: { kind: "REVOKE", role: "CASE_READER", scope: assignedScope },
+      });
+    } finally {
+      await restore();
+    }
+  };
+};
 export type DesignDataset = {
   routes: ReadonlyArray<MatrixRoute>;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
@@ -315,6 +377,12 @@ export const prepareDesignDataset = async (
     }
     const marker = `DM-${randomUUID()}`;
     const cases = await seedCases(page, marker, contextReply.outcome.data.businessDate);
+    restore = await assignOwnerCase(
+      page,
+      stewardship.inventory,
+      cases.references.undecided,
+      restore,
+    );
     const actorId = await registerActor(
       page,
       stewardship.inventory.issuer,

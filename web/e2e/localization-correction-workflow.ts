@@ -128,9 +128,9 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
     revision = acceptedRevision;
   }
   await (await showExactLookup(page)).fill(reference);
-  await page.getByRole("button", { name: "Find case", exact: true }).click();
+  await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
-  await expect(page.locator(".case-lifecycle").getByText(`Revision ${revision}`)).toBeVisible();
+  await expect(page.locator(".case-header-state").getByText(`Revision ${revision}`)).toBeVisible();
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
   await startAct(page, "Correct case facts");

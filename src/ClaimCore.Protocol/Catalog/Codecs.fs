@@ -433,22 +433,50 @@ module CatalogCodecs =
                 })
         |> named "Presentation.CatalogEntry"
 
-    let codec =
-        (record (fun fields inputs warnings limits entries version ->
+    let private role =
+        (record (fun role kinds ->
             {
-                CatalogDocument.Fields = fields
-                InputFields = inputs
-                CharacterWarnings = warnings
-                Limits = limits
-                Entries = entries
-                ProductVersion = version
+                RolePresentationDefinition.Role = role
+                AdmittedPrincipalKinds = kinds
             })
+        : Fields<RolePresentationDefinition, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field
+            "admittedPrincipalKinds"
+            _.AdmittedPrincipalKinds
+            (many (VocabularyCodec.create PrincipalKind.vocabulary))
+        |> build
+        |> named "Presentation.RoleDefinition"
+
+    let private definitions =
+        (record (fun fields inputs -> fields, inputs)
+        : Fields<FieldPresentationDefinition list * InputPresentationDefinition list, _>)
+        |> field "fields" fst (many businessField)
+        |> field "inputFields" snd (many inputField)
+
+    let private policies =
+        (record (fun characterWarnings presentationLimits -> characterWarnings, presentationLimits)
+        : Fields<CharacterWarningDefinition * PresentationLimits, _>)
+        |> field "characterWarnings" fst warnings
+        |> field "limits" snd limits
+
+    let codec =
+        (record
+            (fun (fields, inputs) (characterWarnings, presentationLimits) entries roles version ->
+                {
+                    CatalogDocument.Fields = fields
+                    InputFields = inputs
+                    CharacterWarnings = characterWarnings
+                    Limits = presentationLimits
+                    Entries = entries
+                    Roles = roles
+                    ProductVersion = version
+                })
         : Fields<CatalogDocument, _>)
-        |> field "fields" _.Fields (many businessField)
-        |> field "inputFields" _.InputFields (many inputField)
-        |> field "characterWarnings" _.CharacterWarnings warnings
-        |> field "limits" _.Limits limits
+        |> flatten (fun document -> document.Fields, document.InputFields) definitions
+        |> flatten (fun document -> document.CharacterWarnings, document.Limits) policies
         |> field "entries" _.Entries (many entry)
+        |> field "roles" _.Roles (many role)
         |> field "productVersion" _.ProductVersion text
         |> build
         |> named "Presentation.CatalogDocument"

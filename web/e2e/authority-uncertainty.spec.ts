@@ -52,7 +52,7 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
   await expect(
     page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
   ).toBeEnabled();
-  await expect(page.locator(".authority-panel ul > li")).toHaveCount(0);
+  await expect(page.locator(".authority-rows > tr")).toHaveCount(0);
 };
 
 const cleanupAuthority = async (

@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -7,7 +8,7 @@ import { deferredResponse, editor, previewReply } from "../support/presentation-
 import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/contract-corpus.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -18,7 +19,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 const expectAuthoringDisabled = () => {
   const controls = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
     ".operation-editor form input, .operation-editor form select",

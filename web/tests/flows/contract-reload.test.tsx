@@ -1,3 +1,4 @@
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { CaseList } from "../../src/views/CaseList";
@@ -13,4 +14,8 @@ it("contract mismatch offers explicit reload and never automatically redispatche
   expect(await screen.findByRole("button", { name: "Reload page" })).toBeVisible();
   expect(fetch).toHaveBeenCalledOnce();
   expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(["/api/case.list"]);
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

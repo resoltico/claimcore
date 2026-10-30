@@ -8,8 +8,9 @@ Use `--dry-run` to print the prepared JSON frame without authentication. This ch
 
 Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
 
-Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--order reference|recent` selects the page order. A continuation cursor is bound to those filters and order.
-`case list --format csv` emits UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--assignment assigned-to-me` restricts to valid case-scoped read grants; `--order reference|recent|notified` selects the page order. Cursors bind filters, assignment and order.
+`case list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case and previews with that revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
 
 For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; there is no skip-confirmation flag.
@@ -18,7 +19,11 @@ Human operations default to text. Add `--format json` for structured output or `
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
 
-## Discovery and frame commands
+`claimcore configure` atomically saves only public connection settings in `$XDG_CONFIG_HOME/claimcore/profile.json` (default `~/.config/claimcore/profile.json` on Unix). Files are 0600 and the profile directory is 0700. Every read uses private-file admission and refuses unknown members. Environment values override profile values individually; `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` is environment-only. `claimcore configure --show` displays effective values and their sources without reading secret content.
+
+`claimcore shell` requires interactive authentication mode and terminal stdin. It shares one process-local access/refresh-token session across commands, refreshes on expiry and signs in again on refresh failure. Fifteen idle minutes, exit, EOF and SIGTERM discard tokens. Arrow-key history stays in memory. Quotes and backslashes group arguments; metacharacters do not execute or expand. Each command prints its exit code and the shell continues after exit 4 with the frozen retry frame and resolve command. Ctrl-C cancels a command; a second Ctrl-C at an empty prompt exits. Interactive review still requires terminal stdout.
+
+## Discovery, configuration and frame commands
 
 Help, version, describe and schema commands work offline. Call and session dispatch frames through the configured HTTPS service and authentication mode.
 
@@ -29,8 +34,11 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore schema endpoint request|response`
 - `claimcore call`
 - `claimcore session`
+- `claimcore shell`
+- `claimcore configure --show`
+- `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]`
 
-Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
+Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
 
 ## Exit codes
 
@@ -382,7 +390,7 @@ List cases
 Read one page of cases visible to the actor.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -393,7 +401,27 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
-| `--order` | Order — Order by case reference, or by latest accepted change with case reference as the tie-breaker. | reference, recent | REFERENCE |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
+| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
+
+## case summary
+
+Case summary
+
+Count matching visible cases and sum claimed and payable amounts separately for each currency.
+
+```sh
+claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--lifecycle` | Lifecycle — Restrict results to the selected lifecycles. Omit this filter to include every lifecycle. | active, voided, erased |  |
+| `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
+| `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
+| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
+| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
 
 ## case history
 
@@ -467,7 +495,23 @@ claimcore authority grants ACTOR-ID [--cursor VALUE] [--limit N]
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `ACTOR-ID` | Actor ID — The registered actor whose grants are being read. |  |  |
+| `ACTOR-ID` | Actor ID — The registered actor selected for grant review or authority history. |  |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## authority history
+
+Authority history
+
+Review authority changes, newest first, optionally filtered by target actor.
+
+```sh
+claimcore authority history [--actor-id VALUE] [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--actor-id` | Actor ID — The registered actor selected for grant review or authority history. |  |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

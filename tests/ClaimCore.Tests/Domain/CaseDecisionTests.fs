@@ -223,11 +223,31 @@ let private boundsAndFence () =
         (Verdict.Fail CoreFault.InternalError)
         "A format-valid record at the bound yields CORE_INTERNAL_ERROR"
 
-let private rawOpening =
-    """{"kind":"CASE","operationId":"80000000-0000-4000-8000-000000000010","caseReference":"UNIT-001","expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"LV","claimantName":"Synthetic Party","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}"""
+let private opening =
+    RequestCodecs.operationInput.Write(
+        OperationInput.Case
+            {
+                OperationId = Guid.Parse "80000000-0000-4000-8000-000000000010"
+                CaseReference = "UNIT-001"
+                ExpectedRevision = 0L
+                Act = AuthoredCaseAct.Open Inputs.registration
+            }
+    )
+
+let private rawOpening = opening |> WireWriter.bytes |> Text.Encoding.UTF8.GetString
+
+let rec private reverseMembers =
+    function
+    | JsonValue.Object members ->
+        members
+        |> List.rev
+        |> List.map (fun (key, value) -> key, reverseMembers value)
+        |> JsonValue.Object
+    | JsonValue.Array values -> JsonValue.Array(List.map reverseMembers values)
+    | value -> value
 
 let private respelledOpening =
-    """{"kind":"CASE","act":{"values":{"claimedCurrency":"EUR","claimedAmount":"1000.00","insurerName":"Synthetic Insurer","claimantName":"Synthetic Party","incidentCountry":"LV","incidentNotificationDate":"2026-08-03","incidentDate":"2026-08-01"},"kind":"OPEN"},"expectedRevision":0,"caseReference":"UNIT-001","operationId":"80000000-0000-4000-8000-000000000010"}"""
+    opening |> reverseMembers |> WireWriter.bytes |> Text.Encoding.UTF8.GetString
 
 let private decodeWire (text: string) =
     Codec.decode

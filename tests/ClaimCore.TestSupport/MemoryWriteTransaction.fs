@@ -98,6 +98,9 @@ type internal Writer(inputs: WriteInputs) =
                                     Status = None
                                     Progress = None
                                     SearchText = None
+                                    NotifiedOn = None
+                                    Claimed = None
+                                    Payable = None
                                     ChangedAt = changedAt
                                 }
                             Snapshot =

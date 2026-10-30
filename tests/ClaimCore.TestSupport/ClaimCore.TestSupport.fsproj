@@ -20,6 +20,9 @@
     <Compile Include="SessionResults.fs" />
     <Compile Include="Inventory.fs" />
     <Compile Include="Inputs.fs" />
+    <Compile Include="PositiveExamples.fs" />
+    <Compile Include="ResponseExamples.fs" />
+    <Compile Include="GoldenFiles.fs" />
     <Compile Include="CaseFixtures.fs" />
     <Compile Include="MemoryStoreState.fs" />
     <Compile Include="MemoryReadTransaction.fs" />

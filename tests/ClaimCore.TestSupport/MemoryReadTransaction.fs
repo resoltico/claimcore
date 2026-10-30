@@ -11,6 +11,41 @@ open ClaimCore.Domain
 
 open ClaimCore.TestSupport.MemoryStoreState
 
+let private selected (state: State) (selection: CaseSelection) (record: StoredCase) =
+    let assigned =
+        state.Grants
+        |> Seq.exists (fun (id, role, scope) ->
+            id = selection.ActorId
+            && scope = Some record.CaseId
+            && List.contains role selection.ReadRoles)
+
+    let forbidden =
+        state.Grants
+        |> Seq.exists (fun (id, role, scope) ->
+            id = selection.ActorId
+            && scope = Some record.CaseId
+            && List.contains role selection.ForbiddenRoles)
+
+    (selection.Visibility = CaseVisibility.Every || assigned)
+    && (selection.Filter.Assignment.IsNone || assigned)
+    && not forbidden
+    && CaseListFilter.matches
+        selection.Filter
+        (CaseState.lifecycle record.Snapshot.State)
+        record.Index.Status
+        record.Index.Progress
+        record.Index.SearchText
+
+let private total money =
+    money
+    |> Option.map (fun value ->
+        {
+            CurrencyTotal.Currency = Money.currencyValue value
+            Amount =
+                DecimalTotal.parse (Money.format value)
+                |> Result.defaultWith (string >> failwith)
+        })
+
 type internal Reader(get: unit -> State, installationId, observed, read: unit -> unit) =
     interface IReadTx with
         member _.ObservedAt = observed
@@ -112,10 +147,15 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
 
             let compareRows (left: StoredCase) (right: StoredCase) =
                 let time =
-                    if query.Filter.Order = CaseListOrder.Recent then
-                        compare right.Index.ChangedAt left.Index.ChangedAt
-                    else
-                        0
+                    match query.Filter.Order with
+                    | CaseListOrder.Reference -> 0
+                    | CaseListOrder.Recent -> compare right.Index.ChangedAt left.Index.ChangedAt
+                    | CaseListOrder.Notified ->
+                        match left.Index.NotifiedOn, right.Index.NotifiedOn with
+                        | None, None -> 0
+                        | None, Some _ -> 1
+                        | Some _, None -> -1
+                        | Some left, Some right -> compare left right
 
                 if time <> 0 then
                     time
@@ -131,34 +171,21 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                     record.Index.ChangedAt < time
                     || (record.Index.ChangedAt = time
                         && StringComparer.Ordinal.Compare(reference record, value) > 0)
+                | Some(CaseListPosition.Notified(date, value)) ->
+                    match record.Index.NotifiedOn, date with
+                    | None, Some _ -> true
+                    | Some _, None -> false
+                    | None, None -> StringComparer.Ordinal.Compare(reference record, value) > 0
+                    | Some found, Some after ->
+                        found > after
+                        || (found = after
+                            && StringComparer.Ordinal.Compare(reference record, value) > 0)
 
-            let visible (record: StoredCase) =
-                (query.Visibility = CaseVisibility.Every
-                 || (state.Grants
-                     |> Seq.exists (fun (id, role, scope) ->
-                         id = query.ActorId
-                         && scope = Some record.CaseId
-                         && List.contains role query.ReadRoles)))
-                && not (
-                    state.Grants
-                    |> Seq.exists (fun (id, role, scope) ->
-                        id = query.ActorId
-                        && scope = Some record.CaseId
-                        && List.contains role query.ForbiddenRoles)
-                )
 
             let rows =
                 state.Cases
                 |> Map.values
-                |> Seq.filter (fun record ->
-                    visible record
-                    && after record
-                    && CaseListFilter.matches
-                        query.Filter
-                        (CaseState.lifecycle record.Snapshot.State)
-                        record.Index.Status
-                        record.Index.Progress
-                        record.Index.SearchText)
+                |> Seq.filter (fun record -> selected state query.Selection record && after record)
                 |> Seq.sortWith compareRows
                 |> Seq.map (readCase installationId)
                 |> Seq.toList
@@ -170,9 +197,31 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                         CaseListPosition.create
                             query.Filter.Order
                             record.Index.ChangedAt
+                            record.Index.NotifiedOn
                             (CaseReference.format record.Snapshot.Reference))
                     rows
             )
+
+        member _.CaseSummary selection =
+            read ()
+            let state = get ()
+
+            let groups =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state selection)
+                |> Seq.map (fun record ->
+                    {
+                        CaseCountGroup.Lifecycle = CaseState.lifecycle record.Snapshot.State
+                        Status = record.Index.Status
+                        Progress = record.Index.Progress
+                        Count = 1L
+                        Claimed = total record.Index.Claimed
+                        Payable = total record.Index.Payable
+                    })
+                |> Seq.toList
+
+            Task.FromResult(CaseWorklistSummary.fromGroups groups |> Result.defaultWith failwith)
 
         member _.HistoryPage
             ({
@@ -203,6 +252,25 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 | _ -> failwith "Invalid history fixture"
 
             Task.FromResult(page limit revision rows)
+
+        member _.AuthorityHistoryPage(query: AuthorityHistoryPageQuery) =
+            read ()
+
+            let rows =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    match entry.Subject with
+                    | EntryTarget.Authority(target, _) ->
+                        (query.TargetActorId |> Option.forall ((=) target))
+                        && (query.BeforeSequence
+                            |> Option.forall (fun before -> entry.Sequence < before))
+                    | _ -> false)
+                |> Seq.sortByDescending _.Sequence
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit (fun entry -> entry.Sequence) rows)
 
         member _.ActorPage
             ({

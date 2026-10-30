@@ -11,6 +11,7 @@ import { navigate } from "../routing/navigation";
 import { AuthorityPanel } from "./AuthorityPanel";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
+import { MissingPage } from "./MissingPage";
 import { OperationEditor } from "./OperationEditor";
 import { OperationLookup } from "./OperationLookup";
 
@@ -145,6 +146,6 @@ export const RoutedContent = ({
     case "authority":
       return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
     case "missing":
-      return <CaseList onSelect={selectCase} onOpen={openCase} />;
+      return <MissingPage />;
   }
 };

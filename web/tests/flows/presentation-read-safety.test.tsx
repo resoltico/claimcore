@@ -1,6 +1,7 @@
-import { caseSummaryInput } from "../support/inputs";
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
+import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { CaseDetail } from "../../src/views/CaseDetail";
@@ -105,7 +106,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
     missing ? "REJECTED" : "SUCCEEDED",
     missing
       ? unavailable
-      : {
+      : caseViewInput({
           caseReference: value,
           revision: 1,
           advice: {
@@ -119,7 +120,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
               caseReference: value,
             },
           },
-        },
+        }),
   );
 };
 const checkDetail = async (value: string, points: string | null, missing: boolean) => {
@@ -149,9 +150,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   }
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
-    const directStatus = view.container.querySelectorAll(
-      'section[aria-labelledby="case-detail-title"] > .case-lifecycle p[role="status"]',
-    );
+    const directStatus = view.container.querySelectorAll(".case-header-state .badge");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(view.container.querySelector(".case-fields")).toBeNull();
@@ -223,3 +222,7 @@ it.each(languages)(
     expect(view.container.querySelectorAll(".character-warning")).toHaveLength(2);
   },
 );
+
+beforeEach(() => {
+  stubWorklistSummary();
+});

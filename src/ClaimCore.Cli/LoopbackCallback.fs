@@ -172,7 +172,7 @@ module internal LoopbackTransport =
         }
 
 /// One IPv4 loopback callback. OAuth state, issuer and PKCE validation belong to OidcClient.
-type internal LoopbackBrowser() =
+type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
     let listener = new TcpListener(IPAddress.Loopback, 0)
     let mutable invoked = 0
     let mutable failure: AccessFailure option = None
@@ -203,6 +203,8 @@ type internal LoopbackBrowser() =
                 return BrowserResult(ResultType = BrowserResultType.HttpError)
         }
 
+    new() = new LoopbackBrowser(LoopbackTransport.launch)
+
     member _.RedirectUri = "http://" + host
     member _.Failure = failure
 
@@ -212,7 +214,7 @@ type internal LoopbackBrowser() =
                 if Interlocked.Exchange(&invoked, 1) <> 0 then
                     return BrowserResult(ResultType = BrowserResultType.UnknownError)
                 else
-                    match LoopbackTransport.launch options.StartUrl with
+                    match launch options.StartUrl with
                     | Ok() -> return! receive cancelled
                     | Error reason ->
                         failure <- Some reason

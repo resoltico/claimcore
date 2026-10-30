@@ -5,7 +5,7 @@ import { type ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { ActorSummary } from "./AuthorityListing";
+import { ActorSummary, type KnownActorGrantCount } from "./AuthorityListing";
 
 const grantPage = (response: ServiceResponse<"authority.grants">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
@@ -16,6 +16,7 @@ type Props = {
   onBack: () => void;
   onDisclosureRefused: (notice?: Notice) => void;
   onActor?: ((actor: GrantPage["actor"]) => void) | undefined;
+  onGrantCount?: ((count: KnownActorGrantCount | null) => void) | undefined;
 };
 const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
   const p = usePresentation();
@@ -41,22 +42,48 @@ const useActorDisclosure = (actor: GrantPage["actor"] | null, onActor: Props["on
     }
   }, [actor, onActor]);
 };
-export const AuthorityGrants = ({ actorId, onBack, onDisclosureRefused, onActor }: Props) => {
-  const p = usePresentation();
-  const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
+const useActorGrants = (actorId: string, onDisclosureRefused: Props["onDisclosureRefused"]) => {
   const input = useCallback(
     (cursor: string | null) => ({ actorId, ...(cursor === null ? {} : { cursor }), limit: 50 }),
     [actorId],
   );
-  const page = useEndpointPage<"authority.grants", GrantPage["items"][number], GrantPage>(
+  return useEndpointPage<"authority.grants", GrantPage["items"][number], GrantPage>(
     "authority.grants",
     input,
     grantPage,
     onDisclosureRefused,
   );
+};
+const useGrantCount = (
+  page: ReturnType<typeof useActorGrants>,
+  onGrantCount: Props["onGrantCount"],
+) => {
+  const actorId = page.page?.actor.actorId ?? null;
+  const count =
+    page.page !== null && !page.loading && page.message === null && page.cursor === null
+      ? page.items.length
+      : null;
+  useEffect(() => {
+    onGrantCount?.(actorId === null || count === null ? null : { actorId, count });
+    return () => {
+      onGrantCount?.(null);
+    };
+  }, [actorId, count, onGrantCount]);
+};
+export const AuthorityGrants = ({
+  actorId,
+  onBack,
+  onDisclosureRefused,
+  onActor,
+  onGrantCount,
+}: Props) => {
+  const p = usePresentation();
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+  const page = useActorGrants(actorId, onDisclosureRefused);
+  useGrantCount(page, onGrantCount);
 
   useActorDisclosure(page.page?.actor ?? null, onActor);
 

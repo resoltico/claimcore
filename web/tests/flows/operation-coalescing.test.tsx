@@ -1,10 +1,11 @@
+import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { fields, response, runtime } from "../support/service-ui.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -15,7 +16,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 const closePreview = () =>
   response("operation.preview", "REVIEWED", {
     review: {

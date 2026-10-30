@@ -10,6 +10,7 @@ type CaseSummaryFacts =
         Claimed: Money
         Payable: Money option
         Progress: CaseProgress
+        IncidentNotificationDate: CalendarDate
     }
 
 type CaseSummary =

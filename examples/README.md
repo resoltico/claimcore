@@ -5,8 +5,9 @@ clear the payment record, void, reinstate and erase. Use a fresh installation an
 [Getting started](../docs/getting-started.md) creates the service, identity provider and protected key ring.
 The CLI uses HTTPS and receives no database credential.
 
-Configure `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`
-and `CLAIMCORE_CLI_AUTH_MODE` as described by `claimcore help`. For automation, supply
+Use the public CLI profile from [getting started](../docs/getting-started.md#optional-cli-setup),
+or configure the connection and authentication settings in [CLI use](../docs/integrating.md#cli-use).
+Environment values override individual profile settings. For automation, supply
 its private client-secret file. For local HTTPS certificates outside system trust, configure
 the explicit CLI service and OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
 An installation `OWNER` grants authority; that role alone does not grant case work.

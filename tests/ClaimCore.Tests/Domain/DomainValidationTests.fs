@@ -74,16 +74,14 @@ let private restorationTests =
                 let text value = JsonValue.String value
 
                 let registration =
-                    JsonValue.Object
+                    Inputs.registrationWith
                         [
-                            "incidentDate", text "2026-08-01"
-                            "incidentNotificationDate", text "2026-08-03"
-                            "incidentCountry", text "LV"
-                            "claimantName", text "Synthetic party"
-                            "insurerName", text "Synthetic insurer"
-                            "claimedAmount", text "1000"
-                            "claimedCurrency", text "EUR"
+                            BusinessField.ClaimantName, "Synthetic party"
+                            BusinessField.InsurerName, "Synthetic insurer"
+                            BusinessField.ClaimedAmount, "1000"
                         ]
+                        Inputs.registration
+                    |> RequestCodecs.registration.Write
 
                 let candidate mask =
                     JsonValue.Object

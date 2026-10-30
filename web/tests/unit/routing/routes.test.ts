@@ -24,6 +24,7 @@ it("reserves the OPEN route while preserving all ordinary deep links", () => {
   expect(parseRoute(new URL("/authority/actor-id", window.location.origin))).toEqual({
     screen: "authority",
     actorId: "actor-id",
+    history: false,
   });
   expect(parseRoute(new URL("/cases/%", window.location.origin))).toEqual({ screen: "missing" });
 });

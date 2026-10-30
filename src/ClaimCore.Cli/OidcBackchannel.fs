@@ -41,7 +41,10 @@ type internal OidcBackchannel
             try
                 do!
                     response.Content.LoadIntoBufferAsync(
-                        (if token then 32768L else 65536L),
+                        (if token then
+                             int64 AccessTokens.MaximumResponseBytes
+                         else
+                             65536L),
                         cancelled
                     )
 

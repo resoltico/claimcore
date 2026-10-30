@@ -18,29 +18,7 @@ open ClaimCore.Cli
 
 let bytes (text: string) = Encoding.UTF8.GetBytes text
 
-let private examples filename endpoint =
-    use document =
-        JsonDocument.Parse(
-            File.ReadAllBytes(
-                Path.Combine(
-                    ClaimCore.TestSupport.RepositoryRoot.find (),
-                    "tests/fixtures",
-                    filename
-                )
-            )
-        )
-
-    document.RootElement.GetProperty("cases").EnumerateArray()
-    |> Seq.filter (fun row ->
-        row.GetProperty("valid").GetBoolean()
-        && row.GetProperty("endpoint").GetString() = endpoint)
-    |> Seq.map (fun row ->
-        row.GetProperty("value").GetRawText()
-        |> bytes
-        |> StrictJson.read Limits.MaximumResponseBytes
-        |> Result.defaultWith (fun problem ->
-            failwithf "Authored transport sample refused: %A" problem))
-    |> Seq.toList
+let private examples = ClaimCore.TestSupport.PositiveExamples.forEndpoint
 
 let samples endpoint =
     examples "wire-response-examples.json" endpoint |> List.map WireWriter.bytes
@@ -117,6 +95,9 @@ let call (input: byte array) invoke =
     use source = new MemoryStream(input)
     use output = new MemoryStream()
     use errors = new MemoryStream()
-    use processor = RemoteFrameProcessor.ForTest(source, output, errors, invoke)
+
+    use processor =
+        RemoteFrameProcessor.ForTest(source, output, errors, invoke, (fun _ -> Task.FromResult()))
+
     let code = processor.Call CancellationToken.None
     code, output.ToArray(), errors.ToArray()

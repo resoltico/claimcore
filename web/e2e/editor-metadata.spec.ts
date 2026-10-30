@@ -5,24 +5,27 @@ import { expect, test } from "@playwright/test";
 import { openCase, reviewDraft, startAct } from "./case-workflow";
 import { expectAccessible, openAuthenticated, progress } from "./session-helpers";
 
-test("prefills metadata fields and confirms dirty act changes before review", async ({ page }) => {
+test("prefills routed metadata and confirms discard before changing acts from the case", async ({
+  page,
+}) => {
   const caseReference = `DESCRIPTORS-${randomUUID()}`;
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await startAct(page, "Amend registration");
   await progress("metadata-amend-editor");
-  const claimant = page.getByLabel("Claimant name");
+  const claimant = page.getByLabel("Claimant name", { exact: true });
   await expect(claimant).toHaveValue("Synthetic claimant");
   await claimant.fill("Synthetic amended claimant");
   await progress("metadata-dirty-change");
-  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("DECIDE");
+  await page.getByRole("button", { name: "Back to case", exact: true }).click();
   const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
   await expectAccessible(page);
   await discard.getByRole("button", { name: "Keep editing" }).click();
   await progress("metadata-kept-editing");
   await expect(claimant).toHaveValue("Synthetic amended claimant");
-  await page.getByRole("combobox", { name: "Case action", exact: true }).selectOption("DECIDE");
-  await discard.getByRole("button", { name: "Discard and change action" }).click();
+  await page.getByRole("button", { name: "Back to case", exact: true }).click();
+  await discard.getByRole("button", { name: "Discard and leave" }).click();
+  await startAct(page, "Record payment decision");
   await progress("metadata-discarded");
   await expect(
     page.locator('[data-field-name="paymentDecisionDate"] input[type="hidden"]'),

@@ -41,6 +41,49 @@ module internal TextAuthorityReply =
         (page.Items |> List.map (grantRow language))
         @ nextLines language page.NextCursor
 
+    let historyPage language (page: AuthorityHistoryPage) =
+        let empty =
+            if page.Entries.IsEmpty then
+                [ label language (CliMessages.key CliMessage.AuthorityHistoryEmpty) ]
+            else
+                []
+
+        empty
+        @ (page.Entries
+           |> List.map (fun entry ->
+               let facts =
+                   match entry.Facts with
+                   | AuthorityHistoryFacts.OwnerProvisioned principal
+                   | AuthorityHistoryFacts.Registered principal ->
+                       let kind, issuer, subject = PrincipalKey.parts principal
+
+                       String.concat
+                           "  "
+                           [
+                               principalKind language kind
+                               issuer
+                               displayed language (Some subject)
+                           ]
+                   | AuthorityHistoryFacts.Granted grant
+                   | AuthorityHistoryFacts.Revoked grant -> grantRow language grant
+                   | AuthorityHistoryFacts.Enabled
+                   | AuthorityHistoryFacts.Disabled -> ""
+
+               String.concat
+                   "  "
+                   [
+                       Sequence.format entry.Sequence
+                       instant entry.RecordedAt
+                       term
+                           language
+                           AuthorityKind.vocabulary
+                           (AuthorityHistoryFacts.kind entry.Facts)
+                       ActorId.format entry.RecordedBy
+                       ActorId.format entry.TargetActorId
+                       facts
+                   ]))
+        @ nextLines language page.NextCursor
+
     let authorityChanges language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled

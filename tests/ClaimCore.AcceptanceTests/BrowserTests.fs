@@ -44,6 +44,11 @@ let private selectedSpecifications =
             "authority-uncertainty.spec.ts"
             "act-lifecycle.spec.ts"
             "localization-correction.spec.ts"
+            "localization-editor.spec.ts"
+            "localization-pseudolocale.spec.ts"
+            "localization-session-history.spec.ts"
+            "narrow-role.spec.ts"
+            "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
             "unicode-parity.spec.ts"
         ]

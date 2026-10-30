@@ -14,14 +14,31 @@ Search finds substrings in the reference, claimant and insurer. It applies Unico
 normalization and invariant lowercase to both stored text and queries. Percent, underscore and backslash
 are literal characters. Matching follows the same rules in the browser, CLI and service.
 
-Live rows show claimant, insurer, claimed amount/currency, any payable amount/currency, payment progress
-and last-change time. Erased rows show reference, revision, erasure state and last-change time. Listing
+Live rows show claimant, insurer, claimed amount/currency, any payable amount/currency,
+notification age and last-change time. The main badge prioritizes erasure, voiding and closure over
+payment progress. Erased rows show reference, erasure state and last-change time. Listing
 requires the same case-read rights as opening a case. Use Load more for another page; each page checks
 current rights and uses a separate snapshot.
 
 The browser keeps selected filters, search and order in the URL. Follow its case links to preserve exact
 references, including values that need URL escaping. The CLI supports the same filters through
 `case list`; [Integrating](integrating.md#worklist-queries-and-summary-rows) covers query and export details.
+
+Assignment comes from case-scoped access grants:
+`claimcore case list --assignment ASSIGNED_TO_ME` selects cases where you hold a valid case-scoped
+case-reading grant. Installation access alone does not make a case assigned. `--order notified`
+orders oldest notification dates first, with erased cases last. Notification date is the current
+registration assertion of this handler's first notification; correcting that fact changes its order.
+
+`claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
+claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
+contribute when selected; erased cases contribute only to lifecycle counts. Totals are exact, with
+no rounding or currency conversion.
+
+The browser starts with My cases when you hold a case-scoped grant and no worklist is selected in the
+URL. Choose Oldest first to order by notification; row age counts whole days to the installation's
+business date. Open a case by activating its row. Matching totals use the same filters and expand from
+one line on a narrow screen. Field groups each have an Explain fields toggle and exact-copy icons.
 
 ## Open a case
 

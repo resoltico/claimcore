@@ -1,3 +1,4 @@
+import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
@@ -91,6 +92,7 @@ it.each(["context", "listing"] as const)(
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await selectEnabled();
     await author("synthetic-first");
+    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
@@ -114,6 +116,7 @@ it.each(["context", "listing"] as const)(
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("GRANT");
     expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
+    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     expect(await screen.findByRole("heading", { name: "Review changes" })).toBeVisible();
     expect(execute).toHaveBeenCalledOnce();
@@ -157,6 +160,7 @@ it.each(["transport", "host", "core"] as const)(
     );
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await author("synthetic-first");
+    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
@@ -192,6 +196,7 @@ it("context reload preserves an uncertain prepared authority request and exact r
     .mockImplementation((prepared) => Promise.resolve(acceptance(prepared)));
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await author("synthetic-pending");
+  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
   fireEvent.click(screen.getByRole("button", { name: "Record changes" }));

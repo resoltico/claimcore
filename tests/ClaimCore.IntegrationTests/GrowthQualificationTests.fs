@@ -60,6 +60,7 @@ let private cardinalityWrites cases keyRing (database: PostgresFixture.Database)
         return
             {|
                 cases = cases
+                workloadFingerprint = GrowthWorkloadPlan.cardinalityFingerprint cases
                 acceptedEntries = Sequence.value position.Sequence
                 verificationMilliseconds = elapsed
                 managedBytesBeforeVerification = baseline
@@ -99,7 +100,7 @@ let private cardinality () =
     task {
         let reports = ResizeArray<_>()
 
-        for cases in [ 1; 100; 1000 ] do
+        for cases in GrowthWorkloadPlan.cardinalityCases do
             let! report = cardinalityProfile cases
             reports.Add report
 
@@ -120,7 +121,11 @@ let private profiles () =
         ]
 
     match Environment.GetEnvironmentVariable("CLAIMCORE_GROWTH_PROFILE") |> Option.ofObj with
-    | None -> required
+    | None ->
+        if GrowthWorkloadPlan.comparison then
+            GrowthWorkloadPlan.comparedWrites
+        else
+            required
     | Some selected ->
         match
             required
@@ -133,7 +138,7 @@ let private profiles () =
 let private workloads selected completed =
     async {
         for writes, writers in selected do
-            let cases, actors = 1000, 99
+            let cases, actors = GrowthWorkloadPlan.writeCases, GrowthWorkloadPlan.writeActors
 
             let! database = PostgresFixture.create () |> Async.AwaitTask
 
@@ -205,8 +210,34 @@ let private qualify () =
                     expected = selected.Length
                     requiredProfiles = 9
                     completedReadProfiles = readCount
-                    requiredReadProfiles = 6
+                    requiredReadProfiles = GrowthWorkloadPlan.readProfileCount
                     completeQualification = selected.Length = 9
+                    kind =
+                        if GrowthWorkloadPlan.comparison then
+                            "comparison"
+                        else
+                            "qualification"
+                    workloadFingerprint =
+                        GrowthWorkloadPlan.fingerprint
+                            {|
+                                writes =
+                                    selected
+                                    |> List.map (fun (writes, writers) ->
+                                        GrowthWorkloadPlan.writeFingerprint
+                                            {
+                                                Writes = writes
+                                                Writers = writers
+                                                Cases = GrowthWorkloadPlan.writeCases
+                                                Actors = GrowthWorkloadPlan.writeActors
+                                            })
+                                readPopulations = GrowthWorkloadPlan.readPopulations
+                                authorityHistory =
+                                    [ None; Some GrowthWorkloadPlan.authorityOwner ]
+                                    |> List.map (GrowthWorkloadPlan.authorityFingerprint 100000)
+                                cardinality =
+                                    GrowthWorkloadPlan.cardinalityCases
+                                    |> List.map GrowthWorkloadPlan.cardinalityFingerprint
+                            |}
                     nativeRun = nativeRun
                 |}
 
@@ -219,7 +250,7 @@ let private qualify () =
                     count <- count + 1
                     state "incomplete")
 
-            if selected.Length = 9 then
+            if selected.Length = 9 || GrowthWorkloadPlan.comparison then
                 do!
                     GrowthReadWorkloads.run (fun environment report ->
                         atomic
@@ -234,8 +265,8 @@ let private qualify () =
 
                 Expect.equal
                     readCount
-                    6
-                    "Every required search/filtered population produced a report"
+                    (GrowthWorkloadPlan.readProfileCount)
+                    "Every required case and authority query population produced a report"
 
             let! resources = cardinality () |> Async.AwaitTask
             atomic "cardinality.json" resources

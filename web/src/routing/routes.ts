@@ -4,7 +4,7 @@ export type Route =
   | { screen: "case"; reference: string }
   | { screen: "caseAct"; reference: string; act: string }
   | { screen: "operations"; operationId: string }
-  | { screen: "authority"; actorId: string }
+  | { screen: "authority"; actorId: string; history: boolean }
   | { screen: "missing" };
 
 const opaque = (value: string): string =>
@@ -67,7 +67,11 @@ export const parseRoute = (location: Pick<Location, "pathname" | "search">): Rou
       return { screen: "operations", operationId: decodeURIComponent(segments[1] ?? "") };
     }
     if (segments[0] === "authority" && segments.length <= 2) {
-      return { screen: "authority", actorId: decodeURIComponent(segments[1] ?? "") };
+      return {
+        screen: "authority",
+        actorId: decodeURIComponent(segments[1] ?? ""),
+        history: new URLSearchParams(location.search).get("tab") === "history",
+      };
     }
   } catch {
     return { screen: "missing" };

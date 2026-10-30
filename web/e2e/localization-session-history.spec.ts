@@ -45,7 +45,7 @@ test("updates visible detail and expanded history immediately with independent f
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
     await expectPreferences(page, { displayLocale: "ar-EG" });
     await expect(history.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText(
-      "١٬٢٠٠٫٥",
+      "١٬٢٠٠٫٥٠",
     );
   }
   expect(requests).toHaveLength(0);

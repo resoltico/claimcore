@@ -39,6 +39,11 @@ module DurableNames =
         function
         | CaseListOrder.Reference -> "REFERENCE"
         | CaseListOrder.Recent -> "RECENT"
+        | CaseListOrder.Notified -> "NOTIFIED"
+
+    let caseAssignment =
+        function
+        | CaseAssignment.AssignedToMe -> "ASSIGNED_TO_ME"
 
     let status =
         function
@@ -138,6 +143,9 @@ module DurableNames =
     let tryStatus token =
         statusEntries
         |> List.tryPick (fun (value, name) -> if name = token then Some value else None)
+
+    let tryLifecycle token =
+        values<Lifecycle>() |> List.tryFind (fun value -> lifecycle value = token)
 
     let tryProgress token =
         values<CaseProgress>() |> List.tryFind (fun value -> progress value = token)

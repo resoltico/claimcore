@@ -16,19 +16,8 @@ let private token = CancellationToken.None
 let private seed actor count =
     task {
         for index in 0 .. count - 1 do
-            let reference = sprintf "READ-GROWTH-%07d" index
-
-            let registration =
-                Inputs.registrationWith
-                    [
-                        BusinessField.ClaimantName,
-                        (if index = count - 1 then
-                             "Target needle"
-                         else
-                             "Growth claimant " + string (index % 100))
-                        BusinessField.InsurerName, "Growth insurer"
-                    ]
-                    Inputs.registration
+            let reference = GrowthWorkloadPlan.readReference index
+            let registration = GrowthWorkloadPlan.readRegistration count index
 
             let! opened =
                 Service.execute
@@ -45,7 +34,7 @@ let private seed actor count =
             accepted opened |> ignore
             let mutable revision = 1L
 
-            if index % 5 = 0 then
+            if index % GrowthWorkloadPlan.decideEvery = 0 then
                 let! decided =
                     Service.execute
                         actor
@@ -61,7 +50,7 @@ let private seed actor count =
                 accepted decided |> ignore
                 revision <- revision + 1L
 
-            if index % 2 = 0 then
+            if index % GrowthWorkloadPlan.closeEvery = 0 then
                 let! closed =
                     Service.execute
                         actor
@@ -83,7 +72,11 @@ let private read actor filter =
             Service.list
                 actor
                 {
-                    Page = { AfterCursor = None; Limit = 50 }
+                    Page =
+                        {
+                            AfterCursor = None
+                            Limit = GrowthWorkloadPlan.readLimit
+                        }
                     Filter = filter
                 }
                 token
@@ -93,19 +86,19 @@ let private read actor filter =
         | _ -> return failtestf "Read growth workload failed: %A" result
     }
 
-let private measure actor cases (name, filter, expectedItems) =
+let private measure cases (name, order, expectedItems, fingerprint) (limit: Nullable<int>) read =
     task {
-        for _ in 1..5 do
-            let! found = read actor filter
+        for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
+            let! found = read ()
             Expect.equal found expectedItems "Warmup observes the independent seeded population"
 
         let durations = ResizeArray<double>()
         let mutable returned = 0
         let elapsed = Stopwatch.StartNew()
 
-        for _ in 1..100 do
+        for _ in 1 .. GrowthWorkloadPlan.measuredRequests do
             let watch = Stopwatch.StartNew()
-            let! found = read actor filter
+            let! found = read ()
             durations.Add watch.Elapsed.TotalMilliseconds
 
             Expect.equal
@@ -122,9 +115,9 @@ let private measure actor cases (name, filter, expectedItems) =
                 name = name
                 cases = cases
                 requests = latencies.Length
-                warmupRequests = 5
-                order = CaseListOrder.token filter.Order
-                limit = 50
+                warmupRequests = GrowthWorkloadPlan.warmupRequests
+                order = order
+                limit = limit
                 expectedItems = expectedItems
                 returnedItems = returned
                 seconds = elapsed.Elapsed.TotalSeconds
@@ -132,7 +125,103 @@ let private measure actor cases (name, filter, expectedItems) =
                 p95Milliseconds = latencies[int (float (latencies.Length - 1) * 0.95)]
                 p99Milliseconds = latencies[int (float (latencies.Length - 1) * 0.99)]
                 maximumMilliseconds = Array.last latencies
+                workloadFingerprint = fingerprint
             |}
+    }
+
+let private authorityProfiles (database: PostgresFixture.Database) actor cases =
+    task {
+        for index in 0 .. GrowthWorkloadPlan.authorityEntries - 1 do
+            let! reply =
+                grant
+                    actor
+                    (id (GrowthWorkloadPlan.authorityOperationStart + index))
+                    database.Fixture.Owner
+                    {
+                        Role = GrowthWorkloadPlan.authorityRole
+                        Scope = GrantTarget.Installation
+                    }
+                    (index % 2 = 0)
+
+            acceptedAuthority reply
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! counts =
+            ClaimCore.Postgres.DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='AUTHORITY'"
+                [||]
+                token
+
+        Expect.equal
+            (ClaimCore.Postgres.DatabaseSession.value<int64> 0 counts.Head)
+            (int64 (GrowthWorkloadPlan.authorityEntries + 3))
+            "History qualification contains the declared actual authority entry population"
+
+        let reports = ResizeArray<_>()
+
+        for name, target in
+            [
+                "authority-history", None
+                "authority-history-actor", Some GrowthWorkloadPlan.authorityOwner
+            ] do
+            let query =
+                {
+                    TargetActorId = target |> Option.map ActorId.value
+                    AfterCursor = None
+                    Limit = GrowthWorkloadPlan.readLimit
+                }
+
+            let read () =
+                task {
+                    let! result = Service.authorityHistory actor query token
+
+                    match result with
+                    | Outcome.Succeeded page -> return page.Entries.Length
+                    | _ -> return failtestf "Authority history growth failed: %A" result
+                }
+
+            let! report =
+                measure
+                    cases
+                    (name,
+                     "SEQUENCE",
+                     GrowthWorkloadPlan.readLimit,
+                     GrowthWorkloadPlan.authorityFingerprint cases target)
+                    (Nullable GrowthWorkloadPlan.readLimit)
+                    read
+
+            reports.Add report
+
+        return reports.ToArray()
+    }
+
+let private readSummary actor (cases: int) =
+    task {
+        let! result = Service.caseSummary actor CaseListFilter.empty<string> token
+
+        match result with
+        | Outcome.Succeeded summary ->
+            Expect.equal summary.Counts.Total (int64 cases) "Summary counts the actual seeded cases"
+
+            let totals (values: CurrencyTotal list) =
+                values
+                |> List.map (fun value ->
+                    Currency.format value.Currency, DecimalTotal.format value.Amount)
+
+            Expect.equal
+                (totals summary.Claimed)
+                [ "EUR", string (bigint cases * 1000I) ]
+                "Every claimed amount contributes exactly once"
+
+            Expect.equal
+                (totals summary.Payable)
+                [ "EUR", string (bigint ((cases + 4) / 5) * 750I) ]
+                "Only the independently seeded decisions contribute payable amounts"
+
+            return int summary.Counts.Total
+        | _ -> return failtestf "Summary growth workload failed: %A" result
     }
 
 let profile cases =
@@ -163,13 +252,42 @@ let profile cases =
                         None
                         CaseListOrder.Recent,
                     min 50 ((cases + 9) / 10)
+                    "notified",
+                    { CaseListFilter.empty<string> with
+                        Order = CaseListOrder.Notified
+                    },
+                    min 50 cases
                 ]
 
             let reports = ResizeArray<_>()
 
-            for workload in workloads do
-                let! report = measure actor cases workload
+            for name, filter, expectedItems in workloads do
+                let! report =
+                    measure
+                        cases
+                        (name,
+                         CaseListOrder.token filter.Order,
+                         expectedItems,
+                         GrowthWorkloadPlan.readFingerprint cases filter)
+                        (Nullable GrowthWorkloadPlan.readLimit)
+                        (fun () -> read actor filter)
+
                 reports.Add report
+
+            let! summary =
+                measure
+                    cases
+                    ("summary", "GROUPED", cases, GrowthWorkloadPlan.summaryFingerprint cases)
+                    (Nullable())
+                    (fun () -> readSummary actor cases)
+
+            reports.Add summary
+
+            // Seed authority events only after the existing query measurements; their declared
+            // inputs and fingerprints remain unchanged for historical comparisons.
+            if cases = 100000 then
+                let! history = authorityProfiles database actor cases
+                reports.AddRange history
 
             return
                 {|
@@ -183,7 +301,7 @@ let profile cases =
 
 let run completed =
     async {
-        for cases in [ 1000; 10000; 100000 ] do
+        for cases in GrowthWorkloadPlan.readPopulations do
             let! report = profile cases |> Async.AwaitTask
 
             for workload in report.workloads do

@@ -85,7 +85,10 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
     }),
   );
   const amount = page.locator('.field-row[data-field-name="claimedAmount"]');
-  await amount.locator("details > summary").click();
+  const group = page.locator(".case-fact-card").filter({ has: amount });
+  await group.locator(".explain-fields").click();
+  await expect(group.locator(".explain-fields")).toHaveAttribute("aria-pressed", "true");
+  await amount.getByRole("button").focus();
   await amount.getByRole("button").click();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
   const revision = await page.locator(".success-toast").textContent();
@@ -93,5 +96,5 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await expect(page.locator(".success-toast")).toContainText("Open a case recorded at revision ١.");
   expect(revision).not.toBeNull();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
-  await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText("١");
+  await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText("١٫٠٠");
 });

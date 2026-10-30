@@ -23,13 +23,18 @@ export const BusinessValue = ({
   value,
   field,
   context,
+  currency,
 }: {
   value: string | null;
   field: FieldCatalogEntry;
   context?: "ui.before" | "ui.after";
+  currency?: string;
 }) => {
   const p = usePresentation();
-  const display = p.fieldValue(value, field);
+  const display =
+    value !== null && field.scalar.kind === "AMOUNT" && currency !== undefined
+      ? p.amount(value, currency)
+      : p.fieldValue(value, field);
   return (
     <span>
       {context === undefined ? (

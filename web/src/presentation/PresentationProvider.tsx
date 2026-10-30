@@ -26,7 +26,6 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = presenter.direction;
-    document.title = "ClaimCore";
     if (preferences.theme === "SYSTEM") {
       delete document.documentElement.dataset["theme"];
     } else {

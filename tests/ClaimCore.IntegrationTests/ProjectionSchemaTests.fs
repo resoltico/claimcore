@@ -22,6 +22,11 @@ let private expected =
             "progress"
             "changed_at"
             "search_text"
+            "notified_on"
+            "claimed_amount"
+            "claimed_currency"
+            "payable_amount"
+            "payable_currency"
         ]
 
 let private columns (source: NpgsqlDataSource) =

@@ -151,7 +151,9 @@ let progressSets =
         [ CaseProgress.Undecided; CaseProgress.Decided; CaseProgress.Paid ]
     ]
 
-let orders = [ CaseListOrder.Reference; CaseListOrder.Recent ]
+let orders =
+    [ CaseListOrder.Reference; CaseListOrder.Recent; CaseListOrder.Notified ]
+
 let limits = [ 1; 2; 3; 5; 50 ]
 
 let private recordedAt (database: PostgresFixture.Database) operation =
@@ -353,6 +355,16 @@ let expected (filter: CaseListFilter<string>) =
             |> List.sortWith (fun a b ->
                 StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
         | CaseListOrder.Recent -> recent
+        | CaseListOrder.Notified ->
+            cases
+            |> List.sortWith (fun a b ->
+                let erased =
+                    compare (a.Lifecycle = Lifecycle.Erased) (b.Lifecycle = Lifecycle.Erased)
+
+                if erased <> 0 then
+                    erased
+                else
+                    StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
 
     ordered
     |> List.filter (fun row ->

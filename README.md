@@ -34,7 +34,6 @@ The browser offers English, Latvian and Arabic, with right-to-left layout and se
 The [synthetic examples](examples/README.md) demonstrate equivalent human commands and JSON calls.
 Operators manage identity, access and data custody; start with the operating guide before using real data.
 
-ClaimCore is pre-1.0 software supplied for evaluation, without production qualification or a support SLA.
 See [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work. Releases distribute source through
 [GitHub Releases](https://github.com/resoltico/claimcore/releases).

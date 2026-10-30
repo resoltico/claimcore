@@ -106,6 +106,11 @@ CREATE TABLE claimcore.ledger (
     CONSTRAINT ledger_case_revision_unique UNIQUE (subject_id, case_revision)
 );
 
+CREATE INDEX ledger_authority_sequence ON claimcore.ledger (sequence DESC)
+    WHERE subject_kind = 'AUTHORITY';
+CREATE INDEX ledger_authority_actor ON claimcore.ledger (subject_id, sequence DESC)
+    WHERE subject_kind = 'AUTHORITY';
+
 CREATE TABLE claimcore.ledger_head (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     sequence bigint NOT NULL CHECK (sequence BETWEEN 0 AND 9007199254740991),
@@ -256,6 +261,11 @@ CREATE TABLE claimcore.cases (
                        AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
     ),
     search_text text CHECK (search_text IS NULL OR octet_length(search_text) BETWEEN 1 AND 1048576),
+    notified_on date CHECK (notified_on BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    claimed_amount numeric(22,4) CHECK (claimed_amount >= 0),
+    claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
+    payable_amount numeric(22,4) CHECK (payable_amount >= 0),
+    payable_currency text CHECK (payable_currency ~ '^[A-Z]{3}$'),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
     CONSTRAINT reference_shape CHECK (case_reference ~ '^[!-~]{1,80}$'),
@@ -264,7 +274,12 @@ CREATE TABLE claimcore.cases (
         AND ((state = 'ERASED') = (status IS NULL))
         AND ((state = 'ERASED') = (progress IS NULL))
         AND ((state = 'ERASED') = (search_text IS NULL))
+        AND ((state = 'ERASED') = (notified_on IS NULL))
+        AND ((state = 'ERASED') = (claimed_amount IS NULL))
+        AND ((state = 'ERASED') = (claimed_currency IS NULL))
+        AND (state <> 'ERASED' OR payable_amount IS NULL)
     ),
+    CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
@@ -273,6 +288,7 @@ CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference
 
 CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
+CREATE INDEX cases_notified ON claimcore.cases (notified_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
 
 CREATE TABLE claimcore.actors (
     -- The operation ID of the authority entry that registered the actor.

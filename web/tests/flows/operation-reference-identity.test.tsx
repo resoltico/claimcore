@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -7,7 +8,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -18,7 +19,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 const prepared = () =>
   response("operation.preview", "REVIEWED", {
     review: {

@@ -93,9 +93,10 @@ module Vocabulary =
                 (FSharpValue.MakeUnion(case, [||], representation) |> nonNull) :?> 'T)
             |> Array.toList
 
-        define name values (fun value ->
-            let case, _ = FSharpValue.GetUnionFields(value, typeof<'T>, representation)
-            formatToken casing prefix case.Name)
+        let readTag = FSharpValue.PreComputeUnionTagReader(typeof<'T>, representation)
+        let tokens = cases |> Array.map (fun case -> formatToken casing prefix case.Name)
+
+        define name values (fun value -> tokens[readTag (box value)])
 
     /// Compose already-declared sets, rejecting collisions in their shared token namespace.
     let ofEntries name (entries: ('T * string) list) : Vocabulary<'T> =

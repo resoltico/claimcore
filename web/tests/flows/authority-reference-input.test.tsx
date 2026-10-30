@@ -1,3 +1,4 @@
+import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
 import { catalogs as coreCatalogs } from "@contracts/messages";
 import { within } from "@testing-library/react";
@@ -151,6 +152,12 @@ const expectGrantReferencePath = (active: boolean) => {
     ),
   ).toBe("act.scope.caseReference");
 };
+const referencePreferences = (language: string) => {
+  localStorage.setItem(
+    preferenceKey,
+    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+  );
+};
 it.each(
   locales.flatMap((locale) =>
     [true, false].map((active) => ({
@@ -164,15 +171,7 @@ it.each(
   async ({ locale, active }) => {
     const user = userEvent.setup();
     const preview = rejectedPreview();
-    localStorage.setItem(
-      preferenceKey,
-      JSON.stringify({
-        version: 2,
-        language: locale.language,
-        displayLocale: "en-GB",
-        theme: "SYSTEM" as const,
-      }),
-    );
+    referencePreferences(locale.language);
     expectGrantReferencePath(active);
     render(<AuthorityForm kind={active ? "GRANT" : "REVOKE"} />);
     expect(
@@ -183,6 +182,7 @@ it.each(
     const reference = await authorCaseGrant(user, locale);
     expect(reference).toHaveAttribute("name", "act.scope.caseReference");
     expectReferenceDescription(reference, locale, false);
+    chooseRoleForReview();
     await user.click(
       screen.getByRole("button", {
         name: locale.ui["label.reviewTitle"],

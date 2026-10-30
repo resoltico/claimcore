@@ -71,7 +71,30 @@ let private scalarAdmission () =
     let id = "10000000-0000-4000-8000-000000000001"
 
     let request =
-        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"\",\"expectedRevision\":0,\"act\":{{\"kind\":\"OPEN\",\"values\":{{\"incidentDate\":\"not-a-date\",\"incidentNotificationDate\":\"\",\"incidentCountry\":\"lowercase\",\"claimantName\":\"\",\"insurerName\":\"\",\"claimedAmount\":\"not-money\",\"claimedCurrency\":\"eur\"}}}}}}"
+        RequestCodecs.operationInput.Write(
+            OperationInput.Case
+                {
+                    OperationId = Guid.Parse id
+                    CaseReference = ""
+                    ExpectedRevision = 0L
+                    Act =
+                        AuthoredCaseAct.Open(
+                            Inputs.registrationWith
+                                [
+                                    BusinessField.IncidentDate, "not-a-date"
+                                    BusinessField.IncidentNotificationDate, ""
+                                    BusinessField.IncidentCountry, "lowercase"
+                                    BusinessField.ClaimantName, ""
+                                    BusinessField.InsurerName, ""
+                                    BusinessField.ClaimedAmount, "not-money"
+                                    BusinessField.ClaimedCurrency, "eur"
+                                ]
+                                Inputs.registration
+                        )
+                }
+        )
+        |> WireWriter.bytes
+        |> Encoding.UTF8.GetString
 
     Expect.isOk
         (admit (endpoint "operation.execute") request)

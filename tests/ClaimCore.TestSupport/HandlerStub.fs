@@ -24,49 +24,30 @@ let position: LedgerPosition =
              |> EntryHash.ofBytes
              |> Option.get)
     }
-// Independently authored valid OPEN exercises dispatch as well as shape.
+
+let private registration =
+    Inputs.registrationWith
+        [
+            BusinessField.ClaimantName, "Synthetic claimant"
+            BusinessField.InsurerName, "Synthetic insurer"
+            BusinessField.ClaimedAmount, "1.00"
+        ]
+        Inputs.registration
+
+let private request reference =
+    {
+        OperationId = operationId
+        CaseReference = reference
+        ExpectedRevision = 0L
+        Act = AuthoredCaseAct.Open registration
+    }
+
 let commandInput =
-    System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
-        {|
-            kind = "CASE"
-            operationId = operationId.ToString("D")
-            caseReference = "WEB-001"
-            expectedRevision = 0L
-            act =
-                {|
-                    kind = "OPEN"
-                    values =
-                        {|
-                            incidentDate = "2026-08-01"
-                            incidentNotificationDate = "2026-08-03"
-                            incidentCountry = "LV"
-                            claimantName = "Synthetic claimant"
-                            insurerName = "Synthetic insurer"
-                            claimedAmount = "1.00"
-                            claimedCurrency = "EUR"
-                        |}
-                |}
-        |}
+    RequestCodecs.operationInput.Write(OperationInput.Case(request "WEB-001"))
+    |> ClaimCore.Json.WireWriter.bytes
 
 let view reference =
-    let request =
-        {
-            OperationId = operationId
-            CaseReference = reference
-            ExpectedRevision = 0L
-            Act =
-                (AuthoredCaseAct.Open(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [
-                            BusinessField.ClaimantName, ("Synthetic claimant")
-                            BusinessField.InsurerName, ("Synthetic insurer")
-                            BusinessField.ClaimedAmount, ("1.00")
-                        ]
-                        (Inputs.registration)
-                ))
-        }
-
-    CaseFixtures.decide (DateOnly(2026, 10, 13)) request None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) (request reference) None
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
@@ -99,18 +80,6 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
                 }
     }
 
-let description =
-    {
-        Runtime =
-            {
-                ProductVersion = BuildIdentity.current.Version
-                EffectiveBusinessDate = DateOnly(2026, 10, 13)
-                TimeZoneId = "Etc/UTC"
-            }
-        View = [ View.Cases; View.Authority; View.Operations ]
-        Capability = Capability.all
-        Offers = []
-    }
 
 type Stub() =
     let calls = ResizeArray<string>()
@@ -161,9 +130,6 @@ type Stub() =
 
     member this.Handlers =
         function
-        | (ActorEndpoint.Query QueryEndpoint.Context) ->
-            Route.bind Api.context (fun _ () _ ->
-                this.Invoke "context" (Outcome.Succeeded description))
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             Route.bind Api.operationPreview (fun _ input _ ->
                 let outcome =
@@ -201,55 +167,15 @@ type Stub() =
                                 Outcome = outcome
                             }
                 })
-        | (ActorEndpoint.Query QueryEndpoint.Resolve) ->
-            Route.bind Api.operationResolve (fun _ _ _ ->
-                this.Invoke "operation.resolve" (Outcome.Succeeded Resolved.NotAccepted))
-        | (ActorEndpoint.Query QueryEndpoint.CaseGet) ->
-            Route.bind Api.caseGet (fun _ request _ ->
-                this.Invoke
-                    "case.get"
-                    (Outcome.Succeeded
-                        {
-                            Snapshot = view request.CaseReference
-                            Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
-                        }))
-        | (ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            Route.bind Api.caseList (fun _ _ _ ->
-                this.Invoke
-                    "case.list"
-                    (Outcome.Succeeded
-                        {
-                            Items = []
-                            NextCursor = None
-                            Offers = []
-                        }))
-        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
-            Route.bind Api.caseHistory (fun _ _ _ ->
-                this.Invoke "case.history" (Outcome.Succeeded { Entries = []; NextCursor = None }))
-        | (ActorEndpoint.Query QueryEndpoint.Observe) ->
-            Route.bind Api.operationObserve (fun _ request _ ->
-                this.Invoke
-                    "operation.observe"
-                    (Outcome.Succeeded(receipt request.OperationId "WEB-001")))
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            Route.bind Api.authorityGrants (fun _ request _ ->
-                let principal =
-                    PrincipalKey.human "https://identity.example/" "synthetic-target"
-                    |> Result.defaultWith (string >> failwith)
+        | ActorEndpoint.Query query ->
+            let definition =
+                Api.definitions
+                |> List.find (fun endpoint ->
+                    endpoint.Id = EndpointId.Actor(ActorEndpoint.Query query))
 
-                this.Invoke
-                    "authority.grants"
-                    (Outcome.Succeeded
-                        {
-                            Actor =
-                                {
-                                    ActorId = CaseFixtures.actorId request.ActorId
-                                    Principal = principal
-                                    Enabled = false
-                                }
-                            Items = []
-                            NextCursor = None
-                        }))
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            Route.bind Api.authorityList (fun _ _ _ ->
-                this.Invoke "authority.list" (Outcome.Succeeded { Items = []; NextCursor = None }))
+            definition.Accept
+                { new IEndpointVisitor<ClaimCore.Web.Route> with
+                    member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
+                        let reply = ResponseExamples.defaultReply endpoint
+                        Route.bind endpoint (fun _ _ _ -> this.Invoke endpoint.Token reply)
+                }

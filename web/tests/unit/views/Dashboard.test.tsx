@@ -1,3 +1,5 @@
+import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
+import { actorContextInput } from "../../support/inputs";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { wireReply } from "../../support/contract-corpus.fixtures";
 import { installationOffers } from "../../support/installation-advice.fixtures";
@@ -60,14 +62,14 @@ it("replaces an unavailable initial case route with the first advertised workspa
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: {
+        data: actorContextInput({
           productVersion: "0.10.0",
           businessDate: "2026-09-09",
           timeZone: "Etc/UTC",
           capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
           views: ["AUTHORITY", "OPERATIONS"],
           offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-        },
+        }),
       },
     },
   });
@@ -81,4 +83,8 @@ it("replaces an unavailable initial case route with the first advertised workspa
   expect(window.location.pathname).toBe("/authority");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

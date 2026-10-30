@@ -33,6 +33,10 @@ let dotnet
 
     ClaimCore.TestSupport.CliProcessEnvironment.clearInherited start
 
+    ClaimCore.TestSupport.CliProcessEnvironment.isolateProfile
+        start
+        (System.IO.Path.GetDirectoryName dll |> nonNull)
+
     for argument in arguments do
         start.ArgumentList.Add(argument)
 

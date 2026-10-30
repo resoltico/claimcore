@@ -26,6 +26,15 @@ const fieldValue = (current: CurrentCase | null, path: ReadonlyArray<string> | n
   const value = path === null || current === null ? undefined : atPath(current.state.fields, path);
   return typeof value === "string" ? value : "";
 };
+const inputDefault = (input: CatalogInput) => {
+  if (input.kind.kind === "CHOICE" && input.kind.vocabulary === "role") {
+    return "";
+  }
+  if (input.default === null) {
+    return null;
+  }
+  return typeof input.default === "number" ? String(input.default) : input.default;
+};
 const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
   if (input.source === "OPERATION_IDENTITY") {
     return id;
@@ -33,8 +42,9 @@ const initialValue = (input: CatalogInput, current: CurrentCase | null, id: stri
   if (input.source === "EXPECTED_REVISION") {
     return String(current?.revision ?? 0);
   }
-  if (input.default !== null) {
-    return typeof input.default === "number" ? String(input.default) : input.default;
+  const preset = inputDefault(input);
+  if (preset !== null) {
+    return preset;
   }
   switch (input.kind.kind) {
     case "BOOLEAN":

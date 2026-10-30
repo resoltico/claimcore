@@ -29,47 +29,46 @@ module private RemoteTokenRequest =
                     | None -> return Error AccessFailure.OidcMetadataInvalid
                     | Some address ->
                         return!
-                            OAuthTokenClient.acquire
-                                client
-                                (Uri address)
-                                configuration.ClientId
-                                secret
-                                cancelled
+                            task {
+                                let endpoint = Uri address
+
+                                let! result =
+                                    OAuthTokenClient.acquire
+                                        client
+                                        endpoint
+                                        configuration.ClientId
+                                        secret
+                                        cancelled
+
+                                return
+                                    result
+                                    |> Result.map (fun access ->
+                                        AuthorizationGrant(access, None, endpoint))
+                            }
             | _ -> return Error AccessFailure.OidcGrantInvalid
         }
 
-/// Tokens remain process-local and are reacquired before expiry. No refresh token is persisted.
+/// Access and refresh tokens remain process-local and are discarded by the shell idle lock.
 type RemoteAccessSession
     private (configuration: RemoteConfiguration, oidcTrust: RemoteTls, serviceTrust: RemoteTls) =
     let serviceClient = new HttpClient(serviceTrust.Handler, false)
-    let gate = new SemaphoreSlim(1, 1)
-    let mutable current: AccessToken option = None
 
-    do serviceClient.Timeout <- TimeSpan.FromSeconds(20.)
+    let credentials =
+        new MemoryTokenSession(
+            RemoteTokenRequest.acquire configuration oidcTrust.Handler,
+            OAuthRefresh.run TimeProvider.System oidcTrust.Handler configuration.ClientId
+        )
+
+    do serviceClient.Timeout <- TimeSpan.FromSeconds 20.
 
     member _.Configuration = configuration
     member _.Client = serviceClient
-
-    member _.Token(cancelled: CancellationToken) =
-        task {
-            do! gate.WaitAsync(cancelled)
-
-            try
-                match current with
-                | Some token when token.CanReuse -> return Ok token
-                | _ ->
-                    match! RemoteTokenRequest.acquire configuration oidcTrust.Handler cancelled with
-                    | Error reason -> return Error reason
-                    | Ok token ->
-                        current <- Some token
-                        return Ok token
-            finally
-                gate.Release() |> ignore
-        }
+    member _.Token(cancelled: CancellationToken) = credentials.Token cancelled
+    member internal _.DiscardTokens(cancelled: CancellationToken) = credentials.Discard cancelled
 
     interface IDisposable with
         member _.Dispose() =
-            gate.Dispose()
+            (credentials :> IDisposable).Dispose()
             serviceClient.Dispose()
             (oidcTrust :> IDisposable).Dispose()
             (serviceTrust :> IDisposable).Dispose()

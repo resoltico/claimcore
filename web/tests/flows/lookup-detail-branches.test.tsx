@@ -1,3 +1,5 @@
+import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
+import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -44,18 +46,22 @@ it("does not request history or acts for a missing case", async () => {
 it("keeps a failed history page request-local without erasing current case data", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("case.get", "SUCCEEDED", {
-      caseReference: fields.caseReference,
-      revision: 1,
-      advice: {
-        ...caseAdvice([]),
-        history: ["SUMMARY", "FULL"],
-      },
-      state: {
-        kind: "ACTIVE",
-        fields,
-      },
-    }),
+    response(
+      "case.get",
+      "SUCCEEDED",
+      caseViewInput({
+        caseReference: fields.caseReference,
+        revision: 1,
+        advice: {
+          ...caseAdvice([]),
+          history: ["SUMMARY", "FULL"],
+        },
+        state: {
+          kind: "ACTIVE",
+          fields,
+        },
+      }),
+    ),
   );
   fetch.mockResolvedValueOnce(
     new Response("invalid", {
@@ -77,18 +83,22 @@ it("keeps a failed history page request-local without erasing current case data"
   expect(await screen.findByRole("alert")).toBeVisible();
 });
 const readableCurrent = () =>
-  response("case.get", "SUCCEEDED", {
-    caseReference: fields.caseReference,
-    revision: 1,
-    advice: {
-      ...caseAdvice([]),
-      history: ["SUMMARY", "FULL"],
-    },
-    state: {
-      kind: "ACTIVE",
-      fields,
-    },
-  });
+  response(
+    "case.get",
+    "SUCCEEDED",
+    caseViewInput({
+      caseReference: fields.caseReference,
+      revision: 1,
+      advice: {
+        ...caseAdvice([]),
+        history: ["SUMMARY", "FULL"],
+      },
+      state: {
+        kind: "ACTIVE",
+        fields,
+      },
+    }),
+  );
 it("shows a typed unavailable history refusal after revalidating readable current fields", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   let release: ((value: Response) => void) | undefined;
@@ -113,7 +123,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   await waitFor(() => {
     expect(
       screen.queryByRole("region", {
-        name: "current case",
+        name: "Current case",
       }),
     ).toBeNull();
   });
@@ -123,7 +133,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   });
   expect(
     await screen.findByRole("region", {
-      name: "current case",
+      name: "Current case",
     }),
   ).toBeVisible();
   expect(
@@ -216,11 +226,15 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   const user = userEvent.setup();
   render(<CaseList onSelect={selected} onOpen={vi.fn()} />);
   const find = screen.getByRole("button", {
-    name: "Find case",
+    name: "Open by exact reference",
   });
   expect(find).toBeDisabled();
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith(" REF ");
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+});
+
+beforeEach(() => {
+  stubWorklistSummary();
 });

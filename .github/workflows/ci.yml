@@ -12,6 +12,10 @@ on:
         description: Run the nine-profile growth qualification
         type: boolean
         default: false
+      comparison_ref:
+        description: Optional commit or ref for a full same-host growth comparison
+        type: string
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -112,7 +116,7 @@ jobs:
             --volume "$PWD:/workspace" --workdir /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0.403-alpine3.24@sha256:cc02b814237a76c4735fb6eeee87181597b5e56f2ce458a435e527674d91f4d7 \
             sh -euc '
-              apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1
+              apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1 python3=3.14.10-r1
               test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"
               git config --global --add safe.directory /workspace
               bash eng/verify.sh unit
@@ -221,6 +225,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - name: Install isolated NSS profile test utility
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools
       - name: Published service and clients
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
@@ -249,6 +257,44 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
               summary.write(message + "\n")
           PYTHON
+
+  comparison:
+    name: Manual same-host growth comparison
+    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+        with:
+          node: "false"
+      - name: Compare complete paired workloads
+        env:
+          COMPARISON_REF: ${{ inputs.comparison_ref }}
+          CLAIMCORE_TEST_REPORT_DIRECTORY: ${{ runner.temp }}/claimcore-comparison
+        run: |
+          set -euo pipefail
+          reference="$(git rev-parse --verify --end-of-options "${COMPARISON_REF}^{commit}")"
+          bash eng/verify.sh growth-compare "$reference"
+      - name: Retain comparison and raw workload reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: growth-comparison
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/claimcore-comparison/**/comparison.json
+            ${{ runner.temp }}/claimcore-comparison/**/comparison.md
+            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth/*.json
+            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/workload-*.json
+            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/read-workload-*.json
+            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/cardinality.json
+            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/run.json
+            ${{ runner.temp }}/claimcore-comparison/**/*-harness.patch
 
   gate:
     name: Gate

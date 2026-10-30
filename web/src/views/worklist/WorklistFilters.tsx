@@ -93,7 +93,10 @@ const OrderControl = ({ query, onChange }: Props) => {
         value={query.order ?? "REFERENCE"}
         onChange={(event) => {
           const { view: _view, ...manual } = query;
-          onChange({ ...manual, order: event.target.value === "RECENT" ? "RECENT" : "REFERENCE" });
+          onChange({
+            ...manual,
+            order: isTerm("caseOrder", event.target.value) ? event.target.value : "REFERENCE",
+          });
         }}
       >
         {options.map((order) =>

@@ -1,6 +1,7 @@
 import type { CaseListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 export const savedViews = [
+  "mine",
   "open-undecided",
   "decided-unpaid",
   "recent",
@@ -14,6 +15,8 @@ export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit"> & {
 };
 export const viewQuery = (view: SavedView): WorklistQuery => {
   switch (view) {
+    case "mine":
+      return { view, assignment: "ASSIGNED_TO_ME" };
     case "open-undecided":
       return { view, lifecycle: ["ACTIVE"], status: ["OPENED"], progress: ["UNDECIDED"] };
     case "decided-unpaid":
@@ -45,7 +48,8 @@ export const parseWorklistQuery = (query: string): WorklistQuery => {
     ...(status.length ? { status } : {}),
     ...(progress.length ? { progress } : {}),
     ...(text === "" ? {} : { text }),
-    ...(order === "RECENT" ? { order } : {}),
+    ...(order === "RECENT" || order === "NOTIFIED" ? { order } : {}),
+    ...(params.get("assignment") === "ASSIGNED_TO_ME" ? { assignment: "ASSIGNED_TO_ME" } : {}),
   };
 };
 export const worklistPath = (query: WorklistQuery): string => {
@@ -61,8 +65,11 @@ export const worklistPath = (query: WorklistQuery): string => {
   if (query.text !== undefined && query.text !== "") {
     params.set("q", query.text);
   }
-  if (query.order === "RECENT") {
+  if (query.order === "RECENT" || query.order === "NOTIFIED") {
     params.set("order", query.order);
+  }
+  if (query.assignment !== undefined && query.view !== "mine") {
+    params.set("assignment", query.assignment);
   }
   const suffix = params.toString();
   return suffix === "" ? "/cases" : `/cases?${suffix}`;

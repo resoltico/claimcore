@@ -1,6 +1,7 @@
 import type { Presentation } from "../../presentation/context";
 import type { SavedView } from "../../routing/worklistQuery";
 const viewLabels = {
+  mine: "ui.viewMine",
   "open-undecided": "ui.viewOpenUndecided",
   "decided-unpaid": "ui.viewDecidedUnpaid",
 
