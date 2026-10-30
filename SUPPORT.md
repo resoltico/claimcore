@@ -1,8 +1,5 @@
 # Support
 
-ClaimCore is pre-1.0 software with no support SLA. Releases distribute source, without installable application
-packages. Include the source revision when asking a question or reporting a problem.
-
 - Start with [Getting started](docs/getting-started.md) for local evaluation, or use the
   [documentation map](docs/README.md) to find the guide for your task.
 - Report non-sensitive defects through the repository's bug form, using a synthetic reproduction.
