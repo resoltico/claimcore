@@ -12,11 +12,14 @@ type internal ShellLine =
     | End
 
 module internal ShellKeys =
-    let isEndOfInput isEmpty (key: ConsoleKeyInfo) =
+    let isEndOfInput isUnix isEmpty (key: ConsoleKeyInfo) =
+        let control =
+            (key.Modifiers &&& ConsoleModifiers.Control) <> enum<ConsoleModifiers> 0
+
         isEmpty
         && (key.KeyChar = '\u0004'
-            || (key.Key = ConsoleKey.D
-                && (key.Modifiers &&& ConsoleModifiers.Control) <> enum<ConsoleModifiers> 0))
+            || (key.Key = ConsoleKey.D && control)
+            || (isUnix && key.Key = ConsoleKey.D2 && key.KeyChar = '\u0000' && control))
 
 /// One input worker owns ReadKey throughout the shell, including a cancelled or idle prompt.
 type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
@@ -102,7 +105,7 @@ type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
         | ConsoleKey.Tab -> append '\t'
         | ConsoleKey.UpArrow when remember -> recall -1
         | ConsoleKey.DownArrow when remember -> recall 1
-        | _ when ShellKeys.isEndOfInput (buffer.Length = 0) key ->
+        | _ when ShellKeys.isEndOfInput (not (OperatingSystem.IsWindows())) (buffer.Length = 0) key ->
             write "\n"
             complete ShellLine.End
         | _ when not (Char.IsControl key.KeyChar) -> append key.KeyChar
