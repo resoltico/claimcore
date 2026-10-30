@@ -9,59 +9,9 @@ open System.Text
 open System.Threading
 open System.Runtime.InteropServices
 
-let private writeBytes (output: System.IO.Stream) (bytes: byte array) =
-    output.Write bytes
+open CliDiscovery
 
-    if bytes.Length = 0 || bytes[bytes.Length - 1] <> byte '\n' then
-        output.WriteByte(byte '\n')
-
-    output.Flush()
-
-let private writeText (output: System.IO.Stream) (value: string) =
-    output.Write(Encoding.UTF8.GetBytes value)
-    output.Flush()
-
-let private unsupported errors language arguments issue =
-    writeText errors (UsageText.renderHost language arguments issue)
-
-    ExitCode.value ExitCode.Usage
-
-let private writeDiscovery output errors language command response =
-    match response with
-    | Some bytes ->
-        writeBytes output bytes
-        ExitCode.value ExitCode.Success
-    | None -> unsupported errors language [ command ] (UsageError.UnknownCommand(command, []))
-
-let private discovery output errors =
-    function
-    | CliInvocation.Help(topic, language) ->
-        writeText output (ContractDiscovery.helpTopic language topic)
-        ExitCode.value ExitCode.Success
-    | CliInvocation.Version false ->
-        writeText output (BuildIdentity.current.Version + Environment.NewLine)
-        ExitCode.value ExitCode.Success
-    | CliInvocation.Version true ->
-        Discovery.versionJson () |> writeBytes output
-        ExitCode.value ExitCode.Success
-    | CliInvocation.Describe(selector, false, _) ->
-        Discovery.describe selector |> writeDiscovery output errors "en" "describe"
-    | CliInvocation.Describe(selector, true, language) ->
-        Discovery.describeText language selector
-        |> writeDiscovery output errors language "describe"
-    | CliInvocation.Schema selection ->
-        Discovery.schema selection |> writeDiscovery output errors "en" "schema"
-    | _ -> unsupported errors "en" [] (UsageError.NotApplicable("arguments", "command"))
-
-[<NoEquality; NoComparison>]
-type private RemoteStreams =
-    {
-        Input: System.IO.Stream
-        Output: System.IO.Stream
-        Errors: System.IO.Stream
-    }
-
-let private withRemote streams language render action =
+let private withRemote (streams: RemoteStreams) language render action =
     let input = streams.Input
     let output = streams.Output
     let errors = streams.Errors
@@ -104,92 +54,6 @@ let private remote streams session language render =
         else
             processor.Call CancellationToken.None)
 
-let private preparedVerb output errors arguments =
-    match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
-    | Error issues ->
-        let language = CliInvocations.usageLanguage arguments
-        writeText errors (UsageText.render language arguments issues)
-        ExitCode.value ExitCode.Usage
-    | Ok prepared when prepared.DryRun ->
-        writeBytes output prepared.Bytes
-        ExitCode.value ExitCode.Success
-    | Ok prepared when prepared.All || prepared.Format = VerbFormat.Csv ->
-        use input = new System.IO.MemoryStream()
-
-        withRemote
-            {
-                Input = input
-                Output = output
-                Errors = errors
-            }
-            prepared.Language
-            (fun reply -> reply.Bytes)
-            (fun processor ->
-                let io =
-                    {
-                        Exchange = fun frame token -> processor.Exchange(frame, token)
-                        Deliver =
-                            fun frame reply ->
-                                processor.Deliver(
-                                    (fun response ->
-                                        if prepared.Format = VerbFormat.Json then
-                                            response.Bytes
-                                        else
-                                            TextReply.bytesFor
-                                                prepared.Language
-                                                (Some frame)
-                                                response.Frame),
-                                    reply
-                                )
-                        Output =
-                            fun bytes ->
-                                output.Write(bytes: byte array)
-                                output.Flush()
-                        Errors =
-                            fun bytes ->
-                                errors.Write(bytes: byte array)
-                                errors.Flush()
-                    }
-
-                let frame =
-                    Frames.admit prepared.Bytes
-                    |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
-
-                let pending =
-                    if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
-                        AuthorityHistoryCommand.run io prepared CancellationToken.None
-                    else
-                        CaseListCommand.run io prepared CancellationToken.None
-
-                pending.GetAwaiter().GetResult())
-    | Ok prepared ->
-        use input = new System.IO.MemoryStream(prepared.Bytes, false)
-
-        if prepared.Format = VerbFormat.Text then
-            let invocation =
-                Frames.admit prepared.Bytes
-                |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
-
-            remote
-                {
-                    Input = input
-                    Output = output
-                    Errors = errors
-                }
-                false
-                prepared.Language
-                (fun reply -> TextReply.bytesFor prepared.Language (Some invocation) reply.Frame)
-        else
-            remote
-                {
-                    Input = input
-                    Output = output
-                    Errors = errors
-                }
-                false
-                prepared.Language
-                (fun reply -> reply.Bytes)
-
 let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments =
     let console =
         {
@@ -201,43 +65,41 @@ let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments
                     output.Flush()
         }
 
-    match InteractiveReview.prepare console arguments with
-    | Error issues ->
-        writeText
-            errors
-            (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
+    let io =
+        {
+            Output = output
+            Errors = errors
+            Review = console
+        }
 
-        ExitCode.value ExitCode.Usage
-    | Ok None -> preparedVerb output errors arguments
-    | Ok(Some draft) ->
-        use input = new System.IO.MemoryStream()
+    withRemote
+        {
+            Input = System.IO.Stream.Null
+            Output = output
+            Errors = errors
+        }
+        (CliInvocations.usageLanguage arguments)
+        (fun reply -> reply.Bytes)
+        (fun processor ->
+            VerbRunner.run io processor arguments CancellationToken.None
+            |> _.GetAwaiter().GetResult())
 
-        withRemote
-            {
-                Input = input
-                Output = output
-                Errors = errors
-            }
-            draft.Language
-            (fun reply -> reply.Bytes)
-            (fun processor ->
-                let transport =
-                    {
-                        Exchange = fun frame token -> processor.Exchange(frame, token)
-                        Deliver =
-                            fun frame reply ->
-                                processor.Deliver(
-                                    (fun response ->
-                                        TextReply.bytesFor
-                                            draft.Language
-                                            (Some frame)
-                                            response.Frame),
-                                    reply
-                                )
-                    }
+let private configure output updates =
+    let result =
+        match updates with
+        | None -> CliConfigure.show ()
+        | Some values -> CliConfigure.save values |> Result.map (fun () -> [||])
 
-                InteractiveReview.run Guid.NewGuid console transport draft CancellationToken.None
-                |> fun value -> value.GetAwaiter().GetResult())
+    match result with
+    | Ok bytes ->
+        if bytes.Length > 0 then
+            writeBytes output bytes
+
+        ExitCode.value ExitCode.Success
+    | Error reason ->
+        let reply = CliReply.local reason
+        writeBytes output reply.Bytes
+        reply.ExitCode
 
 let private dispatch output errors argv =
     try
@@ -266,6 +128,8 @@ let private dispatch output errors argv =
                 true
                 "en"
                 (fun reply -> reply.Bytes)
+        | Ok CliInvocation.Shell -> ShellRuntime.run output errors
+        | Ok(CliInvocation.Configure updates) -> configure output updates
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation
         | Error issue ->

@@ -8,14 +8,14 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 
-type private RemoteSessionHolder() =
+type private RemoteSessionHolder(configuration: RemoteConfiguration option) =
     let mutable session: RemoteAccessSession option = None
 
     member _.Acquire() =
         match session with
         | Some value -> Ok value
         | None ->
-            match RemoteConfiguration.fromEnvironment () with
+            match configuration |> Option.map Ok |> Option.defaultWith RemoteConfiguration.load with
             | Error failure -> Error failure
             | Ok configuration ->
                 match RemoteAccessSession.Open configuration with
@@ -23,6 +23,11 @@ type private RemoteSessionHolder() =
                 | Ok opened ->
                     session <- Some opened
                     Ok opened
+
+    member _.Discard(cancelled) =
+        match session with
+        | Some value -> value.DiscardTokens cancelled
+        | None -> Task.FromResult()
 
     interface IDisposable with
         member _.Dispose() =
@@ -65,18 +70,40 @@ module private FrameInvocation =
                                 cancelled
         }
 
+[<NoEquality; NoComparison>]
+type internal RemoteStreams =
+    {
+        Input: Stream
+        Output: Stream
+        Errors: Stream
+    }
+
+[<NoEquality; NoComparison>]
+type private RemoteTransport =
+    {
+        Invoke: Invocation -> (unit -> unit) -> CancellationToken -> Task<CliReply>
+        Discard: CancellationToken -> Task<unit>
+        Owned: IDisposable
+    }
+
+module private RemoteTransport =
+    let create configuration =
+        let holder = new RemoteSessionHolder(configuration)
+
+        {
+            Invoke = FrameInvocation.invoke holder
+            Discard = holder.Discard
+            Owned = holder
+        }
+
 type RemoteFrameProcessor
-    private
-    (
-        input: Stream,
-        output: Stream,
-        errors: Stream,
-        language: string,
-        render,
-        invoke,
-        owned: IDisposable
-    ) =
-    let delivery = ClaimCore.Cli.FrameDelivery(output, errors, language, render)
+    private (streams: RemoteStreams, language, render, transport: RemoteTransport) =
+    let input = streams.Input
+
+    let delivery =
+        ClaimCore.Cli.FrameDelivery(streams.Output, streams.Errors, language, render)
+
+    let invoke = transport.Invoke
 
     let exchange frame stopped =
         delivery.Prepare frame
@@ -96,34 +123,57 @@ type RemoteFrameProcessor
             | Ok frame ->
                 Some(exchange frame stopped |> fun value -> value.GetAwaiter().GetResult())
 
-    new(input, output, errors, language, render) =
-        let holder = new RemoteSessionHolder()
-
+    new
+        (
+            input: Stream,
+            output: Stream,
+            errors: Stream,
+            language: string,
+            render: CliReply -> byte array
+        ) =
         new RemoteFrameProcessor(
-            input,
-            output,
-            errors,
+            {
+                Input = input
+                Output = output
+                Errors = errors
+            },
             language,
             render,
-            FrameInvocation.invoke holder,
-            holder
+            RemoteTransport.create None
         )
 
-    new(input, output, errors, language) =
+    new(input: Stream, output: Stream, errors: Stream, language: string) =
         new RemoteFrameProcessor(input, output, errors, language, (fun reply -> reply.Bytes))
 
-    static member internal ForTest(input, output, errors, invoke) =
+    static member internal ForShell(streams, configuration) =
         new RemoteFrameProcessor(
-            input,
-            output,
-            errors,
+            streams,
             "en",
             (fun reply -> reply.Bytes),
-            invoke,
-            { new IDisposable with
-                member _.Dispose() = ()
+            RemoteTransport.create (Some configuration)
+        )
+
+    static member internal ForTest(input, output, errors, invoke, discard) =
+        new RemoteFrameProcessor(
+            {
+                Input = input
+                Output = output
+                Errors = errors
+            },
+            "en",
+            (fun reply -> reply.Bytes),
+            {
+                Invoke = invoke
+                Discard = discard
+                Owned =
+                    { new IDisposable with
+                        member _.Dispose() = ()
+                    }
             }
         )
+
+    member internal _.BeginCommand(language) = delivery.BeginCommand(language)
+    member internal _.DiscardAuthentication(cancelled) = transport.Discard cancelled
 
     /// Multi-step CLI flows share authentication and the same frozen-delivery state.
     member internal _.Exchange(frame, stopped) =
@@ -181,4 +231,4 @@ type RemoteFrameProcessor
             delivery.Failure error
 
     interface IDisposable with
-        member _.Dispose() = owned.Dispose()
+        member _.Dispose() = transport.Owned.Dispose()

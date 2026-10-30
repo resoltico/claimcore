@@ -6,15 +6,18 @@
 - Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
 - Discard earlier case-list cursors; format 3 binds canonical filters, assignment and notification order. Other existing cursor formats remain unchanged.
 - CSV exports prefix formula-leading cells with an apostrophe before quoting; use JSON for exact authored values.
+- CLI public settings load from a private Unix profile with per-value environment overrides; unknown members are refused. Use configure --show to inspect sources.
 - Stored browser preferences reset; version 2 adds independent SYSTEM, LIGHT and DARK themes.
 - Update source callers for typed IDs/positions, complete field groups, grouped refusals, act descriptions and endpoint reply classification; Schema interpreters handle Vocabulary annotations.
 - Handle new CASE_STATUS_PROJECTION, CASE_PROGRESS_PROJECTION, CASE_CHANGED_AT_PROJECTION and CASE_SEARCH_PROJECTION verification findings.
 - Audit authority changes with installation OWNER or AUDITOR rights using authority.history or the CLI, including typed facts and target-filtered newest-first pages.
 - Select assigned cases and oldest notifications; case.summary counts the current visible filter and returns exact per-currency totals beyond single-amount precision.
 - Erasure clears notification dates and all amount/currency projections; verification identifies divergence in each new column.
+- Run reviewed commands in claimcore shell with one sign-in; access/refresh tokens and arrow-key history stay in memory, with 15-minute idle discard and no history file.
 - Vocabulary token plans reduce repeated work in case writes and ledger verification while retaining permanent bytes and integrity checks.
 - growth-compare compares three alternating same-host pairs and fails relative throughput, latency or verification regressions using workload fingerprints.
 - Use focused checks during development; change probes and growth runs require a concrete question or explicit acceptance scope, while implementation PRs retain full product verification.
+- Musl CI installs pinned Python required by native comparison controls.
 - Positive test inputs use inventory builders; local golden updates refuse CI and permanent vectors, and one transition oracle supplies semantic expectations.
 - Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
 - Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.

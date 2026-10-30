@@ -95,6 +95,9 @@ let call (input: byte array) invoke =
     use source = new MemoryStream(input)
     use output = new MemoryStream()
     use errors = new MemoryStream()
-    use processor = RemoteFrameProcessor.ForTest(source, output, errors, invoke)
+
+    use processor =
+        RemoteFrameProcessor.ForTest(source, output, errors, invoke, (fun _ -> Task.FromResult()))
+
     let code = processor.Call CancellationToken.None
     code, output.ToArray(), errors.ToArray()

@@ -181,9 +181,10 @@ let private sessionLines () =
             input,
             output,
             errors,
-            fun _ _ _ ->
+            (fun _ _ _ ->
                 invoked <- invoked + 1
-                Task.FromResult(CliReply.local ClientFailure.Unavailable)
+                Task.FromResult(CliReply.local ClientFailure.Unavailable)),
+            (fun _ -> Task.FromResult())
         )
 
     Expect.equal
@@ -214,7 +215,7 @@ let private uncertainSession () =
             input,
             output,
             errors,
-            fun invocation dispatched _ ->
+            (fun invocation dispatched _ ->
                 invoked <- invoked + 1
                 dispatched ()
                 let reply = CliReply.local ClientFailure.Unavailable
@@ -224,7 +225,8 @@ let private uncertainSession () =
                         CliReply.unknown reply
                     else
                         reply
-                )
+                )),
+            (fun _ -> Task.FromResult())
         )
 
     Expect.equal

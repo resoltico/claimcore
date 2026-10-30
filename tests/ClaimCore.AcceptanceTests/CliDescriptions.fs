@@ -47,7 +47,29 @@ let private frameOracle cli =
             )
         )
 
-    Expect.equal rows.Length 30 "Complete captured oracle"
+    let captured =
+        rows
+        |> Array.map (fun row ->
+            let cells = row.Split('\t', 2)
+
+            let arguments =
+                cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
+                |> List.ofArray
+
+            OperationCatalog.all
+            |> List.find (fun operation ->
+                let words = CommandGrammar.words operation
+                List.truncate words.Length arguments = words))
+        |> Set.ofArray
+
+    let expected = OperationCatalog.all |> Set.ofList
+    Expect.equal captured expected "Every catalog operation has an independent captured frame"
+    let arguments = rows |> Array.map (fun row -> row.Split('\t', 2)[0])
+
+    Expect.equal
+        (arguments |> Array.distinct |> Array.length)
+        rows.Length
+        "Captured invocation arguments are distinct"
 
     for row in rows do
         let cells = row.Split('\t', 2)

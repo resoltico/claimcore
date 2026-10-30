@@ -180,6 +180,20 @@ can replace a target during opening; that principal can already replace the secr
 have no hard deadline. File ownership, filesystem behavior and administrators remain trusted. See
 [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) and its real-object tests.
 
+The CLI public profile follows the same admission rules. Its fixed Unix location is
+`$XDG_CONFIG_HOME/claimcore/profile.json`, or `~/.config/claimcore/profile.json` when XDG_CONFIG_HOME
+is unset or empty. A missing profile is normal; an existing refused profile fails even when environment
+variables supply all settings. `claimcore configure` creates a 0700 profile directory, refuses unsafe
+existing directories, and atomically replaces a 0600 file. It accepts only the six public connection
+members documented in [CLI use](integrating.md#cli-use). The client secret file setting remains in the
+environment, and `configure --show` never reads its contents. Environment settings override individual
+profile values. A running CLI session keeps its admitted service/issuer configuration until exit.
+
+The interactive shell keeps access and refresh material and arrow-key history in process memory only.
+It writes neither a token cache nor a history file. Fifteen idle minutes at a command or confirmation
+prompt discard credentials; exit, EOF and SIGTERM also discard them. A refresh failure discards the old
+grant before interactive sign-in. Discard drops the session's references to managed token strings.
+
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams

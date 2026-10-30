@@ -176,8 +176,12 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "caseReference"; "revision"; "state" ]
-        "Erased views expose only identity, revision, state and current advice"
+        [ "advice"; "assignedToYou"; "caseReference"; "revision"; "state" ]
+        "Erased views expose retained identity, assignment metadata and current advice"
+
+    Expect.isFalse
+        (tombstone.GetProperty("assignedToYou").GetBoolean())
+        "Installation stewardship does not invent a case-scoped assignment"
 
     let advice = tombstone.GetProperty "advice"
 

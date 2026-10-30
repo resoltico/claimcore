@@ -114,19 +114,22 @@ dotnet restore src/ClaimCore.Cli/ClaimCore.Cli.fsproj --locked-mode
 dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore \
   --output "$claimcore_source/artifacts/local-cli"
 export PATH="$claimcore_source/artifacts/local-cli:$PATH"
-export CLAIMCORE_SERVICE_URL="https://localhost:7443/"
-export CLAIMCORE_OIDC_ISSUER="https://identity.localhost:7444/realms/claimcore"
-export CLAIMCORE_OIDC_CLIENT_ID=claimcore-cli
-export CLAIMCORE_CLI_AUTH_MODE=interactive
-export CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="$claimcore_config/ca.pem"
-export CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE="$claimcore_config/ca.pem"
+export XDG_CONFIG_HOME="$claimcore_config/cli"
+claimcore configure --service-url "https://localhost:7443/" \
+  --issuer "https://identity.localhost:7444/realms/claimcore" \
+  --client-id claimcore-cli --auth-mode interactive \
+  --service-trust-root-file "$claimcore_config/ca.pem" \
+  --oidc-trust-root-file "$claimcore_config/ca.pem"
+claimcore configure --show
 claimcore case list --text START-0001
 ```
 
 Use the generated public CA, not its private key or a client secret. CLI PKCE opens the system browser;
 if it opens outside the trusted profile, copy the complete authorization URL into trusted Firefox and
 finish login there. The one-use 127.0.0.1 callback uses HTTP; service and issuer traffic stays HTTPS.
-Tokens remain process-local. Keep authorization URLs out of logs.
+Tokens remain process-local. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
+commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and
+access/refresh tokens in memory, discards tokens after 15 idle minutes and writes no history file.
 
 Offline `help`, `help configuration`, `help call`, `help delivery` and `describe case open` need no
 credentials. `--dry-run` prints the prepared frame; the service still checks business rules and rights.

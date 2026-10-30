@@ -20,6 +20,7 @@ let private runProcess directory executable arguments environment input =
         start.ArgumentList.Add argument
 
     CliProcessEnvironment.clearInherited start
+    CliProcessEnvironment.isolateProfile start directory
 
     for pair: KeyValuePair<string, string> in environment do
         start.Environment[pair.Key] <- pair.Value

@@ -75,33 +75,29 @@ module RemoteConfiguration =
             | _ -> Error ClientFailure.Configuration
         | _ -> Error ClientFailure.Configuration
 
-    let private read setting =
-        let name = InputDiagnostics.settingName setting
-        Environment.GetEnvironmentVariable name |> Option.ofObj
-
     let private invalid setting =
         Error(ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Invalid))
 
-    let private required setting =
+    let private required read setting =
         match read setting with
         | None -> Error(ClientFailure.ConfigurationIssue(setting, ConfigurationIssue.Missing))
         | Some value -> Ok value
 
-    let private root setting =
-        required setting
+    let private root read setting =
+        required read setting
         |> Result.bind (fun value ->
             match absoluteHttpsRoot value with
             | Some uri -> Ok uri
             | None -> invalid setting)
 
-    let private privateRoot setting =
+    let private privateRoot (read: CliSetting -> string option) setting =
         match read setting with
         | None -> Ok None
         | Some path when IO.Path.IsPathFullyQualified path -> Ok(Some path)
         | _ -> invalid setting
 
-    let private configureMode (service: Uri) (issuer: Uri) clientId =
-        required CliSetting.AuthMode
+    let private configureMode read (service: Uri) (issuer: Uri) clientId =
+        required read CliSetting.AuthMode
         |> Result.bind (fun mode ->
             match mode with
             | "interactive" ->
@@ -112,7 +108,7 @@ module RemoteConfiguration =
                     RemoteClientMode.Interactive
                     None
             | "automation" ->
-                required CliSetting.SecretFile
+                required read CliSetting.SecretFile
                 |> Result.bind (fun path ->
                     if not (IO.Path.IsPathFullyQualified path) then
                         invalid CliSetting.SecretFile
@@ -125,25 +121,25 @@ module RemoteConfiguration =
                             (Some path))
             | _ -> invalid CliSetting.AuthMode)
 
-    let private trust value =
-        privateRoot CliSetting.OidcTrustRoot
+    let private trust read value =
+        privateRoot read CliSetting.OidcTrustRoot
         |> Result.bind (fun oidc ->
-            privateRoot CliSetting.ServiceTrustRoot
+            privateRoot read CliSetting.ServiceTrustRoot
             |> Result.map (fun service ->
                 { value with
                     OidcTrustRootFile = oidc
                     ServiceTrustRootFile = service
                 }))
 
-    let fromEnvironment () =
-        root CliSetting.ServiceUrl
+    let private connection read =
+        root read CliSetting.ServiceUrl
         |> Result.bind (fun service ->
             if service.AbsolutePath <> "/" then
                 invalid CliSetting.ServiceUrl
             else
-                root CliSetting.Issuer
+                root read CliSetting.Issuer
                 |> Result.bind (fun issuer ->
-                    required CliSetting.ClientId
+                    required read CliSetting.ClientId
                     |> Result.bind (fun clientId ->
                         if
                             String.IsNullOrWhiteSpace clientId
@@ -152,4 +148,52 @@ module RemoteConfiguration =
                         then
                             invalid CliSetting.ClientId
                         else
-                            configureMode service issuer clientId |> Result.bind trust)))
+                            Ok(service, issuer, clientId))))
+
+    let internal fromSettings read =
+        connection read
+        |> Result.bind (fun (service, issuer, clientId) ->
+            configureMode read service issuer clientId |> Result.bind (trust read))
+
+    let internal validatePublic values =
+        let read setting = Map.tryFind setting values
+
+        connection read
+        |> Result.bind (fun _ ->
+            required read CliSetting.AuthMode
+            |> Result.bind (fun mode ->
+                if mode = "interactive" || mode = "automation" then
+                    Ok()
+                else
+                    invalid CliSetting.AuthMode))
+        |> Result.bind (fun () -> privateRoot read CliSetting.ServiceTrustRoot)
+        |> Result.bind (fun _ -> privateRoot read CliSetting.OidcTrustRoot)
+        |> Result.map ignore
+
+    let internal sources readEnvironment =
+        CliProfile.location readEnvironment
+        |> Result.bind (fun path ->
+            CliProfile.read path
+            |> Result.map (fun profile ->
+                let values =
+                    InputDiagnostics.settings
+                    |> List.map (fun (setting, name) ->
+                        let value, source =
+                            match readEnvironment name with
+                            | Some value -> Some value, "environment"
+                            | None ->
+                                match Map.tryFind setting profile with
+                                | Some value -> Some value, "profile"
+                                | None -> None, "missing"
+
+                        setting, (value, source))
+                    |> Map.ofList
+
+                path, values))
+
+    let internal environment name =
+        Environment.GetEnvironmentVariable name |> Option.ofObj
+
+    let load () =
+        sources environment
+        |> Result.bind (fun (_, values) -> fromSettings (fun setting -> fst values[setting]))

@@ -23,6 +23,8 @@ type CliInvocation =
     | Schema of selection: CliSchema
     | Call
     | Session
+    | Shell
+    | Configure of Map<CliSetting, string> option
     | Verb of string list
 
 module CliInvocations =
@@ -108,6 +110,12 @@ module CliInvocations =
         else
             schemaSelector arguments |> Result.map CliInvocation.Schema
 
+    let private noArguments invocation tail =
+        if List.isEmpty tail then
+            Ok invocation
+        else
+            Error(UsageError.NotApplicable("arguments", "command"))
+
     let private admitCommand command tail =
         match tail with
         | [ flag ] when List.contains flag CliCommands.aliases ->
@@ -118,16 +126,10 @@ module CliInvocations =
             | CliCommand.Version -> admitVersion tail
             | CliCommand.Describe -> admitDescribe tail
             | CliCommand.Schema -> admitSchema tail
-            | CliCommand.Call ->
-                if List.isEmpty tail then
-                    Ok CliInvocation.Call
-                else
-                    Error(UsageError.NotApplicable("arguments", "command"))
-            | CliCommand.Session ->
-                if List.isEmpty tail then
-                    Ok CliInvocation.Session
-                else
-                    Error(UsageError.NotApplicable("arguments", "command"))
+            | CliCommand.Call -> noArguments CliInvocation.Call tail
+            | CliCommand.Configure -> CliConfigure.admit tail |> Result.map CliInvocation.Configure
+            | CliCommand.Shell -> noArguments CliInvocation.Shell tail
+            | CliCommand.Session -> noArguments CliInvocation.Session tail
 
     let admit arguments =
         match arguments with

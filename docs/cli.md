@@ -19,7 +19,11 @@ Human operations default to text. Add `--format json` for structured output or `
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
 
-## Discovery and frame commands
+`claimcore configure` atomically saves only public connection settings in `$XDG_CONFIG_HOME/claimcore/profile.json` (default `~/.config/claimcore/profile.json` on Unix). Files are 0600 and the profile directory is 0700. Every read uses private-file admission and refuses unknown members. Environment values override profile values individually; `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` is environment-only. `claimcore configure --show` displays effective values and their sources without reading secret content.
+
+`claimcore shell` requires interactive authentication mode and terminal stdin. It shares one process-local access/refresh-token session across commands, refreshes on expiry and signs in again on refresh failure. Fifteen idle minutes, exit, EOF and SIGTERM discard tokens. Arrow-key history stays in memory. Quotes and backslashes group arguments; metacharacters do not execute or expand. Each command prints its exit code and the shell continues after exit 4 with the frozen retry frame and resolve command. Ctrl-C cancels a command; a second Ctrl-C at an empty prompt exits. Interactive review still requires terminal stdout.
+
+## Discovery, configuration and frame commands
 
 Help, version, describe and schema commands work offline. Call and session dispatch frames through the configured HTTPS service and authentication mode.
 
@@ -30,8 +34,11 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore schema endpoint request|response`
 - `claimcore call`
 - `claimcore session`
+- `claimcore shell`
+- `claimcore configure --show`
+- `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]`
 
-Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
+Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
 
 ## Exit codes
 

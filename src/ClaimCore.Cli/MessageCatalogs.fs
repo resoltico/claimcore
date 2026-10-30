@@ -73,6 +73,8 @@ module internal MessageCatalogs =
                 "context", CliMessage.ContextFamily
                 "call", CliMessage.CallFamily
                 "session", CliMessage.SessionFamily
+                "shell", CliMessage.ShellFamily
+                "configure", CliMessage.ConfigureFamily
                 "describe", CliMessage.DescribeFamily
                 "schema", CliMessage.SchemaFamily
                 "help", CliMessage.HelpFamily
@@ -99,6 +101,8 @@ module internal MessageCatalogs =
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
         | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
         | HelpTopic.Version -> renderCli language CliMessage.HelpVersion
+        | HelpTopic.Shell -> renderCli language CliMessage.HelpShell
+        | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
         | HelpTopic.Verbs ->
             Catalog.document.Entries

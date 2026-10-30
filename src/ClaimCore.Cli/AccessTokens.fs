@@ -34,6 +34,8 @@ type AccessToken
     override _.ToString() = "<redacted access token>"
 
 module AccessTokens =
+    let internal MaximumResponseBytes = 32768
+
     [<NoEquality; NoComparison>]
     type internal Observation =
         {
@@ -83,7 +85,8 @@ module AccessTokens =
         elif
             response.Raw
             |> Option.ofObj
-            |> Option.forall (fun raw -> System.Text.Encoding.UTF8.GetByteCount raw > 32768)
+            |> Option.forall (fun raw ->
+                System.Text.Encoding.UTF8.GetByteCount raw > MaximumResponseBytes)
         then
             Error AccessFailure.OidcResponseInvalid
         else

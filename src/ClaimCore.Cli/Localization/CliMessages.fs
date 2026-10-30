@@ -102,6 +102,13 @@ type CliMessage =
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
     | [<MessageKey("cli.text.cursorReached")>] CursorReached of cursor: string
     | [<MessageKey("cli.review.confirm")>] ReviewConfirmation
+    | [<MessageKey("cli.family.shell")>] ShellFamily
+    | [<MessageKey("cli.family.configure")>] ConfigureFamily
+    | [<MessageKey("cli.help.shell")>] HelpShell
+    | [<MessageKey("cli.help.configure")>] HelpConfigure
+    | [<MessageKey("cli.shell.exitCode")>] ShellExitCode of code: string
+    | [<MessageKey("cli.shell.invalidLine")>] InvalidShellLine
+    | [<MessageKey("cli.usage.configureOptions")>] InvalidConfigureOptions
     | Failure of ClientFailure
 
 /// Rendering and publication inspect the same closed producers; no separate argument-name list exists.

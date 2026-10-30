@@ -118,10 +118,30 @@ structured reply and `--language` selects interface language. Authored business 
 process-local authentication. Reply frames contain nullable `endpoint` and `operationId`, a `delivery` tag,
 and `result`. Delivery tags describe transport progress; inspect the typed result to determine acceptance.
 
-Configure service URL, issuer, client ID and authentication mode using `help configuration`.
+Save public connection settings with `claimcore configure`; `claimcore help configure` lists its flags.
+The Unix profile is `$XDG_CONFIG_HOME/claimcore/profile.json`, defaulting to
+`~/.config/claimcore/profile.json`. Its string members are `serviceUrl`, `issuer`, `clientId`, `authMode`
+and optional `serviceTrustRootFile` and `oidcTrustRootFile`. The writer uses atomic replacement, 0600
+files and a 0700 profile directory. Reads use [private-file admission](operating.md#private-configuration)
+and refuse malformed documents and unknown members, including secret or token members. Environment
+variables override profile values individually; `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` remains
+environment-only. `claimcore configure --show` prints effective values and their sources without opening
+the secret file. Changing the profile takes effect in the next process.
+
+`claimcore shell` requires interactive authentication mode and terminal stdin. Existing verbs, `help`
+and `describe` run in one process and share one sign-in. Quotes and backslashes group arguments;
+metacharacters stay literal, with no expansion or command execution. Arrow-key history, access tokens
+and refresh tokens remain in memory. After 15 idle minutes at a command or confirmation prompt, all
+tokens are discarded; the next authenticated action signs in again. Refresh failure also starts browser
+sign-in again. `exit`, EOF and SIGTERM discard tokens. Ctrl-C cancels the current command and returns
+to the prompt; a second Ctrl-C at an empty prompt exits. Outcomes use stdout; prompts and each command's
+exit code use stderr. Exit 4 prints the frozen retry frame and resolve command, then the shell continues.
+Interactive review still requires terminal stdout. `call` and NDJSON `session` retain their existing
+stop-on-uncertain-delivery behavior.
+
 Interactive login uses PKCE and a one-use loopback callback. Automation uses a registered service actor,
-client credentials and its private secret file. Tokens remain process-local. Optional explicit service/IdP
-trust-root files replace system roots while retaining hostname and validity checks. The
+client credentials and its private secret file. Optional explicit service/IdP trust-root files replace
+system roots while retaining hostname and validity checks. The
 [walkthrough](getting-started.md#optional-cli-setup) shows local setup.
 
 ## Authority history
@@ -255,7 +275,7 @@ accepted receipt with current disclosure, or a permanent actor/ID fence and `NOT
 delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. Repeat resolution if
 its response fails. After final non-acceptance, load current state and prepare a new operation with a new ID.
 
-On uncertain CLI exit 4, the last stderr line is the exact prepared call frame; retain it privately.
+For ordinary verbs, call and session, uncertain exit 4 leaves the exact prepared call frame on the last stderr line; retain it privately. In the shell it appears before the next prompt.
 Session processing stops on exit 4 or 130, or an oversized frame. Output loss after dispatch preserves
 uncertainty. A complete OS write and flush do not prove downstream persistence.
 

@@ -10,6 +10,7 @@ open System.IO
 type FrameDelivery(output: Stream, errors: Stream, language: string, render: CliReply -> byte array)
     =
     let gate = obj ()
+    let mutable currentLanguage = language
     let mutable interrupted = false
     let mutable potentiallyChanged = false
     let mutable dispatched = false
@@ -30,7 +31,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                 errors.Write(
                     System.Text.Encoding.UTF8.GetBytes(
                         (MessageCatalogs.renderCli
-                            language
+                            currentLanguage
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
                                 CliIdentity.programName
@@ -61,6 +62,15 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
     new(output, errors, language) =
         new FrameDelivery(output, errors, language, (fun reply -> reply.Bytes))
+
+    /// The shell calls this only after the preceding command has fully stopped.
+    member internal _.BeginCommand(language) =
+        lock gate (fun () ->
+            interrupted <- false
+            potentiallyChanged <- false
+            dispatched <- false
+            pending <- None
+            currentLanguage <- language)
 
     member _.BeginFrame() =
         advance (fun () ->

@@ -135,6 +135,16 @@
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
     <Compile Include="Cli/ConfigurationHelpTests.fs" />
+    <Compile Include="Cli/CliProfileTests.fs" />
+    <Compile Include="Cli/ShellTokenizerTests.fs" />
+    <Compile Include="Cli/ShellTestClock.fs" />
+    <Compile Include="Cli/ShellIdentityFixture.fs" />
+    <Compile Include="Cli/ShellAuthenticationTests.fs" />
+    <Compile Include="Cli/ShellIdleTests.fs" />
+    <Compile Include="Cli/ShellConsoleFixture.fs" />
+    <Compile Include="Cli/ShellSessionTests.fs" />
+    <Compile Include="Cli/ShellReviewIdleTests.fs" />
+    <Compile Include="Cli/ShellHomeTests.fs" />
     <Compile Include="Cli/CliDescriptionTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/WorklistGrammarTests.fs" />

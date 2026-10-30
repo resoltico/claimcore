@@ -16,6 +16,7 @@
     <Compile Include="ThirdPartyNotices.fs" />
     <Compile Include="PublishedProcesses.fs" />
     <Compile Include="CliUsageTests.fs" />
+    <Compile Include="PublishedCliProfileTests.fs" />
     <Compile Include="ThirdPartyNoticeTests.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />
