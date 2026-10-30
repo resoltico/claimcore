@@ -61,6 +61,16 @@ const checkPresentation = async (page: Page, complete: boolean) => {
   }
 };
 
+const clickActorKind = async (page: Page) => {
+  const cell = page.locator(".authority-rows > tr > td").first();
+  await cell.scrollIntoViewIfNeeded();
+  const point = await cell.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  });
+  await page.mouse.click(point.x, point.y);
+};
+
 test("selected authority grants use bounded core pages and survive presentation changes at narrow width", async ({
   page,
 }) => {
@@ -100,6 +110,12 @@ test("selected authority grants use bounded core pages and survive presentation 
   await view.getByRole("button", { name: "Back to actors", exact: true }).click();
   await expect(view).toHaveCount(0);
   await expect(selected).toBeFocused();
-  await table.locator("tbody tr").first().locator("td").first().click();
-  await expect(view.getByRole("heading")).toBeFocused();
+  for (const width of [1280, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await clickActorKind(page);
+    await expect(view.getByRole("heading")).toBeFocused();
+    await expect(view.getByText(value.outcome.data.actor.actorId, { exact: true })).toBeVisible();
+    await view.getByRole("button", { name: "Back to actors", exact: true }).click();
+    await expect(selected).toBeFocused();
+  }
 });
