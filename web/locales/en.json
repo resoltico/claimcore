@@ -152,6 +152,7 @@
   "ui.historyForActor": "History for this actor",
   "ui.chooseRole": "Choose a role",
   "ui.roleNotAvailableForService": "Not available for service principals",
+  "ui.grantCount": "Grant count",
   "ui.knownGrantCount": "Grants: {count}",
   "ui.exactUtc": "Exact UTC instant",
   "ui.caseState": "Case state",

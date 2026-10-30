@@ -152,6 +152,7 @@
   "ui.historyForActor": "سجل هذا الفاعل",
   "ui.chooseRole": "اختر دورًا",
   "ui.roleNotAvailableForService": "غير متاح لهويات الخدمات",
+  "ui.grantCount": "عدد الأدوار الممنوحة",
   "ui.knownGrantCount": "الأدوار الممنوحة: {count}",
   "ui.exactUtc": "الوقت الدقيق بتوقيت UTC",
   "ui.caseState": "حالة القضية",

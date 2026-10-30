@@ -32,7 +32,8 @@
 - Browser inputs use locale dates/amounts and currency/country suggestions; linked error summaries focus first, and the server remains authoritative.
 - The responsive work surface adds saved worklists, grouped facts, progress/history and contextual case/authority actions with distinct primary actions in both themes and en/lv/ar.
 - Compact case rows open as links; facts share group help, exact amounts retain all digits, and localized history shortens actor/operation IDs with exact details.
-- Authority grants require an explicit role and disable inadmissible principal kinds; actor rows open detail and history can filter by actor. Unknown routes stay offline on a localized not-found page.
+- Authority grants require an explicit role and disable inadmissible principal kinds; actor tables on desktop and compact mobile cards open detail.
+- Unknown routes stay offline on a localized not-found page.
 - Accepted browser case changes return to the current case with an act/revision notice; uncertain delivery retains exact retry and final-resolution controls.
 - Authority actor actions bind the selected principal; retained requests need explicit discard consent before a fresh request can target another actor.
 - Stored act, role and principal kinds use permanent decoders; unknown tokens fail reads and diverge verification even when SQL accepts their shape.

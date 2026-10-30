@@ -79,7 +79,7 @@ const KnownGrantCount = ({ actorId }: { actorId: string }) => {
     </small>
   );
 };
-const ActorRow = ({
+const ActorSubject = ({
   actor,
   onSelect,
   mayReadGrants,
@@ -91,35 +91,76 @@ const ActorRow = ({
   const p = usePresentation();
   if (!mayReadGrants) {
     return (
-      <li className="authority-row">
-        <ActorSummary actor={actor} />
-      </li>
+      <bdi className="actor-subject" title={actor.principal.subject}>
+        {actor.principal.subject}
+      </bdi>
     );
   }
   const href = `/authority/${encodeURIComponent(actor.actorId)}`;
   return (
-    <li className="authority-row">
-      <a
-        href={href}
-        id={`actor-grants-${actor.actorId}`}
-        title={actor.actorId}
-        onClick={(event) => {
-          followLink(event, () => {
-            onSelect(actor.actorId);
-          });
-        }}
-      >
-        <span>
-          {p.term("principalKind", actor.principal.kind)}
-          {" · "}
+    <a
+      className="actor-subject row-link"
+      href={href}
+      id={`actor-grants-${actor.actorId}`}
+      title={actor.actorId}
+      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${actor.principal.subject} ${p.text(actor.enabled ? "ui.yes" : "ui.no")}`}
+      onClick={(event) => {
+        followLink(event, () => {
+          onSelect(actor.actorId);
+        });
+      }}
+    >
+      <bdi title={actor.principal.subject}>{actor.principal.subject}</bdi>
+    </a>
+  );
+};
+const ActorRow = (props: {
+  actor: Actor;
+  onSelect: ListingProps["onSelect"];
+  mayReadGrants: boolean;
+}) => {
+  const p = usePresentation();
+  return (
+    <tr className="authority-row">
+      <td>{p.term("principalKind", props.actor.principal.kind)}</td>
+      <td className="authority-subject">
+        <ActorSubject {...props} />
+      </td>
+      <td className="authority-enabled">
+        <span className="authority-cell-label" aria-hidden="true">
+          {p.text("label.enabled")}:{" "}
         </span>
-        <bdi className="actor-subject" title={actor.principal.subject}>
-          {actor.principal.subject}
-        </bdi>
-        <span> {p.text(actor.enabled ? "ui.yes" : "ui.no")}</span>
-        <KnownGrantCount actorId={actor.actorId} />
-      </a>
-    </li>
+        {p.text(props.actor.enabled ? "ui.yes" : "ui.no")}
+      </td>
+      <td className="authority-grant-count">
+        {props.mayReadGrants ? <KnownGrantCount actorId={props.actor.actorId} /> : null}
+      </td>
+    </tr>
+  );
+};
+const AuthorityTable = ({
+  items,
+  ...props
+}: Pick<ListingProps, "mayReadGrants" | "onSelect"> & {
+  items: Actor[];
+}) => {
+  const p = usePresentation();
+  return (
+    <table className="authority-table" aria-labelledby="authority-actors-title">
+      <thead className="authority-columns">
+        <tr>
+          <th scope="col">{p.fieldLabel("principal.kind")}</th>
+          <th scope="col">{p.fieldLabel("principal.subject")}</th>
+          <th scope="col">{p.text("label.enabled")}</th>
+          <th scope="col">{p.text("ui.grantCount")}</th>
+        </tr>
+      </thead>
+      <tbody className="authority-rows">
+        {items.map((actor) => (
+          <ActorRow key={actor.actorId} actor={actor} {...props} />
+        ))}
+      </tbody>
+    </table>
   );
 };
 export const AuthorityListing = (props: ListingProps) => {
@@ -130,16 +171,11 @@ export const AuthorityListing = (props: ListingProps) => {
       <h2 id="authority-actors-title" tabIndex={-1}>
         {p.text("ui.actors")}
       </h2>
-      <ul className="authority-rows">
-        {page.items.map((actor) => (
-          <ActorRow
-            key={actor.actorId}
-            actor={actor}
-            onSelect={props.onSelect}
-            mayReadGrants={props.mayReadGrants}
-          />
-        ))}
-      </ul>
+      <AuthorityTable
+        items={page.items}
+        onSelect={props.onSelect}
+        mayReadGrants={props.mayReadGrants}
+      />
       {page.message === null ? null : (
         <p role="alert">
           <NoticeView value={page.message} />

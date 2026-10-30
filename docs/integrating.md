@@ -261,6 +261,10 @@ Use the client's link builder for exact references. Ordinary reference segments 
 `/cases/~Lg` for `.`, `/cases/~Li4` for `..` and `/cases/~fg` for `~`. `NEW` remains `/cases/NEW`. This
 avoids route keywords, dot-segment normalization and prefix collisions without changing case identity.
 
+The actor directory uses a labelled table on desktop and compact cards on mobile, with kind, subject,
+enabled state and a grant count only when a complete cached grant page is known. Each offered row link
+opens the actor detail; listing does not fetch individual grant pages.
+
 Authority actor links bind offered actions to the disclosed actor. A retained request keeps its original
 principal and operation identity until the user explicitly discards it to begin the selected actor's
 action. Preview and exact-request confirmation still precede execution.

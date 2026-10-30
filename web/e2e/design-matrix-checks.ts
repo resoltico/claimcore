@@ -1,4 +1,5 @@
 import { checkActionHierarchy } from "./action-hierarchy";
+import { checkAuthorityTable } from "./authority-table-checks";
 import { retainResponseBodies } from "./response-bodies";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -335,6 +336,7 @@ const factCardReadability = () => {
   return failures;
 };
 const compactRows = async (page: Page, dimension: Dimension) => {
+  await checkAuthorityTable(page, dimension.width >= 1024);
   if (dimension.zoom !== undefined || dimension.language === "en-XA") {
     return;
   }
@@ -347,7 +349,7 @@ const compactRows = async (page: Page, dimension: Dimension) => {
   }
   if (dimension.width < 640) {
     const cards = await page
-      .locator(".authority-row > a")
+      .locator(".authority-row")
       .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
     for (const height of cards) {
       expect(height).toBeLessThanOrEqual(96);

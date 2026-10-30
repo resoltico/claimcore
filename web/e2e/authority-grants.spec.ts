@@ -73,13 +73,17 @@ test("selected authority grants use bounded core pages and survive presentation 
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.getByRole("link").and(page.locator('nav a[href="/authority"]')).click();
+  const table = page.getByRole("table").and(page.locator(".authority-table"));
+  await expect(table.getByRole("columnheader")).toHaveCount(4);
+  await expect(table.locator("thead")).toBeVisible();
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
   expect(grantRequests).toHaveLength(0);
   const reply = page.waitForResponse((response) =>
     response.url().endsWith("/api/authority.grants"),
   );
-  await selected.click();
+  await selected.focus();
+  await page.keyboard.press("Enter");
   const value: unknown = await (await reply).json();
   expect(isResponse("authority.grants", value)).toBe(true);
   if (!isResponse("authority.grants", value) || value.outcome.kind !== "SUCCEEDED") {
@@ -96,4 +100,6 @@ test("selected authority grants use bounded core pages and survive presentation 
   await view.getByRole("button", { name: "Back to actors", exact: true }).click();
   await expect(view).toHaveCount(0);
   await expect(selected).toBeFocused();
+  await table.locator("tbody tr").first().locator("td").first().click();
+  await expect(view.getByRole("heading")).toBeFocused();
 });

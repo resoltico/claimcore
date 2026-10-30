@@ -152,6 +152,7 @@
   "ui.historyForActor": "Šī dalībnieka vēsture",
   "ui.chooseRole": "Izvēlieties lomu",
   "ui.roleNotAvailableForService": "Nav pieejama pakalpojumu subjektiem",
+  "ui.grantCount": "Piešķīrumu skaits",
   "ui.knownGrantCount": "Piešķīrumi: {count}",
   "ui.exactUtc": "Precīzs UTC laiks",
   "ui.caseState": "Lietas stāvoklis",
