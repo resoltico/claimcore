@@ -13,6 +13,7 @@ type InteractionInput =
     | Status
     | Progress
     | Order
+    | Assignment
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InteractionInput =
@@ -28,6 +29,7 @@ module InteractionInput =
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
         | InteractionInput.Order -> "order"
+        | InteractionInput.Assignment -> "assignment"
 
     let messageKey input part =
         match input with
@@ -42,7 +44,8 @@ module InteractionInput =
         | InteractionInput.Lifecycle
         | InteractionInput.Status
         | InteractionInput.Progress
-        | InteractionInput.Order -> vocabularyName + "." + key input + "." + part
+        | InteractionInput.Order
+        | InteractionInput.Assignment -> vocabularyName + "." + key input + "." + part
 
     let extras =
         FSharpType.GetUnionCases typeof<InteractionInput>

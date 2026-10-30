@@ -169,20 +169,24 @@ module CatalogAnnotations =
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
                 yield (owner, WireMembers.Limit), limit
-            for name, input in
-                [
-                    "lifecycle", InteractionInput.Lifecycle
-                    "status", InteractionInput.Status
-                    "progress", InteractionInput.Progress
-                    "text", InteractionInput.Target InputTarget.Text
-                ] do
-                yield (RequestSchemas.CaseListRequest, name), constant (annotation input)
-            yield
-                (RequestSchemas.CaseListRequest, "order"),
-                constant
-                    { annotation InteractionInput.Order with
-                        Default =
-                            Some(BindingValue.Text(CaseListOrder.token CaseListOrder.Reference))
-                    }
+            for owner in [ RequestSchemas.CaseListRequest; RequestSchemas.CaseSummaryRequest ] do
+                for name, input in
+                    [
+                        "lifecycle", InteractionInput.Lifecycle
+                        "status", InteractionInput.Status
+                        "progress", InteractionInput.Progress
+                        "text", InteractionInput.Target InputTarget.Text
+                    ] do
+                    yield (owner, name), constant (annotation input)
+
+                yield (owner, "assignment"), constant (annotation InteractionInput.Assignment)
+
+                yield
+                    (owner, "order"),
+                    constant
+                        { annotation InteractionInput.Order with
+                            Default =
+                                Some(BindingValue.Text(CaseListOrder.token CaseListOrder.Reference))
+                        }
         ]
         |> Map.ofList

@@ -1,5 +1,5 @@
 import { changeField } from "../support/field-entry";
-import { caseSummaryInput } from "../support/inputs";
+import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -9,7 +9,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, fields, response, runtime } from "../support/service-ui.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -20,7 +20,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 import { wireReply } from "../support/contract-corpus.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {

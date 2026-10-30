@@ -23,6 +23,17 @@ The browser keeps selected filters, search and order in the URL. Follow its case
 references, including values that need URL escaping. The CLI supports the same filters through
 `case list`; [Integrating](integrating.md#worklist-queries-and-summary-rows) covers query and export details.
 
+The CLI offers assignment and age-based triage without a separate assignment act:
+`claimcore case list --assignment ASSIGNED_TO_ME` selects cases where you hold a valid case-scoped
+case-reading grant. Installation access alone does not make a case assigned. `--order notified`
+orders oldest notification dates first, with erased cases last. Notification date is the current
+registration assertion of this handler's first notification; correcting that fact changes its order.
+
+`claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
+claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
+contribute when selected; erased cases contribute only to lifecycle counts. Totals are exact, with
+no rounding or currency conversion.
+
 ## Open a case
 
 Choose OPEN when it is offered, then supply the reference and every registration value: incident date,

@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { historyVariants } from "../support/contract-corpus.fixtures";
@@ -28,19 +29,23 @@ const detail = (token = "token", reloadSignal = 0) => (
     />
   </TestSession>
 );
-const readable = (historyDetails = ["SUMMARY", "FULL"]) =>
-  response("case.get", "SUCCEEDED", {
-    caseReference: fields.caseReference,
-    revision: 1,
-    advice: {
-      ...caseAdvice([]),
-      history: historyDetails,
-    },
-    state: {
-      kind: "ACTIVE",
-      fields,
-    },
-  });
+const readable = (historyDetails: ReadonlyArray<"SUMMARY" | "FULL"> = ["SUMMARY", "FULL"]) =>
+  response(
+    "case.get",
+    "SUCCEEDED",
+    caseViewInput({
+      caseReference: fields.caseReference,
+      revision: 1,
+      advice: {
+        ...caseAdvice([]),
+        history: historyDetails,
+      },
+      state: {
+        kind: "ACTIVE",
+        fields,
+      },
+    }),
+  );
 const pageEntry = (
   entry: Extract<
     HistoryEntry,

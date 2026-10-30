@@ -92,7 +92,7 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->

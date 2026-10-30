@@ -23,72 +23,80 @@ module internal TransactionPages =
                     None
         }
 
-    let private caseSql order =
+    let private caseQuery (query: CasePageQuery) =
         let key = "upper(c.case_reference COLLATE \"C\")"
 
-        let after, sorting =
-            match order with
-            | CaseListOrder.Reference -> key + " > $1 COLLATE \"C\"", key + " ASC"
-            | CaseListOrder.Recent ->
-                "(c.changed_at < $11 OR (c.changed_at = $11 AND "
+        let after, sorting, values, limit =
+            match query.Filter.Order, query.AfterPosition with
+            | CaseListOrder.Reference, position ->
+                let reference =
+                    match position with
+                    | None -> None
+                    | Some(CaseListPosition.Reference value) -> Some value
+                    | _ -> invalidArg (nameof query) "Expected a reference position."
+
+                key + " > $10 COLLATE \"C\"",
+                key + " ASC",
+                [| DatabaseSession.parameter reference |],
+                "$11"
+            | CaseListOrder.Recent, position ->
+                let reference, changedAt =
+                    match position with
+                    | None -> None, None
+                    | Some(CaseListPosition.Recent(time, reference)) -> Some reference, Some time
+                    | _ -> invalidArg (nameof query) "Expected a recent position."
+
+                "(c.changed_at < $11::timestamptz OR (c.changed_at = $11 AND "
                 + key
-                + " > $1 COLLATE \"C\"))",
-                "c.changed_at DESC," + key + " ASC"
+                + " > $10 COLLATE \"C\"))",
+                "c.changed_at DESC," + key + " ASC",
+                [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
+                "$12"
+            | CaseListOrder.Notified, position ->
+                let reference, date =
+                    match position with
+                    | None -> None, None
+                    | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
+                    | _ -> invalidArg (nameof query) "Expected a notification position."
 
-        let search =
-            "($10::text IS NULL OR c.search_text LIKE '%' || $10 || '%' ESCAPE chr(92))"
+                "(($11::date IS NULL AND c.notified_on IS NULL AND "
+                + key
+                + " > $10 COLLATE \"C\") OR ($11::date IS NOT NULL AND (c.notified_on > $11 OR c.notified_on IS NULL OR (c.notified_on=$11 AND "
+                + key
+                + " > $10 COLLATE \"C\"))))",
+                "c.notified_on ASC NULLS LAST," + key + " ASC",
+                [|
+                    DatabaseSession.parameter reference
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                |],
+                "$12"
 
-        $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE ($1::text IS NULL OR {after}) AND ($2 OR c.case_id IN (SELECT g.case_id FROM claimcore.grants g WHERE g.actor_id=$3 AND g.role=ANY($4::text[]) AND g.case_id IS NOT NULL)) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$3 AND bad.case_id=c.case_id AND bad.role=ANY($5::text[])) AND (cardinality($7::text[])=0 OR c.state=ANY($7::text[])) AND (cardinality($8::text[])=0 OR c.status=ANY($8::text[])) AND (cardinality($9::text[])=0 OR c.progress=ANY($9::text[])) AND {search} ORDER BY {sorting} LIMIT $6"
+        let sql =
+            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} AND ($10::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
 
-    let private afterPosition (query: CasePageQuery) =
-        match query.Filter.Order, query.AfterPosition with
-        | _, None -> None, None
-        | CaseListOrder.Reference, Some(CaseListPosition.Reference reference) ->
-            Some reference, None
-        | CaseListOrder.Recent, Some(CaseListPosition.Recent(changedAt, reference)) ->
-            Some reference, Some changedAt
-        | _ -> invalidArg (nameof query) "The page position must match its order."
+        let parameters =
+            Array.concat
+                [
+                    CaseSelectionSql.parameters query.Selection
+                    values
+                    [| box (query.Limit + 1) |]
+                ]
 
-    let private escapeSearch (value: string) =
-        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")
+        sql, parameters
 
     let cases connection installation (query: CasePageQuery) token =
-        let after, changedAt = afterPosition query
-        let filter = query.Filter
-
-        let parameters =
-            [|
-                DatabaseSession.parameter after
-                box (query.Visibility = CaseVisibility.Every)
-                box (ActorId.value query.ActorId)
-                box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
-                box (query.ForbiddenRoles |> List.map DurableNames.role |> List.toArray)
-                box (query.Limit + 1)
-                box (filter.Lifecycles |> List.map DurableNames.lifecycle |> List.toArray)
-                box (filter.Statuses |> List.map DurableNames.status |> List.toArray)
-                box (filter.Progress |> List.map DurableNames.progress |> List.toArray)
-                DatabaseSession.parameter (
-                    filter.Text |> Option.map (CaseSearchText.value >> escapeSearch)
-                )
-            |]
-
-        let parameters =
-            if filter.Order = CaseListOrder.Recent then
-                Array.append parameters [| DatabaseSession.parameter changedAt |]
-            else
-                parameters
-
         task {
-            let! rows =
-                DatabaseSession.namedRows connection (caseSql filter.Order) parameters token
+            let sql, parameters = caseQuery query
+            let! rows = DatabaseSession.namedRows connection sql parameters token
 
             return
                 rows
                 |> List.map (Projections.caseRow installation)
                 |> page query.Limit (fun record ->
                     CaseListPosition.create
-                        filter.Order
+                        query.Filter.Order
                         record.Index.ChangedAt
+                        record.Index.NotifiedOn
                         (CaseReference.format record.Snapshot.Reference))
         }
 
@@ -213,6 +221,9 @@ type private ReadTx
 
         member _.CasePage query =
             TransactionPages.cases connection installation query token
+
+        member _.CaseSummary query =
+            CaseSummaryQuery.read connection query token
 
         member _.HistoryPage query =
             TransactionPages.history connection installation query token

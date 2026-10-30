@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { render, screen } from "../support/presentation-test-support";
@@ -7,7 +8,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -18,7 +19,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
   const close = vi.fn();
   render(

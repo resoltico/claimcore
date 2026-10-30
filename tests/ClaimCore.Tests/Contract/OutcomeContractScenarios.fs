@@ -41,6 +41,7 @@ let internal contextCodec () =
                         EffectiveBusinessDate = today
                         TimeZoneId = "Etc/UTC"
                     }
+                HasAssignedCases = false
                 Capability = []
                 View = []
                 Offers = []
@@ -62,6 +63,7 @@ let internal queryCodecs () =
             Api.caseGet.Output
             (Outcome.Succeeded
                 {
+                    AssignedToYou = false
                     Snapshot = view
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })

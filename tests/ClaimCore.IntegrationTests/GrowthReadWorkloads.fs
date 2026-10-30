@@ -86,7 +86,7 @@ let private read actor filter =
         | _ -> return failtestf "Read growth workload failed: %A" result
     }
 
-let private measure cases (name, order, expectedItems, fingerprint) read =
+let private measure cases (name, order, expectedItems, fingerprint) (limit: Nullable<int>) read =
     task {
         for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
             let! found = read ()
@@ -117,7 +117,7 @@ let private measure cases (name, order, expectedItems, fingerprint) read =
                 requests = latencies.Length
                 warmupRequests = GrowthWorkloadPlan.warmupRequests
                 order = order
-                limit = GrowthWorkloadPlan.readLimit
+                limit = limit
                 expectedItems = expectedItems
                 returnedItems = returned
                 seconds = elapsed.Elapsed.TotalSeconds
@@ -189,11 +189,39 @@ let private authorityProfiles (database: PostgresFixture.Database) actor cases =
                      "SEQUENCE",
                      GrowthWorkloadPlan.readLimit,
                      GrowthWorkloadPlan.authorityFingerprint cases target)
+                    (Nullable GrowthWorkloadPlan.readLimit)
                     read
 
             reports.Add report
 
         return reports.ToArray()
+    }
+
+let private readSummary actor (cases: int) =
+    task {
+        let! result = Service.caseSummary actor CaseListFilter.empty<string> token
+
+        match result with
+        | Outcome.Succeeded summary ->
+            Expect.equal summary.Counts.Total (int64 cases) "Summary counts the actual seeded cases"
+
+            let totals (values: CurrencyTotal list) =
+                values
+                |> List.map (fun value ->
+                    Currency.format value.Currency, DecimalTotal.format value.Amount)
+
+            Expect.equal
+                (totals summary.Claimed)
+                [ "EUR", string (bigint cases * 1000I) ]
+                "Every claimed amount contributes exactly once"
+
+            Expect.equal
+                (totals summary.Payable)
+                [ "EUR", string (bigint ((cases + 4) / 5) * 750I) ]
+                "Only the independently seeded decisions contribute payable amounts"
+
+            return int summary.Counts.Total
+        | _ -> return failtestf "Summary growth workload failed: %A" result
     }
 
 let profile cases =
@@ -224,6 +252,11 @@ let profile cases =
                         None
                         CaseListOrder.Recent,
                     min 50 ((cases + 9) / 10)
+                    "notified",
+                    { CaseListFilter.empty<string> with
+                        Order = CaseListOrder.Notified
+                    },
+                    min 50 cases
                 ]
 
             let reports = ResizeArray<_>()
@@ -236,9 +269,19 @@ let profile cases =
                          CaseListOrder.token filter.Order,
                          expectedItems,
                          GrowthWorkloadPlan.readFingerprint cases filter)
+                        (Nullable GrowthWorkloadPlan.readLimit)
                         (fun () -> read actor filter)
 
                 reports.Add report
+
+            let! summary =
+                measure
+                    cases
+                    ("summary", "GROUPED", cases, GrowthWorkloadPlan.summaryFingerprint cases)
+                    (Nullable())
+                    (fun () -> readSummary actor cases)
+
+            reports.Add summary
 
             // Seed authority events only after the existing query measurements; their declared
             // inputs and fingerprints remain unchanged for historical comparisons.

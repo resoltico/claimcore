@@ -1,3 +1,4 @@
+import { actorContextInput } from "./inputs";
 import { transportResponse } from "./transport-response.fixtures";
 import { consumerContractIdentity } from "@contracts/client";
 export { productMetadata as definition } from "../../src/protocol/productMetadata";
@@ -25,12 +26,12 @@ const fixtureData = (endpoint: string, kind: string, data: unknown): unknown => 
 export const response = (endpoint: string, kind: string, data: unknown, status = 200): Response =>
   transportResponse(endpoint, kind, fixtureData(endpoint, kind, data), status);
 
-export const context = {
+export const context = actorContextInput({
   ...runtime,
   capabilities: ["REGISTER"],
   views: ["CASES", "AUTHORITY", "OPERATIONS"],
   offers: [{ kind: "OPEN" }],
-};
+});
 
 export const unavailable = {
   code: "RESOURCE_UNAVAILABLE",

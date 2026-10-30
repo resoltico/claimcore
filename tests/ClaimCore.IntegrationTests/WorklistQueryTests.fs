@@ -148,7 +148,7 @@ let private facets pair =
         Expect.equal
             (orders |> List.map CaseListOrder.token |> Set.ofList)
             (Inventory.tokens "caseOrders" |> Set.ofList)
-            "Both independently inventoried orders execute"
+            "Every independently inventoried order executes"
 
         let mutable scenarios = 0
 
@@ -206,13 +206,13 @@ let private erasure pair =
         let! rows =
             DatabaseSession.rows
                 connection
-                "SELECT status,progress,search_text,changed_at FROM claimcore.cases WHERE case_reference='work-13'"
+                "SELECT status,progress,search_text,changed_at,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency FROM claimcore.cases WHERE case_reference='work-13'"
                 [||]
                 token
 
         let row = List.exactlyOne rows
 
-        for index in [ 0; 1; 2 ] do
+        for index in [ 0; 1; 2; 4; 5; 6; 7; 8 ] do
             Expect.isTrue
                 (Convert.IsDBNull row[index])
                 "Erasure physically clears every searchable/facet value"

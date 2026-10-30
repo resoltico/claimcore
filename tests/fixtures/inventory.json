@@ -286,6 +286,11 @@
       "token": "authority.history",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "case.summary",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -334,9 +339,10 @@
     "lifecycle",
     "status",
     "progress",
-    "order"
+    "order",
+    "assignment"
   ],
-  "cliFrameCount": 31,
+  "cliFrameCount": 32,
   "readInputs": {
     "case.get": [
       "caseReference"
@@ -348,7 +354,8 @@
       "status",
       "progress",
       "text",
-      "order"
+      "order",
+      "assignment"
     ],
     "case.history": [
       "caseReference",
@@ -376,6 +383,14 @@
       "actorId",
       "limit",
       "cursor"
+    ],
+    "case.summary": [
+      "lifecycle",
+      "status",
+      "progress",
+      "text",
+      "order",
+      "assignment"
     ]
   },
   "caseLifecycles": [
@@ -394,7 +409,8 @@
   ],
   "caseOrders": [
     "REFERENCE",
-    "RECENT"
+    "RECENT",
+    "NOTIFIED"
   ],
   "verificationFindings": [
     "LINK",
@@ -417,7 +433,12 @@
     "CASE_SEARCH_PROJECTION",
     "AUTHORITY_PROJECTION",
     "HEAD",
-    "EXPECTED_POSITION"
+    "EXPECTED_POSITION",
+    "CASE_NOTIFIED_ON_PROJECTION",
+    "CASE_CLAIMED_AMOUNT_PROJECTION",
+    "CASE_CLAIMED_CURRENCY_PROJECTION",
+    "CASE_PAYABLE_AMOUNT_PROJECTION",
+    "CASE_PAYABLE_CURRENCY_PROJECTION"
   ],
   "renderedVocabularies": [
     "status",
@@ -433,7 +454,8 @@
     "group",
     "input",
     "caseOrder",
-    "progress"
+    "progress",
+    "assignment"
   ],
   "goldens": [
     "wire-request-examples.json",
@@ -452,5 +474,8 @@
     "progress": "UNDECIDED",
     "text": "synthetic",
     "order": "REFERENCE"
-  }
+  },
+  "caseAssignments": [
+    "ASSIGNED_TO_ME"
+  ]
 }

@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
@@ -106,7 +107,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 });
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = {
+  const current: CurrentCase = caseViewInput({
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
@@ -117,7 +118,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
       kind: "ACTIVE",
       fields,
     },
-  };
+  });
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
     .mockResolvedValueOnce(rejectedResponse(staleRefusal));
@@ -143,7 +144,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
     await screen.findByText("Read the current case before making a changed request."),
   ).toBeVisible();
 });
-const paidCase: CurrentCase = {
+const paidCase: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -164,7 +165,7 @@ const paidCase: CurrentCase = {
       },
     },
   },
-};
+});
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {
   const user = userEvent.setup();
   const current = paidCase;

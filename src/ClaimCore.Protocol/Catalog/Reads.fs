@@ -31,6 +31,10 @@ module ReadCatalog =
                 Inputs = [ ReadInput.Page; ReadInput.Worklist ]
             }
             {
+                Endpoint = QueryEndpoint.CaseSummary
+                Inputs = [ ReadInput.Worklist ]
+            }
+            {
                 Endpoint = QueryEndpoint.CaseHistory
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
             }

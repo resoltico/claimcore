@@ -36,6 +36,7 @@
     <Compile Include="Wire/ReadRowCodecs.fs" />
     <Compile Include="Wire/ResponseCodecs.fs" />
     <Compile Include="Wire/AuthorityHistoryCodecs.fs" />
+    <Compile Include="Wire/CaseTotalsCodecs.fs" />
     <Compile Include="Wire/ReceiptCodecs.fs" />
     <Compile Include="Wire/ReplyCodecs.fs" />
     <Compile Include="Wire/ResolutionCodecs.fs" />

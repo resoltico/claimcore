@@ -333,7 +333,7 @@ module RequestCodecs =
                  | values -> Some values)
             (list (Vocabulary.all vocabulary |> List.length) (VocabularyCodec.create vocabulary))
 
-    let private filterFields =
+    let private baseFilterFields =
         (record (fun lifecycles statuses progress text order ->
             CaseListFilter.create
                 (defaultArg lifecycles [])
@@ -354,6 +354,15 @@ module RequestCodecs =
                 else
                     Some value.Order)
             (VocabularyCodec.create CaseListOrder.vocabulary)
+
+    let private filterFields =
+        (record (fun filter assignment -> { filter with Assignment = assignment })
+        : Fields<CaseListFilter<string>, _>)
+        |> flatten id baseFilterFields
+        |> optionalField
+            "assignment"
+            _.Assignment
+            (VocabularyCodec.create CaseAssignment.vocabulary)
 
     let caseListRequest =
         let paging =
@@ -380,6 +389,13 @@ module RequestCodecs =
             Fields = fields
         }
         |> finishRead RequestSchemas.CaseListRequest QueryEndpoint.CaseList
+
+    let caseSummaryRequest =
+        {
+            Inputs = [ ReadInput.Worklist ]
+            Fields = filterFields
+        }
+        |> finishRead RequestSchemas.CaseSummaryRequest QueryEndpoint.CaseSummary
 
     let historyRequest =
         (read (fun reference detail cursor limit ->

@@ -63,6 +63,7 @@ module internal Queries =
                             EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
+                    HasAssignedCases = actor.HasAssignedCases
                     View = Advice.views principal actor
                     Offers = Advice.installationOffers principal actor
                     Capability =
@@ -147,6 +148,11 @@ module internal Queries =
                                 Claimed = Registration.claimed fields.Registration
                                 Payable = fields.Decision |> Option.map Decision.payable
                                 Progress = CaseProgress.ofPayment fields.Progress
+                                IncidentNotificationDate =
+                                    Registration.value
+                                        BusinessField.IncidentNotificationDate
+                                        fields.Registration
+                                    |> FieldValue.date
                             })
                         record.Snapshot.State
             })
@@ -207,6 +213,39 @@ module internal Queries =
                     )
 
                 return readResult result
+        }
+
+    let caseSummary (services: ServiceContext) (filter: CaseListFilter<string>) token =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! actor =
+                                        tx.Authority
+                                            {
+                                                Principal = services.Principal
+                                                CaseId = None
+                                            }
+
+                                    let request =
+                                        {
+                                            CaseListRequest.Page = { Limit = 1; AfterCursor = None }
+                                            Filter = filter
+                                        }
+
+                                    match selectCases services.Principal request actor with
+                                    | Error refusal -> return Outcome.Rejected refusal
+                                    | Ok selection ->
+                                        let! summary = tx.CaseSummary selection.Selection
+                                        return Outcome.Succeeded summary
+                                }
+                        CancellationToken = token
+                    }
+
+            return readResult result
         }
 
     let selectHistory principal (request: HistoryRequest) actor record =

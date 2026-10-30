@@ -222,6 +222,7 @@ module Service =
         Queries.get services input.CaseReference ct
 
     let list = Queries.list
+    let caseSummary = Queries.caseSummary
     let history = Queries.history
 
     let observe services (input: OperationLookup) ct =

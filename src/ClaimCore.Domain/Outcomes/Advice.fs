@@ -58,12 +58,14 @@ type ActorContext =
         Capability: Capability list
         View: View list
         Offers: InstallationOffer list
+        HasAssignedCases: bool
     }
 
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
         Advice: CaseAdvice
+        AssignedToYou: bool
     }
 
 type FieldDiff =

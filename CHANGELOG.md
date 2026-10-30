@@ -2,12 +2,19 @@
 
 ## [Unreleased]
 
-- Use a fresh database: snapshot and worklist projections change the SQL checksum. Earlier installations are refused unchanged; no migration or earlier-format reader is supplied.
+- Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.
 - Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
-- Discard earlier case-list cursors; continuations bind canonical filters and order. History, actor and grant cursor formats remain unchanged.
+- Discard earlier case-list cursors; format 3 binds canonical filters, assignment and notification order. Other existing cursor formats remain unchanged.
+- CSV exports prefix formula-leading cells with an apostrophe before quoting; use JSON for exact authored values.
 - Stored browser preferences reset; version 2 adds independent SYSTEM, LIGHT and DARK themes.
 - Update source callers for typed IDs/positions, complete field groups, grouped refusals, act descriptions and endpoint reply classification; Schema interpreters handle Vocabulary annotations.
 - Handle new CASE_STATUS_PROJECTION, CASE_PROGRESS_PROJECTION, CASE_CHANGED_AT_PROJECTION and CASE_SEARCH_PROJECTION verification findings.
+- Audit authority changes with installation OWNER or AUDITOR rights using authority.history or the CLI, including typed facts and target-filtered newest-first pages.
+- Select assigned cases and oldest notifications; case.summary counts the current visible filter and returns exact per-currency totals beyond single-amount precision.
+- Erasure clears notification dates and all amount/currency projections; verification identifies divergence in each new column.
+- Vocabulary token plans reduce repeated work in case writes and ledger verification while retaining permanent bytes and integrity checks.
+- growth-compare compares three alternating same-host pairs and fails relative throughput, latency or verification regressions using workload fingerprints.
+- Positive test inputs use inventory builders; local golden updates refuse CI and permanent vectors, and one transition oracle supplies semantic expectations.
 - Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
 - Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.
 - Case-list rows add claimant, insurer, canonical claimed/payable amounts, progress and last-change time; erased rows expose only retained metadata.

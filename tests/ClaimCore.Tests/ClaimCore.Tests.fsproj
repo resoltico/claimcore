@@ -44,6 +44,7 @@
     <Compile Include="Contract/WireGroupGenerators.fs" />
     <Compile Include="Contract/WireValueGenerators.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
+    <Compile Include="Application/ProjectionIndexChecks.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />
@@ -59,6 +60,7 @@
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
+    <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
@@ -85,6 +87,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
     <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />

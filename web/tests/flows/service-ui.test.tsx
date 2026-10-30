@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { getButton, render, screen } from "../support/presentation-test-support";
@@ -13,7 +14,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, definition, fields, runtime, response } from "../support/service-ui.fixtures";
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -24,7 +25,7 @@ const current: CurrentCase = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 describe("catalog rendering", () => {
   it("renders catalog labels and all supplied field values without client-side normalization", () => {
     const changed = vi.fn();

@@ -180,7 +180,7 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun reference revision view advice ->
+        (record (fun reference revision view advice assigned ->
             {
                 Snapshot =
                     {
@@ -189,12 +189,14 @@ module ResponseCodecs =
                         State = view
                     }
                 Advice = advice
+                AssignedToYou = assigned
             })
         : Fields<CaseReadModel, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
+        |> field "assignedToYou" _.AssignedToYou boolean
         |> build
         |> named "CaseView"
 
@@ -212,7 +214,7 @@ module ResponseCodecs =
                     (record id |> field "act" id authorityKind)
             ]
 
-    let runtimeContext =
+    let private runtimeFields =
         (record (fun version date zone ->
             {
                 ProductVersion = version
@@ -223,32 +225,27 @@ module ResponseCodecs =
         |> field "productVersion" _.ProductVersion nonempty
         |> field "businessDate" _.EffectiveBusinessDate dateValue
         |> field "timeZone" _.TimeZoneId nonempty
-        |> build
-        |> named "RuntimeContext"
+
+    let runtimeContext = runtimeFields |> build |> named "RuntimeContext"
 
     let actorContext =
-        (record (fun version date zone capabilities views offers ->
+        (record (fun runtime capabilities views offers assigned ->
             {
-                Runtime =
-                    {
-                        ProductVersion = version
-                        EffectiveBusinessDate = date
-                        TimeZoneId = zone
-                    }
+                ActorContext.Runtime = runtime
                 Capability = capabilities
                 View = views
                 Offers = offers
+                HasAssignedCases = assigned
             })
         : Fields<ActorContext, _>)
-        |> field "productVersion" _.Runtime.ProductVersion nonempty
-        |> field "businessDate" _.Runtime.EffectiveBusinessDate dateValue
-        |> field "timeZone" _.Runtime.TimeZoneId nonempty
+        |> flatten _.Runtime runtimeFields
         |> field
             "capabilities"
             _.Capability
             (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
+        |> field "hasAssignedCases" _.HasAssignedCases boolean
         |> build
         |> named "ActorContext"
 

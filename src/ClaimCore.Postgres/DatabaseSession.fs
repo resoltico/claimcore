@@ -133,6 +133,9 @@ module internal DatabaseSession =
     let calendarDate index row =
         parsedCalendarDate (value<string> index row)
 
+    let namedOptionalCalendarDate name row =
+        namedOptional<string> name row |> Option.map parsedCalendarDate
+
 
     let private recordedText text =
         let format = JsonFormats.InstantFormat + " 'AD'"

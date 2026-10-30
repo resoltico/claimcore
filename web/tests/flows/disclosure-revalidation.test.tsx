@@ -1,10 +1,11 @@
+import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
-const context = {
+const context = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -15,7 +16,7 @@ const context = {
     kind: "ACTIVE",
     fields,
   },
-};
+});
 const sessionRefusal = () =>
   new Response(
     JSON.stringify({

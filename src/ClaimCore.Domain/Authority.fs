@@ -120,6 +120,13 @@ module Authority =
         && (scoped
             |> Option.exists (List.exists (fun role -> List.contains capability (policy role))))
 
+    let assignedTo principal (view: AuthorityView) id =
+        validActor principal view
+        && (view.Cases
+            |> Map.tryFind id
+            |> Option.defaultValue []
+            |> List.exists (fun role -> List.contains role (readRoles principal)))
+
     let correctionCapability =
         function
         | RecordGroup.Registration -> Capability.Register

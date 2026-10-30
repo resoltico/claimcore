@@ -1,4 +1,4 @@
-import { caseSummaryInput } from "../support/inputs";
+import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
@@ -105,7 +105,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
     missing ? "REJECTED" : "SUCCEEDED",
     missing
       ? unavailable
-      : {
+      : caseViewInput({
           caseReference: value,
           revision: 1,
           advice: {
@@ -119,7 +119,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
               caseReference: value,
             },
           },
-        },
+        }),
   );
 };
 const checkDetail = async (value: string, points: string | null, missing: boolean) => {

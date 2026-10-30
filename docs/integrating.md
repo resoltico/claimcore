@@ -161,7 +161,8 @@ order is `REFERENCE`. For example:
 | `status` | Set of OPENED and CLOSED; erased cases have no status. |
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
 | `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
-| `order` | REFERENCE, or RECENT for last accepted change first. |
+| `order` | REFERENCE, RECENT for last change first, or NOTIFIED for oldest notification first. |
+| `assignment` | ASSIGNED_TO_ME restricts to valid case-scoped grants with ReadCase; omitted means the whole visible scope. |
 | `cursor` | Opaque continuation bound to the admitted filters and order. |
 | `limit` | Bounded page size from the catalog and contract. |
 
@@ -170,18 +171,28 @@ invariant lowercase. Stored searchable values use the same normalization, joined
 underscore and backslash match literally. Search does not remove accents or use date/amount ranges.
 
 REFERENCE orders by the ASCII-case-folded reference. RECENT orders by the latest accepted case ledger
-entry's `recorded_at` descending, then folded reference ascending. A continuation encodes those keyset
+entry's `recorded_at` descending, then folded reference ascending. NOTIFIED orders by notification date
+ascending, then folded reference; erased rows with no date sort last. A continuation encodes those keyset
 positions and its canonical filters/order. Use only continuations supported by the issuing endpoint.
 After request admission and authorization, unsupported cursor formats or invalid endpoint/filter/resource
 bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot.
 
 A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
-(`amount`/`currency`) and `progress`. The amount strings are canonical; an undecided case has null payable.
+(`amount`/`currency`), `progress` and `incidentNotificationDate`. The amount strings are canonical; an undecided case has null payable.
 An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
 requires the same `ReadCase` capability as `case.get`. Names, amounts, status and progress agree with the
 same actor's current case read. `changedAt` comes from the latest accepted case ledger/history entry;
 `case.get` itself has no timestamp member.
+
+`case.summary` accepts the same filter members, without `cursor` or `limit`. Its `counts` contain
+`total` and `lifecycle`, `status` and `progress` value/count arrays. `claimed` and `payable` contain
+currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string with at most 40 integer
+and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
+count. Visibility, assignment and forbidden-role safeguards match `case.list` in the same read snapshot.
+`case.get` adds `assignedToYou`, and `context` adds `hasAssignedCases` for choosing an assigned worklist.
+Discard earlier case-list cursors: format 3 binds assignment and notification-date keysets, with no
+older-format reader.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent

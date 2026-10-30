@@ -1,3 +1,4 @@
+import { caseViewInput } from "../../../support/inputs";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -12,12 +13,12 @@ vi.mock("../../../../src/hooks/useCompact", () => ({ useCompact: () => compact.v
 beforeEach(() => {
   compact.value = false;
 });
-const current: CurrentCase = {
+const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 2,
   state: { kind: "ACTIVE", fields },
   advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), history: [] },
-};
+});
 it("renders grouped facts with missing decision and payment and retains help and exact copying", async () => {
   const user = userEvent.setup();
   const view = render(

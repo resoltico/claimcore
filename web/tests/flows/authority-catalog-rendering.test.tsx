@@ -1,3 +1,4 @@
+import { actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -42,12 +43,12 @@ const contextReply = (): Response =>
   response("context", {
     outcome: {
       kind: "SUCCEEDED",
-      data: {
+      data: actorContextInput({
         ...runtime,
         capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
         views: ["AUTHORITY", "OPERATIONS"],
         offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-      },
+      }),
     },
   });
 const authorityPreview = (parsed: AuthorityInput) =>

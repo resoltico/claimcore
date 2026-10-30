@@ -95,12 +95,51 @@ module internal VerificationRows =
                                             VerificationFinding.CaseSearchProjection
                                             (fun () -> Projections.caseSearchText row)
 
+                                    let! notifiedOn =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseNotifiedOnProjection
+                                            (fun () -> Projections.caseNotifiedOn row)
+
+                                    let! claimedAmount =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseClaimedAmountProjection
+                                            (fun () -> Projections.caseClaimedAmount row)
+
+                                    let! claimedCurrency =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseClaimedCurrencyProjection
+                                            (fun () -> Projections.caseClaimedCurrency row)
+
+                                    let! payableAmount =
+                                        capture
+                                            None
+                                            VerificationFinding.CasePayableAmountProjection
+                                            (fun () -> Projections.casePayableAmount row)
+
+                                    let! payableCurrency =
+                                        capture
+                                            None
+                                            VerificationFinding.CasePayableCurrencyProjection
+                                            (fun () -> Projections.casePayableCurrency row)
+
                                     let index: CaseIndex =
                                         {
                                             Status = status
                                             Progress = progress
                                             ChangedAt = changedAt
                                             SearchText = searchText
+                                            NotifiedOn = notifiedOn
+                                            Claimed =
+                                                Projections.indexedMoney
+                                                    claimedAmount
+                                                    claimedCurrency
+                                            Payable =
+                                                Projections.indexedMoney
+                                                    payableAmount
+                                                    payableCurrency
                                         }
 
                                     let! record =

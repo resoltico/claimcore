@@ -378,6 +378,24 @@ let private indexFinding expected statement database =
         do! finding expected database
     }
 
+let private payableIndexFinding expected statement database =
+    task {
+        let! actor = populated database
+
+        let! decided =
+            Service.execute
+                actor
+                (OperationInput.Case(
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide Inputs.decision)
+                ))
+                token
+
+        accepted decided |> ignore
+        let! _ = verified database
+        do! sql database statement [||]
+        do! finding expected database
+    }
+
 let internal findingCases =
     [
         VerificationFinding.Link, link
@@ -410,6 +428,26 @@ let internal findingCases =
         indexFinding
             VerificationFinding.CaseSearchProjection
             "UPDATE claimcore.cases SET search_text='tampered'"
+        VerificationFinding.CaseNotifiedOnProjection,
+        indexFinding
+            VerificationFinding.CaseNotifiedOnProjection
+            "UPDATE claimcore.cases SET notified_on=DATE '2026-08-04'"
+        VerificationFinding.CaseClaimedAmountProjection,
+        indexFinding
+            VerificationFinding.CaseClaimedAmountProjection
+            "UPDATE claimcore.cases SET claimed_amount=1"
+        VerificationFinding.CaseClaimedCurrencyProjection,
+        indexFinding
+            VerificationFinding.CaseClaimedCurrencyProjection
+            "UPDATE claimcore.cases SET claimed_currency='USD'"
+        VerificationFinding.CasePayableAmountProjection,
+        payableIndexFinding
+            VerificationFinding.CasePayableAmountProjection
+            "UPDATE claimcore.cases SET payable_amount=1"
+        VerificationFinding.CasePayableCurrencyProjection,
+        payableIndexFinding
+            VerificationFinding.CasePayableCurrencyProjection
+            "UPDATE claimcore.cases SET payable_currency='USD'"
         VerificationFinding.AuthorityProjection, authorityProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected

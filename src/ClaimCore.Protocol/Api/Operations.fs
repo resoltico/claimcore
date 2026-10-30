@@ -11,6 +11,7 @@ type OperationEndpoint =
 type QueryEndpoint =
     | CaseGet
     | CaseList
+    | CaseSummary
     | CaseHistory
     | Observe
     | Resolve
@@ -34,6 +35,7 @@ module ActorEndpoint =
                 (ActorEndpoint.Operation OperationEndpoint.Execute)
                 (ActorEndpoint.Query QueryEndpoint.CaseGet)
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
                 (ActorEndpoint.Query QueryEndpoint.Observe)
                 (ActorEndpoint.Query QueryEndpoint.Resolve)
@@ -47,6 +49,7 @@ module ActorEndpoint =
              | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
              | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
              | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
              | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"

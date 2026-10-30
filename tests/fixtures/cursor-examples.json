@@ -2,9 +2,9 @@
  "accepted": [
   {
    "endpoint": "case.list",
-   "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null},\"kind\":\"CASES\",\"v\":2}",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9",
-   "tokenLength": 188
+   "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null},\"kind\":\"CASES\",\"v\":3}",
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjN9",
+   "tokenLength": 212
   },
   {
    "endpoint": "case.history",

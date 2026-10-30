@@ -21,6 +21,7 @@ let private facts =
         Claimed = Inputs.money "1000.00" "EUR"
         Payable = None
         Progress = CaseProgress.Undecided
+        IncidentNotificationDate = Inputs.date "2026-08-03"
     }
 
 let private row reference =
@@ -231,6 +232,7 @@ let tests =
                             "state.payable.amount"
                             "state.payable.currency"
                             "state.progress"
+                            "state.incidentNotificationDate"
                             "changedAt"
                         ]
                         "The independently specified wire-path header"
@@ -249,6 +251,7 @@ let tests =
                             ""
                             ""
                             "UNDECIDED"
+                            "2026-08-03"
                             "2026-10-28T12:30:00.000000Z"
                         ]
                         "Canonical values and authored punctuation survive"
@@ -259,6 +262,7 @@ let tests =
                             "ERASED"
                             "9"
                             "ERASED"
+                            ""
                             ""
                             ""
                             ""

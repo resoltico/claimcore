@@ -18,6 +18,8 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
         | ActorEndpoint.Query QueryEndpoint.CaseGet -> Route.bind Api.caseGet Service.get
         | ActorEndpoint.Query QueryEndpoint.CaseList -> Route.bind Api.caseList Service.list
+        | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
+            Route.bind Api.caseSummary Service.caseSummary
         | ActorEndpoint.Query QueryEndpoint.CaseHistory ->
             Route.bind Api.caseHistory Service.history
         | ActorEndpoint.Query QueryEndpoint.Observe ->

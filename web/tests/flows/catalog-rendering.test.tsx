@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { inventory } from "../support/inventory";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
@@ -30,7 +31,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
     kind,
   );
   const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT";
-  return {
+  return caseViewInput({
     caseReference: caseFields.caseReference,
     revision: 1,
     advice: {
@@ -56,7 +57,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
           : null,
       },
     },
-  };
+  });
 };
 const authorCase = (kind: ActKind) => {
   switch (kind) {

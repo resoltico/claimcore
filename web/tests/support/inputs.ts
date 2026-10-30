@@ -1,7 +1,26 @@
 import type { CaseSummary as Summary } from "../../src/protocol/types";
-import type { Principal, Registration, Decision, Payment } from "@contracts/client";
+import type {
+  ActorContext,
+  CaseView,
+  Principal,
+  Registration,
+  Decision,
+  Payment,
+} from "@contracts/client";
 
 import { inventory } from "./inventory";
+
+type CaseViewSeed = Omit<CaseView, "assignedToYou"> & Partial<Pick<CaseView, "assignedToYou">>;
+export const caseViewInput = <T extends CaseViewSeed>(value: T) => ({
+  ...value,
+  assignedToYou: value.assignedToYou ?? false,
+});
+type ActorContextSeed = Omit<ActorContext, "hasAssignedCases"> &
+  Partial<Pick<ActorContext, "hasAssignedCases">>;
+export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
+  ...value,
+  hasAssignedCases: value.hasAssignedCases ?? false,
+});
 
 // Build inputs only. Expected outputs and oracle values must stay literal.
 const samples: Record<string, string> = {
@@ -55,6 +74,7 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     claimed: { amount: "12.34", currency: "EUR" },
     payable: null,
     progress: "UNDECIDED",
+    incidentNotificationDate: "2026-09-02",
   };
   return {
     caseReference: "SYNTHETIC-001",

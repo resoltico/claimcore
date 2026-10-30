@@ -113,6 +113,7 @@ let internal retainedText () =
             Api.caseGet.Output
             (Outcome.Succeeded
                 {
+                    AssignedToYou = false
                     Snapshot = snapshot
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
@@ -269,7 +270,8 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Lifecycle
             | InteractionInput.Status
             | InteractionInput.Progress
-            | InteractionInput.Order -> "input."
+            | InteractionInput.Order
+            | InteractionInput.Assignment -> "input."
 
         Expect.equal
             labelId

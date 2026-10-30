@@ -104,6 +104,9 @@ module RequestSchemas =
     let CaseListRequest = "CaseListRequest"
 
     [<Literal>]
+    let CaseSummaryRequest = "CaseSummaryRequest"
+
+    [<Literal>]
     let HistoryRequest = "HistoryRequest"
 
     [<Literal>]

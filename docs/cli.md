@@ -383,7 +383,7 @@ List cases
 Read one page of cases visible to the actor.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -394,7 +394,27 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
-| `--order` | Order — Order by case reference, or by latest accepted change with case reference as the tie-breaker. | reference, recent | REFERENCE |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
+| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
+
+## case summary
+
+Case summary
+
+Count matching visible cases and sum claimed and payable amounts separately for each currency.
+
+```sh
+claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--lifecycle` | Lifecycle — Restrict results to the selected lifecycles. Omit this filter to include every lifecycle. | active, voided, erased |  |
+| `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
+| `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
+| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
+| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
 
 ## case history
 

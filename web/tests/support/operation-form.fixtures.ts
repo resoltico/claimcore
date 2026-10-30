@@ -1,3 +1,4 @@
+import { caseViewInput } from "./inputs";
 import type { CurrentCase } from "../../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseAdvice } from "./case-advice.fixtures";
@@ -11,7 +12,7 @@ import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
-export const current: CurrentCase = {
+export const current: CurrentCase = caseViewInput({
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {
@@ -25,7 +26,7 @@ export const current: CurrentCase = {
       caseReference: "CASE-SERIALIZATION",
     },
   },
-};
+});
 export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current, firstId);
 export const requestFor = (values: FormValues, kind = "CLOSE") =>
   buildRequest(

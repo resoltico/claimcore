@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act } from "@testing-library/react";
@@ -23,7 +24,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
   value: {
     outcome: {
       kind: "SUCCEEDED",
-      data: {
+      data: caseViewInput({
         caseReference: fields.caseReference,
         revision: 1,
         advice: {
@@ -34,7 +35,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
           kind: "ACTIVE",
           fields,
         },
-      },
+      }),
     },
   },
 };

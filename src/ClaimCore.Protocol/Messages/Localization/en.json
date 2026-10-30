@@ -197,7 +197,7 @@
   "input.lifecycle.label": "Lifecycle",
   "input.lifecycle.meaning": "Restrict results to the selected lifecycles. Omit this filter to include every lifecycle.",
   "input.order.label": "Order",
-  "input.order.meaning": "Order by case reference, or by latest accepted change with case reference as the tie-breaker.",
+  "input.order.meaning": "Order by reference, latest accepted change, or oldest notification date; reference breaks ties.",
   "input.progress.label": "Payment progress",
   "input.progress.meaning": "Restrict results to undecided, decided or paid cases. Erased cases have no payment progress.",
   "input.scope.label": "Grant scope",
@@ -256,5 +256,12 @@
   "subject.AUTHORITY.label": "Authority",
   "subject.CASE.label": "Case",
   "endpoint.authority.history.label": "Authority history",
-  "endpoint.authority.history.meaning": "Review authority changes, newest first, optionally filtered by target actor."
+  "endpoint.authority.history.meaning": "Review authority changes, newest first, optionally filtered by target actor.",
+  "caseOrder.NOTIFIED.label": "Oldest first",
+  "assignment.ASSIGNED_TO_ME.label": "Assigned to me",
+  "assignment.ASSIGNED_TO_ME.meaning": "Cases where you hold a valid case-scoped grant with ReadCase.",
+  "input.assignment.label": "Assignment",
+  "input.assignment.meaning": "Restrict results to cases assigned to the requesting actor.",
+  "endpoint.case.summary.label": "Case summary",
+  "endpoint.case.summary.meaning": "Count matching visible cases and sum claimed and payable amounts separately for each currency."
 }

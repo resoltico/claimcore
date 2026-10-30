@@ -168,12 +168,13 @@ Baseline edits require a rebuild and a fresh installation. The runtime refuses u
 identities without modifying them.
 
 The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
-last-change time and normalized search text. Live snapshots store
+last-change time, normalized search text, notification date and exact claimed/payable amount/currency
+pairs. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check its reference, revision and lifecycle against the columns and
 its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
-text against the folded state. Case progress and business-value invariants belong to Domain
+text, notification date and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts
@@ -436,7 +437,8 @@ stays at the recorded commit. The comparison removes its worktrees, build output
 containers on success or failure, while preserving reports and failure output.
 
 Run `bash eng/verify.sh growth` before a release and on demand. It includes nine write-contention profiles,
-three cardinality comparisons and search/filtered read workloads at 1k, 10k and 100k cases. At the
+three cardinality comparisons and search/filtered, notification-order and summary workloads at 1k,
+10k and 100k cases. At the
 100k case population, global and actor-filtered authority-history reads also run after 100k additional
 grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
 their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.

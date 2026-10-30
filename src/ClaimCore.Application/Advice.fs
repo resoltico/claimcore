@@ -65,6 +65,7 @@ module internal Advice =
             {
                 Snapshot = record.Snapshot
                 Advice = advice
+                AssignedToYou = Authority.assignedTo principal actor record.CaseId
             })
 
     let installationOffers principal actor =

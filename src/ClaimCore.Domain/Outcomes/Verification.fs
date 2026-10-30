@@ -23,6 +23,11 @@ type VerificationFinding =
     | CaseProgressProjection
     | CaseChangedAtProjection
     | CaseSearchProjection
+    | CaseNotifiedOnProjection
+    | CaseClaimedAmountProjection
+    | CaseClaimedCurrencyProjection
+    | CasePayableAmountProjection
+    | CasePayableCurrencyProjection
     | AuthorityProjection
     | Head
     | ExpectedPosition

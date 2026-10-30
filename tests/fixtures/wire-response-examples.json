@@ -108,7 +108,8 @@
               "CASES",
               "AUTHORITY",
               "OPERATIONS"
-            ]
+            ],
+            "hasAssignedCases": false
           }
         }
       },
@@ -184,7 +185,8 @@
             "advice": {
               "acts": [],
               "history": []
-            }
+            },
+            "assignedToYou": false
           }
         }
       },
@@ -1027,7 +1029,8 @@
               "CASES",
               "AUTHORITY",
               "OPERATIONS"
-            ]
+            ],
+            "hasAssignedCases": false
           }
         }
       }
@@ -1080,7 +1083,8 @@
                   "CLEAR"
                 ]
               }
-            }
+            },
+            "assignedToYou": false
           }
         }
       }
@@ -1133,7 +1137,8 @@
                   "CLEAR"
                 ]
               }
-            }
+            },
+            "assignedToYou": false
           }
         }
       }
@@ -1160,7 +1165,8 @@
                     "currency": "EUR"
                   },
                   "payable": null,
-                  "progress": "UNDECIDED"
+                  "progress": "UNDECIDED",
+                  "incidentNotificationDate": "2026-01-01"
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z"
               },
@@ -1177,7 +1183,8 @@
                     "currency": "EUR"
                   },
                   "payable": null,
-                  "progress": "UNDECIDED"
+                  "progress": "UNDECIDED",
+                  "incidentNotificationDate": "2026-01-01"
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z"
               },
@@ -3022,7 +3029,8 @@
             "advice": {
               "acts": [],
               "history": []
-            }
+            },
+            "assignedToYou": false
           }
         }
       },
@@ -3149,7 +3157,8 @@
                     "amount": "750",
                     "currency": "EUR"
                   },
-                  "progress": "DECIDED"
+                  "progress": "DECIDED",
+                  "incidentNotificationDate": "2026-01-01"
                 }
               },
               {
@@ -3169,7 +3178,8 @@
                     "amount": "750",
                     "currency": "EUR"
                   },
-                  "progress": "PAID"
+                  "progress": "PAID",
+                  "incidentNotificationDate": "2026-01-01"
                 }
               }
             ],
@@ -3306,6 +3316,105 @@
     {
       "name": "authority.history-failed",
       "endpoint": "authority.history",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.summary-counts-totals",
+      "endpoint": "case.summary",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "counts": {
+              "total": 2,
+              "lifecycle": [
+                {
+                  "value": "ACTIVE",
+                  "count": 1
+                },
+                {
+                  "value": "VOIDED",
+                  "count": 1
+                },
+                {
+                  "value": "ERASED",
+                  "count": 0
+                }
+              ],
+              "status": [
+                {
+                  "value": "OPENED",
+                  "count": 1
+                },
+                {
+                  "value": "CLOSED",
+                  "count": 1
+                }
+              ],
+              "progress": [
+                {
+                  "value": "UNDECIDED",
+                  "count": 1
+                },
+                {
+                  "value": "DECIDED",
+                  "count": 1
+                },
+                {
+                  "value": "PAID",
+                  "count": 0
+                }
+              ]
+            },
+            "claimed": [
+              {
+                "currency": "EUR",
+                "amount": "1999999999999999999.9998"
+              }
+            ],
+            "payable": [
+              {
+                "currency": "EUR",
+                "amount": "999999999999999999.9999"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "case.summary-rejected",
+      "endpoint": "case.summary",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "incidentDate",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.summary-failed",
+      "endpoint": "case.summary",
       "value": {
         "outcome": {
           "kind": "FAILED",

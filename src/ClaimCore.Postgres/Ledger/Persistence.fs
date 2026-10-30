@@ -69,6 +69,11 @@ module internal Persistence =
             DatabaseSession.parameter (index.Progress |> Option.map DurableNames.progress)
             box index.ChangedAt
             DatabaseSession.parameter index.SearchText
+            DatabaseSession.parameter (index.NotifiedOn |> Option.map CalendarDate.value)
+            DatabaseSession.parameter (index.Claimed |> Option.map Money.value)
+            DatabaseSession.parameter (index.Claimed |> Option.map Money.currency)
+            DatabaseSession.parameter (index.Payable |> Option.map Money.value)
+            DatabaseSession.parameter (index.Payable |> Option.map Money.currency)
         |]
 
     let case connection projection token =
@@ -78,7 +83,7 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)"
                         (caseParameters id snapshot index)
                         token
 
@@ -87,7 +92,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9 WHERE case_id=$1"
+                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14 WHERE case_id=$1"
                         (caseParameters id snapshot index)
                         token
 
@@ -104,7 +109,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,changed_at=$3 WHERE case_id=$1"
+                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,changed_at=$3 WHERE case_id=$1"
                         [| box (CaseId.value id); box (Revision.value revision); box changedAt |]
                         token
 

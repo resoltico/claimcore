@@ -1,3 +1,4 @@
+import { caseViewInput } from "../support/inputs";
 import { businessFieldCount, inventory } from "../support/inventory";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
@@ -18,7 +19,7 @@ describe("core act metadata", () => {
         (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
       ),
     ).toHaveLength(inventory.caseActs.length);
-    const current = {
+    const current = caseViewInput({
       caseReference: fields.caseReference,
       revision: 1,
       advice: {
@@ -29,7 +30,7 @@ describe("core act metadata", () => {
         kind: "ACTIVE" as const,
         fields,
       },
-    };
+    });
     const values = initialOperationValues(
       "CASE",
       "AMEND_REGISTRATION",

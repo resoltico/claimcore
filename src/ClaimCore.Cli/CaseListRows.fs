@@ -79,6 +79,11 @@ module internal CaseListRows =
                 Value = live (fun facts -> CaseProgress.token facts.Progress)
             }
             {
+                Key = "state.incidentNotificationDate"
+                Label = field BusinessField.IncidentNotificationDate
+                Value = live (fun facts -> CalendarDate.format facts.IncidentNotificationDate)
+            }
+            {
                 Key = "changedAt"
                 Label = "label.changedAt"
                 Value = fun row -> Some(TextReplyFormat.instant row.ChangedAt)

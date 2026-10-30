@@ -240,6 +240,7 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.FindCase id = tx.FindCase id
                                         member _.FindEntry id = tx.FindEntry id
                                         member _.CasePage query = tx.CasePage query
+                                        member _.CaseSummary query = tx.CaseSummary query
                                         member _.HistoryPage query = tx.HistoryPage query
                                         member _.ActorPage query = tx.ActorPage query
                                         member _.GrantPage query = tx.GrantPage query

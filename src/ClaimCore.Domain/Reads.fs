@@ -48,6 +48,16 @@ module HistoryDetail =
 type CaseListOrder =
     | Reference
     | Recent
+    | Notified
+
+[<RequireQualifiedAccess>]
+type CaseAssignment = | AssignedToMe
+
+module CaseAssignment =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseAssignment> "assignment" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
 
 [<RequireQualifiedAccess>]
 type CaseProgress =
@@ -107,6 +117,7 @@ type CaseListFilter<'text> =
         Progress: CaseProgress list
         Text: 'text option
         Order: CaseListOrder
+        Assignment: CaseAssignment option
     }
 
 module CaseListFilter =
@@ -117,6 +128,7 @@ module CaseListFilter =
             Progress = progress
             Text = text
             Order = order
+            Assignment = None
         }
 
     let empty<'text> : CaseListFilter<'text> =
@@ -135,7 +147,11 @@ module CaseListFilter =
                 (input.Statuses |> List.distinct |> List.sort)
                 (input.Progress |> List.distinct |> List.sort)
                 text
-                input.Order)
+                input.Order
+            |> fun filter ->
+                { filter with
+                    Assignment = input.Assignment
+                })
 
     let matches (filter: CaseListFilter<CaseSearchText>) lifecycle status progress text =
         let allows choices candidate =

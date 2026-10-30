@@ -29,3 +29,4 @@ authority list	{"endpoint":"authority.list","input":{"limit":50}}
 authority grants 11111111-2222-4333-8444-555555555555	{"endpoint":"authority.grants","input":{"actorId":"11111111-2222-4333-8444-555555555555","limit":50}}
 context	{"endpoint":"context","input":{}}
 authority history --limit 1	{"endpoint":"authority.history","input":{"limit":1}}
+case summary	{"endpoint":"case.summary","input":{}}

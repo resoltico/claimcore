@@ -1,3 +1,4 @@
+import { caseViewInput } from "../../support/inputs";
 import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
@@ -6,12 +7,16 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("erased cases retain their exact reference and revision but expose no facts or acts", async () => {
   vi.mocked(fetch)
     .mockResolvedValueOnce(
-      response("case.get", "SUCCEEDED", {
-        state: { kind: "ERASED" },
-        caseReference: "ERASED-1",
-        revision: 4,
-        advice: { acts: [], history: ["SUMMARY"] },
-      }),
+      response(
+        "case.get",
+        "SUCCEEDED",
+        caseViewInput({
+          state: { kind: "ERASED" },
+          caseReference: "ERASED-1",
+          revision: 4,
+          advice: { acts: [], history: ["SUMMARY"] },
+        }),
+      ),
     )
     .mockResolvedValueOnce(
       response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),

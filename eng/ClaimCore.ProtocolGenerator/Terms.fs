@@ -72,6 +72,7 @@ module Terms =
             rendered ActKind.vocabulary
             rendered HistoryDetail.vocabulary
             rendered CaseListOrder.vocabulary
+            rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
             rendered ActSubject.vocabulary
             fieldTerms
