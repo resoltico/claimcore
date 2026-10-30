@@ -8,6 +8,11 @@ explicit task or release requirement. Neither growth command is part of the ordi
 comparison isolates the reference commit and a stable candidate snapshot, including tracked working
 changes, and retains all six runs.
 
+For an independently hosted comparison, dispatch the CI workflow on the candidate branch with
+`comparison_ref` set to the reference commit. Its optional job runs the same complete comparison on
+one fresh runner and retains JSON/Markdown and raw workload reports as `growth-comparison` for 30 days.
+This does not enable the separate nine-profile `growth` input or change normal PR requirements.
+
 | Tool | Responsibility |
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and bounded native report retention |

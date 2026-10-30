@@ -18,6 +18,7 @@
 - Run reviewed commands in claimcore shell with one sign-in; access/refresh tokens and arrow-key history stay in memory, with 15-minute idle discard and no history file.
 - Vocabulary token plans reduce repeated work in case writes and ledger verification while retaining permanent bytes and integrity checks.
 - growth-compare compares three alternating same-host pairs and fails relative throughput, latency or verification regressions using workload fingerprints.
+- Run optional full growth comparisons on a fresh CI runner; paired workload reports are retained as a downloadable artifact.
 - Use focused checks during development; change probes and growth runs require a concrete question or explicit acceptance scope, while implementation PRs retain full product verification.
 - Musl CI installs pinned Python required by native comparison controls.
 - Positive test inputs use inventory builders; local golden updates refuse CI and permanent vectors, and one transition oracle supplies semantic expectations.
