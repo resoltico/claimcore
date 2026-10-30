@@ -14,6 +14,7 @@
 - Erasure clears notification dates and all amount/currency projections; verification identifies divergence in each new column.
 - Vocabulary token plans reduce repeated work in case writes and ledger verification while retaining permanent bytes and integrity checks.
 - growth-compare compares three alternating same-host pairs and fails relative throughput, latency or verification regressions using workload fingerprints.
+- Use focused checks during development; change probes and growth runs require a concrete question or explicit acceptance scope, while implementation PRs retain full product verification.
 - Positive test inputs use inventory builders; local golden updates refuse CI and permanent vectors, and one transition oracle supplies semantic expectations.
 - Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
 - Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.

@@ -193,8 +193,8 @@ policy. Unknown stored act, role or principal-kind tokens are corruption; verifi
 are canonical nonnegative integers and hashes are lowercase hexadecimal. The checkpoint must belong to the
 verified chain; the ledger may extend beyond it.
 
-Run [synthetic growth qualification](contributing.md#growth) before release and on demand, then qualify
-actual storage, workloads and concurrency. Read workloads report search and filtered-query percentiles at
-1k, 10k and 100k cases. These measurements establish neither an SLA nor production capacity.
+Select [synthetic growth measurements](contributing.md#growth) for the performance question or agreed
+release scope. Qualify actual storage, workloads and concurrency separately; synthetic measurements
+establish neither an SLA nor production capacity.
 
 See [Integrating](integrating.md) for result handling and [Support](../SUPPORT.md) for redacted reporting.
