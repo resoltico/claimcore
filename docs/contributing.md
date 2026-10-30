@@ -246,7 +246,7 @@ Choose checks by the changed behavior and the claim being made:
 | Documentation-only change | Check affected links, commands and claims; run relevant documentation checks. Product or generated-output changes need their applicable checks. |
 | Change probe or performance investigation | Select the experiment and checks that answer the concrete question; see [Change probes](#change-probes) and [Growth](#growth). |
 
-There is no automatic full-gate requirement after each edit, commit or work package. Explicit task
+There is no automatic full-gate requirement after each edit or commit. Explicit task
 acceptance criteria still apply. Reuse results only while their relevant source, configuration, dependencies
 and execution conditions remain applicable; rerun affected checks after later changes. Preserve failures
 and their resolution rather than treating a later pass as evidence that the earlier run never failed.
@@ -338,8 +338,7 @@ unchanged. Run the ordinary gate afterwards. Updating goldens never resolves per
 
 ## Change probes
 
-Change probes are optional architecture experiments. Foundation or refactoring work does not itself
-require a probe, assessment of all five, or an explanation for excluding them. Run a probe to answer a
+Change probes are optional architecture experiments. Select a probe to answer a
 concrete design question or meet explicit task acceptance criteria. Prefer evidence from requested product
 changes when it answers the same question. Probes do not replace [product verification](#verification).
 
@@ -441,7 +440,7 @@ fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*
 `CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
 Different workload fingerprints refuse comparison, naming the differing members.
 
-References that predate fingerprints require a recorded manual review of act cycles, populations,
+References without workload fingerprints require a recorded manual review of act cycles, populations,
 authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
 `reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
 a `workloads` array of reviewed keys (for example
@@ -450,8 +449,8 @@ a `workloads` array of reviewed keys (for example
 before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
 Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
 
-Only the disposable test harnesses receive an ownership label; historical harnesses also receive the
-comparison workload selection. Every adaptation is retained as a patch in the report. Product code
+Only the disposable test harnesses receive an ownership label; reference harnesses without comparison
+selection also receive that selection. Every adaptation is retained as a patch in the report. Product code
 stays at the recorded commit. The comparison removes its worktrees, build outputs and labelled
 containers on success or failure, while preserving reports and failure output.
 

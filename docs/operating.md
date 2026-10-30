@@ -135,8 +135,9 @@ elapsed verification time for that invocation, not a response-time guarantee.
 
 ## Erasure limits
 
-ERASE atomically clears every case ledger payload/nonce, its snapshot, and projected status, progress and
-`search_text`. It retains reference, revision, `changed_at` and ledger metadata. Authority history,
+ERASE atomically clears every case ledger payload/nonce, its snapshot, projected status and progress,
+`search_text`, notification date, and claimed/payable amount and currency columns. It retains reference,
+revision, `changed_at` and ledger metadata. Authority history,
 issuer/subject, executor/target attribution and grants remain. The reference itself may identify a person.
 
 Erasure does not reach dead row versions, WAL, replicas, exports, logs, browser history/shared URLs or

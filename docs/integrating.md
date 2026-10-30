@@ -215,10 +215,10 @@ currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string w
 and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
 count. Visibility, assignment and forbidden-role safeguards match `case.list`, within the summary's
 own read snapshot. Separate list and summary requests can observe different accepted writes.
-`case.get` adds `assignedToYou`; `context` adds `hasAssignedCases` for choosing an assigned worklist
+`case.get` reports `assignedToYou`; `context` reports `hasAssignedCases` for choosing an assigned worklist
 and the admitted requester's `actorId` for attribution without an authority lookup.
-Discard earlier case-list cursors: format 3 binds assignment and notification-date keysets, with no
-older-format reader.
+Case-list continuations use format 3, binding assignment and notification-date keysets as well as
+the other admitted filters. Only that case-list cursor format is supported.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent
@@ -236,7 +236,7 @@ JSON and text output retain authored values.
 The header order is:
 
 ```text
-caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,changedAt
+caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,changedAt
 ```
 
 Amounts and timestamps use their canonical wire values; tokens and references are not localized. `--all` follows continuations to the end, emits the header once and stops on refusal, reporting the cursor

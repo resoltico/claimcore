@@ -14,8 +14,9 @@ Search finds substrings in the reference, claimant and insurer. It applies Unico
 normalization and invariant lowercase to both stored text and queries. Percent, underscore and backslash
 are literal characters. Matching follows the same rules in the browser, CLI and service.
 
-Live rows show claimant, insurer, claimed amount/currency, any payable amount/currency, payment progress
-and last-change time. Erased rows show reference, revision, erasure state and last-change time. Listing
+Live rows show claimant, insurer, claimed amount/currency, any payable amount/currency,
+notification age and last-change time. The main badge prioritizes erasure, voiding and closure over
+payment progress. Erased rows show reference, erasure state and last-change time. Listing
 requires the same case-read rights as opening a case. Use Load more for another page; each page checks
 current rights and uses a separate snapshot.
 
@@ -23,7 +24,7 @@ The browser keeps selected filters, search and order in the URL. Follow its case
 references, including values that need URL escaping. The CLI supports the same filters through
 `case list`; [Integrating](integrating.md#worklist-queries-and-summary-rows) covers query and export details.
 
-The CLI offers assignment and age-based triage without a separate assignment act:
+Assignment comes from case-scoped access grants:
 `claimcore case list --assignment ASSIGNED_TO_ME` selects cases where you hold a valid case-scoped
 case-reading grant. Installation access alone does not make a case assigned. `--order notified`
 orders oldest notification dates first, with erased cases last. Notification date is the current

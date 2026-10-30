@@ -24,7 +24,7 @@
 - Positive test inputs use inventory builders; local golden updates refuse CI and permanent vectors, and one transition oracle supplies semantic expectations.
 - Case history now pages newest revisions first; follow nextCursor for older changes. Cursor bytes and shape remain unchanged.
 - Filter case lists by lifecycle, status, progress and normalized reference/claimant/insurer substrings; order by reference or latest accepted change.
-- Case-list rows add claimant, insurer, canonical claimed/payable amounts, progress and last-change time; erased rows expose only retained metadata.
+- Case-list rows include claimant, insurer, canonical claimed/payable amounts, notification date, progress and last-change time; erased rows expose only retained metadata.
 - Case lists hide cases with corrupt case-scoped human-only grants to the querying service principal, even with installation-wide read access, matching case.get.
 - Export case lists as RFC 4180 CSV; --all follows per-page snapshots and stops with the reached cursor on refusal.
 - Terminal text verbs can fetch an omitted revision, preview and ask before execution; automation still supplies a revision and omitted correction groups default to KEEP interactively.
