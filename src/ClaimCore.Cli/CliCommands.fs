@@ -97,6 +97,8 @@ module CliCommands =
     let private protocolSynopses =
         [ "schema invocation"; "schema response"; "help call"; "help session" ]
 
+    // Every closed HelpTopic has one syntax value; an added topic must remain a compile-time omission.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private helpSynopses =
         function
         | HelpTopic.Describe -> synopses CliCommand.Describe
