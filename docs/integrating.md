@@ -35,6 +35,10 @@ the vocabulary name. Scalar guidance comes from core messages and Domain-owned b
 metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
+The catalog's `roles` declares `admittedPrincipalKinds` for each role from Domain admission policy.
+Use it to disable unsuitable choices and require an explicit grant role. Execution independently checks
+current authority and principal kind; catalog admission is presentation guidance.
+
 Field and technical-target labels use `field.*`; group labels use `group.*`. Scope, actor-ID and
 history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`; worklist facet/order
 labels also use their catalog-supplied `input.*` keys. Always consume the declared label identity rather
@@ -209,8 +213,10 @@ same actor's current case read. `changedAt` comes from the latest accepted case 
 `total` and `lifecycle`, `status` and `progress` value/count arrays. `claimed` and `payable` contain
 currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string with at most 40 integer
 and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
-count. Visibility, assignment and forbidden-role safeguards match `case.list` in the same read snapshot.
-`case.get` adds `assignedToYou`, and `context` adds `hasAssignedCases` for choosing an assigned worklist.
+count. Visibility, assignment and forbidden-role safeguards match `case.list`, within the summary's
+own read snapshot. Separate list and summary requests can observe different accepted writes.
+`case.get` adds `assignedToYou`; `context` adds `hasAssignedCases` for choosing an assigned worklist
+and the admitted requester's `actorId` for attribution without an authority lookup.
 Discard earlier case-list cursors: format 3 binds assignment and notification-date keysets, with no
 older-format reader.
 
@@ -243,6 +249,11 @@ The browser supports worklist URLs under `/cases`, case links under `/cases/:ref
 under `/authority/:actorId`. `/cases/new` opens a new case. Worklist query parameters carry selected view,
 filters, search and order; page cursors are not stored in the URL. Back/forward, reload and sign-in return
 preserve the intended same-origin path.
+
+`/authority?tab=history` shows installation authority history; adding `?tab=history` to an actor detail
+filters by that actor. Unknown routes keep their URL and render a localized not-found page without an API
+request. Browser history uses the installation zone and selected locale, retaining exact UTC and IDs in
+entry details. Links to authority details appear only for authority readers.
 
 Use the client's link builder for exact references. Ordinary reference segments use `encodeURIComponent`:
 `A/B` becomes `/cases/A%2FB`. Exact `new`, `.` and `..`, and references beginning with `~`, instead use a

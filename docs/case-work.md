@@ -34,6 +34,11 @@ claimed and payable amounts per currency. Counts remain inside the selected filt
 contribute when selected; erased cases contribute only to lifecycle counts. Totals are exact, with
 no rounding or currency conversion.
 
+The browser starts with My cases when you hold a case-scoped grant and no worklist is selected in the
+URL. Choose Oldest first to order by notification; row age counts whole days to the installation's
+business date. Open a case by activating its row. Matching totals use the same filters and expand from
+one line on a narrow screen. Field groups each have an Explain fields toggle and exact-copy icons.
+
 ## Open a case
 
 Choose OPEN when it is offered, then supply the reference and every registration value: incident date,

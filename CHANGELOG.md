@@ -4,6 +4,7 @@
 
 - Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.
 - Regenerate catalog, client and OpenAPI consumers; bindings name vocabularies/advice groups and add CHOICES for repeatable worklist facets.
+- Context adds actorId/hasAssignedCases, case views add assignedToYou, and catalog roles declare principal-kind admission; regenerate consumers for these required fields.
 - Discard earlier case-list cursors; format 3 binds canonical filters, assignment and notification order. Other existing cursor formats remain unchanged.
 - CSV exports prefix formula-leading cells with an apostrophe before quoting; use JSON for exact authored values.
 - CLI public settings load from a private Unix profile with per-value environment overrides; unknown members are refused. Use configure --show to inspect sources.
@@ -29,6 +30,8 @@
 - Browser routes preserve worklist queries, deep links and sign-in return; reserved references use reversible prefixed escaping.
 - Browser inputs use locale dates/amounts and currency/country suggestions; linked error summaries focus first, and the server remains authoritative.
 - The responsive work surface adds saved worklists, grouped facts, progress/history and contextual case/authority actions with distinct primary actions in both themes and en/lv/ar.
+- Compact case rows open as links; facts share group help, exact amounts retain all digits, and localized history shortens actor/operation IDs with exact details.
+- Authority grants require an explicit role and disable inadmissible principal kinds; actor rows open detail and history can filter by actor. Unknown routes stay offline on a localized not-found page.
 - Accepted browser case changes return to the current case with an act/revision notice; uncertain delivery retains exact retry and final-resolution controls.
 - Authority actor actions bind the selected principal; retained requests need explicit discard consent before a fresh request can target another actor.
 - Stored act, role and principal kinds use permanent decoders; unknown tokens fail reads and diverge verification even when SQL accepts their shape.
