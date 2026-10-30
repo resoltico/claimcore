@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import pty
+import re
 import select
 import signal
 import subprocess
@@ -15,7 +16,7 @@ import time
 
 
 class Terminal:
-    def __init__(self, cli, environment, redirect_output=False):
+    def __init__(self, cli, environment, redirect_output=False, arguments=None):
         self.master, slave = pty.openpty()
         self.output = bytearray()
         self.offset = 0
@@ -26,7 +27,7 @@ class Terminal:
 
         try:
             self.child = subprocess.Popen(
-                ["dotnet", cli, "shell"], stdin=slave, stdout=subprocess.PIPE if redirect_output else slave, stderr=slave,
+                arguments or ["dotnet", cli, "shell"], stdin=slave, stdout=subprocess.PIPE if redirect_output else slave, stderr=slave,
                 env=environment, preexec_fn=session, close_fds=True,
             )
         except BaseException:
@@ -90,6 +91,21 @@ class Terminal:
             self.child.stdout.close()
 
 
+def diagnose_eof(environment):
+    script = str(Path(__file__).with_name("TerminalKeyProbe.fsx"))
+    terminal = Terminal(None, environment, arguments=["dotnet", "fsi", "--exec", script])
+    try:
+        terminal.expect(b"key-probe> ")
+        terminal.send(b"\x04")
+        terminal.expect(b"MOD=")
+        terminal.read(0.1)
+        result = re.search(rb"KEY=\d+ CHAR=\d+ MOD=\d+", terminal.output)
+        if result is not None:
+            print(result.group().decode("ascii"), file=sys.stderr)
+    finally:
+        terminal.close()
+
+
 def run(cli, home):
     environment = {
         key: value for key, value in os.environ.items()
@@ -134,6 +150,8 @@ def run(cli, home):
                 terminal.send(ending)
             terminal.finish(expected)
         except subprocess.TimeoutExpired as error:
+            if ending == b"\x04":
+                diagnose_eof(environment)
             raise RuntimeError(f"Shell did not exit for ending {ending!r}") from error
         finally:
             terminal.close()
