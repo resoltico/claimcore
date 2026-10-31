@@ -223,8 +223,9 @@ count. Visibility, assignment and forbidden-role safeguards match `case.list`, w
 own read snapshot. Separate list and summary requests can observe different accepted writes.
 `case.get` reports `assignedToYou`; `context` reports `hasAssignedCases` for choosing an assigned worklist
 and the admitted requester's `actorId` for attribution without an authority lookup.
-Case-list continuations use format 3, binding assignment and notification-date keysets as well as
-the other admitted filters. Only that case-list cursor format is supported.
+Case-list continuations use format 4; other continuations use format 2. All bind InstallationId.
+Case-history continuations bind the retained CaseId. Case-list positions also bind the admitted filters,
+assignment and ordering. Earlier cursor formats are refused.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent

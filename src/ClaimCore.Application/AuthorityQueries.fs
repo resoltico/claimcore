@@ -9,12 +9,12 @@ open ClaimCore.RecordFormat
 module internal AuthorityQueries =
     open QueryResults
 
-    let selectActors principal (request: PageRequest) actor =
+    let selectActors installation principal (request: PageRequest) actor =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
-            |> Result.bind (fun _ -> cursor Cursors.decodeActors request.AfterCursor)
+            |> Result.bind (fun _ -> cursor (Cursors.decodeActors installation) request.AfterCursor)
 
     let actors (services: ServiceContext) (request: PageRequest) token =
         let store = services.Store
@@ -38,7 +38,13 @@ module internal AuthorityQueries =
                                                 }
                                             )
 
-                                        match selectActors principal request actor with
+                                        match
+                                            selectActors
+                                                services.InstallationId
+                                                principal
+                                                request
+                                                actor
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             let! page =
@@ -59,7 +65,10 @@ module internal AuthorityQueries =
 
                                                             NextCursor =
                                                                 page.Next
-                                                                |> Option.map Cursors.encodeActors
+                                                                |> Option.map (
+                                                                    Cursors.encodeActors
+                                                                        services.InstallationId
+                                                                )
                                                         }
                                     })
                             CancellationToken = token
@@ -70,6 +79,7 @@ module internal AuthorityQueries =
         }
 
     let selectGrants
+        installation
         principal
         (request: GrantsRequest)
         (actor: AuthorityView)
@@ -80,7 +90,7 @@ module internal AuthorityQueries =
         else
             match currentActor principal actor, target with
             | Ok _, Some target when ActorId.value target.ActorId = request.ActorId ->
-                cursor (Cursors.decodeGrants target.ActorId) request.AfterCursor
+                cursor (Cursors.decodeGrants installation target.ActorId) request.AfterCursor
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let grants (services: ServiceContext) (request: GrantsRequest) token =
@@ -113,7 +123,14 @@ module internal AuthorityQueries =
 
                                         let! target = tx.FindActor actorId
 
-                                        match selectGrants principal request actor target with
+                                        match
+                                            selectGrants
+                                                services.InstallationId
+                                                principal
+                                                request
+                                                actor
+                                                target
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match target with
@@ -143,6 +160,7 @@ module internal AuthorityQueries =
                                                                     page.Next
                                                                     |> Option.map (
                                                                         Cursors.encodeGrants
+                                                                            services.InstallationId
                                                                             actorId
                                                                     )
                                                             }
@@ -155,6 +173,7 @@ module internal AuthorityQueries =
         }
 
     let private selectHistory
+        installation
         principal
         actor
         (request: AuthorityHistoryRequest)
@@ -168,7 +187,7 @@ module internal AuthorityQueries =
         else
             currentActor principal actor
             |> Result.bind (fun _ ->
-                cursor (Cursors.decodeAuthorityHistory target) request.AfterCursor)
+                cursor (Cursors.decodeAuthorityHistory installation target) request.AfterCursor)
 
     let private historyEntries
         installation
@@ -224,7 +243,12 @@ module internal AuthorityQueries =
                                                 }
 
                                         match
-                                            selectHistory services.Principal actor request target
+                                            selectHistory
+                                                services.InstallationId
+                                                services.Principal
+                                                actor
+                                                request
+                                                target
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok before ->
@@ -246,6 +270,7 @@ module internal AuthorityQueries =
                                                             page.Next
                                                             |> Option.map (
                                                                 Cursors.encodeAuthorityHistory
+                                                                    services.InstallationId
                                                                     target
                                                             )
                                                     })

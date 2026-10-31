@@ -65,7 +65,7 @@ let tests =
                     | _ -> failtest "Fixture page"
 
                 let position =
-                    Cursors.decodeCases admitted cursor
+                    Cursors.decodeCases pair.Database.Fixture.InstallationId admitted cursor
                     |> Result.defaultWith (fun _ -> failtest "Fixture cursor")
 
                 let time =

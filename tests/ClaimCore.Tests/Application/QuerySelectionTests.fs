@@ -22,17 +22,29 @@ let private authorityAndCursor () =
     let read = ungranted
 
     Expect.equal
-        (Queries.selectCases owner (ClaimCore.TestSupport.Inputs.caseListPage (page)) read)
+        (Queries.selectCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            (ClaimCore.TestSupport.Inputs.caseListPage (page))
+            read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Visibility precedes token parsing"
 
     Expect.equal
-        (Queries.selectActors owner page read)
+        (Queries.selectActors
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            page
+            read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Authority precedes token parsing"
 
     Expect.equal
-        (Queries.selectActors owner page worker)
+        (Queries.selectActors
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            page
+            worker)
         (Error Refusal.InvalidCursor)
         "Authorized malformed cursor refuses"
 
@@ -49,7 +61,12 @@ let private authorityAndCursor () =
     let view = target.Actor
 
     Expect.equal
-        (Queries.selectGrants owner grants caller view)
+        (Queries.selectGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            grants
+            caller
+            view)
         (Ok None)
         "Enabled ungranted target is reviewable"
 
@@ -57,17 +74,32 @@ let private authorityAndCursor () =
         target.Actor |> Option.map (fun value -> { value with Enabled = false })
 
     Expect.equal
-        (Queries.selectGrants owner grants caller disabled)
+        (Queries.selectGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            grants
+            caller
+            disabled)
         (Ok None)
         "Disabled target remains reviewable"
 
     Expect.equal
-        (Queries.selectGrants owner grants caller None)
+        (Queries.selectGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            grants
+            caller
+            None)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent target remains private"
 
     Expect.equal
-        (Queries.selectGrants owner grants ungranted view)
+        (Queries.selectGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            grants
+            ungranted
+            view)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Grant review needs installation authority"
 
@@ -95,12 +127,18 @@ let private history () =
         }
 
     Expect.equal
-        (Queries.selectHistory owner request reader read)
+        (Queries.selectHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            request
+            reader
+            read)
         (Ok(CaseFixtures.revision (0L)))
         "Reader may select summary"
 
     Expect.equal
         (Queries.selectHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             { request with
                 Detail = HistoryDetail.Full
@@ -111,7 +149,12 @@ let private history () =
         "Reader cannot select full history"
 
     Expect.equal
-        (Queries.selectHistory owner request reader None)
+        (Queries.selectHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            request
+            reader
+            None)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Absent case stays private"
 
@@ -223,7 +266,11 @@ let private context () =
         "Scoped auditor cannot observe installation authority"
 
     Expect.equal
-        (Queries.selectActors owner { AfterCursor = None; Limit = 50 } scoped)
+        (Queries.selectActors
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            owner
+            { AfterCursor = None; Limit = 50 }
+            scoped)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Scoped audit cannot enumerate installation actors"
 

@@ -179,7 +179,13 @@ let private roles role readable full () =
             }
 
         Expect.equal
-            (Queries.selectHistory owner query authority (Some later) |> Result.isOk)
+            (Queries.selectHistory
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                owner
+                query
+                authority
+                (Some later)
+             |> Result.isOk)
             full
             "Full-history selection shares policy"
 

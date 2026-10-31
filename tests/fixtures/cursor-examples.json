@@ -2,79 +2,79 @@
  "accepted": [
   {
    "endpoint": "case.list",
-   "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null},\"kind\":\"CASES\",\"v\":3}",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjN9",
-   "tokenLength": 212
+   "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASES\",\"v\":4}",
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6NH0",
+   "tokenLength": 287
   },
   {
    "endpoint": "case.history",
-   "canonicalJson": "{\"after\":50,\"case\":\"DEMO-0001\",\"kind\":\"HISTORY\",\"v\":1}",
-   "token": "eyJhZnRlciI6NTAsImNhc2UiOiJERU1PLTAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjF9",
-   "tokenLength": 72
+   "canonicalJson": "{\"after\":50,\"caseId\":\"a0000000-0000-4000-8000-000000000001\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"HISTORY\",\"v\":2}",
+   "token": "eyJhZnRlciI6NTAsImNhc2VJZCI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkhJU1RPUlkiLCJ2IjoyfQ",
+   "tokenLength": 186
   },
   {
    "endpoint": "authority.list",
-   "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"kind\":\"ACTORS\",\"v\":1}",
-   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImtpbmQiOiJBQ1RPUlMiLCJ2IjoxfQ",
-   "tokenLength": 94
+   "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"v\":2}",
+   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9",
+   "tokenLength": 168
   },
   {
    "endpoint": "authority.grants",
-   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":\"dd9e7559-4cf5-8dbb-9b29-5c312d9d2e92\",\"role\":\"CASE_HANDLER\"},\"kind\":\"GRANTS\",\"v\":1}",
-   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6ImRkOWU3NTU5LTRjZjUtOGRiYi05YjI5LTVjMzEyZDlkMmU5MiIsInJvbGUiOiJDQVNFX0hBTkRMRVIifSwia2luZCI6IkdSQU5UUyIsInYiOjF9",
-   "tokenLength": 200
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":\"dd9e7559-4cf5-8dbb-9b29-5c312d9d2e92\",\"role\":\"CASE_HANDLER\"},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"GRANTS\",\"v\":2}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6ImRkOWU3NTU5LTRjZjUtOGRiYi05YjI5LTVjMzEyZDlkMmU5MiIsInJvbGUiOiJDQVNFX0hBTkRMRVIifSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiR1JBTlRTIiwidiI6Mn0",
+   "tokenLength": 275
   },
   {
    "endpoint": "authority.grants",
-   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":null,\"role\":\"OWNER\"},\"kind\":\"GRANTS\",\"v\":1}",
-   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6bnVsbCwicm9sZSI6Ik9XTkVSIn0sImtpbmQiOiJHUkFOVFMiLCJ2IjoxfQ",
-   "tokenLength": 146
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":null,\"role\":\"OWNER\"},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"GRANTS\",\"v\":2}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6bnVsbCwicm9sZSI6Ik9XTkVSIn0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkdSQU5UUyIsInYiOjJ9",
+   "tokenLength": 220
   },
   {
    "endpoint": "authority.history",
-   "canonicalJson": "{\"actor\":null,\"after\":50,\"kind\":\"AUTHORITY_HISTORY\",\"v\":1}",
-   "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJraW5kIjoiQVVUSE9SSVRZX0hJU1RPUlkiLCJ2IjoxfQ",
-   "tokenLength": 78
+   "canonicalJson": "{\"actor\":null,\"after\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\",\"v\":2}",
+   "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSIsInYiOjJ9",
+   "tokenLength": 152
   },
   {
    "endpoint": "authority.history",
-   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":50,\"kind\":\"AUTHORITY_HISTORY\",\"v\":1}",
-   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjo1MCwia2luZCI6IkFVVEhPUklUWV9ISVNUT1JZIiwidiI6MX0",
-   "tokenLength": 123
+   "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\",\"v\":2}",
+   "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjo1MCwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQVVUSE9SSVRZX0hJU1RPUlkiLCJ2IjoyfQ",
+   "tokenLength": 198
   }
  ],
  "refused": [
   {
    "name": "padding",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9="
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6NH0="
   },
   {
    "name": "non-canonical member order",
-   "token": "eyJ2IjoyLCJraW5kIjoiQ0FTRVMiLCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsfSwiYWZ0ZXIiOnsicmVmZXJlbmNlIjoiREVNTy0wMDUwIn19"
+   "token": "eyJ2Ijo0LCJraW5kIjoiQ0FTRVMiLCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsfSwiYWZ0ZXIiOnsicmVmZXJlbmNlIjoiREVNTy0wMDUwIn0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIn0"
   },
   {
    "name": "unknown member",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjIsIngiOjF9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6NCwieCI6MX0"
   },
   {
    "name": "wrong version",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjF9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6MX0"
   },
   {
    "name": "kind for another endpoint (used on case.list)",
-   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImtpbmQiOiJBQ1RPUlMiLCJ2IjoxfQ"
+   "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9"
   },
   {
    "name": "history cursor for another case (used on DEMO-0002)",
-   "token": "eyJhZnRlciI6NTAsImNhc2UiOiJERU1PLTAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjF9"
+   "token": "eyJhZnRlciI6NTAsImNhc2VJZCI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkhJU1RPUlkiLCJ2IjoyfQ"
   },
   {
    "name": "folded reference not uppercase",
-   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImtpbmQiOiJDQVNFUyIsInYiOjJ9"
+   "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwic3RhdHVzIjpbXSwidGV4dCI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6NH0"
   },
   {
    "name": "revision zero",
-   "token": "eyJhZnRlciI6MCwiY2FzZSI6IkRFTU8tMDAwMSIsImtpbmQiOiJISVNUT1JZIiwidiI6MX0"
+   "token": "eyJhZnRlciI6MCwiY2FzZUlkIjoiYTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjJ9"
   },
   {
    "name": "standard base64 alphabet",

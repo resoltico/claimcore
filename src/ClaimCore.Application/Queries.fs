@@ -103,7 +103,7 @@ module internal Queries =
             return readResult result
         }
 
-    let selectCases principal (request: CaseListRequest) actor =
+    let selectCases installation principal (request: CaseListRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
@@ -113,7 +113,7 @@ module internal Queries =
                 |> Result.mapError (fun violation ->
                     Refusal.invalidInput (InputTarget.Text, violation))
                 |> Result.bind (fun filter ->
-                    cursor (Cursors.decodeCases filter) request.Page.AfterCursor
+                    cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
                             Visibility = visibility
@@ -173,7 +173,13 @@ module internal Queries =
                                                 }
                                             )
 
-                                        match selectCases principal request actor with
+                                        match
+                                            selectCases
+                                                services.InstallationId
+                                                principal
+                                                request
+                                                actor
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
@@ -196,6 +202,7 @@ module internal Queries =
                                                                 page.Next
                                                                 |> Option.map (
                                                                     Cursors.encodeCases
+                                                                        services.InstallationId
                                                                         selection.Filter
                                                                 )
                                                         })
@@ -229,7 +236,13 @@ module internal Queries =
                                             Filter = filter
                                         }
 
-                                    match selectCases services.Principal request actor with
+                                    match
+                                        selectCases
+                                            services.InstallationId
+                                            services.Principal
+                                            request
+                                            actor
+                                    with
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
                                         let! summary = tx.CaseSummary selection.Selection
@@ -241,7 +254,7 @@ module internal Queries =
             return readResult result
         }
 
-    let selectHistory principal (request: HistoryRequest) actor record =
+    let selectHistory installation principal (request: HistoryRequest) actor record =
         let capability =
             if request.Detail = HistoryDetail.Full then
                 Capability.ReadHistoryFull
@@ -253,8 +266,11 @@ module internal Queries =
         else
             currentActor principal actor
             |> Result.bind (fun _ ->
-                cursor (Cursors.decodeHistory request.CaseReference) request.AfterCursor
-                |> Result.map (Option.defaultValue Revision.zero))
+                match record with
+                | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+                | Some record ->
+                    cursor (Cursors.decodeHistory installation record.CaseId) request.AfterCursor
+                    |> Result.map (Option.defaultValue Revision.zero))
 
     let private historyEntry (services: ServiceContext) actor current detail entry =
         let installation = services.InstallationId
@@ -291,7 +307,14 @@ module internal Queries =
                                                 principal
                                                 (record |> Option.map _.CaseId |> Option.toList)
 
-                                        match selectHistory principal request actor record with
+                                        match
+                                            selectHistory
+                                                installation
+                                                principal
+                                                request
+                                                actor
+                                                record
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match record with
@@ -327,7 +350,8 @@ module internal Queries =
                                                                 page.Next
                                                                 |> Option.map (
                                                                     Cursors.encodeHistory
-                                                                        request.CaseReference
+                                                                        installation
+                                                                        current.CaseId
                                                                 )
                                                         })
                                                     |> succeeded

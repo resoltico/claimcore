@@ -53,27 +53,43 @@ let private accepted () =
                     let expected = CaseListPosition.Reference(text "reference" position)
 
                     Expect.equal
-                        (Cursors.decodeCases filter encoded)
+                        (Cursors.decodeCases
+                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            filter
+                            encoded)
                         (Ok expected)
                         "Independent case position"
 
-                    Cursors.encodeCases filter expected
+                    Cursors.encodeCases
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        filter
+                        expected
                 | "case.history" ->
                     Expect.equal
-                        (Cursors.decodeHistory "demo-0001" encoded)
+                        (Cursors.decodeHistory
+                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            (CaseFixtures.caseId actor)
+                            encoded)
                         (Ok(CaseFixtures.revision (position.GetInt64())))
                         "Independent history position"
 
-                    Cursors.encodeHistory "DEMO-0001" (CaseFixtures.revision (position.GetInt64()))
+                    Cursors.encodeHistory
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (CaseFixtures.caseId actor)
+                        (CaseFixtures.revision (position.GetInt64()))
                 | "authority.list" ->
                     let expected = Guid.Parse(position.GetString() |> nonNull)
 
                     Expect.equal
-                        (Cursors.decodeActors encoded)
+                        (Cursors.decodeActors
+                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            encoded)
                         (Ok(CaseFixtures.actorId (expected)))
                         "Independent actor position"
 
-                    Cursors.encodeActors (CaseFixtures.actorId (expected))
+                    Cursors.encodeActors
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (CaseFixtures.actorId (expected))
                 | "authority.grants" ->
                     let caseId = position.GetProperty "caseId"
 
@@ -92,11 +108,17 @@ let private accepted () =
                         }
 
                     Expect.equal
-                        (Cursors.decodeGrants (CaseFixtures.actorId (actor)) encoded)
+                        (Cursors.decodeGrants
+                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            (CaseFixtures.actorId (actor))
+                            encoded)
                         (Ok expected)
                         "Independent grant position"
 
-                    Cursors.encodeGrants (CaseFixtures.actorId (actor)) expected
+                    Cursors.encodeGrants
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (CaseFixtures.actorId (actor))
+                        expected
                 | "authority.history" ->
                     let target = json.RootElement.GetProperty "actor"
 
@@ -109,11 +131,17 @@ let private accepted () =
                     let expected = CaseFixtures.sequence (position.GetInt64())
 
                     Expect.equal
-                        (Cursors.decodeAuthorityHistory actor encoded)
+                        (Cursors.decodeAuthorityHistory
+                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            actor
+                            encoded)
                         (Ok expected)
                         "Independent authority-history position and target"
 
-                    Cursors.encodeAuthorityHistory actor expected
+                    Cursors.encodeAuthorityHistory
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        actor
+                        expected
                 | _ -> failtest "Unknown fixture endpoint"
 
             Expect.equal actual encoded "Encoder reproduces committed owner bytes")
@@ -126,17 +154,35 @@ let private refused () =
 
             let decoded =
                 if name.StartsWith("history cursor", StringComparison.Ordinal) then
-                    Cursors.decodeHistory "DEMO-0002" encoded |> Result.map string
+                    Cursors.decodeHistory
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000001"))
+                        encoded
+                    |> Result.map string
                 elif name = "revision zero" then
-                    Cursors.decodeHistory "DEMO-0001" encoded |> Result.map string
+                    Cursors.decodeHistory
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (CaseFixtures.caseId actor)
+                        encoded
+                    |> Result.map string
                 else
-                    Cursors.decodeCases filter encoded |> Result.map CaseListPosition.reference
+                    Cursors.decodeCases
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        filter
+                        encoded
+                    |> Result.map CaseListPosition.reference
 
             Expect.equal decoded (Error Refusal.InvalidCursor) name)
 
 let private boundaries () =
     for value in [ ""; "!"; "A"; String('A', Paging.MaximumCaseCursorCharacters + 1) ] do
-        Expect.equal (Cursors.decodeCases filter value) (Error Refusal.InvalidCursor) "Token bounds"
+        Expect.equal
+            (Cursors.decodeCases
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                filter
+                value)
+            (Error Refusal.InvalidCursor)
+            "Token bounds"
 
     let baseJson =
         examples (fun fixture ->
@@ -146,12 +192,15 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":3", "\"v\":3.0")
+            baseJson.Replace("\"v\":4", "\"v\":4.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
         Expect.equal
-            (Cursors.decodeCases filter (token json))
+            (Cursors.decodeCases
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                filter
+                (token json))
             (Error Refusal.InvalidCursor)
             "Strict canonical JSON"
 
@@ -162,36 +211,52 @@ let private boundaries () =
             "CASE_READER", "\"A0000000-0000-4000-8000-000000000001\""
         ] do
         let raw =
-            $"{{\"actor\":\"{actor:D}\",\"after\":{{\"caseId\":{caseId},\"role\":\"{role}\"}},\"kind\":\"GRANTS\",\"v\":1}}"
+            $"{{\"actor\":\"{actor:D}\",\"after\":{{\"caseId\":{caseId},\"role\":\"{role}\"}},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"GRANTS\",\"v\":2}}"
 
         Expect.equal
-            (Cursors.decodeGrants (CaseFixtures.actorId (actor)) (token raw))
+            (Cursors.decodeGrants
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                (CaseFixtures.actorId (actor))
+                (token raw))
             (Error Refusal.InvalidCursor)
             "Admitted role and UUID only"
 
 let private maximum () =
-    let reference = String('"', 80)
-
     let encoded =
-        Cursors.encodeHistory reference (CaseFixtures.revision 9007199254740991L)
+        Cursors.encodeHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            (CaseFixtures.caseId actor)
+            (CaseFixtures.revision 9007199254740991L)
 
-    Expect.isLessThan encoded.Length 512 "Largest escaped history position fits"
+    Expect.isLessThan encoded.Length 512 "Largest installation-bound history position fits"
 
     Expect.equal
-        (Cursors.decodeHistory reference encoded)
+        (Cursors.decodeHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            (CaseFixtures.caseId actor)
+            encoded)
         (Ok(CaseFixtures.revision 9007199254740991L))
         "Maximum safe revision"
 
     Expect.equal
-        (Cursors.decodeHistory "OTHER" encoded)
+        (Cursors.decodeHistory
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            (CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000001"))
+            encoded)
         (Error Refusal.InvalidCursor)
         "Resource binding"
 
     let grant =
-        Cursors.encodeGrants (CaseFixtures.actorId (actor)) { Role = Role.Owner; CaseId = None }
+        Cursors.encodeGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            (CaseFixtures.actorId (actor))
+            { Role = Role.Owner; CaseId = None }
 
     Expect.equal
-        (Cursors.decodeGrants (CaseFixtures.actorId (Guid.NewGuid())) grant)
+        (Cursors.decodeGrants
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            (CaseFixtures.actorId (Guid.NewGuid()))
+            grant)
         (Error Refusal.InvalidCursor)
         "Actor binding"
 
@@ -212,10 +277,17 @@ let private worklistBinding () =
     let position =
         CaseListPosition.Recent(DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero), "CASE-2")
 
-    let encoded = Cursors.encodeCases selected position
+    let encoded =
+        Cursors.encodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            selected
+            position
 
     Expect.equal
-        (Cursors.decodeCases selected encoded)
+        (Cursors.decodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            selected
+            encoded)
         (Ok position)
         "Recent timestamp and tie-break reference survive"
 
@@ -239,17 +311,27 @@ let private worklistBinding () =
             }
         ] do
         Expect.equal
-            (Cursors.decodeCases changed encoded)
+            (Cursors.decodeCases
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                changed
+                encoded)
             (Error Refusal.InvalidCursor)
             "Every filter and order binds the cursor"
 
     let compatibility =
         CaseListFilter.create [] [] [] (Some "¨") CaseListOrder.Reference |> admitted
 
-    let cursor = Cursors.encodeCases compatibility (CaseListPosition.Reference "CASE-1")
+    let cursor =
+        Cursors.encodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            compatibility
+            (CaseListPosition.Reference "CASE-1")
 
     Expect.equal
-        (Cursors.decodeCases compatibility cursor)
+        (Cursors.decodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            compatibility
+            cursor)
         (Ok(CaseListPosition.Reference "CASE-1"))
         "Normalized compatibility text is compared without re-admitting it as authored input"
 
@@ -263,21 +345,33 @@ let private recentPrecision () =
     let position = CaseListPosition.Recent(instant, "CASE-1")
 
     Expect.equal
-        (Cursors.decodeCases filter (Cursors.encodeCases filter position))
+        (Cursors.decodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            filter
+            (Cursors.encodeCases
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                filter
+                position))
         (Ok position)
         "Whole-microsecond instants remain valid"
 
     Expect.throwsT<ArgumentException>
         (fun () ->
-            Cursors.encodeCases filter (CaseListPosition.Recent(instant.AddTicks 1L, "CASE-1"))
+            Cursors.encodeCases
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                filter
+                (CaseListPosition.Recent(instant.AddTicks 1L, "CASE-1"))
             |> ignore)
         "An encoder cannot produce an unsupported recorded instant"
 
     let raw =
-        """{"after":{"changedAt":"2026-10-28T00:00:00.0000001+00:00","reference":"CASE-1"},"filters":{"lifecycle":[],"order":"RECENT","progress":[],"status":[],"text":null},"kind":"CASES","v":2}"""
+        """{"after":{"changedAt":"2026-10-28T00:00:00.0000001+00:00","reference":"CASE-1"},"filters":{"assignment":null,"lifecycle":[],"order":"RECENT","progress":[],"status":[],"text":null},"installationId":"90000000-0000-4000-8000-000000000001","kind":"CASES","v":4}"""
 
     Expect.equal
-        (Cursors.decodeCases filter (token raw))
+        (Cursors.decodeCases
+            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            filter
+            (token raw))
         (Error Refusal.InvalidCursor)
         "A forged canonical cursor cannot introduce sub-microsecond keyset semantics"
 
@@ -307,13 +401,66 @@ let triageCursors =
             let expected = CaseListPosition.Notified(date, "CASE-2")
 
             Expect.equal
-                (Cursors.decodeCases selected (Cursors.encodeCases selected expected))
+                (Cursors.decodeCases
+                    (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                    selected
+                    (Cursors.encodeCases
+                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        selected
+                        expected))
                 (Ok expected)
                 "Live and erased notification positions round trip"
 
-        let zero = token """{"actor":null,"after":0,"kind":"AUTHORITY_HISTORY","v":1}"""
+        let zero =
+            token
+                """{"actor":null,"after":0,"installationId":"90000000-0000-4000-8000-000000000001","kind":"AUTHORITY_HISTORY","v":2}"""
 
         Expect.equal
-            (Cursors.decodeAuthorityHistory None zero)
+            (Cursors.decodeAuthorityHistory
+                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                None
+                zero)
             (Error Refusal.InvalidCursor)
             "An empty head is never a history continuation")
+
+[<Tests>]
+let installationBinding =
+    testCase
+        "every continuation refuses a different installation after a valid positive control"
+        (fun () ->
+            examples (fun fixture ->
+                let foreign = Guid.Parse "90000000-0000-4000-8000-000000000099"
+
+                for sample in fixture.GetProperty("accepted").EnumerateArray() do
+                    let encoded = text "token" sample
+
+                    let result =
+                        match text "endpoint" sample with
+                        | "case.list" ->
+                            Cursors.decodeCases foreign filter encoded |> Result.map ignore
+                        | "case.history" ->
+                            Cursors.decodeHistory foreign (CaseFixtures.caseId actor) encoded
+                            |> Result.map ignore
+                        | "authority.list" ->
+                            Cursors.decodeActors foreign encoded |> Result.map ignore
+                        | "authority.grants" ->
+                            Cursors.decodeGrants foreign (CaseFixtures.actorId actor) encoded
+                            |> Result.map ignore
+                        | "authority.history" ->
+                            use json = JsonDocument.Parse(text "canonicalJson" sample)
+                            let target = json.RootElement.GetProperty("actor")
+
+                            let id =
+                                if target.ValueKind = JsonValueKind.Null then
+                                    None
+                                else
+                                    Some(
+                                        CaseFixtures.actorId (
+                                            Guid.Parse(target.GetString() |> nonNull)
+                                        )
+                                    )
+
+                            Cursors.decodeAuthorityHistory foreign id encoded |> Result.map ignore
+                        | _ -> failtest "Unknown independent cursor fixture"
+
+                    Expect.equal result (Error Refusal.InvalidCursor) "Installation-bound grammar"))
