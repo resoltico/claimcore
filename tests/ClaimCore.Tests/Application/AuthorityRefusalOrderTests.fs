@@ -390,8 +390,8 @@ let private ordering () =
 
         let facts =
             { view.Read with
-                EnabledHumanOwners = owners
-                ActorCount = actors
+                EnabledHumanOwners = Some owners
+                ActorCount = Some actors
                 TargetCase = current
             }
 

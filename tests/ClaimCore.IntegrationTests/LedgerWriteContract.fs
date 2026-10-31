@@ -30,6 +30,7 @@ let internal genesis fixture =
                                     ExecutionFacts.target
                                         (core fixture fixture.Owner)
                                         tx
+                                        (Authority.factsNeeded AuthorityAct.ProvisionOwner)
                                         ((CaseFixtures.operationId (id 1)))
                                         fixture.Owner
                                         None

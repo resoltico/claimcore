@@ -19,8 +19,8 @@ type internal AuthorityExecutionFacts =
         ExistingOperation: StoredEntry option
         Target: AuthorityView
         TargetCase: StoredCase option
-        EnabledHumanOwners: int
-        ActorCount: int
+        EnabledHumanOwners: int option
+        ActorCount: int option
     }
 
 module internal ExecutionFacts =
@@ -99,7 +99,7 @@ module internal ExecutionFacts =
                 }
         }
 
-    let target (services: ServiceContext) (tx: IReadTx) operationId target reference =
+    let target (services: ServiceContext) (tx: IReadTx) needed operationId target reference =
         let principal = services.Principal
 
         task {
@@ -114,8 +114,17 @@ module internal ExecutionFacts =
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
 
-            let! owners = tx.EnabledHumanOwners()
-            let! actors = tx.ActorCount()
+            let! owners =
+                if List.contains AuthorityFact.EnabledHumanOwners needed then
+                    task { let! count = tx.EnabledHumanOwners() in return Some count }
+                else
+                    System.Threading.Tasks.Task.FromResult None
+
+            let! actors =
+                if List.contains AuthorityFact.ActorCount needed then
+                    task { let! count = tx.ActorCount() in return Some count }
+                else
+                    System.Threading.Tasks.Task.FromResult None
 
             return
                 {

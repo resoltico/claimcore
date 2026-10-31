@@ -32,6 +32,11 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
             Fences = Set.empty
         }
 
+    let factRead =
+        function
+        | AuthorityFact.ActorCount -> events.Add "actor-count"
+        | AuthorityFact.EnabledHumanOwners -> events.Add "enabled-owner-count"
+
     member val ObservedAt = observed with get, set
 
     member val ReadFailure: StoreFailure option = None with get, set
@@ -75,7 +80,8 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                         (fun () -> snapshot),
                                         installationId,
                                         this.ObservedAt,
-                                        (fun () -> events.Add "read")
+                                        (fun () -> events.Add "read"),
+                                        factRead = factRead
                                     )
                                     :> IReadTx
                                 )
@@ -117,6 +123,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                     Head = state.Head
                                     Nonce = RandomNumberGenerator.GetBytes 32
                                     Read = (fun () -> events.Add "read")
+                                    FactRead = factRead
                                 }
                             )
                             :> IWriteTx

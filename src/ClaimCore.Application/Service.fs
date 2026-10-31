@@ -176,6 +176,7 @@ module Service =
                                 ExecutionFacts.target
                                     services
                                     tx
+                                    (Authority.factsNeeded admitted.Act)
                                     admitted.OperationId
                                     admitted.Target
                                     (AuthorityRequests.targetCase admitted)

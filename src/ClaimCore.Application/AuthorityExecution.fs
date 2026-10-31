@@ -137,7 +137,7 @@ module internal AuthorityExecution =
         let installationId = services.InstallationId
         let principal = services.Principal
 
-        if view.ActorCount = 0 then
+        if view.ActorCount = Some 0 then
             if head.Sequence = Sequence.zero && view.ExistingOperation.IsNone then
                 Verdict.Proceed()
             else
@@ -251,6 +251,7 @@ module internal AuthorityExecution =
                                 ExecutionFacts.target
                                     services
                                     tx
+                                    (Authority.factsNeeded command.Act)
                                     command.OperationId
                                     command.Target
                                     (AuthorityRequests.targetCase command)
@@ -287,7 +288,14 @@ module internal AuthorityExecution =
                 WriteOperation.Work =
                     (fun tx ->
                         task {
-                            let! view = ExecutionFacts.target services tx operationId target None
+                            let! view =
+                                ExecutionFacts.target
+                                    services
+                                    tx
+                                    (Authority.factsNeeded AuthorityAct.ProvisionOwner)
+                                    operationId
+                                    target
+                                    None
 
                             let! fenced = ExecutionFacts.fenced tx view.Actor operationId
 

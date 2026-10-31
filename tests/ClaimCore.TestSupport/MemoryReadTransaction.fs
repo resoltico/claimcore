@@ -47,7 +47,16 @@ let private total money =
                 |> Result.defaultWith (string >> failwith)
         })
 
-type internal Reader(get: unit -> State, _installationId, observed, read: unit -> unit) =
+type internal Reader
+    (
+        get: unit -> State,
+        _installationId,
+        observed,
+        read: unit -> unit,
+        ?factRead: AuthorityFact -> unit
+    ) =
+    let factRead = defaultArg factRead ignore
+
     interface IReadTx with
         member _.ObservedAt = observed
 
@@ -134,10 +143,12 @@ type internal Reader(get: unit -> State, _installationId, observed, read: unit -
 
         member _.ActorCount() =
             read ()
+            factRead AuthorityFact.ActorCount
             Task.FromResult((get ()).Actors.Count)
 
         member _.EnabledHumanOwners() =
             read ()
+            factRead AuthorityFact.EnabledHumanOwners
             let state = get ()
 
             Task.FromResult(

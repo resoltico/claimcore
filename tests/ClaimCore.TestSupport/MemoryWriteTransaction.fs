@@ -22,10 +22,19 @@ type internal WriteInputs =
         Head: LedgerPosition
         Nonce: byte array
         Read: unit -> unit
+        FactRead: AuthorityFact -> unit
     }
 
 type internal Writer(inputs: WriteInputs) =
-    inherit Reader(inputs.Get, inputs.InstallationId, inputs.Observed, inputs.Read)
+    inherit
+        Reader(
+            inputs.Get,
+            inputs.InstallationId,
+            inputs.Observed,
+            inputs.Read,
+            factRead = inputs.FactRead
+        )
+
     let get = inputs.Get
     let set = inputs.Set
     let head = inputs.Head

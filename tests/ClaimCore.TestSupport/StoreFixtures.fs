@@ -58,6 +58,7 @@ let internal inspectCase fixture principal operation reference token =
 
 type internal AuthorityInspection =
     {
+        Needed: AuthorityFact list
         OperationId: Guid
         Target: PrincipalKey
         CaseReference: string option
@@ -71,6 +72,7 @@ let internal inspectTarget fixture principal (query: AuthorityInspection) token 
                     ExecutionFacts.target
                         (core fixture principal)
                         tx
+                        query.Needed
                         (CaseFixtures.operationId query.OperationId)
                         query.Target
                         query.CaseReference)

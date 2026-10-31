@@ -31,6 +31,7 @@ let internal authorityReview fixture principal input =
                 fixture
                 (principal)
                 {
+                    Needed = Authority.factsNeeded request.Act
                     OperationId = (OperationId.value (request.OperationId))
                     Target = request.Target
                     CaseReference = AuthorityRequests.targetCase request
@@ -324,6 +325,7 @@ let internal authorityGrantReview fixture =
                 fixture
                 (fixture.Owner)
                 {
+                    Needed = []
                     OperationId = id 14
                     Target = target
                     CaseReference = Some "REVIEW-CASE"
@@ -380,7 +382,7 @@ let internal authorityReviewRechecks fixture =
         let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture fixture.Owner input
-        Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."
+        Expect.equal view.EnabledHumanOwners (Some 2) "The preview sees two enabled owners."
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority _)) -> ()

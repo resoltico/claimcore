@@ -18,7 +18,7 @@ let private lastOwner () =
         { view with
             Read =
                 { view.Read with
-                    EnabledHumanOwners = 1
+                    EnabledHumanOwners = Some 1
                 }
         }
 
@@ -67,8 +67,8 @@ let private humanOnly () =
                 }
             Read =
                 { view.Read with
-                    ActorCount = 0
-                    EnabledHumanOwners = 0
+                    ActorCount = Some 0
+                    EnabledHumanOwners = Some 0
                 }
         }
 
@@ -138,8 +138,8 @@ let private provision () =
                 }
             Read =
                 { initial.Read with
-                    ActorCount = 0
-                    EnabledHumanOwners = 0
+                    ActorCount = Some 0
+                    EnabledHumanOwners = Some 0
                 }
         }
 
