@@ -55,7 +55,14 @@ let private caseRequest (local: HttpClient) token browserCookies reference =
 
         request.Content <-
             new StringContent(
-                JsonSerializer.Serialize {| caseReference = reference |},
+                JsonSerializer.Serialize
+                    {|
+                        target =
+                            {|
+                                kind = "REFERENCE"
+                                caseReference = reference
+                            |}
+                    |},
                 Encoding.UTF8,
                 "application/json"
             )

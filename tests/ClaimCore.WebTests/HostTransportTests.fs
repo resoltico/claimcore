@@ -146,7 +146,8 @@ let private gateRefusals () =
             let! status, _ =
                 host.Call(
                     "case.get",
-                    Encoding.UTF8.GetBytes "{\"caseReference\":\"WEB-001\",\"extra\":true}",
+                    Encoding.UTF8.GetBytes
+                        "{\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"WEB-001\"},\"extra\":true}",
                     token
                 )
 

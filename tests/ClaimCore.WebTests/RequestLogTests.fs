@@ -28,7 +28,12 @@ let private canaryLog () =
         let! token = host.Token()
         host.ClearLog()
         let canary = "sensitive-canary-" + Guid.NewGuid().ToString("N")
-        let input = Encoding.UTF8.GetBytes("{\"caseReference\":\"" + canary + "\"}")
+
+        let input =
+            Encoding.UTF8.GetBytes(
+                "{\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"" + canary + "\"}}"
+            )
+
         let! status, _ = host.Call("case.get", input, token)
         Expect.equal status 200 "Reference-bearing request"
         Expect.equal (lines host.Log).Length 1 "Exactly one request line"

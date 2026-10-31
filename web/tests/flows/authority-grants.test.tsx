@@ -25,6 +25,7 @@ const grants = (
   actorId: string,
   nextCursor: string | null = null,
   reference = `GRANT-${actorId}`,
+  caseId = "20000000-0000-4000-8000-000000000001",
 ): ApiResult<ServiceResponse<"authority.grants">> => ({
   kind: "outcome",
   status: 200,
@@ -38,7 +39,7 @@ const grants = (
             role: "CASE_READER",
             scope: {
               kind: "CASE",
-              caseId: "20000000-0000-4000-8000-000000000001",
+              caseId,
               caseReference: reference,
             },
           },
@@ -136,7 +137,9 @@ it("keeps only the same actor's page on a transient error and follows server con
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     })
-    .mockResolvedValueOnce(grants(first, null, "SECOND-PAGE"));
+    .mockResolvedValueOnce(
+      grants(first, null, "SECOND-PAGE", "20000000-0000-4000-8000-000000000002"),
+    );
   render(<AuthorityGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   await screen.findByRole("alert");
@@ -151,7 +154,7 @@ it("counts only complete loaded grants and clears the count while reloading with
   const reload = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
   const request = mockEndpoint("authority.grants")
     .mockResolvedValueOnce(grants(first, "next"))
-    .mockResolvedValueOnce(grants(first, null, "SECOND"))
+    .mockResolvedValueOnce(grants(first, null, "SECOND", "20000000-0000-4000-8000-000000000002"))
     .mockImplementationOnce(() => reload.promise);
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   const actors = await screen.findAllByRole("link", { name: / ·/u });
@@ -264,7 +267,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
           data: {
             ...receipt.outcome.data,
             operationId: prepared.input.operationId,
-            scope: {
+            subject: {
               ...receipt.outcome.data.subject,
               act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
             },

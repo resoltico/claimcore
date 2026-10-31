@@ -390,7 +390,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
             data: {
               ...receipt,
               operationId: prepared.input.operationId,
-              scope: {
+              subject: {
                 ...receipt.subject,
                 act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
               },
