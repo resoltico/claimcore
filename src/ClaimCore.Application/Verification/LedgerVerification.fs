@@ -15,7 +15,8 @@ module LedgerVerification =
             Cases: Map<CaseId, CaseHistory>
             Actors: Map<ActorId, ActorAuthority>
             Fences: Map<ActorId * OperationId, DateTimeOffset>
-            Accepted: Set<ActorId * OperationId>
+            Accepted: Map<OperationId, ActorId>
+            References: Map<string, CaseId>
             EarliestDuplicate: Sequence option
             ExpectedSeen: bool
         }
@@ -28,18 +29,7 @@ module LedgerVerification =
         | EntryTarget.Authority _, VerifiedPayload.Authority request ->
             AuthorityFold.apply
                 installationId
-                (fun reference ->
-                    state.Cases
-                    |> Map.toSeq
-                    |> Seq.tryPick (fun (id, history) ->
-                        if
-                            history.Reference
-                            |> Option.exists (fun retained ->
-                                CaseReference.identity retained = CaseReference.key reference)
-                        then
-                            Some id
-                        else
-                            None))
+                (fun reference -> Map.tryFind (CaseReference.key reference) state.References)
                 state.Actors
                 entry
                 request
@@ -78,6 +68,34 @@ module LedgerVerification =
         result {
             let sequence = entry.Sequence
             let at = Some sequence
+
+            let subject =
+                match entry.Subject with
+                | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
+                | EntryTarget.Authority(id, act) ->
+                    RecordedTarget.Authority { TargetActorId = id; Act = act }
+                | EntryTarget.Case(id, revision, act, date) ->
+                    RecordedTarget.Case
+                        {
+                            CaseId = id
+                            Revision = revision
+                            Act = act
+                            BusinessDate = date
+                        }
+
+            do!
+                require
+                    at
+                    VerificationFinding.PayloadFormat
+                    (metadata.InstallationId = installationId
+                     && metadata.Sequence = entry.Sequence
+                     && metadata.OperationId = entry.OperationId
+                     && metadata.ActorId = entry.ActorId
+                     && metadata.RecordedAt = entry.RecordedAt
+                     && metadata.Subject = subject
+                     && metadata.CreationReference = entry.CreationReference
+                     && metadata.PayloadCommitment = entry.PayloadCommitment)
+
             do! link state sequence metadata.PreviousHash
 
             let! hash =
@@ -99,12 +117,28 @@ module LedgerVerification =
                         at
                         VerificationFinding.PayloadFormat
                         (not (Map.containsKey (entry.ActorId, operation) state.Fences)
-                         && not (Set.contains (entry.ActorId, operation) state.Accepted))
+                         && Map.tryFind operation state.Accepted <> Some entry.ActorId)
                 | _ ->
                     require
                         at
                         VerificationFinding.PayloadFormat
-                        (not (Map.containsKey (entry.ActorId, entry.OperationId) state.Fences))
+                        (not (Map.containsKey (entry.ActorId, entry.OperationId) state.Fences)
+                         && not (Map.containsKey entry.OperationId state.Accepted))
+
+            let! references =
+                match entry.Subject, entry.CreationReference with
+                | EntryTarget.Case(id, _, CaseActKind.Open, _), Some reference ->
+                    let key = CaseReference.identity reference
+
+                    require
+                        at
+                        VerificationFinding.HistoryStart
+                        (not (Map.containsKey key state.References))
+                    |> Result.map (fun () -> Map.add key id state.References)
+                | EntryTarget.Case(_, _, CaseActKind.Open, _), None ->
+                    Error(divergence at VerificationFinding.HistoryStart)
+                | _, None -> Ok state.References
+                | _, Some _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
             let! cases, actors = histories installationId state entry payload
 
@@ -126,7 +160,8 @@ module LedgerVerification =
                     Accepted =
                         match payload with
                         | VerifiedPayload.NonAcceptance _ -> state.Accepted
-                        | _ -> Set.add (entry.ActorId, entry.OperationId) state.Accepted
+                        | _ -> Map.add entry.OperationId entry.ActorId state.Accepted
+                    References = references
                     Fences =
                         match payload with
                         | VerifiedPayload.NonAcceptance operation ->
@@ -145,7 +180,8 @@ module LedgerVerification =
             Cases = Map.empty
             Actors = Map.empty
             Fences = Map.empty
-            Accepted = Set.empty
+            Accepted = Map.empty
+            References = Map.empty
             EarliestDuplicate = earliestDuplicate
             ExpectedSeen =
                 expected

@@ -132,8 +132,29 @@ module BusinessField =
 type GroupValues<'stage> = private GroupValues of RecordGroup * Map<BusinessField, 'stage>
 
 module GroupValues =
+    // Authored group shape is explicit: adding a descriptor cannot change retained inputs.
+    let private fields =
+        function
+        | RecordGroup.Registration ->
+            [
+                BusinessField.IncidentDate
+                BusinessField.IncidentNotificationDate
+                BusinessField.IncidentCountry
+                BusinessField.ClaimantName
+                BusinessField.InsurerName
+                BusinessField.ClaimedAmount
+                BusinessField.ClaimedCurrency
+            ]
+        | RecordGroup.Decision ->
+            [
+                BusinessField.PaymentDecisionDate
+                BusinessField.PayableAmount
+                BusinessField.PayableCurrency
+            ]
+        | RecordGroup.Payment -> [ BusinessField.PaymentDate ]
+
     let private create group members =
-        let expected = BusinessField.ofGroup group
+        let expected = fields group
         let supplied = members |> List.map fst
 
         if
@@ -145,7 +166,7 @@ module GroupValues =
             Ok(GroupValues(group, Map.ofList members))
 
     let items (GroupValues(group, values)) =
-        BusinessField.ofGroup group |> List.map (fun field -> field, values[field])
+        fields group |> List.map (fun field -> field, values[field])
 
     let raw field (GroupValues(_, values)) = values[field] |> Authored.format
 
