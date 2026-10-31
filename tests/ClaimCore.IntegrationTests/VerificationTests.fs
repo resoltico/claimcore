@@ -19,11 +19,82 @@ open ClaimCore.IntegrationTests.AuthorityFindingScenarios
 open ClaimCore.IntegrationTests.StoredDataFindingScenarios
 
 
+let private requestEffectAgreement (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+        let sequence = CaseFixtures.sequence 4L
+        let! original = row database sequence
+        let request, snapshot = livePayload original
+
+        let forged =
+            { snapshot with
+                State =
+                    CaseState.map
+                        (fun fields ->
+                            { fields with
+                                Status = CaseStatus.Closed
+                            })
+                        snapshot.State
+            }
+
+        Expect.isOk (Case.ofAccepted forged) "CLOSED remains intrinsically representable"
+        // Recommit the retained request/result, rehash every affected link and replace the head.
+        do! rewrite database sequence (updateCase request forged)
+        let bytes = CaseRecord.encodeSnapshot forged
+        // Only status and snapshot change; all other projection facts remain the same.
+        do!
+            sql
+                database
+                "UPDATE claimcore.cases SET snapshot=$1,status='CLOSED' WHERE case_id=$2"
+                [| box bytes; box (CaseId.value forged.CaseId) |]
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT snapshot,status FROM claimcore.cases WHERE case_id=$1"
+                [| box (CaseId.value forged.CaseId) |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<byte array> 0 rows.Head)
+            bytes
+            "Projection agrees with the forged retained snapshot"
+
+        Expect.equal
+            (DatabaseSession.value<string> 1 rows.Head)
+            "CLOSED"
+            "Independent closed projection expectation"
+
+        let! retained = row database sequence
+        let _, retainedSnapshot = livePayload retained
+
+        Expect.equal
+            retainedSnapshot
+            forged
+            "The rehashed retained snapshot matches the materialized state"
+
+        let! result = Verification.verify database.OwnerSource None token
+
+        Expect.equal
+            result
+            (VerificationResult.Diverged
+                {
+                    Sequence = Some sequence
+                    Finding = VerificationFinding.StateSequence
+                })
+            "A self-consistent hash, head and projection cannot substitute for the OPEN request effect"
+    }
+
 [<Tests>]
 let tests =
     testList
         "typed ledger verification"
         [
+            testCaseAsync
+                "a self-consistent rehashed OPEN cannot assert a CLOSED result"
+                (run requestEffectAgreement)
             for occurrences in [ 2; 3 ] do
                 for earlier in [ None; Some 4L; Some 5L ] do
                     testCaseAsync
