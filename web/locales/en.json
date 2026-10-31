@@ -158,5 +158,8 @@
   "ui.caseState": "Case state",
   "ui.wasProgress": "was {progress}",
   "ui.targetActor": "Target actor",
-  "ui.recordedBy": "Recorded by"
+  "ui.recordedBy": "Recorded by",
+  "ui.preparingRecovery": "Saving recovery identity…",
+  "ui.recoveryUnavailable": "Not sent: recovery storage is unavailable. Enable site storage or free space, then retry. Your request has not been sent.",
+  "ui.recoveryListingUnavailable": "Recovery identities cannot be read or updated. Restore site storage access and retry."
 }

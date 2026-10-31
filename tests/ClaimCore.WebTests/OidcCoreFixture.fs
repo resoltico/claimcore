@@ -14,6 +14,7 @@ open ClaimCore.Postgres
 
 /// Real PostgreSQL preserves the same Application authorization exercised through OIDC.
 type Fixture(database: PostgresFixture.Database) =
+    member _.InstallationId = database.Fixture.InstallationId
     member _.Actor principal = core database.Fixture principal
 
     member _.EntryCount =

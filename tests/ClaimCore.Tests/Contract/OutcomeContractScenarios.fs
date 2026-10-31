@@ -36,6 +36,7 @@ let internal contextCodec () =
         Api.context.Output
         (Outcome.Succeeded
             {
+                InstallationId = System.Guid.Parse "90000000-0000-4000-8000-000000000001"
                 Runtime =
                     {
                         ProductVersion = "0.10.0"
@@ -89,7 +90,12 @@ let internal queryCodecs () =
 
     |> ignore
 
-    admitted Api.operationObserve.Output (Outcome.Succeeded authority)
+    admitted
+        Api.operationObserve.Output
+        {
+            OperationReply.OperationId = id
+            Outcome = Outcome.Succeeded authority
+        }
 
     |> ignore
 
@@ -163,7 +169,13 @@ let internal disclosures () =
                         }
             }
 
-        let result = admitted Api.operationObserve.Output (Outcome.Succeeded value)
+        let result =
+            admitted
+                Api.operationObserve.Output
+                {
+                    OperationReply.OperationId = id
+                    Outcome = Outcome.Succeeded value
+                }
 
         Expect.equal
             (result

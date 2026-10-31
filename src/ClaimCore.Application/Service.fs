@@ -217,6 +217,9 @@ module Service =
                 }
         }
 
+    let matchesInstallation (services: ServiceContext) installation =
+        services.InstallationId = installation
+
     let context services () ct = Queries.context services ct
 
     let get services (input: CaseGetRequest) ct =
@@ -227,9 +230,27 @@ module Service =
     let history = Queries.history
 
     let observe services (input: OperationLookup) ct =
-        Queries.observe services input.OperationId ct
+        task {
+            let! outcome = Queries.observe services input.OperationId ct
 
-    let resolve = Resolution.run
+            return
+                {
+                    OperationReply.OperationId = input.OperationId
+                    Outcome = outcome
+                }
+        }
+
+    let resolve services (input: OperationLookup) ct =
+        task {
+            let! outcome = Resolution.run services input ct
+
+            return
+                {
+                    OperationReply.OperationId = input.OperationId
+                    Outcome = outcome
+                }
+        }
+
     let actors = Queries.actors
     let grants = Queries.grants
     let authorityHistory = Queries.authorityHistory

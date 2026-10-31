@@ -74,7 +74,9 @@ const envelope = (endpoint: string, kind: string, original: unknown) => {
   if (
     isObject(request) &&
     "operationId" in request &&
-    ["operation.preview", "operation.execute"].includes(endpoint)
+    ["operation.preview", "operation.execute", "operation.observe", "operation.resolve"].includes(
+      endpoint,
+    )
   ) {
     echo = { operationId: request["operationId"] };
     data = responseData(kind, data, request);

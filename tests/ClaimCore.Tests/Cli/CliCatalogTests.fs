@@ -161,8 +161,11 @@ let tests =
                 let arguments =
                     [ "operation"; "resolve"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
 
-                Expect.equal
-                    (Grammar.prepare (fun () -> "unused") arguments)
-                    (Error [ UsageError.NotApplicable("--preview", "operation resolve") ])
-                    "Resolve is an operational write, so read-command wording is inaccurate")
+                match Grammar.prepare (fun () -> "unused") arguments with
+                | Error errors ->
+                    Expect.equal
+                        errors
+                        [ UsageError.NotApplicable("--preview", "operation resolve") ]
+                        "Resolve is an operational write, so read-command wording is accurate"
+                | Ok _ -> failtest "Resolve cannot be previewed")
         ]

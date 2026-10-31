@@ -5,6 +5,7 @@ import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
+  contextGeneration: number;
   id: string;
   credential: string;
   target: string;
@@ -29,7 +30,7 @@ export type OperationPhase =
       confirmed: boolean;
     }
   | {
-      kind: "SUBMITTING";
+      kind: "PREPARING" | "SUBMITTING";
       source: LocalSource;
       effect: EffectIdentity;
       review: OperationReview | null;
@@ -74,6 +75,8 @@ export type OperationState = {
   entry: CatalogEntryIdentity;
   target: string;
   context: {
+    generation: number;
+    epoch: number;
     credential: string;
     target: string;
   };
@@ -89,6 +92,7 @@ export type OperationState = {
   pendingDiscard: string | null;
 };
 export type OperationAction =
+  | { type: "HANDOFF"; identity: EffectIdentity }
   | {
       type: "RESET";
       state: OperationState;
@@ -130,6 +134,7 @@ export type OperationAction =
     }
   | {
       type: "CONTEXT";
+      epoch: number;
       credential: string;
       target: string;
     }

@@ -263,5 +263,6 @@
   "input.assignment.label": "Piešķīrums",
   "input.assignment.meaning": "Atlasīt tikai lietas, kas piešķirtas pieprasījuma dalībniekam.",
   "endpoint.case.summary.label": "Lietu kopsavilkums",
-  "endpoint.case.summary.meaning": "Saskaitīt atlasītās redzamās lietas un summēt prasītās un izmaksājamās summas atsevišķi katrai valūtai."
+  "endpoint.case.summary.meaning": "Saskaitīt atlasītās redzamās lietas un summēt prasītās un izmaksājamās summas atsevišķi katrai valūtai.",
+  "host.INSTALLATION_MISMATCH": "Instalācija ir mainījusies. Pirms pieprasījuma sagatavošanas atsvaidziniet autentificēto kontekstu. Šis pieprasījums netika sākts."
 }

@@ -110,7 +110,8 @@
               "OPERATIONS"
             ],
             "hasAssignedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001"
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -717,7 +718,8 @@
               "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -737,7 +739,8 @@
               }
             ]
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -751,7 +754,8 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -1039,7 +1043,8 @@
               "OPERATIONS"
             ],
             "hasAssignedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001"
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -2887,7 +2892,8 @@
               "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2898,7 +2904,8 @@
         "outcome": {
           "kind": "NOT_ACCEPTED",
           "data": null
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2913,7 +2920,8 @@
             "action": "READ_CURRENT",
             "target": "operationId"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2927,7 +2935,8 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },

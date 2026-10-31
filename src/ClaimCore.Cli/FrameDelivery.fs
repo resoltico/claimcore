@@ -85,7 +85,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <- Frames.endpoint frame |> Api.executesLedger
+            potentiallyChanged <- Frames.endpoint frame |> Api.requiresInstallation
             dispatched <- true
             pending <- Some frame)
 

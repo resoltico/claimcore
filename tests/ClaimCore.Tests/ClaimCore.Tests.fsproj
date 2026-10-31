@@ -59,6 +59,7 @@
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
+    <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
@@ -130,12 +131,15 @@
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
+    <Compile Include="Cli/ReplyCorrelationTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
     <Compile Include="Cli/ConfigurationHelpTests.fs" />
     <Compile Include="Cli/CliProfileTests.fs" />
+    <Compile Include="Cli/RecoveryJournalProcess.fs" />
+    <Compile Include="Cli/RecoveryJournalTests.fs" />
     <Compile Include="Cli/ShellTokenizerTests.fs" />
     <Compile Include="Cli/ShellTerminalTests.fs" />
     <Compile Include="Cli/ShellTestClock.fs" />

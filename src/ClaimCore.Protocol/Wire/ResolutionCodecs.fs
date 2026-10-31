@@ -49,4 +49,4 @@ module ResolutionCodecs =
                         (data DiagnosticCodecs.fault)
                 ]
 
-        record id |> field "outcome" id outcome |> build |> named "ResolveReply"
+        ReplyCodecs.operationReply "ResolveReply" outcome

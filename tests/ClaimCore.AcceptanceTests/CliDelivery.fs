@@ -68,9 +68,17 @@ let private lostFrame (fixture: PublishedFixture.Fixture) source =
     let prepared =
         Frames.admit source
         |> Result.defaultWith (fun _ -> failtest "Synthetic source is admitted")
-        |> Frames.encodeInvocation
 
-    exactBytes fixture "stderr-retry-frame" prepared retry
+    let bound =
+        Frames.admit retry
+        |> Result.defaultWith (fun _ ->
+            failtest "The retry frame must retain its admitted installation binding")
+
+    Expect.isSome
+        (Frames.installationId bound)
+        "Prepared retry frames preserve the original installation"
+
+    exactBytes fixture "stderr-retry-body" (Frames.inputBytes prepared) (Frames.inputBytes bound)
     reply, retry
 
 let private oneAcceptance fixture reference =

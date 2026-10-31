@@ -97,7 +97,16 @@ let private relay
                 let! bytes = response.Content.ReadAsByteArrayAsync(context.RequestAborted)
                 control.Original(Some bytes)
 
-                if status = RedirectControl.lostResponse then
+                if status = RedirectControl.heldResponse then
+                    try
+                        do!
+                            System.Threading.Tasks.Task.Delay(
+                                System.Threading.Timeout.Infinite,
+                                context.RequestAborted
+                            )
+                    with :? OperationCanceledException ->
+                        ()
+                elif status = RedirectControl.lostResponse then
                     context.Abort()
                 else
                     context.Response.StatusCode <- status

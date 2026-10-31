@@ -5,6 +5,7 @@ open ClaimCore.Application.Contracts
 
 [<RequireQualifiedAccess>]
 type HostFailureCode =
+    | InstallationMismatch
     | ContractMismatch
     | ConnectionRejected
     | OriginRejected

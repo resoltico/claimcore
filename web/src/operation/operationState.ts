@@ -18,16 +18,20 @@ export type {
 } from "./operationTypes";
 const operationBusy = (state: OperationState): boolean =>
   state.operation.kind === "PREVIEWING" ||
+  state.operation.kind === "PREPARING" ||
   state.operation.kind === "SUBMITTING" ||
   (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null);
 const canEdit = (state: OperationState): boolean =>
   state.operation.kind === "EDITING" || state.operation.kind === "REVIEWING";
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
-  state.context.credential === identity.credential && state.context.target === identity.target;
+  state.context.generation === identity.contextGeneration &&
+  state.context.credential === identity.credential &&
+  state.context.target === identity.target;
 const completing = (state: OperationState, identity: EffectIdentity): boolean =>
   current(state, identity) &&
   operationBusy(state) &&
   (state.operation.kind === "PREVIEWING" ||
+    state.operation.kind === "PREPARING" ||
     state.operation.kind === "SUBMITTING" ||
     (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null)) &&
   state.operation.effect?.id === identity.id;
@@ -163,7 +167,7 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
               effect: identity,
             }
           : {
-              kind: "SUBMITTING",
+              kind: "PREPARING",
               source,
               effect: identity,
               review: phase.kind === "REVIEWING" ? phase.review : null,
@@ -232,7 +236,7 @@ const record = (
     }
   >,
 ): OperationState => {
-  if (!completing(state, action.identity)) {
+  if (state.operation.kind === "PREPARING" || !completing(state, action.identity)) {
     return state;
   }
   const source = operationSource(state.operation);
@@ -292,11 +296,15 @@ const contextChanged = (
     }
   >,
 ): OperationState =>
-  state.context.credential === action.credential && state.context.target === action.target
+  state.context.credential === action.credential &&
+  state.context.target === action.target &&
+  state.context.epoch === action.epoch
     ? state
     : {
         ...invalidate(state, false),
         context: {
+          generation: state.context.generation + 1,
+          epoch: action.epoch,
           credential: action.credential,
           target: action.target,
         },
@@ -382,7 +390,7 @@ const notAccepted = (
 type NavigationAction = Exclude<
   OperationAction,
   {
-    type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW";
+    type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW" | "HANDOFF";
   }
 >;
 const navigation = (state: OperationState, action: NavigationAction): OperationState => {
@@ -420,6 +428,10 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
       };
   }
 };
+const handoff = (state: OperationState, identity: EffectIdentity): OperationState =>
+  completing(state, identity) && state.operation.kind === "PREPARING"
+    ? { ...state, operation: { ...state.operation, kind: "SUBMITTING" } }
+    : state;
 /** Effects are issued only by explicit events; completions are fenced by epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
@@ -432,6 +444,8 @@ export const operationReducer = (
       return preview(state, action);
     case "EXECUTE":
       return execute(state, action.identity);
+    case "HANDOFF":
+      return handoff(state, action.identity);
     case "REFUSE":
       return refuse(state, action);
     case "RECORD":
@@ -451,11 +465,14 @@ export const operationView = (state: OperationState) => {
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
     prepared: source?.prepared ?? null,
-    review: phase.kind === "REVIEWING" || phase.kind === "SUBMITTING" ? phase.review : null,
+    review:
+      phase.kind === "REVIEWING" || phase.kind === "PREPARING" || phase.kind === "SUBMITTING"
+        ? phase.review
+        : null,
     receipt: phase.kind === "ACCEPTED" ? phase.receipt : null,
     confirmed:
       phase.kind === "REVIEWING"
         ? phase.confirmed
-        : phase.kind === "SUBMITTING" && phase.review !== null,
+        : (phase.kind === "PREPARING" || phase.kind === "SUBMITTING") && phase.review !== null,
   };
 };

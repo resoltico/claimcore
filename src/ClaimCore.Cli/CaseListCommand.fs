@@ -15,23 +15,14 @@ module internal CaseListCommand =
         | lines -> String.concat "\n" lines + "\n" |> Encoding.UTF8.GetBytes
 
     let private invocation request =
-        JsonValue.Object
-            [
-                "endpoint", JsonValue.String Api.caseList.Token
-                "input", Api.caseList.Input.Write request
-            ]
-        |> WireWriter.bytes
-        |> Frames.admit
+        Frames.create Api.caseList request
         |> Result.defaultWith (fun _ ->
             invalidOp "A typed case page must produce an admitted invocation.")
 
     let private page (reply: CliReply) =
         match reply.Frame.Result with
         | FrameResult.Reply value when value.Route.Id = Api.caseList.Id ->
-            Api.caseList.Output.Read "$" value.Wire
-            |> Result.defaultWith (fun _ ->
-                invalidOp "An admitted case page must retain its endpoint shape.")
-            |> Some
+            ServiceReply.value Api.caseList value
         | FrameResult.Reply _ -> invalidOp "A case page must retain its requested endpoint."
         | _ -> None
 
@@ -66,13 +57,11 @@ module internal CaseListCommand =
 
     let run (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
         task {
-            let initial =
-                Frames.admit prepared.Bytes
-                |> Result.defaultWith (fun _ -> invalidOp "A prepared listing must be admitted.")
+            let initial = prepared.Invocation
 
             let request =
-                Api.caseList.Input.Read "$" (Frames.input initial)
-                |> Result.defaultWith (fun _ ->
+                Frames.value Api.caseList initial
+                |> Option.defaultWith (fun () ->
                     invalidOp "A listing must carry a case-list request.")
 
             let mutable cursor = request.Page.AfterCursor

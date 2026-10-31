@@ -306,7 +306,7 @@ let private assertRemainingHistoryAccess
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
         let! observed =
-            (Service.observe
+            (ClaimCore.TestSupport.StoreFixtures.observe
                 actor
                 ({
                     OperationId = (OperationId.value (original.OperationId))

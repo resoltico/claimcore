@@ -8,7 +8,6 @@ import { useEndpointCache } from "../hooks/EndpointProvider";
 import { useRoute } from "../routing/useRoute";
 import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
 import { useCredential } from "../session/SessionContext";
-import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
@@ -370,7 +369,6 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     onRecorded,
     onDisclosureRefused: refused,
   });
-  useUnresolvedOperation(model);
   useAuthorityActions(model, actions, ready);
   return {
     model,

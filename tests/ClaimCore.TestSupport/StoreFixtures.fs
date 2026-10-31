@@ -30,6 +30,18 @@ let internal core fixture principal =
         fixture.Calendar
         principal
 
+let internal resolve services input token =
+    task {
+        let! reply = Service.resolve services input token
+        return reply.Outcome
+    }
+
+let internal observe services input token =
+    task {
+        let! reply = Service.observe services input token
+        return reply.Outcome
+    }
+
 let internal inspectCase fixture principal operation reference token =
     fixture.Store.Read(
         {

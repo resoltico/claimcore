@@ -278,6 +278,14 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
           }
         ],
         "security": [
@@ -817,6 +825,14 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
             }
           }
         ],
@@ -1561,19 +1577,39 @@
                   "additionalProperties": false,
                   "properties": {
                     "hostFailure": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "code": {
-                          "const": "CONTRACT_MISMATCH"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "const": "INSTALLATION_MISMATCH"
+                            },
+                            "phase": {
+                              "const": "NOT_STARTED"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "phase"
+                          ]
                         },
-                        "phase": {
-                          "const": "NOT_STARTED"
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "const": "CONTRACT_MISMATCH"
+                            },
+                            "phase": {
+                              "const": "NOT_STARTED"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "phase"
+                          ]
                         }
-                      },
-                      "required": [
-                        "code",
-                        "phase"
                       ]
                     }
                   },
@@ -1820,6 +1856,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "installationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "productVersion": {
             "type": "string",
             "minLength": 1,
@@ -1884,6 +1923,7 @@
           }
         },
         "required": [
+          "installationId",
           "productVersion",
           "businessDate",
           "timeZone",
@@ -4913,6 +4953,22 @@
             "additionalProperties": false,
             "properties": {
               "code": {
+                "const": "INSTALLATION_MISMATCH"
+              },
+              "phase": {
+                "const": "NOT_STARTED"
+              }
+            },
+            "required": [
+              "code",
+              "phase"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
                 "const": "CONTRACT_MISMATCH"
               },
               "phase": {
@@ -5513,36 +5569,40 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "outcome": {
-            "$ref": "#/components/schemas/ObservationReply.Outcome"
+            "$ref": "#/components/schemas/ObservationResult"
           }
         },
         "required": [
+          "operationId",
           "outcome"
         ]
       },
-      "ObservationReply.Outcome": {
+      "ObservationResult": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ObservationReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/ObservationResult.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ObservationReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/ObservationResult.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/ObservationReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/ObservationResult.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/ObservationReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ObservationReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ObservationReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/ObservationResult.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ObservationResult.REJECTED",
+            "FAILED": "#/components/schemas/ObservationResult.FAILED"
           }
         }
       },
-      "ObservationReply.Outcome.FAILED": {
+      "ObservationResult.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5558,7 +5618,7 @@
           "data"
         ]
       },
-      "ObservationReply.Outcome.REJECTED": {
+      "ObservationResult.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5574,7 +5634,7 @@
           "data"
         ]
       },
-      "ObservationReply.Outcome.SUCCEEDED": {
+      "ObservationResult.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6235,11 +6295,15 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "outcome": {
             "$ref": "#/components/schemas/ResolveResult"
           }
         },
         "required": [
+          "operationId",
           "outcome"
         ]
       },

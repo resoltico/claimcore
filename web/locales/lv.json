@@ -158,5 +158,8 @@
   "ui.caseState": "Lietas stāvoklis",
   "ui.wasProgress": "bija {progress}",
   "ui.targetActor": "Mērķa dalībnieks",
-  "ui.recordedBy": "Reģistrēja"
+  "ui.recordedBy": "Reģistrēja",
+  "ui.preparingRecovery": "Saglabā atkopšanas identitāti…",
+  "ui.recoveryUnavailable": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Atļaujiet vietnes krātuvi vai atbrīvojiet vietu un mēģiniet vēlreiz. Pieprasījums nav nosūtīts.",
+  "ui.recoveryListingUnavailable": "Atkopšanas identitātes nevar nolasīt vai atjaunināt. Atjaunojiet piekļuvi vietnes krātuvei un mēģiniet vēlreiz."
 }

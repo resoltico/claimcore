@@ -384,6 +384,7 @@ let private qualify () =
         CliDiscovery.qualify fixture
         setup fixture
         do! CliResolution.qualify fixture
+        CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         CliDisclosure.qualify fixture

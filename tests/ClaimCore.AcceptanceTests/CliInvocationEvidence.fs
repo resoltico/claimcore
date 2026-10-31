@@ -12,6 +12,7 @@ let private stages =
     set
         [
             "start"
+            "launcher-started"
             "driver-started"
             "browser-launched"
             "context-created"
@@ -99,7 +100,14 @@ let internal describe stage (failure: BoundedProcessFailure) =
 let private report (diagnostics: TextWriter) progress render =
     try
         let stage = progress |> Option.map readStage |> Option.defaultValue "not-applicable"
-        diagnostics.WriteLine(render stage + " browserReturn=" + browserReturn progress)
+        let summary = render stage + " browserReturn=" + browserReturn progress
+        diagnostics.WriteLine summary
+        match System.Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+        | null -> ()
+        | directory ->
+            let output = Path.Combine(directory, "cli-failure")
+            Directory.CreateDirectory output |> ignore
+            File.WriteAllText(Path.Combine(output, System.Guid.NewGuid().ToString("N") + ".txt"), summary)
     with
     | :? IOException
     | :? System.ObjectDisposedException -> ()

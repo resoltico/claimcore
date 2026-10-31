@@ -112,6 +112,8 @@ module ContractDiscovery =
             Some(schemaDocument Api.session.Input.Schema Api.session.Input.Definitions)
         | "invocation" -> Some(schemaDocument CliSchemas.invocation CliSchemas.definitions)
         | "response" -> Some(schemaDocument CliSchemas.response CliSchemas.definitions)
+        | "recovery" ->
+            Some(schemaDocument CliSchemas.recoveryList.Schema CliSchemas.recoveryList.Definitions)
         | "host-failure" ->
             Some(schemaDocument HostFailureCodecs.reply.Schema HostFailureCodecs.reply.Definitions)
         | _ ->

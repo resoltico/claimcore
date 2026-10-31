@@ -167,5 +167,19 @@ let qualify fixture =
         |> require "NOT_ACCEPTED"
         |> ignore
 
-        Expect.equal (head fixture) before "Resolution appends no ledger entry"
+        let after = head fixture
+        use earlier = JsonDocument.Parse before
+        use later = JsonDocument.Parse after
+
+        Expect.equal
+            (later.RootElement.GetProperty("position").GetProperty("sequence").GetInt64())
+            (earlier.RootElement.GetProperty("position").GetProperty("sequence").GetInt64()
+             + 1L)
+            "First final resolution appends one retained control"
+
+        verb fixture fixture.Environment [ "operation"; "resolve"; operationId ] 2
+        |> require "NOT_ACCEPTED"
+        |> ignore
+
+        Expect.equal (head fixture) after "Repeated final resolution appends no additional control"
     }

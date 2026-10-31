@@ -129,6 +129,21 @@ let private dispatch output errors argv =
                 "en"
                 (fun reply -> reply.Bytes)
         | Ok CliInvocation.Shell -> ShellRuntime.run output errors
+        | Ok(CliInvocation.Recovery selected) ->
+            let result =
+                RecoveryCommand.run selected CancellationToken.None
+                |> _.GetAwaiter().GetResult()
+
+            try
+                output.Write result.Bytes
+                output.WriteByte(byte '\n')
+                output.Flush()
+                result.ExitCode
+            with _ ->
+                if result.MayChange then
+                    ExitCode.value ExitCode.OutcomeUnknown
+                else
+                    ExitCode.value ExitCode.Failed
         | Ok(CliInvocation.Configure updates) -> configure output updates
         | Ok(CliInvocation.Verb arguments) -> verb output errors arguments
         | Ok invocation -> discovery output errors invocation

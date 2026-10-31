@@ -27,7 +27,7 @@ let private run action =
     }
 
 let private resolve (actor: ServiceContext) id =
-    (Service.resolve actor ({ OperationId = id }) (token))
+    (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id }) (token))
 
 let private waiters (database: PostgresFixture.Database) count =
     task {
@@ -97,7 +97,8 @@ let private delayedExecute (database: PostgresFixture.Database) =
             1L
             "Repeated resolution appends exactly one control"
 
-        let! observed = Service.observe actor { OperationId = id 101 } token
+        let! observed =
+            ClaimCore.TestSupport.StoreFixtures.observe actor { OperationId = id 101 } token
 
         Expect.equal
             observed

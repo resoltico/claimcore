@@ -102,8 +102,10 @@ type CliMessage =
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
     | [<MessageKey("cli.text.cursorReached")>] CursorReached of cursor: string
     | [<MessageKey("cli.review.confirm")>] ReviewConfirmation
+    | [<MessageKey("cli.family.recovery")>] RecoveryFamily
     | [<MessageKey("cli.family.shell")>] ShellFamily
     | [<MessageKey("cli.family.configure")>] ConfigureFamily
+    | [<MessageKey("cli.help.recovery")>] HelpRecovery
     | [<MessageKey("cli.help.shell")>] HelpShell
     | [<MessageKey("cli.help.configure")>] HelpConfigure
     | [<MessageKey("cli.shell.exitCode")>] ShellExitCode of code: string
@@ -129,6 +131,8 @@ module CliMessages =
 
     let private failureKey =
         function
+        | ClientFailure.InstallationMismatch -> "cli.failure.INSTALLATION_MISMATCH"
+        | ClientFailure.RecoveryUnavailable -> "cli.failure.RECOVERY_UNAVAILABLE"
         | ClientFailure.Configuration -> "cli.failure.CONFIGURATION_INVALID"
         | ClientFailure.ConfigurationIssue _ -> "cli.configurationIssue"
         | ClientFailure.Authentication -> "cli.failure.AUTHENTICATION_FAILED"

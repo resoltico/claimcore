@@ -3,7 +3,7 @@ import { RequesterContext } from "../hooks/useRequesterContext";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { UnresolvedNotice } from "./operation/UnresolvedNotice";
 import { RoutedContent } from "./RoutedContent";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { CaseReceipt } from "../api/service";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -119,7 +119,7 @@ const AcceptedToast = ({
   );
 };
 const useNavigationLock = (locked: boolean) => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     setNavigationLock(locked);
     return () => {
       setNavigationLock(false);

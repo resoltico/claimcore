@@ -1,5 +1,6 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
@@ -13,6 +14,7 @@ const preparedHook = async () => {
   const view = renderHook(
     ({ credential }) =>
       useOperation({
+        ...recoveryOptions,
         subject: "AUTHORITY",
         kind: "REGISTER",
         current: null,
@@ -62,7 +64,9 @@ it("coalesces authority execution before React commits busy state", async () => 
     task = view.result.current.execute();
     void view.result.current.execute();
   });
-  expect(send).toHaveBeenCalledOnce();
+  await waitFor(() => {
+    expect(send).toHaveBeenCalledOnce();
+  });
   await act(async () => {
     completion.finish(authorityAcceptance(send.mock.calls[0]![0]));
     await task;
@@ -78,6 +82,9 @@ it("ignores completion from a superseded session while retaining the exact froze
   let task = Promise.resolve();
   act(() => {
     task = view.result.current.execute();
+  });
+  await waitFor(() => {
+    expect(vi.mocked(service.execute)).toHaveBeenCalledOnce();
   });
   view.rerender({
     credential: "second",

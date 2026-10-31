@@ -63,14 +63,18 @@ let private qualify path (database: PostgresFixture.Database) =
                 true
 
         let receipt = accepted executed
-        let! before = Service.observe actor { OperationId = operationId } token
+
+        let! before =
+            ClaimCore.TestSupport.StoreFixtures.observe actor { OperationId = operationId } token
 
         match before with
         | Outcome.Succeeded _ -> ()
         | _ -> failtest "The exact receipt is readable before its stored enum is damaged"
 
         do! rewrite database receipt.Position.Sequence (corrupt path)
-        let! after = Service.observe actor { OperationId = operationId } token
+
+        let! after =
+            ClaimCore.TestSupport.StoreFixtures.observe actor { OperationId = operationId } token
 
         Expect.equal
             after

@@ -16,6 +16,12 @@ import {
 } from "../../support/operation-identity.fixtures";
 import { wireReply } from "../../support/contract-corpus.fixtures";
 
+const submitted = (state = reviewed(), id = "execute") =>
+  operationReducer(operationReducer(state, { type: "EXECUTE", identity: effect(id) }), {
+    type: "HANDOFF",
+    identity: effect(id),
+  });
+
 it("unexposed edits keep identity and changed exposed input receives fresh identity", () => {
   expect(
     operationReducer(initial(), { type: "EDIT", path: "act.reason", value: "B", id: secondId })
@@ -40,10 +46,7 @@ it("unexposed edits keep identity and changed exposed input receives fresh ident
   ).toBe(exposed);
 });
 it("uncertainty survives later definite failures and blocks edits while allowing exact retry", () => {
-  const submitting = operationReducer(reviewed(), {
-    type: "EXECUTE",
-    identity: effect("execute"),
-  });
+  const submitting = submitted();
   const unknown = operationReducer(submitting, {
     type: "REFUSE",
     notice: { kind: "local", reason: "outcomeUnknown" },
@@ -88,7 +91,7 @@ it("requires an exact review and consent and blocks edits while an attempt is pe
 });
 
 const unknown = () =>
-  operationReducer(operationReducer(reviewed(), { type: "EXECUTE", identity: effect("execute") }), {
+  operationReducer(submitted(), {
     type: "REFUSE",
     identity: effect("execute"),
     notice: { kind: "local", reason: "outcomeUnknown" },
@@ -97,10 +100,7 @@ const unknown = () =>
     disclosure: false,
   });
 it("fences stale execute acceptance after epoch or target change while retaining uncertain identity", () => {
-  const submitting = operationReducer(reviewed(), {
-    type: "EXECUTE",
-    identity: effect("execute"),
-  });
+  const submitting = submitted();
   const result = wireReply("operation.execute");
   if (result.outcome.kind !== "ACCEPTED") {
     throw new Error("Acceptance example missing");
@@ -109,7 +109,7 @@ it("fences stale execute acceptance after epoch or target change while retaining
     { credential: "new-epoch", target: submitting.target },
     { credential: "token", target: "CASE:OTHER" },
   ]) {
-    const invalidated = operationReducer(submitting, { type: "CONTEXT", ...context });
+    const invalidated = operationReducer(submitting, { type: "CONTEXT", epoch: 0, ...context });
     expect(invalidated.operation.kind).toBe("UNRESOLVED");
     const late = operationReducer(invalidated, {
       type: "RECORD",
@@ -122,7 +122,7 @@ it("fences stale execute acceptance after epoch or target change while retaining
   }
 });
 it("disclosure invalidation removes a submitting review and its late completion cannot restore it", () => {
-  const pending = operationReducer(reviewed(), { type: "EXECUTE", identity: effect("execute") });
+  const pending = submitted();
   expect(operationView(pending).review).not.toBeNull();
   const invalid = operationReducer(pending, { type: "INVALIDATE", refused: true });
   expect(operationView(invalid).review).toBeNull();
@@ -142,7 +142,7 @@ const controlEvents = (state: OperationState): OperationAction[] => [
   { type: "INVALIDATE", refused: true },
   { type: "RESTORE" },
   { type: "RESET", state: initial(), abandon: false },
-  { type: "CONTEXT", credential: state.context.credential, target: state.context.target },
+  { type: "CONTEXT", epoch: 0, credential: state.context.credential, target: state.context.target },
 ];
 it("200 deterministic event sequences preserve prior uncertainty and cannot schedule cleanup", () => {
   for (let seed = 1; seed <= 200; seed += 1) {

@@ -106,7 +106,7 @@ let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
         FixtureFiles.text
             fixture.Directory
             (if OperatingSystem.IsMacOS() then "open" else "xdg-open")
-            "#!/bin/sh\nexec node \"$CLAIMCORE_CLI_TEST_DRIVER\" \"$@\"\n"
+            "#!/bin/sh\nprintf 'launcher-started\\n' > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE\"\nexec node \"$CLAIMCORE_CLI_TEST_DRIVER\" \"$@\" > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stdout\" 2> \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stderr\"\n"
 
     File.SetUnixFileMode(
         launcher,

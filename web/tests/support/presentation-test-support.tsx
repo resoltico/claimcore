@@ -1,3 +1,5 @@
+import { JournalContext } from "../../src/recovery/JournalContext";
+import { testJournal } from "./recovery.fixtures";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { context as requester } from "./service-ui.fixtures";
 import { SessionContext } from "../../src/session/SessionContext";
@@ -16,30 +18,34 @@ export const TestSession = ({
   credential?: string;
   logout?: () => Promise<void>;
 }) => (
-  <SessionContext
-    value={{
-      state: { kind: "authenticated", token: credential, epoch: 0 },
-      logout,
-      refresh: () => Promise.resolve(),
-    }}
-  >
-    {children}
-  </SessionContext>
-);
-export const TestProviders = ({ children }: { children: ReactNode }) => (
-  <PresentationProvider>
+  <JournalContext value={testJournal}>
     <SessionContext
       value={{
-        state: { kind: "authenticated", token: "token", epoch: 0 },
-        logout: () => Promise.resolve(),
+        state: { kind: "authenticated", token: credential, epoch: 0 },
+        logout,
         refresh: () => Promise.resolve(),
       }}
     >
-      <EndpointProvider>
-        <RequesterContext value={requester}>{children}</RequesterContext>
-      </EndpointProvider>
+      {children}
     </SessionContext>
-  </PresentationProvider>
+  </JournalContext>
+);
+export const TestProviders = ({ children }: { children: ReactNode }) => (
+  <JournalContext value={testJournal}>
+    <PresentationProvider>
+      <SessionContext
+        value={{
+          state: { kind: "authenticated", token: "token", epoch: 0 },
+          logout: () => Promise.resolve(),
+          refresh: () => Promise.resolve(),
+        }}
+      >
+        <EndpointProvider>
+          <RequesterContext value={requester}>{children}</RequesterContext>
+        </EndpointProvider>
+      </SessionContext>
+    </PresentationProvider>
+  </JournalContext>
 );
 export const render = (ui: ReactElement, options?: RenderOptions) =>
   testingRender(ui, { wrapper: TestProviders, ...options });

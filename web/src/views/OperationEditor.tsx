@@ -3,7 +3,6 @@ import { normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useCredential } from "../session/SessionContext";
-import { useUnresolvedOperation } from "./operation/unresolvedOperation";
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
 import { AcceptedOperation } from "./operation/OperationDialogs";
@@ -20,7 +19,6 @@ const useCaseOperation = (props: OperationEditorProps) => {
     normalizeValues: (values, entry) => normalizeAmountValues(values, entry, p.displayLocale),
     onLockChange: props.onMutationLockChange,
   });
-  useUnresolvedOperation(model);
   const navigation = useOperationNavigation(model, props.onClose);
   const recorded = useRef<string | null>(null);
   const commit = useCallback(

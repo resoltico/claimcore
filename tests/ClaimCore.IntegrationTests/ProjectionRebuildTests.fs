@@ -26,7 +26,10 @@ let private rows (database: PostgresFixture.Database) table =
 let private seeded database =
     task {
         let! actor = populated database
-        let! resolved = Service.resolve actor { OperationId = id 99 } token
+
+        let! resolved =
+            ClaimCore.TestSupport.StoreFixtures.resolve actor { OperationId = id 99 } token
+
         Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Control seed commits"
         let! checkpoint = verified database
         return actor, checkpoint

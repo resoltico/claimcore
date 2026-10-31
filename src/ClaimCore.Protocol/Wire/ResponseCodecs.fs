@@ -237,9 +237,10 @@ module ResponseCodecs =
         |> field "hasAssignedCases" snd boolean
 
     let actorContext =
-        (record (fun runtime capabilities views offers (identity, assigned) ->
+        (record (fun installation runtime capabilities views offers (identity, assigned) ->
             {
-                ActorContext.ActorId = identity
+                ActorContext.InstallationId = installation
+                ActorId = identity
                 Runtime = runtime
                 Capability = capabilities
                 View = views
@@ -247,6 +248,7 @@ module ResponseCodecs =
                 HasAssignedCases = assigned
             })
         : Fields<ActorContext, _>)
+        |> field "installationId" _.InstallationId uuid
         |> flatten _.Runtime runtimeFields
         |> field
             "capabilities"

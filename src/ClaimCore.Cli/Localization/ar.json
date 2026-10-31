@@ -69,5 +69,9 @@
   "cli.help.configure": "الملف العام هو $XDG_CONFIG_HOME/claimcore/profile.json، أو ~/.config/claimcore/profile.json إذا لم يُضبط XDG_CONFIG_HOME. يكتب configure بصورة ذرية بصلاحيات 0600 للملف و0700 للمجلد. تُقبل فقط serviceUrl وissuer وclientId وauthMode وserviceTrustRootFile وoidcTrustRootFile. تُطبق ضوابط قبول الملفات الخاصة الحالية عند كل قراءة؛ وتُرفض الأعضاء غير الصالحة أو غير المعروفة أو الشبيهة بالأسرار. تتجاوز متغيرات البيئة كل قيمة عامة على حدة. يبقى CLAIMCORE_OIDC_CLIENT_SECRET_FILE في البيئة فقط؛ ولا تُحفظ محتويات الأسرار أو الرموز أبداً. يعرض configure --show القيم الفعلية ومصدرها environment/profile/missing دون قراءة محتوى السر. لا يعرض إعداد ملف السر إلا وجوده ومصدره.",
   "cli.shell.exitCode": "رمز الخروج: {code}",
   "cli.shell.invalidLine": "علامة اقتباس غير مغلقة أو شرطة مائلة عكسية في نهاية السطر. لم يُنفّذ الأمر.",
-  "cli.usage.configureOptions": "يقبل configure الخيار --show وحده أو الإعدادات العامة الموثقة. تُرفض خيارات الأسرار."
+  "cli.usage.configureOptions": "يقبل configure الخيار --show وحده أو الإعدادات العامة الموثقة. تُرفض خيارات الأسرار.",
+  "cli.failure.RECOVERY_UNAVAILABLE": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. تحقّق من دليل XDG_STATE_HOME/claimcore الخاص (الافتراضي ~/.local/state/claimcore) والمساحة والأذونات ثم أعد المحاولة.",
+  "cli.family.recovery": "استرداد المحاولات المحلية.",
+  "cli.help.recovery": "recovery list: يعرض معرّفات المحاولات للخدمة والتثبيت والفاعل المعتمدين. recovery resolve ATTEMPT_ID: يحصل على نتيجة نهائية ويحذف هذه المحاولة فقط بعد رد كامل ومتطابق. تُحفظ المعرّفات في ملفات خاصة لكل محاولة ضمن $XDG_STATE_HOME/claimcore (الافتراضي ~/.local/state/claimcore). لا تُحفظ الطلبات أو المراجع أو بيانات الاعتماد. لا توجد إعادة إرسال تلقائية. احتفظ بالمعرّفات غير المحسومة. فقدان الجهاز وحذف الحالة وضمانات نظام الملفات خارج ضمان الاسترداد.",
+  "cli.failure.INSTALLATION_MISMATCH": "لم يُرسل الطلب: ينتمي هذا الطلب إلى تثبيت آخر. احسمه في تثبيته الأصلي، وأعدّ طلباً جديداً لهذا التثبيت."
 }

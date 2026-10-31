@@ -278,7 +278,8 @@ let internal boundaryEvidence () =
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
 
-        let! resolved = (Service.resolve actor ({ OperationId = id 42 }) (ct))
+        let! resolved =
+            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Resolve installs a fence"
 

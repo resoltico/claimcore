@@ -105,6 +105,12 @@ module OpenApi =
                 parameters
                 @ [ header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema ]
 
+        let parameters =
+            if Api.requiresInstallation endpoint then
+                parameters @ [ header "ClaimCore-Installation" true Codec.uuid.Schema ]
+            else
+                parameters
+
         let fields =
             [
                 "operationId", text endpoint.Token

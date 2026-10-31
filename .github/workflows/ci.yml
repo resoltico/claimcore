@@ -130,9 +130,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
@@ -161,9 +163,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   growth:
     name: Manual PostgreSQL ${{ matrix.major }} growth qualification
@@ -206,9 +210,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -302,9 +308,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   comparison:
     name: Manual same-host growth comparison

@@ -164,12 +164,14 @@ type Host
     (
         ready: bool,
         ?forActor: PrincipalKey -> ServiceContext,
+        ?installationId: Guid,
         ?sessions: ClaimCore.Postgres.ISessionStore
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
     let certificate = ProbeHttpsFixture.certificate ()
     let facade = Stub()
+    let installationId = defaultArg installationId HandlerStub.operationId
 
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
@@ -283,7 +285,7 @@ type Host
     member this.Login() =
         this.Send(HttpMethod.Post, "/__test/login", None, [])
 
-    member this.Call(endpoint, body, token, ?fingerprint: string) =
+    member this.Call(endpoint, body, token, ?fingerprint: string, ?installation: string) =
         this.Send(
             HttpMethod.Post,
             "/api/" + endpoint,
@@ -292,6 +294,7 @@ type Host
                 "Origin", origin.GetLeftPart(UriPartial.Authority)
                 "X-ClaimCore-Antiforgery", token
                 "ClaimCore-Contract", defaultArg fingerprint (ContractIdentity.value)
+                "ClaimCore-Installation", defaultArg installation (installationId.ToString("D"))
             ]
         )
 

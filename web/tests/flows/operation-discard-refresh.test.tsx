@@ -1,3 +1,4 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -7,6 +8,7 @@ import { OperationPanel, OperationDiscard } from "../../src/views/operation/Oper
 const locked = vi.fn();
 const Workspace = ({ epoch }: { epoch: number }) => {
   const model = useOperation({
+    ...recoveryOptions,
     subject: "AUTHORITY",
     kind: "REGISTER",
     current: null,

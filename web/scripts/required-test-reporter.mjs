@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 /** Reject incomplete runner outcomes, independent of import syntax or test API chaining. */
 export default class RequiredTestReporter {
   /** @param {import("vitest/node").Vitest} context */
@@ -10,10 +13,32 @@ export default class RequiredTestReporter {
    * @param {ReadonlyArray<unknown>} errors
    * @param {"passed"|"failed"|"interrupted"} reason */
   onTestRunEnd(modules, errors, reason) {
+    const tests = modules.flatMap((module) => [...module.children.allTests()]);
+    // No test titles, error messages, request values or exception data enter CI evidence.
+    const states = { passed: 0, failed: 0, skipped: 0, pending: 0, unknown: 0 };
+    for (const test of tests) {
+      const { state } = test.result();
+      if (state === "passed" || state === "failed" || state === "skipped" || state === "pending") {
+        states[state] += 1;
+      } else {
+        states.unknown += 1;
+      }
+    }
+    const directory = resolve(import.meta.dirname, "../../artifacts/verification/frontend");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      resolve(directory, "completion.json"),
+      `${JSON.stringify({
+        reason,
+        modules: modules.length,
+        tests: tests.length,
+        errors: errors.length,
+        states,
+      })}\n`,
+    );
     if (reason === "failed" || errors.length > 0) {
       return;
     }
-    const tests = modules.flatMap((module) => [...module.children.allTests()]);
     const incomplete = tests.some((test) => {
       const result = test.result();
       return (

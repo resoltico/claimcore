@@ -9,6 +9,7 @@ open System.Text.Json.Nodes
 // Synthetic proxy modes remain confined to this owned HTTPS fixture.
 let lostResponse = -1
 let beforeDispatchFailure = -2
+let heldResponse = -3
 
 [<NoEquality; NoComparison>]
 type Armed =
@@ -37,6 +38,15 @@ type Control(directory: string) =
 
         node.Remove "reply" |> ignore
 
+    member _.WaitForRelease(token: System.Threading.CancellationToken) =
+        task {
+            try
+                while not (File.Exists(Path.Combine(directory, "redirect-release"))) do
+                    do! System.Threading.Tasks.Task.Delay(20, token)
+            with :? System.OperationCanceledException ->
+                ()
+        }
+
     member _.Arm(path) =
         lock gate (fun () ->
             let file = Path.Combine(directory, "redirect-control.json")
@@ -56,6 +66,13 @@ type Control(directory: string) =
                             }
 
                     consumed <- false
+
+                    if root.GetProperty("status").GetInt32() = heldResponse then
+                        let release = Path.Combine(directory, "redirect-release")
+
+                        if File.Exists release then
+                            File.Delete release
+
                     originals <- 0
                     destinations <- 0
                     reply <- null

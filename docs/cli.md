@@ -35,10 +35,12 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore call`
 - `claimcore session`
 - `claimcore shell`
+- `claimcore recovery list`
+- `claimcore recovery resolve ATTEMPT_ID`
 - `claimcore configure --show`
 - `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]`
 
-Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
+Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `recovery`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
 
 ## Exit codes
 

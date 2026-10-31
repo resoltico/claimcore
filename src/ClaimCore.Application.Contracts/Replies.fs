@@ -49,3 +49,9 @@ type ExecuteReply =
         OperationId: Guid
         Outcome: ExecuteResult
     }
+
+type OperationReply<'success> =
+    {
+        OperationId: Guid
+        Outcome: Outcome<'success>
+    }

@@ -46,8 +46,8 @@ module internal TextOperationReply =
     let requestInput request =
         request
         |> Option.bind (fun invocation ->
-            RequestCodecs.operationInput.Read "$" (Frames.input invocation)
-            |> Result.toOption)
+            Frames.value Api.operationExecute invocation
+            |> Option.orElseWith (fun () -> Frames.value Api.operationPreview invocation))
 
     let private reviewIdentity language input review =
 

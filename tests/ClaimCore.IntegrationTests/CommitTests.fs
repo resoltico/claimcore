@@ -101,14 +101,19 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
 
-        let! unknown = (Service.resolve throughProxy ({ OperationId = id 140 }) (token))
+        let! unknown =
+            (ClaimCore.TestSupport.StoreFixtures.resolve
+                throughProxy
+                ({ OperationId = id 140 })
+                (token))
 
         Expect.equal
             unknown
             (Outcome.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
-        let! repeated = (Service.resolve actor ({ OperationId = id 140 }) (token))
+        let! repeated =
+            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated

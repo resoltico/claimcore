@@ -17,12 +17,13 @@ export const caseViewInput = <T extends CaseViewSeed>(value: T) => ({
   assignedToYou: value.assignedToYou ?? false,
   caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
 });
-type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId"> &
-  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId">>;
+type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId" | "installationId"> &
+  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId" | "installationId">>;
 export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   ...value,
   hasAssignedCases: value.hasAssignedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
+  installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.

@@ -14,14 +14,17 @@ type VerbFormat =
     | Json
     | Csv
 
+[<NoEquality; NoComparison>]
 type PreparedVerb =
     {
-        Bytes: byte array
+        Invocation: Invocation
         DryRun: bool
         Format: VerbFormat
         All: bool
         Language: string
     }
+
+    member this.Bytes = Frames.encodeInvocation this.Invocation
 
 module Grammar =
     open VerbOptions
@@ -96,6 +99,7 @@ module Grammar =
             | _ -> None
 
     let private build
+        incomplete
         newId
         entry
         (options: Dictionary<string, string option list>)
@@ -174,6 +178,13 @@ module Grammar =
                 |> JsonValue.Array
                 |> Some
             | CatalogAtom.Choices _, _ -> None
+            | _ when
+                incomplete
+                && raw.IsNone
+                && (item.Binding.Source = InputSource.OperationIdentity
+                    || item.Binding.Identity = "expectedRevision")
+                ->
+                None
             | _ -> scalarValue newId item name raw problems
 
         for item in derived do
@@ -239,7 +250,7 @@ module Grammar =
 
         body
 
-    let prepare newId arguments =
+    let private prepareWith incomplete admit finish newId arguments =
         let found =
             (Catalog.document.Entries |> List.map OperationCatalog.operation)
             |> List.tryPick (fun entry ->
@@ -295,7 +306,7 @@ module Grammar =
                     arguments
                     problems
 
-            let body = build newId entry options operands problems
+            let body = build incomplete newId entry options operands problems
 
             let endpoint =
                 if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
@@ -350,10 +361,7 @@ module Grammar =
             if not found.IsEmpty then
                 Error found
             else
-                let admitted =
-                    Api.tryFind endpoint
-                    |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
-                    |> fun endpoint -> endpoint.NormalizeInput body
+                let admitted = admit endpoint body
 
                 match admitted with
                 | Error problem ->
@@ -392,22 +400,59 @@ module Grammar =
 
                     Error [ issue ]
                 | Ok input ->
-                    let bytes =
-                        JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]
-                        |> WireWriter.bytes
+                    finish
+                        input
+                        (options.ContainsKey "--dry-run")
+                        (if format = "csv" then VerbFormat.Csv
+                         elif format = "json" then VerbFormat.Json
+                         else VerbFormat.Text)
+                        (options.ContainsKey "--all")
+                        language
+                        (options.ContainsKey "--preview")
 
-                    // The endpoint codec has admitted the body; frame admission also enforces byte limits.
-                    Frames.admit bytes
-                    |> Result.mapError (fun _ ->
-                        [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
-                    |> Result.map (fun _ ->
-                        {
-                            Bytes = bytes
-                            DryRun = options.ContainsKey "--dry-run"
-                            Format =
-                                if format = "csv" then VerbFormat.Csv
-                                elif format = "json" then VerbFormat.Json
-                                else VerbFormat.Text
-                            All = options.ContainsKey "--all"
-                            Language = language
-                        })
+    let prepare newId arguments =
+        let admit endpoint body =
+            Api.tryFind endpoint
+            |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
+            |> fun endpoint -> endpoint.ReadInput body
+
+        let finish input dryRun format all language _ =
+            Frames.fromInput input
+            |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
+            |> Result.map (fun invocation ->
+                {
+                    Invocation = invocation
+                    DryRun = dryRun
+                    Format = format
+                    All = all
+                    Language = language
+                })
+
+        prepareWith false admit finish newId arguments
+
+    /// Authored intent is admitted without inventing an executable operation or revision.
+    let internal caseIntent arguments =
+        let codec =
+            Codec.record (fun reference act operation -> reference, act, operation)
+            |> Codec.field "caseReference" (fun (reference, _, _) -> reference) Codec.text
+            |> Codec.field "act" (fun (_, act, _) -> act) RequestCodecs.caseAct
+            |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
+            |> Codec.build
+
+        let admit _ body =
+            // The enclosing subject tag is a catalog constant, not part of case intent.
+            let fields =
+                match body with
+                | JsonValue.Object fields -> fields |> List.filter (fst >> (<>) WireMembers.Kind)
+                | _ -> []
+
+            codec.Read "$" (JsonValue.Object fields)
+
+        let finish input _ _ _ language preview = Ok(input, language, preview)
+
+        prepareWith
+            true
+            admit
+            finish
+            (fun () -> invalidOp "Intent does not allocate an operation ID.")
+            arguments

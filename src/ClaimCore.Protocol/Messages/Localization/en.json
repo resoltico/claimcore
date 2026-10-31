@@ -263,5 +263,6 @@
   "input.assignment.label": "Assignment",
   "input.assignment.meaning": "Restrict results to cases assigned to the requesting actor.",
   "endpoint.case.summary.label": "Case summary",
-  "endpoint.case.summary.meaning": "Count matching visible cases and sum claimed and payable amounts separately for each currency."
+  "endpoint.case.summary.meaning": "Count matching visible cases and sum claimed and payable amounts separately for each currency.",
+  "host.INSTALLATION_MISMATCH": "The installation has changed. Refresh the authenticated context before preparing a request. This request was not started."
 }

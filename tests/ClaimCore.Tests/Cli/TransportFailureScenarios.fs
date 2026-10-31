@@ -42,7 +42,8 @@ let internal resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            let invocation = frame (Api.id endpoint)
+            let invocation = frameForReply (Api.id endpoint) body
+            let body = correlatedBody invocation body
 
             use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
             let reply = send handler invocation
@@ -115,7 +116,7 @@ let internal failurePhases () =
 
             let expected =
                 if
-                    ((Api.executesLedger endpoint)
+                    ((Api.requiresInstallation endpoint)
                      && ClaimCore.Protocol.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
@@ -248,6 +249,7 @@ let internal dispatchGuards () =
         RemoteServiceCall.send
             client
             {
+                InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                 Service = (Uri "https://localhost/")
                 Authorization =
                     (System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "synthetic-token"))

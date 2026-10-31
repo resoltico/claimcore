@@ -51,7 +51,14 @@ let private logout (host: Host) =
 
 let private caseFlow (database: PostgresFixture.Database) storage =
     task {
-        use host = new Host(true, forActor = core database.Fixture, sessions = storage)
+        use host =
+            new Host(
+                true,
+                forActor = core database.Fixture,
+                sessions = storage,
+                installationId = database.Fixture.InstallationId
+            )
+
         let! _ = host.Login()
         let! antiforgery = host.Token()
 
@@ -103,7 +110,14 @@ let private caseFlow (database: PostgresFixture.Database) storage =
 
 let private endedFlow (database: PostgresFixture.Database) storage statement =
     task {
-        use host = new Host(true, forActor = core database.Fixture, sessions = storage)
+        use host =
+            new Host(
+                true,
+                forActor = core database.Fixture,
+                sessions = storage,
+                installationId = database.Fixture.InstallationId
+            )
+
         let! _ = host.Login()
         do! sql database statement
         let! status, _ = host.Bootstrap()

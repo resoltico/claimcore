@@ -146,7 +146,10 @@ let private cancelled () =
             |> Async.AwaitTask
 
         let! observed =
-            (Service.observe core ({ OperationId = id 470 }) (cancellation.Token))
+            (ClaimCore.TestSupport.StoreFixtures.observe
+                core
+                ({ OperationId = id 470 })
+                (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled context"
@@ -207,7 +210,7 @@ let private committed () =
             let! reply = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             let! observed =
-                Service.observe
+                ClaimCore.TestSupport.StoreFixtures.observe
                     core
                     {
                         OperationId = OperationInput.operationId input

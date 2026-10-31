@@ -259,7 +259,10 @@ let private malformedWire () =
 let private businessFormatRefusals () =
     task {
         use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
-        use host = new Host(true, forActor = fixture.Actor)
+
+        use host =
+            new Host(true, forActor = fixture.Actor, installationId = fixture.InstallationId)
+
         let! _ = host.Login()
         let! token = host.Token()
         let source = Encoding.UTF8.GetString commandInput
@@ -314,7 +317,10 @@ let private readiness () =
 let private authorityPreview () =
     task {
         use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
-        use host = new Host(true, forActor = fixture.Actor)
+
+        use host =
+            new Host(true, forActor = fixture.Actor, installationId = fixture.InstallationId)
+
         let! _ = host.Login()
         let! token = host.Token()
         let original = fixture.EntryCount
@@ -399,7 +405,10 @@ let private closedRuntime () =
 let private principalAdmission () =
     task {
         use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
-        use host = new Host(true, forActor = fixture.Actor)
+
+        use host =
+            new Host(true, forActor = fixture.Actor, installationId = fixture.InstallationId)
+
         let! _ = host.Login()
         let! token = host.Token()
         let originalEntries = fixture.EntryCount
@@ -490,3 +499,67 @@ let tests =
             testCase "live and ready are exact read-only operational probes" readiness
         ]
     |> testSequenced
+
+[<Tests>]
+let installationBinding =
+    testCaseAsync
+        "stale installation binding cannot execute or commit a resolution fence"
+        (async {
+            use! fixture =
+                OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
+                |> Async.AwaitTask
+
+            use host =
+                new Host(true, forActor = fixture.Actor, installationId = fixture.InstallationId)
+
+            let! _ = host.Login() |> Async.AwaitTask
+            let! token = host.Token() |> Async.AwaitTask
+            let before = fixture.EntryCount
+
+            for endpoint, input in
+                [
+                    "operation.execute", body "operation.execute"
+                    "operation.resolve",
+                    Encoding.UTF8.GetBytes
+                        "{\"operationId\":\"10000000-0000-4000-8000-000000000099\"}"
+                ] do
+                let! status, response =
+                    host.Call(
+                        endpoint,
+                        input,
+                        token,
+                        installation = "90000000-0000-4000-8000-000000000099"
+                    )
+                    |> Async.AwaitTask
+
+                Expect.equal status 409 "An installation mismatch is rejected before the action"
+                use json = System.Text.Json.JsonDocument.Parse response
+
+                Expect.equal
+                    (json.RootElement.GetProperty("hostFailure").GetProperty("code").GetString())
+                    "INSTALLATION_MISMATCH"
+                    "Stable replacement-installation diagnostic"
+
+                Expect.equal
+                    (json.RootElement.GetProperty("hostFailure").GetProperty("phase").GetString())
+                    "NOT_STARTED"
+                    "The stale request did not start"
+
+            Expect.equal fixture.EntryCount before "No acceptance or control was appended"
+
+            let! status, _ =
+                host.Call(
+                    "operation.resolve",
+                    Encoding.UTF8.GetBytes
+                        "{\"operationId\":\"10000000-0000-4000-8000-000000000099\"}",
+                    token
+                )
+                |> Async.AwaitTask
+
+            Expect.equal status 200 "Matching installation positive control"
+
+            Expect.equal
+                fixture.EntryCount
+                (before + 1)
+                "The matching resolution commits its control"
+        })

@@ -158,5 +158,8 @@
   "ui.caseState": "حالة القضية",
   "ui.wasProgress": "كانت {progress}",
   "ui.targetActor": "الفاعل المستهدف",
-  "ui.recordedBy": "سجّله"
+  "ui.recordedBy": "سجّله",
+  "ui.preparingRecovery": "جارٍ حفظ معرّف الاسترداد…",
+  "ui.recoveryUnavailable": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
+  "ui.recoveryListingUnavailable": "تعذّر قراءة معرّفات الاسترداد أو تحديثها. أعد إتاحة تخزين الموقع ثم حاول مجدداً."
 }

@@ -94,27 +94,6 @@ module internal InteractiveReview =
 
         arguments @ defaults
 
-    let private draft arguments (prepared: PreparedVerb) =
-        let frame =
-            Frames.admit prepared.Bytes
-            |> Result.defaultWith (fun _ ->
-                invalidOp "A prepared draft must have an admitted shape.")
-
-        match RequestCodecs.operationInput.Read "$" (Frames.input frame) with
-        | Ok(OperationInput.Case request) ->
-            {
-                Reference = request.CaseReference
-                Act = request.Act
-                SuppliedId =
-                    if hasOption "--operation-id" arguments then
-                        Some request.OperationId
-                    else
-                        None
-                DisplayLanguage = prepared.Language
-                PreviewOnly = hasOption "--preview" arguments
-            }
-        | _ -> invalidOp "An existing-case draft must carry a case act."
-
     let prepare console arguments =
         if
             not console.IsInteractive
@@ -127,32 +106,26 @@ module internal InteractiveReview =
             match operation arguments with
             | None -> Ok None
             | Some entry ->
-                // These shape-only values never enter the draft or a dispatched invocation.
-                let shapeId () = "10000000-0000-4000-8000-000000000001"
-
-                Grammar.prepare
-                    shapeId
-                    (keepGroups entry arguments @ [ "--expected-revision"; "0" ])
-                |> Result.map (draft arguments >> Some)
+                Grammar.caseIntent (keepGroups entry arguments)
+                |> Result.map (fun ((reference, act, supplied), language, preview) ->
+                    Some
+                        {
+                            Reference = reference
+                            Act = act
+                            SuppliedId = supplied
+                            DisplayLanguage = language
+                            PreviewOnly = preview
+                        })
 
     let private invocation (endpoint: Endpoint<'Input, 'Output>) input =
-        JsonValue.Object
-            [
-                "endpoint", JsonValue.String endpoint.Token
-                "input", endpoint.Input.Write input
-            ]
-        |> WireWriter.bytes
-        |> Frames.admit
+        Frames.create endpoint input
         |> Result.defaultWith (fun _ ->
             invalidOp "A typed review step must produce an admitted invocation.")
 
     let private unpack (endpoint: Endpoint<'Input, 'Output>) (reply: CliReply) =
         match reply.Frame.Result with
         | FrameResult.Reply value when value.Route.Id = endpoint.Id ->
-            endpoint.Output.Read "$" value.Wire
-            |> Result.defaultWith (fun _ ->
-                invalidOp "An admitted review response must retain its endpoint shape.")
-            |> Some
+            ServiceReply.value endpoint value
         | FrameResult.Reply _ -> invalidOp "A review response must retain its requested endpoint."
         | _ -> None
 
@@ -174,6 +147,7 @@ module internal InteractiveReview =
         transport
         (draft: InteractiveCaseDraft)
         (request: UnvalidatedCaseRequest)
+        installation
         token
         =
         task {
@@ -191,7 +165,12 @@ module internal InteractiveReview =
                 |> console.Write
 
                 if confirmed draft.Language (console.ReadLine()) then
-                    let execute = invocation Api.operationExecute input
+                    let execute =
+                        invocation Api.operationExecute input
+                        |> Frames.bindInstallation installation
+                        |> Result.defaultWith (fun _ ->
+                            invalidOp "Reviewed scope must bind the request.")
+
                     let! accepted = transport.Exchange execute token
                     transport.Deliver execute accepted
                     return accepted.ExitCode
@@ -200,7 +179,20 @@ module internal InteractiveReview =
             | _ -> return response.ExitCode
         }
 
-    let run newId console transport (draft: InteractiveCaseDraft) token =
+    let rec run newId console transport (draft: InteractiveCaseDraft) token =
+        task {
+            let context = invocation Api.context ()
+            let! contextReply = transport.Exchange context token
+
+            match unpack Api.context contextReply with
+            | Some(Outcome.Succeeded scope) ->
+                return! readCase newId console transport draft scope.InstallationId token
+            | _ ->
+                transport.Deliver context contextReply
+                return contextReply.ExitCode
+        }
+
+    and private readCase newId console transport (draft: InteractiveCaseDraft) installation token =
         task {
             let lookup =
                 invocation
@@ -221,7 +213,7 @@ module internal InteractiveReview =
                         Act = draft.Act
                     }
 
-                return! review console transport draft request token
+                return! review console transport draft request installation token
             | _ ->
                 transport.Deliver lookup response
                 return response.ExitCode

@@ -303,10 +303,28 @@ uncertainty. A complete OS write and flush do not prove downstream persistence.
 
 The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
 
-The browser's Send again uses the frozen request; Check outcome uses final resolution. A reload retains
-only the unresolved ID, subject and act in its session-stored delivery-recovery record, so only Check
-outcome remains. That record has no submitted body or business values. Faults leave uncertainty visible; storage failure preserves the current
-page's flow.
+Authenticated context includes `installationId`. Execute and resolve requests carry its canonical UUID in
+the required `ClaimCore-Installation` header; a mismatch returns `INSTALLATION_MISMATCH / NOT_STARTED`
+before an acceptance or fence. All operation replies echo their operation ID; clients also check receipt
+and target identities after decoding. A schema-valid mismatched reply remains uncertain.
+
+Both clients commit an identity-only journal before dispatch and recheck credential, actor, target and
+installation context after storage completion. Failed initial storage is `NOT_SENT`; it blocks sending.
+Records contain format, service origin, installation, actor, local attempt, operation, subject and act.
+They contain no references, business values, credentials, secret paths or retry bodies. Separate attempts
+can share an operation ID; clearing one never clears another attempt.
+
+The browser uses IndexedDB transaction completion. Send again uses the in-memory frozen request; after
+reload or tab closure, recovery can only check the final result. Storage denial, quota, clearing, eviction,
+device loss and universal crash/power-loss durability are outside the retained-storage guarantee. There
+is no automatic storage-permission prompt or reconstructed resubmission.
+
+The native client publishes private per-attempt files under `$XDG_STATE_HOME/claimcore`, defaulting to
+`~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
+current authenticated service/installation/actor scope; `claimcore recovery resolve ATTEMPT_ID` resolves
+and clears that selected attempt only after a complete correlated final reply. `claimcore schema recovery`
+describes the local listing. Prepared retry frames retain their original installation binding. New clients
+refuse stale bindings instead of adopting a replacement installation for an earlier request.
 
 ## Disclosure and cursors
 

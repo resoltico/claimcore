@@ -1,3 +1,4 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
@@ -55,6 +56,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   vi.stubGlobal("fetch", fetch);
   const { result } = renderHook(() =>
     useOperation({
+      ...recoveryOptions,
       credential: "token",
       current,
       kind: "CLOSE",

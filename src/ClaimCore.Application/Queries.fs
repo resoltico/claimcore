@@ -57,6 +57,7 @@ module internal Queries =
         | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    InstallationId = services.InstallationId
                     ActorId = requester.ActorId
                     Runtime =
                         {

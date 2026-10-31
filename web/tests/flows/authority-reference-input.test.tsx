@@ -1,3 +1,4 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
 import { catalogs as coreCatalogs } from "@contracts/messages";
@@ -50,6 +51,7 @@ type Locale = (typeof locales)[number];
 const noLockChange = () => undefined;
 const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
   const model = useOperation({
+    ...recoveryOptions,
     subject: "AUTHORITY",
     kind,
     current: null,

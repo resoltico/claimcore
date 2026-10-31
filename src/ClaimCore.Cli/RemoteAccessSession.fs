@@ -64,6 +64,7 @@ type RemoteAccessSession
     member _.Configuration = configuration
     member _.Client = serviceClient
     member _.Token(cancelled: CancellationToken) = credentials.Token cancelled
+    member internal _.IsCurrent(token: AccessToken) = credentials.IsCurrent token
     member internal _.DiscardTokens(cancelled: CancellationToken) = credentials.Discard cancelled
 
     interface IDisposable with
