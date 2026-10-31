@@ -80,6 +80,15 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
   ] as const;
   return (
     <>
+      <p>
+        {p.term("scope", review.accessScope.kind)}
+        {review.accessScope.kind === "CASE" ? (
+          <>
+            {" "}
+            <IdentifierValue value={review.accessScope.caseReference} />
+          </>
+        ) : null}
+      </p>
       {states.map(([label, state]) => (
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
@@ -89,6 +98,25 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
           </dl>
           <h5>{p.text("ui.actorGrants")}</h5>
           <ReviewGrants grants={state.grants} />
+          <h5>{p.text("ui.effectiveAccess")}</h5>
+          <dl>
+            {state.access.map((access) => (
+              <div key={access.capability}>
+                <dt>{p.term("capability", access.capability)}</dt>
+                <dd>
+                  <p>{p.text(access.effective ? "ui.effective" : "ui.dormant")}</p>
+                  <p>
+                    {p.text("ui.directRoles")}:{" "}
+                    {access.directRoles.map((role) => p.term("role", role)).join(", ") || "—"}
+                  </p>
+                  <p>
+                    {p.text("ui.inheritedRoles")}:{" "}
+                    {access.installationRoles.map((role) => p.term("role", role)).join(", ") || "—"}
+                  </p>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </section>
       ))}
     </>

@@ -14,20 +14,6 @@ type ActKind =
     | Case of CaseActKind
     | Authority of AuthorityKind
 
-[<RequireQualifiedAccess>]
-type ScopeKind =
-    | Installation
-    | Case
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ScopeKind =
-    let vocabulary =
-        Vocabulary.ofUnion<ScopeKind> "scope" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-
-/// Caller-authored scope; accepted grants resolve case references to case IDs.
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActSubject =
     let vocabulary =

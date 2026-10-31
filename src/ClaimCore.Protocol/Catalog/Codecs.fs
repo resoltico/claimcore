@@ -435,10 +435,11 @@ module CatalogCodecs =
         |> named "Presentation.CatalogEntry"
 
     let private role =
-        (record (fun role kinds ->
+        (record (fun role kinds scopes ->
             {
                 RolePresentationDefinition.Role = role
                 AdmittedPrincipalKinds = kinds
+                AdmittedScopes = scopes
             })
         : Fields<RolePresentationDefinition, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
@@ -446,8 +447,32 @@ module CatalogCodecs =
             "admittedPrincipalKinds"
             _.AdmittedPrincipalKinds
             (many (VocabularyCodec.create PrincipalKind.vocabulary))
+        |> field
+            "admittedScopes"
+            _.AdmittedScopes
+            (many (VocabularyCodec.create ScopeKind.vocabulary))
         |> build
         |> named "Presentation.RoleDefinition"
+
+    let private capability =
+        (record (fun capability kinds scopes ->
+            {
+                CapabilityPresentationDefinition.Capability = capability
+                AdmittedPrincipalKinds = kinds
+                AdmittedScopes = scopes
+            })
+        : Fields<CapabilityPresentationDefinition, _>)
+        |> field "capability" _.Capability (VocabularyCodec.create Capability.vocabulary)
+        |> field
+            "admittedPrincipalKinds"
+            _.AdmittedPrincipalKinds
+            (many (VocabularyCodec.create PrincipalKind.vocabulary))
+        |> field
+            "admittedScopes"
+            _.AdmittedScopes
+            (many (VocabularyCodec.create ScopeKind.vocabulary))
+        |> build
+        |> named "Presentation.CapabilityDefinition"
 
     let private definitions =
         (record (fun fields inputs -> fields, inputs)
@@ -463,7 +488,13 @@ module CatalogCodecs =
 
     let codec =
         (record
-            (fun (fields, inputs) (characterWarnings, presentationLimits) entries roles version ->
+            (fun
+                (fields, inputs)
+                (characterWarnings, presentationLimits)
+                entries
+                roles
+                capabilities
+                version ->
                 {
                     CatalogDocument.Fields = fields
                     InputFields = inputs
@@ -471,6 +502,7 @@ module CatalogCodecs =
                     Limits = presentationLimits
                     Entries = entries
                     Roles = roles
+                    Capabilities = capabilities
                     ProductVersion = version
                 })
         : Fields<CatalogDocument, _>)
@@ -478,6 +510,7 @@ module CatalogCodecs =
         |> flatten (fun document -> document.CharacterWarnings, document.Limits) policies
         |> field "entries" _.Entries (many entry)
         |> field "roles" _.Roles (many role)
+        |> field "capabilities" _.Capabilities (many capability)
         |> field "productVersion" _.ProductVersion text
         |> build
         |> named "Presentation.CatalogDocument"

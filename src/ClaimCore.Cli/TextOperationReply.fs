@@ -115,7 +115,8 @@ module internal TextOperationReply =
 
         let changes =
             match review with
-            | OperationReview.Authority value -> authorityStates language value.Before value.After
+            | OperationReview.Authority value ->
+                authorityStates language value.Before value.After @ accessStates language value
             | OperationReview.Case value ->
                 let lifecycle =
                     let before =

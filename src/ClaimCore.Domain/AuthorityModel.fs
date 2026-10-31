@@ -109,6 +109,19 @@ module PrincipalKey =
 
 
 [<RequireQualifiedAccess>]
+type ScopeKind =
+    | Installation
+    | Case
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ScopeKind =
+    let vocabulary =
+        Vocabulary.ofUnion<ScopeKind> "scope" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
 type Scope =
     | Installation
     | Case of CaseId

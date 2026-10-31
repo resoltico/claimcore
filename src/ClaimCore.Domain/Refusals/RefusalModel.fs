@@ -53,6 +53,7 @@ type AuthorityRefusal =
     | ActorAlreadyRegistered
     | ActorUnknown
     | HumanPrincipalRequired
+    | RoleScopeNotApplicable
 
 [<RequireQualifiedAccess>]
 type AccessRefusal =

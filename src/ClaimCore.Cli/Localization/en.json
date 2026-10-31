@@ -48,6 +48,7 @@
   "cli.text.authorityHistoryEmpty": "No authority changes match this selection.",
   "cli.text.code": "Code",
   "cli.text.cursorReached": "Stopped at cursor {cursor}.",
+  "cli.text.accessSources": "Direct roles: {direct}; installation-derived roles: {inherited}; effective: {effective}",
   "cli.text.grants": "Grants",
   "cli.text.next": "Next",
   "cli.text.state": "State",

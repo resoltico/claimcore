@@ -48,6 +48,7 @@
   "cli.text.authorityHistoryEmpty": "Šai atlasei nav atbilstošu pilnvaru izmaiņu.",
   "cli.text.code": "Kods",
   "cli.text.cursorReached": "Apturēts pie kursora {cursor}.",
+  "cli.text.accessSources": "Tiešās lomas: {direct}; no instalācijas mantotās lomas: {inherited}; spēkā: {effective}",
   "cli.text.grants": "Lomas",
   "cli.text.next": "Nākamais",
   "cli.text.state": "Stāvoklis",

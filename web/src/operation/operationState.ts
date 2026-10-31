@@ -41,15 +41,26 @@ const append = (state: OperationState, effect: OperationEffect): OperationState 
 });
 const localSource = operationSource;
 const uncertain = (phase: OperationPhase): boolean => phase.kind === "UNRESOLVED";
-const edit = (
-  state: OperationState,
-  action: Extract<
-    OperationAction,
-    {
-      type: "EDIT";
-    }
-  >,
-): OperationState => {
+type EditAction = Extract<OperationAction, { type: "EDIT" }>;
+const clearsRoleSelection = (state: OperationState, action: EditAction): boolean => {
+  if (
+    state.entry.subject !== "AUTHORITY" ||
+    state.entry.kind !== "GRANT" ||
+    (action.path !== "target.kind" && action.path !== "act.scope.kind")
+  ) {
+    return false;
+  }
+  const values = { ...state.values, [action.path]: action.value };
+  const role = values["act.role"];
+  const principal = values["target.kind"];
+  const scope = values["act.scope.kind"];
+  return (
+    typeof role === "string" &&
+    typeof principal === "string" &&
+    !roleAdmitted(role, principal, typeof scope === "string" ? scope : undefined)
+  );
+};
+const edit = (state: OperationState, action: EditAction): OperationState => {
   if (!canEdit(state) || state.values[action.path] === action.value) {
     return state;
   }
@@ -64,12 +75,7 @@ const edit = (
     values: {
       ...state.values,
       [action.path]: action.value,
-      ...(action.path === "target.kind" &&
-      typeof action.value === "string" &&
-      typeof state.values["act.role"] === "string" &&
-      !roleAdmitted(state.values["act.role"], action.value)
-        ? { "act.role": "" }
-        : {}),
+      ...(clearsRoleSelection(state, action) ? { "act.role": "" } : {}),
       operationId: source === null ? state.values["operationId"]! : action.id,
     },
     notice: null,

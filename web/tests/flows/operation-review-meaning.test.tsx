@@ -98,12 +98,15 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
     subject: {
       kind: "AUTHORITY",
       target: null,
+      accessScope: resolvedScope,
       before: {
         enabled: true,
+        access: [],
         grants: [],
       },
       after: {
         enabled: true,
+        access: [],
         grants: [
           {
             role: "CASE_READER",
@@ -129,7 +132,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
       within(dialog).getAllByText(kind === "CASE" ? "One case" : "Installation", {
         exact: true,
       }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
       within(dialog)
         .getByText("KEEP", {
@@ -152,7 +155,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
         within(dialog).getAllByText("SYNTHETIC-GRANT", {
           exact: true,
         }),
-      ).toHaveLength(2);
+      ).toHaveLength(3);
     }
   },
 );

@@ -54,10 +54,24 @@ module Catalog =
                 |> List.map (fun role ->
                     {
                         Role = role
+                        AdmittedScopes = Authority.roleScopes role
                         AdmittedPrincipalKinds =
                             Vocabulary.all PrincipalKind.vocabulary
                             |> List.filter (fun kind ->
                                 kind = PrincipalKind.Human || not (Authority.humanOnlyRole role))
+                    })
+            Capabilities =
+                Capability.all
+                |> List.map (fun capability ->
+                    {
+                        Capability = capability
+                        AdmittedScopes = Authority.capabilityScopes capability
+                        AdmittedPrincipalKinds =
+                            PrincipalKind.vocabulary
+                            |> Vocabulary.all
+                            |> List.filter (fun kind ->
+                                kind = PrincipalKind.Human
+                                || not (Authority.humanOnlyCapability capability))
                     })
             Entries = OperationCatalog.entries
             ProductVersion = BuildIdentity.current.Version

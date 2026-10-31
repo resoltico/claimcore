@@ -85,23 +85,53 @@ module ReplyCodecs =
 
         operationReply "ObservationReply" outcome
 
+    let private capabilityAccess =
+        (record (fun capability direct inherited effective ->
+            {
+                Capability = capability
+                DirectRoles = direct
+                InstallationRoles = inherited
+                Effective = effective
+            })
+        : Fields<CapabilityAccess, _>)
+        |> field "capability" _.Capability (VocabularyCodec.create Capability.vocabulary)
+        |> field
+            "directRoles"
+            _.DirectRoles
+            (list Role.all.Length (VocabularyCodec.create Role.vocabulary))
+        |> field
+            "installationRoles"
+            _.InstallationRoles
+            (list Role.all.Length (VocabularyCodec.create Role.vocabulary))
+        |> field "effective" _.Effective boolean
+        |> build
+        |> named "CapabilityAccess"
+
     let authorityState =
-        (record (fun enabled grants -> { Enabled = enabled; Grants = grants })
+        (record (fun enabled grants access ->
+            {
+                Enabled = enabled
+                Grants = grants
+                Access = access
+            })
         : Fields<AuthorityState, _>)
         |> field "enabled" _.Enabled boolean
         |> field "grants" _.Grants (list 1 ResponseCodecs.authorityGrant)
+        |> field "access" _.Access (list Capability.all.Length capabilityAccess)
         |> build
         |> named "AuthorityState"
 
     let private authorityReviewFields =
-        (record (fun target before after ->
+        (record (fun target scope before after ->
             {
                 Target = target
+                AccessScope = scope
                 Before = before
                 After = after
             })
         : Fields<AuthorityReview, _>)
         |> field "target" _.Target (nullable ResponseCodecs.actorSummary)
+        |> field "accessScope" _.AccessScope ResponseCodecs.grantScope
         |> field "before" _.Before authorityState
         |> field "after" _.After authorityState
 

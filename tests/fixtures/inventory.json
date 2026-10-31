@@ -311,6 +311,7 @@
     "DECISION_ALREADY_PAID",
     "DECISION_REQUIRED",
     "HUMAN_PRINCIPAL_REQUIRED",
+    "ROLE_SCOPE_NOT_APPLICABLE",
     "IDEMPOTENCY_CONFLICT",
     "INVALID_CURSOR",
     "INVALID_INPUT",
@@ -457,7 +458,8 @@
     "input",
     "caseOrder",
     "progress",
-    "assignment"
+    "assignment",
+    "capability"
   ],
   "goldens": [
     "wire-request-examples.json",

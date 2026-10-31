@@ -151,6 +151,14 @@ type RolePresentationDefinition =
     {
         Role: Role
         AdmittedPrincipalKinds: PrincipalKind list
+        AdmittedScopes: ScopeKind list
+    }
+
+type CapabilityPresentationDefinition =
+    {
+        Capability: Capability
+        AdmittedPrincipalKinds: PrincipalKind list
+        AdmittedScopes: ScopeKind list
     }
 
 type CatalogDocument =
@@ -161,6 +169,7 @@ type CatalogDocument =
         Limits: PresentationLimits
         Entries: CatalogEntry list
         Roles: RolePresentationDefinition list
+        Capabilities: CapabilityPresentationDefinition list
         ProductVersion: string
     }
 

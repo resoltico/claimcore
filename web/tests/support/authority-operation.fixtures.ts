@@ -15,12 +15,15 @@ export const authorityPreview = () =>
               subject: {
                 kind: "AUTHORITY",
                 target: null,
+                accessScope: { kind: "INSTALLATION" },
                 before: {
                   enabled: false,
+                  access: [],
                   grants: [],
                 },
                 after: {
                   enabled: true,
+                  access: [],
                   grants: [],
                 },
               },

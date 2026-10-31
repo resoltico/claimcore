@@ -45,6 +45,9 @@ let internal tests factory =
                 "authority history rejects tampered payloads and malformed store pages"
                 (withFixture factory AuthorityHistoryContract.integrity)
             testCaseAsync
+                "meaningless scope refuses without append while meaningful dormant overlapping grants succeed"
+                (withFixture factory AuthorityReviewContract.meaningfulScopeAdmission)
+            testCaseAsync
                 "authority grant review shows only touched facts and writes nothing"
                 (withFixture factory AuthorityReviewContract.authorityGrantReview)
             testCaseAsync

@@ -56,9 +56,17 @@ the vocabulary name. Scalar guidance comes from core messages and Domain-owned b
 metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
-The catalog's `roles` declares `admittedPrincipalKinds` for each role from Domain admission policy.
-Use it to disable unsuitable choices and require an explicit grant role. Execution independently checks
-current authority and principal kind; catalog admission is presentation guidance.
+The catalog's `roles` declares `admittedPrincipalKinds` and `admittedScopes` from Domain admission policy.
+Its `capabilities` separately declares principal-kind and scope applicability. OWNER admits installation
+scope only; a role is meaningful at a scope when at least one of its capabilities applies there.
+Use this metadata for new grant choices and require an explicit role. Revocation remains available for
+recognized grants that would no longer be admitted. Disabled targets and overlapping meaningful grants
+remain admissible. Execution independently checks current authority and action state.
+
+Authority previews include `accessScope` and before/after `access` explanations. Each capability identifies
+its direct and installation-derived role sources and whether it is currently effective. Disabled actors
+retain dormant sources; removing an overlapping grant need not remove inherited access. These explanations
+cover the supplied resource snapshot and do not predict whether a later business act will pass its rules.
 
 Field and technical-target labels use `field.*`; group labels use `group.*`. Scope, actor-ID and
 history-detail labels use `input.scope.*`, `input.actorId.*` and `input.detail.*`; worklist facet/order

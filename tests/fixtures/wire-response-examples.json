@@ -986,11 +986,16 @@
                 "target": null,
                 "before": {
                   "enabled": false,
-                  "grants": []
+                  "grants": [],
+                  "access": []
                 },
                 "after": {
                   "enabled": true,
-                  "grants": []
+                  "grants": [],
+                  "access": []
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
                 }
               }
             }
@@ -3566,6 +3571,125 @@
             "nextCursor": null,
             "caseId": "10000000-0000-4000-8000-000000000001",
             "caseReference": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "meaningless-role-scope-refusal",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ROLE_SCOPE_NOT_APPLICABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-scoped-dormant-overlap-review",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000002",
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "dormant-target"
+                  },
+                  "enabled": false
+                },
+                "accessScope": {
+                  "kind": "CASE",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "OVERLAPPING"
+                },
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [
+                    {
+                      "capability": "READ_CASE",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "READ_HISTORY",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "REGISTER",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    }
+                  ]
+                },
+                "after": {
+                  "enabled": false,
+                  "grants": [
+                    {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "CASE",
+                        "caseId": "20000000-0000-4000-8000-000000000001",
+                        "caseReference": "OVERLAPPING"
+                      }
+                    }
+                  ],
+                  "access": [
+                    {
+                      "capability": "READ_CASE",
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "READ_HISTORY",
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "REGISTER",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }

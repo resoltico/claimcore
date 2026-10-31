@@ -65,6 +65,7 @@ module Terms =
         [
             rendered CaseStatus.vocabulary
             rendered Lifecycle.vocabulary
+            rendered Capability.vocabulary
             rendered Role.vocabulary
             rendered PrincipalKind.vocabulary
             rendered CorrectionGroupAction.vocabulary

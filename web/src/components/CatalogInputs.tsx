@@ -67,10 +67,16 @@ const choiceLabel = (
     : value;
 };
 const roleOptionUnavailable = (input: CatalogInput, props: Props, value: string) =>
+  props.entry.subject === "AUTHORITY" &&
+  props.entry.kind === "GRANT" &&
   input.kind.kind === "CHOICE" &&
   input.kind.vocabulary === "role" &&
   typeof props.values["target.kind"] === "string" &&
-  !roleAdmitted(value, props.values["target.kind"]);
+  !roleAdmitted(
+    value,
+    props.values["target.kind"],
+    typeof props.values["act.scope.kind"] === "string" ? props.values["act.scope.kind"] : undefined,
+  );
 const ChoiceOption = ({
   input,
   value,
@@ -98,7 +104,16 @@ const ChoiceOption = ({
         }}
       />
       {choiceLabel(p, input, value)}
-      {blocked ? <small id={reason}>{p.text("ui.roleNotAvailableForService")}</small> : null}
+      {blocked ? (
+        <small id={reason} aria-hidden="true">
+          {p.text(
+            typeof props.values["target.kind"] === "string" &&
+              !roleAdmitted(value, props.values["target.kind"])
+              ? "ui.roleNotAvailableForService"
+              : "ui.roleNotAvailableAtScope",
+          )}
+        </small>
+      ) : null}
     </label>
   );
 };

@@ -2536,11 +2536,81 @@
             },
             "minItems": 0,
             "maxItems": 1
+          },
+          "access": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityAccess"
+            },
+            "minItems": 0,
+            "maxItems": 10
           }
         },
         "required": [
           "enabled",
-          "grants"
+          "grants",
+          "access"
+        ]
+      },
+      "CapabilityAccess": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "capability": {
+            "enum": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY"
+            ]
+          },
+          "directRoles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OWNER",
+                "CASE_READER",
+                "CASE_REGISTRAR",
+                "CASE_HANDLER",
+                "PAYMENT_RECORDER",
+                "DATA_STEWARD",
+                "AUDITOR"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 7
+          },
+          "installationRoles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OWNER",
+                "CASE_READER",
+                "CASE_REGISTRAR",
+                "CASE_HANDLER",
+                "PAYMENT_RECORDER",
+                "DATA_STEWARD",
+                "AUDITOR"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 7
+          },
+          "effective": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "capability",
+          "directRoles",
+          "installationRoles",
+          "effective"
         ]
       },
       "CaseAct": {
@@ -4274,6 +4344,7 @@
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "OPERATION_RESOLVED": "#/components/schemas/Diagnostic.OPERATION_RESOLVED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
             "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
@@ -4307,7 +4378,8 @@
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
               "ACTOR_UNKNOWN",
-              "HUMAN_PRINCIPAL_REQUIRED"
+              "HUMAN_PRINCIPAL_REQUIRED",
+              "ROLE_SCOPE_NOT_APPLICABLE"
             ]
           },
           "action": {
@@ -6632,6 +6704,9 @@
               }
             ]
           },
+          "accessScope": {
+            "$ref": "#/components/schemas/GrantScope"
+          },
           "before": {
             "$ref": "#/components/schemas/AuthorityState"
           },
@@ -6642,6 +6717,7 @@
         "required": [
           "kind",
           "target",
+          "accessScope",
           "before",
           "after"
         ]

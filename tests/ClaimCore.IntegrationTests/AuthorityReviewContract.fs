@@ -181,11 +181,23 @@ let internal authorityReviewReplay fixture =
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
             Expect.isNone review.Target "The unregistered principal has no current actor."
-            Expect.equal review.Before { Enabled = false; Grants = [] } "Unregistered before state."
+
+            Expect.equal
+                review.Before
+                {
+                    Enabled = false
+                    Grants = []
+                    Access = []
+                }
+                "Unregistered before state."
 
             Expect.equal
                 review.After
-                { Enabled = true; Grants = [] }
+                {
+                    Enabled = true
+                    Grants = []
+                    Access = []
+                }
                 "Registration proposes an enabled actor without grants."
         | _ -> failtest "Expected an authority proposal."
 
@@ -302,8 +314,20 @@ let internal assertGrantRevocation (review: AuthorityReview) =
 
     Expect.equal
         review.After
-        { Enabled = true; Grants = [] }
-        "The revoked grant is absent after the proposal."
+        {
+            Enabled = true
+            Grants = []
+            Access =
+                [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
+                |> List.map (fun capability ->
+                    {
+                        Capability = capability
+                        DirectRoles = []
+                        InstallationRoles = [ Role.CaseRegistrar ]
+                        Effective = true
+                    })
+        }
+        "The revoked grant is absent, while inherited registrar capabilities remain."
 
     Expect.equal
         (review.Target |> Option.map _.ActorId)
@@ -416,4 +440,86 @@ let internal authorityReviewRechecks fixture =
 
         let! after = ledgerHead fixture
         Expect.equal after before "Stale preview cannot authorize a write."
+    }
+
+let internal meaningfulScopeAdmission fixture =
+    task {
+        let! actor = caseWorker fixture
+
+        let! opened =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request 20 "SCOPE-ADMISSION" 0L (AuthoredCaseAct.Open registration)
+                ))
+                CancellationToken.None
+
+        accepted opened |> ignore
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "scope-target"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            Service.execute
+                actor
+                (OperationInput.Authority(authorityRequest (id 21) target AuthorityAct.Register))
+                CancellationToken.None
+
+        acceptedAuthority registered
+        let! before = ledgerHead fixture
+
+        let! refused =
+            grant
+                actor
+                (id 22)
+                target
+                {
+                    Role = Role.Owner
+                    Scope = GrantTarget.CaseReference "SCOPE-ADMISSION"
+                }
+                true
+
+        Expect.equal
+            refused.Outcome
+            (ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.RoleScopeNotApplicable))
+            "A meaningless grant refuses through the service"
+
+        let! after = ledgerHead fixture
+        Expect.equal after before "Refusal appends no ledger entry"
+
+        let! installed =
+            grant
+                actor
+                (id 23)
+                target
+                {
+                    Role = Role.Owner
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority installed
+
+        let! disabled =
+            Service.execute
+                actor
+                (OperationInput.Authority(authorityRequest (id 24) target AuthorityAct.Disable))
+                CancellationToken.None
+
+        acceptedAuthority disabled
+
+        for operation, role in [ 25, Role.CaseHandler; 26, Role.CaseReader ] do
+            let! result =
+                grant
+                    actor
+                    (id operation)
+                    target
+                    {
+                        Role = role
+                        Scope = GrantTarget.CaseReference "SCOPE-ADMISSION"
+                    }
+                    true
+
+            acceptedAuthority result
     }

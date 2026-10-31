@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
+- New case-scoped OWNER grants refuse as meaningless; owners can still revoke recognized obsolete grants. Disabled and overlapping meaningful grants remain allowed.
+- CLI human text escapes terminal controls, embedded line breaks and directional formatting; literal backslashes double. JSON/NDJSON remain exact and CSV keeps its export rules.
 - Use a fresh database: retained creation identity, logged recovery controls and format 2 replace the earlier baseline. Old installations are refused; migrations and compatibility readers are excluded.
 - Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.

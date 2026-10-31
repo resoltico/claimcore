@@ -14,7 +14,7 @@ module ResponseCodecs =
 
     let private principal = PrincipalCodecs.key
 
-    let private scope =
+    let grantScope =
         Codec.tagged
             "GrantScope"
             [
@@ -318,7 +318,7 @@ module ResponseCodecs =
     let internal authorityGrantFields =
         (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
-        |> field "scope" _.Scope (scope)
+        |> field "scope" _.Scope grantScope
 
     let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 

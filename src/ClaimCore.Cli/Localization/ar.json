@@ -48,6 +48,7 @@
   "cli.text.authorityHistoryEmpty": "لا توجد تغييرات صلاحيات مطابقة لهذا الاختيار.",
   "cli.text.code": "الرمز",
   "cli.text.cursorReached": "توقف عند المؤشر {cursor}.",
+  "cli.text.accessSources": "الأدوار المباشرة: {direct}؛ الأدوار الموروثة من التثبيت: {inherited}؛ سارية: {effective}",
   "cli.text.grants": "الأدوار",
   "cli.text.next": "التالي",
   "cli.text.state": "الحالة",

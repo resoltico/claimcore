@@ -40,6 +40,9 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
                 "AuthorityState.Grants", 1
+                "AuthorityState.Access", 10
+                "CapabilityAccess.DirectRoles", 7
+                "CapabilityAccess.InstallationRoles", 7
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2

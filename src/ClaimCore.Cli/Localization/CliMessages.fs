@@ -81,6 +81,10 @@ type CliMessage =
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.next")>] NextLabel
     | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty
+    | [<MessageKey("cli.text.accessSources")>] AccessSources of
+        direct: string *
+        inherited: string *
+        effective: string
     | [<MessageKey("cli.text.grants")>] GrantsLabel
     | [<MessageKey("cli.text.code")>] CodeLabel
     | [<MessageKey("cli.text.uncertain")>] UncertainDelivery

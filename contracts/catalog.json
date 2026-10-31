@@ -4319,6 +4319,9 @@
       "role": "OWNER",
       "admittedPrincipalKinds": [
         "HUMAN"
+      ],
+      "admittedScopes": [
+        "INSTALLATION"
       ]
     },
     {
@@ -4326,6 +4329,10 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
       ]
     },
     {
@@ -4333,6 +4340,10 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
       ]
     },
     {
@@ -4340,6 +4351,10 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
       ]
     },
     {
@@ -4347,12 +4362,20 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
       ]
     },
     {
       "role": "DATA_STEWARD",
       "admittedPrincipalKinds": [
         "HUMAN"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
       ]
     },
     {
@@ -4360,6 +4383,118 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    }
+  ],
+  "capabilities": [
+    {
+      "capability": "READ_CASE",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "READ_HISTORY",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "READ_HISTORY_FULL",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "REGISTER",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "DECIDE",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "RECORD_PAYMENT",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "CLOSE",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "STEWARD",
+      "admittedPrincipalKinds": [
+        "HUMAN"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "MANAGE_AUTHORITY",
+      "admittedPrincipalKinds": [
+        "HUMAN"
+      ],
+      "admittedScopes": [
+        "INSTALLATION"
+      ]
+    },
+    {
+      "capability": "READ_AUTHORITY",
+      "admittedPrincipalKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION"
       ]
     }
   ],

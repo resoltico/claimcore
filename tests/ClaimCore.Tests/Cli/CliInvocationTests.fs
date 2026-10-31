@@ -343,14 +343,17 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                     OperationReview.Authority
                         {
                             Target = None
+                            AccessScope = GrantScope.Installation
                             Before =
                                 {
                                     Enabled = enabledBefore
+                                    Access = []
                                     Grants = grants grantBefore
                                 }
                             After =
                                 {
                                     Enabled = enabledAfter
+                                    Access = []
                                     Grants = grants grantAfter
                                 }
                         }
