@@ -51,6 +51,7 @@ let private row payload =
 
     let metadata: LedgerMetadata =
         {
+            CreationReference = None
             InstallationId = installation
             Sequence = CaseFixtures.sequence 1L
             PreviousHash = Array.zeroCreate 32
@@ -68,6 +69,7 @@ let private row payload =
 
     let entry: StoredEntry =
         {
+            CreationReference = None
             Sequence = CaseFixtures.sequence 1L
             EntryHash = LedgerEntry.hash metadata
             OperationId = (CaseFixtures.operationId id)
@@ -97,6 +99,7 @@ let requestEffectAgreement =
 
         let expected: CaseSnapshot =
             {
+                CaseId = CaseFixtures.caseId id
                 Reference = reference
                 Revision = Revision.first
                 State =
@@ -118,10 +121,11 @@ let requestEffectAgreement =
                     }
 
             let entry, metadata = row payload
-            let caseId = CaseReferenceId.encode installation "EFFECT-OPEN"
+            let caseId = CaseId.ofOperationId request.OperationId
 
             let metadata =
                 { metadata with
+                    CreationReference = Some reference
                     Subject =
                         RecordedTarget.Case
                             {
@@ -134,6 +138,7 @@ let requestEffectAgreement =
 
             let entry =
                 { entry with
+                    CreationReference = Some reference
                     Subject =
                         EntryTarget.Case(
                             caseId,
@@ -354,7 +359,7 @@ let private authorityChecks =
 
             AuthorityFold.apply
                 installation
-                (fun _ -> false)
+                (fun _ -> None)
                 (Map.ofList [ (CaseFixtures.actorId id), owner ])
                 entry
                 request

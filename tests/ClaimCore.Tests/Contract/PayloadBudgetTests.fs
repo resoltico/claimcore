@@ -37,6 +37,7 @@ let private fields length : CaseFields =
 
 let private snapshot length : CaseSnapshot =
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = CaseFixtures.reference reference
         Revision = CaseFixtures.revision maximum
         State = CaseState.Voided(fields length)
@@ -59,6 +60,10 @@ let private receipt disclosure : OperationReceipt =
         Subject =
             ReceiptSubject.Case
                 {
+                    CaseId =
+                        CaseFixtures.caseId (
+                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                        )
                     Reference = CaseFixtures.reference reference
                     Revision = CaseFixtures.revision maximum
                     Act = CaseActKind.AmendRegistration

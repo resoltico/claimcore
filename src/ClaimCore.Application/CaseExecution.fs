@@ -11,20 +11,13 @@ module internal CaseExecution =
         |> Option.exists (fun value ->
             Authority.can principal actor capability (Scope.Case value.CaseId))
 
-    let current installationId (record: StoredCase) =
+    let current _installationId (record: StoredCase) =
         Case.ofAccepted record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun value ->
             let indexed = CaseIndex.create record.Index.ChangedAt record.Snapshot
 
-            if
-                indexed = record.Index
-                && CaseReferenceId.encode
-                    installationId
-                    (CaseReference.format record.Snapshot.Reference)
-                    =
-                    record.CaseId
-            then
+            if indexed = record.Index && record.Snapshot.CaseId = record.CaseId then
                 Ok value
             else
                 Error CoreFault.StoreIntegrityError)
@@ -79,7 +72,7 @@ module internal CaseExecution =
             Verdict.Fail CoreFault.InternalError
 
     let private project
-        installationId
+        _installationId
         (calendar: IBusinessCalendar)
         (request: CaseCommand)
         (view: CaseFacts)
@@ -88,11 +81,7 @@ module internal CaseExecution =
         let snapshot = Case.snapshot after
         let index = CaseIndex.create view.ObservedAt snapshot
 
-        let id =
-            view.Case
-            |> Option.map _.CaseId
-            |> Option.defaultWith (fun () ->
-                CaseReferenceId.encode installationId (CaseReference.format snapshot.Reference))
+        let id = snapshot.CaseId
 
         let projection =
             match snapshot.State, view.Case with

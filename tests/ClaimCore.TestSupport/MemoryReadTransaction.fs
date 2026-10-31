@@ -47,7 +47,7 @@ let private total money =
                 |> Result.defaultWith (string >> failwith)
         })
 
-type internal Reader(get: unit -> State, installationId, observed, read: unit -> unit) =
+type internal Reader(get: unit -> State, _installationId, observed, read: unit -> unit) =
     interface IReadTx with
         member _.ObservedAt = observed
 
@@ -111,7 +111,18 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
 
         member _.FindCase id =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase installationId))
+            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase (get ()).Entries))
+
+        member _.FindCaseByReference reference =
+            read ()
+
+            Task.FromResult(
+                (get ()).Cases
+                |> Map.values
+                |> Seq.tryFind (fun record ->
+                    CaseReference.identity record.Snapshot.Reference = CaseReference.key reference)
+                |> Option.map (readCase (get ()).Entries)
+            )
 
         member _.FindEntry id =
             read ()
@@ -188,7 +199,7 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 |> Map.values
                 |> Seq.filter (fun record -> selected state query.Selection record && after record)
                 |> Seq.sortWith compareRows
-                |> Seq.map (readCase installationId)
+                |> Seq.map (readCase (get ()).Entries)
                 |> Seq.toList
 
             Task.FromResult(

@@ -38,12 +38,13 @@ let internal history fixture reference after limit =
             ReadOperation.Work =
                 (fun tx ->
                     task {
-                        let id =
-                            ClaimCore.RecordFormat.CaseReferenceId.encode
-                                fixture.InstallationId
-                                reference
+                        let! current = tx.FindCaseByReference reference
 
-                        let! current = tx.FindCase id
+                        let id =
+                            current
+                            |> Option.map _.CaseId
+                            |> Option.defaultWith (fun () ->
+                                failtest "Expected a case history target")
 
                         let! page =
                             tx.HistoryPage(

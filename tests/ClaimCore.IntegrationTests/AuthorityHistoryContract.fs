@@ -239,6 +239,10 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Authority query = tx.Authority query
                                         member _.FindCase id = tx.FindCase id
+
+                                        member _.FindCaseByReference reference =
+                                            tx.FindCaseByReference reference
+
                                         member _.FindEntry id = tx.FindEntry id
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query

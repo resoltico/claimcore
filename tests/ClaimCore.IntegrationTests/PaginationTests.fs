@@ -155,6 +155,10 @@ type internal PausedPageStore
                                         }
 
                                     member _.FindCase id = tx.FindCase id
+
+                                    member _.FindCaseByReference reference =
+                                        tx.FindCaseByReference reference
+
                                     member _.FindEntry id = tx.FindEntry id
 
                                     member _.CasePage

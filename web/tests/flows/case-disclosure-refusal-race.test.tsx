@@ -25,6 +25,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
     outcome: {
       kind: "SUCCEEDED",
       data: caseViewInput({
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: fields.caseReference,
         revision: 1,
         advice: {

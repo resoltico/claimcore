@@ -12,6 +12,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
         "SUCCEEDED",
         caseViewInput({
           state: { kind: "ERASED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "ERASED-1",
           revision: 4,
           advice: { acts: [], history: ["SUMMARY"] },

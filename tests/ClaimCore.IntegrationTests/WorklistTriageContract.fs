@@ -320,8 +320,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         Expect.equal first.Counts.Total 2L "A service's valid scoped grants define assignment"
         // An inconsistent projection is injected through the real store port, without changing
         // any SQL constraint or authorization rule. The visibility safeguards must exclude it.
-        let caseId =
-            ClaimCore.RecordFormat.CaseReferenceId.encode fixture.InstallationId "TRIAGE-B"
+        let caseId = CaseFixtures.caseId (id 21)
 
         let! altered =
             fixture.Store.Write

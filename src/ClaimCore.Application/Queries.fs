@@ -129,7 +129,8 @@ module internal Queries =
         CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
-                CaseSummary.Reference = record.Snapshot.Reference
+                CaseSummary.CaseId = record.Snapshot.CaseId
+                Reference = record.Snapshot.Reference
                 Revision = record.Snapshot.Revision
                 ChangedAt = record.Index.ChangedAt
                 State =
@@ -281,20 +282,13 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let id =
-                                            CaseReferenceId.encode
-                                                installation
-                                                request.CaseReference
+                                        let! record = tx.FindCaseByReference request.CaseReference
 
                                         let! actor =
-                                            tx.Authority(
-                                                {
-                                                    AuthorityQuery.Principal = principal
-                                                    CaseId = Some id
-                                                }
-                                            )
-
-                                        let! record = tx.FindCase id
+                                            ExecutionFacts.authority
+                                                tx
+                                                principal
+                                                (record |> Option.map _.CaseId |> Option.toList)
 
                                         match selectHistory principal request actor record with
                                         | Error refusal -> return Outcome.Rejected refusal
@@ -306,7 +300,8 @@ module internal Queries =
                                                 let! page =
                                                     tx.HistoryPage(
                                                         {
-                                                            HistoryPageQuery.CaseId = id
+                                                            HistoryPageQuery.CaseId =
+                                                                current.CaseId
                                                             AfterRevision = after
                                                             Limit = request.Limit
                                                         }

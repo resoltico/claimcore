@@ -35,6 +35,7 @@ type LedgerMetadata =
         ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: RecordedTarget
+        CreationReference: CaseReference option
         PayloadCommitment: byte array
     }
 
@@ -163,7 +164,7 @@ module LedgerEntry =
                 Date = i32 subject.BusinessDate.DayNumber
             }
 
-    /// Exactly 183 bytes. Only the salted payload commitment covers erasable business content.
+    /// Fixed metadata plus a presence tag and length-framed retained OPEN reference.
     let preimage (metadata: LedgerMetadata) =
         requireHash DurableNames.PreviousHash metadata.PreviousHash
         requireHash DurableNames.PayloadCommitment metadata.PayloadCommitment
@@ -193,6 +194,12 @@ module LedgerEntry =
                 subject.Identifier
                 subject.Revision
                 subject.Date
+                // Length framing makes retained variable-width identity unambiguous.
+                (match metadata.CreationReference with
+                 | None -> [| 0uy |]
+                 | Some reference ->
+                     let bytes = Encoding.UTF8.GetBytes(CaseReference.format reference)
+                     Array.concat [ [| 1uy |]; u32 (uint32 bytes.Length); bytes ])
                 metadata.PayloadCommitment
             ]
 

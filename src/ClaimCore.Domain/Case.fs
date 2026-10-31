@@ -25,6 +25,7 @@ type CaseCommand =
 type CaseRecord =
     private
         {
+            CaseId: CaseId
             Reference: CaseReference
             Revision: Revision
             State: CaseState<Claim>
@@ -95,6 +96,7 @@ module Case =
 
     let snapshot (record: CaseRecord) : CaseSnapshot =
         {
+            CaseId = record.CaseId
             Reference = record.Reference
             Revision = record.Revision
             State = CaseState.map (BusinessState.fields record.Reference) record.State
@@ -119,6 +121,7 @@ module Case =
 
                 return
                     {
+                        CaseId = accepted.CaseId
                         Reference = accepted.Reference
                         Revision = accepted.Revision
                         State = state
@@ -138,6 +141,7 @@ module Case =
             BusinessState.openCase today facts
             |> Result.map (fun claim ->
                 {
+                    CaseId = CaseId.ofOperationId command.OperationId
                     Reference = command.Reference
                     Revision = Revision.first
                     State = CaseState.Active claim

@@ -5,6 +5,12 @@ response shapes, endpoint effects and host statuses. The [generated CLI referenc
 flags and choices. [Case work](case-work.md) explains the business record; the [glossary](glossary.md)
 defines terms.
 
+Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
+References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
+reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
+This fresh installation baseline supports request, snapshot, authority and ledger entry format 2 only.
+There are no compatibility readers or installation migrations.
+
 ## Discover inputs
 
 `claimcore describe case open` describes one operation offline. `describe --format json` exposes catalog

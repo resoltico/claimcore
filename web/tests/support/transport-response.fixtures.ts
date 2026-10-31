@@ -7,6 +7,7 @@ const snapshot = (value: unknown): unknown => {
   }
   const { state } = value;
   return {
+    caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: value["caseReference"],
     revision: value["revision"],
     state: isObject(state)
@@ -55,6 +56,7 @@ const responseData = (kind: string, data: unknown, request: Record<string, unkno
         ...(isObject(request["act"]) ? { act: request["act"]["kind"] } : {}),
         ...(subject["kind"] === "CASE" && request["kind"] === "CASE"
           ? {
+              caseId: "20000000-0000-4000-8000-000000000001",
               caseReference: request["caseReference"],
               revision: Number(request["expectedRevision"]) + 1,
             }

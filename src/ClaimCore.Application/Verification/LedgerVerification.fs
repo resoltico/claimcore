@@ -23,7 +23,18 @@ module LedgerVerification =
         | EntryTarget.Authority _, VerifiedPayload.Authority request ->
             AuthorityFold.apply
                 installationId
-                (fun id -> Map.containsKey id state.Cases)
+                (fun reference ->
+                    state.Cases
+                    |> Map.toSeq
+                    |> Seq.tryPick (fun (id, history) ->
+                        if
+                            history.Reference
+                            |> Option.exists (fun retained ->
+                                CaseReference.identity retained = CaseReference.key reference)
+                        then
+                            Some id
+                        else
+                            None))
                 state.Actors
                 entry
                 request

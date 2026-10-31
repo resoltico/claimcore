@@ -127,6 +127,8 @@ let private scalarDomainValue (kind: Type) =
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
     elif kind = typeof<OperationId> then
         Some(guid |> Gen.map (CaseFixtures.operationId >> box))
+    elif kind = typeof<CaseId> then
+        Some(guid |> Gen.map (CaseFixtures.caseId >> box))
     elif kind = typeof<ActorId> then
         Some(guid |> Gen.map (CaseFixtures.actorId >> box))
     elif kind = typeof<CalendarDate> then

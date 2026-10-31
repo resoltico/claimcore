@@ -27,6 +27,7 @@ let private facts =
 
 let private row reference =
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = Inputs.reference reference
         Revision = CaseFixtures.revision 1L
         ChangedAt = moment

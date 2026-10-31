@@ -62,14 +62,16 @@ module internal ReadRowCodecs =
             (parsed CalendarDate.parse CalendarDate.format date)
 
     let caseSummary =
-        (record (fun reference revision changedAt state ->
+        (record (fun id reference revision changedAt state ->
             {
-                CaseSummary.Reference = reference
+                CaseSummary.CaseId = id
+                Reference = reference
                 Revision = revision
                 ChangedAt = changedAt
                 State = state
             })
         : Fields<CaseSummary, _>)
+        |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
         |> field "changedAt" _.ChangedAt instant

@@ -43,6 +43,7 @@ let snapshot status progress state : CaseSnapshot =
         | _ -> Some(decision "50")
 
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = CaseFixtures.reference "DEMO-1"
         Revision = CaseFixtures.revision 3L
         State =
@@ -63,6 +64,7 @@ let snapshot status progress state : CaseSnapshot =
 
 let erased: CaseSnapshot =
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = CaseFixtures.reference "DEMO-1"
         Revision = CaseFixtures.revision 3L
         State = CaseState.Erased

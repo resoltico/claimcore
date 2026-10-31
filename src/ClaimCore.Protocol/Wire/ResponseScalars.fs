@@ -24,6 +24,7 @@ module ResponseScalars =
         RequestCodecs.sequence |> map (Sequence.create >> Option.get) Sequence.value
 
     let operationId = uuid |> map (OperationId.create >> Option.get) OperationId.value
+    let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
 

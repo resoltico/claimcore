@@ -37,6 +37,10 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
         Subject =
             ClaimCore.Application.Contracts.ReceiptSubject.Case
                 {
+                    CaseId =
+                        CaseFixtures.caseId (
+                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                        )
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open

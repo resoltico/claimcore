@@ -68,6 +68,7 @@ let private fields status decided paid : CaseFields =
 let private retained revision view =
     Case.ofAccepted
         {
+            CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
             Reference = CaseFixtures.reference "Demo-1"
             Revision = CaseFixtures.revision revision
             State = view

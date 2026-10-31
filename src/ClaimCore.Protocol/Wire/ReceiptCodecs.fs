@@ -28,14 +28,16 @@ module ReceiptCodecs =
             ]
 
     let private caseFields =
-        (record (fun reference revision act snapshot ->
+        (record (fun id reference revision act snapshot ->
             {
+                CaseId = id
                 Reference = reference
                 Revision = revision
                 Act = act
                 Snapshot = snapshot
             })
         : Fields<CaseReceipt, _>)
+        |> field "caseId" _.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)

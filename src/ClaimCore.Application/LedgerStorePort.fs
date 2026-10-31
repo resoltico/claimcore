@@ -68,6 +68,7 @@ type StoredEntry =
         ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
+        CreationReference: CaseReference option
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
@@ -88,6 +89,7 @@ type EntryDraft =
         ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
+        CreationReference: CaseReference option
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array
@@ -180,6 +182,7 @@ type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
+    abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract FindEntry: OperationId -> Task<StoredEntry option>
 
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>

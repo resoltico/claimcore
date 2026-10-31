@@ -27,7 +27,7 @@ ACT_CODES = {
     "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
     "ENABLE": 36, "DISABLE": 37,
 }
-ENTRY_TAG = b"claimcore/ledger-entry/1\n"
+ENTRY_TAG = b"claimcore/ledger-entry/2\n"
 REFERENCE_TAG = b"claimcore/case-reference-id/1\n"
 
 
@@ -164,7 +164,7 @@ def ledger(sources, requests, snapshot, authority):
         if spec["subject"] == "CASE":
             request_bytes = canonical(requests[0]).encode("utf-8")
             snapshot_bytes = canonical(snapshot).encode("utf-8")
-            subject = case_id(installation, requests[0]["caseReference"])
+            subject = requests[0]["operationId"]
             subject_byte, revision = 1, spec["caseRevision"]
         else:
             request_bytes = canonical(authority).encode("utf-8")
@@ -186,9 +186,9 @@ def ledger(sources, requests, snapshot, authority):
             uuid.UUID(subject).bytes,
             revision.to_bytes(8, "big", signed=True),
             day_number(spec["businessDate"]).to_bytes(4, "big", signed=True),
+            (b"\x01" + len(requests[0]["caseReference"].encode("utf-8")).to_bytes(4,"big") + requests[0]["caseReference"].encode("utf-8")) if spec["subject"] == "CASE" else b"\x00",
             commitment,
         ])
-        assert len(preimage) == 183, len(preimage)
         entry_hash = hashlib.sha256(preimage).digest()
         vectors.append({
             "name": spec["name"], "installationId": spec["installationId"],
@@ -197,14 +197,14 @@ def ledger(sources, requests, snapshot, authority):
             "operationId": spec["operationId"], "actorId": spec["actorId"],
             "recordedAt": spec["recordedAt"], "recordedAtUnixMicroseconds": micros(spec["recordedAt"]),
             "subjectId": subject, "caseRevision": spec["caseRevision"],
-            "businessDate": spec["businessDate"],
+            "businessDate": spec["businessDate"], "creationReference": requests[0]["caseReference"] if spec["subject"] == "CASE" else None,
             "businessDateDayNumber": day_number(spec["businessDate"]),
             "payloadNonce": spec["payloadNonce"], "payload": payload.hex(),
             "payloadCommitment": commitment.hex(), "preimage": preimage.hex(),
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": 3, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": 183,
+    return {"entryFormat": 2, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": "variable: 184 plus OPEN reference framing",
             "actCodes": ACT_CODES, "vectors": vectors}
 
 

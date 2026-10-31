@@ -17,6 +17,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
         items: [
           caseSummaryInput({
             state: { kind: "ACTIVE", status: "OPENED" },
+            caseId: "20000000-0000-4000-8000-000000000001",
             caseReference: reference,
             revision: 1,
           }),

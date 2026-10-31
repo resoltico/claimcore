@@ -217,6 +217,9 @@ type private ReadTx
         member _.FindCase id =
             Projections.caseById connection installation id token
 
+        member _.FindCaseByReference reference =
+            Projections.caseByReference connection installation reference token
+
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 

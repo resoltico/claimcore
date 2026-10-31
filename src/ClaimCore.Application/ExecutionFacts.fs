@@ -73,7 +73,6 @@ module internal ExecutionFacts =
         }
 
     let case (services: ServiceContext) (tx: IReadTx) operationId reference =
-        let installation = services.InstallationId
         let principal = services.Principal
 
         task {
@@ -82,9 +81,14 @@ module internal ExecutionFacts =
                 | Some id -> tx.FindEntry id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
-            let id = ClaimCore.RecordFormat.CaseReferenceId.encode installation reference
-            let! actor = authority tx principal (id :: (operationCase existing |> Option.toList))
-            let! record = tx.FindCase id
+            let! record = tx.FindCaseByReference reference
+
+            let! actor =
+                authority
+                    tx
+                    principal
+                    ((record |> Option.map _.CaseId |> Option.toList)
+                     @ (operationCase existing |> Option.toList))
 
             return
                 {
@@ -96,24 +100,19 @@ module internal ExecutionFacts =
         }
 
     let target (services: ServiceContext) (tx: IReadTx) operationId target reference =
-        let installation = services.InstallationId
         let principal = services.Principal
 
         task {
             let! existing = tx.FindEntry operationId
 
-            let ids =
-                reference
-                |> Option.map (ClaimCore.RecordFormat.CaseReferenceId.encode installation)
-                |> Option.toList
+            let! record =
+                match reference with
+                | Some reference -> tx.FindCaseByReference reference
+                | None -> System.Threading.Tasks.Task.FromResult None
 
+            let ids = record |> Option.map _.CaseId |> Option.toList
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
-
-            let! record =
-                match ids with
-                | id :: _ -> tx.FindCase id
-                | [] -> System.Threading.Tasks.Task.FromResult None
 
             let! owners = tx.EnabledHumanOwners()
             let! actors = tx.ActorCount()

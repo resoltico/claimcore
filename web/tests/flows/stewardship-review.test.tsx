@@ -18,6 +18,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
             subject: {
               kind: "CASE",
               before: {
+                caseId: "20000000-0000-4000-8000-000000000001",
                 caseReference: fields.caseReference,
                 revision: 1,
                 state: {
@@ -26,6 +27,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
                 },
               },
               after: {
+                caseId: "20000000-0000-4000-8000-000000000001",
                 caseReference: fields.caseReference,
                 revision: 2,
                 state:

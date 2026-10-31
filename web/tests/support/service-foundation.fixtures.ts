@@ -13,6 +13,7 @@ export const review: OperationReview = {
     kind: "CASE",
     before: null,
     after: {
+      caseId: "20000000-0000-4000-8000-000000000001",
       caseReference: caseFields.caseReference,
       revision: 1,
       state: {

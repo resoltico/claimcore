@@ -107,13 +107,15 @@ module ResponseCodecs =
         CaseStateCodecs.state "CaseState" (record id |> field "fields" id caseFields)
 
     let caseSnapshot =
-        (record (fun reference revision view ->
+        (record (fun id reference revision view ->
             {
-                CaseSnapshot.Reference = reference
+                CaseSnapshot.CaseId = id
+                Reference = reference
                 Revision = revision
                 State = view
             })
         : Fields<CaseSnapshot, _>)
+        |> field "caseId" _.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
         |> field "state" _.State caseState
@@ -179,10 +181,11 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun reference revision view advice assigned ->
+        (record (fun id reference revision view advice assigned ->
             {
                 Snapshot =
                     {
+                        CaseId = id
                         Reference = reference
                         Revision = revision
                         State = view
@@ -191,6 +194,7 @@ module ResponseCodecs =
                 AssignedToYou = assigned
             })
         : Fields<CaseReadModel, _>)
+        |> field "caseId" _.Snapshot.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState

@@ -69,7 +69,7 @@ let tests =
                 Enabled = true
             }
 
-        let caseId = CaseReferenceId.encode installation "VISIBLE-1"
+        let caseId = CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
         memory.SeedActor actor [ Role.CaseReader, None; Role.DataSteward, Some caseId ]
         let service = core servicePrincipal
 

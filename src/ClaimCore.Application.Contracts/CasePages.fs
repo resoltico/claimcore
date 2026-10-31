@@ -17,6 +17,7 @@ type CaseSummaryFacts =
 
 type CaseSummary =
     {
+        CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
         ChangedAt: DateTimeOffset

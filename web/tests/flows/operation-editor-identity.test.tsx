@@ -42,6 +42,7 @@ const preparedResponse = () =>
         kind: "CASE",
         before: null,
         after: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: fields.caseReference,
           revision: 1,
           state: {
@@ -108,6 +109,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
   const current: CurrentCase = caseViewInput({
+    caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
@@ -145,6 +147,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
   ).toBeVisible();
 });
 const paidCase: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {

@@ -4,6 +4,12 @@ Start with a fresh installation, grant access deliberately, and plan backups and
 real data. The supplied Compose setup is for local evaluation. Operators choose and qualify their deployment,
 TLS, storage, identity provider and monitoring.
 
+The foundation baseline is for fresh installations. Older baseline digests and durable formats are refused
+without conversion. OPEN metadata retains the original reference and creation operation identity after
+payload erasure; this preserves the existing reference retention and nonreuse policy. Verification compares
+retained request effects with complete snapshots. After legitimate erasure it checks retained identity,
+lifecycle, revisions, attribution, hash links and complete payload removal; it cannot replay erased values.
+
 ## Install a fresh register
 
 Use [getting started](getting-started.md) for a separate local installation. For another deployment, prepare

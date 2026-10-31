@@ -14,10 +14,11 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private snapshot (reference: string) claimant : CaseSnapshot =
+let private snapshot operationId (reference: string) claimant : CaseSnapshot =
     let reference = CaseFixtures.reference reference
 
     {
+        CaseId = CaseFixtures.caseId operationId
         Reference = reference
         Revision = CaseFixtures.revision 1L
         State =
@@ -65,7 +66,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                     (registration)
             ))
 
-    let snapshot = snapshot request.CaseReference claimant
+    let snapshot = snapshot request.OperationId request.CaseReference claimant
 
     Case.ofAccepted snapshot
     |> Result.defaultWith (fun _ -> failtest "Historical fixture must obey permanent format")
@@ -75,8 +76,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
         Expect.isNone view.Case "Fixture reference is fresh"
         Expect.isNone view.ExistingOperation "Fixture operation is fresh"
 
-        let id =
-            CaseReferenceId.encode fixture.InstallationId (CaseReference.format snapshot.Reference)
+        let id = snapshot.CaseId
 
         let actor =
             view.Actor.Actor

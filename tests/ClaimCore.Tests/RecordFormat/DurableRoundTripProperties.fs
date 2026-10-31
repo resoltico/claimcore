@@ -249,6 +249,10 @@ let private snapshotProperty =
                             [ CaseState.Active fields, "ACTIVE"; CaseState.Voided fields, "VOIDED" ] do
                             let expected: CaseSnapshot =
                                 {
+                                    CaseId =
+                                        CaseFixtures.caseId (
+                                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                        )
                                     Reference = reference
                                     Revision = (CaseFixtures.revision revision)
                                     State = state

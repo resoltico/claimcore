@@ -59,6 +59,7 @@ module LedgerEntries =
             ActorId = entry.ActorId
             RecordedAt = entry.RecordedAt
             Subject = entry.Subject
+            CreationReference = entry.CreationReference
             PayloadCommitment = entry.PayloadCommitment
             PayloadNonce = Some entry.PayloadNonce
             Payload = Some entry.Payload
@@ -101,6 +102,14 @@ module LedgerEntries =
         let commitment = LedgerEntry.commitment nonce payload
         let sequence = Sequence.successor head.Sequence
 
+        let creationReference =
+            match subject with
+            | EntryTarget.Case(_, _, CaseActKind.Open, _) ->
+                match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes request with
+                | Ok command -> Some command.Reference
+                | Error _ -> invalidArg (nameof request) "Invalid OPEN creation identity."
+            | _ -> None
+
         let metadata =
             {
                 InstallationId = installationId
@@ -110,6 +119,7 @@ module LedgerEntries =
                 ActorId = actorId
                 RecordedAt = instant
                 Subject = metadataSubject subject
+                CreationReference = creationReference
                 PayloadCommitment = commitment
             }
 
@@ -121,6 +131,7 @@ module LedgerEntries =
             ActorId = actorId
             RecordedAt = instant
             Subject = subject
+            CreationReference = creationReference
             PayloadCommitment = commitment
             PayloadNonce = Array.copy nonce
             Payload = payload
@@ -165,7 +176,7 @@ module LedgerEntries =
         && entry.RecordedAt.UtcTicks % 10L = 0L
         && subject
 
-    let private caseContent installationId (entry: StoredEntry) (data: LedgerPayload) =
+    let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
@@ -174,8 +185,9 @@ module LedgerEntries =
                 request.OperationId = entry.OperationId
                 && Revision.value request.ExpectedRevision = Revision.value revision - 1L
                 && CaseAct.kind request.Act = act
-                && CaseReferenceId.encode installationId (CaseReference.format request.Reference) =
-                    id
+                && (act <> CaseActKind.Open
+                    || (id = CaseId.ofOperationId request.OperationId
+                        && entry.CreationReference = Some request.Reference))
                 ->
                 if act = CaseActKind.Erase then
                     if Array.isEmpty data.Snapshot then
@@ -185,7 +197,8 @@ module LedgerEntries =
                 else
                     match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
                     | Ok snapshot when
-                        snapshot.Revision = revision
+                        snapshot.CaseId = id
+                        && snapshot.Revision = revision
                         && CaseReference.identity snapshot.Reference =
                             CaseReference.identity request.Reference
                         ->
@@ -292,7 +305,6 @@ module LedgerEntries =
         (current: StoredCase option)
         (validated: ValidatedEntry)
         =
-        let installationId = validated.InstallationId
         let content = validated.Content
 
         match validated.Entry.Subject with
@@ -306,13 +318,7 @@ module LedgerEntries =
                 || (Case.ofAccepted record.Snapshot |> Result.isError)
                 ->
                 Error CoreFault.StoreIntegrityError
-            | Some record when
-                CaseReferenceId.encode
-                    installationId
-                    (CaseReference.format record.Snapshot.Reference)
-                <> id
-                ->
-                Error CoreFault.StoreIntegrityError
+            | Some record when record.Snapshot.CaseId <> id -> Error CoreFault.StoreIntegrityError
             | Some record ->
                 let shown =
                     match record.Snapshot.State, content with
@@ -331,6 +337,7 @@ module LedgerEntries =
                 |> Result.map (fun snapshot ->
                     ReceiptSubject.Case
                         {
+                            CaseId = id
                             Reference = record.Snapshot.Reference
                             Revision = revision
                             Act = act

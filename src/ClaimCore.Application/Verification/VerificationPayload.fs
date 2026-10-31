@@ -21,7 +21,7 @@ module internal VerificationPayload =
     let private decoded (entry: StoredEntry) =
         Result.mapError (fun _ -> problem entry.Sequence)
 
-    let private case installationId (entry: StoredEntry) (payload: LedgerPayload) =
+    let private case _installationId (entry: StoredEntry) (payload: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
@@ -38,11 +38,9 @@ module internal VerificationPayload =
                         (request.OperationId = entry.OperationId
                          && Revision.value request.ExpectedRevision = Revision.value revision - 1L
                          && CaseAct.kind request.Act = act
-                         && CaseReferenceId.encode
-                             installationId
-                             (CaseReference.format request.Reference)
-                             =
-                             id)
+                         && (act <> CaseActKind.Open
+                             || (id = CaseId.ofOperationId request.OperationId
+                                 && entry.CreationReference = Some request.Reference)))
 
                 if act = CaseActKind.Erase then
                     do!
@@ -61,7 +59,8 @@ module internal VerificationPayload =
                         require
                             (Some entry.Sequence)
                             VerificationFinding.PayloadFormat
-                            (snapshot.Revision = revision
+                            (snapshot.CaseId = id
+                             && snapshot.Revision = revision
                              && CaseReference.identity snapshot.Reference =
                                  CaseReference.identity request.Reference)
 

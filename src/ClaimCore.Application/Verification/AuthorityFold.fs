@@ -8,11 +8,7 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
 [<NoEquality; NoComparison>]
-type internal AuthorityFoldContext =
-    {
-        InstallationId: Guid
-        CaseExists: CaseId -> bool
-    }
+type internal AuthorityFoldContext = { FindCase: string -> CaseId option }
 
 type internal AuthorityFoldTarget =
     {
@@ -129,8 +125,7 @@ module internal AuthorityFold =
         (value: AuthoredGrant)
         active
         =
-        let installationId = context.InstallationId
-        let caseExists = context.CaseExists
+        let findCase = context.FindCase
         let role = value.Role
         let scope = value.Scope
 
@@ -139,16 +134,16 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HumanRequired
-                    (not (Authority.humanOnlyRole role) || PrincipalKey.isHuman actor.Principal)
+                    (not (role = Role.Owner || role = Role.DataSteward)
+                     || PrincipalKey.isHuman actor.Principal)
 
             let! scope =
                 match scope with
                 | GrantTarget.Installation -> Ok Scope.Installation
                 | GrantTarget.CaseReference reference ->
-                    let id = CaseReferenceId.encode installationId reference
-
-                    require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
-                    |> Result.map (fun () -> Scope.Case id)
+                    findCase reference
+                    |> known (Some entry.Sequence) VerificationFinding.AuthorityFold
+                    |> Result.map Scope.Case
 
             let grant: ActorGrant = { Role = role; Scope = scope }
             let grants = actor.Grants |> List.filter ((<>) grant)
@@ -203,8 +198,8 @@ module internal AuthorityFold =
                 |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply
-        installationId
-        caseExists
+        _installationId
+        findCase
         (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
         (request: AuthorityRequestRecord)
@@ -232,10 +227,7 @@ module internal AuthorityFold =
 
             let! next =
                 action
-                    {
-                        InstallationId = installationId
-                        CaseExists = caseExists
-                    }
+                    { FindCase = findCase }
                     actors
                     entry
                     { ActorId = id; Principal = principal }

@@ -79,7 +79,7 @@
     <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="RecordFormat/OperationRecordTests.fs" />
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
-    <Compile Include="Domain/CaseReferenceIdTests.fs" />
+    <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractReads.fs" Link="Application/StoreContractReads.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/LedgerWriteContract.fs" Link="Application/LedgerWriteContract.fs" />

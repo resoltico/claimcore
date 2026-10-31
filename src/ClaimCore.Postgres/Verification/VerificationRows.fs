@@ -66,7 +66,7 @@ module internal VerificationRows =
             let! seen =
                 fold
                     connection
-                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
+                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases c ORDER BY case_id")
                     {
                         Read = DatabaseSession.namedRow
                         Append =

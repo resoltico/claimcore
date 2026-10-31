@@ -26,7 +26,7 @@ module internal StoredEntries =
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"
-        + ",payload_commitment,payload,payload_nonce"
+        + ",payload_commitment,payload,payload_nonce,creation_reference"
 
     let private subjects row =
         let target = DatabaseSession.value<Guid> 9 row
@@ -83,6 +83,13 @@ module internal StoredEntries =
                 ActorId = DatabaseSession.value 7 row |> DatabaseSession.admitted ActorId.create
                 RecordedAt = DatabaseSession.recordedInstant 8 row
                 Subject = subject
+                CreationReference =
+                    DatabaseSession.optional<string> 15 row
+                    |> Option.map (
+                        CaseReference.parse
+                        >> Result.defaultWith (fun _ ->
+                            raise (RecordCorruptException "Invalid retained reference."))
+                    )
                 PayloadCommitment = DatabaseSession.value 12 row
                 Payload = DatabaseSession.optional<byte array> 13 row
                 PayloadNonce = DatabaseSession.optional<byte array> 14 row
@@ -99,6 +106,7 @@ module internal StoredEntries =
                     ActorId = entry.ActorId
                     RecordedAt = entry.RecordedAt
                     Subject = metadataSubject
+                    CreationReference = entry.CreationReference
                     PayloadCommitment = entry.PayloadCommitment
                 }
         }

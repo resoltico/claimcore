@@ -60,6 +60,7 @@ let viewFields (snapshot: CaseSnapshot) =
 
 let snapshot revision (fields: CaseFields) =
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = fields.CaseReference
         Revision = CaseFixtures.revision revision
         State = CaseState.Active(fields)

@@ -176,7 +176,7 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             |> AuthorityRequests.toRecord
 
         do! rewrite database (CaseFixtures.sequence (3L)) (updateAuthority altered)
-        let caseId = CaseReferenceId.encode database.Fixture.InstallationId "synthetic-a"
+        let caseId = CaseFixtures.caseId (id 10)
 
         do!
             sql

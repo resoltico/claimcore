@@ -104,6 +104,7 @@ module LiveCase =
 
 type CaseSnapshot =
     {
+        CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
         State: CaseState<CaseFields>

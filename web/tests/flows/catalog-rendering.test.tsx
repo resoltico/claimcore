@@ -32,6 +32,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
   );
   const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT";
   return caseViewInput({
+    caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: caseFields.caseReference,
     revision: 1,
     advice: {
@@ -102,6 +103,7 @@ const caseReceipt = (request: CaseInput) => {
     subject: {
       kind: "CASE" as const,
       act: request.act.kind,
+      caseId: "20000000-0000-4000-8000-000000000001",
       caseReference: request.caseReference,
       revision: request.expectedRevision + 1,
       snapshot: {
@@ -130,6 +132,7 @@ const caseReview = (request: CaseInput) => ({
           kind: "CASE" as const,
           before: null,
           after: {
+            caseId: "20000000-0000-4000-8000-000000000001",
             caseReference: request.caseReference,
             revision: request.expectedRevision + 1,
             state: {

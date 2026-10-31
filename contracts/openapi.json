@@ -3212,6 +3212,9 @@
           "kind": {
             "const": "CASE"
           },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -3245,6 +3248,7 @@
         },
         "required": [
           "kind",
+          "caseId",
           "caseReference",
           "revision",
           "act",
@@ -3255,6 +3259,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -3271,6 +3278,7 @@
           }
         },
         "required": [
+          "caseId",
           "caseReference",
           "revision",
           "state"
@@ -3345,6 +3353,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -3368,6 +3379,7 @@
           }
         },
         "required": [
+          "caseId",
           "caseReference",
           "revision",
           "changedAt",
@@ -3671,6 +3683,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -3693,6 +3708,7 @@
           }
         },
         "required": [
+          "caseId",
           "caseReference",
           "revision",
           "state",
@@ -6091,6 +6107,9 @@
           "kind": {
             "const": "CASE"
           },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -6124,6 +6143,7 @@
         },
         "required": [
           "kind",
+          "caseId",
           "caseReference",
           "revision",
           "act",

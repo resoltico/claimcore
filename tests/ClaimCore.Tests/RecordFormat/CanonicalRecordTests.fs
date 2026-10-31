@@ -168,28 +168,27 @@ let private formats () =
                 RecordVersions.Authority
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
-                RecordVersions.CaseReferenceIdentity
             ]
-            [ 1; 1; 1; 1; 1 ]
+            [ 2; 2; 2; 2 ]
             "Each retained grammar has its adopted format number"
 
-        for format in [ "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
+        for format in [ "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":1", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":2", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":1", "\"format\":2"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":2", "\"format\":1"))
             ))
             "No old snapshot reinterpretation"
 
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":1", "\"format\":4"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":2", "\"format\":4"))))
             "No old authority reinterpretation")
 
 let private operationIdentity () =

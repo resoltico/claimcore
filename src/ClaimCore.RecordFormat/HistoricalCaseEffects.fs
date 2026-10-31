@@ -95,6 +95,7 @@ module HistoricalCaseEffects =
             | None, CaseAct.Open facts when request.ExpectedRevision = Revision.zero ->
                 Ok
                     {
+                        CaseId = CaseId.ofOperationId request.OperationId
                         Reference = request.Reference
                         Revision = Revision.first
                         State =

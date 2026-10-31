@@ -53,8 +53,8 @@ CREATE TABLE claimcore.installation (
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
--- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the fixed 183-byte metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 1). The preimage covers `payload_commitment`,
+-- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 2). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -63,7 +63,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 1),
+    entry_format smallint NOT NULL CHECK (entry_format = 2),
     subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
@@ -84,6 +84,13 @@ CREATE TABLE claimcore.ledger (
     -- NULL together when, and only when, the case is erased. Authority payloads are never erased.
     payload bytea,
     payload_nonce bytea,
+    creation_reference text,
+    CONSTRAINT ledger_creation_shape CHECK (
+        (subject_kind = 'CASE' AND act = 'OPEN' AND case_revision = 1
+         AND subject_id = operation_id AND creation_reference IS NOT NULL
+         AND creation_reference COLLATE "C" ~ '^[!-~]{1,80}$')
+        OR ((subject_kind <> 'CASE' OR act <> 'OPEN') AND creation_reference IS NULL)
+    ),
 
     CONSTRAINT ledger_subject_shape CHECK (
         (subject_kind = 'CASE'
@@ -105,6 +112,9 @@ CREATE TABLE claimcore.ledger (
     -- Authority rows have NULL revision and therefore never collide here.
     CONSTRAINT ledger_case_revision_unique UNIQUE (subject_id, case_revision)
 );
+
+-- Retained authoritative references cannot be reused even if a projection is damaged.
+CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger (upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
 
 CREATE INDEX ledger_authority_sequence ON claimcore.ledger (sequence DESC)
     WHERE subject_kind = 'AUTHORITY';
@@ -192,11 +202,11 @@ BEGIN
        OR NEW.payload_nonce IS NOT NULL
        OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
            NEW.act, NEW.operation_id, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
-           NEW.case_revision, NEW.business_date, NEW.payload_commitment)
+           NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.payload_commitment)
           IS DISTINCT FROM
           (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
            OLD.act, OLD.operation_id, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
-           OLD.case_revision, OLD.business_date, OLD.payload_commitment)
+           OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.payload_commitment)
     THEN
         RAISE EXCEPTION 'ledger rows change only by case erasure' USING ERRCODE = 'CC003';
     END IF;

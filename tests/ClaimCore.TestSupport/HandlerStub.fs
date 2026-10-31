@@ -59,6 +59,7 @@ let receipt id (reference: string) =
         Subject =
             ReceiptSubject.Case
                 {
+                    CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference reference
                     Revision = Revision.first
                     Act = CaseActKind.Open

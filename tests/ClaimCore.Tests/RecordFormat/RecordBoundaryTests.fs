@@ -140,7 +140,7 @@ let private envelope () =
 
     let asWire bytes =
         Encoding.UTF8.GetString(bytes: byte array)
-        |> fun value -> value.Replace("\"format\":1,", "")
+        |> fun value -> value.Replace("\"format\":2,", "")
 
         |> Encoding.UTF8.GetBytes
 

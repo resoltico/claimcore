@@ -22,7 +22,7 @@ module internal Projections =
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
         + DatabaseSession.dateExpression "notified_on"
-        + " AS notified_on,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency"
+        + " AS notified_on,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -79,7 +79,7 @@ module internal Projections =
         }
 
 
-    let caseRowWithIndex installationId index (row: Map<string, obj>) : StoredCase =
+    let caseRowWithIndex _installationId index (row: Map<string, obj>) : StoredCase =
         let reference =
             DatabaseSession.namedValue<string> "case_reference" row
             |> CaseReference.parse
@@ -101,6 +101,7 @@ module internal Projections =
             match state, bytes with
             | "ERASED", None ->
                 {
+                    CaseId = id
                     Reference = reference
                     Revision = revision
                     State = CaseState.Erased
@@ -113,7 +114,9 @@ module internal Projections =
             snapshot.Reference <> reference
             || snapshot.Revision <> revision
             || CaseState.token snapshot.State <> state
-            || CaseReferenceId.encode installationId (CaseReference.format reference) <> id
+            || snapshot.CaseId <> id
+            || DatabaseSession.namedOptional<string> "creation_reference" row
+               <> Some(CaseReference.format reference)
         then
             raise (RecordCorruptException "Stored snapshot disagrees with projection identity.")
 
@@ -134,7 +137,7 @@ module internal Projections =
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    ($"SELECT {caseColumns} FROM claimcore.cases WHERE case_id=$1")
+                    ($"SELECT {caseColumns} FROM claimcore.cases c WHERE case_id=$1")
                     [| box (CaseId.value id) |]
                     token
 
@@ -142,6 +145,21 @@ module internal Projections =
             | [] -> return None
             | [ row ] -> return Some(caseRow installationId row)
             | _ -> return raise (RecordCorruptException "Duplicate case projection.")
+        }
+
+    let caseByReference connection installationId reference token =
+        task {
+            let! rows =
+                DatabaseSession.namedRows
+                    connection
+                    ($"SELECT {caseColumns} FROM claimcore.cases c WHERE upper(case_reference COLLATE \"C\")=$1")
+                    [| box (CaseReference.key reference) |]
+                    token
+
+            match rows with
+            | [] -> return None
+            | [ row ] -> return Some(caseRow installationId row)
+            | _ -> return raise (RecordCorruptException "Duplicate reference projection.")
         }
 
     let private role row =

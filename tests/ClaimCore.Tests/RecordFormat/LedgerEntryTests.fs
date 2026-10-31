@@ -38,6 +38,11 @@ let private subject (vector: JsonElement) =
 
 let private metadata vector : LedgerMetadata =
     {
+        CreationReference =
+            if text vector "subject" = "CASE" then
+                Some(CaseFixtures.reference (text vector "creationReference"))
+            else
+                None
         InstallationId = Guid.Parse(text vector "installationId")
         Sequence = CaseFixtures.sequence (vector.GetProperty("sequence").GetInt64())
         PreviousHash = Convert.FromHexString(text vector "previousHash")
@@ -111,7 +116,7 @@ let private vectors () =
             Expect.equal
                 (Convert.ToHexStringLower(LedgerEntry.preimage entry))
                 (text vector "preimage")
-                "All 183 fixed bytes"
+                "All framed metadata bytes"
 
             Expect.equal
                 (Convert.ToHexStringLower(LedgerEntry.hash entry))
@@ -146,6 +151,9 @@ let private allMetadataFields () =
 
         let changes =
             [
+                { entry with
+                    CreationReference = Some(CaseFixtures.reference "Different")
+                }
                 { entry with InstallationId = otherId }
                 { entry with
                     Sequence = CaseFixtures.sequence 2L

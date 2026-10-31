@@ -14,6 +14,7 @@ type SnapshotDisclosure =
 
 type CaseReceipt =
     {
+        CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
         Act: CaseActKind

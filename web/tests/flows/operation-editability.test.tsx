@@ -9,6 +9,7 @@ import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {

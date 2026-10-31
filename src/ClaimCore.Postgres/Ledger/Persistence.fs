@@ -38,7 +38,7 @@ module internal Persistence =
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)"
             [|
                 box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
@@ -55,6 +55,9 @@ module internal Persistence =
                 box entry.PayloadCommitment
                 box entry.Payload
                 box entry.PayloadNonce
+                DatabaseSession.parameter (
+                    entry.CreationReference |> Option.map CaseReference.format
+                )
             |]
             token
 
