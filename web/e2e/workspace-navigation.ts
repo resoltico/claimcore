@@ -1,11 +1,11 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 /** Resize completion precedes React's media-query subscription update. */
 export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
-  await expect(page.locator(".workspace-header")).toBeVisible();
+  await page.locator(".workspace-header").waitFor({ state: "visible" });
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
-  await expect(page.locator(".workspace-header button[aria-expanded]")).toHaveCount(
-    compact ? 1 : 0,
-  );
+  await page
+    .locator(".workspace-header button[aria-expanded]")
+    .waitFor({ state: compact ? "visible" : "detached" });
 };
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
