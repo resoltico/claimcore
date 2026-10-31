@@ -433,3 +433,62 @@ test("the actual adapter closes a version-changed connection and preserves commi
     retained: record,
   });
 });
+
+test("same-identity workspace refresh settles a pending recovery without resubmission", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  const record: RecoveryRecord = {
+    ...scope,
+    format: 1,
+    operationId: randomUUID(),
+    attemptId: randomUUID(),
+    subject: "CASE",
+    act: "CLOSE",
+  };
+  await page.evaluate(async (identity) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    await module.createIndexedJournal(indexedDB).put(identity);
+  }, record);
+  await page.reload();
+  const ready = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let resolutions = 0;
+  await page.route("**/api/operation.resolve", async (route) => {
+    resolutions += 1;
+    const response = await route.fetch({ maxRedirects: 0 });
+    const value: unknown = await response.json();
+    expect(isResponse("operation.resolve", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(
+      true,
+    );
+    ready.resolve();
+    await release.promise;
+    await route.fulfill({ response });
+  });
+  try {
+    await page.getByRole("button", { name: "Check unresolved operation", exact: true }).click();
+    await ready.promise;
+    await expect(
+      page.getByRole("button", { name: "Check unresolved operation", exact: true }),
+    ).toBeDisabled();
+    const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
+    await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
+    const value: unknown = await (await refreshed).json();
+    if (!isResponse("context", value) || value.outcome.kind !== "SUCCEEDED") {
+      throw new Error("Workspace context refresh positive control");
+    }
+    expect(value.outcome.data.actorId).toBe(scope.actorId);
+    expect(value.outcome.data.installationId).toBe(scope.installationId);
+    release.resolve();
+    await expect.poll(() => records(page, scope)).toEqual([]);
+    await expect(
+      page.getByRole("button", { name: "Check unresolved operation", exact: true }),
+    ).toHaveCount(0);
+    expect(resolutions).toBe(1);
+  } finally {
+    release.resolve();
+  }
+});

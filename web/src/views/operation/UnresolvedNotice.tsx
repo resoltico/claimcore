@@ -7,6 +7,7 @@ import { subscribeRecovery } from "../../recovery/indexedJournal";
 import {
   sameRecoveryScope,
   type RecoveryRecord,
+  type RecoveryJournal,
   type RecoveryScope,
 } from "../../protocol/recoveryJournal";
 import { service, resultNotice } from "../../api/service";
@@ -14,28 +15,68 @@ import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 
+type RecoveryOwner = { scope: RecoveryScope; credential: string; epoch: number };
 type RecoveryView = {
-  scope: RecoveryScope | null;
+  owner: RecoveryOwner | null;
   operations: ReadonlyArray<RecoveryRecord>;
   failed: boolean;
 };
-type Feedback = { scope: RecoveryScope; credential: string; epoch: number; notice: Notice };
-const belongsToView = (
-  scope: RecoveryScope | null,
-  credential: string,
-  epoch: number,
-  value: { scope: RecoveryScope | null; credential?: string; epoch?: number } | null,
-) =>
-  value?.scope !== undefined &&
-  value.scope !== null &&
-  scope !== null &&
-  sameRecoveryScope(value.scope, scope) &&
-  (value.credential === undefined || value.credential === credential) &&
-  (value.epoch === undefined || value.epoch === epoch);
-
+type RecoveryAttempt = { owner: RecoveryOwner; attempt: string };
+type Feedback = { owner: RecoveryOwner; notice: Notice };
 const finalResolution = (result: Awaited<ReturnType<typeof service.resolve>>) =>
   result.kind === "outcome" &&
   (result.value.outcome.kind === "ACCEPTED" || result.value.outcome.kind === "NOT_ACCEPTED");
+const settleRecovery = async (
+  record: RecoveryRecord,
+  owner: RecoveryOwner,
+  journal: RecoveryJournal,
+  current: () => boolean,
+): Promise<{ notice: Notice; removed: boolean } | null> => {
+  const result = await service.resolve(record.operationId, owner.credential, record.installationId);
+  if (!current()) {
+    return null;
+  }
+  if (!finalResolution(result) || result.kind !== "outcome") {
+    return { notice: resultNotice(result), removed: false };
+  }
+  try {
+    await journal.remove(record);
+  } catch {
+    return { notice: { kind: "local", reason: "recoveryListingUnavailable" }, removed: false };
+  }
+  if (!current()) {
+    return null;
+  }
+  return {
+    removed: true,
+    notice:
+      result.value.outcome.kind === "ACCEPTED"
+        ? { kind: "accepted", operationId: record.operationId }
+        : { kind: "local", reason: "notAccepted" },
+  };
+};
+const visibleRecovery = (
+  owner: RecoveryOwner | null,
+  view: RecoveryView,
+  busy: RecoveryAttempt | null,
+  feedback: Feedback | null,
+) => {
+  if (owner === null) {
+    return { operations: [], busy: null, notice: null };
+  }
+  const unavailable: Notice | null =
+    view.owner === owner && view.failed
+      ? { kind: "local", reason: "recoveryListingUnavailable" }
+      : null;
+  return {
+    operations:
+      view.owner === owner
+        ? view.operations.filter((record) => sameRecoveryScope(owner.scope, record))
+        : [],
+    busy: busy?.owner === owner ? busy.attempt : null,
+    notice: feedback?.owner === owner ? feedback.notice : unavailable,
+  };
+};
 /** Restart recovery sends only identity. It never reconstructs or resubmits business requests. */
 const useRecoveryNotice = () => {
   const credential = useCredential();
@@ -49,50 +90,51 @@ const useRecoveryNotice = () => {
   }, []);
   const requester = useRequesterContext();
   const journal = useRecoveryJournal();
+  const actorId = requester?.actorId;
+  const installationId = requester?.installationId;
   const scope = useMemo<RecoveryScope | null>(
     () =>
-      requester === null
+      actorId === undefined || installationId === undefined
         ? null
         : {
             serviceOrigin: location.origin,
-            installationId: requester.installationId,
-            actorId: requester.actorId,
+            installationId,
+            actorId,
           },
-    [requester],
+    [actorId, installationId],
   );
-  const latest = useRef({ credential, epoch, scope });
+  // Value-equivalent refreshes keep ownership; every real transition gets a new identity,
+  // including A → B → A and requester → null → requester.
+  const owner = useMemo<RecoveryOwner | null>(
+    () => (scope === null ? null : { scope, credential, epoch }),
+    [scope, credential, epoch],
+  );
+  const latest = useRef(owner);
   useLayoutEffect(() => {
-    latest.current = { credential, epoch, scope };
-  }, [credential, epoch, scope]);
-  const [view, setView] = useState<RecoveryView>({ scope: null, operations: [], failed: false });
-  const [busy, setBusy] = useState<{
-    scope: RecoveryScope;
-    credential: string;
-    epoch: number;
-    attempt: string;
-  } | null>(null);
+    latest.current = owner;
+  }, [owner]);
+  const [view, setView] = useState<RecoveryView>({ owner: null, operations: [], failed: false });
+  const [busy, setBusy] = useState<RecoveryAttempt | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const owns = (value: Parameters<typeof belongsToView>[3]) =>
-    belongsToView(scope, credential, epoch, value);
   useEffect(() => {
     let active = true;
     let serial = 0;
-    if (scope === null) {
+    if (owner === null) {
       return;
     }
-    const currentScope = scope;
+    const currentOwner = owner;
     const refresh = () => {
       const request = ++serial;
       void Promise.resolve()
-        .then(() => journal.list(currentScope))
+        .then(() => journal.list(currentOwner.scope))
         .then((operations) => {
           if (active && request === serial) {
-            setView({ scope: currentScope, operations, failed: false });
+            setView({ owner: currentOwner, operations, failed: false });
           }
         })
         .catch(() => {
           if (active && request === serial) {
-            setView({ scope: currentScope, operations: [], failed: true });
+            setView({ owner: currentOwner, operations: [], failed: true });
           }
         });
     };
@@ -102,60 +144,46 @@ const useRecoveryNotice = () => {
       active = false;
       unsubscribe();
     };
-  }, [scope, journal]);
+  }, [owner, journal]);
   const check = async (record: RecoveryRecord) => {
-    const current = () =>
-      alive.current &&
-      latest.current.credential === credential &&
-      latest.current.epoch === epoch &&
-      latest.current.scope === scope &&
-      scope !== null &&
-      sameRecoveryScope(scope, record);
-    if (scope === null || !current() || owns(busy)) {
+    const current = () => alive.current && owner !== null && latest.current === owner;
+    if (
+      owner === null ||
+      !current() ||
+      busy?.owner === owner ||
+      !sameRecoveryScope(owner.scope, record)
+    ) {
       return;
     }
-    setBusy({ scope, credential, epoch, attempt: record.attemptId });
-    const result = await service.resolve(record.operationId, credential, record.installationId);
-    if (!current()) {
-      return;
-    }
-    setBusy(null);
-    let notice = resultNotice(result);
-    if (finalResolution(result) && result.kind === "outcome") {
-      try {
-        await journal.remove(record);
-        if (!current()) {
-          return;
+    const attempt: RecoveryAttempt = { owner, attempt: record.attemptId };
+    setBusy(attempt);
+    try {
+      const settled = await settleRecovery(record, owner, journal, current);
+      if (settled !== null && current()) {
+        if (settled.removed) {
+          setView((previous) =>
+            previous.owner === owner
+              ? {
+                  ...previous,
+                  operations: previous.operations.filter(
+                    (value) => value.attemptId !== record.attemptId,
+                  ),
+                }
+              : previous,
+          );
         }
-        setView((previous) => ({
-          ...previous,
-          operations: previous.operations.filter((value) => value.attemptId !== record.attemptId),
-        }));
-        notice =
-          result.value.outcome.kind === "ACCEPTED"
-            ? { kind: "accepted", operationId: record.operationId }
-            : { kind: "local", reason: "notAccepted" };
-      } catch {
-        notice = { kind: "local", reason: "recoveryListingUnavailable" };
+        setFeedback({ owner, notice: settled.notice });
       }
-    }
-    if (current()) {
-      setFeedback({ scope, credential, epoch, notice });
+    } catch {
+      if (current()) {
+        setFeedback({ owner, notice: { kind: "local", reason: "unreachable" } });
+      }
+    } finally {
+      // An obsolete completion must never release a newer attempt's lock.
+      setBusy((previous) => (previous === attempt ? null : previous));
     }
   };
-  const operations = owns(view)
-    ? view.operations.filter((record) => scope !== null && sameRecoveryScope(scope, record))
-    : [];
-  const ownedFeedback = owns(feedback) ? feedback : null;
-  const ownedBusy = owns(busy) ? busy : null;
-  const unavailable: Notice | null =
-    owns(view) && view.failed ? { kind: "local", reason: "recoveryListingUnavailable" } : null;
-  return {
-    operations,
-    busy: ownedBusy?.attempt ?? null,
-    notice: ownedFeedback?.notice ?? unavailable,
-    check,
-  };
+  return { ...visibleRecovery(owner, view, busy, feedback), check };
 };
 export const UnresolvedNotice = () => {
   const p = usePresentation();

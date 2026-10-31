@@ -7,6 +7,7 @@
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
 - Discard older cursors: case lists use format 4 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
 - Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
+- Recovery checks settle across same-identity refreshes; obsolete completions cannot release newer checks or clear another scope's records.
 - Use CLI recovery list/resolve for private per-attempt recovery; retain exact prepared retry frames and their installation binding until uncertainty is settled.
 - Final nonacceptance is an ordered actor/operation control. Verification and trusted-checkpoint rebuild restore fences, live projections and erased identity without reconstructing erased content.
 - Owners can rebuild projections with a trusted checkpoint and explicitly invalidate restored sessions. Keep actor traffic isolated during restore; older backups can resurrect data and cookies.
