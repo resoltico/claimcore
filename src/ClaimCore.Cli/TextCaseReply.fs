@@ -41,7 +41,7 @@ module internal TextCaseReply =
             line
                 language
                 (FieldPresentation.labelId BusinessField.CaseReference)
-                (CaseReference.format value.Snapshot.Reference)
+                (TerminalText.data (CaseReference.format value.Snapshot.Reference))
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)

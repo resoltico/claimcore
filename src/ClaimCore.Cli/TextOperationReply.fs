@@ -18,7 +18,7 @@ module internal TextOperationReply =
             match receipt.Subject with
             | ReceiptSubject.Case value ->
                 term language CaseActKind.vocabulary value.Act,
-                CaseReference.format value.Reference,
+                TerminalText.data (CaseReference.format value.Reference),
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     Revision.format value.Revision
@@ -62,7 +62,8 @@ module internal TextOperationReply =
 
         let target =
             match review with
-            | OperationReview.Case value -> CaseReference.format value.Proposed.Reference
+            | OperationReview.Case value ->
+                TerminalText.data (CaseReference.format value.Proposed.Reference)
             | OperationReview.Authority value ->
                 let principal =
                     match input with
@@ -72,7 +73,13 @@ module internal TextOperationReply =
 
                 match principal with
                 | Some(kind, issuer, subject) ->
-                    String.concat " " [ principalKind language kind; issuer; subject ]
+                    String.concat
+                        " "
+                        [
+                            principalKind language kind
+                            TerminalText.data issuer
+                            displayed language (Some subject)
+                        ]
                 | None -> "— — —"
 
         act + " " + target

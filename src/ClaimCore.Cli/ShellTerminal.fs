@@ -35,7 +35,7 @@ type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
     let mutable disposed = false
 
     let redraw () =
-        write ("\r\u001b[2K" + activePrompt + buffer.ToString())
+        write ("\r\u001b[2K" + activePrompt + TerminalText.data (buffer.ToString()))
 
     let complete value =
         let receiver = pending
@@ -94,9 +94,9 @@ type internal ShellTerminal(write: string -> unit, maximumCharacters: int) =
                 && buffer.Length > 1
                 && Char.IsHighSurrogate buffer[buffer.Length - 2]
             then
-                write (buffer.ToString(buffer.Length - 2, 2))
+                write (TerminalText.data (buffer.ToString(buffer.Length - 2, 2)))
             else
-                write (string character)
+                write (TerminalText.data (string character))
 
     let key (key: ConsoleKeyInfo) =
         match key.Key with

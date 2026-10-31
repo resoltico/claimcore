@@ -26,6 +26,7 @@
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="MessageCatalogs.fs" />
+    <Compile Include="TerminalText.fs" />
     <Compile Include="UsageText.fs" />
     <Compile Include="ContractDiscovery.fs" />
     <Compile Include="Discovery.fs" />

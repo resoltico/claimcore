@@ -19,7 +19,9 @@ module internal TextAuthorityReply =
             | GrantScope.Case(_, reference) ->
                 term language ScopeKind.vocabulary ScopeKind.Case, CaseReference.format reference
 
-        String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
+        String.concat
+            "  "
+            [ term language Role.vocabulary grant.Role; scope; TerminalText.data reference ]
 
     let actorRow language (actor: Actor) =
         let kind, issuer, subject = PrincipalKey.parts actor.Principal
@@ -29,8 +31,8 @@ module internal TextAuthorityReply =
             [
                 ActorId.format actor.ActorId
                 principalKind language kind
-                issuer
-                subject
+                TerminalText.data issuer
+                displayed language (Some subject)
                 boolean actor.Enabled
             ]
 
@@ -62,7 +64,7 @@ module internal TextAuthorityReply =
                            "  "
                            [
                                principalKind language kind
-                               issuer
+                               TerminalText.data issuer
                                displayed language (Some subject)
                            ]
                    | AuthorityHistoryFacts.Granted grant

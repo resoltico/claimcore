@@ -15,6 +15,7 @@ When stdin and stdout are terminals and text output is selected, omitting `--exp
 
 For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; there is no skip-confirmation flag.
 
+Human data text visibly escapes terminal controls, line/paragraph separators and directional formatting as `\u{XXXX}` (uppercase hexadecimal). Literal backslashes are doubled, so displayed escapes are distinct from exact stored values. Arabic text and joining characters remain readable. This applies to redirected text too; JSON/NDJSON retain exact decoded values and CSV keeps its export rules.
 Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values.
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
