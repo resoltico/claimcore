@@ -318,75 +318,119 @@ test("the actual adapter closes a version-changed connection and preserves commi
     subject: "CASE",
     act: "CLOSE",
   };
-  const observed = await page.evaluate(async (identity) => {
-    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
-    const module = (await import(path)) as typeof IndexedJournalModule;
-    const name = `claimcore-version-change-${identity.attemptId}`;
-    let changedClose = false;
-    let upgraded: Promise<void> = Promise.resolve();
-    const factory = {
-      open(databaseName: string, version: number) {
-        const request = indexedDB.open(databaseName, version);
-        request.addEventListener("success", () => {
-          const database = request.result;
-          let changing = false;
-          database.addEventListener("versionchange", () => {
-            changing = true;
-            queueMicrotask(() => {
-              changing = false;
+  const exercise = (disableVersionHandler: boolean) =>
+    page.evaluate(
+      async ({ identity, suppressHandler }) => {
+        const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+        const module = (await import(path)) as typeof IndexedJournalModule;
+        const name = `claimcore-version-change-${identity.attemptId}-${String(suppressHandler)}`;
+        let changedClose = false;
+        let nativeVersionChanges = 0;
+        let upgraded: Promise<void> = Promise.resolve();
+        const factory = {
+          open(databaseName: string, version: number) {
+            const request = indexedDB.open(databaseName, version);
+            request.addEventListener("success", () => {
+              const database = request.result;
+              let changing = false;
+              let versionChanged = false;
+              let cleanupRequested = false;
+              const close = database.close.bind(database);
+              let onChange: IDBDatabase["onversionchange"] = null;
+              Object.defineProperty(database, "onversionchange", {
+                configurable: true,
+                get: () => onChange,
+                set: (handler: IDBDatabase["onversionchange"]) => {
+                  onChange = handler;
+                },
+              });
+              // Keep the signal around the adapter's callback itself: browsers may run a microtask
+              // checkpoint between separate listeners for the same genuine native event.
+              database.addEventListener("versionchange", (event) => {
+                nativeVersionChanges += 1;
+                versionChanged = true;
+                changing = true;
+                try {
+                  if (!suppressHandler) {
+                    onChange?.call(database, event);
+                  }
+                } finally {
+                  changing = false;
+                  if (cleanupRequested) {
+                    close();
+                  }
+                }
+              });
+              database.close = () => {
+                if (changing) {
+                  changedClose = true;
+                  close();
+                } else {
+                  // Hold ordinary cleanup until the native upgrade event is delivered; otherwise
+                  // a fast transaction can remove the connection before the event in some engines.
+                  cleanupRequested = true;
+                  if (versionChanged) {
+                    close();
+                  }
+                }
+              };
+              upgraded = new Promise<void>((resolve, reject) => {
+                const upgrade = indexedDB.open(name, 2);
+                upgrade.onsuccess = () => {
+                  upgrade.result.close();
+                  resolve();
+                };
+                upgrade.onerror = () => {
+                  reject(new Error("Upgrade positive control failed"));
+                };
+              });
             });
-          });
-          const close = database.close.bind(database);
-          database.close = () => {
-            if (changing) {
-              changedClose = true;
-            }
-            close();
+            return request;
+          },
+        } as IDBFactory;
+        await module.createIndexedJournal(factory, name).put(identity);
+        await upgraded;
+        const retained = await new Promise<unknown>((resolve, reject) => {
+          const request = indexedDB.open(name, 2);
+          request.onsuccess = () => {
+            const database = request.result;
+            const tx = database.transaction("attempts", "readonly");
+            const read = tx
+              .objectStore("attempts")
+              .get([
+                identity.serviceOrigin,
+                identity.installationId,
+                identity.actorId,
+                identity.attemptId,
+              ]);
+            read.onsuccess = () => {
+              resolve(read.result);
+            };
+            tx.oncomplete = () => {
+              database.close();
+            };
+            tx.onerror = () => {
+              reject(new Error("Readback failed"));
+            };
           };
-          upgraded = new Promise<void>((resolve, reject) => {
-            const upgrade = indexedDB.open(name, 2);
-            upgrade.onsuccess = () => {
-              upgrade.result.close();
-              resolve();
-            };
-            upgrade.onerror = () => {
-              reject(new Error("Upgrade positive control failed"));
-            };
-          });
+          request.onerror = () => {
+            reject(new Error("Readback open failed"));
+          };
         });
-        return request;
+        return { changedClose, nativeVersionChanges, retained };
       },
-    } as IDBFactory;
-    await module.createIndexedJournal(factory, name).put(identity);
-    await upgraded;
-    const retained = await new Promise<unknown>((resolve, reject) => {
-      const request = indexedDB.open(name, 2);
-      request.onsuccess = () => {
-        const database = request.result;
-        const tx = database.transaction("attempts", "readonly");
-        const read = tx
-          .objectStore("attempts")
-          .get([
-            identity.serviceOrigin,
-            identity.installationId,
-            identity.actorId,
-            identity.attemptId,
-          ]);
-        read.onsuccess = () => {
-          resolve(read.result);
-        };
-        tx.oncomplete = () => {
-          database.close();
-        };
-        tx.onerror = () => {
-          reject(new Error("Readback failed"));
-        };
-      };
-      request.onerror = () => {
-        reject(new Error("Readback open failed"));
-      };
-    });
-    return { changedClose, retained };
-  }, record);
-  expect(observed).toEqual({ changedClose: true, retained: record });
+      { identity: record, suppressHandler: disableVersionHandler },
+    );
+  expect(await exercise(false)).toEqual({
+    changedClose: true,
+    nativeVersionChanges: 1,
+    retained: record,
+  });
+  // Normal transaction cleanup still closes the connection when the version handler is disabled.
+  // It must not satisfy the event-handler assertion.
+  expect(await exercise(true)).toEqual({
+    changedClose: false,
+    nativeVersionChanges: 1,
+    retained: record,
+  });
 });
