@@ -72,11 +72,48 @@ let private receipt disclosure : OperationReceipt =
     }
 
 let private encodedHistory count disclosure =
+    let difference =
+        match disclosure with
+        | SnapshotDisclosure.Disclosed(LiveCase.Active fields | LiveCase.Voided fields) ->
+            Some
+                {
+                    Lifecycle = None
+                    Fields =
+                        [
+                            {
+                                FieldName = BusinessField.ClaimantName
+                                Before = Some(String(char 2, PartyName.MaximumBytes))
+                                After =
+                                    Some(
+                                        PartyName.format (Registration.claimant fields.Registration)
+                                    )
+                            }
+                            {
+                                FieldName = BusinessField.InsurerName
+                                Before = Some(String(char 2, PartyName.MaximumBytes))
+                                After =
+                                    Some(
+                                        PartyName.format (Registration.insurer fields.Registration)
+                                    )
+                            }
+                        ]
+                }
+        | _ -> None
+
     Codec.encode
         Api.caseHistory.Output
         (Outcome.Succeeded
             {
-                Entries = List.replicate count (HistoryEntry.FullEntry(receipt disclosure))
+                CaseId = (snapshot 1).CaseId
+                Reference = (snapshot 1).Reference
+                Entries =
+                    List.replicate
+                        count
+                        (HistoryEntry.FullEntry
+                            {
+                                Receipt = receipt disclosure
+                                Difference = difference
+                            })
                 NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
             })
 
@@ -88,7 +125,7 @@ let private fullHistoryBudget () =
             50
             (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
 
-    let perEntry = 2 * 6 * PartyName.MaximumBytes + 6 * 80 + 2048
+    let perEntry = 6 * 6 * PartyName.MaximumBytes + 6 * 80 + 2048
     let bound = 50 * perEntry + 1024
 
     Expect.isOk
@@ -131,10 +168,10 @@ let private authorityFixture () =
             Enabled = false
         }
 
-    let grant: AuthoredGrant =
+    let grant: ScopedGrant =
         {
             Role = Role.PaymentRecorder
-            Scope = GrantTarget.CaseReference reference
+            Scope = GrantScope.Case(CaseFixtures.caseId id, CaseFixtures.reference reference)
         }
 
     actor, grant

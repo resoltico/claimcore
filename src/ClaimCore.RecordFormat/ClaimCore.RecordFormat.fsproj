@@ -8,6 +8,7 @@
     <Compile Include="Versions.fs" />
     <Compile Include="DecodeProblem.fs" />
     <Compile Include="LedgerPayload.fs" />
+    <Compile Include="AuthorityRecordTypes.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="HistoricalCaseEffects.fs" />

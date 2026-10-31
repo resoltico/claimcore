@@ -119,7 +119,7 @@ export const service = {
   logout: (credential: string) => request("session.logout", credential, {}),
   context: (credential: string, signal?: AbortSignal) => request("context", credential, {}, signal),
   get: (caseReference: string, credential: string, signal?: AbortSignal) =>
-    request("case.get", credential, { caseReference }, signal),
+    request("case.get", credential, { target: { kind: "REFERENCE", caseReference } }, signal),
   list: (cursor: string | null, limit: number, credential: string, signal?: AbortSignal) =>
     request("case.list", credential, { ...(cursor === null ? {} : { cursor }), limit }, signal),
   history: (
@@ -136,7 +136,7 @@ export const service = {
       "case.history",
       credential,
       {
-        caseReference: input.caseReference,
+        target: { kind: "REFERENCE", caseReference: input.caseReference },
         ...(input.cursor === null ? {} : { cursor: input.cursor }),
         limit: input.limit,
         detail: input.detail ?? "SUMMARY",

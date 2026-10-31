@@ -94,7 +94,10 @@ const acceptSetup = async (
   const receipt: CaseReceipt = { ...outcome.data, subject: outcome.data.subject };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  expect(receipt.subject.caseReference).toBe(request.caseReference);
+  if (request.target.kind !== "REFERENCE") {
+    throw new Error("Reference fixture positive control");
+  }
+  expect(receipt.subject.caseReference).toBe(request.target.caseReference);
   expect(receipt.subject.act).toBe(request.act.kind);
   expect(receipt.subject.revision).toBe(revision);
   expect(receipt.subject.snapshot).toEqual({
@@ -115,7 +118,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       {
         kind: "CASE",
         operationId: randomUUID(),
-        caseReference: reference,
+        target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: revision,
         act: step.act,
       },
@@ -164,7 +167,7 @@ export const currentCase = async (page: Page, caseReference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference }),
+    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference } }),
   });
   if (!isResponse("case.get", result.payload)) {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
@@ -182,7 +185,11 @@ export const history = async (page: Page, caseReference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference, limit: 50, detail: "FULL" }),
+    body: JSON.stringify({
+      target: { kind: "REFERENCE", caseReference },
+      limit: 50,
+      detail: "FULL",
+    }),
   });
   if (!isResponse("case.history", result.payload)) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");

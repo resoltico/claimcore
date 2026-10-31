@@ -69,7 +69,6 @@ module internal FailureDiagnostics =
                         [||]
                     else
                         StackTrace(error, false).GetFrames()
-                        |> Array.truncate 8
                         |> Array.choose (fun frame ->
                             match frame.GetMethod() with
                             | null -> None
@@ -83,6 +82,7 @@ module internal FailureDiagnostics =
                                         let value = name + "." + method.Name
                                         Some(value.Substring(0, min 160 value.Length))
                                 | _ -> None)
+                        |> Array.truncate 8
 
                 let value =
                     {

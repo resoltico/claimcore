@@ -134,7 +134,7 @@ let private erasedIdentity database =
         let! erased =
             Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 101 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
@@ -185,7 +185,14 @@ let private erasedIdentity database =
         do! sql database "DELETE FROM claimcore.cases" [||]
         let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
         Expect.isOk result "Retained OPEN identity reconstructs erased cases"
-        let! returned = Service.get actor { CaseReference = "SYNTHETIC-A" } token
+
+        let! returned =
+            Service.get
+                actor
+                {
+                    Target = CaseSelector.Reference("SYNTHETIC-A")
+                }
+                token
 
         match returned with
         | Outcome.Succeeded view ->

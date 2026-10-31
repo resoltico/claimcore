@@ -11,13 +11,13 @@ open ClaimCore.Json
 module internal TextAuthorityReply =
     open TextReplyFormat
 
-    let grantRow language (grant: AuthoredGrant) =
+    let grantRow language (grant: ScopedGrant) =
         let scope, reference =
             match grant.Scope with
-            | GrantTarget.Installation ->
+            | GrantScope.Installation ->
                 term language ScopeKind.vocabulary ScopeKind.Installation, "—"
-            | GrantTarget.CaseReference reference ->
-                term language ScopeKind.vocabulary ScopeKind.Case, reference
+            | GrantScope.Case(_, reference) ->
+                term language ScopeKind.vocabulary ScopeKind.Case, CaseReference.format reference
 
         String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 

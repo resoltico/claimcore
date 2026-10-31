@@ -159,7 +159,17 @@ it("keeps the requested case route while an actual read refusal removes every cu
     .mockResolvedValueOnce(outcome({ outcome: { kind: "SUCCEEDED", data: visible } }))
     .mockResolvedValue(outcome({ outcome: unavailable }));
   mockEndpoint("case.history").mockResolvedValue(
-    outcome({ outcome: { kind: "SUCCEEDED", data: { entries: [], nextCursor: null } } }),
+    outcome({
+      outcome: {
+        kind: "SUCCEEDED",
+        data: {
+          caseId: current.caseId,
+          caseReference: current.caseReference,
+          entries: [],
+          nextCursor: null,
+        },
+      },
+    }),
   );
   navigate(casePath(current.caseReference));
   const user = userEvent.setup();

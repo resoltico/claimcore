@@ -302,7 +302,9 @@
                 }
               }
             ],
-            "nextCursor": "x"
+            "nextCursor": "x",
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "caseReference": "Demo-0001"
           }
         }
       },
@@ -1317,7 +1319,8 @@
                 "role": "CASE_READER",
                 "scope": {
                   "kind": "CASE",
-                  "caseReference": "CASE-001"
+                  "caseReference": "CASE-001",
+                  "caseId": "20000000-0000-4000-8000-000000000001"
                 }
               }
             ],
@@ -1618,10 +1621,13 @@
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -1685,10 +1691,13 @@
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -1752,10 +1761,13 @@
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -3279,7 +3291,8 @@
                   "role": "CASE_READER",
                   "scope": {
                     "kind": "CASE",
-                    "caseReference": "HISTORY-001"
+                    "caseReference": "HISTORY-001",
+                    "caseId": "20000000-0000-4000-8000-000000000001"
                   }
                 }
               },
@@ -3293,7 +3306,8 @@
                   "role": "CASE_READER",
                   "scope": {
                     "kind": "CASE",
-                    "caseReference": "HISTORY-001"
+                    "caseReference": "HISTORY-001",
+                    "caseId": "20000000-0000-4000-8000-000000000001"
                   }
                 }
               },
@@ -3478,6 +3492,83 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case.history.disclosed-difference",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "kind": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "subject": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "kind": "DISCLOSED",
+                      "view": {
+                        "kind": "ACTIVE",
+                        "fields": {
+                          "caseReference": "x",
+                          "status": "OPENED",
+                          "registration": {
+                            "incidentDate": "2026-01-01",
+                            "incidentNotificationDate": "2026-01-01",
+                            "incidentCountry": "LV",
+                            "claimantName": "x",
+                            "insurerName": "x",
+                            "claimedAmount": "0",
+                            "claimedCurrency": "EUR"
+                          },
+                          "decision": {
+                            "paymentDecisionDate": "2026-01-01",
+                            "payableAmount": "0",
+                            "payableCurrency": "EUR"
+                          },
+                          "payment": {
+                            "paymentDate": "2026-01-01"
+                          },
+                          "progress": "PAID"
+                        }
+                      }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
+                  }
+                },
+                "difference": {
+                  "lifecycle": {
+                    "before": null,
+                    "after": "ACTIVE"
+                  },
+                  "fields": [
+                    {
+                      "field": "status",
+                      "before": null,
+                      "after": "OPENED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
+          }
+        }
+      }
     }
   ]
 }

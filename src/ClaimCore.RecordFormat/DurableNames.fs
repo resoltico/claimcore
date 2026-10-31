@@ -100,11 +100,6 @@ module DurableNames =
         | BusinessField.CaseReference -> "caseReference"
         | BusinessField.Status -> "status"
 
-    let scope =
-        function
-        | GrantTarget.Installation -> "INSTALLATION"
-        | GrantTarget.CaseReference _ -> "CASE"
-
     // A total table preserves the permanent spelling of every closed input target.
     // fsharplint:disable-next-line CyclomaticComplexity
     let inputTarget =

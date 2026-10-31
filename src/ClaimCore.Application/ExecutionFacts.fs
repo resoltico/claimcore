@@ -72,7 +72,12 @@ module internal ExecutionFacts =
                 return actor
         }
 
-    let case (services: ServiceContext) (tx: IReadTx) operationId reference =
+    let findCase (tx: IReadTx) =
+        function
+        | CaseSelector.Reference reference -> tx.FindCaseByReference reference
+        | CaseSelector.Id id -> tx.FindCase id
+
+    let case (services: ServiceContext) (tx: IReadTx) operationId selector =
         let principal = services.Principal
 
         task {
@@ -81,7 +86,7 @@ module internal ExecutionFacts =
                 | Some id -> tx.FindEntry id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
-            let! record = tx.FindCaseByReference reference
+            let! record = findCase tx selector
 
             let! actor =
                 authority
@@ -107,7 +112,7 @@ module internal ExecutionFacts =
 
             let! record =
                 match reference with
-                | Some reference -> tx.FindCaseByReference reference
+                | Some selector -> findCase tx selector
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let ids = record |> Option.map _.CaseId |> Option.toList

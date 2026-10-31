@@ -34,7 +34,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operationId = id ()
     let reference = "CLI-DELIVERY-" + id ()
     input["operationId"] <- JsonValue.Create operationId
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     let values = (input["act"] |> nonNull)["values"] |> nonNull
     values["claimedAmount"] <- JsonValue.Create "1.0000"
     Encoding.UTF8.GetBytes(source.ToJsonString()), operationId, reference
@@ -87,7 +87,11 @@ let private oneAcceptance fixture reference =
             fixture
             "case.history"
             {|
-                caseReference = reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
                 detail = "FULL"
                 limit = 50
             |}
@@ -97,7 +101,17 @@ let private oneAcceptance fixture reference =
     Expect.equal (page.GetProperty("entries").GetArrayLength()) 1 "Retries append no second entry"
 
     let current =
-        automation fixture "case.get" {| caseReference = reference |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One accepted revision"

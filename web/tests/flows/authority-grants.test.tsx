@@ -33,7 +33,16 @@ const grants = (
       kind: "SUCCEEDED",
       data: {
         actor: actor(actorId),
-        items: [{ role: "CASE_READER", scope: { kind: "CASE", caseReference: reference } }],
+        items: [
+          {
+            role: "CASE_READER",
+            scope: {
+              kind: "CASE",
+              caseId: "20000000-0000-4000-8000-000000000001",
+              caseReference: reference,
+            },
+          },
+        ],
         nextCursor,
       },
     },

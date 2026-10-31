@@ -34,6 +34,14 @@ module internal AuthorityExecution =
                         Ok()
                     else
                         Error CoreFault.StoreIntegrityError)
+            | AuthorityAct.Grant { Scope = GrantTarget.CaseId id }, Some record
+            | AuthorityAct.Revoke { Scope = GrantTarget.CaseId id }, Some record ->
+                CaseExecution.current installationId record
+                |> Result.bind (fun _ ->
+                    if record.CaseId = id then
+                        Ok()
+                    else
+                        Error CoreFault.StoreIntegrityError)
             | _ -> Ok()
 
     let private domainFacts (view: AuthorityExecutionFacts) : AuthorityFacts =
@@ -92,40 +100,57 @@ module internal AuthorityExecution =
             Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, false))
         | _, None -> Error CoreFault.StoreIntegrityError
 
+    let private recorded
+        (services: ServiceContext)
+        (command: AuthorityCommand)
+        (view: AuthorityExecutionFacts)
+        =
+        if
+            command.Act <> AuthorityAct.ProvisionOwner
+            && not (
+                Authority.can
+                    services.Principal
+                    view.Actor
+                    Capability.ManageAuthority
+                    Scope.Installation
+            )
+        then
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+        else
+            match targets services.InstallationId command view with
+            | Error fault -> Verdict.Fail fault
+            | Ok() ->
+                AuthorityRequests.toRecord (view.TargetCase |> Option.map _.Snapshot) command
+                |> Result.map Verdict.Proceed
+                |> Result.defaultWith (fun refusal ->
+                    // An unavailable scope cannot supply record identity; Domain still orders independent target refusals.
+                    match Authority.decide (domainFacts view) command with
+                    | Error priority -> Verdict.Refuse priority
+                    | Ok _ -> Verdict.Refuse refusal)
+
     let private authorizeIdentity
         (services: ServiceContext)
         operationId
         bytes
         (view: AuthorityExecutionFacts)
         =
-        let principal = services.Principal
+        OperationIdentity.decide
+            services
+            view.Actor
+            {
+                OperationId = operationId
+                Bytes = bytes
+                Existing = view.ExistingOperation
+            }
+            (LedgerEntries.receipt services.Principal view.Actor None)
 
-        if
-            not (Authority.can principal view.Actor Capability.ManageAuthority Scope.Installation)
-        then
-            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-        else
-            OperationIdentity.decide
-                services
-                view.Actor
-                {
-                    OperationId = operationId
-                    Bytes = bytes
-                    Existing = view.ExistingOperation
-                }
-                (LedgerEntries.receipt principal view.Actor None)
-
-
-    let private propose installationId command view =
-        match targets installationId command view with
-        | Error fault -> Verdict.Fail fault
-        | Ok() ->
-            match Authority.decide (domainFacts view) command with
-            | Error refusal -> Verdict.Refuse refusal
-            | Ok change ->
-                projection command view change
-                |> Result.map Verdict.Proceed
-                |> Result.defaultWith Verdict.Fail
+    let private propose _installationId command view =
+        match Authority.decide (domainFacts view) command with
+        | Error refusal -> Verdict.Refuse refusal
+        | Ok change ->
+            projection command view change
+            |> Result.map Verdict.Proceed
+            |> Result.defaultWith Verdict.Fail
 
     let private provisionIdentity
         (services: ServiceContext)
@@ -182,12 +207,12 @@ module internal AuthorityExecution =
         (command: AuthorityCommand)
         (view: AuthorityExecutionFacts)
         =
-        let installationId = services.InstallationId
-        let record = AuthorityRequests.toRecord command
-        let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
+        recorded services command view
+        |> Verdict.bind (fun record ->
+            let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
-        authorizeIdentity services command.OperationId bytes view
-        |> Verdict.bind (fun () -> propose installationId command view)
+            authorizeIdentity services command.OperationId bytes view
+            |> Verdict.bind (fun () -> propose services.InstallationId command view))
 
     let private executeRecord
         (services: ServiceContext)
@@ -196,17 +221,22 @@ module internal AuthorityExecution =
         (write: LedgerWriteContext)
         (view: AuthorityExecutionFacts)
         =
-        let installationId = services.InstallationId
-        let record = AuthorityRequests.toRecord command
-        let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
+        recorded services command view
+        |> Verdict.bind (fun record ->
+            let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
-        admit bytes
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
-        |> Verdict.bind (fun () -> propose installationId command view)
-        |> Verdict.bind (fun proposed ->
-            let plan = project command record view proposed
+            admit bytes
+            |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
+            |> Verdict.bind (fun () -> propose services.InstallationId command view)
+            |> Verdict.bind (fun proposed ->
+                let plan = project command record view proposed
 
-            LedgerEnvelope.accept services view.Actor write plan (AuthorityRecord.encode record))
+                LedgerEnvelope.accept
+                    services
+                    view.Actor
+                    write
+                    plan
+                    (AuthorityRecord.encode record)))
 
     let execute
         (services: ServiceContext)

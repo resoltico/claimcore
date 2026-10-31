@@ -8,7 +8,7 @@ it("fetch never follows redirects and dispatched delivery loss remains uncertain
     prepareRequest("operation.execute", {
       kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
-      caseReference: "CASE-1",
+      target: { kind: "REFERENCE", caseReference: "CASE-1" },
       expectedRevision: 1,
       act: {
         kind: "CLOSE",

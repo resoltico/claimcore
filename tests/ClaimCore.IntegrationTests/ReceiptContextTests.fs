@@ -55,7 +55,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         ))
 
                 let! amended =
-                    (Service.execute admin (OperationInput.Case amendment) (CancellationToken.None))
+                    (Service.execute
+                        admin
+                        (ClaimCore.TestSupport.Inputs.caseOperation amendment)
+                        (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -86,7 +89,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! result =
             (Service.execute
                 actor
-                (OperationInput.Case(openRequest 10 "PROBE-1"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "PROBE-1"))
                 (CancellationToken.None))
 
         let receipt = accepted result
@@ -102,7 +105,9 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! denied =
             (Service.get
                 (core fixture principal)
-                ({ CaseReference = "PROBE-1" })
+                ({
+                    Target = CaseSelector.Reference("PROBE-1")
+                })
                 (CancellationToken.None))
 
         Expect.equal

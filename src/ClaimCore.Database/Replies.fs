@@ -99,6 +99,8 @@ module Replies =
         |> field "position" _.Position administrativePosition
         |> field "previousDivergence" _.PreviousDivergence (nullable divergenceCodec)
 
+    // This closed codec table pairs every success constructor with its inverse projection; it has no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private successVariants =
         [
             variant

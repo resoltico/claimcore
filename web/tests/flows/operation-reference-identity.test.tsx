@@ -43,7 +43,7 @@ const prepared = () =>
   });
 type SentDraft = {
   operationId: string;
-  caseReference: string;
+  target: { kind: "REFERENCE"; caseReference: string };
   act: {
     kind: string;
     values?: Record<string, string>;
@@ -89,7 +89,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
-  expect(draft.caseReference).toBe(fields.caseReference);
+  expect(draft.target).toEqual({ kind: "REFERENCE", caseReference: fields.caseReference });
   expect(draft.act).toEqual({
     kind: "CLOSE",
   });

@@ -51,7 +51,7 @@ const prepared = () =>
   prepareRequest("operation.execute", {
     kind: "CASE",
     operationId: operation,
-    caseReference: "CORRELATION",
+    target: { kind: "REFERENCE", caseReference: "CORRELATION" },
     expectedRevision: 0,
     act: { kind: "CLOSE" },
   });

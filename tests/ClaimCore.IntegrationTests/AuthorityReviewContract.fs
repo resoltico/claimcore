@@ -34,7 +34,7 @@ let internal authorityReview fixture principal input =
                     Needed = Authority.factsNeeded request.Act
                     OperationId = (OperationId.value (request.OperationId))
                     Target = request.Target
-                    CaseReference = AuthorityRequests.targetCase request
+                    CaseTarget = AuthorityRequests.targetCase request
                 }
                 (CancellationToken.None)
 
@@ -225,7 +225,7 @@ let internal grantReviewTarget fixture =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "REVIEW-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
@@ -291,7 +291,11 @@ let internal assertGrantRevocation (review: AuthorityReview) =
         [
             {
                 Role = Role.CaseReader
-                Scope = GrantTarget.CaseReference "REVIEW-CASE"
+                Scope =
+                    GrantScope.Case(
+                        CaseFixtures.caseId (id 10),
+                        CaseFixtures.reference "REVIEW-CASE"
+                    )
             }
         ]
         "Only the touched grant is shown, with the authoritative reference spelling."
@@ -328,7 +332,7 @@ let internal authorityGrantReview fixture =
                     Needed = []
                     OperationId = id 14
                     Target = target
-                    CaseReference = Some "REVIEW-CASE"
+                    CaseTarget = Some(CaseSelector.Reference "REVIEW-CASE")
                 }
                 (CancellationToken.None)
 

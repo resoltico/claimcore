@@ -63,7 +63,7 @@ let private caseFlow (database: PostgresFixture.Database) storage =
         let! antiforgery = host.Token()
 
         let operation =
-            OperationInput.Case(
+            ClaimCore.TestSupport.Inputs.caseOperation (
                 request 601 "METRIC-ACCEPTANCE" 0L (AuthoredCaseAct.Open registration)
             )
 
@@ -75,7 +75,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-ACCEPTANCE" }
+                {
+                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
+                }
                 antiforgery
                 ReplyKind.Succeeded
 
@@ -83,7 +85,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-MISSING" }
+                {
+                    Target = CaseSelector.Reference("METRIC-MISSING")
+                }
                 antiforgery
                 ReplyKind.Rejected
 
@@ -98,7 +102,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-ACCEPTANCE" }
+                {
+                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
+                }
                 antiforgery
                 ReplyKind.Failed
 

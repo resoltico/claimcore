@@ -16,7 +16,7 @@ module PaymentProgress =
 
     let payment =
         function
-        | PaymentProgress.Paid(_, date) -> Some date
+        | PaymentProgress.Paid(_, payment) -> Some payment
         | _ -> None
 
     let paymentDate progress =
@@ -29,7 +29,7 @@ module PaymentProgress =
         | Some value, None -> Ok(PaymentProgress.Decided value)
         | Some value, Some payment -> Ok(PaymentProgress.Paid(value, payment))
 
-/// Accepted facts share the authored group types; a decision is complete or absent.
+/// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
         CaseReference: CaseReference

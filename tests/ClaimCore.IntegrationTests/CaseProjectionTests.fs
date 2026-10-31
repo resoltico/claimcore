@@ -463,7 +463,7 @@ let private roundTrips database =
             let! result =
                 Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         ClaimCore.TestSupport.StoreFixtures.request
                             number
                             "synthetic-a"

@@ -127,12 +127,13 @@ module internal Transactions =
 
     let read source token action =
         task {
-            use _diagnostic = FailureDiagnostics.scope FailurePhase.Read
+            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
 
             try
                 let! value =
                     DatabaseSession.read source token (fun connection ->
                         task {
+                            FailureDiagnostics.phase FailurePhase.Read
                             let! _ = configure connection timeouts token
                             return! action connection
                         })

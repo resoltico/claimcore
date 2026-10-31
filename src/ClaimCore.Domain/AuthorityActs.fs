@@ -23,6 +23,7 @@ type PrincipalInput =
 type GrantTarget =
     | Installation
     | CaseReference of string
+    | CaseId of CaseId
 
 type Grant<'scope> = { Role: Role; Scope: 'scope }
 
@@ -46,13 +47,6 @@ type AuthorityRequest =
         Act: AuthoredAuthorityAct
     }
 
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
-type AuthorityActSlot<'grant> =
-    | Bare of AuthorityAct<'grant>
-    | Grant of
-        inject: ('grant -> AuthorityAct<'grant>) *
-        project: (AuthorityAct<'grant> -> 'grant option)
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module AuthorityKind =
     let vocabulary =
@@ -62,31 +56,7 @@ module AuthorityKind =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
-    let describe<'grant> kind : AuthorityActSlot<'grant> =
-        match kind with
-        | AuthorityKind.ProvisionOwner -> AuthorityActSlot.Bare AuthorityAct.ProvisionOwner
-        | AuthorityKind.Register -> AuthorityActSlot.Bare AuthorityAct.Register
-        | AuthorityKind.Grant ->
-            AuthorityActSlot.Grant(
-                AuthorityAct.Grant,
-                (function
-                | AuthorityAct.Grant value -> Some value
-                | _ -> None)
-            )
-        | AuthorityKind.Revoke ->
-            AuthorityActSlot.Grant(
-                AuthorityAct.Revoke,
-                (function
-                | AuthorityAct.Revoke value -> Some value
-                | _ -> None)
-            )
-        | AuthorityKind.Enable -> AuthorityActSlot.Bare AuthorityAct.Enable
-        | AuthorityKind.Disable -> AuthorityActSlot.Bare AuthorityAct.Disable
-
 module AuthorityAct =
-    // Permanent adapters use act structure without depending on the wire-vocabulary module.
-    let slot<'grant> kind : AuthorityActSlot<'grant> = AuthorityKind.describe kind
-
     let kind =
         function
         | AuthorityAct.Register -> AuthorityKind.Register

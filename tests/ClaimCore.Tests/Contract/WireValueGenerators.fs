@@ -50,6 +50,7 @@ let internal listBounds (path: string) =
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "AdvisoryReview.Changes", Inventory.fieldCount
+                "HistoryDifference.Fields", Inventory.fieldCount
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50

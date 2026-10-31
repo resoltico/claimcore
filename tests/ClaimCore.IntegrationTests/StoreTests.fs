@@ -28,7 +28,7 @@ let private serviceCases (admin: ServiceContext) principal =
             let! opened =
                 (Service.execute
                     admin
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request (410 + number) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
@@ -97,7 +97,12 @@ let private serviceScopeCorruption installationRead =
                     principal
 
             let! hidden =
-                (Service.get service ({ CaseReference = "SERVICE-1" }) (CancellationToken.None))
+                (Service.get
+                    service
+                    ({
+                        Target = CaseSelector.Reference("SERVICE-1")
+                    })
+                    (CancellationToken.None))
                 |> Async.AwaitTask
 
             Expect.equal

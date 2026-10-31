@@ -5,7 +5,7 @@ open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type OperationInput =
-    | Case of UnvalidatedCaseRequest
+    | Case of CaseOperationRequest
     | Authority of ClaimCore.Domain.AuthorityRequest
 
 module OperationInput =

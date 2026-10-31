@@ -24,7 +24,7 @@ const GrantItems = ({ items }: { items: GrantPage["items"] }) => {
     <ul>
       {items.map((grant) => (
         <li
-          key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseReference : ""}`}
+          key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseId : ""}`}
         >
           {p.term("role", grant.role)} · {p.term("scope", grant.scope.kind)}{" "}
           {grant.scope.kind === "CASE" ? (

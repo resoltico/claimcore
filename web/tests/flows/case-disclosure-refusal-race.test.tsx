@@ -57,6 +57,8 @@ const empty: ApiResult<ServiceResponse<"case.history">> = {
     outcome: {
       kind: "SUCCEEDED",
       data: {
+        caseId: "20000000-0000-4000-8000-000000000001",
+        caseReference: fields.caseReference,
         entries: [],
         nextCursor: null,
       },

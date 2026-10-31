@@ -33,7 +33,7 @@ const outcomes = [
 const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
   expect(authored).toMatchObject({
-    caseReference: reference,
+    target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
     act: {
       kind: "CORRECT",

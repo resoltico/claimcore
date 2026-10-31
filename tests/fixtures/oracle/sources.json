@@ -158,7 +158,8 @@
         "role": "CASE_HANDLER",
         "scope": {
           "caseReference": "Demo-0001",
-          "kind": "CASE"
+          "kind": "CASE",
+          "caseId": "10000000-0000-4000-8000-000000000001"
         }
       },
       "format": 1,
@@ -604,7 +605,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "r-1"
+            "caseReference": "r-1",
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -622,7 +624,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "R-1"
+            "caseReference": "R-1",
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -644,7 +647,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "R-1"
+            "caseReference": "R-1",
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -662,7 +666,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "r-1"
+            "caseReference": "r-1",
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -1589,7 +1594,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "caseId": "10000000-0000-4000-8000-000000000001"
           }
         },
         "format": 1,
@@ -1612,7 +1618,8 @@
           "role": "CASE_READER",
           "scope": {
             "kind": "CASE",
-            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "caseId": "10000000-0000-4000-8000-000000000001"
           }
         },
         "format": 1,

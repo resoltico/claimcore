@@ -5,6 +5,21 @@ const identity = (value: unknown): string | null =>
   typeof value === "string" ? value.toLowerCase() : null;
 const reference = (value: unknown): string | null =>
   typeof value === "string" ? value.toUpperCase() : null;
+const caseTargetMatches = (
+  request: Record<string, unknown>,
+  actual: Record<string, unknown>,
+): boolean => {
+  const selector = object(request["target"]);
+  if (selector["kind"] === "REFERENCE") {
+    const expected = reference(selector["caseReference"]);
+    return expected !== null && expected === reference(actual["caseReference"]);
+  }
+  if (selector["kind"] === "ID") {
+    const expected = identity(selector["caseId"]);
+    return expected !== null && expected === identity(actual["caseId"]);
+  }
+  return false;
+};
 const operationEnvelopeMatches = (
   endpoint: EndpointId,
   request: Record<string, unknown>,
@@ -39,8 +54,7 @@ const receiptMatches = (
   const subject = object(data["subject"]);
   return (
     request["kind"] !== "CASE" ||
-    (subject["kind"] === "CASE" &&
-      reference(request["caseReference"]) === reference(subject["caseReference"]))
+    (subject["kind"] === "CASE" && caseTargetMatches(request, subject))
   );
 };
 const readTargetMatches = (
@@ -52,13 +66,28 @@ const readTargetMatches = (
     return true;
   }
   const data = object(outcome["data"]);
-  if (endpoint === "case.get") {
-    return reference(request["caseReference"]) === reference(data["caseReference"]);
+  if (endpoint === "case.get" || endpoint === "case.history") {
+    return caseTargetMatches(request, data);
   }
   if (endpoint === "authority.grants") {
     return identity(request["actorId"]) === identity(object(data["actor"])["actorId"]);
   }
   return true;
+};
+const previewTargetMatches = (
+  endpoint: EndpointId,
+  request: Record<string, unknown>,
+  outcome: Record<string, unknown>,
+): boolean => {
+  if (
+    endpoint !== "operation.preview" ||
+    request["kind"] !== "CASE" ||
+    outcome["kind"] !== "REVIEWED"
+  ) {
+    return true;
+  }
+  const subject = object(object(object(outcome["data"])["review"])["subject"]);
+  return subject["kind"] === "CASE" && caseTargetMatches(request, object(subject["after"]));
 };
 /** Structural decoding is a prerequisite; these are transport identities, not business rules. */
 export const replyCorrelates = (endpoint: EndpointId, input: unknown, reply: unknown): boolean => {
@@ -68,6 +97,7 @@ export const replyCorrelates = (endpoint: EndpointId, input: unknown, reply: unk
   return (
     operationEnvelopeMatches(endpoint, request, envelope) &&
     receiptMatches(endpoint, request, outcome) &&
-    readTargetMatches(endpoint, request, outcome)
+    readTargetMatches(endpoint, request, outcome) &&
+    previewTargetMatches(endpoint, request, outcome)
   );
 };

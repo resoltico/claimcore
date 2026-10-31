@@ -128,17 +128,40 @@ module RequestCodecs =
 
     let caseAct = caseActWithNames CaseActKind.token
 
+    let caseSelector =
+        let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+
+        Codec.tagged
+            RequestSchemas.CaseSelector
+            [
+                variant
+                    "REFERENCE"
+                    CaseSelector.Reference
+                    (function
+                    | CaseSelector.Reference reference -> Some reference
+                    | _ -> None)
+                    (record id |> field "caseReference" id text)
+                variant
+                    "ID"
+                    CaseSelector.Id
+                    (function
+                    | CaseSelector.Id value -> Some value
+                    | _ -> None)
+                    (record id |> field "caseId" id caseId)
+            ]
+        |> Codec.vocabulary "caseSelector"
+
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
             {
-                UnvalidatedCaseRequest.OperationId = v0
-                CaseReference = v1
+                CaseOperationRequest.OperationId = v0
+                Target = v1
                 ExpectedRevision = v2
                 Act = v3
             })
-        : Fields<UnvalidatedCaseRequest, _>)
+        : Fields<CaseOperationRequest, _>)
         |> field WireMembers.OperationId _.OperationId (uuid)
-        |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference (text)
+        |> field "target" _.Target caseSelector
         |> field WireMembers.ExpectedRevision _.ExpectedRevision (revision)
         |> field WireMembers.Act _.Act (caseAct)
 
@@ -166,11 +189,14 @@ module RequestCodecs =
                 unitVariant (ScopeKind.token ScopeKind.Installation) GrantTarget.Installation
                 variant
                     (ScopeKind.token ScopeKind.Case)
-                    GrantTarget.CaseReference
                     (function
-                    | GrantTarget.CaseReference value -> Some value
+                    | CaseSelector.Reference reference -> GrantTarget.CaseReference reference
+                    | CaseSelector.Id id -> GrantTarget.CaseId id)
+                    (function
+                    | GrantTarget.CaseReference reference -> Some(CaseSelector.Reference reference)
+                    | GrantTarget.CaseId id -> Some(CaseSelector.Id id)
                     | _ -> None)
-                    (record id |> field (BusinessField.key BusinessField.CaseReference) id text)
+                    (record id |> field "target" id caseSelector)
             ]
 
     let private authorityVariantsWith role scope =
@@ -183,14 +209,25 @@ module RequestCodecs =
             |> field WireMembers.Role _.Role role
             |> field WireMembers.Scope _.Scope scope
 
-        AuthorityKind.all
-        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-        |> List.map (fun kind ->
-            let token = AuthorityKind.token kind
-
-            match AuthorityKind.describe kind with
-            | AuthorityActSlot.Bare act -> unitVariant token act
-            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
+        [
+            unitVariant (AuthorityKind.token AuthorityKind.Register) AuthorityAct.Register
+            variant
+                (AuthorityKind.token AuthorityKind.Grant)
+                AuthorityAct.Grant
+                (function
+                | AuthorityAct.Grant value -> Some value
+                | _ -> None)
+                grant
+            variant
+                (AuthorityKind.token AuthorityKind.Revoke)
+                AuthorityAct.Revoke
+                (function
+                | AuthorityAct.Revoke value -> Some value
+                | _ -> None)
+                grant
+            unitVariant (AuthorityKind.token AuthorityKind.Enable) AuthorityAct.Enable
+            unitVariant (AuthorityKind.token AuthorityKind.Disable) AuthorityAct.Disable
+        ]
 
     let authorityActWith role =
         authorityVariantsWith role scope
@@ -243,10 +280,10 @@ module RequestCodecs =
 
     let private read ctor : ReadFields<'request, 'ctor> = { Inputs = []; Fields = record ctor }
 
-    let private caseOperand get (fields: ReadFields<'request, string -> 'rest>) =
+    let private caseOperand get (fields: ReadFields<'request, CaseSelector -> 'rest>) =
         {
             Inputs = fields.Inputs @ [ ReadInput.CaseOperand ]
-            Fields = fields.Fields |> field (BusinessField.key BusinessField.CaseReference) get text
+            Fields = fields.Fields |> field "target" get caseSelector
         }
 
     let private operationOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
@@ -299,17 +336,14 @@ module RequestCodecs =
             ReadCatalog.declarations |> List.find (fun value -> value.Endpoint = endpoint)
 
         if declaration.Inputs <> fields.Inputs then
-            invalidOp "The read codec must follow its Domain input declaration."
+            invalidOp "The read codec must follow its declared input contract."
 
         fields.Fields |> build |> named name
 
     let caseGetRequest =
-        (read (fun reference ->
-            {
-                CaseGetRequest.CaseReference = reference
-            })
+        (read (fun reference -> { CaseGetRequest.Target = reference })
         : ReadFields<CaseGetRequest, _>)
-        |> caseOperand _.CaseReference
+        |> caseOperand _.Target
         |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
     let private pageFields =
@@ -401,13 +435,13 @@ module RequestCodecs =
     let historyRequest =
         (read (fun reference detail cursor limit ->
             {
-                HistoryRequest.CaseReference = reference
+                HistoryRequest.Target = reference
                 Detail = detail
                 AfterCursor = cursor
                 Limit = limit
             })
         : ReadFields<HistoryRequest, _>)
-        |> caseOperand _.CaseReference
+        |> caseOperand _.Target
         |> detail _.Detail
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory

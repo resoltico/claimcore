@@ -124,6 +124,11 @@ Find the server process with `dotnet-counters ps`, then run:
 dotnet-counters monitor --process-id PID --counters ClaimCore
 ```
 
+Storage failures also publish bounded values through `DiagnosticListener` named `ClaimCore.Storage.Failures`:
+correlation UUID, phase, classification and at most eight adapter method identifiers. Messages, exception
+data, SQL/provider details, credentials, principals, references and payloads are excluded. Collector
+failures cannot replace a confirmed transaction result or prevent remaining provider cleanup.
+
 Counters restart with the process; they are operational observations, not a ledger inventory.
 
 | Instrument | Unit | Tags |

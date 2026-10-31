@@ -324,12 +324,12 @@ let private authorityPreviewInvocation verb =
 
 
 let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter =
-    let grants present : AuthoredGrant list =
+    let grants present : ScopedGrant list =
         if present then
             [
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.Installation
+                    Scope = GrantScope.Installation
                 }
             ]
         else

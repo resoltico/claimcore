@@ -86,7 +86,15 @@ let internal queryCodecs () =
 
     |> ignore
 
-    admitted Api.caseHistory.Output (Outcome.Succeeded { Entries = []; NextCursor = None })
+    admitted
+        Api.caseHistory.Output
+        (Outcome.Succeeded
+            {
+                CaseId = CaseFixtures.caseId id
+                Reference = CaseFixtures.reference "WIRE"
+                Entries = []
+                NextCursor = None
+            })
 
     |> ignore
 

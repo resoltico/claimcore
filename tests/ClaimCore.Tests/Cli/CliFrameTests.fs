@@ -291,7 +291,7 @@ let private exampleFrames () =
                 Api.operationExecute.Input.Read "$" (Frames.input invocation)
                 |> Fixtures.accepted
             with
-            | OperationInput.Case request -> request
+            | OperationInput.Case request -> Inputs.referencedCase request
             | _ -> failtest "Example must be a case request"
 
         let next =

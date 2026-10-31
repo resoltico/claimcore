@@ -74,7 +74,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   }) => {
     await openAuthority(page, language);
     const source = await syntheticPrincipals();
-    const reference = page.locator('[name="act.scope.caseReference"]');
+    const reference = page.locator('[name="act.scope.target.caseReference"]');
     for (const kind of ["GRANT", "REVOKE"]) {
       await page
         .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })

@@ -30,7 +30,7 @@ let private submitted (fixture: PublishedFixture.Fixture) =
     let input = source["input"] |> nonNull
     let operation, reference = id (), "RECOVERY-PROCESS-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     Encoding.UTF8.GetBytes(source.ToJsonString()), operation, reference
 
 let private acceptedEvidence (fixture: PublishedFixture.Fixture) operation =

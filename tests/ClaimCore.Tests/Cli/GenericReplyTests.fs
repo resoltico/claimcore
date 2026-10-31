@@ -27,7 +27,7 @@ let private authorityReview () =
                                             [
                                                 {
                                                     Role = Role.CaseReader
-                                                    Scope = GrantTarget.Installation
+                                                    Scope = GrantScope.Installation
                                                 }
                                             ]
                                     }

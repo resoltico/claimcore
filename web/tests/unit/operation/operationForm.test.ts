@@ -112,7 +112,7 @@ it("takes the selected entry from identity while request constants derive from t
   expect(assembleOperation(entry, values)).toEqual({
     kind: "CASE",
     operationId: firstId,
-    caseReference: current.caseReference,
+    target: { kind: "REFERENCE", caseReference: current.caseReference },
     expectedRevision: current.revision,
     act: { kind: "CLOSE" },
   });

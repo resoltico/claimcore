@@ -45,7 +45,7 @@ module Service =
         | StoreFailure.CommitOutcomeUnknown -> ExecuteResult.OutcomeUnknown
         | failure -> ExecuteResult.Failed(Queries.fault failure)
 
-    let private admitCase request = Case.parse request
+    let private admitCase = CaseExecution.prepare
 
     let private admitAuthority = Authority.parse
 
@@ -65,38 +65,6 @@ module Service =
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
-    let private businessFields (snapshot: CaseSnapshot option) =
-        match snapshot with
-        | None -> Map.empty
-        | Some {
-                   State = (CaseState.Active(fields) | CaseState.Voided(fields))
-               } -> CaseFields.values fields |> Map.ofList
-        | Some { State = CaseState.Erased } -> Map.empty
-
-    let private changes act before after =
-        match act with
-        | CaseAct.Void _
-        | CaseAct.Reinstate _
-        | (CaseAct.Bare BareAct.Erase) -> []
-        | _ ->
-            let previous = businessFields before
-            let next = businessFields (Some after)
-
-            CaseFields.declarations
-            |> List.choose (fun field ->
-                let before = Map.tryFind field.Field previous |> Option.flatten
-                let after = Map.tryFind field.Field next |> Option.flatten
-
-                if before = after then
-                    None
-                else
-                    Some
-                        {
-                            FieldName = field.Field
-                            Before = before
-                            After = after
-                        })
-
     let private advisory (services: ServiceContext) instant act before after =
         let productVersion = services.ProductVersion
         let calendar = services.Calendar
@@ -106,7 +74,7 @@ module Service =
         {
             Before = before
             Proposed = after
-            Changes = changes act before after
+            Changes = CaseChanges.review act before after
             Context =
                 {
                     ProductVersion = productVersion
@@ -143,26 +111,49 @@ module Service =
                                 Previewed.AlreadyAccepted
         }
 
-    let private previewCase (services: ServiceContext) request ct =
-        review
-            ct
-            (fun () -> admitCase request)
-            (fun (admitted: CaseCommand) ->
-                services.Store.Read
-                    {
-                        Work =
-                            fun tx ->
-                                ExecutionFacts.case
-                                    services
-                                    tx
-                                    (Some admitted.OperationId)
-                                    (CaseReference.format admitted.Reference)
-                        CancellationToken = ct
-                    })
-            (CaseExecution.review services)
-            (fun admitted (view: CaseFacts) (before, after) ->
-                advisory services view.ObservedAt admitted.Act before after
-                |> OperationReview.Case)
+    let private previewCase (services: ServiceContext) request (ct: CancellationToken) =
+        task {
+            if ct.IsCancellationRequested then
+                return Outcome.Failed CoreFault.StoreUnavailable
+            else
+                match admitCase request with
+                | Error refusal -> return Outcome.Rejected refusal
+                | Ok request ->
+                    let! result =
+                        services.Store.Read
+                            {
+                                Work =
+                                    fun tx ->
+                                        task {
+                                            let! view =
+                                                ExecutionFacts.case
+                                                    services
+                                                    tx
+                                                    (CaseExecution.operationId request)
+                                                    (CaseExecution.target request)
+
+                                            return
+                                                match CaseExecution.complete request view.Case with
+                                                | Error refusal -> Outcome.Rejected refusal
+                                                | Ok admitted ->
+                                                    CaseExecution.review services admitted view
+                                                    |> Verdict.outcome
+                                                        (fun (before, after) ->
+                                                            advisory
+                                                                services
+                                                                view.ObservedAt
+                                                                admitted.Act
+                                                                before
+                                                                after
+                                                            |> OperationReview.Case
+                                                            |> Previewed.Reviewed)
+                                                        Previewed.AlreadyAccepted
+                                        }
+                                CancellationToken = ct
+                            }
+
+                    return QueryResults.readResult result
+        }
 
     let private previewAuthority (services: ServiceContext) request ct =
         review
@@ -223,8 +214,7 @@ module Service =
 
     let context services () ct = Queries.context services ct
 
-    let get services (input: CaseGetRequest) ct =
-        Queries.get services input.CaseReference ct
+    let get services (input: CaseGetRequest) ct = Queries.get services input.Target ct
 
     let list = Queries.list
     let caseSummary = Queries.caseSummary

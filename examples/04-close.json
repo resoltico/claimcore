@@ -3,10 +3,13 @@
   "input": {
     "kind": "CASE",
     "operationId": "10000000-0000-4000-8000-000000000004",
-    "caseReference": "DEMO-0001",
     "expectedRevision": 3,
     "act": {
       "kind": "CLOSE"
+    },
+    "target": {
+      "kind": "REFERENCE",
+      "caseReference": "DEMO-0001"
     }
   }
 }

@@ -73,7 +73,7 @@ let private scalarAdmission () =
 
     let request =
         RequestCodecs.operationInput.Write(
-            OperationInput.Case
+            ClaimCore.TestSupport.Inputs.caseOperation
                 {
                     OperationId = Guid.Parse id
                     CaseReference = ""
@@ -102,14 +102,22 @@ let private scalarAdmission () =
         "Business grammar belongs to Application"
 
     for reference in [ ""; "not a reference" ] do
-        let raw = JsonSerializer.Serialize {| caseReference = reference |}
+        let raw =
+            JsonSerializer.Serialize
+                {|
+                    target =
+                        {|
+                            kind = "REFERENCE"
+                            caseReference = reference
+                        |}
+                |}
 
         Expect.isOk
             (admit (endpoint "case.get") raw)
             "Read reference format also reaches Application"
 
     let voided =
-        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"caseReference\":\"CASE\",\"expectedRevision\":1,\"act\":{{\"kind\":\"VOID\",\"reason\":\"\"}}}}"
+        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"target\":{{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"}},\"expectedRevision\":1,\"act\":{{\"kind\":\"VOID\",\"reason\":\"\"}}}}"
 
     Expect.isOk
         (admit (endpoint "operation.preview") voided)
@@ -131,7 +139,7 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        "{\"kind\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"caseReference\":\"CASE\",\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
+        "{\"kind\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"},\"expectedRevision\":0,\"act\":{\"kind\":\"ERASE\"}}"
 
     Expect.isOk
         (admit
@@ -152,7 +160,7 @@ let private structure () =
 
 let private registrationClear () =
     let raw =
-        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","caseReference":"CASE","expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
+        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
 
     match
         Codec.decode

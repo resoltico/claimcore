@@ -139,7 +139,14 @@ let internal queryEvidence actor =
                 )))
                 (ct))
 
-        let! missing = (Service.get actor ({ CaseReference = "MISSING" }) (ct))
+        let! missing =
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference("MISSING")
+                })
+                (ct))
+
         let evidence = ResizeArray<_>()
 
         for raw in [ ""; "x\u0000y"; " x"; "x\u0001y"; "x\u200by"; String('x', 101) ] do

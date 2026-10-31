@@ -10,7 +10,7 @@ open Npgsql
 
 module internal TransactionPages =
     let grantPageSql =
-        "SELECT g.role,c.case_reference,g.case_id FROM claimcore.grants g LEFT JOIN claimcore.cases c USING(case_id) WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4"
+        "SELECT g.role,c.case_reference,g.case_id,l.creation_reference FROM claimcore.grants g LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4"
 
     let page limit position rows =
         let visible = List.truncate limit rows
@@ -121,7 +121,11 @@ module internal TransactionPages =
                 | EntryTarget.Case(_, revision, _, _) -> revision
                 | _ -> raise (RecordCorruptException "Invalid case history.")
 
-            return page limit revision entries
+            return
+                {
+                    Page = page limit revision entries
+                    Previous = List.tryItem limit entries
+                }
         }
 
     let authorityHistory connection installation (query: AuthorityHistoryPageQuery) token =
@@ -380,6 +384,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             Transactions.write source settings token (fun connection ->
                 task {
                     let! head, observedAt, nonce = Transactions.head connection token
+                    FailureDiagnostics.phase FailurePhase.Read
 
                     let! verdict =
                         work (

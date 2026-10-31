@@ -432,6 +432,20 @@ module ReplyCorrelation =
         | Some left, Some right -> CaseReference.key left = CaseReference.key right
         | _ -> false
 
+    let private caseTarget input actual =
+        match memberValue "target" input with
+        | None -> false
+        | Some selector ->
+            match stringMember "kind" selector with
+            | Some "REFERENCE" ->
+                sameReference
+                    (stringMember "caseReference" selector)
+                    (stringMember "caseReference" actual)
+            | Some "ID" ->
+                let expected = guid "caseId" selector
+                expected.IsSome && guid "caseId" actual = expected
+            | _ -> false
+
     let matches token input reply =
         let outcome = memberValue "outcome" reply
         let kind = outcome |> Option.bind (stringMember "kind")
@@ -461,24 +475,29 @@ module ReplyCorrelation =
         let receiptIdentity =
             receipt |> Option.forall (fun value -> guid "operationId" value = operation)
 
-        let target = stringMember "caseReference" input
-
         let receiptTarget =
             receipt
             |> Option.forall (fun receipt ->
                 match stringMember "kind" input, memberValue "subject" receipt with
                 | Some "CASE", Some subject ->
-                    stringMember "kind" subject = Some "CASE"
-                    && sameReference target (stringMember "caseReference" subject)
+                    stringMember "kind" subject = Some "CASE" && caseTarget input subject
                 | _ -> true)
 
         let readTarget =
             match token, kind, data with
-            | "case.get", Some "SUCCEEDED", Some value ->
-                sameReference target (stringMember "caseReference" value)
+            | ("case.get" | "case.history"), Some "SUCCEEDED", Some value -> caseTarget input value
             | "authority.grants", Some "SUCCEEDED", Some value ->
                 memberValue "actor" value
                 |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
             | _ -> true
 
-        envelope && receiptIdentity && receiptTarget && readTarget
+        let previewTarget =
+            match token, kind, stringMember "kind" input, data with
+            | "operation.preview", Some "REVIEWED", Some "CASE", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.bind (memberValue "after")
+                |> Option.exists (caseTarget input)
+            | _ -> true
+
+        envelope && receiptIdentity && receiptTarget && readTarget && previewTarget

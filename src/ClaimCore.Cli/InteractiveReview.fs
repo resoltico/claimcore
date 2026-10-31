@@ -110,7 +110,12 @@ module internal InteractiveReview =
                 |> Result.map (fun ((reference, act, supplied), language, preview) ->
                     Some
                         {
-                            Reference = reference
+                            Reference =
+                                match reference with
+                                | CaseSelector.Reference reference -> reference
+                                | CaseSelector.Id _ ->
+                                    invalidOp
+                                        "Interactive reference bindings must supply a reference."
                             Act = act
                             SuppliedId = supplied
                             DisplayLanguage = language
@@ -146,7 +151,7 @@ module internal InteractiveReview =
         console
         transport
         (draft: InteractiveCaseDraft)
-        (request: UnvalidatedCaseRequest)
+        (request: CaseOperationRequest)
         installation
         token
         =
@@ -198,7 +203,7 @@ module internal InteractiveReview =
                 invocation
                     Api.caseGet
                     {
-                        CaseGetRequest.CaseReference = draft.Reference
+                        CaseGetRequest.Target = CaseSelector.Reference draft.Reference
                     }
 
             let! response = transport.Exchange lookup token
@@ -208,7 +213,7 @@ module internal InteractiveReview =
                 let request =
                     {
                         OperationId = draft.SuppliedId |> Option.defaultWith newId
-                        CaseReference = draft.Reference
+                        Target = CaseSelector.Id current.Snapshot.CaseId
                         ExpectedRevision = Revision.value current.Snapshot.Revision
                         Act = draft.Act
                     }

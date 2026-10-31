@@ -53,7 +53,14 @@ let private authorityProperty =
         let! active = Gen.bool
 
         let! scope =
-            Gen.item [ GrantTarget.Installation; GrantTarget.CaseReference "UNIT-001" ]
+            Gen.item
+                [
+                    RecordedGrantScope.Installation
+                    RecordedGrantScope.Case(
+                        (CaseFixtures.caseId (Guid.Parse "d0000000-0000-4000-8000-000000000001")),
+                        CaseFixtures.reference "UNIT-001"
+                    )
+                ]
 
         let! role =
             Gen.item
@@ -104,7 +111,7 @@ let private decoderProperty =
                 (ClaimCore.Domain.AuthorityAct.Grant
                     {
                         Role = Role.CaseHandler
-                        Scope = GrantTarget.Installation
+                        Scope = RecordedGrantScope.Installation
                     })
             )
             |> AuthorityRecord.encode
@@ -161,7 +168,7 @@ let private strictRecords () =
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantTarget.Installation
+                    Scope = RecordedGrantScope.Installation
                 })
         )
 

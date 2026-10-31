@@ -23,7 +23,7 @@ let private seed actor count =
             let! opened =
                 Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request
                             (1000000 + index * 3)
                             reference
@@ -39,7 +39,7 @@ let private seed actor count =
                 let! decided =
                     Service.execute
                         actor
-                        (OperationInput.Case(
+                        (ClaimCore.TestSupport.Inputs.caseOperation (
                             request
                                 (1000001 + index * 3)
                                 reference
@@ -55,7 +55,7 @@ let private seed actor count =
                 let! closed =
                     Service.execute
                         actor
-                        (OperationInput.Case(
+                        (ClaimCore.TestSupport.Inputs.caseOperation (
                             request
                                 (1000002 + index * 3)
                                 reference

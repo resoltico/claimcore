@@ -22,7 +22,7 @@ const model = (input: OperationInput, proposed: Review): Model => ({
 const correction: OperationInput = {
   kind: "CASE",
   operationId,
-  caseReference: "CASE-1",
+  target: { kind: "REFERENCE", caseReference: "CASE-1" },
   expectedRevision: 1,
   act: {
     kind: "CORRECT",
@@ -71,11 +71,19 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
     kind === "CASE"
       ? {
           kind,
-          caseReference: "SYNTHETIC-GRANT",
+          target: { kind: "REFERENCE" as const, caseReference: "SYNTHETIC-GRANT" },
         }
       : {
           kind,
         };
+  const resolvedScope =
+    kind === "CASE"
+      ? {
+          kind,
+          caseId: "20000000-0000-4000-8000-000000000001",
+          caseReference: "SYNTHETIC-GRANT",
+        }
+      : { kind };
   const input: OperationInput = {
     kind: "AUTHORITY",
     operationId,
@@ -99,7 +107,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
         grants: [
           {
             role: "CASE_READER",
-            scope,
+            scope: resolvedScope,
           },
         ],
       },
@@ -217,7 +225,7 @@ it("erasure review retains its act meaning and WAL/backups limitation", () => {
         {
           kind: "CASE",
           operationId,
-          caseReference: "CASE-1",
+          target: { kind: "REFERENCE", caseReference: "CASE-1" },
           expectedRevision: 1,
           act: {
             kind: "ERASE",

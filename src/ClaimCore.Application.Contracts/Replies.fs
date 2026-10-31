@@ -8,7 +8,7 @@ open System
 type AuthorityState =
     {
         Enabled: bool
-        Grants: AuthoredGrant list
+        Grants: ScopedGrant list
     }
 
 type AuthorityReview =

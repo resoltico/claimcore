@@ -3,6 +3,28 @@ namespace ClaimCore.Application.Contracts
 open System
 open ClaimCore.Domain
 
+/// Authored references and retained IDs are explicitly distinguished, including UUID-shaped references.
+[<RequireQualifiedAccess>]
+type CaseSelector =
+    | Reference of string
+    | Id of CaseId
+
+/// Read/review scopes publish the resolved retained identity, independently of authored selectors.
+[<RequireQualifiedAccess>]
+type GrantScope =
+    | Installation
+    | Case of CaseId * CaseReference
+
+type ScopedGrant = Grant<GrantScope>
+
+type CaseOperationRequest =
+    {
+        OperationId: Guid
+        Target: CaseSelector
+        ExpectedRevision: int64
+        Act: AuthoredCaseAct
+    }
+
 type PageRequest =
     {
         AfterCursor: string option
@@ -11,7 +33,7 @@ type PageRequest =
 
 type HistoryRequest =
     {
-        CaseReference: string
+        Target: CaseSelector
         AfterCursor: string option
         Limit: int
         Detail: HistoryDetail
@@ -31,7 +53,7 @@ type AuthorityHistoryRequest =
         Limit: int
     }
 
-type CaseGetRequest = { CaseReference: string }
+type CaseGetRequest = { Target: CaseSelector }
 
 type OperationLookup = { OperationId: Guid }
 

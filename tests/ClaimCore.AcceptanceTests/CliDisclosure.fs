@@ -18,7 +18,7 @@ let private original (fixture: PublishedFixture.Fixture) =
     let input = source["input"] |> nonNull
     let reference = "CLI-DISCLOSURE-" + id ()
     input["operationId"] <- JsonValue.Create(id ())
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     Encoding.UTF8.GetBytes(source.ToJsonString()), input, reference
 
 let private amend (input: JsonNode) =
@@ -39,7 +39,11 @@ let private staleReview fixture input reference =
         {|
             kind = "CASE"
             operationId = id ()
-            caseReference = reference
+            target =
+                {|
+                    kind = "REFERENCE"
+                    caseReference = reference
+                |}
             expectedRevision = 1L
             act = {| kind = "CLOSE" |}
         |}
@@ -77,7 +81,11 @@ let private summaryHistory fixture reference =
             fixture
             "case.history"
             {|
-                caseReference = reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
                 detail = "SUMMARY"
                 limit = 50
             |}
@@ -93,7 +101,11 @@ let private summaryHistory fixture reference =
         fixture
         "case.history"
         {|
-            caseReference = reference
+            target =
+                {|
+                    kind = "REFERENCE"
+                    caseReference = reference
+                |}
             detail = "FULL"
             limit = 50
         |}
@@ -111,7 +123,17 @@ let qualify fixture =
     setGrant fixture target "CASE_HANDLER" false
 
     let current =
-        automation fixture "case.get" {| caseReference = reference |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     Expect.equal

@@ -20,10 +20,10 @@ let private summary =
     """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
 
 let private full receipt =
-    "{\"kind\":\"FULL\",\"receipt\":" + receipt + "}"
+    "{\"kind\":\"FULL\",\"receipt\":" + receipt + ",\"difference\":null}"
 
 let private page entries =
-    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"entries\":["
+    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"caseId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"x\",\"entries\":["
     + String.concat "," entries
     + "],\"nextCursor\":null}}}"
 

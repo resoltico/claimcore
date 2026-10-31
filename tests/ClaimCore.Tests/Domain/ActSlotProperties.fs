@@ -55,17 +55,22 @@ let private authorityProperty =
         let candidates = Inputs.authorityActs [ value; value + 1 ] |> List.map fst
 
         return
-            AuthorityKind.all
-            |> List.forall (fun kind ->
-                match (AuthorityKind.describe kind: AuthorityActSlot<int>) with
-                | AuthorityActSlot.Bare act ->
-                    AuthorityAct.kind act = kind && List.contains act candidates
-                | AuthorityActSlot.Grant(inject, project) ->
-                    project (inject value) = Some value
-                    && AuthorityAct.kind (inject value) = kind
-                    && (candidates
-                        |> List.filter (AuthorityAct.kind >> ((<>) kind))
-                        |> List.forall (project >> Option.isNone)))
+            candidates
+            |> List.forall (fun act ->
+                let mapped = AuthorityAct.map ((+) 1) act
+                let restored = AuthorityAct.map (fun value -> value - 1) mapped
+                let rejected = AuthorityAct.traverse (fun _ -> Error()) act
+
+                let hasGrant =
+                    match act with
+                    | AuthorityAct.Grant _
+                    | AuthorityAct.Revoke _ -> true
+                    | _ -> false
+
+                restored = act
+                && AuthorityAct.kind mapped = AuthorityAct.kind act
+                && Result.isError rejected = hasGrant)
+
     }
 
 let private descriptions () =

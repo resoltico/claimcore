@@ -63,7 +63,7 @@ let internal openCases (actor: ServiceContext) count =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request
                             (1000 + index)
                             (reference index)
@@ -94,7 +94,8 @@ let internal writeLane (actor: ServiceContext) workload lane =
 
             let watch = Stopwatch.StartNew()
 
-            let! result = (Service.execute actor (OperationInput.Case authored) (token))
+            let! result =
+                (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation authored) (token))
 
             accepted result |> ignore
 
@@ -235,7 +236,7 @@ let internal history workload (actor: ServiceContext) =
             (Service.history
                 actor
                 ({
-                    CaseReference = "synthetic-growth-0"
+                    Target = CaseSelector.Reference("synthetic-growth-0")
                     AfterCursor = None
                     Limit = 50
                     Detail = HistoryDetail.Full
@@ -255,6 +256,46 @@ let internal history workload (actor: ServiceContext) =
 
     }
 
+let private rebuildMeasured (database: PostgresFixture.Database) checkpoint =
+    task {
+        let baseline = GC.GetTotalMemory true
+        use runner = Process.GetCurrentProcess()
+        let mutable peakManaged = baseline
+        let mutable peakWorking = runner.WorkingSet64
+        let watch = Stopwatch.StartNew()
+        let rebuilding = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        while not rebuilding.IsCompleted do
+            runner.Refresh()
+            peakManaged <- max peakManaged (GC.GetTotalMemory false)
+            peakWorking <- max peakWorking runner.WorkingSet64
+            do! Task.Delay 5
+
+        let! result = rebuilding
+
+        Expect.equal
+            (result |> Result.map _.Position)
+            (Ok checkpoint)
+            "A measured rebuild retains the authoritative position"
+
+        let elapsed = watch.Elapsed.TotalMilliseconds
+        let! verified = Verification.verify database.OwnerSource (Some checkpoint) token
+
+        Expect.equal
+            verified
+            (VerificationResult.Verified checkpoint)
+            "Reconstructed projections independently verify"
+
+        return
+            {|
+                elapsedMilliseconds = elapsed
+                baselineManagedBytes = baseline
+                peakManagedBytes = peakManaged
+                peakWorkingBytes = peakWorking
+                checkpointSequence = Sequence.value checkpoint.Sequence
+            |}
+    }
+
 let internal verified workload actor database =
     task {
         let! verification = verifyMeasured database
@@ -262,7 +303,7 @@ let internal verified workload actor database =
 
         Expect.equal
             (Sequence.value position.Sequence)
-            (int64 (1016 + workload.Cases + workload.Writes + workload.Actors * 11))
+            (int64 (1017 + workload.Cases + workload.Writes + workload.Actors * 11))
             "Every accepted write is counted"
 
         do! history workload actor
@@ -320,6 +361,7 @@ let internal measure keyRing workload (database: PostgresFixture.Database) =
 
         let! controls = GrowthControls.run database actor (subjects workload.Actors).Head
         let! verification = verified workload actor database
+        let! rebuild = rebuildMeasured database verification.Position
 
         let! databaseAfter = GrowthEnvironment.database database
 
@@ -343,5 +385,6 @@ let internal measure keyRing workload (database: PostgresFixture.Database) =
                 business = report workload elapsed latencies timeoutMilliseconds verification
                 sessions = sessions
                 controls = controls
+                rebuild = rebuild
             |}
     }

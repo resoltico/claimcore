@@ -6,6 +6,64 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 module internal CaseExecution =
+    [<RequireQualifiedAccess; NoComparison>]
+    type TargetedRequest =
+        | ByReference of CaseCommand
+        | ById of CaseOperationRequest
+
+    let target =
+        function
+        | TargetedRequest.ByReference command ->
+            CaseSelector.Reference(CaseReference.format command.Reference)
+        | TargetedRequest.ById request -> request.Target
+
+    let operationId =
+        function
+        | TargetedRequest.ByReference command -> Some command.OperationId
+        | TargetedRequest.ById request -> OperationId.create request.OperationId
+
+    let validateSelector =
+        function
+        | CaseSelector.Id _ -> Ok()
+        | CaseSelector.Reference value ->
+            CaseReference.parse value
+            |> Result.map ignore
+            |> Result.mapError (fun violation ->
+                Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
+
+    let private fromInput (request: CaseOperationRequest) (record: StoredCase option) =
+        let reference =
+            match request.Target with
+            | CaseSelector.Reference value -> Ok value
+            | CaseSelector.Id id ->
+                match record, request.Act with
+                | Some record, _ when
+                    record.CaseId = id && CaseAct.kind request.Act <> CaseActKind.Open
+                    ->
+                    Ok(CaseReference.format record.Snapshot.Reference)
+                | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+        reference
+        |> Result.bind (fun reference ->
+            Case.parse
+                {
+                    OperationId = request.OperationId
+                    CaseReference = reference
+                    ExpectedRevision = request.ExpectedRevision
+                    Act = request.Act
+                })
+
+    let prepare (request: CaseOperationRequest) =
+        match request.Target with
+        | CaseSelector.Reference _ ->
+            fromInput request None |> Result.map TargetedRequest.ByReference
+        | CaseSelector.Id _ -> Ok(TargetedRequest.ById request)
+
+    let complete request record =
+        match request with
+        | TargetedRequest.ByReference command -> Ok command
+        | TargetedRequest.ById request -> fromInput request record
+
     let authorize principal actor capability (record: StoredCase option) =
         record
         |> Option.exists (fun value ->
@@ -147,7 +205,7 @@ module internal CaseExecution =
 
             LedgerEnvelope.accept services view.Actor write plan (RequestRecord.encode command))
 
-    let run (services: ServiceContext) (command: CaseCommand) token =
+    let run (services: ServiceContext) (request: TargetedRequest) token =
         let store = services.Store
 
         store.Write(
@@ -159,22 +217,26 @@ module internal CaseExecution =
                                 ExecutionFacts.case
                                     services
                                     tx
-                                    (Some command.OperationId)
-                                    (CaseReference.format command.Reference)
+                                    (operationId request)
+                                    (target request)
 
-                            let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
+                            match complete request view.Case with
+                            | Error refusal -> return Verdict.Refuse refusal
+                            | Ok command ->
+                                let! fenced =
+                                    ExecutionFacts.fenced tx view.Actor command.OperationId
 
-                            return!
-                                execute
-                                    services
-                                    command
-                                    {
-                                        Head = tx.Head
-                                        Fenced = fenced
-                                        Nonce = tx.Nonce
-                                    }
-                                    view
-                                |> ExecutionFacts.persist tx tx.ProjectCase
+                                return!
+                                    execute
+                                        services
+                                        command
+                                        {
+                                            Head = tx.Head
+                                            Fenced = fenced
+                                            Nonce = tx.Nonce
+                                        }
+                                        view
+                                    |> ExecutionFacts.persist tx tx.ProjectCase
                         })
                 CancellationToken = token
             }

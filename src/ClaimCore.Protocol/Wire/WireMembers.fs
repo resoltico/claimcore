@@ -55,6 +55,9 @@ module WireMembers =
 /// Named codec definitions are used by the codec and its semantic annotations.
 module RequestSchemas =
     [<Literal>]
+    let CaseSelector = "CaseSelector"
+
+    [<Literal>]
     let Registration = "Registration"
 
     [<Literal>]

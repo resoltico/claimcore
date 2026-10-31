@@ -179,6 +179,13 @@ type Page<'Item, 'Position> =
         Next: 'Position option
     }
 
+/// The already-fetched LIMIT+1 row supplies comparison context without another read or a pinned traversal.
+type CaseHistorySlice =
+    {
+        Page: Page<StoredEntry, Revision>
+        Previous: StoredEntry option
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
@@ -189,11 +196,11 @@ type IReadTx =
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
+    abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>
     abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
-    abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
     abstract FindActor: ActorId -> Task<Actor option>
     abstract EnabledHumanOwners: unit -> Task<int>

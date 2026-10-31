@@ -333,8 +333,8 @@ let private kindRoundTrips () =
 
     let grant =
         {
-            AuthoredGrant.Role = Role.CaseReader
-            Scope = GrantTarget.Installation
+            RecordedGrant.Role = Role.CaseReader
+            Scope = RecordedGrantScope.Installation
         }
 
     let acts = Inputs.authorityActs [ grant ]

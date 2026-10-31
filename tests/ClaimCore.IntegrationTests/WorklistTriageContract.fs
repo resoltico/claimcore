@@ -14,7 +14,10 @@ let private maximum = "999999999999999999.9999"
 let private execute owner number reference revision act =
     task {
         let! reply =
-            Service.execute owner (OperationInput.Case(request number reference revision act)) token
+            Service.execute
+                owner
+                (ClaimCore.TestSupport.Inputs.caseOperation (request number reference revision act))
+                token
 
         match reply.Outcome with
         | ExecuteResult.Accepted _ -> accepted reply |> ignore
@@ -206,7 +209,13 @@ let internal exactTotals fixture =
         | Outcome.Succeeded value -> Expect.isTrue value.HasAssignedCases "My cases can be offered"
         | _ -> failtest "Expected context"
 
-        let! case = Service.get owner { CaseReference = "TRIAGE-B" } token
+        let! case =
+            Service.get
+                owner
+                {
+                    Target = CaseSelector.Reference("TRIAGE-B")
+                }
+                token
 
         match case with
         | Outcome.Succeeded value ->
@@ -362,7 +371,13 @@ let internal assignmentExcludesForbiddenRoles fixture =
             3L
             "Installation visibility retains the same independent safeguard"
 
-        let! denied = Service.get viewer { CaseReference = "TRIAGE-B" } token
+        let! denied =
+            Service.get
+                viewer
+                {
+                    Target = CaseSelector.Reference("TRIAGE-B")
+                }
+                token
 
         Expect.equal
             denied

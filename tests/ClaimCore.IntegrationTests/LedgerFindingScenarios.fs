@@ -118,7 +118,7 @@ let internal stateSequence (database: PostgresFixture.Database) =
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (token))
@@ -164,7 +164,7 @@ let internal erasure (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
                 ))
                 (token))
@@ -218,7 +218,9 @@ let internal authority (database: PostgresFixture.Database) =
             authorityRequest (id 20) (target "absent") (AuthorityAct.Enable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord
+            |> AuthorityRequests.toRecord None
+            |> Result.defaultWith (fun _ ->
+                failtest "Synthetic permanent authority input must resolve")
 
         do!
             rewrite
@@ -275,7 +277,7 @@ let internal human (database: PostgresFixture.Database) =
         let! voided =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Void "Entered in error"))
                 ))
                 (token))
@@ -386,7 +388,7 @@ let private payableIndexFinding expected statement database =
         let! decided =
             Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide Inputs.decision)
                 ))
                 token

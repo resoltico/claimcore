@@ -94,7 +94,10 @@ let internal replayAndRefusal fixture =
         let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! result =
-            (Service.execute actor (OperationInput.Case original) (CancellationToken.None))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation original)
+                (CancellationToken.None))
 
         let receipt = accepted result
 
@@ -104,14 +107,17 @@ let internal replayAndRefusal fixture =
             "One entry per authority operation and case operation"
 
         let! replay =
-            (Service.execute actor (OperationInput.Case original) (CancellationToken.None))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation original)
+                (CancellationToken.None))
 
         Expect.equal replay.Outcome (ExecuteResult.AlreadyAccepted receipt) "Original receipt"
 
         let! stale =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))
@@ -142,7 +148,10 @@ let internal lockedView fixture =
         let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! opened =
-            (Service.execute actor (OperationInput.Case original) (CancellationToken.None))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation original)
+                (CancellationToken.None))
 
         let first = accepted opened
         let mutable calls = 0
@@ -158,7 +167,7 @@ let internal lockedView fixture =
                                         (core fixture fixture.Owner)
                                         tx
                                         (Some(CaseFixtures.operationId original.OperationId))
-                                        original.CaseReference
+                                        (CaseSelector.Reference original.CaseReference)
 
                                 let! fenced =
                                     ExecutionFacts.fenced
@@ -220,7 +229,7 @@ let internal caseUpdate fixture =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
@@ -230,7 +239,7 @@ let internal caseUpdate fixture =
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))

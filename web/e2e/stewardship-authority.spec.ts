@@ -144,7 +144,7 @@ test("browser registers service principals, changes scoped grants and enablement
   await authorityTarget(page, source.issuer, subject);
   await chooseChoice(page, "act.role", "CASE_READER");
   await chooseChoice(page, "act.scope.kind", "CASE");
-  await page.locator('[name="act.scope.caseReference"]').fill(reference);
+  await page.locator('[name="act.scope.target.caseReference"]').fill(reference);
   await submitAuthority(page, "ACCEPTED");
   await selectAuthorityAct(page, "DISABLE");
   await authorityTarget(page, source.issuer, subject);

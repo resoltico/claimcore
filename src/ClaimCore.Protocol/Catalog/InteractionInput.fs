@@ -9,6 +9,7 @@ type InteractionInput =
     | Target of InputTarget
     | Scope
     | ActorId
+    | CaseId
     | Detail
     | Lifecycle
     | Status
@@ -25,6 +26,7 @@ module InteractionInput =
         | InteractionInput.Target target -> InputTarget.token target
         | InteractionInput.Scope -> "scope"
         | InteractionInput.ActorId -> "actorId"
+        | InteractionInput.CaseId -> "caseId"
         | InteractionInput.Detail -> "detail"
         | InteractionInput.Lifecycle -> "lifecycle"
         | InteractionInput.Status -> "status"
@@ -41,6 +43,7 @@ module InteractionInput =
         | InteractionInput.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
         | InteractionInput.Scope
         | InteractionInput.ActorId
+        | InteractionInput.CaseId
         | InteractionInput.Detail
         | InteractionInput.Lifecycle
         | InteractionInput.Status

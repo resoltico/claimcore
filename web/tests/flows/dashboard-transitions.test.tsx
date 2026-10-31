@@ -196,7 +196,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
     {
-      caseReference: fields.caseReference,
+      target: { kind: "REFERENCE", caseReference: fields.caseReference },
     },
   );
 });

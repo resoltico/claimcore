@@ -24,13 +24,21 @@ let tests =
                                 member _.Dispose() = database.Fixture.Dispose()
                             }
 
-                        let observed = ResizeArray<FailureDiagnostic>()
+                        use activity =
+                            new Diagnostics.Activity("ClaimCore.Storage.DiagnosticControl")
+
+                        activity.Start() |> ignore
+                        let observed = Collections.Concurrent.ConcurrentQueue<FailureDiagnostic>()
 
                         use _subscription =
                             FailureDiagnostics.listener.Subscribe(
                                 { new IObserver<Collections.Generic.KeyValuePair<string, obj>> with
                                     member _.OnNext value =
-                                        observed.Add(unbox value.Value)
+                                        match Diagnostics.Activity.Current with
+                                        | null -> ()
+                                        | current when current.TraceId = activity.TraceId ->
+                                            observed.Enqueue(unbox value.Value)
+                                        | _ -> ()
 
                                         raise (
                                             InvalidOperationException "synthetic observer secret"
@@ -57,18 +65,22 @@ let tests =
                                                 [||]
                                                 CancellationToken.None
 
+                                        connection.StateChange.Add(fun change ->
+                                            if
+                                                change.CurrentState = Data.ConnectionState.Closed
+                                            then
+                                                let error =
+                                                    InvalidOperationException
+                                                        "synthetic credential SQL payload secret"
+
+                                                error.Data["provider-detail"] <-
+                                                    "synthetic principal reference and token secret"
+
+                                                raise error)
+
                                         do! transaction.CommitAsync()
                                         return 42
                                     })
-
-                        do!
-                            FailureDiagnostics.cleanup (fun () ->
-                                ValueTask(
-                                    Task.FromException(
-                                        InvalidOperationException
-                                            "synthetic credential SQL payload secret"
-                                    )
-                                ))
 
                         Expect.equal
                             result
@@ -76,16 +88,22 @@ let tests =
                             "Confirmed result survives observer and cleanup failures"
 
                         Expect.equal observed.Count 1 "Cleanup remains diagnosable"
-                        Expect.equal observed[0].Phase FailurePhase.Cleanup "Safe phase"
+                        let evidence = observed.ToArray()[0]
+                        Expect.equal evidence.Phase FailurePhase.Cleanup "Safe phase"
 
                         Expect.equal
-                            observed[0].Classification
+                            evidence.Classification
                             FailureClass.Internal
                             "Safe classification"
 
-                        Expect.isLessThanOrEqual observed[0].Methods.Length 8 "Bounded methods"
-                        Expect.notEqual observed[0].Correlation Guid.Empty "Internal correlation"
-                        let serialized = System.Text.Json.JsonSerializer.Serialize observed[0]
+                        Expect.isLessThanOrEqual evidence.Methods.Length 8 "Bounded methods"
+                        Expect.notEqual evidence.Correlation Guid.Empty "Internal correlation"
+                        let serialized = sprintf "%A" evidence
+
+                        Expect.stringContains
+                            serialized
+                            (evidence.Correlation.ToString("D"))
+                            "The safe diagnostic carries usable correlation evidence"
 
                         Expect.isFalse
                             (serialized.Contains("secret", StringComparison.Ordinal))
@@ -108,12 +126,22 @@ let tests =
             testTask "diagnostics bound known failure classes without exception data" {
                 do!
                     task {
-                        let observed = ResizeArray<FailureDiagnostic>()
+                        use activity =
+                            new Diagnostics.Activity("ClaimCore.Storage.DiagnosticControl")
+
+                        activity.Start() |> ignore
+                        let observed = Collections.Concurrent.ConcurrentQueue<FailureDiagnostic>()
 
                         use _subscription =
                             FailureDiagnostics.listener.Subscribe(
                                 { new IObserver<Collections.Generic.KeyValuePair<string, obj>> with
-                                    member _.OnNext value = observed.Add(unbox value.Value)
+                                    member _.OnNext value =
+                                        match Diagnostics.Activity.Current with
+                                        | null -> ()
+                                        | current when current.TraceId = activity.TraceId ->
+                                            observed.Enqueue(unbox value.Value)
+                                        | _ -> ()
+
                                     member _.OnError _ = ()
                                     member _.OnCompleted() = ()
                                 }

@@ -19,7 +19,7 @@ let private unavailable () =
 
 let private inputs () =
     [
-        OperationInput.Case(opening 470 "BOUNDARY")
+        ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
         OperationInput.Authority(authorityRequest (id 471) other AuthorityAct.Register)
     ]
 
@@ -37,11 +37,11 @@ let private malformed () =
 
         let invalid =
             [
-                OperationInput.Case
+                ClaimCore.TestSupport.Inputs.caseOperation
                     { opening 470 "BOUNDARY" with
                         OperationId = Guid.Empty
                     }
-                OperationInput.Case(
+                ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(authorityRequest Guid.Empty other AuthorityAct.Register)
@@ -142,7 +142,12 @@ let private cancelled () =
         let! context = (Service.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            (Service.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            (Service.get
+                core
+                ({
+                    Target = CaseSelector.Reference("BOUNDARY")
+                })
+                (cancellation.Token))
             |> Async.AwaitTask
 
         let! observed =

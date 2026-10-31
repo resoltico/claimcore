@@ -62,7 +62,9 @@ let private delayedExecute (database: PostgresFixture.Database) =
         do! waiters database 1L
 
         let input =
-            OperationInput.Case(request 101 "FENCED" 0L (AuthoredCaseAct.Open registration))
+            ClaimCore.TestSupport.Inputs.caseOperation (
+                request 101 "FENCED" 0L (AuthoredCaseAct.Open registration)
+            )
 
         let executing = (Service.execute actor (input) (token))
         do! waiters database 2L
@@ -159,7 +161,9 @@ let private receipts (database: PostgresFixture.Database) =
         let! created =
             (Service.execute
                 actor
-                (OperationInput.Case(request 110 "RESOLVED" 0L (AuthoredCaseAct.Open registration)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 110 "RESOLVED" 0L (AuthoredCaseAct.Open registration)
+                ))
                 (token))
 
         let receipt = accepted created
@@ -198,7 +202,9 @@ let private receipts (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(request 113 "RESOLVED" 1L (AuthoredCaseAct.Bare BareAct.Erase)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 113 "RESOLVED" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+                ))
                 (token))
 
         accepted erased |> ignore
@@ -231,7 +237,9 @@ let private foreign (database: PostgresFixture.Database) =
         let other = core database.Fixture principal
 
         let input =
-            OperationInput.Case(request 121 "FOREIGN" 0L (AuthoredCaseAct.Open registration))
+            ClaimCore.TestSupport.Inputs.caseOperation (
+                request 121 "FOREIGN" 0L (AuthoredCaseAct.Open registration)
+            )
 
         let! created = (Service.execute actor (input) (token))
         let receipt = accepted created
@@ -259,7 +267,7 @@ let private foreign (database: PostgresFixture.Database) =
         let! acceptedOtherId =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 122 "OTHER-FENCE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))

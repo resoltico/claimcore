@@ -120,7 +120,7 @@ let private history () =
 
     let request: HistoryRequest =
         {
-            CaseReference = CaseReference.format current.Snapshot.Reference
+            Target = CaseSelector.Reference(CaseReference.format current.Snapshot.Reference)
             AfterCursor = None
             Limit = 1
             Detail = HistoryDetail.Summary

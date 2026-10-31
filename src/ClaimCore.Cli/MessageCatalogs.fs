@@ -113,7 +113,7 @@ module internal MessageCatalogs =
             |> List.map (fun entry ->
                 CliIdentity.programName + " " + CommandGrammar.synopsis entry.Kind)
             |> String.concat "\n"
-            |> fun value -> value + "\n"
+            |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 
     let private guidanceBody language =
         function

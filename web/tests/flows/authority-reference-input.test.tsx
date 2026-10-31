@@ -152,7 +152,7 @@ const expectGrantReferencePath = (active: boolean) => {
         "act.scope.kind": "CASE",
       },
     ),
-  ).toBe("act.scope.caseReference");
+  ).toBe("act.scope.target.caseReference");
 };
 const referencePreferences = (language: string) => {
   localStorage.setItem(
@@ -182,7 +182,7 @@ it.each(
       }),
     ).toBeNull();
     const reference = await authorCaseGrant(user, locale);
-    expect(reference).toHaveAttribute("name", "act.scope.caseReference");
+    expect(reference).toHaveAttribute("name", "act.scope.target.caseReference");
     expectReferenceDescription(reference, locale, false);
     chooseRoleForReview();
     await user.click(
@@ -204,7 +204,7 @@ it.each(
         kind: active ? "GRANT" : "REVOKE",
         scope: {
           kind: "CASE",
-          caseReference: "bad reference",
+          target: { kind: "REFERENCE", caseReference: "bad reference" },
         },
       },
     });

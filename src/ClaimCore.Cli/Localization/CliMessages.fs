@@ -17,6 +17,7 @@ type ProducedMessage =
 
 [<RequireQualifiedAccess>]
 type CliMessage =
+    | [<MessageKey("cli.help.liveTraversal")>] LiveTraversalHelp
     | [<MessageKey("cli.usage.unknownCommand")>] UnknownCommand of command: string
     | [<MessageKey("cli.usage.unknownOption")>] UnknownOption of flag: string
     | [<MessageKey("cli.usage.suggestion")>] Suggestion of suggestion: string

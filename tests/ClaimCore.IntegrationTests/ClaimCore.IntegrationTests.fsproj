@@ -13,6 +13,7 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="AuthorityHistoryContract.fs" />
     <Compile Include="WorklistTriageContract.fs" />
+    <Compile Include="CaseSelectorContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />
@@ -69,6 +70,8 @@
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
+    <Compile Include="ProjectionRebuildFailureTests.fs" />
+    <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="CommitTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />

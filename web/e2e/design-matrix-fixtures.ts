@@ -50,7 +50,7 @@ const caseAct = (page: Page, reference: string, revision: number, act: CaseAct) 
   execute(page, {
     kind: "CASE",
     operationId: randomUUID(),
-    caseReference: reference,
+    target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
     act,
   });
@@ -128,7 +128,7 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
     path: casePath(references[state]),
     ready: "#case-detail-title",
     endpoint: "case.get" as const,
-    expectedInput: { caseReference: references[state] },
+    expectedInput: { target: { kind: "REFERENCE", caseReference: references[state] } },
   })),
   { id: "editor-open", path: "/cases/new", ready: "#operation-title" },
   ...(["DECIDE", "CORRECT", "VOID"] as const).map((act) => ({
@@ -263,7 +263,9 @@ const advanceCase = async (page: Page, reference: string, state: CaseState, date
   return null;
 };
 const assertCase = async (page: Page, reference: string, state: CaseState) => {
-  const read = await request(page, "case.get", { caseReference: reference });
+  const read = await request(page, "case.get", {
+    target: { kind: "REFERENCE", caseReference: reference },
+  });
   if (read.outcome.kind !== "SUCCEEDED") {
     throw new Error(`E2E_MATRIX_CASE_${state}_UNAVAILABLE`);
   }
@@ -325,7 +327,11 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
     kind: "AUTHORITY",
     operationId: randomUUID(),
     target,
-    act: { kind: "GRANT", role: "CASE_READER", scope: { kind: "CASE", caseReference: reference } },
+    act: {
+      kind: "GRANT",
+      role: "CASE_READER",
+      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
+    },
   });
   return registered.subject.targetActorId;
 };
@@ -340,7 +346,10 @@ const assignOwnerCase = async (
     issuer: inventory.issuer,
     subject: inventory.ownerSubject,
   } as const;
-  const assignedScope = { kind: "CASE", caseReference: reference } as const;
+  const assignedScope = {
+    kind: "CASE",
+    target: { kind: "REFERENCE", caseReference: reference },
+  } as const;
   await applyAuthority(page, {
     kind: "AUTHORITY",
     operationId: randomUUID(),

@@ -168,37 +168,60 @@ module internal RecordCodecs =
         |> named "Principal"
 
     let scope =
+        let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+
+        let reference =
+            text
+            |> mapResult
+                (fun path raw ->
+                    CaseReference.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid retained reference."
+                        }))
+                CaseReference.format
+
         tagged
-            "Scope"
+            "RecordedGrantScope"
             [
-                unitVariant DurableNames.InstallationScope GrantTarget.Installation
+                unitVariant DurableNames.InstallationScope RecordedGrantScope.Installation
                 variant
                     DurableNames.CaseScope
-                    GrantTarget.CaseReference
+                    (fun (id, reference) -> RecordedGrantScope.Case(id, reference))
                     (function
-                    | GrantTarget.CaseReference value -> Some value
+                    | RecordedGrantScope.Case(id, reference) -> Some(id, reference)
                     | _ -> None)
-                    (record id |> field DurableNames.CaseReference id text)
+                    (record (fun id reference -> id, reference)
+                     |> field DurableNames.CaseId fst caseId
+                     |> field DurableNames.CaseReference snd reference)
             ]
 
     let private authorityVariantsWith role scope =
         let grant =
-            record (fun role scope ->
-                {
-                    AuthoredGrant.Role = role
-                    Scope = scope
-                })
+            record (fun role scope -> { Grant.Role = role; Scope = scope })
             |> field DurableNames.Role _.Role role
             |> field DurableNames.Scope _.Scope scope
 
-        DurableNames.authorityKinds
-        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-        |> List.map (fun kind ->
-            let token = DurableNames.authorityAct kind
-
-            match AuthorityAct.slot kind with
-            | AuthorityActSlot.Bare act -> unitVariant token act
-            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
+        [
+            unitVariant "REGISTER" AuthorityAct.Register
+            variant
+                "GRANT"
+                AuthorityAct.Grant
+                (function
+                | AuthorityAct.Grant value -> Some value
+                | _ -> None)
+                grant
+            variant
+                "REVOKE"
+                AuthorityAct.Revoke
+                (function
+                | AuthorityAct.Revoke value -> Some value
+                | _ -> None)
+                grant
+            unitVariant "ENABLE" AuthorityAct.Enable
+            unitVariant "DISABLE" AuthorityAct.Disable
+        ]
 
     let role = enumeration DurableNames.roleEntries
     let authorityVariants role = authorityVariantsWith role scope

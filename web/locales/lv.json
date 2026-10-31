@@ -130,7 +130,6 @@
   "ui.exactReference": "{label} (precīzs): {reference}",
   "ui.historyChanges": "Mainītie lauki",
   "ui.historyNoChanges": "Atklātie lauki nav mainīti.",
-  "ui.historyPreviousNeeded": "Ielādējiet iepriekšējo pieņemto redakciju, lai salīdzinātu mainītos laukus.",
   "ui.historyComparisonUnavailable": "Iepriekšējie pieņemtie lauki ir slēpti vai dzēsti, tāpēc izmaiņas nevar salīdzināt.",
   "ui.caseRecorded": "Darbība “{act}” reģistrēta {revision}. redakcijā.",
   "ui.checkUnresolvedOperation": "Pārbaudīt darbību ar nezināmu iznākumu",

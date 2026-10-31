@@ -355,19 +355,16 @@ Keep the change stable when comparing results, or disclose why the experiments a
 reusing existing request/result types measures registration cost, not novel query design. Fewer edits do
 not justify generic machinery, weaker types, shared production/oracle answers or removed safeguards.
 
-| Probe | Change | Locality target |
+| Probe | Change | Evidence question |
 | --- | --- | --- |
-| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. Update typed records, validated constructors, projections and the explicitly versioned durable grammar as required. |
-| P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
-| P-ROLE | Add a role with one existing capability. | No renderer or `db/` changes; growing vocabularies are decoded by their permanent-name owner. |
-| P-READ | Add a read-only endpoint over existing case data. | No renderer changes except the one exhaustive endpoint-to-handler line in `src/ClaimCore.Web/ApiRoutes.fs` `route`. CLI verb/catalog derive; one store-port method is implemented by PostgreSQL and memory. |
-| P-MESSAGE | Add a case refusal and its message. | Only Domain refusal/producer, diagnostic mapping and three locale files change; no renderer changes. |
+| P-FIELD | Add a required registration text field. | Which typed-state and receiving-contract adaptations are necessary? A descriptor alone must not change existing durable members or bytes. |
+| P-ACT | Add a payload-free case act. | Does current admission evolve explicitly while existing-format interpretation remains frozen? |
+| P-ROLE | Add a role with an existing capability. | Are current permission decisions and permanent authority meaning kept separate? |
+| P-READ | Add a read-only endpoint. | Do contracts, authorization, storage, clients and generated output form one exercised path? |
+| P-MESSAGE | Add a refusal and its message. | Do the producer, diagnostic contract and supported locales agree without competing client business rules? |
 
-Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
-`generated/`. Generated contracts and documentation are recorded separately from authored production
-files. P-READ's target permits only that composition line in renderer source. Assess P-FIELD's Domain
-target across field mapping, parsing and admission as well as metadata and projection. Consolidating metadata in
-[CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs) alone does not establish that criterion.
+Record authored and generated adaptations separately. Edit counts describe cost; they are not acceptance
+limits and do not justify hidden property bags, weaker types or silently enlarged durable grammars.
 
 ### Run an experiment
 

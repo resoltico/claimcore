@@ -32,7 +32,9 @@ let private setup (database: PostgresFixture.Database) =
             let! result =
                 (Service.execute
                     admin
-                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request n reference 0L (AuthoredCaseAct.Open registration)
+                    ))
                     (token))
 
             accepted result |> ignore
@@ -332,7 +334,7 @@ let private snapshot (database: PostgresFixture.Database) =
             let! later =
                 (Service.execute
                     admin
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request 13 "CASE-AFTER" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))

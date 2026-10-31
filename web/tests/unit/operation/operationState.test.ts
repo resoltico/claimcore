@@ -39,7 +39,7 @@ it("unexposed edits keep identity and changed exposed input receives fresh ident
   expect(
     operationReducer(exposed, {
       type: "EDIT",
-      path: "caseReference",
+      path: "target.caseReference",
       value: "CASE-SERIALIZATION",
       id: secondId,
     }),
@@ -60,7 +60,7 @@ it("uncertainty survives later definite failures and blocks edits while allowing
   expect(
     operationReducer(rejected, {
       type: "EDIT",
-      path: "caseReference",
+      path: "target.caseReference",
       value: "OTHER",
       id: secondId,
     }),
@@ -83,7 +83,7 @@ it("requires an exact review and consent and blocks edits while an attempt is pe
   expect(
     operationReducer(pending, {
       type: "EDIT",
-      path: "caseReference",
+      path: "target.caseReference",
       value: "OTHER",
       id: secondId,
     }),
@@ -129,7 +129,7 @@ it("disclosure invalidation removes a submitting review and its late completion 
   expect(operationView(invalid).priorUncertain).toBe(true);
 });
 const controlEvents = (state: OperationState): OperationAction[] => [
-  { type: "EDIT", path: "caseReference", value: "OTHER", id: "replacement" },
+  { type: "EDIT", path: "target.caseReference", value: "OTHER", id: "replacement" },
   { type: "RETURN" },
   { type: "CONFIRM", value: true },
   {

@@ -3,7 +3,6 @@
   "input": {
     "kind": "CASE",
     "operationId": "10000000-0000-4000-8000-000000000001",
-    "caseReference": "DEMO-0001",
     "expectedRevision": 0,
     "act": {
       "kind": "OPEN",
@@ -16,6 +15,10 @@
         "claimedAmount": "1000.00",
         "claimedCurrency": "EUR"
       }
+    },
+    "target": {
+      "kind": "REFERENCE",
+      "caseReference": "DEMO-0001"
     }
   }
 }

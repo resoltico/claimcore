@@ -434,7 +434,7 @@ module Grammar =
     let internal caseIntent arguments =
         let codec =
             Codec.record (fun reference act operation -> reference, act, operation)
-            |> Codec.field "caseReference" (fun (reference, _, _) -> reference) Codec.text
+            |> Codec.field "target" (fun (target, _, _) -> target) RequestCodecs.caseSelector
             |> Codec.field "act" (fun (_, act, _) -> act) RequestCodecs.caseAct
             |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
             |> Codec.build

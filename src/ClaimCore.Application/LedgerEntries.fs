@@ -182,20 +182,21 @@ module LedgerEntries =
         && entry.RecordedAt.UtcTicks % 10L = 0L
         && subject
 
+    let private caseRequestMatches (entry: StoredEntry) id revision act (request: CaseCommand) =
+        request.OperationId = entry.OperationId
+        && Revision.value request.ExpectedRevision = Revision.value revision - 1L
+        && CaseAct.kind request.Act = act
+        && (act <> CaseActKind.Open
+            || (id = CaseId.ofOperationId request.OperationId
+                && entry.CreationReference = Some request.Reference))
+
     let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _
         | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
-            | Ok request when
-                request.OperationId = entry.OperationId
-                && Revision.value request.ExpectedRevision = Revision.value revision - 1L
-                && CaseAct.kind request.Act = act
-                && (act <> CaseActKind.Open
-                    || (id = CaseId.ofOperationId request.OperationId
-                        && entry.CreationReference = Some request.Reference))
-                ->
+            | Ok request when caseRequestMatches entry id revision act request ->
                 if act = CaseActKind.Erase then
                     if Array.isEmpty data.Snapshot then
                         Ok(EntryContent.Case(request, None))
@@ -277,7 +278,10 @@ module LedgerEntries =
             AuthorityRequests.fromRecord request
             |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
             |> Result.bind (fun command ->
-                let facts = AuthorityHistoryFacts.ofCommand command
+                let facts =
+                    AuthorityHistoryFacts.ofAct
+                        command.Target
+                        (AuthorityAct.map AuthorityRequests.display request.Act)
 
                 if AuthorityHistoryFacts.kind facts <> act then
                     Error CoreFault.StoreIntegrityError

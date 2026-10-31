@@ -23,7 +23,7 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
   const draft = {
     kind: "CASE",
     operationId,
-    caseReference: "SYNTHETIC",
+    target: { kind: "REFERENCE", caseReference: "SYNTHETIC" },
     expectedRevision: 1,
     act: {
       kind: "CLOSE",

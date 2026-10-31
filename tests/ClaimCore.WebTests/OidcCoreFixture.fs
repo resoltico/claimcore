@@ -69,7 +69,7 @@ let createFor issuer subject =
             let! opened =
                 (Service.execute
                     owner
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))

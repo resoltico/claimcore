@@ -48,7 +48,7 @@ it("independently rejects lossy numeric spellings, duplicate decoded names, dept
       "operation.execute",
       admitBytes(
         new TextEncoder().encode(
-          '{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","caseReference":"A","expectedRevision":-0,"act":{"kind":"CLOSE"}}',
+          '{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"A"},"expectedRevision":-0,"act":{"kind":"CLOSE"}}',
         ),
       ),
     ),
@@ -66,7 +66,7 @@ it("admits business date strings for typed Domain rejection", () => {
   const base = {
     kind: "CASE",
     operationId: "10000000-0000-4000-8000-000000000001",
-    caseReference: "A",
+    target: { kind: "REFERENCE", caseReference: "A" },
     expectedRevision: 0,
     act: {
       kind: "RECORD_PAYMENT",

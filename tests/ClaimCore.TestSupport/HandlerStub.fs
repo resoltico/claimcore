@@ -44,7 +44,9 @@ let private request reference =
     }
 
 let commandInput =
-    RequestCodecs.operationInput.Write(OperationInput.Case(request "WEB-001"))
+    RequestCodecs.operationInput.Write(
+        ClaimCore.TestSupport.Inputs.caseOperation (request "WEB-001")
+    )
     |> ClaimCore.Json.WireWriter.bytes
 
 let view reference =
@@ -136,7 +138,9 @@ type Stub() =
             Route.bind Api.operationPreview (fun _ input _ ->
                 let outcome =
                     match input with
-                    | OperationInput.Case request ->
+                    | OperationInput.Case input ->
+                        let request = Inputs.referencedCase input
+
                         (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                             receipt request.OperationId request.CaseReference
                         )
@@ -159,7 +163,8 @@ type Stub() =
 
                         let! outcome =
                             match input with
-                            | OperationInput.Case request -> this.Execute(request, token)
+                            | OperationInput.Case request ->
+                                this.Execute(Inputs.referencedCase request, token)
                             | OperationInput.Authority request ->
                                 this.ExecuteAuthority(request, token)
 

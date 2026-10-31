@@ -52,8 +52,21 @@ let private review =
             Proposed =
                 { current with
                     Revision = CaseFixtures.revision 8L
+                    State =
+                        current.State
+                        |> CaseState.map (fun fields ->
+                            { fields with
+                                Status = CaseStatus.Closed
+                            })
                 }
-            Changes = []
+            Changes =
+                [
+                    {
+                        FieldName = BusinessField.Status
+                        Before = Some "OPENED"
+                        After = Some "CLOSED"
+                    }
+                ]
             Context =
                 {
                     ProductVersion = "synthetic"
@@ -109,6 +122,17 @@ let private harness language answer scenario =
                 let receipt =
                     { CliReplyFixtures.receipt with
                         OperationId = CaseFixtures.operationId (operationId ())
+                        Subject =
+                            match CliReplyFixtures.receipt.Subject with
+                            | ReceiptSubject.Case subject ->
+                                ReceiptSubject.Case
+                                    { subject with
+                                        CaseId = current.CaseId
+                                        Reference = current.Reference
+                                        Revision = CaseFixtures.revision 8L
+                                        Act = CaseActKind.Close
+                                    }
+                            | _ -> failtest "The case receipt fixture must identify its actual case"
                     }
 
                 response

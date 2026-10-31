@@ -47,16 +47,13 @@ const ReceiptMetadata = ({ receipt }: { receipt: CaseReceipt }) => {
   );
 };
 const HistoryReceipt = ({
-  receipt,
+  entry,
   fields,
-  previous,
-  loadPrevious,
 }: {
-  receipt: CaseReceipt;
+  entry: Extract<HistoryEntry, { kind: "FULL" }>;
   fields: CatalogDocument["fields"];
-  previous: CaseReceipt | undefined;
-  loadPrevious: (() => void) | undefined;
 }) => {
+  const { receipt, difference } = entry;
   const p = usePresentation();
   const context = useRequesterContext();
   return (
@@ -72,12 +69,7 @@ const HistoryReceipt = ({
         })}
       </summary>
       <ReceiptMetadata receipt={receipt} />
-      <HistoryChanges
-        receipt={receipt}
-        previous={previous}
-        fields={fields}
-        loadPrevious={loadPrevious}
-      />
+      <HistoryChanges receipt={receipt} difference={difference} fields={fields} />
       <ReceiptFields
         subject={receipt.subject}
         fields={fields}
@@ -94,28 +86,11 @@ const HistoryReceipt = ({
     </details>
   );
 };
-const Entry = ({
-  entry,
-  fields,
-  previous,
-  loadPrevious,
-}: {
-  entry: HistoryEntry;
-  fields: CatalogDocument["fields"];
-  previous: HistoryEntry | undefined;
-  loadPrevious: (() => void) | undefined;
-}) => {
+const Entry = ({ entry, fields }: { entry: HistoryEntry; fields: CatalogDocument["fields"] }) => {
   const p = usePresentation();
   const context = useRequesterContext();
   if (entry.kind === "FULL") {
-    return (
-      <HistoryReceipt
-        receipt={entry.receipt}
-        fields={fields}
-        previous={previous?.kind === "FULL" ? previous.receipt : undefined}
-        loadPrevious={loadPrevious}
-      />
-    );
+    return <HistoryReceipt entry={entry} fields={fields} />;
   }
   const { change } = entry;
   return (
@@ -145,21 +120,14 @@ const Entry = ({
 const HistoryEntries = ({
   items,
   fields,
-  loadPrevious,
 }: {
   items: ReadonlyArray<HistoryEntry>;
   fields: CatalogDocument["fields"];
-  loadPrevious: (() => void) | undefined;
 }) => (
   <ol className="history-list case-timeline">
-    {items.map((entry, index) => (
+    {items.map((entry) => (
       <li key={entry.kind === "FULL" ? entry.receipt.operationId : entry.change.operationId}>
-        <Entry
-          entry={entry}
-          fields={fields}
-          previous={items[index + 1]}
-          loadPrevious={loadPrevious}
-        />
+        <Entry entry={entry} fields={fields} />
       </li>
     ))}
   </ol>
@@ -253,16 +221,6 @@ const HistoryPageActions = ({
     </>
   );
 };
-const precedingPage = (page: {
-  cursor: string | null;
-  loading: boolean;
-  load: (cursor: string | null) => Promise<void>;
-}) =>
-  page.cursor === null || page.loading
-    ? undefined
-    : () => {
-        void page.load(page.cursor);
-      };
 export const CaseHistory = ({
   caseReference,
   fields,
@@ -274,7 +232,7 @@ export const CaseHistory = ({
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
   const input = useCallback(
     (cursor: string | null) => ({
-      caseReference,
+      target: { kind: "REFERENCE" as const, caseReference },
       ...(cursor === null ? {} : { cursor }),
       limit: 50,
       detail: requestedDetail,
@@ -292,11 +250,7 @@ export const CaseHistory = ({
       <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
       <HistoryModePicker detail={requestedDetail} onChange={setDetail} modes={modes} />
       <p>{p.text("ui.historyHint")}</p>
-      <HistoryEntries
-        items={items}
-        fields={fields}
-        loadPrevious={precedingPage({ cursor, loading, load })}
-      />
+      <HistoryEntries items={items} fields={fields} />
       <HistoryPageStatus
         loading={loading}
         loaded={page !== null}

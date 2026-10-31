@@ -21,7 +21,7 @@ let internal cases (actor: ServiceContext) =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(openRequest n reference))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (openRequest n reference))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -73,7 +73,7 @@ let internal createHistory (actor: ServiceContext) =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(openRequest 10 "HISTORY-1"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "HISTORY-1"))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -87,7 +87,7 @@ let internal createHistory (actor: ServiceContext) =
             let! amended =
                 (Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request n "HISTORY-1" revision (AuthoredCaseAct.AmendRegistration values)
                     ))
                     (CancellationToken.None))
@@ -116,7 +116,7 @@ let internal differentHistoryResource (actor: ServiceContext) (query: HistoryReq
         let! other =
             (Service.execute
                 actor
-                (OperationInput.Case(openRequest 13 "OTHER"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 13 "OTHER"))
                 (CancellationToken.None))
 
         accepted other |> ignore
@@ -125,7 +125,7 @@ let internal differentHistoryResource (actor: ServiceContext) (query: HistoryReq
             (Service.history
                 actor
                 ({ query with
-                    CaseReference = "OTHER"
+                    Target = CaseSelector.Reference("OTHER")
                     AfterCursor = cursor
                 })
                 (CancellationToken.None))
@@ -145,7 +145,9 @@ let internal appendHistory (actor: ServiceContext) =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(request (20 + int revision) "LONG-HISTORY" revision act))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request (20 + int revision) "LONG-HISTORY" revision act
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore

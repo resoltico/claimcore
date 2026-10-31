@@ -271,6 +271,7 @@ module Authority =
         match target, facts.TargetCaseId with
         | GrantTarget.Installation, _ -> Ok Scope.Installation
         | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
+        | GrantTarget.CaseId requested, Some id when requested = id -> Ok(Scope.Case id)
         | _ -> Error AccessRefusal.ResourceUnavailable
 
     let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =

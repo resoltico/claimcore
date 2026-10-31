@@ -26,7 +26,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operation = id ()
     let reference = "CLI-RESOLUTION-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     let values = (input["act"] |> nonNull)["values"] |> nonNull
     values["claimedAmount"] <- JsonValue.Create "1.0000"
 
@@ -61,7 +61,11 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
             fixture
             "case.get"
             {|
-                caseReference = submitted.Reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = submitted.Reference
+                    |}
             |}
             0
         |> require "SUCCEEDED"
@@ -83,7 +87,11 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
             fixture
             "case.history"
             {|
-                caseReference = submitted.Reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = submitted.Reference
+                    |}
                 detail = "FULL"
                 limit = 50
             |}

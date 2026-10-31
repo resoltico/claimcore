@@ -58,8 +58,8 @@ let internal history fixture reference after limit =
                         return
                             {
                                 Case = current
-                                Entries = page.Items
-                                Next = page.Next
+                                Entries = page.Page.Items
+                                Next = page.Page.Next
                             }
                     })
             CancellationToken = CancellationToken.None

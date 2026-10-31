@@ -50,7 +50,7 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
             id="ui.reference"
             values={{
               label: p.fieldLabel("caseReference"),
-              reference: String(model.values["caseReference"]),
+              reference: current.caseReference,
             }}
           />
         </p>

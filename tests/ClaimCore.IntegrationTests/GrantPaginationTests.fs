@@ -28,7 +28,7 @@ let private seedCases (admin: ServiceContext) target =
             let! opened =
                 (Service.execute
                     admin
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request (300 + n) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
@@ -75,7 +75,8 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 Act = ((AuthoredCaseAct.Bare BareAct.Erase))
             }
 
-        let! erased = (Service.execute admin (OperationInput.Case erase) (token))
+        let! erased =
+            (Service.execute admin (ClaimCore.TestSupport.Inputs.caseOperation erase) (token))
 
         accepted erased |> ignore
     }
@@ -312,7 +313,8 @@ let private traversal (database: PostgresFixture.Database) =
             all
             {
                 Role = Role.CaseReader
-                Scope = GrantTarget.CaseReference "GRANT-1"
+                Scope =
+                    GrantScope.Case(CaseFixtures.caseId (id 301), CaseFixtures.reference "GRANT-1")
             }
             "Erased scope reference remains reviewable"
 
@@ -352,7 +354,7 @@ let private boundaries (database: PostgresFixture.Database) =
 
         Expect.equal
             (List.last reader).Scope
-            GrantTarget.Installation
+            GrantScope.Installation
             "NULL installation comes last within role"
 
         Expect.equal (Set.ofList all).Count 55 "No duplicate across nullable position boundaries"
@@ -435,7 +437,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             prior.Items
             {
                 Role = Role.CaseHandler
-                Scope = GrantTarget.Installation
+                Scope = GrantScope.Installation
             }
             "Rows share the target-header snapshot"
 

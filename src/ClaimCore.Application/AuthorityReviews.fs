@@ -8,14 +8,14 @@ module internal AuthorityReviews =
     let private grant role caseId (view: AuthorityExecutionFacts) =
         let scope, roles =
             match caseId with
-            | None -> GrantTarget.Installation, view.Target.Installation
+            | None -> GrantScope.Installation, view.Target.Installation
             | Some id ->
                 let record = view.TargetCase |> Option.get
 
-                GrantTarget.CaseReference(CaseReference.format record.Snapshot.Reference),
+                GrantScope.Case(record.CaseId, record.Snapshot.Reference),
                 (view.Target.Cases |> Map.tryFind id |> Option.defaultValue [])
 
-        let value: AuthoredGrant = { Role = role; Scope = scope }
+        let value: ScopedGrant = { Role = role; Scope = scope }
         value, (if List.contains role roles then [ value ] else [])
 
     let describe (view: AuthorityExecutionFacts) projection =
@@ -36,7 +36,7 @@ module internal AuthorityReviews =
                         [
                             {
                                 Role = Role.Owner
-                                Scope = GrantTarget.Installation
+                                Scope = GrantScope.Installation
                             }
                         ]
                 }

@@ -122,7 +122,7 @@ module internal AuthorityFold =
         (context: AuthorityFoldContext)
         (entry: StoredEntry)
         (actor: ActorAuthority)
-        (value: AuthoredGrant)
+        (value: RecordedGrant)
         active
         =
         let findCase = context.FindCase
@@ -139,11 +139,13 @@ module internal AuthorityFold =
 
             let! scope =
                 match scope with
-                | GrantTarget.Installation -> Ok Scope.Installation
-                | GrantTarget.CaseReference reference ->
-                    findCase reference
-                    |> known (Some entry.Sequence) VerificationFinding.AuthorityFold
-                    |> Result.map Scope.Case
+                | RecordedGrantScope.Installation -> Ok Scope.Installation
+                | RecordedGrantScope.Case(id, reference) ->
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.AuthorityFold
+                        (findCase (CaseReference.format reference) = Some id)
+                    |> Result.map (fun () -> Scope.Case id)
 
             let grant: ActorGrant = { Role = role; Scope = scope }
             let grants = actor.Grants |> List.filter ((<>) grant)

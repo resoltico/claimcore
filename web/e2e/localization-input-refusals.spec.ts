@@ -29,7 +29,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
     body: JSON.stringify({
       kind: "CASE",
       operationId: randomUUID(),
-      caseReference: reference,
+      target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 2,
       act: {
         kind: "CORRECT",

@@ -67,7 +67,7 @@ let populated (database: PostgresFixture.Database) =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))

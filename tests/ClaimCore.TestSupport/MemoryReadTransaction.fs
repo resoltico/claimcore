@@ -274,7 +274,11 @@ type internal Reader
                 | EntryTarget.Case(_, revision, _, _) -> revision
                 | _ -> failwith "Invalid history fixture"
 
-            Task.FromResult(page limit revision rows)
+            Task.FromResult
+                {
+                    Page = page limit revision rows
+                    Previous = List.tryItem limit rows
+                }
 
         member _.AuthorityHistoryPage(query: AuthorityHistoryPageQuery) =
             read ()
@@ -357,15 +361,14 @@ type internal Reader
                         else
                             let target =
                                 match scope with
-                                | None -> GrantTarget.Installation
+                                | None -> GrantScope.Installation
                                 | Some id ->
-                                    GrantTarget.CaseReference(
-                                        CaseReference.format state.Cases[id].Snapshot.Reference
-                                    )
+                                    let current = readCase state.Entries state.Cases[id]
+                                    GrantScope.Case(id, current.Snapshot.Reference)
 
                             Some(
                                 {
-                                    AuthoredGrant.Role = role
+                                    ScopedGrant.Role = role
                                     Scope = target
                                 },
                                 position

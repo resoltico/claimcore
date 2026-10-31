@@ -24,11 +24,11 @@ module internal Queries =
             | Some record -> caseRecord services view.Actor record |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
-    let get (services: ServiceContext) reference token =
+    let get (services: ServiceContext) selector token =
         let store = services.Store
 
         task {
-            match parseReference reference with
+            match CaseExecution.validateSelector selector with
             | Error refusal -> return Outcome.Rejected refusal
             | Ok _ ->
                 let! result =
@@ -37,7 +37,7 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! view = ExecutionFacts.case services tx None reference
+                                        let! view = ExecutionFacts.case services tx None selector
 
                                         return caseResult services view
                                     })
@@ -272,16 +272,42 @@ module internal Queries =
                     cursor (Cursors.decodeHistory installation record.CaseId) request.AfterCursor
                     |> Result.map (Option.defaultValue Revision.zero))
 
-    let private historyEntry (services: ServiceContext) actor current detail entry =
-        let installation = services.InstallationId
-        let principal = services.Principal
-
+    let private historyEntries
+        (services: ServiceContext)
+        actor
+        current
+        detail
+        (slice: CaseHistorySlice)
+        =
         if detail = HistoryDetail.Summary then
-            LedgerEntries.summary current entry |> Result.map HistoryEntry.SummaryEntry
+            slice.Page.Items
+            |> List.map (LedgerEntries.summary current >> Result.map HistoryEntry.SummaryEntry)
+            |> collect
         else
-            LedgerEntries.validate installation entry
-            |> Result.bind (LedgerEntries.receipt principal actor (Some current))
-            |> Result.map HistoryEntry.FullEntry
+            let all = slice.Page.Items @ Option.toList slice.Previous
+
+            all
+            |> List.map (fun entry ->
+                LedgerEntries.validate services.InstallationId entry
+                |> Result.bind (LedgerEntries.receipt services.Principal actor (Some current)))
+            |> collect
+            |> Result.bind (fun receipts ->
+                match receipts with
+                | [] -> Ok []
+                | _ :: tail ->
+                    let previous = (tail |> List.map Some) @ [ None ]
+
+                    List.zip receipts previous
+                    |> List.truncate slice.Page.Items.Length
+                    |> List.map (fun (receipt, previous) ->
+                        CaseChanges.history previous receipt
+                        |> Result.map (fun difference ->
+                            HistoryEntry.FullEntry
+                                {
+                                    Receipt = receipt
+                                    Difference = difference
+                                }))
+                    |> collect)
 
     let history (services: ServiceContext) (request: HistoryRequest) token =
         let store = services.Store
@@ -289,7 +315,7 @@ module internal Queries =
         let principal = services.Principal
 
         task {
-            match parseReference request.CaseReference with
+            match CaseExecution.validateSelector request.Target with
             | Error refusal -> return Outcome.Rejected refusal
             | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok _ ->
@@ -299,7 +325,7 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! record = tx.FindCaseByReference request.CaseReference
+                                        let! record = ExecutionFacts.findCase tx request.Target
 
                                         let! actor =
                                             ExecutionFacts.authority
@@ -321,7 +347,7 @@ module internal Queries =
                                             | None ->
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
                                             | Some current ->
-                                                let! page =
+                                                let! slice =
                                                     tx.HistoryPage(
                                                         {
                                                             HistoryPageQuery.CaseId =
@@ -334,20 +360,20 @@ module internal Queries =
                                                 return
                                                     CaseExecution.current installation current
                                                     |> Result.bind (fun _ ->
-                                                        page.Items
-                                                        |> List.map (
-                                                            historyEntry
-                                                                services
-                                                                actor
-                                                                current
-                                                                request.Detail
-                                                        )
-                                                        |> collect)
+                                                        historyEntries
+                                                            services
+                                                            actor
+                                                            current
+                                                            request.Detail
+                                                            slice)
                                                     |> Result.map (fun entries ->
                                                         {
-                                                            HistoryResultPage.Entries = entries
+                                                            HistoryResultPage.CaseId =
+                                                                current.CaseId
+                                                            Reference = current.Snapshot.Reference
+                                                            Entries = entries
                                                             NextCursor =
-                                                                page.Next
+                                                                slice.Page.Next
                                                                 |> Option.map (
                                                                     Cursors.encodeHistory
                                                                         installation

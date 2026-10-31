@@ -11,6 +11,17 @@ reference is retained in the OPEN ledger metadata independently of erasable requ
 This fresh installation baseline supports request, snapshot, authority and ledger entry format 2 only.
 There are no compatibility readers or installation migrations.
 
+Case reads/history and case operations use a tagged `target`: either
+`{"kind":"REFERENCE","caseReference":"Demo-0001"}` or
+`{"kind":"ID","caseId":"10000000-0000-4000-8000-000000000001"}`. UUID-shaped references stay
+references when tagged REFERENCE. OPEN supplies a new reference. Existing-case selectors resolve in the
+same read snapshot or locked write used for authorization and execution. Accepted-operation identity
+uses the resolved CaseId; changing selector form cannot redirect an existing operation.
+
+Case-scoped authority inputs use `scope: {"kind":"CASE","target": SELECTOR}`. Published grant scopes
+and retained authority records carry both CaseId and immutable creation reference. CLI/browser lookup
+forms remain reference-based; dynamic `call` and HTTP inputs also support ID selectors.
+
 Disclosed case fields include the core-supplied `progress` value. Clients render it directly, along with
 core review changes and correction choices. CLI reviews consume the supplied changes and lifecycle
 states; authority reviews render the supplied before/after states.
@@ -209,9 +220,10 @@ entry's `recorded_at` descending, then folded reference ascending. NOTIFIED orde
 ascending, then folded reference; erased rows with no date sort last. A continuation encodes those keyset
 positions and its canonical filters/order. Use only continuations supported by the issuing endpoint.
 After request admission and authorization, unsupported cursor formats or invalid endpoint/filter/resource
-bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot.
+bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot. Concurrent changes to ordering or filter
+values can move, duplicate or omit rows during traversal. `--all` is a live traversal, not a pinned snapshot export.
 
-A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
+A live summary has root `caseId`, `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
 (`amount`/`currency`), `progress` and `incidentNotificationDate`. The amount strings are canonical; an undecided case has null payable.
 An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
@@ -339,8 +351,10 @@ views, and stale replies cannot populate a different actor or resource context.
 
 `case.history` returns newest revisions first. Start without a cursor, then follow `nextCursor` for older
 revisions. Each continuation selects revisions older than its last entry. The browser loads
-bounded pages and compares adjacent disclosed full receipts for changed fields; it does not fetch the
-complete history before displaying the timeline. Withheld or erased fields are never inferred.
+bounded pages. Core supplies each full entry's nullable `difference`, including lifecycle and field
+changes, using the predecessor already fetched in the same LIMIT+1 query. That context row is not an
+extra visible entry. Clients do no business comparison. Withheld or erased fields are never inferred;
+a missing comparison remains unavailable. This does not pin later pages or fetch the whole history.
 
 Treat continuation strings as opaque positions for their issuing endpoint and resource. Follow non-null
 `nextCursor`, even after a short page. Each page authorizes again before decoding a cursor and uses its own

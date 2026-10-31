@@ -51,7 +51,7 @@ let internal factsAndPaging fixture =
         let! opened =
             Service.execute
                 owner
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "HISTORY-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None
@@ -92,7 +92,15 @@ let internal factsAndPaging fixture =
 
         Expect.equal
             entries[3].Facts
-            (AuthorityHistoryFacts.Granted grant)
+            (AuthorityHistoryFacts.Granted
+                {
+                    Role = Role.CaseReader
+                    Scope =
+                        GrantScope.Case(
+                            CaseFixtures.caseId (id 11),
+                            CaseFixtures.reference "HISTORY-CASE"
+                        )
+                })
             "Typed case reference and role"
 
         Expect.equal
@@ -140,7 +148,7 @@ let internal permissions fixture =
         let! opened =
             Service.execute
                 owner
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "HISTORY-ACCESS" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None

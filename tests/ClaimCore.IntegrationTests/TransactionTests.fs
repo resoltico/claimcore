@@ -137,7 +137,7 @@ let tests =
                                 for index in 1..20 ->
                                     (Service.execute
                                         actor
-                                        (OperationInput.Case(
+                                        (ClaimCore.TestSupport.Inputs.caseOperation (
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
@@ -231,7 +231,13 @@ let tests =
                             (CaseFixtures.sequence (3L))
                             "Neither waiter wrote"
 
-                        let! _ = (Service.get actor ({ CaseReference = "absent" }) (token))
+                        let! _ =
+                            (Service.get
+                                actor
+                                ({
+                                    Target = CaseSelector.Reference("absent")
+                                })
+                                (token))
 
                         return ()
                     }))
@@ -333,7 +339,10 @@ let tests =
                                 (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
                         let! failed =
-                            (Service.execute actor (OperationInput.Case operation) (token))
+                            (Service.execute
+                                actor
+                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
+                                (token))
 
                         Expect.equal
                             failed.Outcome
@@ -350,7 +359,10 @@ let tests =
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
                         let! retry =
-                            (Service.execute actor (OperationInput.Case operation) (token))
+                            (Service.execute
+                                actor
+                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
+                                (token))
 
                         accepted retry |> ignore
                     }))
@@ -392,7 +404,7 @@ let tests =
                         let! opened =
                             (Service.execute
                                 actor
-                                (OperationInput.Case(
+                                (ClaimCore.TestSupport.Inputs.caseOperation (
                                     request
                                         20
                                         "synthetic-snapshot"

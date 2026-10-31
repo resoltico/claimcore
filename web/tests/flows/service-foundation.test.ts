@@ -48,7 +48,7 @@ describe("core act metadata", () => {
     expect(assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close)).toEqual({
       kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
-      caseReference: fields.caseReference,
+      target: { kind: "REFERENCE", caseReference: fields.caseReference },
       expectedRevision: 1,
       act: {
         kind: "CLOSE",

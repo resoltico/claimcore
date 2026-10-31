@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+- Use a fresh database: retained creation identity, logged recovery controls and format 2 replace the earlier baseline. Old installations are refused; migrations and compatibility readers are excluded.
+- Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
+- Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
+- Discard older cursors: case lists use format 4 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
+- Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
+- Use CLI recovery list/resolve for private per-attempt recovery; retain exact prepared retry frames and their installation binding until uncertainty is settled.
+- Final nonacceptance is an ordered actor/operation control. Verification and trusted-checkpoint rebuild restore fences, live projections and erased identity without reconstructing erased content.
+- Owners can rebuild projections with a trusted checkpoint and explicitly invalidate restored sessions. Keep actor traffic isolated during restore; older backups can resurrect data and cookies.
+- Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
+- Core supplies progress and review/history differences; clients retain typed requests through preparation, review and pagination and reject mismatched reply identities.
+- Storage diagnostics retain bounded safe failure context. Provider cleanup and throwing diagnostic observers preserve confirmed results and conservative commit uncertainty.
+- Contributor checks allow identical shapes and wording and remove mechanical size targets; actual ownership, dependency, byte, security and complete-test controls remain enforced.
+- Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
+
 ## [0.14.0] - 2026-10-30
 
 - Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.

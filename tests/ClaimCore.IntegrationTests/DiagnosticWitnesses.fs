@@ -141,7 +141,10 @@ let internal queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let internal execute actor pending =
-    (Service.execute (actor: ServiceContext) (OperationInput.Case pending) (ct))
+    (Service.execute
+        (actor: ServiceContext)
+        (ClaimCore.TestSupport.Inputs.caseOperation pending)
+        (ct))
 
 let internal opening values =
     { openRequest 10 "REACH-1" with

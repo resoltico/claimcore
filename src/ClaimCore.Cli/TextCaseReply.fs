@@ -75,7 +75,9 @@ module internal TextCaseReply =
                              OperationId.format change.OperationId
                          ]
                  ]
-             | HistoryEntry.FullEntry receipt ->
+             | HistoryEntry.FullEntry full ->
+                 let receipt = full.Receipt
+
                  let revision, act, fields =
                      match receipt.Subject with
                      | ReceiptSubject.Case value ->

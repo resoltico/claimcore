@@ -180,7 +180,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     let input = authored["input"] |> nonNull
     input["operationId"] <- JsonValue.Create(Guid.NewGuid().ToString("D"))
-    input["caseReference"] <- JsonValue.Create "SYNTHETIC-CONTRACT-MISMATCH"
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create "SYNTHETIC-CONTRACT-MISMATCH"
 
     let result =
         ProcessRunner.dotnet

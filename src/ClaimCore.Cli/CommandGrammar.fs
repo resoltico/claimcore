@@ -54,7 +54,7 @@ module CommandGrammar =
                 match input.Name with
                 | InteractionInput.Scope -> CatalogArgument.Implicit
                 | InteractionInput.Target(InputTarget.Field BusinessField.CaseReference) when
-                    input.Binding.Path = [ "caseReference" ]
+                    input.Binding.Path = [ "target"; "caseReference" ]
                     ->
                     CatalogArgument.Operand
                 | (InteractionInput.Target InputTarget.OperationId) when

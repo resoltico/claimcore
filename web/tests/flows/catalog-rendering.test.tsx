@@ -104,7 +104,10 @@ const caseReceipt = (request: CaseInput) => {
       kind: "CASE" as const,
       act: request.act.kind,
       caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: request.caseReference,
+      caseReference:
+        request.target.kind === "REFERENCE"
+          ? request.target.caseReference
+          : "Unexpected ID selector in reference-only form fixture",
       revision: request.expectedRevision + 1,
       snapshot: {
         kind: "WITHHELD" as const,
@@ -133,13 +136,19 @@ const caseReview = (request: CaseInput) => ({
           before: null,
           after: {
             caseId: "20000000-0000-4000-8000-000000000001",
-            caseReference: request.caseReference,
+            caseReference:
+              request.target.kind === "REFERENCE"
+                ? request.target.caseReference
+                : "Unexpected ID selector in reference-only form fixture",
             revision: request.expectedRevision + 1,
             state: {
               kind: "ACTIVE" as const,
               fields: {
                 ...caseFields,
-                caseReference: request.caseReference,
+                caseReference:
+                  request.target.kind === "REFERENCE"
+                    ? request.target.caseReference
+                    : "Unexpected ID selector in reference-only form fixture",
               },
             },
           },

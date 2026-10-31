@@ -30,7 +30,10 @@ let private body invocation =
     let operation = Frames.operationId invocation |> Option.get
 
     let reference =
-        match JsonValue.tryMember "caseReference" (Frames.input invocation) with
+        match
+            JsonValue.tryMember "target" (Frames.input invocation)
+            |> Option.bind (JsonValue.tryMember "caseReference")
+        with
         | Some(JsonValue.String reference) -> reference
         | _ -> "UNIT-001"
 

@@ -4,13 +4,6 @@ open System
 open ClaimCore.Json
 open ClaimCore.Domain
 
-type AuthorityRequestRecord =
-    {
-        OperationId: Guid
-        Target: PrincipalInput
-        Act: AuthoredAuthorityAct
-    }
-
 module AuthorityRecord =
     let private act =
         Codec.taggedOn
@@ -26,12 +19,13 @@ module AuthorityRecord =
     let private fields =
         let version = int64 RecordVersions.Authority
 
-        Codec.record (fun operationId target act () ->
+        (Codec.record (fun operationId target act () ->
             {
-                OperationId = operationId
+                AuthorityRequestRecord.OperationId = operationId
                 Target = target
                 Act = act
             })
+        : Fields<AuthorityRequestRecord, _>)
         |> Codec.field DurableNames.OperationId _.OperationId Codec.uuid
         |> Codec.field DurableNames.Target _.Target RecordCodecs.principal
         |> Codec.field DurableNames.Act _.Act act
@@ -47,18 +41,8 @@ module AuthorityRecord =
             [ Codec.variant DurableNames.AuthoritySubject id Some fields ]
         |> Codec.named "AuthorityRequestRecord"
 
-    let private validScope =
-        function
-        | AuthorityAct.Grant {
-                                 Scope = GrantTarget.CaseReference reference
-                             }
-        | AuthorityAct.Revoke {
-                                  Scope = GrantTarget.CaseReference reference
-                              } -> CaseReference.parse reference |> Result.isOk
-        | _ -> true
-
-    let private validate request =
-        if request.OperationId = Guid.Empty || not (validScope request.Act) then
+    let private validate (request: AuthorityRequestRecord) =
+        if request.OperationId = Guid.Empty then
             Error
                 {
                     Field = "$"
@@ -87,10 +71,13 @@ module AuthorityRecord =
         |> Result.bind (fun principal ->
             let act =
                 AuthorityAct.map
-                    (fun (value: AuthoredGrant) ->
+                    (fun (value: RecordedGrant) ->
                         {
                             AuthoredGrant.Role = value.Role
-                            Scope = value.Scope
+                            Scope =
+                                match value.Scope with
+                                | RecordedGrantScope.Installation -> GrantTarget.Installation
+                                | RecordedGrantScope.Case(id, _) -> GrantTarget.CaseId id
                         })
                     request.Act
 
@@ -101,23 +88,19 @@ module AuthorityRecord =
                 Message = "Invalid authority record values."
             })
 
-    let ofCommand (command: AuthorityCommand) : AuthorityRequestRecord =
-        let kind, issuer, subject = PrincipalKey.parts command.Target
-
-        {
-            OperationId = OperationId.value command.OperationId
-            Target =
-                {
-                    Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                }
-            Act =
-                AuthorityAct.map
-                    (fun (grant: AuthoredGrant) ->
-                        {
-                            AuthoredGrant.Role = grant.Role
-                            Scope = grant.Scope
-                        })
-                    command.Act
-        }
+    let ofCommand resolve (command: AuthorityCommand) =
+        AuthorityAct.traverse
+            (fun (grant: AuthoredGrant) ->
+                resolve grant.Scope
+                |> Result.map (fun scope ->
+                    {
+                        RecordedGrant.Role = grant.Role
+                        Scope = scope
+                    }))
+            command.Act
+        |> Result.map (fun act ->
+            {
+                AuthorityRequestRecord.OperationId = OperationId.value command.OperationId
+                Target = PrincipalKey.toInput command.Target
+                Act = act
+            })

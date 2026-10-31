@@ -6,6 +6,7 @@ open System
 open System.Globalization
 open System.Text.RegularExpressions
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 
 module internal Projections =
@@ -264,27 +265,23 @@ module internal Projections =
             Enabled = required 4 row
         }
 
-    let grantRow row : AuthoredGrant * GrantPosition =
+    let grantRow row : ScopedGrant * GrantPosition =
         let role = role row
 
         let caseId =
             optional<Guid> 2 row |> Option.map (DatabaseSession.admitted CaseId.create)
 
         let scope =
-            match caseId, optional<string> 1 row with
-            | None, None -> GrantTarget.Installation
-            | Some _, Some reference when
-                (CaseReference.parse
-                 >> Result.map ignore
-                 >> Result.mapError (fun violation ->
-                     Refusal.invalidInput (
-                         InputTarget.Field BusinessField.CaseReference,
-                         violation
-                     )))
-                    reference
-                |> Result.isOk
-                ->
-                GrantTarget.CaseReference reference
-            | _ -> raise (RecordCorruptException "Invalid grant projection.")
+            match caseId, optional<string> 1 row, optional<string> 3 row with
+            | None, None, None -> GrantScope.Installation
+            | Some id, Some reference, Some retained when reference = retained ->
+                match CaseReference.parse reference with
+                | Ok reference -> GrantScope.Case(id, reference)
+                | Error _ -> raise (RecordCorruptException "Invalid grant reference.")
+            | _ ->
+                raise (
+                    RecordCorruptException
+                        "Grant projection disagrees with retained creation identity."
+                )
 
         { Role = role; Scope = scope }, { Role = role; CaseId = caseId }

@@ -38,7 +38,17 @@ let qualify fixture output =
     let operationId = authored.GetProperty("operationId").GetString() |> nonNull
 
     let current =
-        automation fixture "case.get" {| caseReference = reference |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One browser acceptance"

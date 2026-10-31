@@ -66,7 +66,14 @@ module DiagnosticCodecs =
         let definitions = RequestCodecs.operationInput.Definitions
 
         let width subject family token =
-            let selection = Map.ofList [ RequestSchemas.OperationInput, subject; family, token ]
+            // Reference selectors carry authored scalar validation; typed IDs cannot add an independent business issue.
+            let selection =
+                Map.ofList
+                    [
+                        RequestSchemas.OperationInput, subject
+                        family, token
+                        RequestSchemas.CaseSelector, "REFERENCE"
+                    ]
 
             Bindings.walk definitions selection RequestCodecs.operationInput.Schema
             |> List.choose (function

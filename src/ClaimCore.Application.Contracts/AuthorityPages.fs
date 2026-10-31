@@ -14,7 +14,7 @@ type ActorReviewPage =
 type AuthorityGrantPage =
     {
         Actor: Actor
-        Items: AuthoredGrant list
+        Items: ScopedGrant list
         NextCursor: string option
     }
 
@@ -22,16 +22,16 @@ type AuthorityGrantPage =
 type AuthorityHistoryFacts =
     | OwnerProvisioned of PrincipalKey
     | Registered of PrincipalKey
-    | Granted of AuthoredGrant
-    | Revoked of AuthoredGrant
+    | Granted of ScopedGrant
+    | Revoked of ScopedGrant
     | Enabled
     | Disabled
 
 module AuthorityHistoryFacts =
-    let ofCommand (command: AuthorityCommand) =
-        match command.Act with
-        | AuthorityAct.ProvisionOwner -> AuthorityHistoryFacts.OwnerProvisioned command.Target
-        | AuthorityAct.Register -> AuthorityHistoryFacts.Registered command.Target
+    let ofAct target (act: AuthorityAct<ScopedGrant>) =
+        match act with
+        | AuthorityAct.ProvisionOwner -> AuthorityHistoryFacts.OwnerProvisioned target
+        | AuthorityAct.Register -> AuthorityHistoryFacts.Registered target
         | AuthorityAct.Grant grant -> AuthorityHistoryFacts.Granted grant
         | AuthorityAct.Revoke grant -> AuthorityHistoryFacts.Revoked grant
         | AuthorityAct.Enable -> AuthorityHistoryFacts.Enabled

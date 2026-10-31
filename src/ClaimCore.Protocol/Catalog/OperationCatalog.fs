@@ -53,7 +53,10 @@ module OperationCatalog =
                 ]
             | None -> []
 
-        Bindings.walk route.InputDefinitions (Map.ofList selection) route.InputSchema
+        Bindings.walk
+            route.InputDefinitions
+            (Map.ofList ((RequestSchemas.CaseSelector, "REFERENCE") :: selection))
+            route.InputSchema
 
     let private derived =
         let structures = all |> List.map (fun operation -> operation, structure operation)

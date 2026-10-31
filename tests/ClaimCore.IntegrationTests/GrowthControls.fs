@@ -69,7 +69,7 @@ let private sameCase database (actor: ServiceContext) =
                     for index in 0..1 ->
                         (Service.execute
                             actor
-                            (OperationInput.Case(
+                            (ClaimCore.TestSupport.Inputs.caseOperation (
                                 request
                                     (710000 + index)
                                     (CaseReference.format snapshot.Reference)
@@ -136,7 +136,7 @@ let private revocation (database: PostgresFixture.Database) owner principal =
         let write =
             (Service.execute
                 writer
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
                         710010
                         (CaseReference.format snapshot.Reference)
@@ -213,7 +213,7 @@ let private longCase database (actor: ServiceContext) =
             let! reply =
                 (Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request
                             (720000 + index)
                             (CaseReference.format snapshot.Reference)
@@ -257,12 +257,13 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
 
         acceptedAuthority granted
 
-        let! snapshot = current database "synthetic-growth-999"
+        let! snapshot = current database "synthetic-growth-998"
+        let watch = Stopwatch.StartNew()
 
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
                         730001
                         (CaseReference.format snapshot.Reference)
@@ -272,6 +273,7 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                 (token))
 
         accepted erased |> ignore
+        watch.Stop()
         let! final = current database (CaseReference.format snapshot.Reference)
         Expect.equal final.State CaseState.Erased "Erasure clears the final projection"
 
@@ -287,7 +289,88 @@ let private erase (database: PostgresFixture.Database) (actor: ServiceContext) =
                 false
 
         acceptedAuthority revoked
+        use! connection = database.OwnerSource.OpenConnectionAsync()
 
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*),count(*) FILTER(WHERE payload IS NOT NULL OR payload_nonce IS NOT NULL),min(creation_reference) FILTER(WHERE act='OPEN') FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1"
+                [| box (CaseId.value snapshot.CaseId) |]
+                token
+
+        let entries = DatabaseSession.value<int64> 0 rows.Head
+
+        Expect.isGreaterThanOrEqual
+            entries
+            1001L
+            "The erasure control clears a genuinely long history"
+
+        Expect.equal
+            (DatabaseSession.value<int64> 1 rows.Head)
+            0L
+            "Every erasable byte/nonce is absent"
+
+        Expect.equal
+            (DatabaseSession.value<string> 2 rows.Head)
+            "synthetic-growth-998"
+            "Creation reference is retained"
+
+        return
+            {|
+                entries = entries
+                elapsedMilliseconds = watch.Elapsed.TotalMilliseconds
+            |}
+    }
+
+let private recovery (database: PostgresFixture.Database) actor =
+    task {
+        let! before = Verification.verify database.OwnerSource None token
+        let before = VerificationSupport.position before
+        let watch = Stopwatch.StartNew()
+        let! first = resolve actor { OperationId = id 740000 } token
+
+        Expect.equal
+            first
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "The first final resolution commits a retained control"
+
+        let firstMilliseconds = watch.Elapsed.TotalMilliseconds
+        watch.Restart()
+
+        for _ in 1..1000 do
+            let! repeated = resolve actor { OperationId = id 740000 } token
+            Expect.equal repeated first "Repeated final resolution is stable"
+
+        let repeatedMilliseconds = watch.Elapsed.TotalMilliseconds
+
+        let! delayed =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request 740000 "GROWTH-RESOLVED" 0L (AuthoredCaseAct.Open registration)
+                ))
+                token
+
+        Expect.equal
+            delayed.Outcome
+            (ExecuteResult.Rejected Refusal.OperationResolved)
+            "The logged final answer blocks delayed acceptance"
+
+        let! after = Verification.verify database.OwnerSource None token
+        let after = VerificationSupport.position after
+
+        Expect.equal
+            after.Sequence
+            (Sequence.successor before.Sequence)
+            "Repeated resolution and delayed execute append no additional records"
+
+        return
+            {|
+                retainedEntries = 1
+                repetitions = 1000
+                firstMilliseconds = firstMilliseconds
+                repeatedMilliseconds = repeatedMilliseconds
+            |}
     }
 
 let run database actor principal =
@@ -295,11 +378,15 @@ let run database actor principal =
         do! sameCase database actor
         do! revocation database actor principal
         let! longHistory = longCase database actor
-        do! erase database actor
+        let! erasure = erase database actor
+        let! recovery = recovery database actor
 
         return
             {|
                 accepted = 1006
+                retainedControls = 1
+                recovery = recovery
+                erasure = erasure
                 sameCaseRefusals = 1
                 revokedWriterRefusals = 1
                 longHistory = longHistory

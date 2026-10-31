@@ -110,7 +110,13 @@ let correlatedBody invocation bytes =
                         echoed)
                 |> Option.defaultValue echoed
 
-            match memberText "kind" input, memberText "caseReference" input with
+            match
+                memberText "kind" input,
+                (at [ "target"; "caseReference" ] input
+                 |> Option.bind (function
+                     | JsonValue.String reference -> Some reference
+                     | _ -> None))
+            with
             | Some "CASE", Some reference ->
                 update
                     [ "outcome"; "data"; "subject"; "caseReference" ]
@@ -121,8 +127,13 @@ let correlatedBody invocation bytes =
             echoed
 
     let echoed =
-        if endpoint = "case.get" && tag = Some "SUCCEEDED" then
-            match memberText "caseReference" input with
+        if (endpoint = "case.get" || endpoint = "case.history") && tag = Some "SUCCEEDED" then
+            match
+                (at [ "target"; "caseReference" ] input
+                 |> Option.bind (function
+                     | JsonValue.String reference -> Some reference
+                     | _ -> None))
+            with
             | Some reference ->
                 update [ "outcome"; "data"; "caseReference" ] (JsonValue.String reference) echoed
             | _ -> echoed

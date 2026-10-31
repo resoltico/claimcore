@@ -53,7 +53,7 @@ let internal populated (database: PostgresFixture.Database) =
         let! outcome =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "synthetic-a" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
@@ -63,7 +63,7 @@ let internal populated (database: PostgresFixture.Database) =
         let! second =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "synthetic-b" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
@@ -99,7 +99,8 @@ let internal erased (actor: ServiceContext) =
     task {
         let request = actRequest 13 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
-        let! result = (Service.execute actor (OperationInput.Case request) (token))
+        let! result =
+            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation request) (token))
 
         return accepted result
     }

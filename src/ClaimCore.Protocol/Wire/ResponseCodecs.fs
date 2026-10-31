@@ -14,7 +14,22 @@ module ResponseCodecs =
 
     let private principal = PrincipalCodecs.key
 
-    let private scope = RequestCodecs.scope
+    let private scope =
+        Codec.tagged
+            "GrantScope"
+            [
+                Codec.unitVariant "INSTALLATION" GrantScope.Installation
+                Codec.variant
+                    "CASE"
+                    (fun (id, reference) -> GrantScope.Case(id, reference))
+                    (function
+                    | GrantScope.Case(id, reference) -> Some(id, reference)
+                    | _ -> None)
+                    (Codec.record (fun id reference -> id, reference)
+                     |> Codec.field "caseId" fst caseId
+                     |> Codec.field "caseReference" snd caseReference)
+            ]
+        |> Codec.vocabulary "scope"
 
     let private scalar kind =
         let codec =
@@ -301,7 +316,7 @@ module ResponseCodecs =
         |> named "ActorSummary"
 
     let internal authorityGrantFields =
-        (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
+        (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
 
@@ -342,10 +357,40 @@ module ResponseCodecs =
             | HistoryEntry.SummaryEntry value -> value
             | _ -> invalidArg "entry" "Expected summary history.")
 
+    let historyDifference =
+        let lifecycle =
+            (record (fun before after ->
+                {
+                    LifecycleChange.Before = before
+                    After = after
+                })
+            : Fields<LifecycleChange, _>)
+            |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
+            |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
+            |> build
+            |> named "LifecycleChange"
+
+        (record (fun lifecycle fields ->
+            {
+                HistoryDifference.Lifecycle = lifecycle
+                Fields = fields
+            })
+        : Fields<HistoryDifference, _>)
+        |> field "lifecycle" _.Lifecycle (nullable lifecycle)
+        |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
+        |> build
+        |> named "HistoryDifference"
+
     let private fullEntry receiptCodec =
-        record id
+        (record (fun receipt difference ->
+            {
+                FullHistoryEntry.Receipt = receipt
+                Difference = difference
+            })
+        : Fields<FullHistoryEntry, _>)
         |> fixedField "kind" "FULL"
-        |> field "receipt" id receiptCodec
+        |> field "receipt" _.Receipt receiptCodec
+        |> field "difference" _.Difference (nullable historyDifference)
         |> build
         |> map HistoryEntry.FullEntry (function
             | HistoryEntry.FullEntry value -> value
@@ -395,8 +440,16 @@ module ResponseCodecs =
             ]
 
     let historyPageFor receiptCodec =
-        (record (fun entries next -> { Entries = entries; NextCursor = next })
+        (record (fun id reference entries next ->
+            {
+                CaseId = id
+                Reference = reference
+                Entries = entries
+                NextCursor = next
+            })
         : Fields<HistoryResultPage, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
         |> field "entries" _.Entries (historyEntriesFor receiptCodec)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

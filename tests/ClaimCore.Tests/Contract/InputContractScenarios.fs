@@ -52,7 +52,9 @@ let internal rejectFrames () =
 
 let internal integerLexemes () =
     let wire =
-        Codec.encode Api.operationExecute.Input (OperationInput.Case(caseRequest registration))
+        Codec.encode
+            Api.operationExecute.Input
+            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
         |> Encoding.UTF8.GetString
 
     for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
@@ -140,7 +142,9 @@ let internal retainedText () =
         Codec.decode
             Limits.MaximumRequestBytes
             Api.operationExecute.Input
-            (Codec.encode Api.operationExecute.Input (OperationInput.Case input))
+            (Codec.encode
+                Api.operationExecute.Input
+                (ClaimCore.TestSupport.Inputs.caseOperation input))
         |> accepted
         |> ignore
 
@@ -267,6 +271,7 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Target _ -> "field."
             | InteractionInput.Scope
             | InteractionInput.ActorId
+            | InteractionInput.CaseId
             | InteractionInput.Detail
             | InteractionInput.Lifecycle
             | InteractionInput.Status
@@ -285,7 +290,9 @@ let internal authorityFieldPresentation () =
 
 let internal decoderProperty =
     let seed =
-        Codec.encode Api.operationExecute.Input (OperationInput.Case(caseRequest registration))
+        Codec.encode
+            Api.operationExecute.Input
+            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
 
     let generator = Gen.choice [ DecoderCorpora.jsonLike; DecoderCorpora.mutated seed ]
 

@@ -2202,7 +2202,7 @@
             ]
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope"
+            "$ref": "#/components/schemas/GrantScope"
           }
         },
         "required": [
@@ -2320,7 +2320,7 @@
             ]
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope"
+            "$ref": "#/components/schemas/GrantScope"
           }
         },
         "required": [
@@ -2380,7 +2380,7 @@
             ]
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope"
+            "$ref": "#/components/schemas/GrantScope"
           }
         },
         "required": [
@@ -2971,12 +2971,12 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "caseReference": {
-            "type": "string"
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
           }
         },
         "required": [
-          "caseReference"
+          "target"
         ]
       },
       "CaseListRequest": {
@@ -3301,6 +3301,55 @@
           "revision",
           "act",
           "snapshot"
+        ]
+      },
+      "CaseSelector": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseSelector.REFERENCE"
+          },
+          {
+            "$ref": "#/components/schemas/CaseSelector.ID"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "REFERENCE": "#/components/schemas/CaseSelector.REFERENCE",
+            "ID": "#/components/schemas/CaseSelector.ID"
+          }
+        }
+      },
+      "CaseSelector.ID": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ID"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId"
+        ]
+      },
+      "CaseSelector.REFERENCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REFERENCE"
+          },
+          "caseReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "caseReference"
         ]
       },
       "CaseSnapshot": {
@@ -4613,6 +4662,58 @@
           "after"
         ]
       },
+      "GrantScope": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GrantScope.INSTALLATION"
+          },
+          {
+            "$ref": "#/components/schemas/GrantScope.CASE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "INSTALLATION": "#/components/schemas/GrantScope.INSTALLATION",
+            "CASE": "#/components/schemas/GrantScope.CASE"
+          }
+        }
+      },
+      "GrantScope.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "caseReference"
+        ]
+      },
+      "GrantScope.INSTALLATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "INSTALLATION"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "GrantsPage": {
         "type": "object",
         "additionalProperties": false,
@@ -4751,6 +4852,34 @@
           "limit"
         ]
       },
+      "HistoryDifference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lifecycle": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LifecycleChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChange"
+            },
+            "minItems": 0,
+            "maxItems": 13
+          }
+        },
+        "required": [
+          "lifecycle",
+          "fields"
+        ]
+      },
       "HistoryEntries": {
         "oneOf": [
           {
@@ -4806,11 +4935,22 @@
                 },
                 "receipt": {
                   "$ref": "#/components/schemas/CaseReceipt"
+                },
+                "difference": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HistoryDifference"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
                 "kind",
-                "receipt"
+                "receipt",
+                "difference"
               ]
             },
             "minItems": 1,
@@ -4822,6 +4962,15 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
           "entries": {
             "$ref": "#/components/schemas/HistoryEntries"
           },
@@ -4839,6 +4988,8 @@
           }
         },
         "required": [
+          "caseId",
+          "caseReference",
           "entries",
           "nextCursor"
         ]
@@ -4928,8 +5079,8 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "caseReference": {
-            "type": "string"
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
           },
           "detail": {
             "enum": [
@@ -4949,7 +5100,7 @@
           }
         },
         "required": [
-          "caseReference",
+          "target",
           "detail",
           "limit"
         ]
@@ -5421,6 +5572,37 @@
           "kind"
         ]
       },
+      "LifecycleChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "enum": [
+                  "ACTIVE",
+                  "VOIDED",
+                  "ERASED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "enum": [
+              "ACTIVE",
+              "VOIDED",
+              "ERASED"
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "LifecycleCount": {
         "type": "object",
         "additionalProperties": false,
@@ -5721,8 +5903,8 @@
           "operationId": {
             "$ref": "#/components/schemas/Uuid"
           },
-          "caseReference": {
-            "type": "string"
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
           },
           "expectedRevision": {
             "type": "integer",
@@ -5736,7 +5918,7 @@
         "required": [
           "kind",
           "operationId",
-          "caseReference",
+          "target",
           "expectedRevision",
           "act"
         ]
@@ -6556,13 +6738,13 @@
           "kind": {
             "const": "CASE"
           },
-          "caseReference": {
-            "type": "string"
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
           }
         },
         "required": [
           "kind",
-          "caseReference"
+          "target"
         ]
       },
       "Scope.INSTALLATION": {

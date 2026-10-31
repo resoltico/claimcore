@@ -144,7 +144,13 @@ let private authority () =
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantTarget.CaseReference "Demo-0001"
+                    Scope =
+                        RecordedGrantScope.Case(
+                            (CaseFixtures.caseId (
+                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                            )),
+                            CaseFixtures.reference "Demo-0001"
+                        )
                 })
             "Independent grant meaning"
 
@@ -260,10 +266,13 @@ let private malformedIdentity () =
                         (Fixtures.registration)
                 ))
 
-        let wire = ClaimCore.Protocol.RequestCodecs.caseRequest.Write request
+        let wire =
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
 
         let admitted =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire |> Fixtures.accepted
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire
+            |> Fixtures.accepted
+            |> Inputs.referencedCase
 
         Expect.equal admitted request "Wire admission preserves malformed authored scalars"
 

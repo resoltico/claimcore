@@ -11,7 +11,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
 type SentDraft = {
   operationId: string;
-  caseReference: string;
+  target: { kind: "REFERENCE"; caseReference: string };
   expectedRevision: number;
   act: {
     kind: string;
