@@ -108,32 +108,31 @@ test("tab loss after transaction commit and before notification leaves identity 
   const identity = await reviewDraft(page);
   // Inject loss of the native completion notification after the real transaction has committed.
   await page.evaluate(() => {
-    const open = indexedDB.open.bind(indexedDB);
+    const completion = Object.getOwnPropertyDescriptor(IDBTransaction.prototype, "oncomplete");
+    if (completion?.set === undefined || completion.get === undefined) {
+      throw new Error("Native transaction completion setter is unavailable");
+    }
     const state = globalThis as unknown as { journalCommitObserved: boolean };
     state.journalCommitObserved = false;
-    indexedDB.open = (...args) => {
-      const request = open(...args);
-      request.addEventListener("success", () => {
-        const db = request.result;
-        const transaction = db.transaction.bind(db);
-        db.transaction = (...transactionArgs) => {
-          const tx = transaction(...transactionArgs);
-          if (transactionArgs[1] === "readwrite") {
-            Object.defineProperty(tx, "oncomplete", {
-              configurable: true,
-              get: () => null,
-              set: () => {
-                tx.addEventListener("complete", () => {
-                  state.journalCommitObserved = true;
-                });
-              },
-            });
-          }
-          return tx;
-        };
-      });
-      return request;
-    };
+    Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+      configurable: true,
+      get(this: IDBTransaction) {
+        return completion.get!.call(this) as IDBTransaction["oncomplete"];
+      },
+      set(this: IDBTransaction, handler: IDBTransaction["oncomplete"]) {
+        if (this.mode === "readwrite" && this.objectStoreNames.contains("attempts")) {
+          this.addEventListener(
+            "complete",
+            () => {
+              state.journalCommitObserved = true;
+            },
+            { once: true },
+          );
+        } else {
+          completion.set!.call(this, handler);
+        }
+      },
+    });
   });
   let executions = 0;
   page.on("request", (request) => {
