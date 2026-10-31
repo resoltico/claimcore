@@ -11,6 +11,7 @@ import {
 } from "./session-helpers";
 import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
+import { recoveryRecords } from "./recovery-storage";
 
 const stewardAct = async (page: Page, label: string, reason?: string) => {
   await startAct(page, label);
@@ -96,8 +97,11 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   expect(value.outcome.kind).toBe("ACCEPTED");
   if (value.outcome.kind === "ACCEPTED") {
     await expect(
-      page.getByRole("status").filter({ hasText: value.outcome.data.operationId }),
+      page
+        .getByRole("status")
+        .filter({ hasText: new RegExp(`^${value.outcome.data.operationId}$`, "u") }),
     ).toBeVisible();
+    await expect.poll(() => recoveryRecords(page)).toEqual([]);
     await page.getByRole("button", { name: "Start another operation", exact: true }).click();
   }
 };

@@ -114,11 +114,12 @@ let private descriptions () =
 [<Tests>]
 let tests =
     testList
-        "typed act slots"
+        "typed act structure"
         [
             testCase "descriptions agree with the independent act inventory" descriptions
             testCase "case act slots round trip and reject other kinds" (fun () ->
                 run "case act slots" caseProperty)
-            testCase "authority act slots round trip and reject other kinds" (fun () ->
-                run "authority act slots" authorityProperty)
+            testCase
+                "authority mapping and traversal preserve kinds and reject grant failures"
+                (fun () -> run "authority act traversal" authorityProperty)
         ]

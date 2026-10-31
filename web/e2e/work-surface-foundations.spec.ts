@@ -7,6 +7,7 @@ import { actPath, casePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
 import { pauseJsonReply } from "./localization-support";
+import { recoveryRecords } from "./recovery-storage";
 
 const settleAcceptedClose = async (page: Page, operationId: string) => {
   const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
@@ -15,16 +16,9 @@ const settleAcceptedClose = async (page: Page, operationId: string) => {
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
     await expect(page.getByRole("alert")).toContainText("unknown");
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            JSON.parse(
-              sessionStorage.getItem("claimcore.unresolvedOperation") ?? "null",
-            ) as unknown,
-        ),
-      )
-      .toEqual({ operationId, subject: "CASE", act: "CLOSE" });
+    const saved = await recoveryRecords(page);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
       response.url().endsWith("/api/operation.resolve"),
     );
@@ -36,9 +30,7 @@ const settleAcceptedClose = async (page: Page, operationId: string) => {
     }
     expect(response.status()).toBe(200);
     expect(reply.outcome.data.operationId).toBe(operationId);
-    await expect
-      .poll(() => page.evaluate(() => sessionStorage.getItem("claimcore.unresolvedOperation")))
-      .toBeNull();
+    await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("revision 2.");

@@ -37,14 +37,34 @@ transition cause.
 
 ## Payment progress
 
-Payment is Undecided, Decided or Paid. Every Paid value includes its decision. Decision and payment
-appear as complete groups in the public business record.
+Progress is Undecided, Decided or Paid. Every Paid value retains its complete decision and payment
+record. Both appear as complete groups in the public business record.
 
 ## Ledger position
 
-A sequence number and entry hash identify an accepted ledger position. The hash has 32 bytes and is
-shown as hexadecimal at boundaries. Genesis is sequence zero with the zero hash.
+A sequence number and entry hash identify a committed ledger position, including recovery controls.
+The hash has 32 bytes and is shown as hexadecimal at boundaries. Genesis is sequence zero with the zero hash.
 
 ## Entry target
 
-The case or authority object named by an accepted ledger entry. Its public wire member is `subject`.
+A ledger entry names a case, an authority target or an actor-scoped final-nonacceptance control.
+Public acceptance receipts expose case/authority targets as `subject`; recovery controls have no business
+acceptance receipt and do not appear in case or authority history.
+
+## Case identity and reference
+
+A case's stable CaseId is its accepted OPEN operation UUID. Its original reference is immutable,
+ASCII-case-insensitively unique, retained after erasure and never reused. Tagged ID/reference selectors
+make UUID-shaped references unambiguous. See [Integration](integrating.md) for the wire contract.
+
+## Recovery attempt
+
+An identity-only client record scoped to service origin, installation, actor and local attempt. It must
+commit before mutation handoff. It contains no business request or credentials; restart recovery resolves
+the operation instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
+
+## Final nonacceptance
+
+A committed actor/operation control promises that this pair cannot later be accepted in the supported
+state. Repeated resolution appends no second control; another actor's same raw operation UUID is not
+consumed. Controls advance the head/checkpoint and reconstruct fence projections.
