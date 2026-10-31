@@ -4,7 +4,7 @@ import { type Page } from "@playwright/test";
 
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
-import { browserRequest, progress, sessionToken } from "./session-helpers";
+import { browserRequest, progress, sessionToken, installationId } from "./session-helpers";
 
 type Principals = Readonly<{
   issuer: string;
@@ -50,11 +50,13 @@ export const applyAuthority = async (page: Page, body: RequestByEndpoint["operat
   }
   const bytes = JSON.stringify(body);
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    const antiforgery = await sessionToken(page);
     const reply = await browserRequest(page, endpoint.path, {
       method: endpoint.method,
       headers: {
         "Content-Type": "application/json",
-        "X-ClaimCore-Antiforgery": await sessionToken(page),
+        "X-ClaimCore-Antiforgery": antiforgery,
+        "ClaimCore-Installation": await installationId(page, antiforgery),
       },
       body: bytes,
     });

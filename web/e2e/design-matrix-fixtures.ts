@@ -12,7 +12,7 @@ import {
 import { isResponse } from "../src/protocol/client";
 import { casePath, actPath } from "../src/routing/routes";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
-import { browserRequest, openAuthenticated, sessionToken } from "./session-helpers";
+import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
 
 const request = async <K extends EndpointId>(
   page: Page,
@@ -20,11 +20,17 @@ const request = async <K extends EndpointId>(
   body: RequestByEndpoint[K],
 ): Promise<ResponseByEndpoint[K]> => {
   const metadata = endpoints.find((entry) => entry.id === endpoint)!;
+  const antiforgery = await sessionToken(page);
+  const binding =
+    endpoint === "operation.execute" || endpoint === "operation.resolve"
+      ? { "ClaimCore-Installation": await installationId(page, antiforgery) }
+      : {};
   const reply = await browserRequest(page, metadata.path, {
     method: metadata.method,
     headers: {
       "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": await sessionToken(page),
+      "X-ClaimCore-Antiforgery": antiforgery,
+      ...binding,
     },
     body: JSON.stringify(body),
   });

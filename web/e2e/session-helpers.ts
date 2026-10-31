@@ -355,3 +355,20 @@ export const logout = async (page: Page): Promise<void> => {
   }
   expect(reply.payload.outcome.data.authenticated).toBe(false);
 };
+
+/** Raw mutation fixtures bind to the authenticated installation, just like both production clients. */
+export const installationId = async (page: Page, token: string): Promise<string> => {
+  const reply = await browserRequest(page, "/api/context", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
+    body: "{}",
+  });
+  if (
+    reply.status !== 200 ||
+    !isResponse("context", reply.payload) ||
+    reply.payload.outcome.kind !== "SUCCEEDED"
+  ) {
+    throw new Error("Synthetic installation context is unavailable.");
+  }
+  return reply.payload.outcome.data.installationId;
+};

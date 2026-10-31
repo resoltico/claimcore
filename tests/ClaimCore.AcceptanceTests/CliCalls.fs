@@ -80,6 +80,31 @@ let verb fixture environment arguments code =
 let automation fixture endpoint input code =
     run fixture fixture.Environment (frame endpoint input) code
 
+// Resolve before the CLI isolates XDG state: version-manager shims may store their trust there.
+let private nodeExecutable =
+    lazy
+        (let result =
+            PublishedProcesses.run
+                10000
+                (PublishedProcesses.start
+                    "node"
+                    [ "-p"; "process.execPath" ]
+                    (Dictionary<string, string>()))
+                None
+
+         Expect.equal
+             result.ExitCode
+             0
+             "Resolve the configured Node runtime before isolated CLI launch"
+
+         let path = UTF8Encoding(false, true).GetString(result.StandardOutput).Trim()
+
+         Expect.isTrue
+             (Path.IsPathFullyQualified path && File.Exists path)
+             "Node runtime is an executable path"
+
+         path)
+
 let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
     let values = Dictionary<string, string>(fixture.Environment)
     values.Remove("CLAIMCORE_OIDC_CLIENT_SECRET_FILE") |> ignore
@@ -100,13 +125,14 @@ let interactiveEnvironment (fixture: PublishedFixture.Fixture) username mode =
 
     values["CLAIMCORE_CLI_TEST_ISSUER"] <- fixture.Issuer
     values["CLAIMCORE_CLI_TEST_PUBLIC_CLIENT_ID"] <- "cli"
+    values["CLAIMCORE_CLI_TEST_NODE"] <- nodeExecutable.Value
     values["CLAIMCORE_CLI_TEST_DRIVER"] <- Path.Combine(fixture.Root, "web/e2e/cli-pkce-driver.mjs")
 
     let launcher =
         FixtureFiles.text
             fixture.Directory
             (if OperatingSystem.IsMacOS() then "open" else "xdg-open")
-            "#!/bin/sh\nprintf 'launcher-started\\n' > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE\"\nexec node \"$CLAIMCORE_CLI_TEST_DRIVER\" \"$@\" > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stdout\" 2> \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stderr\"\n"
+            "#!/bin/sh\nprintf 'launcher-started\\n' > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE\"\nexec \"$CLAIMCORE_CLI_TEST_NODE\" \"$CLAIMCORE_CLI_TEST_DRIVER\" \"$@\" > \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stdout\" 2> \"$CLAIMCORE_CLI_TEST_PROGRESS_FILE.stderr\"\n"
 
     File.SetUnixFileMode(
         launcher,

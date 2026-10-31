@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
-import { browserRequest, sessionToken } from "./session-helpers";
+import { browserRequest, sessionToken, installationId } from "./session-helpers";
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
@@ -33,12 +33,13 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   const opened: CaseFields = {
     caseReference: reference,
     status: "OPENED",
+    progress: "UNDECIDED",
     registration: { ...setupRegistration, claimedAmount: "1200.5" },
     decision: null,
     payment: null,
   };
-  const decided: CaseFields = { ...opened, decision: setupDecision };
-  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" } };
+  const decided: CaseFields = { ...opened, decision: setupDecision, progress: "DECIDED" };
+  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" }, progress: "PAID" };
   const steps: SeedStep[] = [
     { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
     { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
@@ -74,6 +75,7 @@ const acceptSetup = async (
     headers: {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": token,
+      "ClaimCore-Installation": await installationId(page, token),
     },
     body: JSON.stringify(request),
   });
@@ -206,6 +208,11 @@ export const expectResultFields = (
     REPLACE: { paymentDate: "2026-09-06" },
     CLEAR: null,
   };
+  const progress = {
+    KEEP: "PAID",
+    REPLACE: "PAID",
+    CLEAR: modes.decision === "CLEAR" ? "UNDECIDED" : "DECIDED",
+  } as const;
   expect(after).toEqual({
     revision: before.revision + 1,
     fields: {
@@ -218,6 +225,7 @@ export const expectResultFields = (
               claimedAmount: "1",
             }
           : before.fields.registration,
+      progress: progress[modes.payment],
       decision: decisions[modes.decision],
       payment: payments[modes.payment],
     },
