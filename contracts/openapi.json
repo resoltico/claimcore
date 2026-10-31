@@ -2949,6 +2949,13 @@
                 "type": "null"
               }
             ]
+          },
+          "progress": {
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "PAID"
+            ]
           }
         },
         "required": [
@@ -2956,7 +2963,8 @@
           "status",
           "registration",
           "decision",
-          "payment"
+          "payment",
+          "progress"
         ]
       },
       "CaseGetRequest": {

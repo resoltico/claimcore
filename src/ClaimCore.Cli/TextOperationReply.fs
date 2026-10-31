@@ -108,30 +108,34 @@ module internal TextOperationReply =
 
         let changes =
             match review with
-            | OperationReview.Authority value -> authorityChanges language value.Before value.After
+            | OperationReview.Authority value -> authorityStates language value.Before value.After
             | OperationReview.Case value ->
-                let before =
-                    value.Before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+                let lifecycle =
+                    let before =
+                        value.Before
+                        |> Option.map (fun snapshot ->
+                            term language Lifecycle.vocabulary (CaseState.lifecycle snapshot.State))
 
-                let after = CaseState.fields value.Proposed.State
+                    let after =
+                        term
+                            language
+                            Lifecycle.vocabulary
+                            (CaseState.lifecycle value.Proposed.State)
 
-                CaseFields.declarations
-                |> List.choose (fun row ->
-                    let previous =
-                        before |> Option.bind (fun fields -> CaseFields.value row.Field fields)
+                    line
+                        language
+                        "input.lifecycle.label"
+                        (displayed language before + " → " + after)
 
-                    let next =
-                        after |> Option.bind (fun fields -> CaseFields.value row.Field fields)
-
-                    if previous = next then
-                        None
-                    else
-                        Some(
-                            line
-                                language
-                                (FieldPresentation.labelId row.Field)
-                                (displayed language previous + " → " + displayed language next)
-                        ))
+                lifecycle
+                :: (value.Changes
+                    |> List.map (fun change ->
+                        line
+                            language
+                            (FieldPresentation.labelId change.FieldName)
+                            (displayed language change.Before
+                             + " → "
+                             + displayed language change.After)))
 
         line
             language

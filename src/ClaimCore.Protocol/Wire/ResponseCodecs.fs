@@ -56,15 +56,19 @@ module ResponseCodecs =
     let private payment = group RecordGroup.Payment Payment.create Payment.values
 
     let caseFields =
-        (record (fun reference status registration decision payment ->
+        (record (fun reference status registration decision payment suppliedProgress ->
             PaymentProgress.fromGroups decision payment
-            |> Result.map (fun progress ->
-                {
-                    CaseFields.CaseReference = reference
-                    Status = status
-                    Registration = registration
-                    Progress = progress
-                }))
+            |> Result.bind (fun progress ->
+                if CaseProgress.ofPayment progress <> suppliedProgress then
+                    Error()
+                else
+                    Ok
+                        {
+                            CaseFields.CaseReference = reference
+                            Status = status
+                            Registration = registration
+                            Progress = progress
+                        }))
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
         |> field
@@ -74,10 +78,14 @@ module ResponseCodecs =
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
+        |> field
+            "progress"
+            (_.Progress >> CaseProgress.ofPayment)
+            (VocabularyCodec.create CaseProgress.vocabulary)
         |> buildResult (fun path () ->
             {
                 Path = path + ".payment"
-                Reason = "Payment requires a decision."
+                Reason = "Payment groups and supplied progress must agree."
             })
         |> named "CaseFields"
 

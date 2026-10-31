@@ -11,6 +11,10 @@ reference is retained in the OPEN ledger metadata independently of erasable requ
 This fresh installation baseline supports request, snapshot, authority and ledger entry format 2 only.
 There are no compatibility readers or installation migrations.
 
+Disclosed case fields include the core-supplied `progress` value. Clients render it directly, along with
+core review changes and correction choices. CLI reviews consume the supplied changes and lifecycle
+states; authority reviews render the supplied before/after states.
+
 ## Discover inputs
 
 `claimcore describe case open` describes one operation offline. `describe --format json` exposes catalog

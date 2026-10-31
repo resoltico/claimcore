@@ -100,6 +100,7 @@ let private restorationTests =
                                         "payableCurrency", text "EUR"
                                 ]
                             "payment", JsonValue.Null
+                            "progress", text "DECIDED"
                         ]
 
                 Expect.isOk

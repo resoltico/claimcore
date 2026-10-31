@@ -39,7 +39,9 @@ let private codecs () =
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
-    let expected = [ "caseReference"; "status"; "registration"; "decision"; "payment" ]
+    let expected =
+        [ "caseReference"; "status"; "registration"; "decision"; "payment"; "progress" ]
+
     Expect.equal actual expected "The public view has complete groups"
 
     let properties =

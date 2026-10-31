@@ -181,7 +181,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -376,7 +377,8 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -405,7 +407,8 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -466,7 +469,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -556,7 +560,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -610,7 +615,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -711,7 +717,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -1387,7 +1394,8 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1416,7 +1424,8 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1543,7 +1552,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -1601,7 +1611,8 @@
                           },
                           "payment": {
                             "paymentDate": "2026-01-01"
-                          }
+                          },
+                          "progress": "PAID"
                         }
                       }
                     },
@@ -2885,7 +2896,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },
@@ -2971,7 +2983,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -3014,7 +3027,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -3056,7 +3070,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -3113,7 +3128,8 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
               },

@@ -85,22 +85,17 @@ module internal TextAuthorityReply =
                    ]))
         @ nextLines language page.NextCursor
 
-    let authorityChanges language (before: AuthorityState) (after: AuthorityState) =
+    let authorityStates language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
             (CliMessages.key CliMessage.GrantsLabel),
             (before.Grants |> List.map (grantRow language) |> String.concat "; "),
             (after.Grants |> List.map (grantRow language) |> String.concat "; ")
         ]
-        |> List.choose (fun (key, previous, next) ->
-            if previous = next then
-                None
-            else
-                Some(
-                    line
-                        language
-                        key
-                        ((if previous = "" then "—" else previous)
-                         + " → "
-                         + (if next = "" then "—" else next))
-                ))
+        |> List.map (fun (key, previous, next) ->
+            line
+                language
+                key
+                ((if previous = "" then "—" else previous)
+                 + " → "
+                 + (if next = "" then "—" else next)))

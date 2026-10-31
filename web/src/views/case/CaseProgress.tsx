@@ -1,4 +1,3 @@
-import { caseProgress } from "../../presentation/caseProgress";
 import type { CurrentCase, CatalogDocument } from "../../api/service";
 import { BusinessValue } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
@@ -12,7 +11,7 @@ export const CaseProgress = ({
 }) => {
   const p = usePresentation();
   const { fields } = current.state;
-  const progress = caseProgress(fields);
+  const { progress } = fields;
   const paidDate = definition.fields.find((field) => field.name === "paymentDate");
   return (
     <div className="case-progress">

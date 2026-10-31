@@ -17,7 +17,6 @@ import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
 import type { CaseView } from "@contracts/client";
 import { CaseStateBadge } from "../components/CaseStateBadge";
-import { caseProgress } from "../presentation/caseProgress";
 
 type CaseDetailProps = {
   caseReference: string;
@@ -97,7 +96,7 @@ const CaseHeader = ({
                   : {
                       kind: state.state.kind,
                       status: state.state.fields.status,
-                      progress: caseProgress(state.state.fields),
+                      progress: state.state.fields.progress,
                     }
               }
             />
