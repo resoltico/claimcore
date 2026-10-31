@@ -113,9 +113,17 @@ jobs:
           expected_sdk="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' global.json)"
           docker run --rm --env CI=true --env NO_COLOR=1 \
             --env CLAIMCORE_EXPECTED_SDK="$expected_sdk" \
+            --env CLAIMCORE_REPORT_OWNER="$(id -u):$(id -g)" \
             --volume "$PWD:/workspace" --workdir /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0.403-alpine3.24@sha256:cc02b814237a76c4735fb6eeee87181597b5e56f2ce458a435e527674d91f4d7 \
             sh -euc '
+              # Keep private report modes while allowing the host runner to retain evidence.
+              restore_report_owner() {
+                if [ -d /workspace/artifacts/verification ]; then
+                  chown -R "$CLAIMCORE_REPORT_OWNER" /workspace/artifacts/verification
+                fi
+              }
+              trap restore_report_owner EXIT
               apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1 python3=3.14.10-r1
               test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"
               git config --global --add safe.directory /workspace
