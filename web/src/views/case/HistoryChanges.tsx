@@ -51,7 +51,7 @@ export const HistoryChanges = ({ receipt, difference, fields }: Props) => {
       ) : null}
       <dl className="review-values history-changes">
         {difference.fields.map((change) => {
-          const field = fields.find((field) => field.name === change.field)!;
+          const field = fields.find((descriptor) => descriptor.name === change.field)!;
           return (
             <div key={change.field}>
               <dt>{p.fieldLabel(change.field)}</dt>
