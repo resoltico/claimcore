@@ -230,8 +230,9 @@ let private identityForms () =
                 | "CASE" ->
                     RequestRecord.decode 65536 source
                     |> Fixtures.accepted
-                    |> Case.canonical
-                    |> RequestRecord.encode
+                    |> RequestRecord.identity (
+                        CaseFixtures.caseId (Guid.Parse(text vector "caseId"))
+                    )
                 | "AUTHORITY" ->
                     AuthorityRecord.decode 65536 source
                     |> Fixtures.accepted

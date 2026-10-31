@@ -1,11 +1,11 @@
 """Independent Python oracle for ClaimCore durable formats.
 
 It shares no code with the F# implementation. From the source objects in sources.json it
-derives RFC 8785 canonical bytes, case-reference identities (UUIDv8), framed ledger payloads,
-salted commitments, the 183-byte entry preimage and entry hashes, in the structure of
+derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloads,
+salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 1 --snapshot 1 --authority 1
+  python3 -I generate_vectors.py --request 2 --snapshot 2 --authority 2
 
 Writes JSON to standard output.
 """
@@ -28,7 +28,6 @@ ACT_CODES = {
     "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
 }
 ENTRY_TAG = b"claimcore/ledger-entry/2\n"
-REFERENCE_TAG = b"claimcore/case-reference-id/1\n"
 
 
 def string(value):
@@ -89,7 +88,7 @@ def fold_reference(reference):
     return "".join(chr(ord(c) - 32) if "a" <= c <= "z" else c for c in reference)
 
 
-def canonical_identity(request):
+def canonical_identity(request, case_id=None):
     result = copy.deepcopy(request)
     def amount(values, key):
         text = format(decimal.Decimal(values[key]), "f")
@@ -105,6 +104,9 @@ def canonical_identity(request):
             for group, key in (("registration", "claimedAmount"), ("decision", "payableAmount")):
                 if act["groups"][group]["kind"] == "REPLACE":
                     amount(act["groups"][group]["values"], key)
+        result["caseId"] = case_id
+        if act["kind"] != "OPEN":
+            del result["caseReference"]
     elif act["kind"] in ("GRANT", "REVOKE") and act["scope"]["kind"] == "CASE":
         act["scope"]["caseReference"] = fold_reference(act["scope"]["caseReference"])
     return result
@@ -116,28 +118,14 @@ def identity_vectors(sources, case_format, authority_format):
         version = case_format if item["left"]["kind"] == "CASE" else authority_format
         authored_left = with_format(item["left"], version)
         authored_right = with_format(item["right"], version)
-        left = canonical_identity(authored_left)
-        right = canonical_identity(authored_right)
+        left = canonical_identity(authored_left, item.get("caseId"))
+        right = canonical_identity(authored_right, item.get("caseId"))
         same = canonical(left) == canonical(right)
         assert same == item["same"], item["name"]
-        result.append({"name": item["name"], "subject": item["left"]["kind"], "same": same,
+        result.append({"name": item["name"], "subject": item["left"]["kind"], "same": same, "caseId": item.get("caseId"),
                        "left": vector("authored left", authored_left), "right": vector("authored right", authored_right),
                        "canonicalLeft": vector("identity left", left), "canonicalRight": vector("identity right", right)})
     return result
-
-
-def case_id(installation, reference):
-    folded = fold_reference(reference)
-    digest = hashlib.sha256(REFERENCE_TAG + uuid.UUID(installation).bytes
-                            + folded.encode("ascii")).digest()
-    raw = bytearray(digest[:16])
-    raw[6] = (raw[6] & 0x0F) | 0x80
-    raw[8] = (raw[8] & 0x3F) | 0x80
-    return str(uuid.UUID(bytes=bytes(raw)))
-
-
-def valid_reference(reference):
-    return 1 <= len(reference) <= 80 and all(0x21 <= ord(c) <= 0x7E for c in reference)
 
 
 def frame(request, snapshot):
@@ -157,7 +145,7 @@ def day_number(text):
 
 
 def ledger(sources, requests, snapshot, authority):
-    installation = sources["caseReferenceIds"]["installationId"]
+    installation = sources["installationId"]
     previous = bytes(32)
     vectors = []
     for spec in sources["ledgerEntries"]:
@@ -237,9 +225,6 @@ def main():
     requests = [with_format(item["value"], arguments.request) for item in sources["caseRequests"]]
     snapshot = with_format(sources["snapshot"]["value"], arguments.snapshot)
     authority = with_format(sources["authorityRecord"]["value"], arguments.authority)
-    installation = sources["caseReferenceIds"]["installationId"]
-    for refused in sources["caseReferenceIds"]["refused"]:
-        assert not valid_reference(refused), refused
     document = {
         "purpose": "Independent Python oracle for ClaimCore durable formats; regenerate with "
                    "python3 -I generate_vectors.py",
@@ -250,12 +235,6 @@ def main():
         "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
-        "caseReferenceIds": {
-            "installationId": installation,
-            "accepted": [{"reference": reference, "caseId": case_id(installation, reference)}
-                         for reference in sources["caseReferenceIds"]["accepted"]],
-            "refused": sources["caseReferenceIds"]["refused"],
-        },
         "ledgerPayloads": {
             "caseRequest": canonical(requests[0]),
             "caseSnapshot": canonical(snapshot),

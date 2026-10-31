@@ -171,21 +171,6 @@
       "kind": "AUTHORITY"
     }
   },
-  "caseReferenceIds": {
-    "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
-    "accepted": [
-      "Demo-0001",
-      "DEMO-0001",
-      "demo-0001",
-      "CL/2026/0042#a"
-    ],
-    "refused": [
-      "DEMO 1",
-      "LIETA-Ā1",
-      "",
-      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    ]
-  },
   "ledgerEntries": [
     {
       "name": "case OPEN at genesis",
@@ -270,7 +255,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000001",
         "kind": "CASE"
-      }
+      },
+      "caseId": "30000000-0000-4000-8000-000000000001"
     },
     {
       "name": "equal reference",
@@ -312,7 +298,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000002",
         "kind": "CASE"
-      }
+      },
+      "caseId": "30000000-0000-4000-8000-000000000002"
     },
     {
       "name": "different amount",
@@ -354,7 +341,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000003",
         "kind": "CASE"
-      }
+      },
+      "caseId": "30000000-0000-4000-8000-000000000003"
     },
     {
       "name": "different name",
@@ -396,7 +384,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000004",
         "kind": "CASE"
-      }
+      },
+      "caseId": "30000000-0000-4000-8000-000000000004"
     },
     {
       "name": "amend amount",
@@ -438,7 +427,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000005",
         "kind": "CASE"
-      }
+      },
+      "caseId": "20000000-0000-4000-8000-000000000001"
     },
     {
       "name": "decision amount",
@@ -472,7 +462,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000006",
         "kind": "CASE"
-      }
+      },
+      "caseId": "20000000-0000-4000-8000-000000000001"
     },
     {
       "name": "correction registration amount",
@@ -536,7 +527,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000007",
         "kind": "CASE"
-      }
+      },
+      "caseId": "20000000-0000-4000-8000-000000000001"
     },
     {
       "name": "correction decision amount",
@@ -592,7 +584,8 @@
         "format": 1,
         "operationId": "30000000-0000-4000-8000-000000000008",
         "kind": "CASE"
-      }
+      },
+      "caseId": "20000000-0000-4000-8000-000000000001"
     },
     {
       "name": "grant reference",
@@ -1800,5 +1793,6 @@
         "caseId": "10000000-0000-4000-8000-000000000001"
       }
     }
-  ]
+  ],
+  "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b"
 }
