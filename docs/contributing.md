@@ -62,9 +62,10 @@ consumers; declaration controls check unused declarations. Independently owned t
 compiler and negative-control details. Explicit exceptions need a concrete consumer or ownership reason.
 Product internals may be exposed to tests only.
 
-A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot` and `AuthorityAct.slot`
-pair typed inject/project functions; wire and durable codecs select their own member names without
-reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
+A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot`
+pairs typed inject/project functions; `AuthorityAct.map` and `AuthorityAct.traverse` preserve typed grant
+payloads. Wire and durable codecs own their member names and vocabularies.
+[Application outcomes](../src/ClaimCore.Application.Contracts/Outcome.fs) own typed use-case results;
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 
@@ -89,9 +90,10 @@ admitted commands and stored identity/position fields use typed values.
 ### Declaration
 
 [BusinessField.describe](../src/ClaimCore.Domain/CaseFields.fs) exhaustively supplies each field's kind,
-group, searchability and amount/currency relationship. Field/group inventories and authored input targets
-derive from that description.
-`CaseAct.slot` and `AuthorityAct.slot` pair typed injection with projection. Protocol owns endpoint and
+group, searchability and amount/currency relationship for current interfaces. Authored group shapes and
+permanent record inventories remain explicit at their owning boundaries.
+`CaseAct.slot` pairs typed injection with projection; authority mapping/traversal preserves grant payloads.
+Protocol owns endpoint and
 interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
 annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
 
@@ -100,9 +102,8 @@ Their boundary adapters check exact membership and scalar kinds. Registration co
 incident/notification chronology. PaymentProgress retains the complete Payment with its Decision.
 Field collections are transport and presentation projections; business accessors return their scalar types.
 
-[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) admits newly asserted values generically.
-Named accessors retain date-order, payable and payment-acknowledgement rules. Adding a declared field
-does not require parallel authored/admitted record members or per-field codec and admission branches.
+A business-field change may require typed record, boundary-adapter and codec updates. Keep these
+adaptations explicit: adding current metadata alone must not change an existing permanent grammar.
 
 [StateValidation](../src/ClaimCore.Domain/StateValidation.fs) owns admission of newly asserted dates and
 names and progress invariants. Corrections retain proposed groups until acknowledgement and admission
