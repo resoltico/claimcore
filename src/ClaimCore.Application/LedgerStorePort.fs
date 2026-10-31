@@ -57,6 +57,7 @@ type StoredCase =
 
 [<RequireQualifiedAccess>]
 type EntryTarget =
+    | NonAcceptance of targetOperationId: OperationId
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: ActorId * act: AuthorityKind
 

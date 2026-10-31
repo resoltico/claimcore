@@ -155,6 +155,11 @@ The append-only guard permits case-payload clearing. A trusted schema owner can 
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.
 
+Final nonacceptance is an actor/operation-scoped retained ledger control. It advances the ordered head and
+checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
+resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
+Verification reconstructs the complete fence projection from controls, including their recorded instants.
+
 ## Trust model
 
 One PostgreSQL database owns acceptance and each read uses one snapshot. The IdP, service host, database
@@ -204,7 +209,7 @@ grant before interactive sign-in. Discard drops the session's references to mana
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
-entries while retaining folded case/actor/grant state; its same-snapshot duplicate prepass may sort or spill
+entries while retaining folded case/actor/grant state, acceptance identities and recovery controls; its same-snapshot duplicate prepass may sort or spill
 in SQL. Streaming does not promise constant total-system memory.
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,

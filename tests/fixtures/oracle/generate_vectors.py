@@ -25,7 +25,7 @@ ACT_CODES = {
     "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
     "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
-    "ENABLE": 36, "DISABLE": 37,
+    "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
 }
 ENTRY_TAG = b"claimcore/ledger-entry/2\n"
 REFERENCE_TAG = b"claimcore/case-reference-id/1\n"
@@ -166,6 +166,11 @@ def ledger(sources, requests, snapshot, authority):
             snapshot_bytes = canonical(snapshot).encode("utf-8")
             subject = requests[0]["operationId"]
             subject_byte, revision = 1, spec["caseRevision"]
+        elif spec["subject"] == "CONTROL":
+            request_bytes = b'{"format":2,"kind":"NOT_ACCEPTED"}'
+            snapshot_bytes = b""
+            subject = spec["operationId"]
+            subject_byte, revision = 3, 0
         else:
             request_bytes = canonical(authority).encode("utf-8")
             snapshot_bytes = b""

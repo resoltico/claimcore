@@ -33,6 +33,16 @@ module internal StoredEntries =
         let act = DatabaseSession.value<string> 5 row
 
         match DatabaseSession.value<string> 4 row with
+        | "CONTROL" ->
+            if
+                act <> "NOT_ACCEPTED"
+                || not (Convert.IsDBNull row[10])
+                || not (Convert.IsDBNull row[11])
+            then
+                raise (RecordCorruptException "Invalid nonacceptance control shape.")
+
+            let operation = DatabaseSession.admitted OperationId.create target
+            EntryTarget.NonAcceptance operation, RecordedTarget.NonAcceptance operation
         | "AUTHORITY" ->
             let target = DatabaseSession.admitted ActorId.create target
 
@@ -116,7 +126,7 @@ module internal StoredEntries =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1")
+                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1 AND subject_kind<>'CONTROL'")
                     [| box (OperationId.value id) |]
                     token
 

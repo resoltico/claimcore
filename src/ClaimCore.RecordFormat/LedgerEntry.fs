@@ -23,6 +23,7 @@ type AuthorityEntryMetadata =
 
 [<RequireQualifiedAccess>]
 type RecordedTarget =
+    | NonAcceptance of OperationId
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
 
@@ -144,6 +145,14 @@ module LedgerEntry =
 
     let private subjectBytes =
         function
+        | RecordedTarget.NonAcceptance operation ->
+            {
+                Kind = 3uy
+                Act = 64uy
+                Identifier = (OperationId.value operation).ToByteArray(bigEndian = true)
+                Revision = i64 0L
+                Date = i32 0
+            }
         | RecordedTarget.Authority subject ->
             {
                 Kind = 2uy

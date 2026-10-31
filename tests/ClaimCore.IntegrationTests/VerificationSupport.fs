@@ -102,6 +102,14 @@ type private RecordedSubjectColumns =
 
 let private subject =
     function
+    | RecordedTarget.NonAcceptance operation ->
+        {
+            Kind = "CONTROL"
+            Act = "NOT_ACCEPTED"
+            Id = OperationId.value operation
+            Revision = None
+            BusinessDate = None
+        }
     | RecordedTarget.Case value ->
         {
             Kind = "CASE"

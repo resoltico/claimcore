@@ -13,6 +13,7 @@
     <Compile Include="HistoricalCaseEffects.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
+    <Compile Include="ControlRecord.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>
   <ItemGroup>

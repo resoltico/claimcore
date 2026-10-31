@@ -14,6 +14,7 @@ type internal State =
     {
         Head: LedgerPosition
         Entries: Map<OperationId, StoredEntry>
+        Controls: Map<Sequence, StoredEntry>
         Cases: Map<CaseId, StoredCase>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>

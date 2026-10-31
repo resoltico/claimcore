@@ -20,7 +20,11 @@ let private text (element: JsonElement) (name: string) =
     |> Option.defaultWith (fun () -> failtest "Missing vector text")
 
 let private subject (vector: JsonElement) =
-    if text vector "subject" = "AUTHORITY" then
+    if text vector "subject" = "CONTROL" then
+        RecordedTarget.NonAcceptance(
+            CaseFixtures.operationId (Guid.Parse(text vector "operationId"))
+        )
+    elif text vector "subject" = "AUTHORITY" then
         RecordedTarget.Authority
             {
                 TargetActorId = CaseFixtures.actorId (Guid.Parse(text vector "subjectId"))
@@ -82,6 +86,8 @@ let private expectedPayload vector =
     let request, snapshot =
         if text vector "subject" = "CASE" then
             text payloads "caseRequest", text payloads "caseSnapshot" |> Encoding.UTF8.GetBytes
+        elif text vector "subject" = "CONTROL" then
+            "{\"format\":2,\"kind\":\"NOT_ACCEPTED\"}", Array.empty
         else
             text payloads "authorityRequest", Array.empty
 
@@ -92,7 +98,7 @@ let private expectedPayload vector =
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 2 "All independent vectors"
+        Expect.equal vectors.Length 3 "All independent business and control vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector
@@ -500,3 +506,20 @@ let tests =
                         Expect.equal authorityBytes[81] 2uy "Authority kind"
                         Expect.equal caseBytes[147..150] [| 0uy; 0uy; 0uy; 0uy |] "Real day zero"))
         ]
+
+[<Tests>]
+let controls =
+    testCase "nonacceptance controls have a closed independent byte grammar" (fun () ->
+        let expected = Encoding.UTF8.GetBytes "{\"format\":2,\"kind\":\"NOT_ACCEPTED\"}"
+        Expect.equal (ControlRecord.encode ()) expected "Independent exact bytes"
+        Expect.isOk (ControlRecord.decode expected) "Positive decode control"
+
+        for invalid in
+            [
+                "{\"format\":1,\"kind\":\"NOT_ACCEPTED\"}"
+                "{\"format\":2,\"kind\":\"NOT_ACCEPTED\",\"extra\":0}"
+                "{\"format\":2,\"format\":2,\"kind\":\"NOT_ACCEPTED\"}"
+            ] do
+            Expect.isError
+                (ControlRecord.decode (Encoding.UTF8.GetBytes invalid))
+                "Unsupported or ambiguous controls refuse")

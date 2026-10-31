@@ -38,7 +38,7 @@ module internal Verification =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT min(sequence) FROM (SELECT sequence,row_number() OVER (PARTITION BY operation_id ORDER BY sequence) AS occurrence FROM claimcore.ledger) AS occurrences WHERE occurrence=2"
+                    "SELECT min(sequence) FROM (SELECT sequence,row_number() OVER (PARTITION BY operation_id ORDER BY sequence) AS occurrence FROM claimcore.ledger WHERE subject_kind<>'CONTROL') AS occurrences WHERE occurrence=2"
                     [||]
                     token
 
@@ -111,7 +111,12 @@ module internal Verification =
 
             match cases with
             | Error error -> return Error error
-            | Ok() -> return! VerificationRows.authority connection state.Actors token
+            | Ok() ->
+                let! authority = VerificationRows.authority connection state.Actors token
+
+                match authority with
+                | Error error -> return Error error
+                | Ok() -> return! VerificationRows.fences connection state.Fences token
         }
 
     let private finish

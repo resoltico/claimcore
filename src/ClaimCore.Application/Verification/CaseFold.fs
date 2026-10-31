@@ -51,7 +51,8 @@ module internal CaseFold =
 
     let apply histories (entry: StoredEntry) payload =
         match entry.Subject with
-        | EntryTarget.Authority _ ->
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
             result {

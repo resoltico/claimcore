@@ -25,6 +25,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                     EntryHash = EntryHash.zero
                 }
             Entries = Map.empty
+            Controls = Map.empty
             Cases = Map.empty
             Actors = Map.empty
             Grants = Set.empty

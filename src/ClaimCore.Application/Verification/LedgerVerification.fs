@@ -14,12 +14,17 @@ module LedgerVerification =
             Head: LedgerPosition
             Cases: Map<CaseId, CaseHistory>
             Actors: Map<ActorId, ActorAuthority>
+            Fences: Map<ActorId * OperationId, DateTimeOffset>
+            Accepted: Set<ActorId * OperationId>
             EarliestDuplicate: Sequence option
             ExpectedSeen: bool
         }
 
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
+        | EntryTarget.NonAcceptance _, VerifiedPayload.NonAcceptance _ ->
+            AuthorityFold.executor state.Actors entry false false
+            |> Result.map (fun () -> state.Cases, state.Actors)
         | EntryTarget.Authority _, VerifiedPayload.Authority request ->
             AuthorityFold.apply
                 installationId
@@ -87,6 +92,20 @@ module LedgerVerification =
                     VerificationFinding.PayloadFormat
                     (state.EarliestDuplicate <> Some sequence)
 
+            do!
+                match payload with
+                | VerifiedPayload.NonAcceptance operation ->
+                    require
+                        at
+                        VerificationFinding.PayloadFormat
+                        (not (Map.containsKey (entry.ActorId, operation) state.Fences)
+                         && not (Set.contains (entry.ActorId, operation) state.Accepted))
+                | _ ->
+                    require
+                        at
+                        VerificationFinding.PayloadFormat
+                        (not (Map.containsKey (entry.ActorId, entry.OperationId) state.Fences))
+
             let! cases, actors = histories installationId state entry payload
 
             let seen =
@@ -104,6 +123,15 @@ module LedgerVerification =
                         }
                     Cases = cases
                     Actors = actors
+                    Accepted =
+                        match payload with
+                        | VerifiedPayload.NonAcceptance _ -> state.Accepted
+                        | _ -> Set.add (entry.ActorId, entry.OperationId) state.Accepted
+                    Fences =
+                        match payload with
+                        | VerifiedPayload.NonAcceptance operation ->
+                            Map.add (entry.ActorId, operation) entry.RecordedAt state.Fences
+                        | _ -> state.Fences
                     EarliestDuplicate = state.EarliestDuplicate
                     ExpectedSeen = state.ExpectedSeen || seen
                 }
@@ -116,6 +144,8 @@ module LedgerVerification =
             Head = head
             Cases = Map.empty
             Actors = Map.empty
+            Fences = Map.empty
+            Accepted = Set.empty
             EarliestDuplicate = earliestDuplicate
             ExpectedSeen =
                 expected

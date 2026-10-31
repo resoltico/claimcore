@@ -48,10 +48,15 @@ type internal Writer(inputs: WriteInputs) =
         member _.Append draft =
             let state = get ()
 
+            let control =
+                match draft.Subject with
+                | EntryTarget.NonAcceptance _ -> true
+                | _ -> false
+
             if
                 draft.Sequence <> Sequence.successor state.Head.Sequence
                 || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
-                || Map.containsKey draft.OperationId state.Entries
+                || (not control && Map.containsKey draft.OperationId state.Entries)
             then
                 invalidOp "An append must extend the owned head with a fresh operation."
 
@@ -62,11 +67,22 @@ type internal Writer(inputs: WriteInputs) =
                             Sequence = draft.Sequence
                             EntryHash = EntryHash.ofBytes draft.EntryHash |> Option.get
                         }
+                    Controls =
+                        if control then
+                            Map.add
+                                draft.Sequence
+                                (LedgerEntries.stored draft |> copyEntry)
+                                state.Controls
+                        else
+                            state.Controls
                     Entries =
-                        Map.add
-                            draft.OperationId
-                            (LedgerEntries.stored draft |> copyEntry)
+                        if control then
                             state.Entries
+                        else
+                            Map.add
+                                draft.OperationId
+                                (LedgerEntries.stored draft |> copyEntry)
+                                state.Entries
                 }
 
             Task.FromResult(())

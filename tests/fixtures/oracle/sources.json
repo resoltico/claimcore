@@ -213,6 +213,20 @@
       "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
       "subjectId": "b0000000-0000-4000-8000-000000000002",
       "subject": "AUTHORITY"
+    },
+    {
+      "name": "actor-scoped final nonacceptance",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 3,
+      "act": "NOT_ACCEPTED",
+      "operationId": "30000000-0000-4000-8000-000000000003",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:28.000001+00:00",
+      "caseRevision": null,
+      "businessDate": null,
+      "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "subjectId": "30000000-0000-4000-8000-000000000003",
+      "subject": "CONTROL"
     }
   ],
   "canonicalIdentity": [

@@ -193,3 +193,27 @@ module internal VerificationRows =
 
                 return actual |> Result.bind (ProjectionVerification.finishAuthority expected)
         }
+
+    let fences connection expected token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ("SELECT actor_id,operation_id,"
+                     + DatabaseSession.instantExpression "fenced_at"
+                     + " FROM claimcore.operation_fences")
+                    [||]
+                    token
+
+            return
+                capture None VerificationFinding.FenceProjection (fun () ->
+                    rows
+                    |> List.map (fun row ->
+                        (DatabaseSession.value<System.Guid> 0 row
+                         |> DatabaseSession.admitted ActorId.create,
+                         DatabaseSession.value<System.Guid> 1 row
+                         |> DatabaseSession.admitted OperationId.create),
+                        DatabaseSession.recordedInstant 2 row)
+                    |> Map.ofList)
+                |> Result.bind (ProjectionVerification.fences expected)
+        }

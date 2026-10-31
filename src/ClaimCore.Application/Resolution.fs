@@ -1,5 +1,6 @@
 namespace ClaimCore.Application
 
+open ClaimCore.RecordFormat
 open System
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -60,6 +61,34 @@ module internal Resolution =
 
                                         match resolve services operationId actor entry current with
                                         | Verdict.Proceed actor ->
+                                            let key =
+                                                {
+                                                    FenceKey.ActorId = actor
+                                                    OperationId = operationId
+                                                }
+
+                                            let! fenced = tx.IsFenced key
+
+                                            if not fenced then
+                                                let control =
+                                                    LedgerEntries.create
+                                                        {
+                                                            InstallationId =
+                                                                services.InstallationId
+                                                            Head = tx.Head
+                                                            Instant = tx.ObservedAt
+                                                            Nonce = tx.Nonce
+                                                            ActorId = actor
+                                                            OperationId = operationId
+                                                            Subject =
+                                                                EntryTarget.NonAcceptance
+                                                                    operationId
+                                                            Request = ControlRecord.encode ()
+                                                            Snapshot = Array.empty
+                                                        }
+
+                                                do! tx.Append control
+
                                             do!
                                                 tx.Fence(
                                                     {

@@ -323,6 +323,11 @@ let private caseChecks =
                         }
                     ]
             )
+        VerificationFinding.FenceProjection,
+        fun () ->
+            ProjectionVerification.fences
+                (Map.ofList [ (CaseFixtures.actorId id, CaseFixtures.operationId id), instant ])
+                Map.empty
         VerificationFinding.CaseProjection,
         fun () ->
             ProjectionVerification.cases

@@ -64,10 +64,10 @@ CREATE TABLE claimcore.ledger (
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
     entry_format smallint NOT NULL CHECK (entry_format = 2),
-    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY')),
+    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
-    operation_id uuid NOT NULL UNIQUE
+    operation_id uuid NOT NULL
         CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (
@@ -93,6 +93,9 @@ CREATE TABLE claimcore.ledger (
     ),
 
     CONSTRAINT ledger_subject_shape CHECK (
+        (subject_kind = 'CONTROL' AND act = 'NOT_ACCEPTED' AND subject_id = operation_id
+            AND case_revision IS NULL AND business_date IS NULL AND payload IS NOT NULL)
+        OR
         (subject_kind = 'CASE'
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
@@ -114,6 +117,9 @@ CREATE TABLE claimcore.ledger (
 );
 
 -- Retained authoritative references cannot be reused even if a projection is damaged.
+CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id) WHERE subject_kind <> 'CONTROL';
+CREATE UNIQUE INDEX ledger_nonacceptance ON claimcore.ledger (actor_id,operation_id) WHERE subject_kind = 'CONTROL';
+
 CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger (upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
 
 CREATE INDEX ledger_authority_sequence ON claimcore.ledger (sequence DESC)
@@ -329,8 +335,8 @@ CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 -- operation IDs while no accepted ledger entry held that ID for that actor. Writers check fences
 -- after claimcore.lock_ledger_head(), so an execute with a fenced (actor, operation) refuses
 -- forever and the earlier NOT_ACCEPTED answer stays true. Fences hold no business content, are
--- never accepted history, are not covered by ledger verification and are retained indefinitely
--- (one row per explicit resolution of an operation that was not accepted).
+-- excluded from business acceptance history. Their retained control records cover them in the
+-- ledger head and verification; both records and projections are retained indefinitely.
 CREATE TABLE claimcore.operation_fences (
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     operation_id uuid NOT NULL CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),

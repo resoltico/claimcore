@@ -30,6 +30,7 @@ type VerificationFinding =
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection
     | CasePayableCurrencyProjection
+    | FenceProjection
     | AuthorityProjection
     | Head
     | ExpectedPosition

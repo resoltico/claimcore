@@ -83,12 +83,55 @@ let private delayedExecute (database: PostgresFixture.Database) =
 
         let! repeated = resolve actor (id 101)
         Expect.equal repeated resolved "Resolution is idempotent"
+        use! inspected = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                inspected
+                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='CONTROL'"
+                [||]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 rows.Head)
+            1L
+            "Repeated resolution appends exactly one control"
+
+        let! observed = Service.observe actor { OperationId = id 101 } token
+
+        Expect.equal
+            observed
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "A control is never an acceptance receipt"
+
         let! verified = Verification.verify database.OwnerSource None token
 
         Expect.equal
             (VerificationSupport.position verified).Sequence
-            (CaseFixtures.sequence (3L))
-            "Only bootstrap and grants exist"
+            (CaseFixtures.sequence (4L))
+            "Bootstrap, grants and exactly one final-nonacceptance control exist"
+
+        do!
+            VerificationSupport.sql
+                database
+                "UPDATE claimcore.operation_fences SET fenced_at=fenced_at+interval '1 second'"
+                [||]
+
+        do! VerificationSupport.finding VerificationFinding.FenceProjection database
+
+        do!
+            VerificationSupport.sql
+                database
+                "UPDATE claimcore.operation_fences f SET fenced_at=l.recorded_at FROM claimcore.ledger l WHERE l.subject_kind='CONTROL' AND l.actor_id=f.actor_id AND l.operation_id=f.operation_id"
+                [||]
+
+        let! repaired = VerificationSupport.verified database
+
+        Expect.equal
+            repaired
+            (VerificationSupport.position verified)
+            "Restoring the projection reestablishes the same control checkpoint"
+
     }
 
 let private revokeReadRoles (actor: ServiceContext) principal =
