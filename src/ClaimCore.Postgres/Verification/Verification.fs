@@ -33,21 +33,6 @@ module internal Verification =
         }
 
     /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
-    let private earliestDuplicate connection token =
-        task {
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    "SELECT min(sequence) FROM (SELECT sequence,row_number() OVER (PARTITION BY operation_id ORDER BY sequence) AS occurrence FROM claimcore.ledger WHERE subject_kind<>'CONTROL') AS occurrences WHERE occurrence=2"
-                    [||]
-                    token
-
-            return
-                match List.exactlyOne rows |> Array.exactlyOne with
-                | :? DBNull -> None
-                | value -> Some(DatabaseSession.admitted Sequence.create (unbox<int64> value))
-        }
-
     let private scan
         connection
         installationId
@@ -55,8 +40,7 @@ module internal Verification =
         (token: CancellationToken)
         =
         task {
-            let! duplicate = earliestDuplicate connection token
-            let mutable state = Ok(LedgerVerification.initial expected duplicate)
+            let mutable state = Ok(LedgerVerification.initial expected)
 
             use statement =
                 DatabaseSession.statement

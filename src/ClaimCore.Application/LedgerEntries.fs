@@ -171,6 +171,7 @@ module LedgerEntries =
             | EntryTarget.Case(_, revision, act, _) ->
                 revision >= Revision.first
                 && ((revision = Revision.first) = (act = CaseActKind.Open))
+                && (entry.CreationReference.IsSome = (act = CaseActKind.Open))
             | EntryTarget.NonAcceptance operation ->
                 operation = entry.OperationId && entry.CreationReference.IsNone
             | EntryTarget.Authority _ -> entry.CreationReference.IsNone

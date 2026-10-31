@@ -17,7 +17,6 @@ module LedgerVerification =
             Fences: Map<ActorId * OperationId, DateTimeOffset>
             Accepted: Map<OperationId, ActorId>
             References: Map<string, CaseId>
-            EarliestDuplicate: Sequence option
             ExpectedSeen: bool
         }
 
@@ -105,12 +104,6 @@ module LedgerVerification =
             let! payload = VerificationPayload.read installationId entry
 
             do!
-                require
-                    at
-                    VerificationFinding.PayloadFormat
-                    (state.EarliestDuplicate <> Some sequence)
-
-            do!
                 match payload with
                 | VerifiedPayload.NonAcceptance operation ->
                     require
@@ -167,12 +160,11 @@ module LedgerVerification =
                         | VerifiedPayload.NonAcceptance operation ->
                             Map.add (entry.ActorId, operation) entry.RecordedAt state.Fences
                         | _ -> state.Fences
-                    EarliestDuplicate = state.EarliestDuplicate
                     ExpectedSeen = state.ExpectedSeen || seen
                 }
         }
 
-    let initial (expected: LedgerPosition option) earliestDuplicate =
+    let initial (expected: LedgerPosition option) =
         let head = LedgerPosition.genesis
 
         {
@@ -182,7 +174,6 @@ module LedgerVerification =
             Fences = Map.empty
             Accepted = Map.empty
             References = Map.empty
-            EarliestDuplicate = earliestDuplicate
             ExpectedSeen =
                 expected
                 |> Option.exists (fun position ->

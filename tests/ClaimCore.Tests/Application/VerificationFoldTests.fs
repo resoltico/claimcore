@@ -42,7 +42,7 @@ let private owner =
             }
         ]
 
-let private state = LedgerVerification.initial None None
+let private state = LedgerVerification.initial None
 let private unitResult result = Result.map (fun _ -> ()) result
 
 let private row payload =
@@ -380,7 +380,7 @@ let private finding expected run =
         Expect.equal divergence.Finding expected "Stable finding token and precedence"
     | Ok() -> failtest "Corrupt synthetic input was accepted"
 
-let private duplicatePrecedence () =
+let private acceptedIdentityPrecedence () =
     let bytes =
         LedgerEntry.encodePayload
             {
@@ -395,7 +395,16 @@ let private duplicatePrecedence () =
             }
 
     let entry, metadata = row bytes
-    let duplicate = LedgerVerification.initial None (Some(CaseFixtures.sequence 1L))
+
+    let duplicate =
+        { state with
+            Accepted =
+                Map.ofList
+                    [
+                        entry.OperationId,
+                        CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000001")
+                    ]
+        }
 
     let append state entry metadata =
         LedgerVerification.append installation None state entry metadata |> unitResult
@@ -419,9 +428,7 @@ let private duplicatePrecedence () =
             }
             metadata)
 
-    Expect.isOk
-        (append (LedgerVerification.initial None (Some(CaseFixtures.sequence 2L))) entry metadata)
-        "A later duplicate cannot hide an earlier valid row"
+    Expect.isOk (append state entry metadata) "A valid row remains admitted without a SQL prepass"
 
 let private invalidProjectionRows () =
     let row: Actor =
@@ -488,7 +495,9 @@ let tests =
     testList
         "pure verification findings"
         [
-            testCase "duplicate prepass preserves per-row precedence" duplicatePrecedence
+            testCase
+                "accepted identities are checked by the pure fold after payload integrity"
+                acceptedIdentityPrecedence
             testCase "every finding has a pure rejection case" (fun () ->
                 Expect.equal
                     (cases |> List.map fst |> Set.ofList)
