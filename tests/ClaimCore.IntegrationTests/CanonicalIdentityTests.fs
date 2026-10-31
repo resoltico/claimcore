@@ -35,8 +35,26 @@ let private authorityInput vector side =
         AuthorityRecord.decode Limits.MaximumRequestBytes (encoded vector side)
         |> Result.defaultWith (fun _ -> failtest "The independent authority vector must decode")
 
-    AuthorityRequests.fromRecord record
-    |> Result.defaultWith (fun _ -> failtest "The independent authority vector must admit")
+    let command =
+        AuthorityRequests.fromRecord record
+        |> Result.defaultWith (fun _ -> failtest "The independent authority vector must admit")
+
+    // Exercise reference selectors at the current boundary; permanent scopes retain resolved IDs.
+    let act =
+        AuthorityAct.map
+            (fun (grant: RecordedGrant) ->
+                {
+                    AuthoredGrant.Role = grant.Role
+                    Scope =
+                        match grant.Scope with
+                        | RecordedGrantScope.Installation -> GrantTarget.Installation
+                        | RecordedGrantScope.Case(_, reference) ->
+                            GrantTarget.CaseReference(CaseReference.format reference)
+                })
+            record.Act
+
+    Authority.restore record.OperationId command.Target act
+    |> Result.defaultWith (fun _ -> failtest "The independent reference input must admit")
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -163,7 +181,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
             Expect.equal
                 authored
                 (encoded vector "left")
-                "Authority history keeps authored subject spelling"
+                "Authority history retains resolved creation identity and original principal spelling"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =

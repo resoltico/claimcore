@@ -135,7 +135,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                 (token))
 
         accepted reopened |> ignore
-        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
+        do! sql database "DROP INDEX claimcore.ledger_accepted_operation" [||]
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!

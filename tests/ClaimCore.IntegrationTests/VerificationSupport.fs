@@ -128,7 +128,7 @@ let private subject =
         }
 
 let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14 WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata
@@ -154,6 +154,7 @@ let private parameters (value: LedgerRow) =
         box metadata.PayloadCommitment
         DatabaseSession.parameter value.Entry.Payload
         DatabaseSession.parameter value.Entry.PayloadNonce
+        DatabaseSession.parameter (metadata.CreationReference |> Option.map CaseReference.format)
     |]
 
 let guardedSql (database: PostgresFixture.Database) statement parameters =

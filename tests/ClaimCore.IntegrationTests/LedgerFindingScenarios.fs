@@ -64,7 +64,17 @@ let internal format (database: PostgresFixture.Database) =
 
 let internal revision (database: PostgresFixture.Database) =
     task {
-        let! _ = populated database
+        let! actor = populated database
+
+        let! closed =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                ))
+                token
+
+        accepted closed |> ignore
 
         let change value =
             let request, snapshot = livePayload value
@@ -72,15 +82,15 @@ let internal revision (database: PostgresFixture.Database) =
             value
             |> caseSubject (fun subject ->
                 { subject with
-                    Revision = CaseFixtures.revision 2L
+                    Revision = CaseFixtures.revision 3L
                 })
             |> updateCase
-                { request with ExpectedRevision = 1L }
+                { request with ExpectedRevision = 2L }
                 { snapshot with
-                    Revision = CaseFixtures.revision 2L
+                    Revision = CaseFixtures.revision 3L
                 }
 
-        do! rewrite database (CaseFixtures.sequence (4L)) change
+        do! rewrite database (CaseFixtures.sequence (5L)) change
         do! finding VerificationFinding.RevisionSequence database
     }
 
@@ -99,7 +109,12 @@ let internal start (database: PostgresFixture.Database) =
                         })
                     snapshot.State
 
-            value
+            { value with
+                Metadata =
+                    { value.Metadata with
+                        CreationReference = None
+                    }
+            }
             |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
             |> updateCase
                 { request with
@@ -399,6 +414,21 @@ let private payableIndexFinding expected statement database =
         do! finding expected database
     }
 
+let private fenceProjection (database: PostgresFixture.Database) =
+    task {
+        let! actor = populated database
+        let! resolved = Service.resolve actor { OperationId = id 997 } token
+
+        Expect.equal
+            resolved.Outcome
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "Positive final-nonacceptance control"
+
+        let! _ = verified database
+        do! sql database "DELETE FROM claimcore.operation_fences" [||]
+        do! finding VerificationFinding.FenceProjection database
+    }
+
 let internal findingCases =
     [
         VerificationFinding.Link, link
@@ -451,6 +481,7 @@ let internal findingCases =
         payableIndexFinding
             VerificationFinding.CasePayableCurrencyProjection
             "UPDATE claimcore.cases SET payable_currency='USD'"
+        VerificationFinding.FenceProjection, fenceProjection
         VerificationFinding.AuthorityProjection, authorityProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected
