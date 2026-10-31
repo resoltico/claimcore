@@ -21,6 +21,13 @@ dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 ```
 
+The transitive matcher and traversal pins in [package.json](../web/package.json) address the
+[minimatch](https://github.com/advisories/GHSA-g3hv-75wg-m249) and
+[glob](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) advisories. The
+[import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
+rule exports; the package index also imports an unsupported API from an unused rule. The audit and
+configured boundary rules remain required.
+
 Use the declared versions before restoring. The frontend can build without executable .NET or Python;
 ordinary .NET builds run neither npm nor generation. Framework-dependent apphost publication is qualified;
 retain the whole publish directory and reviewed [notices](../eng/licenses/third-party-notices.json).

@@ -117,7 +117,7 @@ const config: OxlintConfig = defineConfig({
     },
     {
       name: "import-boundary",
-      specifier: "eslint-plugin-import-x",
+      specifier: fileURLToPath(new URL("./scripts/import-boundary-lint.plugin.mjs", import.meta.url)),
     },
   ],
   settings: {
