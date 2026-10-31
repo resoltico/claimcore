@@ -37,3 +37,21 @@ module RequestRecord =
         codec.Write command.Authored
         |> CanonicalWriter.bytes
         |> RecordLimits.requestBytes
+
+    /// Existing-case identity is the resolved retained ID, independent of lookup spelling.
+    let identity caseId (command: CaseCommand) =
+        let canonical = Case.canonical command
+
+        match codec.Write canonical.Authored with
+        | JsonValue.Object members ->
+            let members =
+                if CaseAct.kind command.Act = CaseActKind.Open then
+                    members
+                else
+                    members |> List.filter (fst >> (<>) DurableNames.CaseReference)
+
+            JsonValue.Object(
+                (DurableNames.CaseId, JsonValue.String(CaseId.format caseId)) :: members
+            )
+            |> CanonicalWriter.bytes
+        | _ -> invalidOp "A permanent case request is an object."

@@ -113,7 +113,12 @@ module internal CaseExecution =
         }
 
     let review (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
-        let identity = Case.canonical command |> RequestRecord.encode
+        let id =
+            view.Case
+            |> Option.map _.CaseId
+            |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
+
+        let identity = RequestRecord.identity id command
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
@@ -126,7 +131,13 @@ module internal CaseExecution =
         =
         let installationId = services.InstallationId
         let calendar = services.Calendar
-        let identity = Case.canonical command |> RequestRecord.encode
+
+        let id =
+            view.Case
+            |> Option.map _.CaseId
+            |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
+
+        let identity = RequestRecord.identity id command
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)

@@ -294,7 +294,10 @@ module LedgerEntries =
     /// Comparison bytes are canonical; retained ledger payloads remain authored.
     let internal identityBytes validated =
         match validated.Content with
-        | EntryContent.Case(request, _) -> Some(Case.canonical request |> RequestRecord.encode)
+        | EntryContent.Case(request, _) ->
+            match validated.Entry.Subject with
+            | EntryTarget.Case(id, _, _, _) -> Some(RequestRecord.identity id request)
+            | _ -> None
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
