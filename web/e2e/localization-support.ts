@@ -1,4 +1,5 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
+import { settledWorkspaceHeader } from "./workspace-navigation";
 import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -39,6 +40,7 @@ const openPreferences = async (page: Page): Promise<boolean> => {
   if (await page.locator('select[id$="-language"]:visible').count()) {
     return false;
   }
+  await settledWorkspaceHeader(page);
   const settings = page.locator("[data-settings-button]");
   if (!(await settings.isVisible())) {
     await page.locator(".workspace-header button[aria-expanded]").click();
