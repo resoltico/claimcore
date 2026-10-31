@@ -315,6 +315,7 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
 
         member _.Append entry =
             task {
+                FailureDiagnostics.phase FailurePhase.Append
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
 
                 try
@@ -325,9 +326,11 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
             }
 
         member _.ProjectCase projection =
+            FailureDiagnostics.phase FailurePhase.Projection
             Persistence.case connection projection token
 
         member _.ProjectAuthority projection =
+            FailureDiagnostics.phase FailurePhase.Projection
             Persistence.authority connection projection token
 
         member _.Fence

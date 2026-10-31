@@ -158,9 +158,34 @@ module internal DatabaseSession =
 
     let transaction (source: NpgsqlDataSource) isolation token action =
         task {
-            use! connection = source.OpenConnectionAsync(token)
-            use! transaction = connection.BeginTransactionAsync(isolation, token)
-            return! action connection transaction
+            let! connection = source.OpenConnectionAsync(token)
+            let mutable transaction: NpgsqlTransaction option = None
+
+            let! outcome =
+                task {
+                    try
+                        let! started = connection.BeginTransactionAsync(isolation, token)
+                        transaction <- Some started
+                        let! result = action connection started
+                        return Ok result
+                    with error ->
+                        return
+                            Error(
+                                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture error
+                            )
+                }
+
+            match transaction with
+            | Some transaction -> do! FailureDiagnostics.cleanup transaction.DisposeAsync
+            | None -> ()
+
+            do! FailureDiagnostics.cleanup connection.DisposeAsync
+
+            match outcome with
+            | Ok result -> return result
+            | Error error ->
+                error.Throw()
+                return Unchecked.defaultof<_>
         }
 
     let read source token action =

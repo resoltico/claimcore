@@ -4,6 +4,7 @@
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InstallationCheck/ServerSupport.fs" />
+    <Compile Include="FailureDiagnostics.fs" />
     <Compile Include="DatabaseSession.fs" />
     <Compile Include="Schema/Baseline.fs" />
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
