@@ -78,8 +78,7 @@ module private FrameInvocation =
                         cancelled
             else
                 match! RemoteServiceCall.context access.Client target cancelled with
-                | Error failure ->
-                    return CliReply.local failure |> CliReply.forAttempt frame DeliveryState.NotSent
+                | Error reply -> return reply |> CliReply.forAttempt frame DeliveryState.NotSent
                 | Ok context ->
                     match Frames.bindInstallation context.InstallationId frame with
                     | Error reason ->

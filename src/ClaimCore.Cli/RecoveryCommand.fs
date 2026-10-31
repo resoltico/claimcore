@@ -47,7 +47,13 @@ module internal RecoveryCommand =
                 }
 
             match! RemoteServiceCall.context access.Client target cancelled with
-            | Error reason -> return failure reason
+            | Error reply ->
+                return
+                    {
+                        Bytes = reply.Bytes
+                        ExitCode = reply.ExitCode
+                        MayChange = false
+                    }
             | Ok context ->
                 let scope: RecoveryScope =
                     {

@@ -309,3 +309,73 @@ let internal malformedBusinessInput () =
             (Some "REJECTED")
             "Business refusal is an admitted result."
     | _ -> failtest "Expected a business refusal."
+
+let internal preparationFailures () =
+    let check status body =
+        let mutable calls = 0
+
+        use handler =
+            new Handler(fun request ->
+                calls <- calls + 1
+
+                Expect.equal
+                    (request.RequestUri |> nonNull).AbsolutePath
+                    "/api/context"
+                    "Only preparation is sent"
+
+                Task.FromResult(response status body))
+
+        use client = new HttpClient(handler)
+
+        let result =
+            RemoteServiceCall.context
+                client
+                {
+                    Service = Uri "https://localhost/"
+                    InstallationId = None
+                    Authorization =
+                        System.Net.Http.Headers.AuthenticationHeaderValue(
+                            "Bearer",
+                            "synthetic-token"
+                        )
+                }
+                CancellationToken.None
+            |> _.GetAwaiter().GetResult()
+
+        Expect.equal calls 1 "One bounded preparation request"
+        result
+
+    let positiveBody =
+        samples "context"
+        |> List.find (fun body ->
+            use document = JsonDocument.Parse(ReadOnlyMemory body)
+
+            document.RootElement.GetProperty("outcome").GetProperty("kind").GetString() =
+                "SUCCEEDED")
+
+    let positive = check 200 positiveBody
+    Expect.isOk positive "Matching context remains admitted"
+
+    let mismatch =
+        check 409 (HostFailureCodecs.encode HostFailureReason.ContractMismatch)
+
+    match mismatch with
+    | Error reply ->
+        match reply.Frame.Result with
+        | FrameResult.HostFailure failure ->
+            Expect.equal
+                failure.Code
+                HostFailureCode.ContractMismatch
+                "Keep the actual refusal cause"
+
+            Expect.equal failure.Phase (Some ExecutionPhase.NotStarted) "Keep the host phase"
+            Expect.equal reply.ExitCode 3 "A preparation host failure remains a host failure"
+        | _ -> failtest "Preparation discarded the structured contract mismatch"
+    | Ok _ -> failtest "A mismatched context cannot prepare a mutation"
+
+    match check 409 (bytes "{}") with
+    | Error reply ->
+        match reply.Frame.Result with
+        | FrameResult.LocalFailure CliFailure.InvalidResponse -> ()
+        | _ -> failtest "An invalid host body must still refuse at transport admission"
+    | Ok _ -> failtest "Malformed context cannot prepare a mutation"

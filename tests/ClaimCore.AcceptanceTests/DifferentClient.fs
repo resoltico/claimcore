@@ -191,6 +191,11 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (Some(CliCalls.frame "operation.execute" input))
         |> CliCalls.parse 3
 
+    Expect.equal
+        (result.GetProperty("delivery").GetString())
+        "NOT_SENT"
+        "Preparation never hands off the mutation"
+
     let failure = result.GetProperty("result").GetProperty("hostFailure")
     Expect.equal (failure.GetProperty("code").GetString()) "CONTRACT_MISMATCH" "Handshake refusal"
 

@@ -130,65 +130,26 @@ module RemoteServiceCall =
         else
             sendBound client access frame beforeSend cancelled
 
-    /// A typed read admits the authenticated installation/actor before mutation preparation.
+    /// Preparation uses the same bounded transport admission and preserves structured host failures.
     let context (client: HttpClient) (access: Access) (cancelled: CancellationToken) =
         task {
+            let invocation =
+                Frames.create Api.context ()
+                |> Result.defaultWith (fun _ -> invalidOp "The empty context request must admit.")
+
             try
-                use deadline = HttpRequestDeadline.link client cancelled
+                let! reply = send client access invocation ignore cancelled
 
-                use request =
-                    new HttpRequestMessage(HttpMethod.Post, Uri(access.Service, "/api/context"))
-
-                request.Headers.Authorization <- access.Authorization
-                request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
-                request.Headers.Add("ClaimCore-Contract", ContractIdentity.value)
-
-                request.Content <-
-                    new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
-
-                use! response =
-                    client.SendAsync(
-                        request,
-                        HttpCompletionOption.ResponseHeadersRead,
-                        deadline.Token
-                    )
-
-                if
-                    response.StatusCode <> HttpStatusCode.OK
-                    || response.Content.Headers.ContentType
-                       |> Option.ofObj
-                       |> Option.forall (fun value ->
-                           not (
-                               String.Equals(
-                                   value.MediaType,
-                                   "application/json",
-                                   StringComparison.OrdinalIgnoreCase
-                               )
-                           ))
-                then
-                    return Error ClientFailure.InvalidResponse
-                else
-                    do!
-                        response.Content.LoadIntoBufferAsync(
-                            int64 MaximumResponseBytes,
-                            deadline.Token
-                        )
-
-                    let! bytes = response.Content.ReadAsByteArrayAsync deadline.Token
-
-                    return
-                        match
-                            ClaimCore.Json.Codec.decode
-                                MaximumResponseBytes
-                                Api.context.Output
-                                bytes
-                        with
-                        | Ok(ClaimCore.Application.Contracts.Outcome.Succeeded context) ->
-                            Ok context
-                        | _ -> Error ClientFailure.InvalidResponse
+                match reply.Frame.Result with
+                | FrameResult.Reply value ->
+                    match ServiceReply.value Api.context value with
+                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded context) ->
+                        return Ok context
+                    | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
+                | _ -> return Error reply
             with
             | :? HttpRequestException
             | :? OperationCanceledException
             | :? IO.IOException
-            | :? InvalidOperationException -> return Error ClientFailure.Unavailable
+            | :? InvalidOperationException -> return Error(CliReply.local ClientFailure.Unavailable)
         }

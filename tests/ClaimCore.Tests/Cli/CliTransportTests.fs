@@ -41,6 +41,9 @@ let tests =
             testCase "all result tags select the specified exit" resultExits
             testCase "catalogue methods handshake and exact input bytes are sent" requestBytes
             testCase "all typed service failure phases preserve mutation knowledge" failurePhases
+            testCase
+                "preparation preserves structured failures and refuses malformed contexts"
+                preparationFailures
             testCase "invalid replies and forged status never settle a mutation" invalidReplies
             testCase
                 "local cancellation unsupported invocation and pre-dispatch failure exits"
