@@ -122,6 +122,63 @@ let tests =
                             "A post-dispatch mismatched reply cannot settle the operation"
 
                         Expect.isTrue (refused.ExitCode <> 0) "It never becomes acceptance")
+            testCase "reference correlation folds ASCII only" (fun () ->
+                let operation = Guid.Parse "10000000-0000-4000-8000-000000000001"
+
+                let invoke reference =
+                    Frames.create
+                        Api.operationExecute
+                        (OperationInput.Case
+                            {
+                                OperationId = operation
+                                Target = CaseSelector.Reference reference
+                                ExpectedRevision = 1L
+                                Act = AuthoredCaseAct.Bare BareAct.Close
+                            })
+                    |> Result.defaultWith (fun _ ->
+                        failtest "Raw reference request must structurally admit")
+
+                for authored, retained in [ "ß", "SS"; "ſ", "S" ] do
+                    let accepted =
+                        { CliReplyFixtures.receipt with
+                            OperationId = CaseFixtures.operationId operation
+                            Subject =
+                                ReceiptSubject.Case
+                                    {
+                                        CaseId =
+                                            CaseFixtures.caseId (
+                                                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                            )
+                                        Reference = CaseFixtures.reference retained
+                                        Revision = CaseFixtures.revision 2L
+                                        Act = CaseActKind.Close
+                                        Snapshot = SnapshotDisclosure.Withheld
+                                    }
+                        }
+
+                    let value =
+                        Api.operationExecute.Output.Write
+                            {
+                                OperationId = operation
+                                Outcome = ExecuteResult.Accepted accepted
+                            }
+
+                    Expect.equal
+                        (exchange (invoke (retained.ToLowerInvariant())) value).ExitCode
+                        0
+                        "ASCII case variants identify the same retained reference"
+
+                    let refused = exchange (invoke authored) value
+
+                    Expect.equal
+                        refused.ExitCode
+                        4
+                        "Unicode folding cannot redirect a dispatched mutation"
+
+                    Expect.equal
+                        refused.Frame.Delivery
+                        DeliveryState.Uncertain
+                        "A foreign reference cannot settle acceptance")
             testCase
                 "a matching execute envelope cannot hide a different receipt operation"
                 (fun () ->

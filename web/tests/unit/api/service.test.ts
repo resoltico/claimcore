@@ -100,3 +100,41 @@ it("resolve and observe reject a different operation envelope and matching final
     expect(refused.kind).toBe("deliveryFailure");
   }
 });
+it.each([
+  ["ß", "SS"],
+  ["ſ", "S"],
+])("reference correlation refuses Unicode folding from %s to %s", async (authored, retained) => {
+  vi.stubGlobal("fetch", vi.fn());
+  const accepted = {
+    operationId: operation,
+    outcome: {
+      kind: "ACCEPTED",
+      data: {
+        ...receipt,
+        subject: {
+          ...receipt.subject,
+          caseId: "20000000-0000-4000-8000-000000000001",
+          caseReference: retained,
+          revision: 2,
+          act: "CLOSE",
+        },
+      },
+    },
+  };
+  const request = (reference: string) =>
+    prepareRequest("operation.execute", {
+      kind: "CASE",
+      operationId: operation,
+      target: { kind: "REFERENCE", caseReference: reference },
+      expectedRevision: 1,
+      act: { kind: "CLOSE" },
+    });
+  vi.mocked(fetch).mockResolvedValueOnce(reply(accepted));
+  expect((await service.execute(request(retained.toLowerCase()), "csrf", installation)).kind).toBe(
+    "outcome",
+  );
+  vi.mocked(fetch).mockResolvedValueOnce(reply(accepted));
+  const result = await service.execute(request(authored), "csrf", installation);
+  expect(result.kind).toBe("deliveryFailure");
+  expect(isMutationUncertain(result)).toBe(true);
+});

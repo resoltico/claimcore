@@ -4,7 +4,9 @@ const object = (value: unknown): Record<string, unknown> => (isObject(value) ? v
 const identity = (value: unknown): string | null =>
   typeof value === "string" ? value.toLowerCase() : null;
 const reference = (value: unknown): string | null =>
-  typeof value === "string" ? value.toUpperCase() : null;
+  typeof value === "string"
+    ? value.replace(/[a-z]/gu, (character) => character.toUpperCase())
+    : null;
 const caseTargetMatches = (
   request: Record<string, unknown>,
   actual: Record<string, unknown>,

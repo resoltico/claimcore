@@ -50,6 +50,7 @@ let private selectedSpecifications =
             "narrow-role.spec.ts"
             "recovery-journal.spec.ts"
             "resolution.spec.ts"
+            "reply-correlation.spec.ts"
             "work-surface-foundations.spec.ts"
             "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
