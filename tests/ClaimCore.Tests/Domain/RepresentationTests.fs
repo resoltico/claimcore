@@ -79,7 +79,7 @@ let tests =
                     CalendarDate.parse "2026-08-20" |> Result.defaultWith (string >> failwith)
 
                 Expect.isError
-                    (PaymentProgress.fromGroups None (Some date))
+                    (PaymentProgress.fromGroups None (Some(Payment.onDate date)))
                     "Invalid state is rejected at construction"
 
                 Expect.equal
@@ -101,7 +101,7 @@ let progressWire =
             [
                 PaymentProgress.Undecided, false, false
                 PaymentProgress.Decided decision, true, false
-                PaymentProgress.Paid(decision, date), true, true
+                PaymentProgress.Paid(decision, Payment.onDate date), true, true
             ] do
             let fields: CaseFields =
                 {

@@ -107,14 +107,12 @@ let private summaries () =
 
                 Expect.equal
                     summary.ClaimantName
-                    (Registration.value BusinessField.ClaimantName fields.Registration
-                     |> FieldValue.name)
+                    (Registration.claimant fields.Registration)
                     "Claimant is already disclosed by case.get"
 
                 Expect.equal
                     summary.InsurerName
-                    (Registration.value BusinessField.InsurerName fields.Registration
-                     |> FieldValue.name)
+                    (Registration.insurer fields.Registration)
                     "Insurer is already disclosed by case.get"
 
                 Expect.equal

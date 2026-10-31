@@ -89,10 +89,7 @@ let private textFormats () =
                 ClaimCore.TestSupport.Inputs.registrationWith
                     [
                         BusinessField.ClaimantName,
-                        (PartyName.format (
-                            Registration.value BusinessField.ClaimantName (oldFields.Registration)
-                            |> FieldValue.name
-                        ))
+                        (PartyName.format (Registration.claimant (oldFields.Registration)))
                     ]
                     (registration)
             ))

@@ -82,10 +82,7 @@ let private snapshot () =
                 "Canonical monetary spelling"
 
             Expect.equal
-                (CountryCode.format (
-                    Registration.value BusinessField.IncidentCountry (fields.Registration)
-                    |> FieldValue.country
-                ))
+                (CountryCode.format (Registration.country (fields.Registration)))
                 "LV"
                 "Country syntax"
 

@@ -56,9 +56,7 @@ module ResponseCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            PaymentProgress.fromGroups
-                decision
-                (payment |> Option.map (fun (value: Payment) -> (Payment.date (value))))
+            PaymentProgress.fromGroups decision payment
             |> Result.map (fun progress ->
                 {
                     CaseFields.CaseReference = reference

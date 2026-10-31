@@ -39,8 +39,7 @@ module CaseIndex =
             NotifiedOn =
                 fields
                 |> Option.map (fun fields ->
-                    Registration.value BusinessField.IncidentNotificationDate fields.Registration
-                    |> FieldValue.date)
+                    Registration.incidentNotificationDate fields.Registration)
             Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
             Payable =
                 fields

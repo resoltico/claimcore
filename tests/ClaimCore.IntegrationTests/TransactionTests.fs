@@ -115,10 +115,7 @@ let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
             "Authority belongs to this snapshot"
 
         Expect.equal
-            (PartyName.format (
-                Registration.value BusinessField.ClaimantName (fields.Registration)
-                |> FieldValue.name
-            ))
+            (PartyName.format (Registration.claimant (fields.Registration)))
             name
             "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"

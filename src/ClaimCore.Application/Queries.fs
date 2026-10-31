@@ -136,24 +136,13 @@ module internal Queries =
                         (fun (fields: CaseFields) ->
                             {
                                 Status = fields.Status
-                                ClaimantName =
-                                    Registration.value
-                                        BusinessField.ClaimantName
-                                        fields.Registration
-                                    |> FieldValue.name
-                                InsurerName =
-                                    Registration.value
-                                        BusinessField.InsurerName
-                                        fields.Registration
-                                    |> FieldValue.name
+                                ClaimantName = Registration.claimant fields.Registration
+                                InsurerName = Registration.insurer fields.Registration
                                 Claimed = Registration.claimed fields.Registration
                                 Payable = fields.Decision |> Option.map Decision.payable
                                 Progress = CaseProgress.ofPayment fields.Progress
                                 IncidentNotificationDate =
-                                    Registration.value
-                                        BusinessField.IncidentNotificationDate
-                                        fields.Registration
-                                    |> FieldValue.date
+                                    Registration.incidentNotificationDate fields.Registration
                             })
                         record.Snapshot.State
             })

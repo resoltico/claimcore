@@ -44,7 +44,7 @@ let progress (decision: Decision option) (payment: Payment option) =
     match decision, payment with
     | None, None -> PaymentProgress.Undecided
     | Some value, None -> PaymentProgress.Decided value
-    | Some value, Some paid -> PaymentProgress.Paid(value, (Payment.date (paid)))
+    | Some value, Some paid -> PaymentProgress.Paid(value, paid)
     | None, Some _ -> failtest "A fixture cannot represent payment without a decision."
 
 let private identifier create value =

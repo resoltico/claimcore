@@ -157,7 +157,7 @@ module internal Transitions =
                 claim
                 (Ok
                     { claim with
-                        Progress = PaymentProgress.Paid(decision, (Payment.date (payment)))
+                        Progress = PaymentProgress.Paid(decision, payment)
                     })
         | Applicable.Unpaying(claim, decision) ->
             businessChange

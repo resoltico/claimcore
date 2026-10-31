@@ -163,10 +163,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format (
-                    Registration.value BusinessField.ClaimantName (fields.Registration)
-                    |> FieldValue.name
-                ))
+                (PartyName.format (Registration.claimant (fields.Registration)))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
@@ -247,10 +244,7 @@ let private assertRetained name entries =
                                                                    }
                                  } ->
             Expect.equal
-                (PartyName.format (
-                    Registration.value BusinessField.ClaimantName (fields.Registration)
-                    |> FieldValue.name
-                ))
+                (PartyName.format (Registration.claimant (fields.Registration)))
                 name
                 "Accepted history is never re-admitted or truncated"
         | _ -> failtest "Expected disclosed retained fields"

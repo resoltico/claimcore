@@ -56,12 +56,7 @@ let private paidCorrectionTests =
                     "Case target is retained"
 
                 Expect.equal
-                    (PartyName.format (
-                        Registration.value
-                            BusinessField.ClaimantName
-                            ((viewFields after).Registration)
-                        |> FieldValue.name
-                    ))
+                    (PartyName.format (Registration.claimant ((viewFields after).Registration)))
                     (RegistrationInput.value BusinessField.ClaimantName (changedRegistration))
                     "Registration replaced"
 
@@ -119,12 +114,7 @@ let private closedCorrectionTests =
                     "Correction does not reopen"
 
                 Expect.equal
-                    (PartyName.format (
-                        Registration.value
-                            BusinessField.ClaimantName
-                            ((viewFields after).Registration)
-                        |> FieldValue.name
-                    ))
+                    (PartyName.format (Registration.claimant ((viewFields after).Registration)))
                     (RegistrationInput.value BusinessField.ClaimantName (changedRegistration))
                     "Fact corrected")
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->

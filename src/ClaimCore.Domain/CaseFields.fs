@@ -147,32 +147,12 @@ module GroupValues =
     let items (GroupValues(group, values)) =
         BusinessField.ofGroup group |> List.map (fun field -> field, values[field])
 
-    let get field (GroupValues(_, values)) = values[field]
-    let raw field values = get field values |> Authored.format
-
-    let money field values =
-        let currency =
-            (BusinessField.describe field).Pairs
-            |> Option.defaultWith (fun () -> invalidOp "An amount must declare its currency pair.")
-
-        Money.create
-            (get field values |> FieldValue.amount)
-            (get currency values |> FieldValue.currency)
+    let raw field (GroupValues(_, values)) = values[field] |> Authored.format
 
     let createAuthored group members =
         members
         |> List.map (fun (field, value) -> field, Authored.create value)
         |> create group
-
-    let createAdmitted group members =
-        if
-            members
-            |> List.exists (fun (field, value) ->
-                FieldValue.kind value <> (BusinessField.describe field).Kind)
-        then
-            Error "A field's value must have its declared kind."
-        else
-            create group members
 
     let parse values =
         items values
@@ -203,7 +183,16 @@ module GroupValues =
 
 type RegistrationInput = private RegistrationInput of GroupValues<Authored>
 
-type Registration = private Registration of GroupValues<Admitted>
+type Registration =
+    private
+        {
+            IncidentDate: CalendarDate
+            NotificationDate: CalendarDate
+            Country: CountryCode
+            Claimant: PartyName
+            Insurer: PartyName
+            Claimed: Money
+        }
 
 module RegistrationInput =
     let value field (RegistrationInput values) = GroupValues.raw field values
@@ -222,23 +211,47 @@ module RegistrationInput =
     let parsed (RegistrationInput values) = GroupValues.parse values
 
 module Registration =
-    let value field (Registration values) = GroupValues.get field values
+    let incidentDate (record: Registration) = record.IncidentDate
+    let incidentNotificationDate (record: Registration) = record.NotificationDate
+    let country (record: Registration) = record.Country
+    let claimant (record: Registration) = record.Claimant
+    let insurer (record: Registration) = record.Insurer
+    let claimed (record: Registration) = record.Claimed
 
-    let incidentDate record =
-        value BusinessField.IncidentDate record |> FieldValue.date
-
-    let incidentNotificationDate record =
-        value BusinessField.IncidentNotificationDate record |> FieldValue.date
-
-    let claimed (Registration values) =
-        GroupValues.money BusinessField.ClaimedAmount values
-
-
+    /// Adapts a field collection at the transport/presentation boundary.
     let create members =
-        GroupValues.createAdmitted RecordGroup.Registration members
-        |> Result.map Registration
+        match List.sortBy fst members with
+        | [ BusinessField.IncidentDate, Admitted.Date incident
+            BusinessField.IncidentNotificationDate, Admitted.Date notification
+            BusinessField.IncidentCountry, Admitted.Country country
+            BusinessField.ClaimantName, Admitted.Name claimant
+            BusinessField.InsurerName, Admitted.Name insurer
+            BusinessField.ClaimedAmount, Admitted.Amount amount
+            BusinessField.ClaimedCurrency, Admitted.Currency currency ] ->
+            if incident > notification then
+                Error "Incident must be on or before notification."
+            else
+                Ok
+                    {
+                        IncidentDate = incident
+                        NotificationDate = notification
+                        Country = country
+                        Claimant = claimant
+                        Insurer = insurer
+                        Claimed = Money.create amount currency
+                    }
+        | _ -> Error "Invalid registration members."
 
-    let values (Registration values) = GroupValues.items values
+    let values (record: Registration) =
+        [
+            BusinessField.IncidentDate, Admitted.Date record.IncidentDate
+            BusinessField.IncidentNotificationDate, Admitted.Date record.NotificationDate
+            BusinessField.IncidentCountry, Admitted.Country record.Country
+            BusinessField.ClaimantName, Admitted.Name record.Claimant
+            BusinessField.InsurerName, Admitted.Name record.Insurer
+            BusinessField.ClaimedAmount, Admitted.Amount(Money.amount record.Claimed)
+            BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue record.Claimed)
+        ]
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -273,7 +286,12 @@ module Registration =
 
 type DecisionInput = private DecisionInput of GroupValues<Authored>
 
-type Decision = private Decision of GroupValues<Admitted>
+type Decision =
+    private
+        {
+            Date: CalendarDate
+            Payable: Money
+        }
 
 module DecisionInput =
     let value field (DecisionInput values) = GroupValues.raw field values
@@ -292,19 +310,27 @@ module DecisionInput =
     let parsed (DecisionInput values) = GroupValues.parse values
 
 module Decision =
-    let value field (Decision values) = GroupValues.get field values
-
-    let date record =
-        value BusinessField.PaymentDecisionDate record |> FieldValue.date
-
-    let payable (Decision values) =
-        GroupValues.money BusinessField.PayableAmount values
-
+    let date (record: Decision) = record.Date
+    let payable (record: Decision) = record.Payable
 
     let create members =
-        GroupValues.createAdmitted RecordGroup.Decision members |> Result.map Decision
+        match List.sortBy fst members with
+        | [ BusinessField.PaymentDecisionDate, Admitted.Date date
+            BusinessField.PayableAmount, Admitted.Amount amount
+            BusinessField.PayableCurrency, Admitted.Currency currency ] ->
+            Ok
+                {
+                    Date = date
+                    Payable = Money.create amount currency
+                }
+        | _ -> Error "Invalid decision members."
 
-    let values (Decision values) = GroupValues.items values
+    let values (record: Decision) =
+        [
+            BusinessField.PaymentDecisionDate, Admitted.Date record.Date
+            BusinessField.PayableAmount, Admitted.Amount(Money.amount record.Payable)
+            BusinessField.PayableCurrency, Admitted.Currency(Money.currencyValue record.Payable)
+        ]
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -326,7 +352,7 @@ module Decision =
 
 type PaymentInput = private PaymentInput of GroupValues<Authored>
 
-type Payment = private Payment of GroupValues<Admitted>
+type Payment = private { Date: CalendarDate }
 
 module PaymentInput =
     let value field (PaymentInput values) = GroupValues.raw field values
@@ -345,16 +371,15 @@ module PaymentInput =
     let parsed (PaymentInput values) = GroupValues.parse values
 
 module Payment =
-    let value field (Payment values) = GroupValues.get field values
-
-    let date record =
-        value BusinessField.PaymentDate record |> FieldValue.date
-
+    let date (record: Payment) = record.Date
 
     let create members =
-        GroupValues.createAdmitted RecordGroup.Payment members |> Result.map Payment
+        match members with
+        | [ BusinessField.PaymentDate, Admitted.Date date ] -> Ok { Date = date }
+        | _ -> Error "Invalid payment members."
 
-    let values (Payment values) = GroupValues.items values
+    let values (record: Payment) =
+        [ BusinessField.PaymentDate, Admitted.Date record.Date ]
 
     let replace members value =
         GroupValues.merge members (values value) |> create

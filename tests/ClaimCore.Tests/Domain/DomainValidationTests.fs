@@ -242,10 +242,7 @@ let private authoredUnicodeRoundTrip () =
         let snapshot = Case.snapshot claim
 
         Expect.equal
-            (PartyName.format (
-                Registration.value BusinessField.ClaimantName ((viewFields snapshot).Registration)
-                |> FieldValue.name
-            ))
+            (PartyName.format (Registration.claimant ((viewFields snapshot).Registration)))
             value
             "Authored scalar content remains exact."
 
