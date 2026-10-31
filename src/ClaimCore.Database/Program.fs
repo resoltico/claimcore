@@ -22,7 +22,9 @@ let main arguments =
                 let mutates =
                     match command with
                     | Initialize _
-                    | ProvisionOwner -> true
+                    | ProvisionOwner
+                    | Rebuild _
+                    | InvalidateRestoredSessions -> true
                     | _ -> false
 
                 bytes,

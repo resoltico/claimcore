@@ -17,6 +17,8 @@ type Command =
     | Initialize of string
     | ProvisionOwner
     | Verify of LedgerPosition option
+    | Rebuild of LedgerPosition
+    | InvalidateRestoredSessions
     | Head
     | Help
     | Version
@@ -26,6 +28,8 @@ type CommandName =
     | Initialize
     | ProvisionOwner
     | Verify
+    | Rebuild
+    | InvalidateRestoredSessions
     | Head
     | Help
     | Version
@@ -48,6 +52,8 @@ module Command =
         | Initialize _ -> CommandName.Initialize
         | ProvisionOwner -> CommandName.ProvisionOwner
         | Verify _ -> CommandName.Verify
+        | Rebuild _ -> CommandName.Rebuild
+        | InvalidateRestoredSessions -> CommandName.InvalidateRestoredSessions
         | Head -> CommandName.Head
         | Help -> CommandName.Help
         | Version -> CommandName.Version
@@ -76,6 +82,8 @@ module CommandName =
         function
         | CommandName.Initialize -> [ CommandArgument.Operand "TIME_ZONE" ]
         | CommandName.Verify -> [ CommandArgument.Optional("--expect", "SEQUENCE:HASH") ]
+        | CommandName.Rebuild -> [ CommandArgument.Operand "--expect SEQUENCE:HASH" ]
+        | CommandName.InvalidateRestoredSessions -> []
         | CommandName.ProvisionOwner
         | CommandName.Head
         | CommandName.Help
@@ -142,6 +150,14 @@ module Inputs =
         | CommandName.ProvisionOwner -> noArguments ProvisionOwner arguments
         | CommandName.Head -> noArguments Head arguments
         | CommandName.Verify -> verify arguments
+        | CommandName.Rebuild ->
+            match arguments with
+            | [ "--expect"; value ] ->
+                expected value
+                |> Option.map (Rebuild >> Ok)
+                |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
+            | _ -> Error(UsageError.MissingOperand "--expect SEQUENCE:HASH")
+        | CommandName.InvalidateRestoredSessions -> noArguments InvalidateRestoredSessions arguments
 
     let command arguments =
         match arguments with

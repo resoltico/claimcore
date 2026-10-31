@@ -32,6 +32,12 @@ module Execution =
                             System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds
                         ))
                         result
+            | Rebuild expected ->
+                let! result = administration.Rebuild(expected, CancellationToken.None)
+                return Replies.rebuild result
+            | InvalidateRestoredSessions ->
+                let! count = administration.InvalidateRestoredSessions(CancellationToken.None)
+                return Replies.sessionsInvalidated count
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 

@@ -195,6 +195,93 @@ let run (database: PostgresFixture.Database) =
                 removed
                 HttpStatusCode.Unauthorized
                 "Logout on one Web host revokes another host's later retrieval"
+
+            use! fresh = restartedClient.GetAsync "https://localhost/issue"
+
+            let restoredCookie =
+                fresh.Headers.GetValues("Set-Cookie")
+                |> Seq.map (fun value -> value.Split(';')[0])
+                |> String.concat "; "
+
+            let exec arguments =
+                task {
+                    let! result = database.Container.ExecAsync arguments
+
+                    Expect.equal
+                        result.ExitCode
+                        (Nullable 0L)
+                        "Owned session backup/restore succeeds"
+                }
+
+            do!
+                exec
+                    [|
+                        "pg_dump"
+                        "-U"
+                        "postgres"
+                        "-d"
+                        "postgres"
+                        "-n"
+                        "claimcore"
+                        "-f"
+                        "/tmp/foundation-sessions.sql"
+                    |]
+
+            let! count =
+                ProjectionRebuild.invalidateRestoredSessions
+                    database.OwnerSource
+                    System.Threading.CancellationToken.None
+
+            Expect.equal count 1L "Only the new session exists"
+            let! invalidated = request restartedClient restoredCookie HttpMethod.Get "/state"
+
+            Expect.equal
+                invalidated
+                HttpStatusCode.Unauthorized
+                "Invalidation rejects an existing cookie"
+
+            use! owner = database.OwnerSource.OpenConnectionAsync()
+
+            let! _ =
+                DatabaseSession.execute
+                    owner
+                    "DROP SCHEMA claimcore CASCADE"
+                    [||]
+                    System.Threading.CancellationToken.None
+
+            do!
+                exec
+                    [|
+                        "psql"
+                        "-U"
+                        "postgres"
+                        "-d"
+                        "postgres"
+                        "-v"
+                        "ON_ERROR_STOP=1"
+                        "-f"
+                        "/tmp/foundation-sessions.sql"
+                    |]
+
+            let! resurrected = request restartedClient restoredCookie HttpMethod.Get "/state"
+
+            Expect.equal
+                resurrected
+                HttpStatusCode.NoContent
+                "A real backup restore resurrects the session before invalidation"
+
+            let! _ =
+                ProjectionRebuild.invalidateRestoredSessions
+                    database.OwnerSource
+                    System.Threading.CancellationToken.None
+
+            let! refusedRestore = request restartedClient restoredCookie HttpMethod.Get "/state"
+
+            Expect.equal
+                refusedRestore
+                HttpStatusCode.Unauthorized
+                "The pre-restore cookie cannot authenticate after explicit restored-session invalidation"
+
         finally
             Directory.Delete(directory, true)
     }

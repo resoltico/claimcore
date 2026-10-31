@@ -105,7 +105,26 @@ module internal Verification =
                 |> Result.bind (LedgerVerification.head state)
         }
 
-    let private projections connection installationId (state: LedgerVerification.Scan) token =
+    /// Authoritative scan for maintenance; projection divergence must not prevent repair.
+    let authoritative connection installationId expected token =
+        task {
+            let! scanned = scan connection installationId expected token
+
+            match scanned with
+            | Error finding -> return Error finding
+            | Ok state ->
+                match LedgerVerification.erasure state with
+                | Error finding -> return Error finding
+                | Ok() ->
+                    let! checkedHead = head connection state token
+
+                    return
+                        checkedHead
+                        |> Result.bind (fun () -> LedgerVerification.complete expected state)
+                        |> Result.map (fun _ -> state)
+        }
+
+    let projections connection installationId (state: LedgerVerification.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state.Cases token
 

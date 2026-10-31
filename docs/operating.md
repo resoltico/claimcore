@@ -36,6 +36,8 @@ Runtime credentials have no schema-owner authority. Offline help/version do not 
 | `head` | Read the installation's current sequence/hash position. |
 | `verify` | Reconstruct retained ledger state and compare projections and head. |
 | `verify --expect SEQUENCE:ENTRY_HASH` | Also check an independently retained checkpoint. |
+| `rebuild --expect SEQUENCE:ENTRY_HASH` | Reconstruct derived projections under writer exclusion; return prior divergence evidence. |
+| `invalidate-restored-sessions` | Delete restored sessions before reopening actor traffic. |
 
 Command errors return `USAGE_ERROR` with the applicable syntax. Read `REJECTED` diagnostics and `FAILED`
 faults alongside the shared [exit-code reference](cli.md#exit-codes).
@@ -93,10 +95,19 @@ Retain sequence/hash checkpoints independently of the database and protect backu
 Capture a position with `claimcore-database head` and use your PostgreSQL full-backup tools. Preserve the
 matching software, identity state and protected key ring with the installation's recovery material.
 
-Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
+Keep restored databases isolated from actor traffic. Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
 checkpoint before reopening actor access. A data-only restore into an initialized schema is unsupported.
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
-newer acceptance existed elsewhere.
+newer acceptance or recovery control existed elsewhere.
+
+If authoritative verification succeeds but projections diverge, run `claimcore-database rebuild --expect
+SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
+head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
+replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
+for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
+
+Before reopening restored actor traffic, run `claimcore-database invalidate-restored-sessions`. Restored
+cookies must no longer authenticate. This explicit restore step is separate from ordinary projection rebuild.
 
 Check later erasures and affected copies before using a restored database. A pre-erasure backup can bring
 back erased content. ClaimCore does not orchestrate backup, restore, replication, copy custody or approvals.

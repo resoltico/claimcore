@@ -182,6 +182,12 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Verify(expected, cancellationToken) =
         LedgerAdministration.verify source expected cancellationToken
 
+    member _.Rebuild(expected, cancellationToken) =
+        ProjectionRebuild.rebuild source expected cancellationToken
+
+    member _.InvalidateRestoredSessions(cancellationToken) =
+        ProjectionRebuild.invalidateRestoredSessions source cancellationToken
+
     member _.Head(cancellationToken) =
         LedgerAdministration.head source cancellationToken
 

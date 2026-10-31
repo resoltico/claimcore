@@ -53,3 +53,9 @@ module VerificationFinding =
 
     let all = Vocabulary.entries vocabulary
     let token = Vocabulary.token vocabulary
+
+type ProjectionRebuildReport =
+    {
+        Position: LedgerPosition
+        PreviousDivergence: VerificationDivergence option
+    }

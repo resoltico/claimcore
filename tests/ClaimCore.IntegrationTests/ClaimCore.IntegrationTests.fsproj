@@ -62,6 +62,7 @@
     <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseScenarios.fs" />
+    <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
