@@ -62,7 +62,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -91,7 +91,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 5,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000006",
         "kind": "CASE"
       }
@@ -105,7 +105,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 6,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000007",
         "kind": "CASE"
       }
@@ -118,7 +118,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 9007199254740990,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000009",
         "kind": "CASE"
       }
@@ -127,7 +127,7 @@
   "snapshot": {
     "name": "ACTIVE OPENED snapshot at revision 1",
     "value": {
-      "format": 1,
+      "format": 2,
       "revision": 1,
       "state": {
         "kind": "ACTIVE",
@@ -162,7 +162,7 @@
           "caseId": "10000000-0000-4000-8000-000000000001"
         }
       },
-      "format": 1,
+      "format": 2,
       "operationId": "20000000-0000-4000-8000-000000000002",
       "target": {
         "issuer": "https://issuer.example/",
@@ -234,7 +234,7 @@
         },
         "caseReference": "CANONICAL-AMOUNT",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       },
@@ -253,7 +253,7 @@
         },
         "caseReference": "CANONICAL-AMOUNT",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       },
@@ -277,7 +277,7 @@
         },
         "caseReference": "r-1",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000002",
         "kind": "CASE"
       },
@@ -296,7 +296,7 @@
         },
         "caseReference": "R-1",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000002",
         "kind": "CASE"
       },
@@ -320,7 +320,7 @@
         },
         "caseReference": "CANONICAL-VALUE",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000003",
         "kind": "CASE"
       },
@@ -339,7 +339,7 @@
         },
         "caseReference": "CANONICAL-VALUE",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000003",
         "kind": "CASE"
       },
@@ -363,7 +363,7 @@
         },
         "caseReference": "CANONICAL-NAME",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000004",
         "kind": "CASE"
       },
@@ -382,7 +382,7 @@
         },
         "caseReference": "CANONICAL-NAME",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000004",
         "kind": "CASE"
       },
@@ -406,7 +406,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000005",
         "kind": "CASE"
       },
@@ -425,7 +425,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000005",
         "kind": "CASE"
       },
@@ -445,7 +445,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000006",
         "kind": "CASE"
       },
@@ -460,7 +460,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000006",
         "kind": "CASE"
       },
@@ -495,7 +495,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000007",
         "kind": "CASE"
       },
@@ -525,7 +525,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000007",
         "kind": "CASE"
       },
@@ -556,7 +556,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000008",
         "kind": "CASE"
       },
@@ -582,7 +582,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 1,
-        "format": 1,
+        "format": 2,
         "operationId": "30000000-0000-4000-8000-000000000008",
         "kind": "CASE"
       },
@@ -592,7 +592,7 @@
       "name": "grant reference",
       "same": true,
       "left": {
-        "format": 1,
+        "format": 2,
         "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000009",
         "target": {
@@ -611,7 +611,7 @@
         }
       },
       "right": {
-        "format": 1,
+        "format": 2,
         "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000009",
         "target": {
@@ -634,7 +634,7 @@
       "name": "revoke reference",
       "same": true,
       "left": {
-        "format": 1,
+        "format": 2,
         "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000010",
         "target": {
@@ -653,7 +653,7 @@
         }
       },
       "right": {
-        "format": 1,
+        "format": 2,
         "kind": "AUTHORITY",
         "operationId": "30000000-0000-4000-8000-000000000010",
         "target": {
@@ -693,7 +693,7 @@
         },
         "caseReference": "A",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -717,7 +717,7 @@
         },
         "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -741,7 +741,7 @@
         },
         "caseReference": "",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -765,7 +765,7 @@
         },
         "caseReference": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -789,7 +789,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -813,7 +813,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -837,7 +837,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -861,7 +861,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -885,7 +885,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -909,7 +909,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -933,7 +933,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -957,7 +957,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -981,7 +981,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1005,7 +1005,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1029,7 +1029,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1053,7 +1053,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1077,7 +1077,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1101,7 +1101,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1125,7 +1125,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1149,7 +1149,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1173,7 +1173,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1189,7 +1189,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1205,7 +1205,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1221,7 +1221,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1245,7 +1245,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 0,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1269,7 +1269,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 9007199254740991,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1293,7 +1293,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": -1,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1317,7 +1317,7 @@
         },
         "caseReference": "Demo-0001",
         "expectedRevision": 9007199254740992,
-        "format": 1,
+        "format": 2,
         "operationId": "10000000-0000-4000-8000-000000000001",
         "kind": "CASE"
       }
@@ -1330,7 +1330,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1348,7 +1348,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1366,7 +1366,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1384,7 +1384,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1402,7 +1402,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "SERVICE",
@@ -1420,7 +1420,7 @@
         "act": {
           "kind": "REGISTER"
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "SERVICE",
@@ -1442,7 +1442,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1464,7 +1464,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1486,7 +1486,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1508,7 +1508,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1530,7 +1530,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1552,7 +1552,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1574,7 +1574,7 @@
             "kind": "INSTALLATION"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1598,7 +1598,7 @@
             "caseId": "10000000-0000-4000-8000-000000000001"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1622,7 +1622,7 @@
             "caseId": "10000000-0000-4000-8000-000000000001"
           }
         },
-        "format": 1,
+        "format": 2,
         "operationId": "20000000-0000-4000-8000-000000000002",
         "target": {
           "kind": "HUMAN",
@@ -1637,7 +1637,7 @@
       "subject": "SNAPSHOT",
       "accepted": true,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 1,
         "state": {
           "kind": "ACTIVE",
@@ -1665,7 +1665,7 @@
       "subject": "SNAPSHOT",
       "accepted": true,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 9007199254740991,
         "state": {
           "kind": "ACTIVE",
@@ -1693,7 +1693,7 @@
       "subject": "SNAPSHOT",
       "accepted": false,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 0,
         "state": {
           "kind": "ACTIVE",
@@ -1721,7 +1721,7 @@
       "subject": "SNAPSHOT",
       "accepted": true,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 1,
         "state": {
           "kind": "ACTIVE",
@@ -1749,7 +1749,7 @@
       "subject": "SNAPSHOT",
       "accepted": true,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 1,
         "state": {
           "kind": "ACTIVE",
@@ -1777,7 +1777,7 @@
       "subject": "SNAPSHOT",
       "accepted": true,
       "value": {
-        "format": 1,
+        "format": 2,
         "revision": 1,
         "state": {
           "kind": "VOIDED",
