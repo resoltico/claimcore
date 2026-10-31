@@ -50,8 +50,9 @@ decision and payment begin unrecorded.
 
 The reference is immutable printable non-space ASCII within the
 [reference format](../src/ClaimCore.Domain/Values.fs). Lookup folds ASCII letter case in one installation;
-snapshots retain the first spelling. A claimant may be a person or organization; insurer records the
-handler's assertion. There are no policy, coverage, reserve, banking, address, notes or attachment fields.
+snapshots retain the creation spelling. The stable CaseId is the accepted OPEN operation UUID; the
+reference and CaseId remain reserved after erasure. A claimant may be a person or organization; insurer
+records the handler's assertion. There are no policy, coverage, reserve, banking, address, notes or attachment fields.
 
 AMEND_REGISTRATION replaces registration only while the case is open and undecided. Before ordinary
 registration editing of a decided case, clear any recorded payment and withdraw the decision, or use the applicable
@@ -164,9 +165,10 @@ Revisions and sequences obey the exact-integer bound in
 [typed positions](../src/ClaimCore.Domain/Identifiers.fs), enforced by SQL and durable decoding.
 
 The history timeline starts with the newest accepted revision and loads older changes in bounded pages.
-Expand a disclosed full receipt to inspect its facts and compare changed fields with the adjacent prior
-revision. If that revision is not loaded, load the preceding page; withheld or erased facts cannot be
-compared.
+Expand a disclosed full receipt to inspect its facts and the core-supplied lifecycle and field changes.
+Core computes comparison context within each page's read snapshot, including the predecessor of its last
+visible entry. Loading another page is not required to obtain that comparison. Withheld or erased facts
+are not inferred; an unavailable comparison is shown as unavailable.
 
 History follows the current summary/full disclosure modes. Superseded snapshots need full-history rights;
 current case access alone does not grant them. See the [glossary](glossary.md) for project terms.

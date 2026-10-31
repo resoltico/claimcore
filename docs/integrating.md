@@ -8,8 +8,8 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-This fresh installation baseline supports request, snapshot, authority and ledger entry format 2 only.
-There are no compatibility readers or installation migrations.
+Request, snapshot, authority, control and ledger entry records support format 2. Installation initialization
+requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
 `{"kind":"REFERENCE","caseReference":"Demo-0001"}` or
@@ -93,7 +93,7 @@ consumers do not infer a family by trying prefixes. Authored principal fields ar
 principal outputs. Stored identity-token decoding belongs to storage adapters; corruption is an integrity
 fault, never a request-correction refusal.
 
-HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
+HTTP replies carry `outcome`; preview, execution, observe and resolve echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
 [host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
@@ -161,8 +161,8 @@ tokens are discarded; the next authenticated action signs in again. Refresh fail
 sign-in again. `exit`, EOF and SIGTERM discard tokens. Ctrl-C cancels the current command and returns
 to the prompt; a second Ctrl-C at an empty prompt exits. Outcomes use stdout; prompts and each command's
 exit code use stderr. Exit 4 prints the frozen retry frame and resolve command, then the shell continues.
-Interactive review still requires terminal stdout. `call` and NDJSON `session` retain their existing
-stop-on-uncertain-delivery behavior.
+Interactive review requires terminal stdout. `call` returns one result; NDJSON `session` stops on
+uncertain delivery or cancellation.
 
 Interactive login uses PKCE and a one-use loopback callback. Automation uses a registered service actor,
 client credentials and its private secret file. Optional explicit service/IdP trust-root files replace
@@ -241,7 +241,7 @@ own read snapshot. Separate list and summary requests can observe different acce
 and the admitted requester's `actorId` for attribution without an authority lookup.
 Case-list continuations use format 4; other continuations use format 2. All bind InstallationId.
 Case-history continuations bind the retained CaseId. Case-list positions also bind the admitted filters,
-assignment and ordering. Earlier cursor formats are refused.
+assignment and ordering. Unsupported cursor formats are refused.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent
@@ -331,8 +331,13 @@ Records contain format, service origin, installation, actor, local attempt, oper
 They contain no references, business values, credentials, secret paths or retry bodies. Separate attempts
 can share an operation ID; clearing one never clears another attempt.
 
-The browser uses IndexedDB transaction completion. Send again uses the in-memory frozen request; after
-reload or tab closure, recovery can only check the final result. Storage denial, quota, clearing, eviction,
+The browser uses IndexedDB transaction completion. A requester-context refresh with the same identity
+keeps an in-flight recovery check valid. Actor, installation, credential or session-epoch transitions
+invalidate its callbacks, including switchbacks; obsolete completions cannot unlock a newer check.
+Busy state lasts through journal removal, and a failed removal permits explicit retry.
+
+Send again uses the in-memory frozen request; after reload or tab closure, recovery can only check the
+final result. Storage denial, quota, clearing, eviction,
 device loss and universal crash/power-loss durability are outside the retained-storage guarantee. There
 is no automatic storage-permission prompt or reconstructed resubmission.
 
@@ -340,8 +345,7 @@ The native client publishes private per-attempt files under `$XDG_STATE_HOME/cla
 `~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
 current authenticated service/installation/actor scope; `claimcore recovery resolve ATTEMPT_ID` resolves
 and clears that selected attempt only after a complete correlated final reply. `claimcore schema recovery`
-describes the local listing. Prepared retry frames retain their original installation binding. New clients
-refuse stale bindings instead of adopting a replacement installation for an earlier request.
+describes the local listing. Prepared retry frames retain their original installation binding. Clients refuse a prepared request whose installation binding differs from authenticated context.
 
 ## Disclosure and cursors
 

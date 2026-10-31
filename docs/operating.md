@@ -4,11 +4,11 @@ Start with a fresh installation, grant access deliberately, and plan backups and
 real data. The supplied Compose setup is for local evaluation. Operators choose and qualify their deployment,
 TLS, storage, identity provider and monitoring.
 
-The foundation baseline is for fresh installations. Older baseline digests and durable formats are refused
-without conversion. OPEN metadata retains the original reference and creation operation identity after
-payload erasure; this preserves the existing reference retention and nonreuse policy. Verification compares
-retained request effects with complete snapshots. After legitimate erasure it checks retained identity,
-lifecycle, revisions, attribution, hash links and complete payload removal; it cannot replay erased values.
+Each installation uses the declared SQL baseline and permanent record formats. Initialize an empty
+database; schema conversion is not supported. OPEN metadata retains the original reference and creation
+operation identity independently of erasable payloads. Verification compares retained requests with their
+resulting snapshots. For erased cases it checks retained identity, lifecycle, revisions, attribution, hash
+links and complete payload removal; erased business values cannot be reconstructed.
 
 ## Install a fresh register
 
@@ -225,8 +225,9 @@ grant before interactive sign-in. Discard drops the session's references to mana
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
-entries while retaining folded case/actor/grant state, acceptance identities and recovery controls; its same-snapshot duplicate prepass may sort or spill
-in SQL. Streaming does not promise constant total-system memory.
+entries while retaining folded case/actor/grant state, accepted-operation identities, immutable reference
+indexes and recovery controls. The authoritative fold checks accepted-operation UUID uniqueness.
+Streaming does not promise constant total-system memory.
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
 all worklist projection columns and the head. It applies permanent invariants rather than today's admission

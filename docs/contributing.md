@@ -3,7 +3,7 @@
 Use this guide for a source checkout, an implementation change or a verification report. The
 [case-work guide](case-work.md) owns user-facing meaning; [operating](operating.md) owns deployment and
 custody procedures. See the [glossary](glossary.md) for terminology.
-Start with [verification](#verification) to choose checks for editing, PR readiness or optional experiments.
+Start with [verification](#verification) to choose checks for editing, PR readiness or growth measurements.
 
 ## First checkout
 
@@ -21,12 +21,9 @@ dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 ```
 
-The transitive matcher and traversal pins in [package.json](../web/package.json) address the
-[minimatch](https://github.com/advisories/GHSA-g3hv-75wg-m249) and
-[glob](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) advisories. The
-[import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
-rule exports; the package index also imports an unsupported API from an unused rule. The audit and
-configured boundary rules remain required.
+The locked npm graph includes matcher/traversal overrides in [package.json](../web/package.json).
+The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
+rule exports directly. Audit and import-boundary checks are required when changing this tooling.
 
 Use the declared versions before restoring. The frontend can build without executable .NET or Python;
 ordinary .NET builds run neither npm nor generation. Framework-dependent apphost publication is qualified;
@@ -38,7 +35,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | JSON-free values and identifiers, typed acts, accepted state, outcomes, authority policy and decisions |
+| Domain | JSON-free values and identifiers, typed acts, accepted state, business refusals, authority policy and decisions |
 | Application.Contracts | Use-case requests, replies, advice, paging and faults over Domain |
 | Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
@@ -172,8 +169,9 @@ The case projection contains identity, revision, lifecycle, a nullable snapshot,
 last-change time, normalized search text, notification date and exact claimed/payable amount/currency
 pairs. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
-Reads decode the permanent record and check its reference, revision and lifecycle against the columns and
-its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger,
+Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
+returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
+UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
 text, notification date and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
@@ -204,7 +202,8 @@ resolves references and nested discriminators, and validates complete, non-orpha
 
 Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
 `p.term(vocabulary, value)`. Registry checks allow equal tokens in different vocabularies and reserve one
-composite `act` vocabulary. Identical renderer/core wording is refused in every locale.
+composite `act` vocabulary. Message ownership follows the producing layer; identical wording or
+translations do not establish shared ownership.
 
 Catalogs share one Template grammar. Structural checks cover language parity, producer arguments and every
 template before publication. Handwritten
@@ -250,7 +249,7 @@ Choose checks by the changed behavior and the claim being made:
 | Broader checkpoint | `bash eng/verify.sh --fast` runs lint, native units and the full frontend stage. |
 | Implementation PR ready for review | `bash eng/verify.sh` runs the ordinary full gate; CI qualifies the declared platform matrix. |
 | Documentation-only change | Check affected links, commands and claims; run relevant documentation checks. Product or generated-output changes need their applicable checks. |
-| Change probe or performance investigation | Select the experiment and checks that answer the concrete question; see [Change probes](#change-probes) and [Growth](#growth). |
+| Performance investigation | Select the workload and evidence needed; see [Growth](#growth). |
 
 There is no automatic full-gate requirement after each edit or commit. Explicit task
 acceptance criteria still apply. Reuse results only while their relevant source, configuration, dependencies
@@ -302,7 +301,7 @@ execute in order and stop at failure:
 | integration | PostgreSQL then Web suites |
 | postgres / web | The corresponding isolated suite |
 | browsers | Install the locked Playwright engines and required system dependencies |
-| acceptance | Published service/CLI, deployment image and real browsers |
+| acceptance | Published service/CLI, deployment configuration and real browsers |
 | growth | Separate synthetic contention and verifier qualification |
 | growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
@@ -342,61 +341,6 @@ basenames and always refuses the three permanent vector files. It supplies omitt
 from the builders and prepares CLI frames from their authored arguments; it leaves invalid examples
 unchanged. Run the ordinary gate afterwards. Updating goldens never resolves permanent-format failures.
 
-## Change probes
-
-Change probes are optional architecture experiments. Select a probe to answer a
-concrete design question or meet explicit task acceptance criteria. Prefer evidence from requested product
-changes when it answers the same question. Probes do not replace [product verification](#verification).
-
-### Select the experiments
-
-Choose only the representative change needed and state the question, scope and expected evidence before
-implementing it. The observations below are diagnostic hypotheses, not architectural requirements.
-Keep the change stable when comparing results, or disclose why the experiments are incomparable. A READ
-reusing existing request/result types measures registration cost, not novel query design. Fewer edits do
-not justify generic machinery, weaker types, shared production/oracle answers or removed safeguards.
-
-| Probe | Change | Evidence question |
-| --- | --- | --- |
-| P-FIELD | Add a required registration text field. | Which typed-state and receiving-contract adaptations are necessary? A descriptor alone must not change existing durable members or bytes. |
-| P-ACT | Add a payload-free case act. | Does current admission evolve explicitly while existing-format interpretation remains frozen? |
-| P-ROLE | Add a role with an existing capability. | Are current permission decisions and permanent authority meaning kept separate? |
-| P-READ | Add a read-only endpoint. | Do contracts, authorization, storage, clients and generated output form one exercised path? |
-| P-MESSAGE | Add a refusal and its message. | Do the producer, diagnostic contract and supported locales agree without competing client business rules? |
-
-Record authored and generated adaptations separately. Edit counts describe cost; they are not acceptance
-limits and do not justify hidden property bags, weaker types or silently enlarged durable grammars.
-
-### Run an experiment
-
-Keep hypothetical features out of the delivered product. Use an isolated worktree when implementing a
-probe, record its source revision and patch, and never push experimental branches. Exercise the element
-through its relevant real path, including applicable refusal or boundary behavior. Regenerate affected
-contracts; use real PostgreSQL when claiming store behavior. Compilation or a memory double cannot
-establish database behavior.
-
-Choose checks for the question. Run the complete fast gate when claiming full adaptation through its
-scope, plus relevant integration checks for database claims. A focused proof needs no automatic full
-fast-gate run, but cannot establish full adaptation. Investigate failures and fix in-scope product defects;
-report other causes and unrun checks. Preserve useful evidence before cleaning up owned probe resources.
-
-### Report outcomes and cost
-
-Keep a short PR summary of the question, revision, patch, environment, commands, result and limits.
-Distinguish locality, exercised behavior and remaining adaptation work. Include file counts or effort/time
-measurements when relevant to the question; label estimates and unavailable measurements. Explain failures
-by cause and distinguish necessary independent-oracle, composition or compatibility work from duplication.
-
-### Reuse applicable evidence
-
-A later revision alone does not require repeating an experiment. Reuse its original result when the
-relevant producer/consumer paths, fixtures, generation, toolchain and execution conditions still support
-the conclusion. Briefly explain applicability; retain the original revision and material failures without
-relabeling old checks as new executions. Rerun affected proofs when their basis changes. Reuse cannot turn
-an incomplete result into a complete pass or waive required product verification.
-
-Existing Git, generation and verification commands suffice; no maintained script applies these probes.
-
 ## Growth
 
 Growth measurements are separate from the ordinary verification gate. They are optional unless required
@@ -427,8 +371,8 @@ read profiles share the fresh database for their case population. The compared s
 is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and six read profiles
 at 100k cases: search, filtered, notification order, summary, global authority history and actor-filtered
 authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
-exact set. Both sides execute their selected workloads, including new candidate-only profiles; only shared
-keys yield ratios, and other profiles are reported as not applicable.
+exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
+are reported as not applicable.
 
 For a targeted diagnostic or an injected-delay control, the existing `CLAIMCORE_GROWTH_PROFILE`
 selector accepts `10000:1`, `100000:1` or `100000:16`. It still runs three alternating pairs and the
