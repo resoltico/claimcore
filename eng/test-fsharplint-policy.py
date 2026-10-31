@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile isolated lint controls, then prove each configured limit rejects its violation."""
+"""Compile isolated controls for the retained complexity and whitespace policies."""
 import json
 import pathlib
 import subprocess
@@ -7,22 +7,21 @@ import tempfile
 
 
 CONTROLS = {
-    "maxLinesInFile": (
-        "maxLinesInFile", 500,
-        "let value = 1\n" + "\n" * 498,
-        "let value = 1\n" + "\n" * 501,
+    "cyclomaticComplexity": (
+        "maxComplexity", 12,
+        "let choose value = if value = 0 then 1 else 0\n",
+        "let choose value =\n" + "\n".join(
+            ("    if" if index == 0 else "    elif") + f" value = {index} then {index}"
+            for index in range(20)
+        ) + "\n    else 20\n",
     ),
-    "maxNumberOfFunctionParameters": (
-        "maxItems", 5,
-        "let total a b c d e = a + b + c + d + e\nlet _ = total 1 2 3 4 5\n",
-        "let total a b c d e f = a + b + c + d + e + f\nlet _ = total 1 2 3 4 5 6\n",
-    ),
-    "maxNumberOfItemsInTuple": (
-        "maxItems", 4,
-        "let value = (1, 2, 3, 4)\n",
-        "let value = (1, 2, 3, 4, 5)\n",
+    "trailingWhitespaceOnLine": (
+        "numberOfSpacesAllowed", 0,
+        "let value = 1\n",
+        "let value = 1   \n",
     ),
 }
+
 
 
 def command(arguments):
@@ -59,7 +58,7 @@ def main():
                     raise RuntimeError(f"{name} did not reject its compiled violation")
                 elif not result.stdout.strip() and not result.stderr.strip():
                     raise RuntimeError(f"{name} failed without diagnostic evidence")
-    print("FSharpLint limit controls passed: file length, parameters, tuple items")
+    print("FSharpLint policy controls passed: complexity and trailing whitespace")
 
 
 if __name__ == "__main__":
