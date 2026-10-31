@@ -12,6 +12,7 @@ const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
     items: [
       caseSummaryInput({
         state: { kind: "ACTIVE", status: "OPENED" },
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: "ADVISED-CASE",
         revision: 1,
       }),

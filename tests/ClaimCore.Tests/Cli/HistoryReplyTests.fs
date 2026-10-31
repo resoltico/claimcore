@@ -7,22 +7,23 @@ open Expecto
 open global.Json.Schema
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 let private codec = Api.caseHistory.Output
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private receipt =
-    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","subject":{"kind":"CASE","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}}"""
+    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","subject":{"kind":"CASE","caseId":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}}"""
 
 let private summary =
     """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
 
 let private full receipt =
-    "{\"kind\":\"FULL\",\"receipt\":" + receipt + "}"
+    "{\"kind\":\"FULL\",\"receipt\":" + receipt + ",\"difference\":null}"
 
 let private page entries =
-    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"entries\":["
+    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"caseId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"x\",\"entries\":["
     + String.concat "," entries
     + "],\"nextCursor\":null}}}"
 
@@ -87,9 +88,11 @@ let private refused () =
 
     let wrongScope =
         receipt.Replace(
-            "{\"kind\":\"CASE\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
+            "{\"kind\":\"CASE\",\"caseId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
             authority
         )
+
+    Expect.notEqual wrongScope receipt "The authority negative control must change the receipt"
 
     for entries in [ [ full wrongScope ]; [ summary; full receipt ] ] do
         agrees schema false (page entries) |> ignore

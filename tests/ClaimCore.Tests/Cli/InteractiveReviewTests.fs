@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -51,8 +52,21 @@ let private review =
             Proposed =
                 { current with
                     Revision = CaseFixtures.revision 8L
+                    State =
+                        current.State
+                        |> CaseState.map (fun fields ->
+                            { fields with
+                                Status = CaseStatus.Closed
+                            })
                 }
-            Changes = []
+            Changes =
+                [
+                    {
+                        FieldName = BusinessField.Status
+                        Before = Some "OPENED"
+                        After = Some "CLOSED"
+                    }
+                ]
             Context =
                 {
                     ProductVersion = "synthetic"
@@ -77,6 +91,8 @@ let private harness language answer scenario =
 
         let reply =
             match (Frames.endpoint frame).Token with
+            | "context" ->
+                response frame Api.context.Output (ResponseExamples.defaultReply Api.context)
             | "case.get" ->
                 Expect.equal
                     generated
@@ -106,6 +122,17 @@ let private harness language answer scenario =
                 let receipt =
                     { CliReplyFixtures.receipt with
                         OperationId = CaseFixtures.operationId (operationId ())
+                        Subject =
+                            match CliReplyFixtures.receipt.Subject with
+                            | ReceiptSubject.Case subject ->
+                                ReceiptSubject.Case
+                                    { subject with
+                                        CaseId = current.CaseId
+                                        Reference = current.Reference
+                                        Revision = CaseFixtures.revision 8L
+                                        Act = CaseActKind.Close
+                                    }
+                            | _ -> failtest "The case receipt fixture must identify its actual case"
                     }
 
                 response
@@ -196,12 +223,12 @@ let tests =
 
                     Expect.equal
                         (endpoints h)
-                        [ "case.get"; "operation.preview"; "operation.execute" ]
+                        [ "context"; "case.get"; "operation.preview"; "operation.execute" ]
                         "Read, review, then execute"
 
                     Expect.equal (h.Generated()) 1 "Allocate one fresh operation id after the read"
                     Expect.equal (h.ReadCount()) 1 "Consent is requested once"
-                    let pending = caseInput h.Calls[1]
+                    let pending = caseInput h.Calls[2]
 
                     Expect.equal
                         pending.ExpectedRevision
@@ -214,8 +241,8 @@ let tests =
                         "The fresh id belongs to the reviewed operation"
 
                     Expect.equal
-                        (Frames.inputBytes h.Calls[1])
                         (Frames.inputBytes h.Calls[2])
+                        (Frames.inputBytes h.Calls[3])
                         "Confirmation executes exactly the reviewed input")
             testCase "decline never dispatches execute" (fun () ->
                 let h = harness "en" (Some "n") Scenario.Accepted
@@ -227,13 +254,13 @@ let tests =
 
                 Expect.equal
                     (endpoints h)
-                    [ "case.get"; "operation.preview" ]
+                    [ "context"; "case.get"; "operation.preview" ]
                     "No mutation follows decline")
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
                     let h = harness "en" answer Scenario.Accepted
                     run [ "case"; "close"; "x" ] h |> ignore
-                    Expect.equal h.Calls.Count 2 "Only an explicit affirmative answer can execute")
+                    Expect.equal h.Calls.Count 3 "Only an explicit affirmative answer can execute")
             testCase "a stale revision stays a definite refusal without retry" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Stale
 
@@ -244,23 +271,28 @@ let tests =
 
                 Expect.equal
                     h.Calls.Count
-                    3
+                    4
                     "The client does not fetch a new revision and bypass consent"
 
                 Expect.equal
-                    (caseInput h.Calls[2]).ExpectedRevision
+                    (caseInput h.Calls[3]).ExpectedRevision
                     7L
                     "Execute retains the reviewed revision")
             testCase "a refused read stops before id allocation preview or confirmation" (fun () ->
                 let h = harness "en" (Some "y") Scenario.ReadRefused
                 Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Read refusal is preserved"
-                Expect.equal (endpoints h) [ "case.get" ] "No further operation is attempted"
+
+                Expect.equal
+                    (endpoints h)
+                    [ "context"; "case.get" ]
+                    "No further operation is attempted"
+
                 Expect.equal (h.Generated()) 0 "No reviewed operation was created"
                 Expect.equal (h.ReadCount()) 0 "A refusal cannot invite consent")
             testCase "a refused preview stops before confirmation or execute" (fun () ->
                 let h = harness "en" (Some "y") Scenario.PreviewRefused
                 Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Preview refusal is preserved"
-                Expect.equal h.Calls.Count 2 "No execute follows a refused review"
+                Expect.equal h.Calls.Count 3 "No execute follows a refused review"
                 Expect.equal (h.ReadCount()) 0 "No confirmation follows refusal")
             testCase "nonterminal omission remains a usage error" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
@@ -293,7 +325,7 @@ let tests =
                 let h = harness "en" (Some "n") Scenario.Accepted
                 run [ "case"; "correct"; "x" ] h |> ignore
 
-                match (caseInput h.Calls[1]).Act with
+                match (caseInput h.Calls[2]).Act with
                 | CaseAct.Correct correction ->
                     Expect.equal correction.Registration Amendment.Keep "Registration is retained"
                     Expect.equal correction.Decision Change.Keep "Decision is retained"
@@ -332,7 +364,7 @@ let tests =
             testCase "explicit preview remains preview-only without asking to execute" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
                 Expect.equal (run [ "case"; "close"; "x"; "--preview" ] h) 0 "Preview completed"
-                Expect.equal h.Calls.Count 2 "Preview does not execute"
+                Expect.equal h.Calls.Count 3 "Preview does not execute"
                 Expect.equal (h.ReadCount()) 0 "Preview does not request mutation consent")
             testCase "offline dry-run and explicit revisions keep their normal paths" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
@@ -353,12 +385,12 @@ let tests =
                 Expect.equal (h.Generated()) 0 "An explicit id is not silently replaced"
 
                 Expect.equal
-                    (caseInput h.Calls[1]).OperationId
+                    (caseInput h.Calls[2]).OperationId
                     supplied
                     "Preview retains the explicit id"
 
                 Expect.equal
-                    (Frames.inputBytes h.Calls[1])
                     (Frames.inputBytes h.Calls[2])
+                    (Frames.inputBytes h.Calls[3])
                     "Execute retains the same explicit id")
         ]

@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
@@ -22,7 +23,7 @@ let private seed actor count =
             let! opened =
                 Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request
                             (1000000 + index * 3)
                             reference
@@ -38,7 +39,7 @@ let private seed actor count =
                 let! decided =
                     Service.execute
                         actor
-                        (OperationInput.Case(
+                        (ClaimCore.TestSupport.Inputs.caseOperation (
                             request
                                 (1000001 + index * 3)
                                 reference
@@ -54,7 +55,7 @@ let private seed actor count =
                 let! closed =
                     Service.execute
                         actor
-                        (OperationInput.Case(
+                        (ClaimCore.TestSupport.Inputs.caseOperation (
                             request
                                 (1000002 + index * 3)
                                 reference

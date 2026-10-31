@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 module VerificationChecks =
     type Builder() =

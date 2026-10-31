@@ -89,7 +89,7 @@ type internal ShellSession
             match CliInvocations.admit words with
             | Ok(CliInvocation.Verb arguments) ->
                 return! VerbRunner.run verbConsole processor arguments token
-            | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Configure _) ->
+            | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
                 return
                     CliDiscovery.unsupported
                         console.Errors

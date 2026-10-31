@@ -36,8 +36,12 @@ module Cursors =
     let private base64 (bytes: byte array) =
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
-    let private encode members =
-        JsonValue.Object members |> CanonicalWriter.bytes |> base64
+    let private encode (installation: Guid) members =
+        JsonValue.Object(
+            ("installationId", JsonValue.String(installation.ToString("D"))) :: members
+        )
+        |> CanonicalWriter.bytes
+        |> base64
 
     let private alphabet character =
         (character >= 'A' && character <= 'Z')
@@ -46,7 +50,7 @@ module Cursors =
         || character = '-'
         || character = '_'
 
-    let private decode maximum read (token: string) =
+    let private decode (installation: Guid) maximum read (token: string) =
         if
             String.IsNullOrEmpty token
             || token.Length > maximum
@@ -68,7 +72,20 @@ module Cursors =
                     if base64 bytes <> token || CanonicalWriter.bytes value <> bytes then
                         Error Refusal.InvalidCursor
                     else
-                        match read value with
+                        let scoped =
+                            match value with
+                            | JsonValue.Object members when
+                                JsonValue.tryMember "installationId" value =
+                                    Some(JsonValue.String(installation.ToString("D")))
+                                ->
+                                read (
+                                    JsonValue.Object(
+                                        members |> List.filter (fst >> (<>) "installationId")
+                                    )
+                                )
+                            | _ -> None
+
+                        match scoped with
                         | Some position -> Ok position
                         | None -> Error Refusal.InvalidCursor
             with
@@ -132,7 +149,7 @@ module Cursors =
             Some parsed
         | _ -> None
 
-    let encodeCases (filter: CaseListFilter<CaseSearchText>) position =
+    let encodeCases installation (filter: CaseListFilter<CaseSearchText>) position =
         let after =
             match filter.Order, position with
             | CaseListOrder.Reference, CaseListPosition.Reference reference ->
@@ -161,11 +178,12 @@ module Cursors =
             | _ -> invalidArg (nameof position) "The position must match the selected order."
 
         encode
+            installation
             [
                 DurableNames.After, after
                 "filters", caseFilters filter
                 DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 3L
+                DurableNames.V, JsonValue.Integer 4L
             ]
 
     let private casePosition order =
@@ -192,65 +210,69 @@ module Cursors =
             | _ -> None
         | _ -> None
 
-    let decodeCases (filter: CaseListFilter<CaseSearchText>) token =
+    let decodeCases installation (filter: CaseListFilter<CaseSearchText>) token =
         decode
-            Paging.MaximumCaseCursorCharacters
+            installation
+            16384
             (function
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 3L ] when
+                                 DurableNames.V, JsonValue.Integer 4L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after
             | _ -> None)
             token
 
-    let encodeHistory reference after =
+    let encodeHistory installation (caseId: CaseId) after =
         encode
+            installation
             [
                 DurableNames.After, JsonValue.Integer(Revision.value after)
-                DurableNames.Case, JsonValue.String(CaseReference.key reference)
+                DurableNames.CaseId, JsonValue.String(CaseId.format caseId)
                 DurableNames.Kind, JsonValue.String "HISTORY"
-                DurableNames.V, JsonValue.Integer 1L
+                DurableNames.V, JsonValue.Integer 2L
             ]
 
-    let decodeHistory requested token =
+    let decodeHistory installation requested token =
         decode
+            installation
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.After, JsonValue.Integer after
-                                 DurableNames.Case, JsonValue.String target
+                                 DurableNames.CaseId, JsonValue.String target
                                  DurableNames.Kind, JsonValue.String "HISTORY"
-                                 DurableNames.V, JsonValue.Integer 1L ] when
+                                 DurableNames.V, JsonValue.Integer 2L ] when
                 after >= 1L
                 && after <= Revision.Maximum
-                && reference target
-                && target = CaseReference.key requested
+                && uuid CaseId.create target = Some requested
                 ->
                 Revision.create after
             | _ -> None)
             token
 
-    let encodeActors (after: ActorId) =
+    let encodeActors installation (after: ActorId) =
         encode
+            installation
             [
                 DurableNames.After, JsonValue.String(ActorId.format after)
                 DurableNames.Kind, JsonValue.String "ACTORS"
-                DurableNames.V, JsonValue.Integer 1L
+                DurableNames.V, JsonValue.Integer 2L
             ]
 
-    let decodeActors token =
+    let decodeActors installation token =
         decode
+            installation
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.After, JsonValue.String after
                                  DurableNames.Kind, JsonValue.String "ACTORS"
-                                 DurableNames.V, JsonValue.Integer 1L ] -> uuid ActorId.create after
+                                 DurableNames.V, JsonValue.Integer 2L ] -> uuid ActorId.create after
             | _ -> None)
             token
 
-    let encodeGrants (actorId: ActorId) (after: GrantPosition) =
+    let encodeGrants installation (actorId: ActorId) (after: GrantPosition) =
         let position =
             JsonValue.Object
                 [
@@ -262,11 +284,12 @@ module Cursors =
                 ]
 
         encode
+            installation
             [
                 DurableNames.Actor, JsonValue.String(ActorId.format actorId)
                 DurableNames.After, position
                 DurableNames.Kind, JsonValue.String "GRANTS"
-                DurableNames.V, JsonValue.Integer 1L
+                DurableNames.V, JsonValue.Integer 2L
             ]
 
     let private grant role caseId =
@@ -280,8 +303,9 @@ module Cursors =
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 
-    let decodeGrants actorId token =
+    let decodeGrants installation actorId token =
         decode
+            installation
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.Actor, JsonValue.String target
@@ -289,15 +313,16 @@ module Cursors =
                                  JsonValue.Object [ DurableNames.CaseId, caseId
                                                     DurableNames.Role, JsonValue.String role ]
                                  DurableNames.Kind, JsonValue.String "GRANTS"
-                                 DurableNames.V, JsonValue.Integer 1L ] when
+                                 DurableNames.V, JsonValue.Integer 2L ] when
                 uuid ActorId.create target = Some actorId
                 ->
                 grant role caseId
             | _ -> None)
             token
 
-    let encodeAuthorityHistory (actor: ActorId option) sequence =
+    let encodeAuthorityHistory installation (actor: ActorId option) sequence =
         encode
+            installation
             [
                 DurableNames.Actor,
                 actor
@@ -305,22 +330,23 @@ module Cursors =
                 |> Option.defaultValue JsonValue.Null
                 DurableNames.After, JsonValue.Integer(Sequence.value sequence)
                 DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
-                DurableNames.V, JsonValue.Integer 1L
+                DurableNames.V, JsonValue.Integer 2L
             ]
 
-    let decodeAuthorityHistory (actor: ActorId option) token =
+    let decodeAuthorityHistory installation (actor: ActorId option) token =
         let expected =
             actor
             |> Option.map (ActorId.format >> JsonValue.String)
             |> Option.defaultValue JsonValue.Null
 
         decode
+            installation
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ DurableNames.Actor, target
                                  DurableNames.After, JsonValue.Integer sequence
                                  DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
-                                 DurableNames.V, JsonValue.Integer 1L ] when
+                                 DurableNames.V, JsonValue.Integer 2L ] when
                 target = expected && sequence >= 1L
                 ->
                 Sequence.create sequence

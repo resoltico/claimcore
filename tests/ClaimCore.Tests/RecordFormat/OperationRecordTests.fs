@@ -53,7 +53,14 @@ let private authorityProperty =
         let! active = Gen.bool
 
         let! scope =
-            Gen.item [ GrantTarget.Installation; GrantTarget.CaseReference "UNIT-001" ]
+            Gen.item
+                [
+                    RecordedGrantScope.Installation
+                    RecordedGrantScope.Case(
+                        (CaseFixtures.caseId (Guid.Parse "d0000000-0000-4000-8000-000000000001")),
+                        CaseFixtures.reference "UNIT-001"
+                    )
+                ]
 
         let! role =
             Gen.item
@@ -104,7 +111,7 @@ let private decoderProperty =
                 (ClaimCore.Domain.AuthorityAct.Grant
                     {
                         Role = Role.CaseHandler
-                        Scope = GrantTarget.Installation
+                        Scope = RecordedGrantScope.Installation
                     })
             )
             |> AuthorityRecord.encode
@@ -161,7 +168,7 @@ let private strictRecords () =
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantTarget.Installation
+                    Scope = RecordedGrantScope.Installation
                 })
         )
 
@@ -188,7 +195,7 @@ let tests =
         [
             testCase "stewardship encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":1,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
+                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":2,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
                     (steward (AuthoredCaseAct.Bare BareAct.Erase)
@@ -198,7 +205,7 @@ let tests =
                     "Canonical field order")
             testCase "authority encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"REGISTER\"},\"format\":1,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
+                    "{\"act\":{\"kind\":\"REGISTER\"},\"format\":2,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
 
                 Expect.equal
                     (authority ((ClaimCore.Domain.AuthorityAct.Register))

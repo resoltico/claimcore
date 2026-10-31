@@ -3,13 +3,16 @@
   "input": {
     "kind": "CASE",
     "operationId": "10000000-0000-4000-8000-000000000003",
-    "caseReference": "DEMO-0001",
     "expectedRevision": 2,
     "act": {
       "kind": "RECORD_PAYMENT",
       "values": {
         "paymentDate": "2026-08-20"
       }
+    },
+    "target": {
+      "kind": "REFERENCE",
+      "caseReference": "DEMO-0001"
     }
   }
 }

@@ -74,6 +74,7 @@ module internal MessageCatalogs =
                 "call", CliMessage.CallFamily
                 "session", CliMessage.SessionFamily
                 "shell", CliMessage.ShellFamily
+                "recovery", CliMessage.RecoveryFamily
                 "configure", CliMessage.ConfigureFamily
                 "describe", CliMessage.DescribeFamily
                 "schema", CliMessage.SchemaFamily
@@ -103,6 +104,7 @@ module internal MessageCatalogs =
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
         | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
         | HelpTopic.Version -> renderCli language CliMessage.HelpVersion
+        | HelpTopic.Recovery -> renderCli language CliMessage.HelpRecovery
         | HelpTopic.Shell -> renderCli language CliMessage.HelpShell
         | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
@@ -111,7 +113,7 @@ module internal MessageCatalogs =
             |> List.map (fun entry ->
                 CliIdentity.programName + " " + CommandGrammar.synopsis entry.Kind)
             |> String.concat "\n"
-            |> fun value -> value + "\n"
+            |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 
     let private guidanceBody language =
         function

@@ -1,3 +1,4 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
@@ -6,6 +7,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { fields, response, runtime } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -23,6 +25,7 @@ const closePreview = () =>
       subject: {
         kind: "CASE",
         before: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: current.caseReference,
           revision: 1,
           state: {
@@ -31,6 +34,7 @@ const closePreview = () =>
           },
         },
         after: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: current.caseReference,
           revision: 2,
           state: {
@@ -52,6 +56,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
   vi.stubGlobal("fetch", fetch);
   const { result } = renderHook(() =>
     useOperation({
+      ...recoveryOptions,
       credential: "token",
       current,
       kind: "CLOSE",

@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
@@ -44,7 +45,7 @@ let tests =
             let opened =
                 Service.execute
                     (core adminPrincipal)
-                    (OperationInput.Case
+                    (ClaimCore.TestSupport.Inputs.caseOperation
                         {
                             OperationId =
                                 Guid.Parse(sprintf "b0000000-0000-4000-8000-%012d" (3 + index))
@@ -68,12 +69,17 @@ let tests =
                 Enabled = true
             }
 
-        let caseId = CaseReferenceId.encode installation "VISIBLE-1"
+        let caseId = CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
         memory.SeedActor actor [ Role.CaseReader, None; Role.DataSteward, Some caseId ]
         let service = core servicePrincipal
 
         let get =
-            Service.get service { CaseReference = "VISIBLE-1" } CancellationToken.None
+            Service.get
+                service
+                {
+                    Target = CaseSelector.Reference("VISIBLE-1")
+                }
+                CancellationToken.None
             |> fun task -> task.GetAwaiter().GetResult()
 
         let listed =

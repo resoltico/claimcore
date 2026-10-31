@@ -177,8 +177,8 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 ExistingOperation = existing
                 Target = target
                 TargetCase = None
-                EnabledHumanOwners = 2
-                ActorCount = 2
+                EnabledHumanOwners = Some 2
+                ActorCount = Some 2
             }
     }
 

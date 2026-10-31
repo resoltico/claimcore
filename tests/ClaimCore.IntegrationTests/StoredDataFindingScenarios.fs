@@ -7,6 +7,7 @@ open ClaimCore.Protocol
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
@@ -64,7 +65,9 @@ let internal malformedOptionalDate (database: PostgresFixture.Database) =
         let! decided =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)
+                ))
                 (token))
 
         accepted decided |> ignore
@@ -116,7 +119,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! closed =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (token))
@@ -126,13 +129,13 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! reopened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 12 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Reopen)
                 ))
                 (token))
 
         accepted reopened |> ignore
-        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
+        do! sql database "DROP INDEX claimcore.ledger_accepted_operation" [||]
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!

@@ -14,6 +14,7 @@ beforeEach(() => {
   compact.value = false;
 });
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 2,
   state: { kind: "ACTIVE", fields },

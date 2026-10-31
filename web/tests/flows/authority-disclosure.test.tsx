@@ -353,7 +353,7 @@ const authorityReceipt = () => {
   if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "AUTHORITY") {
     throw new Error("Missing authority receipt fixture");
   }
-  return { ...accepted.outcome.data, scope: accepted.outcome.data.subject };
+  return { ...accepted.outcome.data, subject: accepted.outcome.data.subject };
 };
 const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
   const receipt = authorityReceipt();
@@ -390,7 +390,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
             data: {
               ...receipt,
               operationId: prepared.input.operationId,
-              scope: {
+              subject: {
                 ...receipt.subject,
                 act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
               },

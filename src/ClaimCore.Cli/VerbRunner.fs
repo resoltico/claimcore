@@ -37,9 +37,7 @@ module internal VerbRunner =
                         io.Errors.Flush()
             }
 
-        let frame =
-            Frames.admit prepared.Bytes
-            |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
+        let frame = prepared.Invocation
 
         if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
             AuthorityHistoryCommand.run pageIO prepared token
@@ -61,9 +59,7 @@ module internal VerbRunner =
             | Ok prepared when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
             | Ok prepared ->
-                let frame =
-                    Frames.admit prepared.Bytes
-                    |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared request.")
+                let frame = prepared.Invocation
 
                 let! reply = processor.Exchange(frame, token)
                 processor.Deliver(render prepared frame, reply)

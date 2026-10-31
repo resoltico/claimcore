@@ -15,12 +15,12 @@ module internal CaseCorrections =
         | Change.Clear, Some _ -> Ok None
 
     let private paymentChoice progress (choice: Change<Payment>) =
-        let current = PaymentProgress.paymentDate progress
+        let current = PaymentProgress.payment progress
 
         match choice, current with
         | Change.Keep, _ -> Ok current
         | _, None -> Error CaseRefusal.CorrectionRequiresExistingValue
-        | Change.Replace replacement, Some _ -> Ok(Some(Payment.date (replacement)))
+        | Change.Replace replacement, Some _ -> Ok(Some replacement)
         | Change.Clear, Some _ -> Ok None
 
     /// Unary presence advice shares the execution guards; combinations are still decided by apply.

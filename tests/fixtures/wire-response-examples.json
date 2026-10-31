@@ -110,7 +110,8 @@
               "OPERATIONS"
             ],
             "hasAssignedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001"
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -180,14 +181,16 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
               "acts": [],
               "history": []
             },
-            "assignedToYou": false
+            "assignedToYou": false,
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -299,7 +302,9 @@
                 }
               }
             ],
-            "nextCursor": "x"
+            "nextCursor": "x",
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "caseReference": "Demo-0001"
           }
         }
       },
@@ -374,9 +379,11 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
-                  }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
                 },
                 "after": {
                   "caseReference": "x",
@@ -402,9 +409,11 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
-                  }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
                 },
                 "changes": [],
                 "context": {
@@ -462,10 +471,12 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         }
@@ -551,10 +562,12 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         }
@@ -604,10 +617,12 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         }
@@ -704,13 +719,16 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -730,7 +748,8 @@
               }
             ]
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -744,7 +763,8 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -1032,7 +1052,8 @@
               "OPERATIONS"
             ],
             "hasAssignedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001"
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -1086,7 +1107,8 @@
                 ]
               }
             },
-            "assignedToYou": false
+            "assignedToYou": false,
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -1140,7 +1162,8 @@
                 ]
               }
             },
-            "assignedToYou": false
+            "assignedToYou": false,
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       }
@@ -1170,7 +1193,8 @@
                   "progress": "UNDECIDED",
                   "incidentNotificationDate": "2026-01-01"
                 },
-                "changedAt": "2026-09-07T12:00:00.000000Z"
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "caseId": "20000000-0000-4000-8000-000000000001"
               },
               {
                 "caseReference": "CASE-002",
@@ -1188,7 +1212,8 @@
                   "progress": "UNDECIDED",
                   "incidentNotificationDate": "2026-01-01"
                 },
-                "changedAt": "2026-09-07T12:00:00.000000Z"
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "caseId": "20000000-0000-4000-8000-000000000001"
               },
               {
                 "caseReference": "CASE-003",
@@ -1196,7 +1221,8 @@
                 "state": {
                   "kind": "ERASED"
                 },
-                "changedAt": "2026-09-07T12:00:00.000000Z"
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "caseId": "20000000-0000-4000-8000-000000000001"
               }
             ],
             "nextCursor": "x",
@@ -1293,7 +1319,8 @@
                 "role": "CASE_READER",
                 "scope": {
                   "kind": "CASE",
-                  "caseReference": "CASE-001"
+                  "caseReference": "CASE-001",
+                  "caseId": "20000000-0000-4000-8000-000000000001"
                 }
               }
             ],
@@ -1370,9 +1397,11 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
-                  }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
                 },
                 "after": {
                   "caseReference": "x",
@@ -1398,9 +1427,11 @@
                       },
                       "payment": {
                         "paymentDate": "2026-01-01"
-                      }
+                      },
+                      "progress": "PAID"
                     }
-                  }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
                 },
                 "changes": [
                   {
@@ -1524,10 +1555,12 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         },
@@ -1581,15 +1614,20 @@
                           },
                           "payment": {
                             "paymentDate": "2026-01-01"
-                          }
+                          },
+                          "progress": "PAID"
                         }
                       }
-                    }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -1616,7 +1654,8 @@
               "act": "OPEN",
               "snapshot": {
                 "kind": "WITHHELD"
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         },
@@ -1649,12 +1688,16 @@
                     "act": "OPEN",
                     "snapshot": {
                       "kind": "WITHHELD"
-                    }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -1681,7 +1724,8 @@
               "act": "OPEN",
               "snapshot": {
                 "kind": "ERASED"
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         },
@@ -1714,12 +1758,16 @@
                     "act": "OPEN",
                     "snapshot": {
                       "kind": "ERASED"
-                    }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
                   }
-                }
+                },
+                "difference": null
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
           }
         }
       }
@@ -2790,7 +2838,8 @@
               "act": "CORRECT",
               "snapshot": {
                 "kind": "WITHHELD"
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         },
@@ -2859,13 +2908,16 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2876,7 +2928,8 @@
         "outcome": {
           "kind": "NOT_ACCEPTED",
           "data": null
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2891,7 +2944,8 @@
             "action": "READ_CURRENT",
             "target": "operationId"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2905,7 +2959,8 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
       },
       "valid": true
     },
@@ -2940,7 +2995,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -2983,7 +3039,8 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -3025,14 +3082,16 @@
                 },
                 "payment": {
                   "paymentDate": "2026-01-01"
-                }
+                },
+                "progress": "PAID"
               }
             },
             "advice": {
               "acts": [],
               "history": []
             },
-            "assignedToYou": false
+            "assignedToYou": false,
+            "caseId": "20000000-0000-4000-8000-000000000001"
           }
         }
       },
@@ -3081,10 +3140,12 @@
                     },
                     "payment": {
                       "paymentDate": "2026-01-01"
-                    }
+                    },
+                    "progress": "PAID"
                   }
                 }
-              }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
             }
           }
         }
@@ -3161,7 +3222,8 @@
                   },
                   "progress": "DECIDED",
                   "incidentNotificationDate": "2026-01-01"
-                }
+                },
+                "caseId": "20000000-0000-4000-8000-000000000001"
               },
               {
                 "caseReference": "WORK-PAID",
@@ -3182,7 +3244,8 @@
                   },
                   "progress": "PAID",
                   "incidentNotificationDate": "2026-01-01"
-                }
+                },
+                "caseId": "20000000-0000-4000-8000-000000000001"
               }
             ],
             "nextCursor": null,
@@ -3228,7 +3291,8 @@
                   "role": "CASE_READER",
                   "scope": {
                     "kind": "CASE",
-                    "caseReference": "HISTORY-001"
+                    "caseReference": "HISTORY-001",
+                    "caseId": "20000000-0000-4000-8000-000000000001"
                   }
                 }
               },
@@ -3242,7 +3306,8 @@
                   "role": "CASE_READER",
                   "scope": {
                     "kind": "CASE",
-                    "caseReference": "HISTORY-001"
+                    "caseReference": "HISTORY-001",
+                    "caseId": "20000000-0000-4000-8000-000000000001"
                   }
                 }
               },
@@ -3427,6 +3492,83 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case.history.disclosed-difference",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "kind": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "subject": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "kind": "DISCLOSED",
+                      "view": {
+                        "kind": "ACTIVE",
+                        "fields": {
+                          "caseReference": "x",
+                          "status": "OPENED",
+                          "registration": {
+                            "incidentDate": "2026-01-01",
+                            "incidentNotificationDate": "2026-01-01",
+                            "incidentCountry": "LV",
+                            "claimantName": "x",
+                            "insurerName": "x",
+                            "claimedAmount": "0",
+                            "claimedCurrency": "EUR"
+                          },
+                          "decision": {
+                            "paymentDecisionDate": "2026-01-01",
+                            "payableAmount": "0",
+                            "payableCurrency": "EUR"
+                          },
+                          "payment": {
+                            "paymentDate": "2026-01-01"
+                          },
+                          "progress": "PAID"
+                        }
+                      }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
+                  }
+                },
+                "difference": {
+                  "lifecycle": {
+                    "before": null,
+                    "after": "ACTIVE"
+                  },
+                  "fields": [
+                    {
+                      "field": "status",
+                      "before": null,
+                      "after": "OPENED"
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
+          }
+        }
+      }
     }
   ]
 }

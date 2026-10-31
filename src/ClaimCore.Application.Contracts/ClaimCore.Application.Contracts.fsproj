@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <Compile Include="Requests.fs" />
+    <Compile Include="Paging.fs" />
+    <Compile Include="Faults.fs" />
+    <Compile Include="Outcome.fs" />
+    <Compile Include="Advice.fs" />
+    <Compile Include="Receipts.fs" />
+    <Compile Include="Verification.fs" />
+    <Compile Include="History.fs" />
+    <Compile Include="CasePages.fs" />
+    <Compile Include="CaseTotals.fs" />
+    <Compile Include="AuthorityPages.fs" />
+    <Compile Include="Replies.fs" />
+    <Compile Include="Operations.fs" />
+    <Compile Include="Resolution.fs" />
+  </ItemGroup>
+</Project>

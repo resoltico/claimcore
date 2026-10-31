@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
@@ -181,10 +182,15 @@ type Pair =
 
 let private mirrored pair request =
     task {
-        let! postgres = Service.execute pair.Postgres (OperationInput.Case request) token
+        let! postgres =
+            Service.execute pair.Postgres (ClaimCore.TestSupport.Inputs.caseOperation request) token
+
         let receipt = accepted postgres
         pair.Clock.ObservedAt <- receipt.RecordedAt
-        let! memory = Service.execute pair.Memory (OperationInput.Case request) token
+
+        let! memory =
+            Service.execute pair.Memory (ClaimCore.TestSupport.Inputs.caseOperation request) token
+
         let mirrored = accepted memory
 
         Expect.equal

@@ -1,5 +1,6 @@
 namespace ClaimCore.Protocol
 
+
 type MessageCatalog = private MessageCatalog of Map<string, Template>
 
 /// Hosts admit authored JSON once; rendering performs no I/O or locale lookup.

@@ -4,6 +4,7 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Threading
@@ -27,7 +28,8 @@ let private token = CancellationToken.None
 
 let private replay (database: PostgresFixture.Database) (actor: ServiceContext) operation landed =
     task {
-        let! replay = (Service.execute actor (OperationInput.Case operation) (token))
+        let! replay =
+            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation operation) (token))
 
         if landed then
             Expect.isTrue
@@ -100,14 +102,19 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
 
-        let! unknown = (Service.resolve throughProxy ({ OperationId = id 140 }) (token))
+        let! unknown =
+            (ClaimCore.TestSupport.StoreFixtures.resolve
+                throughProxy
+                ({ OperationId = id 140 })
+                (token))
 
         Expect.equal
             unknown
             (Outcome.Failed CoreFault.StoreUnavailable)
             "Lost operational commit is a retriable store fault"
 
-        let! repeated = (Service.resolve actor ({ OperationId = id 140 }) (token))
+        let! repeated =
+            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 140 }) (token))
 
         Expect.equal
             repeated
@@ -117,7 +124,7 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         let! delayed =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 140 "LOST-RESOLUTION" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
@@ -131,8 +138,8 @@ let private lostResolution drop (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence (3L))
-            "Resolution never appends"
+            (CaseFixtures.sequence (4L))
+            "Resolution appends one retained control; repeating it appends nothing"
     }
 
 let private lostAuthority drop landed (database: PostgresFixture.Database) =
@@ -277,7 +284,7 @@ let tests =
                             let! result =
                                 (Service.execute
                                     throughProxy
-                                    (OperationInput.Case operation)
+                                    (ClaimCore.TestSupport.Inputs.caseOperation operation)
                                     (token))
 
                             do! commitEvidence drop operation proxy result

@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 

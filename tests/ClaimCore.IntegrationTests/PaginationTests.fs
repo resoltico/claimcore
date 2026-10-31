@@ -9,6 +9,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
@@ -31,7 +32,9 @@ let private setup (database: PostgresFixture.Database) =
             let! result =
                 (Service.execute
                     admin
-                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request n reference 0L (AuthoredCaseAct.Open registration)
+                    ))
                     (token))
 
             accepted result |> ignore
@@ -154,6 +157,10 @@ type internal PausedPageStore
                                         }
 
                                     member _.FindCase id = tx.FindCase id
+
+                                    member _.FindCaseByReference reference =
+                                        tx.FindCaseByReference reference
+
                                     member _.FindEntry id = tx.FindEntry id
 
                                     member _.CasePage
@@ -327,7 +334,7 @@ let private snapshot (database: PostgresFixture.Database) =
             let! later =
                 (Service.execute
                     admin
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request 13 "CASE-AFTER" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open System
 open System.Threading
 open ClaimCore.Application
@@ -32,21 +33,6 @@ module internal Verification =
         }
 
     /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
-    let private earliestDuplicate connection token =
-        task {
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    "SELECT min(sequence) FROM (SELECT sequence,row_number() OVER (PARTITION BY operation_id ORDER BY sequence) AS occurrence FROM claimcore.ledger) AS occurrences WHERE occurrence=2"
-                    [||]
-                    token
-
-            return
-                match List.exactlyOne rows |> Array.exactlyOne with
-                | :? DBNull -> None
-                | value -> Some(DatabaseSession.admitted Sequence.create (unbox<int64> value))
-        }
-
     let private scan
         connection
         installationId
@@ -54,8 +40,7 @@ module internal Verification =
         (token: CancellationToken)
         =
         task {
-            let! duplicate = earliestDuplicate connection token
-            let mutable state = Ok(LedgerVerification.initial expected duplicate)
+            let mutable state = Ok(LedgerVerification.initial expected)
 
             use statement =
                 DatabaseSession.statement
@@ -104,13 +89,37 @@ module internal Verification =
                 |> Result.bind (LedgerVerification.head state)
         }
 
-    let private projections connection installationId (state: LedgerVerification.Scan) token =
+    /// Authoritative scan for maintenance; projection divergence must not prevent repair.
+    let authoritative connection installationId expected token =
+        task {
+            let! scanned = scan connection installationId expected token
+
+            match scanned with
+            | Error finding -> return Error finding
+            | Ok state ->
+                match LedgerVerification.erasure state with
+                | Error finding -> return Error finding
+                | Ok() ->
+                    let! checkedHead = head connection state token
+
+                    return
+                        checkedHead
+                        |> Result.bind (fun () -> LedgerVerification.complete expected state)
+                        |> Result.map (fun _ -> state)
+        }
+
+    let projections connection installationId (state: LedgerVerification.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state.Cases token
 
             match cases with
             | Error error -> return Error error
-            | Ok() -> return! VerificationRows.authority connection state.Actors token
+            | Ok() ->
+                let! authority = VerificationRows.authority connection state.Actors token
+
+                match authority with
+                | Error error -> return Error error
+                | Ok() -> return! VerificationRows.fences connection state.Fences token
         }
 
     let private finish

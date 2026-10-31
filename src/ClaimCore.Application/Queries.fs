@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Every read authorizes and decodes its continuation inside one store snapshot.
@@ -23,11 +24,11 @@ module internal Queries =
             | Some record -> caseRecord services view.Actor record |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
-    let get (services: ServiceContext) reference token =
+    let get (services: ServiceContext) selector token =
         let store = services.Store
 
         task {
-            match parseReference reference with
+            match CaseExecution.validateSelector selector with
             | Error refusal -> return Outcome.Rejected refusal
             | Ok _ ->
                 let! result =
@@ -36,7 +37,7 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! view = ExecutionFacts.case services tx None reference
+                                        let! view = ExecutionFacts.case services tx None selector
 
                                         return caseResult services view
                                     })
@@ -56,6 +57,7 @@ module internal Queries =
         | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    InstallationId = services.InstallationId
                     ActorId = requester.ActorId
                     Runtime =
                         {
@@ -101,7 +103,7 @@ module internal Queries =
             return readResult result
         }
 
-    let selectCases principal (request: CaseListRequest) actor =
+    let selectCases installation principal (request: CaseListRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
@@ -111,7 +113,7 @@ module internal Queries =
                 |> Result.mapError (fun violation ->
                     Refusal.invalidInput (InputTarget.Text, violation))
                 |> Result.bind (fun filter ->
-                    cursor (Cursors.decodeCases filter) request.Page.AfterCursor
+                    cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
                             Visibility = visibility
@@ -128,7 +130,8 @@ module internal Queries =
         CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
-                CaseSummary.Reference = record.Snapshot.Reference
+                CaseSummary.CaseId = record.Snapshot.CaseId
+                Reference = record.Snapshot.Reference
                 Revision = record.Snapshot.Revision
                 ChangedAt = record.Index.ChangedAt
                 State =
@@ -136,24 +139,13 @@ module internal Queries =
                         (fun (fields: CaseFields) ->
                             {
                                 Status = fields.Status
-                                ClaimantName =
-                                    Registration.value
-                                        BusinessField.ClaimantName
-                                        fields.Registration
-                                    |> FieldValue.name
-                                InsurerName =
-                                    Registration.value
-                                        BusinessField.InsurerName
-                                        fields.Registration
-                                    |> FieldValue.name
+                                ClaimantName = Registration.claimant fields.Registration
+                                InsurerName = Registration.insurer fields.Registration
                                 Claimed = Registration.claimed fields.Registration
                                 Payable = fields.Decision |> Option.map Decision.payable
                                 Progress = CaseProgress.ofPayment fields.Progress
                                 IncidentNotificationDate =
-                                    Registration.value
-                                        BusinessField.IncidentNotificationDate
-                                        fields.Registration
-                                    |> FieldValue.date
+                                    Registration.incidentNotificationDate fields.Registration
                             })
                         record.Snapshot.State
             })
@@ -181,7 +173,13 @@ module internal Queries =
                                                 }
                                             )
 
-                                        match selectCases principal request actor with
+                                        match
+                                            selectCases
+                                                services.InstallationId
+                                                principal
+                                                request
+                                                actor
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
@@ -204,6 +202,7 @@ module internal Queries =
                                                                 page.Next
                                                                 |> Option.map (
                                                                     Cursors.encodeCases
+                                                                        services.InstallationId
                                                                         selection.Filter
                                                                 )
                                                         })
@@ -237,7 +236,13 @@ module internal Queries =
                                             Filter = filter
                                         }
 
-                                    match selectCases services.Principal request actor with
+                                    match
+                                        selectCases
+                                            services.InstallationId
+                                            services.Principal
+                                            request
+                                            actor
+                                    with
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
                                         let! summary = tx.CaseSummary selection.Selection
@@ -249,7 +254,7 @@ module internal Queries =
             return readResult result
         }
 
-    let selectHistory principal (request: HistoryRequest) actor record =
+    let selectHistory installation principal (request: HistoryRequest) actor record =
         let capability =
             if request.Detail = HistoryDetail.Full then
                 Capability.ReadHistoryFull
@@ -261,19 +266,48 @@ module internal Queries =
         else
             currentActor principal actor
             |> Result.bind (fun _ ->
-                cursor (Cursors.decodeHistory request.CaseReference) request.AfterCursor
-                |> Result.map (Option.defaultValue Revision.zero))
+                match record with
+                | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+                | Some record ->
+                    cursor (Cursors.decodeHistory installation record.CaseId) request.AfterCursor
+                    |> Result.map (Option.defaultValue Revision.zero))
 
-    let private historyEntry (services: ServiceContext) actor current detail entry =
-        let installation = services.InstallationId
-        let principal = services.Principal
-
+    let private historyEntries
+        (services: ServiceContext)
+        actor
+        current
+        detail
+        (slice: CaseHistorySlice)
+        =
         if detail = HistoryDetail.Summary then
-            LedgerEntries.summary current entry |> Result.map HistoryEntry.SummaryEntry
+            slice.Page.Items
+            |> List.map (LedgerEntries.summary current >> Result.map HistoryEntry.SummaryEntry)
+            |> collect
         else
-            LedgerEntries.validate installation entry
-            |> Result.bind (LedgerEntries.receipt principal actor (Some current))
-            |> Result.map HistoryEntry.FullEntry
+            let all = slice.Page.Items @ Option.toList slice.Previous
+
+            all
+            |> List.map (fun entry ->
+                LedgerEntries.validate services.InstallationId entry
+                |> Result.bind (LedgerEntries.receipt services.Principal actor (Some current)))
+            |> collect
+            |> Result.bind (fun receipts ->
+                match receipts with
+                | [] -> Ok []
+                | _ :: tail ->
+                    let previous = (tail |> List.map Some) @ [ None ]
+
+                    List.zip receipts previous
+                    |> List.truncate slice.Page.Items.Length
+                    |> List.map (fun (receipt, previous) ->
+                        CaseChanges.history previous receipt
+                        |> Result.map (fun difference ->
+                            HistoryEntry.FullEntry
+                                {
+                                    Receipt = receipt
+                                    Difference = difference
+                                }))
+                    |> collect)
 
     let history (services: ServiceContext) (request: HistoryRequest) token =
         let store = services.Store
@@ -281,7 +315,7 @@ module internal Queries =
         let principal = services.Principal
 
         task {
-            match parseReference request.CaseReference with
+            match CaseExecution.validateSelector request.Target with
             | Error refusal -> return Outcome.Rejected refusal
             | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
             | Ok _ ->
@@ -291,32 +325,33 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let id =
-                                            CaseReferenceId.encode
-                                                installation
-                                                request.CaseReference
+                                        let! record = ExecutionFacts.findCase tx request.Target
 
                                         let! actor =
-                                            tx.Authority(
-                                                {
-                                                    AuthorityQuery.Principal = principal
-                                                    CaseId = Some id
-                                                }
-                                            )
+                                            ExecutionFacts.authority
+                                                tx
+                                                principal
+                                                (record |> Option.map _.CaseId |> Option.toList)
 
-                                        let! record = tx.FindCase id
-
-                                        match selectHistory principal request actor record with
+                                        match
+                                            selectHistory
+                                                installation
+                                                principal
+                                                request
+                                                actor
+                                                record
+                                        with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             match record with
                                             | None ->
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
                                             | Some current ->
-                                                let! page =
+                                                let! slice =
                                                     tx.HistoryPage(
                                                         {
-                                                            HistoryPageQuery.CaseId = id
+                                                            HistoryPageQuery.CaseId =
+                                                                current.CaseId
                                                             AfterRevision = after
                                                             Limit = request.Limit
                                                         }
@@ -325,23 +360,24 @@ module internal Queries =
                                                 return
                                                     CaseExecution.current installation current
                                                     |> Result.bind (fun _ ->
-                                                        page.Items
-                                                        |> List.map (
-                                                            historyEntry
-                                                                services
-                                                                actor
-                                                                current
-                                                                request.Detail
-                                                        )
-                                                        |> collect)
+                                                        historyEntries
+                                                            services
+                                                            actor
+                                                            current
+                                                            request.Detail
+                                                            slice)
                                                     |> Result.map (fun entries ->
                                                         {
-                                                            HistoryResultPage.Entries = entries
+                                                            HistoryResultPage.CaseId =
+                                                                current.CaseId
+                                                            Reference = current.Snapshot.Reference
+                                                            Entries = entries
                                                             NextCursor =
-                                                                page.Next
+                                                                slice.Page.Next
                                                                 |> Option.map (
                                                                     Cursors.encodeHistory
-                                                                        request.CaseReference
+                                                                        installation
+                                                                        current.CaseId
                                                                 )
                                                         })
                                                     |> succeeded

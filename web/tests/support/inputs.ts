@@ -10,17 +10,20 @@ import type {
 
 import { inventory } from "./inventory";
 
-type CaseViewSeed = Omit<CaseView, "assignedToYou"> & Partial<Pick<CaseView, "assignedToYou">>;
+type CaseViewSeed = Omit<CaseView, "assignedToYou" | "caseId"> &
+  Partial<Pick<CaseView, "assignedToYou" | "caseId">>;
 export const caseViewInput = <T extends CaseViewSeed>(value: T) => ({
   ...value,
   assignedToYou: value.assignedToYou ?? false,
+  caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
 });
-type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId"> &
-  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId">>;
+type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId" | "installationId"> &
+  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId" | "installationId">>;
 export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   ...value,
   hasAssignedCases: value.hasAssignedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
+  installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.
@@ -78,6 +81,7 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     incidentNotificationDate: "2026-09-02",
   };
   return {
+    caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: "SYNTHETIC-001",
     revision: 1,
     changedAt: "2026-09-01T12:00:00.000000Z",

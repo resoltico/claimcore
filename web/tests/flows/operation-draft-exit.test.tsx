@@ -9,6 +9,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {

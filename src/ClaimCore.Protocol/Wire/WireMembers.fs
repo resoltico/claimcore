@@ -1,5 +1,7 @@
 namespace ClaimCore.Protocol
 
+open ClaimCore.Application.Contracts
+
 /// Technical request member names have one wire-contract owner.
 module WireMembers =
     [<Literal>]
@@ -52,6 +54,9 @@ module WireMembers =
 
 /// Named codec definitions are used by the codec and its semantic annotations.
 module RequestSchemas =
+    [<Literal>]
+    let CaseSelector = "CaseSelector"
+
     [<Literal>]
     let Registration = "Registration"
 

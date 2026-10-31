@@ -12,6 +12,7 @@ type CliCommand =
     | Call
     | Session
     | Shell
+    | Recovery
     | Configure
 
 [<RequireQualifiedAccess>]
@@ -24,6 +25,7 @@ type HelpTopic =
     | Call
     | Session
     | Shell
+    | Recovery
     | Configure
     | Configuration
     | Delivery
@@ -75,6 +77,7 @@ module CliCommands =
         | CliCommand.Call -> CliTopic.Help HelpTopic.Call
         | CliCommand.Session -> CliTopic.Help HelpTopic.Session
         | CliCommand.Shell -> CliTopic.Help HelpTopic.Shell
+        | CliCommand.Recovery -> CliTopic.Help HelpTopic.Recovery
         | CliCommand.Configure -> CliTopic.Help HelpTopic.Configure
 
     /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
@@ -88,6 +91,7 @@ module CliCommands =
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
         | CliCommand.Shell -> [ "shell" ]
+        | CliCommand.Recovery -> [ "recovery list"; "recovery resolve ATTEMPT_ID" ]
         | CliCommand.Configure ->
             [
                 "configure --show"
@@ -108,6 +112,7 @@ module CliCommands =
         | HelpTopic.Call -> synopses CliCommand.Call @ protocolSynopses
         | HelpTopic.Session -> synopses CliCommand.Session @ protocolSynopses
         | HelpTopic.Shell -> synopses CliCommand.Shell
+        | HelpTopic.Recovery -> synopses CliCommand.Recovery
         | HelpTopic.Configure -> synopses CliCommand.Configure
         | HelpTopic.Examples ->
             [ "describe case open"; "case get REF"; "schema operation.execute request" ]

@@ -14,9 +14,30 @@ module internal RecordCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
+    // Frozen member inventory: adding a current domain descriptor cannot change this grammar.
+    let private members =
+        function
+        | RecordGroup.Registration ->
+            [
+                BusinessField.IncidentDate, FieldValueKind.CalendarDate
+                BusinessField.IncidentNotificationDate, FieldValueKind.CalendarDate
+                BusinessField.IncidentCountry, FieldValueKind.Country
+                BusinessField.ClaimantName, FieldValueKind.PartyName
+                BusinessField.InsurerName, FieldValueKind.PartyName
+                BusinessField.ClaimedAmount, FieldValueKind.Amount
+                BusinessField.ClaimedCurrency, FieldValueKind.Currency
+            ]
+        | RecordGroup.Decision ->
+            [
+                BusinessField.PaymentDecisionDate, FieldValueKind.CalendarDate
+                BusinessField.PayableAmount, FieldValueKind.Amount
+                BusinessField.PayableCurrency, FieldValueKind.Currency
+            ]
+        | RecordGroup.Payment -> [ BusinessField.PaymentDate, FieldValueKind.CalendarDate ]
+
     let private inputGroup group create values =
-        CaseFields.ofGroup group
-        |> List.map (fun field -> field, DurableNames.field field, Codec.text)
+        members group
+        |> List.map (fun (field, _) -> field, DurableNames.field field, Codec.text)
         |> Codec.fieldMap
         |> Codec.mapResult
             (fun path fields ->
@@ -147,37 +168,60 @@ module internal RecordCodecs =
         |> named "Principal"
 
     let scope =
+        let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+
+        let reference =
+            text
+            |> mapResult
+                (fun path raw ->
+                    CaseReference.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid retained reference."
+                        }))
+                CaseReference.format
+
         tagged
-            "Scope"
+            "RecordedGrantScope"
             [
-                unitVariant DurableNames.InstallationScope GrantTarget.Installation
+                unitVariant DurableNames.InstallationScope RecordedGrantScope.Installation
                 variant
                     DurableNames.CaseScope
-                    GrantTarget.CaseReference
+                    (fun (id, reference) -> RecordedGrantScope.Case(id, reference))
                     (function
-                    | GrantTarget.CaseReference value -> Some value
+                    | RecordedGrantScope.Case(id, reference) -> Some(id, reference)
                     | _ -> None)
-                    (record id |> field DurableNames.CaseReference id text)
+                    (record (fun id reference -> id, reference)
+                     |> field DurableNames.CaseId fst caseId
+                     |> field DurableNames.CaseReference snd reference)
             ]
 
     let private authorityVariantsWith role scope =
         let grant =
-            record (fun role scope ->
-                {
-                    AuthoredGrant.Role = role
-                    Scope = scope
-                })
+            record (fun role scope -> { Grant.Role = role; Scope = scope })
             |> field DurableNames.Role _.Role role
             |> field DurableNames.Scope _.Scope scope
 
-        DurableNames.authorityKinds
-        |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-        |> List.map (fun kind ->
-            let token = DurableNames.authorityAct kind
-
-            match AuthorityAct.slot kind with
-            | AuthorityActSlot.Bare act -> unitVariant token act
-            | AuthorityActSlot.Grant(inject, project) -> variant token inject project grant)
+        [
+            unitVariant "REGISTER" AuthorityAct.Register
+            variant
+                "GRANT"
+                AuthorityAct.Grant
+                (function
+                | AuthorityAct.Grant value -> Some value
+                | _ -> None)
+                grant
+            variant
+                "REVOKE"
+                AuthorityAct.Revoke
+                (function
+                | AuthorityAct.Revoke value -> Some value
+                | _ -> None)
+                grant
+            unitVariant "ENABLE" AuthorityAct.Enable
+            unitVariant "DISABLE" AuthorityAct.Disable
+        ]
 
     let role = enumeration DurableNames.roleEntries
     let authorityVariants role = authorityVariantsWith role scope
@@ -209,12 +253,9 @@ module internal RecordCodecs =
     let private acceptedReference = scalar CaseReference.parse CaseReference.format
 
     let private acceptedGroup group create values =
-        CaseFields.declarations
-        |> List.filter (fun row -> row.Group = Some group)
-        |> List.map (fun row ->
-            row.Field,
-            DurableNames.field row.Field,
-            scalar (FieldValue.parse row.Kind) FieldValue.format)
+        members group
+        |> List.map (fun (field, kind) ->
+            field, DurableNames.field field, scalar (FieldValue.parse kind) FieldValue.format)
         |> Codec.fieldMap
         |> mapResult
             (fun path fields ->
@@ -236,9 +277,7 @@ module internal RecordCodecs =
 
     let caseFields =
         (record (fun reference status registration decision payment ->
-            PaymentProgress.fromGroups
-                decision
-                (payment |> Option.map (fun (value: Payment) -> (Payment.date (value))))
+            PaymentProgress.fromGroups decision payment
             |> Result.map (fun progress ->
                 {
                     CaseFields.CaseReference = reference

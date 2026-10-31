@@ -56,7 +56,11 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
           "Content-Type": "application/json",
           "X-ClaimCore-Antiforgery": await sessionToken(page),
         },
-        body: JSON.stringify({ caseReference: fixture.reference, detail: "FULL", limit: 50 }),
+        body: JSON.stringify({
+          target: { kind: "REFERENCE", caseReference: fixture.reference },
+          detail: "FULL",
+          limit: 50,
+        }),
       });
     });
     await expect(page.locator(".history-list li")).toHaveCount(1);

@@ -19,25 +19,29 @@ type internal MemoryTokenSession
     let obtain token =
         task {
             let! result = acquire token
-            current <- result |> Result.toOption
+            Volatile.Write(&current, result |> Result.toOption)
             return result |> Result.map _.Access
         }
 
     let expired (grant: AuthorizationGrant) (token: CancellationToken) =
         task {
-            current <- None
+            Volatile.Write(&current, None)
 
             match grant.Refresh with
             | None -> return! obtain token
             | Some _ ->
                 match! refresh grant token with
                 | Ok renewed ->
-                    current <- Some renewed
+                    Volatile.Write(&current, Some renewed)
                     return Ok renewed.Access
                 | Error _ when token.IsCancellationRequested ->
                     return Error AccessFailure.OidcTokenUnavailable
                 | Error _ -> return! obtain token
         }
+
+    member _.IsCurrent(access: AccessToken) =
+        Volatile.Read(&current)
+        |> Option.exists (fun grant -> obj.ReferenceEquals(grant.Access, access) && access.CanUse)
 
     member _.Token(token: CancellationToken) =
         task {
@@ -57,12 +61,12 @@ type internal MemoryTokenSession
             do! gate.WaitAsync token
 
             try
-                current <- None
+                Volatile.Write(&current, None)
             finally
                 gate.Release() |> ignore
         }
 
     interface IDisposable with
         member _.Dispose() =
-            current <- None
+            Volatile.Write(&current, None)
             gate.Dispose()

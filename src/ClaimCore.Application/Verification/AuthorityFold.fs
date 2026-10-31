@@ -1,17 +1,14 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
 [<NoEquality; NoComparison>]
-type internal AuthorityFoldContext =
-    {
-        InstallationId: Guid
-        CaseExists: CaseId -> bool
-    }
+type internal AuthorityFoldContext = { FindCase: string -> CaseId option }
 
 type internal AuthorityFoldTarget =
     {
@@ -125,11 +122,10 @@ module internal AuthorityFold =
         (context: AuthorityFoldContext)
         (entry: StoredEntry)
         (actor: ActorAuthority)
-        (value: AuthoredGrant)
+        (value: RecordedGrant)
         active
         =
-        let installationId = context.InstallationId
-        let caseExists = context.CaseExists
+        let findCase = context.FindCase
         let role = value.Role
         let scope = value.Scope
 
@@ -138,15 +134,17 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HumanRequired
-                    (not (Authority.humanOnlyRole role) || PrincipalKey.isHuman actor.Principal)
+                    (not (role = Role.Owner || role = Role.DataSteward)
+                     || PrincipalKey.isHuman actor.Principal)
 
             let! scope =
                 match scope with
-                | GrantTarget.Installation -> Ok Scope.Installation
-                | GrantTarget.CaseReference reference ->
-                    let id = CaseReferenceId.encode installationId reference
-
-                    require (Some entry.Sequence) VerificationFinding.AuthorityFold (caseExists id)
+                | RecordedGrantScope.Installation -> Ok Scope.Installation
+                | RecordedGrantScope.Case(id, reference) ->
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.AuthorityFold
+                        (findCase (CaseReference.format reference) = Some id)
                     |> Result.map (fun () -> Scope.Case id)
 
             let grant: ActorGrant = { Role = role; Scope = scope }
@@ -202,8 +200,8 @@ module internal AuthorityFold =
                 |> Result.map (fun actor -> Map.add id actor actors))
 
     let apply
-        installationId
-        caseExists
+        _installationId
+        findCase
         (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
         (request: AuthorityRequestRecord)
@@ -231,10 +229,7 @@ module internal AuthorityFold =
 
             let! next =
                 action
-                    {
-                        InstallationId = installationId
-                        CaseExists = caseExists
-                    }
+                    { FindCase = findCase }
                     actors
                     entry
                     { ActorId = id; Principal = principal }

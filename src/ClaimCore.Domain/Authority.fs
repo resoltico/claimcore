@@ -26,16 +26,36 @@ type AuthorityChange =
     | Enabled
     | Disabled
 
+[<RequireQualifiedAccess>]
+type AuthorityFact =
+    | ActorCount
+    | EnabledHumanOwners
+
 type AuthorityFacts =
     {
         TargetActor: ActorAuthority option
         TargetCaseId: CaseId option
-        EnabledHumanOwners: int
-        ActorCount: int
+        EnabledHumanOwners: int option
+        ActorCount: int option
         Requester: AuthorityView
     }
 
 module Authority =
+    /// Only these acts need installation-wide protection facts; callers load them in the action snapshot.
+    let factsNeeded (act: ValidAuthorityAct) =
+        match act with
+        | AuthorityAct.ProvisionOwner -> [ AuthorityFact.ActorCount ]
+        | AuthorityAct.Disable
+        | AuthorityAct.Revoke {
+                                  Role = Role.Owner
+                                  Scope = GrantTarget.Installation
+                              } -> [ AuthorityFact.EnabledHumanOwners ]
+        | _ -> []
+
+    let private required name value =
+        value
+        |> Option.defaultWith (fun () -> invalidOp ("Missing authority protection fact: " + name))
+
     // Roles, principal restrictions and scoped capabilities have one domain owner.
     let policy =
         function
@@ -251,6 +271,7 @@ module Authority =
         match target, facts.TargetCaseId with
         | GrantTarget.Installation, _ -> Ok Scope.Installation
         | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
+        | GrantTarget.CaseId requested, Some id when requested = id -> Ok(Scope.Case id)
         | _ -> Error AccessRefusal.ResourceUnavailable
 
     let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =
@@ -261,7 +282,7 @@ module Authority =
             && role = Role.Owner
             && scope = Scope.Installation
             && owner actor
-            && facts.EnabledHumanOwners <= 1
+            && required "enabled human owners" facts.EnabledHumanOwners <= 1
         then
             Error AuthorityRefusal.LastOwner
         elif active then
@@ -280,14 +301,16 @@ module Authority =
         match command.Act, facts.TargetActor with
         | AuthorityAct.ProvisionOwner, _ when not (PrincipalKey.isHuman command.Target) ->
             Error(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
-        | AuthorityAct.ProvisionOwner, None when facts.ActorCount = 0 ->
+        | AuthorityAct.ProvisionOwner, None when required "actor count" facts.ActorCount = 0 ->
             Ok AuthorityChange.OwnerProvisioned
         | AuthorityAct.ProvisionOwner, _
         | AuthorityAct.Register, Some _ ->
             Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
         | AuthorityAct.Register, None -> Ok AuthorityChange.Registered
         | _, None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
-        | AuthorityAct.Disable, Some actor when owner actor && facts.EnabledHumanOwners <= 1 ->
+        | AuthorityAct.Disable, Some actor when
+            owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1
+            ->
             Error(Refusal.Authority AuthorityRefusal.LastOwner)
         | AuthorityAct.Enable, Some _ -> Ok AuthorityChange.Enabled
         | AuthorityAct.Disable, Some _ -> Ok AuthorityChange.Disabled

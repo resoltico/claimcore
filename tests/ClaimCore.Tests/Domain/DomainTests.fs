@@ -36,24 +36,12 @@ let private registrationTests =
                         "This handler's notification date"
 
                     Expect.isTrue
-                        (PartyName.format (
-                            Registration.value
-                                BusinessField.ClaimantName
-                                ((viewFields view).Registration)
-                            |> FieldValue.name
-                        )
-                            =
+                        (PartyName.format (Registration.claimant ((viewFields view).Registration)) =
                             (RegistrationInput.value BusinessField.ClaimantName (registration)))
                         "A company name is not split"
 
                     Expect.isTrue
-                        (PartyName.format (
-                            Registration.value
-                                BusinessField.InsurerName
-                                ((viewFields view).Registration)
-                            |> FieldValue.name
-                        )
-                            =
+                        (PartyName.format (Registration.insurer ((viewFields view).Registration)) =
                             (RegistrationInput.value BusinessField.InsurerName (registration)))
                         "No liability inference"
 

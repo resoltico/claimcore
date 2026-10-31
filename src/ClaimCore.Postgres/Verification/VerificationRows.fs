@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.Application
 open ClaimCore.Application.VerificationChecks
@@ -65,7 +66,7 @@ module internal VerificationRows =
             let! seen =
                 fold
                     connection
-                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases ORDER BY case_id")
+                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases c ORDER BY case_id")
                     {
                         Read = DatabaseSession.namedRow
                         Append =
@@ -191,4 +192,28 @@ module internal VerificationRows =
                         token
 
                 return actual |> Result.bind (ProjectionVerification.finishAuthority expected)
+        }
+
+    let fences connection expected token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ("SELECT actor_id,operation_id,"
+                     + DatabaseSession.instantExpression "fenced_at"
+                     + " FROM claimcore.operation_fences")
+                    [||]
+                    token
+
+            return
+                capture None VerificationFinding.FenceProjection (fun () ->
+                    rows
+                    |> List.map (fun row ->
+                        (DatabaseSession.value<System.Guid> 0 row
+                         |> DatabaseSession.admitted ActorId.create,
+                         DatabaseSession.value<System.Guid> 1 row
+                         |> DatabaseSession.admitted OperationId.create),
+                        DatabaseSession.recordedInstant 2 row)
+                    |> Map.ofList)
+                |> Result.bind (ProjectionVerification.fences expected)
         }

@@ -6,6 +6,7 @@ open System
 open System.Threading
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport
@@ -13,6 +14,7 @@ open ClaimCore.Postgres
 
 /// Real PostgreSQL preserves the same Application authorization exercised through OIDC.
 type Fixture(database: PostgresFixture.Database) =
+    member _.InstallationId = database.Fixture.InstallationId
     member _.Actor principal = core database.Fixture principal
 
     member _.EntryCount =
@@ -67,7 +69,7 @@ let createFor issuer subject =
             let! opened =
                 (Service.execute
                     owner
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))

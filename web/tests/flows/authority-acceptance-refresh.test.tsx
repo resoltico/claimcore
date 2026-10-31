@@ -96,6 +96,9 @@ it.each(["context", "listing"] as const)(
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    await waitFor(() => {
+      expect(execute).toHaveBeenCalledOnce();
+    });
     const [prepared] = execute.mock.calls[0]!;
     expect(prepared.input.act).toEqual({ kind: "DISABLE" });
     await finish(execution, acceptance(prepared));

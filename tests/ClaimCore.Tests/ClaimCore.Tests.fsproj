@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <!-- The pinned SDK owns the compiler service used for source-level architecture checks. -->
     <Reference Include="FSharp.Compiler.Service">
       <HintPath>$(MSBuildToolsPath)/FSharp/FSharp.Compiler.Service.dll</HintPath>
@@ -23,12 +24,12 @@
     <Compile Include="Architecture/ProductModel.fs" />
     <Compile Include="Architecture/DeclarationFixtures.fs" />
     <Compile Include="Architecture/ProductDeclarationTests.fs" />
-    <Compile Include="Architecture/StructuralTypeTests.fs" />
     <Compile Include="Architecture/DomainOwnershipTests.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
     <Compile Include="Architecture/MessageKeyTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
+    <Compile Include="Contract/ProgressContractTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
     <Compile Include="Contract/DatabaseTimingTests.fs" />
@@ -59,6 +60,7 @@
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
+    <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
@@ -79,7 +81,7 @@
     <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="RecordFormat/OperationRecordTests.fs" />
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
-    <Compile Include="Domain/CaseReferenceIdTests.fs" />
+    <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractReads.fs" Link="Application/StoreContractReads.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/LedgerWriteContract.fs" Link="Application/LedgerWriteContract.fs" />
@@ -88,6 +90,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/CaseSelectorContract.fs" Link="Application/CaseSelectorContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
     <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
@@ -99,6 +102,8 @@
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
+    <Compile Include="Application/HistoricalEffectTests.fs" />
+    <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
     <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
@@ -130,12 +135,15 @@
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
+    <Compile Include="Cli/ReplyCorrelationTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
     <Compile Include="Cli/ConfigurationHelpTests.fs" />
     <Compile Include="Cli/CliProfileTests.fs" />
+    <Compile Include="Cli/RecoveryJournalProcess.fs" />
+    <Compile Include="Cli/RecoveryJournalTests.fs" />
     <Compile Include="Cli/ShellTokenizerTests.fs" />
     <Compile Include="Cli/ShellTerminalTests.fs" />
     <Compile Include="Cli/ShellTestClock.fs" />

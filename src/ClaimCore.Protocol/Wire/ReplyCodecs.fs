@@ -3,6 +3,7 @@ namespace ClaimCore.Protocol
 open ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.Json
 
@@ -41,6 +42,48 @@ module ReplyCodecs =
                 ]
 
         record id |> field "outcome" id outcome |> build |> named name
+
+    let operationReply name outcome =
+        (record (fun operationId value ->
+            {
+                OperationReply.OperationId = operationId
+                Outcome = value
+            })
+        : Fields<OperationReply<'value>, _>)
+        |> field "operationId" _.OperationId uuid
+        |> flatten _.Outcome (record id |> field "outcome" id outcome)
+        |> build
+        |> named name
+
+    let observation =
+        let outcome =
+            tagged
+                "ObservationResult"
+                [
+                    variant
+                        "SUCCEEDED"
+                        Outcome.Succeeded
+                        (function
+                        | Outcome.Succeeded value -> Some value
+                        | _ -> None)
+                        (data ReceiptCodecs.receipt)
+                    variant
+                        "REJECTED"
+                        Outcome.Rejected
+                        (function
+                        | Outcome.Rejected value -> Some value
+                        | _ -> None)
+                        (data DiagnosticCodecs.diagnostic)
+                    variant
+                        "FAILED"
+                        Outcome.Failed
+                        (function
+                        | Outcome.Failed value -> Some value
+                        | _ -> None)
+                        (data DiagnosticCodecs.fault)
+                ]
+
+        operationReply "ObservationReply" outcome
 
     let authorityState =
         (record (fun enabled grants -> { Enabled = enabled; Grants = grants })

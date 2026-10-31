@@ -35,7 +35,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference: reference }),
+    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");

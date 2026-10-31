@@ -18,6 +18,15 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "ID-scoped grants retain their case identity through review replay revocation and erasure"
+                (withFixture factory CaseSelectorContract.grantScopes)
+            testCase
+                "case selectors have a closed unambiguous grammar"
+                CaseSelectorContract.closedSelectorGrammar
+            testCaseAsync
+                "ID and reference selectors preserve retained identity and live history"
+                (withFixture factory CaseSelectorContract.identities)
+            testCaseAsync
                 "triage summary counts and exact sums share the selected scope"
                 (withFixture factory WorklistTriageContract.exactTotals)
             testCaseAsync

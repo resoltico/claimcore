@@ -9,7 +9,11 @@ const expectHistoryRequest = (body: unknown) => {
   if (typeof body !== "string") {
     throw new Error("Synthetic history input must be JSON text.");
   }
-  expect(JSON.parse(body)).toMatchObject({ detail: "SUMMARY", caseReference: "CASE-1", limit: 50 });
+  expect(JSON.parse(body)).toMatchObject({
+    detail: "SUMMARY",
+    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    limit: 50,
+  });
 };
 it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL", async () => {
   const { summary, full } = historyVariants();

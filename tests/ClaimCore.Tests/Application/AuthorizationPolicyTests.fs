@@ -265,10 +265,7 @@ let private scopedAdvice () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
     let snapshot = Case.snapshot (paid ())
 
-    let target =
-        ClaimCore.RecordFormat.CaseReferenceId.encode
-            installation
-            (CaseReference.format snapshot.Reference)
+    let target = snapshot.CaseId
 
     let record: StoredCase =
         {
@@ -358,10 +355,7 @@ let private noUsableCorrectionOffer () =
         |> accepted
         |> Case.snapshot
 
-    let target =
-        ClaimCore.RecordFormat.CaseReferenceId.encode
-            installation
-            (CaseReference.format snapshot.Reference)
+    let target = snapshot.CaseId
 
     let record: StoredCase =
         {

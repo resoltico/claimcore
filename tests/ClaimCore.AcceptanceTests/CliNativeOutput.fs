@@ -51,7 +51,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operation = id ()
     let reference = "NATIVE-OUTPUT-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     let values = (input["act"] |> nonNull)["values"] |> nonNull
     values["claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
     Encoding.UTF8.GetBytes(request.ToJsonString()), operation, reference
@@ -64,7 +64,17 @@ let private head (fixture: PublishedFixture.Fixture) =
 
 let private accepted fixture reference =
     let current =
-        automation fixture "case.get" {| caseReference = reference |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One accepted case revision"
@@ -74,7 +84,11 @@ let private accepted fixture reference =
             fixture
             "case.history"
             {|
-                caseReference = reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
                 detail = "FULL"
                 limit = 50
             |}
@@ -138,7 +152,17 @@ let private mutations fixture =
             accepted fixture reference
 
             if command = "session" then
-                automation fixture "case.get" {| caseReference = laterReference |} 2
+                automation
+                    fixture
+                    "case.get"
+                    {|
+                        target =
+                            {|
+                                kind = "REFERENCE"
+                                caseReference = laterReference
+                            |}
+                    |}
+                    2
                 |> require "REJECTED"
                 |> ignore
 
@@ -188,7 +212,17 @@ let private noMutation fixture =
 let private unicodeFrames fixture =
     let source, _, reference = authored fixture
     CliCalls.run fixture fixture.Environment source 0 |> ignore
-    let request = frame "case.get" {| caseReference = reference |}
+
+    let request =
+        frame
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
 
     let result =
         run

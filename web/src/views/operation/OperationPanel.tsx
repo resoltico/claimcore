@@ -30,7 +30,10 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
     ["act", input.act.kind],
     ...(input.kind === "CASE"
       ? ([
-          ["caseReference", input.caseReference],
+          [
+            input.target.kind === "REFERENCE" ? "caseReference" : "caseId",
+            input.target.kind === "REFERENCE" ? input.target.caseReference : input.target.caseId,
+          ],
           ["expectedRevision", String(input.expectedRevision)],
         ] as const)
       : []),
@@ -44,7 +47,7 @@ const PendingMetadata = ({ metadata }: { metadata: ReturnType<typeof pendingMeta
         <div key={name}>
           <dt>{p.fieldLabel(name)}</dt>
           <dd>
-            {["caseReference", "operationId"].includes(name) ? (
+            {["caseReference", "caseId", "operationId"].includes(name) ? (
               <IdentifierValue value={value} />
             ) : (
               <bdi>{value}</bdi>

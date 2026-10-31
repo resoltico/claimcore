@@ -1,9 +1,8 @@
 namespace ClaimCore.RecordFormat
 
 open ClaimCore.Domain
-open Microsoft.FSharp.Reflection
 
-/// Format 1 names are permanent literals, independent of wire vocabulary and transport.
+/// Permanent format names are permanent literals, independent of wire vocabulary and transport.
 module DurableNames =
     let caseAct =
         function
@@ -101,11 +100,6 @@ module DurableNames =
         | BusinessField.CaseReference -> "caseReference"
         | BusinessField.Status -> "status"
 
-    let scope =
-        function
-        | GrantTarget.Installation -> "INSTALLATION"
-        | GrantTarget.CaseReference _ -> "CASE"
-
     // A total table preserves the permanent spelling of every closed input target.
     // fsharplint:disable-next-line CyclomaticComplexity
     let inputTarget =
@@ -123,13 +117,31 @@ module DurableNames =
         | InputTarget.Cursor -> "cursor"
         | InputTarget.Text -> "text"
 
-    let private values<'value> () =
-        FSharpType.GetUnionCases(typeof<'value>)
-        |> Array.map (fun case -> FSharpValue.MakeUnion(case, [||]) :?> 'value)
-        |> Array.toList
+    let caseKinds =
+        [
+            CaseActKind.Open
+            CaseActKind.AmendRegistration
+            CaseActKind.Correct
+            CaseActKind.Decide
+            CaseActKind.WithdrawDecision
+            CaseActKind.RecordPayment
+            CaseActKind.ClearPayment
+            CaseActKind.Close
+            CaseActKind.Reopen
+            CaseActKind.Void
+            CaseActKind.Reinstate
+            CaseActKind.Erase
+        ]
 
-    let caseKinds = values<CaseActKind>()
-    let authorityKinds = values<AuthorityKind>()
+    let authorityKinds =
+        [
+            AuthorityKind.ProvisionOwner
+            AuthorityKind.Register
+            AuthorityKind.Grant
+            AuthorityKind.Revoke
+            AuthorityKind.Enable
+            AuthorityKind.Disable
+        ]
 
     let tryCaseAct token =
         caseKinds |> List.tryFind (fun value -> caseAct value = token)
@@ -138,20 +150,24 @@ module DurableNames =
         authorityKinds |> List.tryFind (fun value -> authorityAct value = token)
 
     let statusEntries =
-        values<CaseStatus>() |> List.map (fun value -> value, status value)
+        [ CaseStatus.Opened; CaseStatus.Closed ]
+        |> List.map (fun value -> value, status value)
 
     let tryStatus token =
         statusEntries
         |> List.tryPick (fun (value, name) -> if name = token then Some value else None)
 
     let tryLifecycle token =
-        values<Lifecycle>() |> List.tryFind (fun value -> lifecycle value = token)
+        [ Lifecycle.Active; Lifecycle.Voided; Lifecycle.Erased ]
+        |> List.tryFind (fun value -> lifecycle value = token)
 
     let tryProgress token =
-        values<CaseProgress>() |> List.tryFind (fun value -> progress value = token)
+        [ CaseProgress.Undecided; CaseProgress.Decided; CaseProgress.Paid ]
+        |> List.tryFind (fun value -> progress value = token)
 
     let principalKindEntries =
-        values<PrincipalKind>() |> List.map (fun value -> value, principalKind value)
+        [ PrincipalKind.Human; PrincipalKind.Service ]
+        |> List.map (fun value -> value, principalKind value)
 
     let principalKinds = principalKindEntries |> List.map snd
 
@@ -159,7 +175,17 @@ module DurableNames =
         principalKindEntries
         |> List.tryPick (fun (value, name) -> if name = token then Some value else None)
 
-    let roleEntries = values<Role>() |> List.map (fun value -> value, role value)
+    let roleEntries =
+        [
+            Role.Owner
+            Role.CaseReader
+            Role.CaseRegistrar
+            Role.CaseHandler
+            Role.PaymentRecorder
+            Role.DataSteward
+            Role.Auditor
+        ]
+        |> List.map (fun value -> value, role value)
 
     let tryRole token =
         roleEntries

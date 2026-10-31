@@ -34,7 +34,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operationId = id ()
     let reference = "CLI-DELIVERY-" + id ()
     input["operationId"] <- JsonValue.Create operationId
-    input["caseReference"] <- JsonValue.Create reference
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
     let values = (input["act"] |> nonNull)["values"] |> nonNull
     values["claimedAmount"] <- JsonValue.Create "1.0000"
     Encoding.UTF8.GetBytes(source.ToJsonString()), operationId, reference
@@ -68,9 +68,17 @@ let private lostFrame (fixture: PublishedFixture.Fixture) source =
     let prepared =
         Frames.admit source
         |> Result.defaultWith (fun _ -> failtest "Synthetic source is admitted")
-        |> Frames.encodeInvocation
 
-    exactBytes fixture "stderr-retry-frame" prepared retry
+    let bound =
+        Frames.admit retry
+        |> Result.defaultWith (fun _ ->
+            failtest "The retry frame must retain its admitted installation binding")
+
+    Expect.isSome
+        (Frames.installationId bound)
+        "Prepared retry frames preserve the original installation"
+
+    exactBytes fixture "stderr-retry-body" (Frames.inputBytes prepared) (Frames.inputBytes bound)
     reply, retry
 
 let private oneAcceptance fixture reference =
@@ -79,7 +87,11 @@ let private oneAcceptance fixture reference =
             fixture
             "case.history"
             {|
-                caseReference = reference
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
                 detail = "FULL"
                 limit = 50
             |}
@@ -89,7 +101,17 @@ let private oneAcceptance fixture reference =
     Expect.equal (page.GetProperty("entries").GetArrayLength()) 1 "Retries append no second entry"
 
     let current =
-        automation fixture "case.get" {| caseReference = reference |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = reference
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     Expect.equal (current.GetProperty("revision").GetInt64()) 1L "One accepted revision"

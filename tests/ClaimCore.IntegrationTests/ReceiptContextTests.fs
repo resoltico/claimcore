@@ -7,6 +7,7 @@ open ClaimCore.Protocol
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
@@ -54,7 +55,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         ))
 
                 let! amended =
-                    (Service.execute admin (OperationInput.Case amendment) (CancellationToken.None))
+                    (Service.execute
+                        admin
+                        (ClaimCore.TestSupport.Inputs.caseOperation amendment)
+                        (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -85,19 +89,14 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! result =
             (Service.execute
                 actor
-                (OperationInput.Case(openRequest 10 "PROBE-1"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "PROBE-1"))
                 (CancellationToken.None))
 
         let receipt = accepted result
         Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
 
         Expect.equal
-            (PartyName.format (
-                Registration.value
-                    BusinessField.ClaimantName
-                    ((disclosedFields receipt).Registration)
-                |> FieldValue.name
-            ))
+            (PartyName.format (Registration.claimant ((disclosedFields receipt).Registration)))
             (RegistrationInput.value BusinessField.ClaimantName (registration))
             "Disclosure uses the write's locked context"
 
@@ -106,7 +105,9 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! denied =
             (Service.get
                 (core fixture principal)
-                ({ CaseReference = "PROBE-1" })
+                ({
+                    Target = CaseSelector.Reference("PROBE-1")
+                })
                 (CancellationToken.None))
 
         Expect.equal

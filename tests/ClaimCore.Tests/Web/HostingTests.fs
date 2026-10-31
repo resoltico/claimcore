@@ -2,6 +2,7 @@ module ClaimCore.Tests.HostingTests
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Threading.Tasks

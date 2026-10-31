@@ -5,6 +5,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess>]
@@ -39,8 +40,7 @@ module CaseIndex =
             NotifiedOn =
                 fields
                 |> Option.map (fun fields ->
-                    Registration.value BusinessField.IncidentNotificationDate fields.Registration
-                    |> FieldValue.date)
+                    Registration.incidentNotificationDate fields.Registration)
             Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
             Payable =
                 fields
@@ -57,6 +57,7 @@ type StoredCase =
 
 [<RequireQualifiedAccess>]
 type EntryTarget =
+    | NonAcceptance of targetOperationId: OperationId
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: ActorId * act: AuthorityKind
 
@@ -68,6 +69,7 @@ type StoredEntry =
         ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
+        CreationReference: CaseReference option
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
@@ -88,6 +90,7 @@ type EntryDraft =
         ActorId: ActorId
         RecordedAt: DateTimeOffset
         Subject: EntryTarget
+        CreationReference: CaseReference option
         PayloadCommitment: byte array
         PayloadNonce: byte array
         Payload: byte array
@@ -176,20 +179,28 @@ type Page<'Item, 'Position> =
         Next: 'Position option
     }
 
+/// The already-fetched LIMIT+1 row supplies comparison context without another read or a pinned traversal.
+type CaseHistorySlice =
+    {
+        Page: Page<StoredEntry, Revision>
+        Previous: StoredEntry option
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
+    abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract FindEntry: OperationId -> Task<StoredEntry option>
 
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract HistoryPage: HistoryPageQuery -> Task<Page<StoredEntry, Revision>>
+    abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>
     abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
-    abstract GrantPage: GrantPageQuery -> Task<Page<AuthoredGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
     abstract FindActor: ActorId -> Task<Actor option>
     abstract EnabledHumanOwners: unit -> Task<int>

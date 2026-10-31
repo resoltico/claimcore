@@ -102,6 +102,15 @@ const ReviewConfirmation = ({
   confirmationId: string;
 }) => {
   const p = usePresentation();
+  const submitText = () => {
+    if (model.phase === "PREPARING") {
+      return p.text("ui.preparingRecovery");
+    }
+    if (model.phase === "SUBMITTING") {
+      return p.text("ui.submitting");
+    }
+    return p.text("ui.submitExact");
+  };
   return (
     <>
       {" "}
@@ -122,7 +131,7 @@ const ReviewConfirmation = ({
         disabled={!model.confirmed || model.busy}
         onClick={() => void model.execute()}
       >
-        {p.text(model.phase === "SUBMITTING" ? "ui.submitting" : "ui.submitExact")}
+        {submitText()}
       </button>
     </>
   );
@@ -142,7 +151,9 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
       title={p.text("label.reviewTitle")}
       closeLabel={p.text("ui.returnToEdit")}
       description={p.text("ui.reviewDescription")}
-      isOpen={model.phase === "REVIEWING" || model.phase === "SUBMITTING"}
+      isOpen={
+        model.phase === "REVIEWING" || model.phase === "PREPARING" || model.phase === "SUBMITTING"
+      }
       isDismissable={!model.busy}
       onOpenChange={model.returnToEdit}
     >

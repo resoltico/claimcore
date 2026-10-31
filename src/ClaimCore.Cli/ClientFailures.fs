@@ -46,6 +46,8 @@ module CliReply =
     let local failure =
         let code =
             match failure with
+            | ClientFailure.InstallationMismatch -> CliFailure.InstallationMismatch
+            | ClientFailure.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
             | ClientFailure.Configuration -> CliFailure.ConfigurationInvalid
             | ClientFailure.ConfigurationIssue(setting, issue) ->
                 CliFailure.ConfigurationIssue(setting, issue)
@@ -70,6 +72,18 @@ module CliReply =
     let result invocation reply =
         ServiceReply.read (Frames.endpoint invocation) reply
         |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
+        |> Result.bind (fun typed ->
+            if
+                not (
+                    ReplyCorrelation.matches
+                        (Frames.endpoint invocation).Token
+                        (Frames.input invocation)
+                        reply
+                )
+            then
+                Error CliFailure.InvalidResponse
+            else
+                Ok typed)
         |> Result.map (fun typed ->
             let delivery =
                 if Frames.outcome reply = Some "OUTCOME_UNKNOWN" then

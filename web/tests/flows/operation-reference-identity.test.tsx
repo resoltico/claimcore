@@ -9,6 +9,7 @@ import { wireResponse } from "../support/contract-corpus.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -27,6 +28,7 @@ const prepared = () =>
         kind: "CASE",
         before: current,
         after: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: fields.caseReference,
           revision: 2,
           state: {
@@ -41,7 +43,7 @@ const prepared = () =>
   });
 type SentDraft = {
   operationId: string;
-  caseReference: string;
+  target: { kind: "REFERENCE"; caseReference: string };
   act: {
     kind: string;
     values?: Record<string, string>;
@@ -87,7 +89,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
-  expect(draft.caseReference).toBe(fields.caseReference);
+  expect(draft.target).toEqual({ kind: "REFERENCE", caseReference: fields.caseReference });
   expect(draft.act).toEqual({
     kind: "CLOSE",
   });

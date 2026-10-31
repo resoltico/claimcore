@@ -4,6 +4,7 @@ open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.Json
 open CliTransportFixture
@@ -27,7 +28,14 @@ let tests =
                         Outcome.Failed CoreFault.StoreUnavailable, 3
                     ] do
                     Expect.equal
-                        (admittedReply request (Api.operationResolve.Output.Write outcome))
+                        (admittedReply
+                            request
+                            (Api.operationResolve.Output.Write
+                                {
+                                    OperationReply.OperationId =
+                                        Frames.operationId request |> Option.get
+                                    Outcome = outcome
+                                }))
                             .ExitCode
                         expected
                         "Resolution outcome controls exit")

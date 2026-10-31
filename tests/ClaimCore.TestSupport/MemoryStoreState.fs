@@ -14,6 +14,7 @@ type internal State =
     {
         Head: LedgerPosition
         Entries: Map<OperationId, StoredEntry>
+        Controls: Map<Sequence, StoredEntry>
         Cases: Map<CaseId, StoredCase>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
@@ -45,9 +46,16 @@ let internal copyEntry (entry: StoredEntry) =
 
 exception CorruptProjection
 
-let internal readCase installationId (record: StoredCase) =
+let internal readCase (entries: Map<OperationId, StoredEntry>) (record: StoredCase) =
     let identity =
-        CaseReferenceId.encode installationId (CaseReference.format record.Snapshot.Reference)
+        entries
+        |> Map.tryFind (OperationId.create (CaseId.value record.CaseId) |> Option.get)
+        |> Option.exists (fun entry ->
+            entry.CreationReference = Some record.Snapshot.Reference
+            && entry.Subject
+               |> function
+                   | EntryTarget.Case(id, _, CaseActKind.Open, _) -> id = record.CaseId
+                   | _ -> false)
 
     let valid =
         match record.Snapshot.State with
@@ -58,7 +66,7 @@ let internal readCase installationId (record: StoredCase) =
             | Ok snapshot -> snapshot = record.Snapshot
             | Error _ -> false
 
-    if identity <> record.CaseId || not valid then
+    if not identity || record.Snapshot.CaseId <> record.CaseId || not valid then
         raise CorruptProjection
 
     { record with

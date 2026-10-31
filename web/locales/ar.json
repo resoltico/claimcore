@@ -130,7 +130,6 @@
   "ui.exactReference": "{label} (دقيق): {reference}",
   "ui.historyChanges": "الحقول المتغيرة",
   "ui.historyNoChanges": "لم تتغير أي حقول مكشوفة.",
-  "ui.historyPreviousNeeded": "حمّل المراجعة المقبولة السابقة لمقارنة الحقول المتغيرة.",
   "ui.historyComparisonUnavailable": "الحقول المقبولة السابقة محجوبة أو ممحوة، لذا لا يمكن مقارنة التغييرات.",
   "ui.caseRecorded": "سُجّلت العملية «{act}» في المراجعة {revision}.",
   "ui.checkUnresolvedOperation": "التحقق من العملية غير المحسومة",
@@ -158,5 +157,8 @@
   "ui.caseState": "حالة القضية",
   "ui.wasProgress": "كانت {progress}",
   "ui.targetActor": "الفاعل المستهدف",
-  "ui.recordedBy": "سجّله"
+  "ui.recordedBy": "سجّله",
+  "ui.preparingRecovery": "جارٍ حفظ معرّف الاسترداد…",
+  "ui.recoveryUnavailable": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
+  "ui.recoveryListingUnavailable": "تعذّر قراءة معرّفات الاسترداد أو تحديثها. أعد إتاحة تخزين الموقع ثم حاول مجدداً."
 }

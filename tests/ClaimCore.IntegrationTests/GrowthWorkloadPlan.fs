@@ -158,6 +158,7 @@ let writeFingerprint workload =
                             match scope with
                             | GrantTarget.Installation -> "INSTALLATION"
                             | GrantTarget.CaseReference value -> value
+                            | GrantTarget.CaseId value -> CaseId.format value
                     |})
         |]
 
@@ -173,6 +174,14 @@ let writeFingerprint workload =
             referencePrefix = referencePrefix
             lane = "target = lane + (turn % laneCaseCount) * writers"
             authorityGrants = authority
+            maintenanceControls =
+                {|
+                    retainedResolutionEntries = 1
+                    resolutionRepeats = 1000
+                    erasedReference = "synthetic-growth-998"
+                    minimumErasedHistory = 1001
+                    checkpointRebuild = true
+                |}
         |}
 
 let cardinalityFingerprint cases =

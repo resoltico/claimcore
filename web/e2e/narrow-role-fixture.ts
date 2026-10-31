@@ -38,7 +38,9 @@ const setGrant = (
     act: {
       kind: active ? "GRANT" : "REVOKE",
       role,
-      scope: scoped ? { kind: "CASE", caseReference: fixture.reference } : { kind: "INSTALLATION" },
+      scope: scoped
+        ? { kind: "CASE", target: { kind: "REFERENCE", caseReference: fixture.reference } }
+        : { kind: "INSTALLATION" },
     },
   });
 

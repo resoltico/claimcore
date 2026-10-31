@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="FailureDiagnosticsTests.fs" />
     <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
     <Compile Include="StoreContractReads.fs" />
@@ -11,6 +13,7 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="AuthorityHistoryContract.fs" />
     <Compile Include="WorklistTriageContract.fs" />
+    <Compile Include="CaseSelectorContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="StoredIdentityTests.fs" />
@@ -61,11 +64,14 @@
     <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseScenarios.fs" />
+    <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
+    <Compile Include="ProjectionRebuildFailureTests.fs" />
+    <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="CommitTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />

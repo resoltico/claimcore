@@ -3,7 +3,7 @@
 Use this guide for a source checkout, an implementation change or a verification report. The
 [case-work guide](case-work.md) owns user-facing meaning; [operating](operating.md) owns deployment and
 custody procedures. See the [glossary](glossary.md) for terminology.
-Start with [verification](#verification) to choose checks for editing, PR readiness or optional experiments.
+Start with [verification](#verification) to choose checks for editing, PR readiness or growth measurements.
 
 ## First checkout
 
@@ -21,6 +21,10 @@ dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 ```
 
+The locked npm graph includes matcher/traversal overrides in [package.json](../web/package.json).
+The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
+rule exports directly. Audit and import-boundary checks are required when changing this tooling.
+
 Use the declared versions before restoring. The frontend can build without executable .NET or Python;
 ordinary .NET builds run neither npm nor generation. Framework-dependent apphost publication is qualified;
 retain the whole publish directory and reviewed [notices](../eng/licenses/third-party-notices.json).
@@ -31,7 +35,8 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
-| Domain | JSON-free values and identifiers, typed acts, accepted state, outcomes, authority policy and decisions |
+| Domain | JSON-free values and identifiers, typed acts, accepted state, business refusals, authority policy and decisions |
+| Application.Contracts | Use-case requests, replies, advice, paging and faults over Domain |
 | Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
@@ -41,23 +46,23 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | CLI | HTTPS, command grammar, typed replies and frames |
 | Database | Owner administration |
 
-Domain has no project dependencies. Protocol and RecordFormat build codecs over Domain structure using
-Json; Application uses Domain and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
+Domain has no project dependencies. Protocol builds codecs over Domain and Application.Contracts using Json. RecordFormat uses Domain and Json; Application uses Domain, Application.Contracts and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
 RecordFormat and Json. Application and Postgres have no Protocol reference. Web and Database use the
-Application Service and port surface; the published CLI contains Domain, Protocol, Json and HostSecurity,
+Application Service and port surface; the published CLI contains Domain, Application.Contracts, Protocol, Json and HostSecurity,
 with Application and Postgres excluded. The
 [project-edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the exact direct edges.
 
 [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) run in Debug and cover Domain
 isolation, durable vocabulary ownership, service-model independence, host usage and vocabulary naming.
 [Domain ownership](../tests/ClaimCore.Tests/Architecture/DomainOwnershipTests.fs) checks actual product
-consumers; declaration controls check unused and duplicated structure. Their implementations own the
+consumers; declaration controls check unused declarations. Independently owned types may have identical shapes, and independent message keys may share translations. Their implementations own the
 compiler and negative-control details. Explicit exceptions need a concrete consumer or ownership reason.
 Product internals may be exposed to tests only.
 
-A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot` and `AuthorityAct.slot`
-pair typed inject/project functions; wire and durable codecs select their own member names without
-reconstructing a kind/payload pairing. [Domain outcome models](../src/ClaimCore.Domain/Outcomes/) own typed outcomes;
+A vocabulary uses the module named for its value type, compiled as `<Type>Module`. `CaseAct.slot`
+pairs typed inject/project functions; `AuthorityAct.map` and `AuthorityAct.traverse` preserve typed grant
+payloads. Wire and durable codecs own their member names and vocabularies.
+[Application outcomes](../src/ClaimCore.Application.Contracts/Outcome.fs) own typed use-case results;
 [ServiceContext](../src/ClaimCore.Application/ServiceContext.fs) receives product identity and dependencies
 from host composition. Multi-argument transaction and store members take named records.
 
@@ -82,20 +87,20 @@ admitted commands and stored identity/position fields use typed values.
 ### Declaration
 
 [BusinessField.describe](../src/ClaimCore.Domain/CaseFields.fs) exhaustively supplies each field's kind,
-group, searchability and amount/currency relationship. Field/group inventories and authored input targets
-derive from that description.
-`CaseAct.slot` and `AuthorityAct.slot` pair typed injection with projection. Protocol owns endpoint and
+group, searchability and amount/currency relationship for current interfaces. Authored group shapes and
+permanent record inventories remain explicit at their owning boundaries.
+`CaseAct.slot` pairs typed injection with projection; authority mapping/traversal preserves grant payloads.
+Protocol owns endpoint and
 interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
 annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
 
-Private registration, decision and payment wrappers hold complete `GroupValues<Authored>` or
-`GroupValues<Admitted>` in [CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs). Their constructors check
-exact membership and admitted value kinds against the declarations. Group formatting and parsing iterate
-those fields through [FieldValue](../src/ClaimCore.Domain/FieldValues.fs), which dispatches to the owning
-value module. [Validation](../src/ClaimCore.Domain/Validation.fs) maps field failures to input issues;
-[StateValidation](../src/ClaimCore.Domain/StateValidation.fs) admits newly asserted values generically.
-Named accessors retain date-order, payable and payment-acknowledgement rules. Adding a declared field
-does not require parallel authored/admitted record members or per-field codec and admission branches.
+Private Registration, Decision and Payment records hold typed scalar values and complete Money values.
+Their boundary adapters check exact membership and scalar kinds. Registration construction also checks
+incident/notification chronology. PaymentProgress retains the complete Payment with its Decision.
+Field collections are transport and presentation projections; business accessors return their scalar types.
+
+A business-field change may require typed record, boundary-adapter and codec updates. Keep these
+adaptations explicit: adding current metadata alone must not change an existing permanent grammar.
 
 [StateValidation](../src/ClaimCore.Domain/StateValidation.fs) owns admission of newly asserted dates and
 names and progress invariants. Corrections retain proposed groups until acknowledgement and admission
@@ -164,8 +169,9 @@ The case projection contains identity, revision, lifecycle, a nullable snapshot,
 last-change time, normalized search text, notification date and exact claimed/payable amount/currency
 pairs. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
-Reads decode the permanent record and check its reference, revision and lifecycle against the columns and
-its derived case ID. Decode or agreement failures are integrity faults. Verification folds the ledger,
+Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
+returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
+UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
 text, notification date and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
@@ -196,7 +202,8 @@ resolves references and nested discriminators, and validates complete, non-orpha
 
 Qualified vocabulary keys are produced by `Vocabulary.messageKey`; the generated `Terms` map supports
 `p.term(vocabulary, value)`. Registry checks allow equal tokens in different vocabularies and reserve one
-composite `act` vocabulary. Identical renderer/core wording is refused in every locale.
+composite `act` vocabulary. Message ownership follows the producing layer; identical wording or
+translations do not establish shared ownership.
 
 Catalogs share one Template grammar. Structural checks cover language parity, producer arguments and every
 template before publication. Handwritten
@@ -223,12 +230,10 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 without a matching source module. Categories, explicit rules and overrides together define the effective
 policy; review the complete `oxlint --print-config` output when changing it.
 
-Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
-tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
-Only a total table may suppress `CyclomaticComplexity`: its body is one exhaustive match from a closed
-union to values, with no nested branching. Put a concrete reason comment immediately before
-`// fsharplint:disable-next-line CyclomaticComplexity`. Rule bodies meet complexity 12 by splitting
-responsibilities; this exception does not apply to them. Other lint suppressions remain prohibited.
+Keep files and functions focused by responsibility. File length, parameter counts and change-locality
+measurements are review guidance, not representation requirements. Correctness, dependency, compiler,
+formatting and actionable lint controls remain enforced. Only a total exhaustive table may suppress
+CyclomaticComplexity, with a concrete reason immediately before the suppression.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). The permitted total-table suppression needs
@@ -244,7 +249,7 @@ Choose checks by the changed behavior and the claim being made:
 | Broader checkpoint | `bash eng/verify.sh --fast` runs lint, native units and the full frontend stage. |
 | Implementation PR ready for review | `bash eng/verify.sh` runs the ordinary full gate; CI qualifies the declared platform matrix. |
 | Documentation-only change | Check affected links, commands and claims; run relevant documentation checks. Product or generated-output changes need their applicable checks. |
-| Change probe or performance investigation | Select the experiment and checks that answer the concrete question; see [Change probes](#change-probes) and [Growth](#growth). |
+| Performance investigation | Select the workload and evidence needed; see [Growth](#growth). |
 
 There is no automatic full-gate requirement after each edit or commit. Explicit task
 acceptance criteria still apply. Reuse results only while their relevant source, configuration, dependencies
@@ -296,7 +301,7 @@ execute in order and stop at failure:
 | integration | PostgreSQL then Web suites |
 | postgres / web | The corresponding isolated suite |
 | browsers | Install the locked Playwright engines and required system dependencies |
-| acceptance | Published service/CLI, deployment image and real browsers |
+| acceptance | Published service/CLI, deployment configuration and real browsers |
 | growth | Separate synthetic contention and verifier qualification |
 | growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
@@ -336,64 +341,6 @@ basenames and always refuses the three permanent vector files. It supplies omitt
 from the builders and prepares CLI frames from their authored arguments; it leaves invalid examples
 unchanged. Run the ordinary gate afterwards. Updating goldens never resolves permanent-format failures.
 
-## Change probes
-
-Change probes are optional architecture experiments. Select a probe to answer a
-concrete design question or meet explicit task acceptance criteria. Prefer evidence from requested product
-changes when it answers the same question. Probes do not replace [product verification](#verification).
-
-### Select the experiments
-
-Choose only the representative change needed and state the question, scope and expected evidence before
-implementing it. The locality targets below are diagnostic hypotheses, not architectural requirements.
-Keep the change stable when comparing results, or disclose why the experiments are incomparable. A READ
-reusing existing request/result types measures registration cost, not novel query design. Fewer edits do
-not justify generic machinery, weaker types, shared production/oracle answers or removed safeguards.
-
-| Probe | Change | Locality target |
-| --- | --- | --- |
-| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. In Domain, only the new `BusinessField` case and its `describe` entry in `CaseFields.fs` change; no record, parsing, formatting, admission or other Domain function changes. |
-| P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
-| P-ROLE | Add a role with one existing capability. | No renderer or `db/` changes; growing vocabularies are decoded by their permanent-name owner. |
-| P-READ | Add a read-only endpoint over existing case data. | No renderer changes except the one exhaustive endpoint-to-handler line in `src/ClaimCore.Web/ApiRoutes.fs` `route`. CLI verb/catalog derive; one store-port method is implemented by PostgreSQL and memory. |
-| P-MESSAGE | Add a case refusal and its message. | Only Domain refusal/producer, diagnostic mapping and three locale files change; no renderer changes. |
-
-Here, renderer files mean `src/ClaimCore.Cli/`, `src/ClaimCore.Web/` and `web/src/` outside
-`generated/`. Generated contracts and documentation are recorded separately from authored production
-files. P-READ's target permits only that composition line in renderer source. Assess P-FIELD's Domain
-target across field mapping, parsing and admission as well as metadata and projection. Consolidating metadata in
-[CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs) alone does not establish that criterion.
-
-### Run an experiment
-
-Keep hypothetical features out of the delivered product. Use an isolated worktree when implementing a
-probe, record its source revision and patch, and never push experimental branches. Exercise the element
-through its relevant real path, including applicable refusal or boundary behavior. Regenerate affected
-contracts; use real PostgreSQL when claiming store behavior. Compilation or a memory double cannot
-establish database behavior.
-
-Choose checks for the question. Run the complete fast gate when claiming full adaptation through its
-scope, plus relevant integration checks for database claims. A focused proof needs no automatic full
-fast-gate run, but cannot establish full adaptation. Investigate failures and fix in-scope product defects;
-report other causes and unrun checks. Preserve useful evidence before cleaning up owned probe resources.
-
-### Report outcomes and cost
-
-Keep a short PR summary of the question, revision, patch, environment, commands, result and limits.
-Distinguish locality, exercised behavior and remaining adaptation work. Include file counts or effort/time
-measurements when relevant to the question; label estimates and unavailable measurements. Explain failures
-by cause and distinguish necessary independent-oracle, composition or compatibility work from duplication.
-
-### Reuse applicable evidence
-
-A later revision alone does not require repeating an experiment. Reuse its original result when the
-relevant producer/consumer paths, fixtures, generation, toolchain and execution conditions still support
-the conclusion. Briefly explain applicability; retain the original revision and material failures without
-relabeling old checks as new executions. Rerun affected proofs when their basis changes. Reuse cannot turn
-an incomplete result into a complete pass or waive required product verification.
-
-Existing Git, generation and verification commands suffice; no maintained script applies these probes.
-
 ## Growth
 
 Growth measurements are separate from the ordinary verification gate. They are optional unless required
@@ -424,8 +371,8 @@ read profiles share the fresh database for their case population. The compared s
 is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and six read profiles
 at 100k cases: search, filtered, notification order, summary, global authority history and actor-filtered
 authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
-exact set. Both sides execute their selected workloads, including new candidate-only profiles; only shared
-keys yield ratios, and other profiles are reported as not applicable.
+exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
+are reported as not applicable.
 
 For a targeted diagnostic or an injected-delay control, the existing `CLAIMCORE_GROWTH_PROFILE`
 selector accepts `10000:1`, `100000:1` or `100000:16`. It still runs three alternating pairs and the

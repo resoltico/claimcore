@@ -10,7 +10,9 @@ export type LocalNoticeReason =
   | "invalidSession"
   | "missingCsrf"
   | "outcomeUnknown"
-  | "notAccepted";
+  | "notAccepted"
+  | "recoveryUnavailable"
+  | "recoveryListingUnavailable";
 export type Notice =
   | { readonly kind: "issues"; readonly issues: ReadonlyArray<InputIssue> }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }

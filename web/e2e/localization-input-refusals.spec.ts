@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase, startOpen, startAct } from "./case-workflow";
-import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
+import { openAuthenticated, browserRequest, sessionToken, installationId } from "./session-helpers";
 import {
   confirmReview,
   pauseJsonReply,
@@ -18,16 +18,18 @@ import {
 } from "./localization-support";
 
 const forgedCorrection = async (page: Page, reference: string) => {
+  const antiforgery = await sessionToken(page);
   const reply = await browserRequest(page, "/api/operation.execute", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": await sessionToken(page),
+      "X-ClaimCore-Antiforgery": antiforgery,
+      "ClaimCore-Installation": await installationId(page, antiforgery),
     },
     body: JSON.stringify({
       kind: "CASE",
       operationId: randomUUID(),
-      caseReference: reference,
+      target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 2,
       act: {
         kind: "CORRECT",

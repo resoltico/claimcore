@@ -1,4 +1,14 @@
-import { useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { SessionContext } from "../../session/SessionContext";
+import { useRequesterContext } from "../useRequesterContext";
+import { useRecoveryJournal } from "../../recovery/JournalContext";
+import {
+  journalBeforeSend,
+  sameRecoveryScope,
+  type RecoveryScope,
+  type RecoveryRecord,
+  type RecoveryJournal,
+} from "../../protocol/recoveryJournal";
+import { useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
 import {
   service,
   resultNotice,
@@ -31,19 +41,24 @@ type Options = {
   kind: string;
   current: CurrentCase | null;
   credential: string;
+  contextEpoch?: number;
+  recoveryScope?: RecoveryScope;
+  journal?: RecoveryJournal;
   normalizeValues?: (values: FormValues, entry: ReturnType<typeof operationEntry>) => FormValues;
   onLockChange: (locked: boolean) => void;
   onRecorded?: (receipt: OperationReceipt) => void;
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
-  `${options.subject}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
+  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
 const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
   const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
   return {
     target: targetKey(options),
     entry: { subject: options.subject, kind },
     context: {
+      generation: 0,
+      epoch: options.contextEpoch ?? 0,
       credential: options.credential,
       target: targetKey(options),
     },
@@ -62,7 +77,8 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     pendingDiscard: null,
   };
 };
-const identity = (options: Options): EffectIdentity => ({
+const identity = (options: Options, contextGeneration: number): EffectIdentity => ({
+  contextGeneration,
   id: crypto.randomUUID(),
   credential: options.credential,
   target: targetKey(options),
@@ -118,11 +134,13 @@ const runNetwork = async (
       kind: "PREVIEW" | "EXECUTE" | "RESOLVE";
     }
   >,
+  installationId?: string,
 ): Promise<OperationAction> => {
   if (effect.kind === "RESOLVE") {
     const result = await service.resolve(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
+      installationId,
     );
     if (result.kind === "outcome") {
       if (result.value.outcome.kind === "ACCEPTED") {
@@ -153,7 +171,7 @@ const runNetwork = async (
     effect,
     effect.kind === "PREVIEW"
       ? await service.preview(effect.source.prepared, effect.identity.credential)
-      : await service.execute(effect.source.prepared, effect.identity.credential),
+      : await service.execute(effect.source.prepared, effect.identity.credential, installationId),
   );
 };
 const useEffects = (
@@ -163,6 +181,11 @@ const useEffects = (
 ) => {
   const started = useRef(new Set<string>());
   const alive = useRef(true);
+  const latest = useRef({ options, generation: state.context.generation });
+  useLayoutEffect(() => {
+    latest.current = { options, generation: state.context.generation };
+  }, [options, state.context.generation]);
+  const attempts = useRef(new Map<string, RecoveryRecord>());
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -183,6 +206,7 @@ const useEffects = (
         id: effect.identity.id,
       });
       if (
+        effect.identity.contextGeneration !== latest.current.generation ||
         effect.identity.credential !== options.credential ||
         effect.identity.target !== targetKey(options)
       ) {
@@ -193,8 +217,67 @@ const useEffects = (
       } else if (effect.kind === "DISCLOSURE_REFUSED") {
         options.onDisclosureRefused?.(effect.notice);
       } else {
-        void runNetwork(effect).then((action) => {
-          if (alive.current) {
+        const current = () =>
+          alive.current &&
+          latest.current.generation === effect.identity.contextGeneration &&
+          effect.identity.credential === latest.current.options.credential &&
+          effect.identity.target === targetKey(latest.current.options);
+        const run = async (): Promise<OperationAction> => {
+          const journal = options.journal!;
+          const scope = options.recoveryScope;
+          if (effect.kind === "PREVIEW") {
+            return runNetwork(effect, options.recoveryScope?.installationId);
+          }
+          if (scope === undefined) {
+            return {
+              type: "REFUSE",
+              identity: effect.identity,
+              notice: { kind: "local", reason: "recoveryUnavailable" },
+              target: null,
+              uncertain: false,
+              disclosure: false,
+            };
+          }
+          const { operationId } = effect.source.prepared.input;
+          let record = attempts.current.get(operationId);
+          if (record === undefined) {
+            record = {
+              ...scope,
+              format: 1,
+              attemptId: effect.identity.id,
+              operationId,
+              subject: effect.source.prepared.input.kind,
+              act: effect.source.prepared.input.act.kind,
+            };
+            attempts.current.set(operationId, record);
+          }
+          const owned = record;
+          const stillCurrent = () => current() && sameRecoveryScope(scope, owned);
+          const prepared = await journalBeforeSend(journal, owned, stillCurrent, () => {
+            dispatch({ type: "HANDOFF", identity: effect.identity });
+            return runNetwork(effect, options.recoveryScope?.installationId);
+          });
+          if (prepared.kind === "notSent") {
+            return {
+              type: "REFUSE",
+              identity: effect.identity,
+              notice: {
+                kind: "local",
+                reason: prepared.reason === "storage" ? "recoveryUnavailable" : "cancelled",
+              },
+              target: null,
+              uncertain: false,
+              disclosure: false,
+            };
+          }
+          const action = prepared.value;
+          if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
+            await journal.remove(owned).catch(() => undefined);
+          }
+          return action;
+        };
+        void run().then((action) => {
+          if (current()) {
             dispatch(action);
           }
         });
@@ -204,7 +287,7 @@ const useEffects = (
 };
 const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) => {
   const { busy: locked } = operationView(state);
-  useEffect(() => {
+  useLayoutEffect(() => {
     onLockChange(locked);
     return () => {
       onLockChange(false);
@@ -234,7 +317,7 @@ const previewDraft = (
     dispatch({
       type: "PREVIEW",
       prepared,
-      identity: identity(options),
+      identity: identity(options, state.context.generation),
       generation: state.generation,
     });
   } catch (error) {
@@ -318,28 +401,48 @@ const actions = (state: OperationState, dispatch: Dispatch, options: Options) =>
   resolve: () => {
     dispatch({
       type: "RESOLVE",
-      identity: identity(options),
+      identity: identity(options, state.context.generation),
     });
   },
   execute: () => {
     dispatch({
       type: "EXECUTE",
-      identity: identity(options),
+      identity: identity(options, state.context.generation),
     });
     return Promise.resolve();
   },
 });
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
-export const useOperation = (options: Options) => {
+export const useOperation = (supplied: Options) => {
+  const requester = useRequesterContext();
+  const journal = useRecoveryJournal();
+  const session = useContext(SessionContext);
+  const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
+  const recoveryScope =
+    supplied.recoveryScope ??
+    (requester === null
+      ? undefined
+      : {
+          serviceOrigin: location.origin,
+          installationId: requester.installationId,
+          actorId: requester.actorId,
+        });
+  const options: Options = {
+    ...supplied,
+    contextEpoch,
+    journal: supplied.journal ?? journal,
+    ...(recoveryScope === undefined ? {} : { recoveryScope }),
+  };
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
     dispatch({
       type: "CONTEXT",
+      epoch: contextEpoch,
       credential: options.credential,
       target,
     });
-  }, [options.credential, target]);
+  }, [options.credential, target, contextEpoch]);
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);

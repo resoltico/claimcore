@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.Inputs
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open Expecto
 open ClaimCore.Protocol
@@ -9,6 +10,30 @@ open ClaimCore.Json
 let private accepted result =
     result
     |> Result.defaultWith (fun _ -> failtest "The fixture requires a permanently valid value.")
+
+/// Test input adapters preserve authored domain groups while selecting a reference explicitly.
+let caseRequest (input: UnvalidatedCaseRequest) : CaseOperationRequest =
+    {
+        OperationId = input.OperationId
+        Target = CaseSelector.Reference input.CaseReference
+        ExpectedRevision = input.ExpectedRevision
+        Act = input.Act
+    }
+
+let caseOperation input =
+    caseRequest input |> OperationInput.Case
+
+let referencedCase (input: CaseOperationRequest) : UnvalidatedCaseRequest =
+    match input.Target with
+    | CaseSelector.Reference reference ->
+        {
+            OperationId = input.OperationId
+            CaseReference = reference
+            ExpectedRevision = input.ExpectedRevision
+            Act = input.Act
+        }
+    | CaseSelector.Id _ ->
+        failtest "This reference-only test stub requires an explicit reference fixture."
 
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
@@ -202,10 +227,14 @@ let authorityActs grants =
     |> List.collect (fun token ->
         let kind = AuthorityKind.parse token |> Option.get
 
-        match AuthorityKind.describe kind with
-        | AuthorityActSlot.Bare act -> [ act, token ]
-        | AuthorityActSlot.Grant(inject, _) ->
-            grants |> List.map (fun grant -> inject grant, token))
+        match kind with
+        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner, token ]
+        | AuthorityKind.Register -> [ AuthorityAct.Register, token ]
+        | AuthorityKind.Enable -> [ AuthorityAct.Enable, token ]
+        | AuthorityKind.Disable -> [ AuthorityAct.Disable, token ]
+        | AuthorityKind.Grant -> grants |> List.map (fun grant -> AuthorityAct.Grant grant, token)
+        | AuthorityKind.Revoke ->
+            grants |> List.map (fun grant -> AuthorityAct.Revoke grant, token))
 
 // Positive JSON seeds are authored overrides, not expectations. Missing fields come from the
 // same input builders; unknown members and supplied values are never discarded or normalized.

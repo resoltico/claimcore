@@ -17,3 +17,4 @@ module CliProcessEnvironment =
     /// Profile tests may override this afterwards. Every implicit configuration path stays inside owned cleanup.
     let isolateProfile (start: ProcessStartInfo) directory =
         start.Environment["XDG_CONFIG_HOME"] <- Path.Combine(directory, "cli-configuration")
+        start.Environment["XDG_STATE_HOME"] <- Path.Combine(directory, "cli-state")

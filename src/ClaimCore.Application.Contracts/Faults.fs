@@ -1,0 +1,21 @@
+namespace ClaimCore.Application.Contracts
+
+open ClaimCore.Domain
+
+
+
+[<RequireQualifiedAccess>]
+type CoreFault =
+    | InternalError
+    | StoreUnavailable
+    | StoreIntegrityError
+    | SchemaMismatch
+    | OperationContentConflict
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CoreFault =
+    let vocabulary =
+        Vocabulary.ofUnion<CoreFault> "fault" TokenCasing.ScreamingSnake (Some "CORE_")
+
+    let all = Vocabulary.entries vocabulary
+    let token = Vocabulary.token vocabulary

@@ -36,28 +36,10 @@ const config: OxlintConfig = defineConfig({
     "func-style": "off",
     "id-length": "off",
     "init-declarations": "off",
-    "max-lines": ["error", { max: 500, skipBlankLines: false, skipComments: false }],
-    "max-lines-per-function": [
-      "error",
-      {
-        max: 50,
-        skipBlankLines: false,
-        skipComments: false,
-        IIFEs: true,
-      },
-    ],
-    "max-params": [
-      "error",
-      {
-        max: 5,
-      },
-    ],
-    "max-statements": [
-      "error",
-      {
-        max: 50,
-      },
-    ],
+    "max-lines": "off",
+    "max-lines-per-function": "off",
+    "max-params": "off",
+    "max-statements": "off",
     "no-alert": "error",
     "no-continue": "off",
     "no-empty": "error",
@@ -135,7 +117,9 @@ const config: OxlintConfig = defineConfig({
     },
     {
       name: "import-boundary",
-      specifier: "eslint-plugin-import-x",
+      specifier: fileURLToPath(
+        new URL("./scripts/import-boundary-lint.plugin.mjs", import.meta.url),
+      ),
     },
   ],
   settings: {

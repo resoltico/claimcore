@@ -9,6 +9,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 
 [<NoEquality; NoComparison>]
@@ -29,6 +30,18 @@ let internal core fixture principal =
         fixture.Calendar
         principal
 
+let internal resolve services input token =
+    task {
+        let! reply = Service.resolve services input token
+        return reply.Outcome
+    }
+
+let internal observe services input token =
+    task {
+        let! reply = Service.observe services input token
+        return reply.Outcome
+    }
+
 let internal inspectCase fixture principal operation reference token =
     fixture.Store.Read(
         {
@@ -38,16 +51,17 @@ let internal inspectCase fixture principal operation reference token =
                         (core fixture principal)
                         tx
                         (Option.map CaseFixtures.operationId operation)
-                        reference)
+                        (CaseSelector.Reference reference))
             CancellationToken = token
         }
     )
 
 type internal AuthorityInspection =
     {
+        Needed: AuthorityFact list
         OperationId: Guid
         Target: PrincipalKey
-        CaseReference: string option
+        CaseTarget: CaseSelector option
     }
 
 let internal inspectTarget fixture principal (query: AuthorityInspection) token =
@@ -58,9 +72,10 @@ let internal inspectTarget fixture principal (query: AuthorityInspection) token 
                     ExecutionFacts.target
                         (core fixture principal)
                         tx
+                        query.Needed
                         (CaseFixtures.operationId query.OperationId)
                         query.Target
-                        query.CaseReference)
+                        query.CaseTarget)
             CancellationToken = token
         }
     )

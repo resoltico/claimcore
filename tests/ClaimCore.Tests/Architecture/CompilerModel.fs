@@ -286,5 +286,10 @@ let fixtures = lazy (load "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj")
 
 let core =
     lazy
-        ([ "ClaimCore.Application"; "ClaimCore.RecordFormat"; "ClaimCore.Postgres" ]
+        ([
+            "ClaimCore.Application.Contracts"
+            "ClaimCore.Application"
+            "ClaimCore.RecordFormat"
+            "ClaimCore.Postgres"
+         ]
          |> List.map (fun name -> load ("src/" + name + "/" + name + ".fsproj")))

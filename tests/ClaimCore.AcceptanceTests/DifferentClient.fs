@@ -180,7 +180,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     let input = authored["input"] |> nonNull
     input["operationId"] <- JsonValue.Create(Guid.NewGuid().ToString("D"))
-    input["caseReference"] <- JsonValue.Create "SYNTHETIC-CONTRACT-MISMATCH"
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create "SYNTHETIC-CONTRACT-MISMATCH"
 
     let result =
         ProcessRunner.dotnet
@@ -190,6 +190,11 @@ let qualify (fixture: PublishedFixture.Fixture) =
             fixture.Environment
             (Some(CliCalls.frame "operation.execute" input))
         |> CliCalls.parse 3
+
+    Expect.equal
+        (result.GetProperty("delivery").GetString())
+        "NOT_SENT"
+        "Preparation never hands off the mutation"
 
     let failure = result.GetProperty("result").GetProperty("hostFailure")
     Expect.equal (failure.GetProperty("code").GetString()) "CONTRACT_MISMATCH" "Handshake refusal"

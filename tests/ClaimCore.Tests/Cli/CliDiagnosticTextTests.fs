@@ -5,6 +5,7 @@ open ClaimCore.Protocol
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 
 let private frame refusal =

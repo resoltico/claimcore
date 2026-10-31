@@ -13,12 +13,13 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    Codec.encode Api.operationExecute.Input (OperationInput.Case request)
+    Codec.encode Api.operationExecute.Input (ClaimCore.TestSupport.Inputs.caseOperation request)
 
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes
@@ -62,7 +63,8 @@ let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) cs
         let! status, response =
             host.Call(
                 "case.get",
-                Encoding.UTF8.GetBytes "{\"caseReference\":\"historical-1\"}",
+                Encoding.UTF8.GetBytes
+                    "{\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"historical-1\"}}",
                 csrf
             )
 
@@ -85,7 +87,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
         do! AcceptedHistoryFixtures.seed database name
 
         use host =
-            new ClaimCore.TestSupport.TestServerFixture.Host(true, forActor = forActor)
+            new ClaimCore.TestSupport.TestServerFixture.Host(
+                true,
+                forActor = forActor,
+                installationId = database.Fixture.InstallationId
+            )
 
         let! status, _ = host.Login()
         Expect.equal status 200 "Authenticated synthetic browser"
@@ -202,7 +208,11 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! forActor = caller database
 
         use host =
-            new ClaimCore.TestSupport.TestServerFixture.Host(true, forActor = forActor)
+            new ClaimCore.TestSupport.TestServerFixture.Host(
+                true,
+                forActor = forActor,
+                installationId = database.Fixture.InstallationId
+            )
 
         let! _ = host.Login()
         let! csrf = host.Token()

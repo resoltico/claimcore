@@ -4,6 +4,8 @@ open ClaimCore.Domain
 open ClaimCore.Protocol
 
 type ClientFailure =
+    | InstallationMismatch
+    | RecoveryUnavailable
     | Configuration
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | Authentication
@@ -16,6 +18,8 @@ type ClientFailure =
 
 [<RequireQualifiedAccess>]
 type CliFailure =
+    | InstallationMismatch
+    | RecoveryUnavailable
     | ConfigurationInvalid
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | AuthenticationFailed
@@ -28,6 +32,8 @@ type CliFailure =
 
 [<RequireQualifiedAccess>]
 type CliFailureCode =
+    | InstallationMismatch
+    | RecoveryUnavailable
     | ConfigurationInvalid
     | AuthenticationFailed
     | ServiceUnavailable
@@ -47,6 +53,8 @@ module CliFailureCode =
 
     let ofFailure =
         function
+        | CliFailure.InstallationMismatch -> CliFailureCode.InstallationMismatch
+        | CliFailure.RecoveryUnavailable -> CliFailureCode.RecoveryUnavailable
         | CliFailure.ConfigurationInvalid
         | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
         | CliFailure.AuthenticationFailed -> CliFailureCode.AuthenticationFailed
@@ -59,6 +67,8 @@ module CliFailureCode =
 
     let toFailure =
         function
+        | CliFailureCode.InstallationMismatch -> CliFailure.InstallationMismatch
+        | CliFailureCode.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
         | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
         | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
         | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
@@ -71,6 +81,8 @@ module CliFailureCode =
 module ClientFailure =
     let ofFrame =
         function
+        | CliFailure.InstallationMismatch -> ClientFailure.InstallationMismatch
+        | CliFailure.RecoveryUnavailable -> ClientFailure.RecoveryUnavailable
         | CliFailure.ConfigurationInvalid -> ClientFailure.Configuration
         | CliFailure.ConfigurationIssue(setting, issue) ->
             ClientFailure.ConfigurationIssue(setting, issue)

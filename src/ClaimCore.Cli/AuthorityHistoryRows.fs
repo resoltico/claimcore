@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 module internal AuthorityHistoryRows =
@@ -9,11 +10,12 @@ module internal AuthorityHistoryRows =
         let kind, issuer, subject = PrincipalKey.parts value
         [ Vocabulary.token PrincipalKind.vocabulary kind; issuer; subject; ""; ""; "" ]
 
-    let private grant (value: AuthoredGrant) =
+    let private grant (value: ScopedGrant) =
         let scope, reference =
             match value.Scope with
-            | GrantTarget.Installation -> ScopeKind.token ScopeKind.Installation, ""
-            | GrantTarget.CaseReference reference -> ScopeKind.token ScopeKind.Case, reference
+            | GrantScope.Installation -> ScopeKind.token ScopeKind.Installation, ""
+            | GrantScope.Case(_, reference) ->
+                ScopeKind.token ScopeKind.Case, CaseReference.format reference
 
         [ ""; ""; ""; Vocabulary.token Role.vocabulary value.Role; scope; reference ]
 

@@ -16,6 +16,7 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Tests.Fixtures
 
 
@@ -29,18 +30,22 @@ let internal position: ClaimCore.Domain.LedgerPosition =
         EntryHash = (Convert.FromHexString digest |> EntryHash.ofBytes |> Option.get)
     }
 
-let internal receipt: ClaimCore.Domain.OperationReceipt =
+let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
     {
         OperationId = (CaseFixtures.operationId (id))
         Position = position
         Subject =
-            ClaimCore.Domain.ReceiptSubject.Case
+            ClaimCore.Application.Contracts.ReceiptSubject.Case
                 {
+                    CaseId =
+                        CaseFixtures.caseId (
+                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                        )
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open
                     Snapshot =
-                        ClaimCore.Domain.SnapshotDisclosure.Disclosed(
+                        ClaimCore.Application.Contracts.SnapshotDisclosure.Disclosed(
                             LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
                         )
                 }
@@ -51,7 +56,7 @@ let internal receipt: ClaimCore.Domain.OperationReceipt =
 let internal authority =
     { receipt with
         Subject =
-            ClaimCore.Domain.ReceiptSubject.Authority
+            ClaimCore.Application.Contracts.ReceiptSubject.Authority
                 {
                     TargetActorId = (CaseFixtures.actorId (id))
                     Act = AuthorityKind.Register

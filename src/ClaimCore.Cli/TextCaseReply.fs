@@ -5,12 +5,13 @@ open System.Globalization
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextCaseReply =
     open TextReplyFormat
 
-    let fieldLines language fields =
+    let fieldLines language (fields: CaseFields) =
         let rows placement =
             CaseFields.declarations
             |> List.filter (fun row -> row.Group = placement)
@@ -74,7 +75,9 @@ module internal TextCaseReply =
                              OperationId.format change.OperationId
                          ]
                  ]
-             | HistoryEntry.FullEntry receipt ->
+             | HistoryEntry.FullEntry full ->
+                 let receipt = full.Receipt
+
                  let revision, act, fields =
                      match receipt.Subject with
                      | ReceiptSubject.Case value ->

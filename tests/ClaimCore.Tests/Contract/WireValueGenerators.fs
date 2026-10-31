@@ -2,6 +2,7 @@ module ClaimCore.Tests.WireValueGenerators
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 open System
@@ -49,6 +50,7 @@ let internal listBounds (path: string) =
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "AdvisoryReview.Changes", Inventory.fieldCount
+                "HistoryDifference.Fields", Inventory.fieldCount
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
@@ -126,6 +128,8 @@ let private scalarDomainValue (kind: Type) =
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
     elif kind = typeof<OperationId> then
         Some(guid |> Gen.map (CaseFixtures.operationId >> box))
+    elif kind = typeof<CaseId> then
+        Some(guid |> Gen.map (CaseFixtures.caseId >> box))
     elif kind = typeof<ActorId> then
         Some(guid |> Gen.map (CaseFixtures.actorId >> box))
     elif kind = typeof<CalendarDate> then

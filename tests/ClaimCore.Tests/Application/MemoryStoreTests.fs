@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -42,7 +43,7 @@ let private rollback () =
         for verdict in
             [
                 Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-                Verdict.Fail ClaimCore.Domain.CoreFault.InternalError
+                Verdict.Fail ClaimCore.Application.Contracts.CoreFault.InternalError
             ] do
             let! result =
                 store.Write(
@@ -96,3 +97,93 @@ let tests =
                 "rejection discards pending writes and locking precedes reads"
                 (rollback ())
         ]
+
+[<Tests>]
+let authorityFactReads =
+    testTask "authority acts request only their domain-required auxiliary counts" {
+        do!
+            task {
+                let! fixture = fixture ()
+
+                use _owned =
+                    { new IDisposable with
+                        member _.Dispose() = fixture.Dispose()
+                    }
+
+                let memory = fixture.Store :?> MemoryStore.Store
+                let! actor = bootstrap fixture
+
+                let counts events =
+                    events
+                    |> List.filter (fun name ->
+                        name = "actor-count" || name = "enabled-owner-count")
+
+                Expect.equal
+                    (counts memory.Events)
+                    [ "actor-count" ]
+                    "Provisioning requires only actor count"
+
+                let target =
+                    PrincipalKey.human "https://issuer.example/" "other"
+                    |> Result.defaultWith (string >> failtest)
+
+                let check operation act expected =
+                    task {
+                        let! result =
+                            Service.execute
+                                actor
+                                (OperationInput.Authority(
+                                    authorityRequest (id operation) target act
+                                ))
+                                CancellationToken.None
+
+                        match result.Outcome with
+                        | ExecuteResult.Accepted _ -> ()
+                        | other ->
+                            failtestf
+                                "The independently authored authority act must be accepted: %A"
+                                other
+
+                        Expect.equal
+                            (counts memory.Events)
+                            expected
+                            "Only required head-locked protection facts are queried"
+                    }
+
+                do! check 600 AuthorityAct.Register []
+
+                do!
+                    check
+                        601
+                        (AuthorityAct.Grant
+                            {
+                                Role = Role.CaseReader
+                                Scope = GrantTarget.Installation
+                            })
+                        []
+
+                do! check 602 AuthorityAct.Enable []
+
+                do!
+                    check
+                        603
+                        (AuthorityAct.Revoke
+                            {
+                                Role = Role.CaseReader
+                                Scope = GrantTarget.Installation
+                            })
+                        []
+
+                do! check 604 AuthorityAct.Disable [ "enabled-owner-count" ]
+
+                do!
+                    check
+                        605
+                        (AuthorityAct.Revoke
+                            {
+                                Role = Role.Owner
+                                Scope = GrantTarget.Installation
+                            })
+                        [ "enabled-owner-count" ]
+            }
+    }

@@ -166,25 +166,12 @@ let private structure () =
             "Literal catalog samples"
 
 [<Tests>]
-let rendererOwnership =
-    testCase "renderer wording cannot duplicate core wording" (fun () ->
-        CatalogValidation.validateRendererOwnership
-            "en"
-            [ "label.core", "Core meaning"; "ui.control", "Interaction text" ]
+let independentWording =
+    testCase "independent renderer keys may share translations with core keys" (fun () ->
+        let catalog =
+            Messages.catalog [ "label.core", "Shared text"; "ui.control", "Shared text" ]
 
-        Expect.throws
-            (fun () ->
-                CatalogValidation.validateRendererOwnership
-                    "en"
-                    [ "label.core", "Core meaning"; "ui.control", "Core meaning" ])
-            "A browser/core duplicate is detected"
-
-        Expect.throws
-            (fun () ->
-                CatalogValidation.validateRendererOwnership
-                    "lv"
-                    [ "label.core", "Kopīgs teksts"; "cli.control", "Kopīgs teksts" ])
-            "A CLI/core duplicate is detected outside English")
+        Expect.isOk catalog "Equality of wording does not imply shared ownership")
 
 [<Tests>]
 let termRegistry =

@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -50,7 +51,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
         let! replay =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
@@ -63,7 +64,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
         let! reopen =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 13 "contract-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
@@ -95,7 +96,9 @@ let internal caseErasure fixture =
             let! opened =
                 (Service.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request n reference 0L (AuthoredCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted opened |> ignore
@@ -103,7 +106,10 @@ let internal caseErasure fixture =
         let erase = actRequest 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
 
         let! result =
-            (Service.execute actor (OperationInput.Case erase) (CancellationToken.None))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation erase)
+                (CancellationToken.None))
 
         Expect.equal
             (accepted result |> caseReceipt).Snapshot
@@ -121,7 +127,9 @@ let internal caseVisibility fixture =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request n reference 0L (AuthoredCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -172,7 +180,9 @@ let internal foldedOrdering fixture =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(request n reference 0L (AuthoredCaseAct.Open registration)))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request n reference 0L (AuthoredCaseAct.Open registration)
+                    ))
                     (CancellationToken.None))
 
             accepted result |> ignore

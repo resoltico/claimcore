@@ -7,6 +7,7 @@ open ClaimCore.Protocol
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
@@ -17,6 +18,7 @@ let private snapshot (reference: string) : CaseSnapshot =
     let reference = CaseFixtures.reference reference
 
     {
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = reference
         Revision = CaseFixtures.revision 1L
         State =
@@ -32,7 +34,7 @@ let private snapshot (reference: string) : CaseSnapshot =
 
 let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
-        CaseId = CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
+        CaseId = snapshot.CaseId
         Snapshot = snapshot
         Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
@@ -58,7 +60,13 @@ let private mismatch =
         }
 
 let private collection () =
-    let a, b = stored (snapshot "synthetic-a"), stored (snapshot "synthetic-b")
+    let a = stored (snapshot "synthetic-a")
+
+    let b =
+        stored
+            { snapshot "synthetic-b" with
+                CaseId = CaseFixtures.caseId (Guid.Parse "20000000-0000-4000-8000-000000000002")
+            }
 
     let histories =
         Map.ofList [ a.CaseId, history a.Snapshot; b.CaseId, history b.Snapshot ]
@@ -244,6 +252,7 @@ let private projectionFields: CaseFields =
 let private projectionBindings () =
     let snapshot =
         {
+            CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
             Reference = projectionFields.CaseReference
             Revision = CaseFixtures.revision 4L
             State = CaseState.Voided projectionFields
@@ -255,6 +264,7 @@ let private projectionBindings () =
         Map.ofList
             [
                 "case_id", box (CaseId.value expected.CaseId)
+                "creation_reference", box "synthetic-layout"
                 "case_reference", box "synthetic-layout"
                 "revision", box 4L
                 "state", box "VOIDED"
@@ -319,7 +329,7 @@ let private projectionBindings () =
         "Verification compares stored bytes, not only decoded values"
 
 let private storedRead (database: PostgresFixture.Database) =
-    let id = CaseReferenceId.encode database.Fixture.InstallationId "synthetic-a"
+    let id = CaseFixtures.caseId (ClaimCore.TestSupport.StoreFixtures.id 10)
 
     database.Fixture.Store.Read
         {
@@ -453,7 +463,7 @@ let private roundTrips database =
             let! result =
                 Service.execute
                     actor
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         ClaimCore.TestSupport.StoreFixtures.request
                             number
                             "synthetic-a"

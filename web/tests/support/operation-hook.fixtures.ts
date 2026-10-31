@@ -1,3 +1,4 @@
+import { recoveryOptions } from "./recovery.fixtures";
 import { renderHook } from "@testing-library/react";
 import { vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
@@ -8,6 +9,7 @@ export const hook = () =>
   renderHook(
     ({ credential, target }) =>
       useOperation({
+        ...recoveryOptions,
         subject: "CASE",
         kind: "CLOSE",
         current: target,

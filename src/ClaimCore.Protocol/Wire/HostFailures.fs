@@ -2,6 +2,7 @@ namespace ClaimCore.Protocol
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HostFailureReason =
@@ -14,6 +15,8 @@ module HostFailureReason =
     // fsharplint:disable-next-line CyclomaticComplexity
     let private policy =
         function
+        | HostFailureReason.InstallationMismatch ->
+            HostFailureCode.InstallationMismatch, 409, Some ExecutionPhase.NotStarted
         | HostFailureReason.ContractMismatch ->
             HostFailureCode.ContractMismatch, 409, Some ExecutionPhase.NotStarted
         | HostFailureReason.ConnectionRejected ->

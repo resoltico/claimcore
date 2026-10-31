@@ -4,10 +4,12 @@ namespace ClaimCore.Application
 open System
 open System.Security.Cryptography
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
+    | NonAcceptance
     | Case of request: CaseCommand * snapshot: CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | ErasedCase
@@ -58,6 +60,7 @@ module LedgerEntries =
             ActorId = entry.ActorId
             RecordedAt = entry.RecordedAt
             Subject = entry.Subject
+            CreationReference = entry.CreationReference
             PayloadCommitment = entry.PayloadCommitment
             PayloadNonce = Some entry.PayloadNonce
             Payload = Some entry.Payload
@@ -65,6 +68,7 @@ module LedgerEntries =
 
     let private metadataSubject =
         function
+        | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
         | EntryTarget.Authority(target, act) ->
             RecordedTarget.Authority { TargetActorId = target; Act = act }
         | EntryTarget.Case(id, revision, act, date) ->
@@ -100,6 +104,14 @@ module LedgerEntries =
         let commitment = LedgerEntry.commitment nonce payload
         let sequence = Sequence.successor head.Sequence
 
+        let creationReference =
+            match subject with
+            | EntryTarget.Case(_, _, CaseActKind.Open, _) ->
+                match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes request with
+                | Ok command -> Some command.Reference
+                | Error _ -> invalidArg (nameof request) "Invalid OPEN creation identity."
+            | _ -> None
+
         let metadata =
             {
                 InstallationId = installationId
@@ -109,6 +121,7 @@ module LedgerEntries =
                 ActorId = actorId
                 RecordedAt = instant
                 Subject = metadataSubject subject
+                CreationReference = creationReference
                 PayloadCommitment = commitment
             }
 
@@ -120,6 +133,7 @@ module LedgerEntries =
             ActorId = actorId
             RecordedAt = instant
             Subject = subject
+            CreationReference = creationReference
             PayloadCommitment = commitment
             PayloadNonce = Array.copy nonce
             Payload = payload
@@ -147,6 +161,7 @@ module LedgerEntries =
         function
         | EntryTarget.Case(id, _, _, _) ->
             Authority.can principal actor Capability.ReadHistory (Scope.Case id)
+        | EntryTarget.NonAcceptance _ -> false
         | EntryTarget.Authority _ ->
             Authority.can principal actor Capability.ReadAuthority Scope.Installation
 
@@ -156,7 +171,10 @@ module LedgerEntries =
             | EntryTarget.Case(_, revision, act, _) ->
                 revision >= Revision.first
                 && ((revision = Revision.first) = (act = CaseActKind.Open))
-            | EntryTarget.Authority _ -> true
+                && (entry.CreationReference.IsSome = (act = CaseActKind.Open))
+            | EntryTarget.NonAcceptance operation ->
+                operation = entry.OperationId && entry.CreationReference.IsNone
+            | EntryTarget.Authority _ -> entry.CreationReference.IsNone
 
         entry.Sequence >= Sequence.first
         && width 32 entry.EntryHash
@@ -164,18 +182,21 @@ module LedgerEntries =
         && entry.RecordedAt.UtcTicks % 10L = 0L
         && subject
 
-    let private caseContent installationId (entry: StoredEntry) (data: LedgerPayload) =
+    let private caseRequestMatches (entry: StoredEntry) id revision act (request: CaseCommand) =
+        request.OperationId = entry.OperationId
+        && Revision.value request.ExpectedRevision = Revision.value revision - 1L
+        && CaseAct.kind request.Act = act
+        && (act <> CaseActKind.Open
+            || (id = CaseId.ofOperationId request.OperationId
+                && entry.CreationReference = Some request.Reference))
+
+    let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
         match entry.Subject with
-        | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
-            | Ok request when
-                request.OperationId = entry.OperationId
-                && Revision.value request.ExpectedRevision = Revision.value revision - 1L
-                && CaseAct.kind request.Act = act
-                && CaseReferenceId.encode installationId (CaseReference.format request.Reference) =
-                    id
-                ->
+            | Ok request when caseRequestMatches entry id revision act request ->
                 if act = CaseActKind.Erase then
                     if Array.isEmpty data.Snapshot then
                         Ok(EntryContent.Case(request, None))
@@ -184,7 +205,8 @@ module LedgerEntries =
                 else
                     match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
                     | Ok snapshot when
-                        snapshot.Revision = revision
+                        snapshot.CaseId = id
+                        && snapshot.Revision = revision
                         && CaseReference.identity snapshot.Reference =
                             CaseReference.identity request.Reference
                         ->
@@ -227,6 +249,14 @@ module LedgerEntries =
                     payload entry
                     |> Result.bind (fun data ->
                         match entry.Subject with
+                        | EntryTarget.NonAcceptance _ ->
+                            if
+                                Array.isEmpty data.Snapshot
+                                && (ControlRecord.decode data.Request |> Result.isOk)
+                            then
+                                Ok EntryContent.NonAcceptance
+                            else
+                                Error CoreFault.StoreIntegrityError
                         | EntryTarget.Case _ -> caseContent installationId entry data
                         | EntryTarget.Authority(target, act) ->
                             authorityContent entry target act data)
@@ -248,7 +278,10 @@ module LedgerEntries =
             AuthorityRequests.fromRecord request
             |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
             |> Result.bind (fun command ->
-                let facts = AuthorityHistoryFacts.ofCommand command
+                let facts =
+                    AuthorityHistoryFacts.ofAct
+                        command.Target
+                        (AuthorityAct.map AuthorityRequests.display request.Act)
 
                 if AuthorityHistoryFacts.kind facts <> act then
                     Error CoreFault.StoreIntegrityError
@@ -266,10 +299,14 @@ module LedgerEntries =
     /// Comparison bytes are canonical; retained ledger payloads remain authored.
     let internal identityBytes validated =
         match validated.Content with
-        | EntryContent.Case(request, _) -> Some(Case.canonical request |> RequestRecord.encode)
+        | EntryContent.Case(request, _) ->
+            match validated.Entry.Subject with
+            | EntryTarget.Case(id, _, _, _) -> Some(RequestRecord.identity id request)
+            | _ -> None
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
-        | EntryContent.ErasedCase -> None
+        | EntryContent.ErasedCase
+        | EntryContent.NonAcceptance -> None
 
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
     let private disclosure principal actor (current: StoredCase) revision snapshot =
@@ -291,11 +328,11 @@ module LedgerEntries =
         (current: StoredCase option)
         (validated: ValidatedEntry)
         =
-        let installationId = validated.InstallationId
         let content = validated.Content
 
         match validated.Entry.Subject with
-        | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match current with
             | None -> Error CoreFault.StoreIntegrityError
@@ -305,13 +342,7 @@ module LedgerEntries =
                 || (Case.ofAccepted record.Snapshot |> Result.isError)
                 ->
                 Error CoreFault.StoreIntegrityError
-            | Some record when
-                CaseReferenceId.encode
-                    installationId
-                    (CaseReference.format record.Snapshot.Reference)
-                <> id
-                ->
-                Error CoreFault.StoreIntegrityError
+            | Some record when record.Snapshot.CaseId <> id -> Error CoreFault.StoreIntegrityError
             | Some record ->
                 let shown =
                     match record.Snapshot.State, content with
@@ -330,6 +361,7 @@ module LedgerEntries =
                 |> Result.map (fun snapshot ->
                     ReceiptSubject.Case
                         {
+                            CaseId = id
                             Reference = record.Snapshot.Reference
                             Revision = revision
                             Act = act

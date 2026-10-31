@@ -132,6 +132,7 @@ dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --
   --output "$claimcore_source/artifacts/local-cli"
 export PATH="$claimcore_source/artifacts/local-cli:$PATH"
 export XDG_CONFIG_HOME="$claimcore_config/cli"
+export XDG_STATE_HOME="$claimcore_config/cli-state"
 claimcore configure --show
 claimcore case list --text START-0001
 ```
@@ -139,7 +140,8 @@ claimcore case list --text START-0001
 Use the generated public CA, not its private key or a client secret. CLI PKCE opens the system browser;
 if it opens outside the trusted profile, copy the complete authorization URL into trusted Firefox and
 finish login there. The one-use 127.0.0.1 callback uses HTTP; service and issuer traffic stays HTTPS.
-Tokens remain process-local. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
+Tokens remain process-local. Mutation recovery identities stay in the isolated state directory selected
+above. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
 commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and
 access/refresh tokens in memory, discards tokens after 15 idle minutes and writes no history file.
 

@@ -50,6 +50,7 @@ it("keeps a failed history page request-local without erasing current case data"
       "case.get",
       "SUCCEEDED",
       caseViewInput({
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: fields.caseReference,
         revision: 1,
         advice: {
@@ -87,6 +88,7 @@ const readableCurrent = () =>
     "case.get",
     "SUCCEEDED",
     caseViewInput({
+      caseId: "20000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,
       revision: 1,
       advice: {

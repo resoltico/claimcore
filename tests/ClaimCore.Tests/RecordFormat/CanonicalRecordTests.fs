@@ -82,10 +82,7 @@ let private snapshot () =
                 "Canonical monetary spelling"
 
             Expect.equal
-                (CountryCode.format (
-                    Registration.value BusinessField.IncidentCountry (fields.Registration)
-                    |> FieldValue.country
-                ))
+                (CountryCode.format (Registration.country (fields.Registration)))
                 "LV"
                 "Country syntax"
 
@@ -147,7 +144,13 @@ let private authority () =
             (ClaimCore.Domain.AuthorityAct.Grant
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantTarget.CaseReference "Demo-0001"
+                    Scope =
+                        RecordedGrantScope.Case(
+                            (CaseFixtures.caseId (
+                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                            )),
+                            CaseFixtures.reference "Demo-0001"
+                        )
                 })
             "Independent grant meaning"
 
@@ -171,28 +174,27 @@ let private formats () =
                 RecordVersions.Authority
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
-                RecordVersions.CaseReferenceIdentity
             ]
-            [ 1; 1; 1; 1; 1 ]
+            [ 2; 2; 2; 2 ]
             "Each retained grammar has its adopted format number"
 
-        for format in [ "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
+        for format in [ "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":1", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":2", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":1", "\"format\":2"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":2", "\"format\":1"))
             ))
             "No old snapshot reinterpretation"
 
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":1", "\"format\":4"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":2", "\"format\":4"))))
             "No old authority reinterpretation")
 
 let private operationIdentity () =
@@ -234,8 +236,9 @@ let private identityForms () =
                 | "CASE" ->
                     RequestRecord.decode 65536 source
                     |> Fixtures.accepted
-                    |> Case.canonical
-                    |> RequestRecord.encode
+                    |> RequestRecord.identity (
+                        CaseFixtures.caseId (Guid.Parse(text vector "caseId"))
+                    )
                 | "AUTHORITY" ->
                     AuthorityRecord.decode 65536 source
                     |> Fixtures.accepted
@@ -263,10 +266,13 @@ let private malformedIdentity () =
                         (Fixtures.registration)
                 ))
 
-        let wire = ClaimCore.Protocol.RequestCodecs.caseRequest.Write request
+        let wire =
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
 
         let admitted =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire |> Fixtures.accepted
+            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire
+            |> Fixtures.accepted
+            |> Inputs.referencedCase
 
         Expect.equal admitted request "Wire admission preserves malformed authored scalars"
 

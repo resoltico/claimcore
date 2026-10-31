@@ -5,6 +5,7 @@ open System.Net.Http
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Protocol
 open ClaimCore.Application
@@ -50,12 +51,19 @@ let private logout (host: Host) =
 
 let private caseFlow (database: PostgresFixture.Database) storage =
     task {
-        use host = new Host(true, forActor = core database.Fixture, sessions = storage)
+        use host =
+            new Host(
+                true,
+                forActor = core database.Fixture,
+                sessions = storage,
+                installationId = database.Fixture.InstallationId
+            )
+
         let! _ = host.Login()
         let! antiforgery = host.Token()
 
         let operation =
-            OperationInput.Case(
+            ClaimCore.TestSupport.Inputs.caseOperation (
                 request 601 "METRIC-ACCEPTANCE" 0L (AuthoredCaseAct.Open registration)
             )
 
@@ -67,7 +75,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-ACCEPTANCE" }
+                {
+                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
+                }
                 antiforgery
                 ReplyKind.Succeeded
 
@@ -75,7 +85,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-MISSING" }
+                {
+                    Target = CaseSelector.Reference("METRIC-MISSING")
+                }
                 antiforgery
                 ReplyKind.Rejected
 
@@ -90,7 +102,9 @@ let private caseFlow (database: PostgresFixture.Database) storage =
             call
                 host
                 Api.caseGet
-                { CaseReference = "METRIC-ACCEPTANCE" }
+                {
+                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
+                }
                 antiforgery
                 ReplyKind.Failed
 
@@ -102,7 +116,14 @@ let private caseFlow (database: PostgresFixture.Database) storage =
 
 let private endedFlow (database: PostgresFixture.Database) storage statement =
     task {
-        use host = new Host(true, forActor = core database.Fixture, sessions = storage)
+        use host =
+            new Host(
+                true,
+                forActor = core database.Fixture,
+                sessions = storage,
+                installationId = database.Fixture.InstallationId
+            )
+
         let! _ = host.Login()
         do! sql database statement
         let! status, _ = host.Bootstrap()

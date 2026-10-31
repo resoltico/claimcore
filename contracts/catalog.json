@@ -294,6 +294,12 @@
       "scalar": null
     },
     {
+      "name": "caseId",
+      "labelId": "input.caseId.label",
+      "meaningId": "input.caseId.meaning",
+      "scalar": null
+    },
+    {
       "name": "detail",
       "labelId": "input.detail.label",
       "meaningId": "input.detail.meaning",
@@ -376,9 +382,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -579,6 +586,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "expectedRevision"
           ],
           "value": 0,
@@ -627,9 +643,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -873,6 +890,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -913,9 +939,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -1491,6 +1518,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -1531,9 +1567,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -1669,6 +1706,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -1709,9 +1755,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -1766,6 +1813,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -1806,9 +1862,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -1887,6 +1944,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -1927,9 +1993,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -1981,6 +2048,15 @@
           "value": "CASE",
           "branches": [],
           "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
         },
         {
           "path": [
@@ -2024,9 +2100,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2078,6 +2155,15 @@
           "value": "CASE",
           "branches": [],
           "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
         },
         {
           "path": [
@@ -2121,9 +2207,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2175,6 +2262,15 @@
           "value": "CASE",
           "branches": [],
           "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
         },
         {
           "path": [
@@ -2218,9 +2314,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2295,6 +2392,15 @@
           "value": "CASE",
           "branches": [],
           "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
         },
         {
           "path": [
@@ -2338,9 +2444,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2418,6 +2525,15 @@
         },
         {
           "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
             "act",
             "kind"
           ],
@@ -2458,9 +2574,10 @@
           "source": "OPERATION_IDENTITY"
         },
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2512,6 +2629,15 @@
           "value": "CASE",
           "branches": [],
           "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
         },
         {
           "path": [
@@ -2814,11 +2940,12 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.scope.caseReference",
+          "identity": "act.scope.target.caseReference",
           "field": "caseReference",
           "path": [
             "act",
             "scope",
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -2838,7 +2965,9 @@
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
           "order": 6,
-          "prefill": null,
+          "prefill": [
+            "caseReference"
+          ],
           "required": true,
           "default": null,
           "diagnosticTargets": [
@@ -2864,6 +2993,26 @@
           "value": "GRANT",
           "branches": [],
           "vocabulary": "act"
+        },
+        {
+          "path": [
+            "act",
+            "scope",
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [
+            {
+              "path": [
+                "act",
+                "scope",
+                "kind"
+              ],
+              "value": "CASE"
+            }
+          ],
+          "vocabulary": "caseSelector"
         }
       ]
     },
@@ -3032,11 +3181,12 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.scope.caseReference",
+          "identity": "act.scope.target.caseReference",
           "field": "caseReference",
           "path": [
             "act",
             "scope",
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -3056,7 +3206,9 @@
           "labelId": "field.caseReference.label",
           "meaningId": "field.caseReference.meaning",
           "order": 6,
-          "prefill": null,
+          "prefill": [
+            "caseReference"
+          ],
           "required": true,
           "default": null,
           "diagnosticTargets": [
@@ -3082,6 +3234,26 @@
           "value": "REVOKE",
           "branches": [],
           "vocabulary": "act"
+        },
+        {
+          "path": [
+            "act",
+            "scope",
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [
+            {
+              "path": [
+                "act",
+                "scope",
+                "kind"
+              ],
+              "value": "CASE"
+            }
+          ],
+          "vocabulary": "caseSelector"
         }
       ]
     },
@@ -3344,9 +3516,10 @@
       "confirmationId": null,
       "inputs": [
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -3368,7 +3541,17 @@
           "source": "AUTHORED"
         }
       ],
-      "constants": []
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        }
+      ]
     },
     {
       "endpoint": "case.list",
@@ -3743,9 +3926,10 @@
       "confirmationId": null,
       "inputs": [
         {
-          "identity": "caseReference",
+          "identity": "target.caseReference",
           "field": "caseReference",
           "path": [
+            "target",
             "caseReference"
           ],
           "kind": {
@@ -3836,7 +4020,17 @@
           "source": "AUTHORED"
         }
       ],
-      "constants": []
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        }
+      ]
     },
     {
       "endpoint": "operation.observe",

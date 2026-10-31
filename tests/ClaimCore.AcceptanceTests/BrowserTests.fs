@@ -42,12 +42,17 @@ let private selectedSpecifications =
     if smoke then
         [
             "authority-uncertainty.spec.ts"
+            "authority-grants.spec.ts"
             "act-lifecycle.spec.ts"
             "localization-correction.spec.ts"
             "localization-editor.spec.ts"
             "localization-pseudolocale.spec.ts"
             "localization-session-history.spec.ts"
             "narrow-role.spec.ts"
+            "recovery-journal.spec.ts"
+            "resolution.spec.ts"
+            "reply-correlation.spec.ts"
+            "work-surface-foundations.spec.ts"
             "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
             "unicode-parity.spec.ts"
@@ -270,9 +275,17 @@ let private printFailureSummary root engine bytes =
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
     let targets = BrowserProgress.targetGeometry bytes |> String.concat ","
 
-    Console.WriteLine(
+    let summary =
         $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}"
-    )
+
+    Console.WriteLine summary
+
+    match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+    | null -> ()
+    | directory ->
+        let output = Path.Combine(directory, "browser-failure")
+        Directory.CreateDirectory output |> ignore
+        FixtureFiles.text output (engine + ".txt") summary |> ignore
 
 let private runBrowser root engine output start =
     try

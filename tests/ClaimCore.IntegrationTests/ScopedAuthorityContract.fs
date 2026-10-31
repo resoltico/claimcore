@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -92,7 +93,12 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
 let internal checkScopedAdvice (actor: ServiceContext) reference =
     task {
         let! result =
-            (Service.get actor ({ CaseReference = reference }) (CancellationToken.None))
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference(reference)
+                })
+                (CancellationToken.None))
 
         match result with
         | Outcome.Succeeded value ->
@@ -126,7 +132,9 @@ let internal advisedCase fixture reference =
         let! opened =
             (Service.execute
                 admin
-                (OperationInput.Case(request 20 reference 0L (AuthoredCaseAct.Open registration)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 20 reference 0L (AuthoredCaseAct.Open registration)
+                ))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -142,7 +150,9 @@ let internal advisedCase fixture reference =
         let! decided =
             (Service.execute
                 admin
-                (OperationInput.Case(request 21 reference 1L (AuthoredCaseAct.Decide decision)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 21 reference 1L (AuthoredCaseAct.Decide decision)
+                ))
                 (CancellationToken.None))
 
         accepted decided |> ignore
@@ -152,7 +162,10 @@ let internal advisedCase fixture reference =
 let internal refusedAdvice fixture (actor: ServiceContext) pending =
     task {
         let! refused =
-            (Service.execute actor (OperationInput.Case pending) (CancellationToken.None))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                (CancellationToken.None))
 
         Expect.equal
             refused.Outcome
@@ -163,7 +176,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
             (Service.get
                 actor
                 ({
-                    CaseReference = pending.CaseReference
+                    Target = CaseSelector.Reference(pending.CaseReference)
                 })
                 (CancellationToken.None))
 
@@ -214,7 +227,10 @@ let internal revokedAdvice fixture =
         let pending = request 35 reference 2L (AuthoredCaseAct.Correct correction)
 
         let! preview =
-            (Service.preview actor (OperationInput.Case pending) (CancellationToken.None))
+            (Service.preview
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                (CancellationToken.None))
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -283,7 +299,7 @@ let internal scopedWorker fixture =
             let! opened =
                 (Service.execute
                     admin
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request (100 + number) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
@@ -357,7 +373,7 @@ let internal scopedAuthority fixture =
                     fixture.Store
                     fixture.Calendar
                     principal)
-                (OperationInput.Case pending)
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
                 (CancellationToken.None))
 
         Expect.equal

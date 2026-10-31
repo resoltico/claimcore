@@ -3,6 +3,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application.VerificationChecks
 
 type CaseHistory =
@@ -50,7 +51,8 @@ module internal CaseFold =
 
     let apply histories (entry: StoredEntry) payload =
         match entry.Subject with
-        | EntryTarget.Authority _ ->
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
             result {
@@ -72,8 +74,41 @@ module internal CaseFold =
                         VerificationFinding.HistoryStart
                         ((previous.IsNone) = (act = CaseActKind.Open))
 
+                do!
+                    match payload with
+                    | VerifiedPayload.Case(request, snapshot) ->
+                        let expected =
+                            ClaimCore.RecordFormat.HistoricalCaseEffects.apply
+                                request
+                                (previous |> Option.bind _.Snapshot)
+
+                        let agrees =
+                            match expected, snapshot with
+                            | Ok expected, Some actual -> expected = actual
+                            | Ok { State = CaseState.Erased }, None -> true
+                            | _ -> false
+
+                        require (Some entry.Sequence) VerificationFinding.StateSequence agrees
+                    | _ -> Ok()
+
                 let! state = nextState entry.Sequence previous act
-                let reference = previous |> Option.bind _.Reference
+
+                let reference =
+                    if act = CaseActKind.Open then
+                        entry.CreationReference
+                    else
+                        previous |> Option.bind _.Reference
+
+                do!
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.HistoryStart
+                        (reference.IsSome
+                         && (if act = CaseActKind.Open then
+                                 id = CaseId.ofOperationId entry.OperationId
+                             else
+                                 entry.CreationReference.IsNone))
+
                 let! snapshot, reference = snapshot entry.Sequence state reference payload
                 let first field = previous |> Option.bind field
 
@@ -125,16 +160,13 @@ module internal CaseFold =
             | Some finding -> Error finding
             | None -> Ok()
 
-    let matchesProjection installationId histories (record: StoredCase) =
+    let matchesProjection _installationId histories (record: StoredCase) =
         match Map.tryFind record.CaseId histories with
         | None -> false
         | Some history ->
             let identity =
-                ClaimCore.RecordFormat.CaseReferenceId.encode
-                    installationId
-                    (CaseReference.format record.Snapshot.Reference)
-                    =
-                    record.CaseId
+                record.Snapshot.CaseId = record.CaseId
+                && history.Reference = Some record.Snapshot.Reference
 
             let state =
                 match record.Snapshot.State with

@@ -87,6 +87,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "OPENED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: value,
           revision: 1,
         }),
@@ -107,6 +108,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
     missing
       ? unavailable
       : caseViewInput({
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: value,
           revision: 1,
           advice: {

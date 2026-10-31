@@ -3,7 +3,6 @@
   "input": {
     "kind": "CASE",
     "operationId": "10000000-0000-4000-8000-000000000002",
-    "caseReference": "DEMO-0001",
     "expectedRevision": 1,
     "act": {
       "kind": "DECIDE",
@@ -12,6 +11,10 @@
         "payableAmount": "750.00",
         "payableCurrency": "EUR"
       }
+    },
+    "target": {
+      "kind": "REFERENCE",
+      "caseReference": "DEMO-0001"
     }
   }
 }

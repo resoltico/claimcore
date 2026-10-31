@@ -4,6 +4,7 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Threading
@@ -115,10 +116,7 @@ let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
             "Authority belongs to this snapshot"
 
         Expect.equal
-            (PartyName.format (
-                Registration.value BusinessField.ClaimantName (fields.Registration)
-                |> FieldValue.name
-            ))
+            (PartyName.format (Registration.claimant (fields.Registration)))
             name
             "Data belongs to this snapshot"
     | _ -> failtest "Expected a coherent read"
@@ -139,7 +137,7 @@ let tests =
                                 for index in 1..20 ->
                                     (Service.execute
                                         actor
-                                        (OperationInput.Case(
+                                        (ClaimCore.TestSupport.Inputs.caseOperation (
                                             request
                                                 (100 + index)
                                                 ($"synthetic-{index}")
@@ -233,7 +231,13 @@ let tests =
                             (CaseFixtures.sequence (3L))
                             "Neither waiter wrote"
 
-                        let! _ = (Service.get actor ({ CaseReference = "absent" }) (token))
+                        let! _ =
+                            (Service.get
+                                actor
+                                ({
+                                    Target = CaseSelector.Reference("absent")
+                                })
+                                (token))
 
                         return ()
                     }))
@@ -335,7 +339,10 @@ let tests =
                                 (ClaimCore.Domain.AuthoredCaseAct.Open registration)
 
                         let! failed =
-                            (Service.execute actor (OperationInput.Case operation) (token))
+                            (Service.execute
+                                actor
+                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
+                                (token))
 
                         Expect.equal
                             failed.Outcome
@@ -352,7 +359,10 @@ let tests =
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
                         let! retry =
-                            (Service.execute actor (OperationInput.Case operation) (token))
+                            (Service.execute
+                                actor
+                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
+                                (token))
 
                         accepted retry |> ignore
                     }))
@@ -361,7 +371,7 @@ let tests =
                 (run (fun database ->
                     task {
                         let insert =
-                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),1,'AUTHORITY','REGISTER','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
+                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),2,'AUTHORITY','REGISTER','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
 
@@ -394,7 +404,7 @@ let tests =
                         let! opened =
                             (Service.execute
                                 actor
-                                (OperationInput.Case(
+                                (ClaimCore.TestSupport.Inputs.caseOperation (
                                     request
                                         20
                                         "synthetic-snapshot"

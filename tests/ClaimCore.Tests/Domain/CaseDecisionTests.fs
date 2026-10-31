@@ -8,6 +8,7 @@ open System
 open Expecto
 open ClaimCore.Json
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
@@ -225,7 +226,7 @@ let private boundsAndFence () =
 
 let private opening =
     RequestCodecs.operationInput.Write(
-        OperationInput.Case
+        ClaimCore.TestSupport.Inputs.caseOperation
             {
                 OperationId = Guid.Parse "80000000-0000-4000-8000-000000000010"
                 CaseReference = "UNIT-001"
@@ -255,7 +256,7 @@ let private decodeWire (text: string) =
         Api.operationExecute.Input
         (Text.Encoding.UTF8.GetBytes text)
     |> Result.map (function
-        | OperationInput.Case value -> value
+        | OperationInput.Case value -> Inputs.referencedCase value
         | _ -> failtest "Expected a case execution request")
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 

@@ -12,6 +12,7 @@ open System.Text.Json
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
@@ -138,7 +139,14 @@ let internal queryEvidence actor =
                 )))
                 (ct))
 
-        let! missing = (Service.get actor ({ CaseReference = "MISSING" }) (ct))
+        let! missing =
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference("MISSING")
+                })
+                (ct))
+
         let evidence = ResizeArray<_>()
 
         for raw in [ ""; "x\u0000y"; " x"; "x\u0001y"; "x\u200by"; String('x', 101) ] do
@@ -277,7 +285,8 @@ let internal boundaryEvidence () =
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
 
-        let! resolved = (Service.resolve actor ({ OperationId = id 42 }) (ct))
+        let! resolved =
+            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 42 }) (ct))
 
         Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Resolve installs a fence"
 

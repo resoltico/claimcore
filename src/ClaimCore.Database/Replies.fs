@@ -3,6 +3,7 @@ namespace ClaimCore.Database
 open System
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Application
 open ClaimCore.Postgres
@@ -17,6 +18,8 @@ type OwnerAcceptance =
 [<RequireQualifiedAccess; NoComparison>]
 type DatabaseSuccess =
     | Initialized of Guid
+    | Rebuilt of ProjectionRebuildReport
+    | RestoredSessionsInvalidated of int64
     | Head of LedgerPosition
     | Accepted of OwnerAcceptance
     | AlreadyAccepted of OwnerAcceptance
@@ -69,8 +72,54 @@ module Replies =
                  (EntryHash.toBytes >> Convert.ToHexStringLower))
         |> build
 
+    let private divergenceCodec =
+        (record (fun sequence finding ->
+            {
+                VerificationDivergence.Sequence = sequence
+                Finding = finding
+            })
+        : Fields<VerificationDivergence, _>)
+        |> field
+            "sequence"
+            _.Sequence
+            (nullable (
+                integer 0L SafeInteger.Maximum
+                |> map (Sequence.create >> Option.get) Sequence.value
+            ))
+        |> field "finding" _.Finding (enumeration VerificationFinding.all)
+        |> build
+
+    let private rebuildFields =
+        (record (fun position divergence ->
+            {
+                ProjectionRebuildReport.Position = position
+                PreviousDivergence = divergence
+            })
+        : Fields<ProjectionRebuildReport, _>)
+        |> field "position" _.Position administrativePosition
+        |> field "previousDivergence" _.PreviousDivergence (nullable divergenceCodec)
+
+    // This closed codec table pairs every success constructor with its inverse projection; it has no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private successVariants =
         [
+            variant
+                "REBUILT"
+                (DatabaseSuccess.Rebuilt >> Outcome.Succeeded >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Rebuilt report)) -> Some report
+                | _ -> None)
+                rebuildFields
+            variant
+                "RESTORED_SESSIONS_INVALIDATED"
+                (DatabaseSuccess.RestoredSessionsInvalidated
+                 >> Outcome.Succeeded
+                 >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredSessionsInvalidated count)) ->
+                    Some count
+                | _ -> None)
+                (record id |> field "count" id (integer 0L SafeInteger.Maximum))
             variant
                 "INITIALIZED"
                 (DatabaseSuccess.Initialized >> Outcome.Succeeded >> Reply.Operation)
@@ -245,6 +294,16 @@ module Replies =
         | VerificationResult.Verified position ->
             encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified(position, elapsed))))
         | VerificationResult.Diverged finding -> encode (Reply.Diverged(finding, elapsed))
+
+    let rebuild =
+        function
+        | Ok report -> encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Rebuilt report)))
+        | Error finding -> encode (Reply.Diverged(finding, 0L))
+
+    let sessionsInvalidated count =
+        encode (
+            Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredSessionsInvalidated count))
+        )
 
     let usage error = encode (Reply.Usage error)
 

@@ -8,6 +8,7 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.TestSupport.MemoryStoreState
 
@@ -46,7 +47,16 @@ let private total money =
                 |> Result.defaultWith (string >> failwith)
         })
 
-type internal Reader(get: unit -> State, installationId, observed, read: unit -> unit) =
+type internal Reader
+    (
+        get: unit -> State,
+        _installationId,
+        observed,
+        read: unit -> unit,
+        ?factRead: AuthorityFact -> unit
+    ) =
+    let factRead = defaultArg factRead ignore
+
     interface IReadTx with
         member _.ObservedAt = observed
 
@@ -110,7 +120,18 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
 
         member _.FindCase id =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase installationId))
+            Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase (get ()).Entries))
+
+        member _.FindCaseByReference reference =
+            read ()
+
+            Task.FromResult(
+                (get ()).Cases
+                |> Map.values
+                |> Seq.tryFind (fun record ->
+                    CaseReference.identity record.Snapshot.Reference = CaseReference.key reference)
+                |> Option.map (readCase (get ()).Entries)
+            )
 
         member _.FindEntry id =
             read ()
@@ -122,10 +143,12 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
 
         member _.ActorCount() =
             read ()
+            factRead AuthorityFact.ActorCount
             Task.FromResult((get ()).Actors.Count)
 
         member _.EnabledHumanOwners() =
             read ()
+            factRead AuthorityFact.EnabledHumanOwners
             let state = get ()
 
             Task.FromResult(
@@ -187,7 +210,7 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 |> Map.values
                 |> Seq.filter (fun record -> selected state query.Selection record && after record)
                 |> Seq.sortWith compareRows
-                |> Seq.map (readCase installationId)
+                |> Seq.map (readCase (get ()).Entries)
                 |> Seq.toList
 
             Task.FromResult(
@@ -251,7 +274,11 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                 | EntryTarget.Case(_, revision, _, _) -> revision
                 | _ -> failwith "Invalid history fixture"
 
-            Task.FromResult(page limit revision rows)
+            Task.FromResult
+                {
+                    Page = page limit revision rows
+                    Previous = List.tryItem limit rows
+                }
 
         member _.AuthorityHistoryPage(query: AuthorityHistoryPageQuery) =
             read ()
@@ -334,15 +361,14 @@ type internal Reader(get: unit -> State, installationId, observed, read: unit ->
                         else
                             let target =
                                 match scope with
-                                | None -> GrantTarget.Installation
+                                | None -> GrantScope.Installation
                                 | Some id ->
-                                    GrantTarget.CaseReference(
-                                        CaseReference.format state.Cases[id].Snapshot.Reference
-                                    )
+                                    let current = readCase state.Entries state.Cases[id]
+                                    GrantScope.Case(id, current.Snapshot.Reference)
 
                             Some(
                                 {
-                                    AuthoredGrant.Role = role
+                                    ScopedGrant.Role = role
                                     Scope = target
                                 },
                                 position

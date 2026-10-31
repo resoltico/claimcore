@@ -4,6 +4,12 @@ Start with a fresh installation, grant access deliberately, and plan backups and
 real data. The supplied Compose setup is for local evaluation. Operators choose and qualify their deployment,
 TLS, storage, identity provider and monitoring.
 
+Each installation uses the declared SQL baseline and permanent record formats. Initialize an empty
+database; schema conversion is not supported. OPEN metadata retains the original reference and creation
+operation identity independently of erasable payloads. Verification compares retained requests with their
+resulting snapshots. For erased cases it checks retained identity, lifecycle, revisions, attribution, hash
+links and complete payload removal; erased business values cannot be reconstructed.
+
 ## Install a fresh register
 
 Use [getting started](getting-started.md) for a separate local installation. For another deployment, prepare
@@ -30,6 +36,8 @@ Runtime credentials have no schema-owner authority. Offline help/version do not 
 | `head` | Read the installation's current sequence/hash position. |
 | `verify` | Reconstruct retained ledger state and compare projections and head. |
 | `verify --expect SEQUENCE:ENTRY_HASH` | Also check an independently retained checkpoint. |
+| `rebuild --expect SEQUENCE:ENTRY_HASH` | Reconstruct derived projections under writer exclusion; return prior divergence evidence. |
+| `invalidate-restored-sessions` | Delete restored sessions before reopening actor traffic. |
 
 Command errors return `USAGE_ERROR` with the applicable syntax. Read `REJECTED` diagnostics and `FAILED`
 faults alongside the shared [exit-code reference](cli.md#exit-codes).
@@ -87,10 +95,19 @@ Retain sequence/hash checkpoints independently of the database and protect backu
 Capture a position with `claimcore-database head` and use your PostgreSQL full-backup tools. Preserve the
 matching software, identity state and protected key ring with the installation's recovery material.
 
-Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
+Keep restored databases isolated from actor traffic. Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
 checkpoint before reopening actor access. A data-only restore into an initialized schema is unsupported.
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
-newer acceptance existed elsewhere.
+newer acceptance or recovery control existed elsewhere.
+
+If authoritative verification succeeds but projections diverge, run `claimcore-database rebuild --expect
+SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
+head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
+replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
+for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
+
+Before reopening restored actor traffic, run `claimcore-database invalidate-restored-sessions`. Restored
+cookies must no longer authenticate. This explicit restore step is separate from ordinary projection rebuild.
 
 Check later erasures and affected copies before using a restored database. A pre-erasure backup can bring
 back erased content. ClaimCore does not orchestrate backup, restore, replication, copy custody or approvals.
@@ -106,6 +123,11 @@ Find the server process with `dotnet-counters ps`, then run:
 ```sh
 dotnet-counters monitor --process-id PID --counters ClaimCore
 ```
+
+Storage failures also publish bounded values through `DiagnosticListener` named `ClaimCore.Storage.Failures`:
+correlation UUID, phase, classification and at most eight adapter method identifiers. Messages, exception
+data, SQL/provider details, credentials, principals, references and payloads are excluded. Collector
+failures cannot replace a confirmed transaction result or prevent remaining provider cleanup.
 
 Counters restart with the process; they are operational observations, not a ledger inventory.
 
@@ -148,6 +170,11 @@ address affected erasures before reopening access.
 The append-only guard permits case-payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.
+
+Final nonacceptance is an actor/operation-scoped retained ledger control. It advances the ordered head and
+checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
+resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
+Verification reconstructs the complete fence projection from controls, including their recorded instants.
 
 ## Trust model
 
@@ -198,8 +225,9 @@ grant before interactive sign-in. Discard drops the session's references to mana
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
-entries while retaining folded case/actor/grant state; its same-snapshot duplicate prepass may sort or spill
-in SQL. Streaming does not promise constant total-system memory.
+entries while retaining folded case/actor/grant state, accepted-operation identities, immutable reference
+indexes and recovery controls. The authoritative fold checks accepted-operation UUID uniqueness.
+Streaming does not promise constant total-system memory.
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
 all worklist projection columns and the head. It applies permanent invariants rather than today's admission

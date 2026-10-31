@@ -26,13 +26,23 @@ module internal StoredEntries =
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"
-        + ",payload_commitment,payload,payload_nonce"
+        + ",payload_commitment,payload,payload_nonce,creation_reference"
 
     let private subjects row =
         let target = DatabaseSession.value<Guid> 9 row
         let act = DatabaseSession.value<string> 5 row
 
         match DatabaseSession.value<string> 4 row with
+        | "CONTROL" ->
+            if
+                act <> "NOT_ACCEPTED"
+                || not (Convert.IsDBNull row[10])
+                || not (Convert.IsDBNull row[11])
+            then
+                raise (RecordCorruptException "Invalid nonacceptance control shape.")
+
+            let operation = DatabaseSession.admitted OperationId.create target
+            EntryTarget.NonAcceptance operation, RecordedTarget.NonAcceptance operation
         | "AUTHORITY" ->
             let target = DatabaseSession.admitted ActorId.create target
 
@@ -83,6 +93,13 @@ module internal StoredEntries =
                 ActorId = DatabaseSession.value 7 row |> DatabaseSession.admitted ActorId.create
                 RecordedAt = DatabaseSession.recordedInstant 8 row
                 Subject = subject
+                CreationReference =
+                    DatabaseSession.optional<string> 15 row
+                    |> Option.map (
+                        CaseReference.parse
+                        >> Result.defaultWith (fun _ ->
+                            raise (RecordCorruptException "Invalid retained reference."))
+                    )
                 PayloadCommitment = DatabaseSession.value 12 row
                 Payload = DatabaseSession.optional<byte array> 13 row
                 PayloadNonce = DatabaseSession.optional<byte array> 14 row
@@ -99,6 +116,7 @@ module internal StoredEntries =
                     ActorId = entry.ActorId
                     RecordedAt = entry.RecordedAt
                     Subject = metadataSubject
+                    CreationReference = entry.CreationReference
                     PayloadCommitment = entry.PayloadCommitment
                 }
         }
@@ -108,7 +126,7 @@ module internal StoredEntries =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1")
+                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1 AND subject_kind<>'CONTROL'")
                     [| box (OperationId.value id) |]
                     token
 

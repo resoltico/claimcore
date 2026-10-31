@@ -61,13 +61,24 @@ const diagnosticText = (
   );
   return renderKey(preferences, messageKey, parameters);
 };
+const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): MessageKey => {
+  switch (reason) {
+    case "recoveryListingUnavailable":
+      return "ui.recoveryListingUnavailable";
+    case "recoveryUnavailable":
+      return "ui.recoveryUnavailable";
+    case "incomplete":
+      return "ui.incompleteResponse";
+    default:
+      return `notice.${reason}`;
+  }
+};
 export const renderNotice = (preferences: Preferences, notice: Notice): string => {
   switch (notice.kind) {
     case "issues":
       return notice.issues.map((issue) => diagnosticText(preferences, issue)).join(" ");
     case "local": {
-      const key: MessageKey =
-        notice.reason === "incomplete" ? "ui.incompleteResponse" : `notice.${notice.reason}`;
+      const key = localMessageKey(notice.reason);
       return renderKey(preferences, key);
     }
     case "diagnostic":

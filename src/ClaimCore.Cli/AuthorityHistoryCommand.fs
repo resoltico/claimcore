@@ -3,24 +3,20 @@ namespace ClaimCore.Cli
 open System.Text
 open System.Threading
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 module internal AuthorityHistoryCommand =
     let run (io: ReadPageIO) (prepared: PreparedVerb) token =
         task {
-            let frame =
-                Frames.admit prepared.Bytes
-                |> Result.defaultWith (fun _ -> invalidOp "Invalid prepared authority history.")
+            let frame = prepared.Invocation
 
             let! reply = io.Exchange frame token
 
             let page =
                 match reply.Frame.Result with
                 | FrameResult.Reply value when value.Route.Id = Api.authorityHistory.Id ->
-                    Api.authorityHistory.Output.Read "$" value.Wire
-                    |> Result.defaultWith (fun _ ->
-                        invalidOp "An admitted authority history must retain its shape.")
-                    |> Some
+                    ServiceReply.value Api.authorityHistory value
                 | _ -> None
 
             match page with

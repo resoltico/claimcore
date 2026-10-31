@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open System
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 let id = Guid.Parse "10000000-0000-4000-8000-000000000001"
@@ -40,6 +41,7 @@ let snapshot =
         }
 
     {
+        CaseId = CaseFixtures.caseId id
         Reference = CaseFixtures.reference "x"
         Revision = CaseFixtures.revision 1L
         State = CaseState.Active(fields)
@@ -60,6 +62,10 @@ let receipt =
         Subject =
             ReceiptSubject.Case
                 {
+                    CaseId =
+                        CaseFixtures.caseId (
+                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                        )
                     Reference = CaseFixtures.reference "x"
                     Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open

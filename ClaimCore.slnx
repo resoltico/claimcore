@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
   <Project Path="src/ClaimCore.Json/ClaimCore.Json.fsproj" />
   <Project Path="src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
   <Project Path="src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

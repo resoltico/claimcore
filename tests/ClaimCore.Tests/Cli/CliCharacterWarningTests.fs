@@ -176,8 +176,20 @@ let private previewWarnings () =
     rendered
         "review-all-fields"
         (fun root ->
-            (reviewFields "before" root)["claimantName"] <- JsonValue.Create before
-            (reviewFields "after" root)["claimantName"] <- JsonValue.Create after)
+            (reviewFields "before" root)["claimantName"] <- JsonValue.Create "Snapshot before"
+            (reviewFields "after" root)["claimantName"] <- JsonValue.Create "Snapshot after"
+
+            let changes =
+                (memberPath [ "outcome"; "data"; "review"; "subject"; "changes" ] root).AsArray()
+
+            let change =
+                changes
+                |> Seq.map nonNull
+                |> Seq.find (fun value ->
+                    (value["field"] |> nonNull).GetValue<string>() = "claimantName")
+
+            change["before"] <- JsonValue.Create before
+            change["after"] <- JsonValue.Create after)
         (fun language text ->
             let expected =
                 annotated language before [ "U+180E" ]
@@ -253,7 +265,7 @@ let tests =
                 "annotation has eight distinct scalar slots with truthful truncation"
                 warningBudget
             testCase "current case values warn in every language" currentWarnings
-            testCase "both differing preview sides warn in every language" previewWarnings
+            testCase "core-supplied differing preview sides warn in every language" previewWarnings
             testCase "full history accepted values warn in every language" fullHistoryWarnings
             testCase
                 "human annotations are bounded and ordinary text stays unannotated"

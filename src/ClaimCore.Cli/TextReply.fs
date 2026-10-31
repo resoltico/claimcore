@@ -10,13 +10,13 @@ open ClaimCore.Json
 module internal TextReply =
     open TextReplyFormat
 
-    type private Presenter = string -> Invocation option -> JsonValue -> string list
+    type private Presenter = string -> Invocation option -> ServiceReply -> string list
 
     let private presenter (endpoint: Endpoint<'Input, 'Output>) render : EndpointId * Presenter =
         endpoint.Id,
         (fun language request value ->
-            endpoint.Output.Read "$" value
-            |> Result.defaultWith (fun _ -> invalidOp "An admitted reply must remain valid.")
+            ServiceReply.value endpoint value
+            |> Option.defaultWith (fun () -> invalidOp "An admitted reply must remain valid.")
             |> render language request)
 
     let private read endpoint render =
@@ -28,8 +28,11 @@ module internal TextReply =
             read Api.caseGet TextCaseReply.caseLines
             read Api.caseList TextCaseReply.casePage
             read Api.caseHistory TextCaseReply.historyLines
-            read Api.operationObserve (fun language receipt ->
-                TextOperationReply.receiptLines language "ACCEPTED" receipt)
+            presenter Api.operationObserve (fun language _ reply ->
+                TextDiagnosticReply.readLines
+                    language
+                    (TextOperationReply.receiptLines language "ACCEPTED")
+                    reply.Outcome)
             read Api.authorityList TextAuthorityReply.actorPage
             read Api.authorityGrants TextAuthorityReply.grantPage
             read Api.authorityHistory TextAuthorityReply.historyPage
@@ -37,13 +40,13 @@ module internal TextReply =
             presenter Api.operationExecute (fun language _ reply ->
                 TextOperationReply.executeLines language reply)
             presenter Api.operationResolve (fun language _ reply ->
-                TextOperationReply.resolveLines language reply)
+                TextOperationReply.resolveLines language reply.Outcome)
         ]
         |> Map.ofList
 
     let private replyLines language request (reply: ServiceReply) =
         match Map.tryFind reply.Route.Id presenters with
-        | Some render -> render language request reply.Wire
+        | Some render -> render language request reply
         | None -> TextGenericReply.render language reply
 
     let resultLines language request =

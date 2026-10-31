@@ -36,6 +36,9 @@ type FrameReply =
 type Invocation =
     private
         {
+            AttemptId: Guid
+            InstallationId: Guid option
+            Typed: IEndpointInput
             Target: ClaimCore.Protocol.Route
             Input: JsonValue
             Bytes: byte array
@@ -54,6 +57,23 @@ module Frames =
         | JsonValue.Object fields -> fields |> List.map fst |> Set.ofList = Set.ofList names
         | _ -> false
 
+    let installationId (invocation: Invocation) = invocation.InstallationId
+
+    let value endpoint (invocation: Invocation) =
+        EndpointValues.tryInput endpoint invocation.Typed
+
+    let bindInstallation installation (invocation: Invocation) =
+        if installation = Guid.Empty || not (Api.requiresInstallation invocation.Target) then
+            Error ClientFailure.InvalidFrame
+        elif invocation.InstallationId |> Option.exists ((<>) installation) then
+            Error ClientFailure.InstallationMismatch
+        else
+            Ok
+                { invocation with
+                    InstallationId = Some installation
+                }
+
+    let attemptId (invocation: Invocation) = invocation.AttemptId
     let endpoint (invocation: Invocation) = invocation.Target
     let input (invocation: Invocation) = invocation.Input
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
@@ -62,10 +82,43 @@ module Frames =
         JsonValue.tryMember "operationId" (input invocation)
         |> Option.bind (fun value -> Codec.uuid.Read "$.operationId" value |> Result.toOption)
 
+    /// Typed in-process callers materialize once; only external frames require byte admission.
+    let create (endpoint: Endpoint<'input, 'output>) input =
+        try
+            let value = endpoint.Input.Write input
+            let bytes = WireWriter.bytes value
+
+            if bytes.Length > Limits.MaximumRequestBytes then
+                error "$.input" "request exceeds its byte limit"
+            else
+                Ok
+                    {
+                        AttemptId = Guid.NewGuid()
+                        InstallationId = None
+                        Typed = EndpointValues.input endpoint input
+                        Target = ClaimCore.Protocol.Route.describe endpoint
+                        Input = value
+                        Bytes = bytes
+                    }
+        with :? ArgumentException ->
+            error "$.input" "invalid request format"
+
+    let fromInput (input: IEndpointInput) =
+        input.Accept
+            { new IEndpointInputVisitor<Result<Invocation, Problem>> with
+                member _.Visit<'value, 'reply>(endpoint: Endpoint<'value, 'reply>, value: 'value) =
+                    create endpoint value
+            }
+
     let admit bytes =
         StrictJson.read Limits.MaximumInvocationBytes bytes
         |> Result.bind (fun document ->
-            if not (members [ "endpoint"; "input" ] document) then
+            if
+                not (
+                    members [ "endpoint"; "input" ] document
+                    || members [ "endpoint"; "input"; "installationId" ] document
+                )
+            then
                 error "$" "expected a frame"
             else
                 match
@@ -76,8 +129,8 @@ module Frames =
                     match Api.tryFind name with
                     | None -> error "$.endpoint" "unknown endpoint"
                     | Some endpoint ->
-                        Api.admitInput endpoint input
-                        |> Result.bind (fun () ->
+                        endpoint.ReadInput input
+                        |> Result.bind (fun typed ->
                             let prepared = WireWriter.bytes input
 
                             if prepared.Length > Limits.MaximumRequestBytes then
@@ -85,18 +138,37 @@ module Frames =
                             else
                                 Ok
                                     {
+                                        AttemptId = Guid.NewGuid()
+                                        InstallationId = None
+                                        Typed = typed
                                         Target = endpoint
                                         Input = input
                                         Bytes = prepared
                                     })
                 | Error problem, _ -> Error problem
-                | _ -> error "$.input" "missing input")
+                | _ -> error "$.input" "missing input"
+            |> Result.bind (fun invocation ->
+                match JsonValue.tryMember "installationId" document with
+                | None -> Ok invocation
+                | Some value ->
+                    Codec.uuid.Read "$.installationId" value
+                    |> Result.bind (fun installation ->
+                        bindInstallation installation invocation
+                        |> Result.mapError (fun _ ->
+                            {
+                                Path = "$.installationId"
+                                Reason = "Invalid installation binding."
+                            }))))
 
     let encodeInvocation invocation =
         JsonValue.Object
             [
                 "endpoint", JsonValue.String(Api.id (endpoint invocation))
                 "input", input invocation
+                yield!
+                    invocation.InstallationId
+                    |> Option.map (fun id -> "installationId", Codec.uuid.Write id)
+                    |> Option.toList
             ]
         |> WireWriter.bytes
 
@@ -241,7 +313,7 @@ module Frames =
                 | EndpointId.Host host -> Api.forHost host
                 | EndpointId.Actor actor -> Api.forActor actor
 
-            Api.executesLedger endpoint)
+            Api.requiresInstallation endpoint)
 
     let exitCode frame =
         (if frame.Delivery = DeliveryState.Uncertain && mutation frame then

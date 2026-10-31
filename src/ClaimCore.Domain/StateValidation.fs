@@ -43,7 +43,7 @@ module internal StateValidation =
                 CaseFields.groupValues
                     claim.Facts
                     (PaymentProgress.decision claim.Progress)
-                    (PaymentProgress.paymentDate claim.Progress)
+                    (PaymentProgress.payment claim.Progress)
                 |> Map.ofList)
             |> Option.defaultValue Map.empty
 
@@ -68,4 +68,4 @@ module internal StateValidation =
             before
             (after.Facts,
              PaymentProgress.decision after.Progress,
-             PaymentProgress.paymentDate after.Progress)
+             PaymentProgress.payment after.Progress)

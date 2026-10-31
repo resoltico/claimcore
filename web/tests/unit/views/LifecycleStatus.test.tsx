@@ -9,6 +9,7 @@ it("renders stewardship meanings for voided and erased accepted states", () => {
   const { rerender } = render(
     <LifecycleStatus
       value={caseViewInput({
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: fields.caseReference,
         revision: 1,
         advice: fullHistory,
@@ -23,6 +24,7 @@ it("renders stewardship meanings for voided and erased accepted states", () => {
   rerender(
     <LifecycleStatus
       value={caseViewInput({
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: fields.caseReference,
         revision: 2,
         advice: fullHistory,
@@ -40,6 +42,7 @@ it("renders stewardship meanings for voided and erased accepted states", () => {
         state: {
           kind: "ERASED",
         },
+        caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: "CASE-1",
         revision: 3,
         advice: {

@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module CaseActAnnotations =
@@ -111,7 +112,10 @@ module CatalogAnnotations =
 
         [
             yield (caseRequest, WireMembers.OperationId), operationIdentity
-            yield (caseRequest, BusinessField.key BusinessField.CaseReference), caseReference
+            yield
+                (Bindings.branchDefinition definitions RequestSchemas.CaseSelector "REFERENCE",
+                 BusinessField.key BusinessField.CaseReference),
+                caseReference
             yield (caseRequest, WireMembers.ExpectedRevision), revision
             yield (authorityRequest, WireMembers.OperationId), operationIdentity
             yield
@@ -145,15 +149,6 @@ module CatalogAnnotations =
             for kind in [ AuthorityKind.Grant; AuthorityKind.Revoke ] do
                 yield (authorityBranch kind, WireMembers.Role), constant (target InputTarget.Role)
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
-            yield
-                (Bindings.branchDefinition
-                    definitions
-                    RequestSchemas.Scope
-                    (ScopeKind.token ScopeKind.Case),
-                 BusinessField.key BusinessField.CaseReference),
-                constant (field BusinessField.CaseReference)
-            for owner in [ RequestSchemas.CaseGetRequest; RequestSchemas.HistoryRequest ] do
-                yield (owner, BusinessField.key BusinessField.CaseReference), caseReference
             for owner in [ RequestSchemas.ObserveRequest; RequestSchemas.ResolveRequest ] do
                 yield (owner, WireMembers.OperationId), operationIdentity
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do

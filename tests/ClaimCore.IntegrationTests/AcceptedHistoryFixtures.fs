@@ -7,16 +7,18 @@ open ClaimCore.Protocol
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private snapshot (reference: string) claimant : CaseSnapshot =
+let private snapshot operationId (reference: string) claimant : CaseSnapshot =
     let reference = CaseFixtures.reference reference
 
     {
+        CaseId = CaseFixtures.caseId operationId
         Reference = reference
         Revision = CaseFixtures.revision 1L
         State =
@@ -64,7 +66,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                     (registration)
             ))
 
-    let snapshot = snapshot request.CaseReference claimant
+    let snapshot = snapshot request.OperationId request.CaseReference claimant
 
     Case.ofAccepted snapshot
     |> Result.defaultWith (fun _ -> failtest "Historical fixture must obey permanent format")
@@ -74,8 +76,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
         Expect.isNone view.Case "Fixture reference is fresh"
         Expect.isNone view.ExistingOperation "Fixture operation is fresh"
 
-        let id =
-            CaseReferenceId.encode fixture.InstallationId (CaseReference.format snapshot.Reference)
+        let id = snapshot.CaseId
 
         let actor =
             view.Actor.Actor
@@ -135,7 +136,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                         (core fixture fixture.Owner)
                                         tx
                                         (Some(CaseFixtures.operationId (request.OperationId)))
-                                        request.CaseReference
+                                        (CaseSelector.Reference request.CaseReference)
 
                                 return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
                             })
@@ -154,7 +155,13 @@ let private grandfathering (database: PostgresFixture.Database) =
         let name = String.replicate 201 "A"
         do! seed database name
 
-        let! current = (Service.get actor ({ CaseReference = "historical-1" }) (token))
+        let! current =
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference("historical-1")
+                })
+                (token))
 
         match current with
         | Outcome.Succeeded {
@@ -163,10 +170,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                                            }
                             } ->
             Expect.equal
-                (PartyName.format (
-                    Registration.value BusinessField.ClaimantName (fields.Registration)
-                    |> FieldValue.name
-                ))
+                (PartyName.format (Registration.claimant (fields.Registration)))
                 name
                 "Retained record renders without admission"
         | _ -> failtest "Historical record could not be read"
@@ -182,7 +186,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! reaffirm =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
                 ))
                 (token))
@@ -192,7 +196,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         let! changed =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
                         12
                         "HISTORICAL-1"
@@ -231,7 +235,9 @@ let private appendTransitions (actor: ServiceContext) =
             let! result =
                 (Service.execute
                     actor
-                    (OperationInput.Case(request (100 + int revision) "HISTORICAL-1" revision act))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request (100 + int revision) "HISTORICAL-1" revision act
+                    ))
                     (token))
 
             accepted result |> ignore
@@ -242,15 +248,14 @@ let private assertRetained name entries =
     for entry in entries do
         match entry with
         | HistoryEntry.FullEntry {
-                                     Subject = ReceiptSubject.Case {
-                                                                       Snapshot = SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields))
-                                                                   }
+                                     Receipt = {
+                                                   Subject = ReceiptSubject.Case {
+                                                                                     Snapshot = SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields))
+                                                                                 }
+                                               }
                                  } ->
             Expect.equal
-                (PartyName.format (
-                    Registration.value BusinessField.ClaimantName (fields.Registration)
-                    |> FieldValue.name
-                ))
+                (PartyName.format (Registration.claimant fields.Registration))
                 name
                 "Accepted history is never re-admitted or truncated"
         | _ -> failtest "Expected disclosed retained fields"
@@ -311,7 +316,7 @@ let private assertRemainingHistoryAccess
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
         let! observed =
-            (Service.observe
+            (ClaimCore.TestSupport.StoreFixtures.observe
                 actor
                 ({
                     OperationId = (OperationId.value (original.OperationId))
@@ -380,7 +385,7 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         let query =
             {
-                CaseReference = "HISTORICAL-1"
+                Target = CaseSelector.Reference("HISTORICAL-1")
                 AfterCursor = None
                 Limit = 50
                 Detail = HistoryDetail.Full
@@ -404,8 +409,9 @@ let private retainedPages (database: PostgresFixture.Database) =
         let revisions =
             entries
             |> List.map (function
-                | HistoryEntry.FullEntry { Subject = ReceiptSubject.Case c } ->
-                    Revision.value c.Revision
+                | HistoryEntry.FullEntry {
+                                             Receipt = { Subject = ReceiptSubject.Case c }
+                                         } -> Revision.value c.Revision
                 | _ -> failtest "Full case receipt")
 
         Expect.equal
@@ -430,10 +436,9 @@ let private retainedPages (database: PostgresFixture.Database) =
         let original =
             entries
             |> List.pick (function
-                | HistoryEntry.FullEntry({ Subject = ReceiptSubject.Case c } as receipt) when
-                    Revision.value c.Revision = 1L
-                    ->
-                    Some receipt
+                | HistoryEntry.FullEntry {
+                                             Receipt = ({ Subject = ReceiptSubject.Case c } as receipt)
+                                         } when Revision.value c.Revision = 1L -> Some receipt
                 | _ -> None)
 
         do! revokedFullHistory database actor query first original

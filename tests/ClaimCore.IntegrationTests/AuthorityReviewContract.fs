@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -30,9 +31,10 @@ let internal authorityReview fixture principal input =
                 fixture
                 (principal)
                 {
+                    Needed = Authority.factsNeeded request.Act
                     OperationId = (OperationId.value (request.OperationId))
                     Target = request.Target
-                    CaseReference = AuthorityRequests.targetCase request
+                    CaseTarget = AuthorityRequests.targetCase request
                 }
                 (CancellationToken.None)
 
@@ -223,7 +225,7 @@ let internal grantReviewTarget fixture =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "REVIEW-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
@@ -289,7 +291,11 @@ let internal assertGrantRevocation (review: AuthorityReview) =
         [
             {
                 Role = Role.CaseReader
-                Scope = GrantTarget.CaseReference "REVIEW-CASE"
+                Scope =
+                    GrantScope.Case(
+                        CaseFixtures.caseId (id 10),
+                        CaseFixtures.reference "REVIEW-CASE"
+                    )
             }
         ]
         "Only the touched grant is shown, with the authoritative reference spelling."
@@ -323,9 +329,10 @@ let internal authorityGrantReview fixture =
                 fixture
                 (fixture.Owner)
                 {
+                    Needed = []
                     OperationId = id 14
                     Target = target
-                    CaseReference = Some "REVIEW-CASE"
+                    CaseTarget = Some(CaseSelector.Reference "REVIEW-CASE")
                 }
                 (CancellationToken.None)
 
@@ -379,7 +386,7 @@ let internal authorityReviewRechecks fixture =
         let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture fixture.Owner input
-        Expect.equal view.EnabledHumanOwners 2 "The preview sees two enabled owners."
+        Expect.equal view.EnabledHumanOwners (Some 2) "The preview sees two enabled owners."
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority _)) -> ()

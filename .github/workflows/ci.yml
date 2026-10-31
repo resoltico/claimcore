@@ -113,14 +113,36 @@ jobs:
           expected_sdk="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*"([^"]+)".*/\1/p' global.json)"
           docker run --rm --env CI=true --env NO_COLOR=1 \
             --env CLAIMCORE_EXPECTED_SDK="$expected_sdk" \
+            --env CLAIMCORE_REPORT_OWNER="$(id -u):$(id -g)" \
             --volume "$PWD:/workspace" --workdir /workspace \
             mcr.microsoft.com/dotnet/sdk:10.0.403-alpine3.24@sha256:cc02b814237a76c4735fb6eeee87181597b5e56f2ce458a435e527674d91f4d7 \
             sh -euc '
+              # Keep private report modes while allowing the host runner to retain evidence.
+              restore_report_owner() {
+                if [ -d /workspace/artifacts/verification ]; then
+                  chown -R "$CLAIMCORE_REPORT_OWNER" /workspace/artifacts/verification
+                fi
+              }
+              trap restore_report_owner EXIT
               apk add --no-cache bash=5.3.9-r1 util-linux-misc=2.42.3-r1 python3=3.14.10-r1
               test "$(dotnet --version)" = "$CLAIMCORE_EXPECTED_SDK"
               git config --global --add safe.directory /workspace
               bash eng/verify.sh unit
             '
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-verification-${{ matrix.rid }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/frontend/completion.json
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
@@ -140,6 +162,20 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh postgres
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-verification-${{ matrix.major }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/frontend/completion.json
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   growth:
     name: Manual PostgreSQL ${{ matrix.major }} growth qualification
@@ -173,6 +209,20 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh web
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-verification
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/frontend/completion.json
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -257,6 +307,20 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
               summary.write(message + "\n")
           PYTHON
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: acceptance-verification-${{ matrix.engine }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/frontend/completion.json
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/cli-failure/**
 
   comparison:
     name: Manual same-host growth comparison

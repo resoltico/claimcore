@@ -4,7 +4,7 @@ namespace ClaimCore.Domain
 type PaymentProgress =
     | Undecided
     | Decided of decision: Decision
-    | Paid of decision: Decision * paidDate: CalendarDate
+    | Paid of decision: Decision * payment: Payment
 
 /// Complete groups are retained as typed state; no paid state can omit its decision.
 module PaymentProgress =
@@ -14,19 +14,22 @@ module PaymentProgress =
         | PaymentProgress.Decided value
         | PaymentProgress.Paid(value, _) -> Some value
 
-    let paymentDate =
+    let payment =
         function
-        | PaymentProgress.Paid(_, date) -> Some date
+        | PaymentProgress.Paid(_, payment) -> Some payment
         | _ -> None
+
+    let paymentDate progress =
+        payment progress |> Option.map Payment.date
 
     let fromGroups decision payment =
         match decision, payment with
         | None, None -> Ok PaymentProgress.Undecided
         | None, Some _ -> Error()
         | Some value, None -> Ok(PaymentProgress.Decided value)
-        | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
+        | Some value, Some payment -> Ok(PaymentProgress.Paid(value, payment))
 
-/// Accepted facts share the authored group types; a decision is complete or absent.
+/// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
         CaseReference: CaseReference
@@ -37,8 +40,7 @@ type CaseFields =
 
     member this.Decision = PaymentProgress.decision this.Progress
 
-    member this.Payment =
-        PaymentProgress.paymentDate this.Progress |> Option.map Payment.onDate
+    member this.Payment = PaymentProgress.payment this.Progress
 
 [<RequireQualifiedAccess>]
 type Lifecycle =
@@ -102,6 +104,7 @@ module LiveCase =
 
 type CaseSnapshot =
     {
+        CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
         State: CaseState<CaseFields>
@@ -114,9 +117,7 @@ module CaseFields =
     let groupValues registration decision payment =
         Registration.values registration
         @ (decision |> Option.map Decision.values |> Option.defaultValue [])
-        @ (payment
-           |> Option.map (Payment.onDate >> Payment.values)
-           |> Option.defaultValue [])
+        @ (payment |> Option.map Payment.values |> Option.defaultValue [])
 
     let value field (fields: CaseFields) =
         match field with
@@ -126,7 +127,7 @@ module CaseFields =
             groupValues
                 fields.Registration
                 fields.Decision
-                (PaymentProgress.paymentDate fields.Progress)
+                (PaymentProgress.payment fields.Progress)
             |> List.tryFind (fst >> (=) field)
             |> Option.map (snd >> FieldValue.format)
 

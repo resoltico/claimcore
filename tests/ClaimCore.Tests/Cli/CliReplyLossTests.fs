@@ -113,6 +113,7 @@ let private physicalReplyLoss () =
         RemoteServiceCall.send
             client
             {
+                InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                 Service = (Uri($"https://127.0.0.1:{port}/"))
                 Authorization = (AuthenticationHeaderValue("Bearer", "synthetic-token"))
             }

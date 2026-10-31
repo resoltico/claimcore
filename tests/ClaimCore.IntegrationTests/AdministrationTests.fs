@@ -35,7 +35,16 @@ let private discovery binary connection principal =
                 (help.GetProperty("acts").EnumerateArray()
                  |> Seq.map (fun item -> item.GetString() |> nonNull)
                  |> Seq.toList)
-                [ "initialize"; "provision-owner"; "verify"; "head"; "help"; "version" ]
+                [
+                    "initialize"
+                    "provision-owner"
+                    "verify"
+                    "rebuild"
+                    "invalidate-restored-sessions"
+                    "head"
+                    "help"
+                    "version"
+                ]
                 "Exact command set"
 
             let! _ =
@@ -130,6 +139,29 @@ let private checkpoints binary connection principal =
 
             let! repeated = invoke binary connection principal [ "head" ] 0
             Expect.equal (repeated.GetRawText()) (head.GetRawText()) "Read-only head repeats"
+
+        let! rebuilt =
+            invoke binary connection principal [ "rebuild"; "--expect"; expected ] 0
+
+        Expect.equal
+            (kind rebuilt)
+            "REBUILT"
+            "The owner process exposes checkpoint-bound reconstruction"
+
+        Expect.equal
+            (rebuilt.GetProperty("position").GetRawText())
+            (position.GetRawText())
+            "Owner rebuild preserves the head"
+
+        let! sessions =
+            invoke binary connection principal [ "invalidate-restored-sessions" ] 0
+
+        Expect.equal
+            (kind sessions)
+            "RESTORED_SESSIONS_INVALIDATED"
+            "Explicit restore-session maintenance is owner-only"
+
+        let! _ = invoke binary connection principal [ "rebuild" ] 2
 
         for changed in
             [
@@ -341,6 +373,9 @@ let private inputAndDeliveryGuards () =
             [ "verify"; "--expect"; "01:" + String.replicate 64 "0" ]
             [ "verify"; "--expect"; "1:" + String.replicate 64 "A" ]
             [ "initialize" ]
+            [ "rebuild" ]
+            [ "rebuild"; "--expect"; "1:" + String.replicate 64 "A" ]
+            [ "invalidate-restored-sessions"; "extra" ]
             [ "head"; "extra" ]
             [ "verify"; "--expect"; "9007199254740992:" + String.replicate 64 "0" ]
         ] do

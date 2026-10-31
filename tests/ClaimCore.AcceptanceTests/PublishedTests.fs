@@ -43,7 +43,7 @@ let private verbArguments verb (bytes: byte array) =
     [
         "case"
         verb
-        input.GetProperty("caseReference").GetString() |> nonNull
+        input.GetProperty("target").GetProperty("caseReference").GetString() |> nonNull
         "--operation-id"
         input.GetProperty("operationId").GetString() |> nonNull
     ]
@@ -106,7 +106,17 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         position <- receipt.GetProperty("position")
 
     let current =
-        automation fixture "case.get" {| caseReference = "DEMO-0001" |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = "DEMO-0001"
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     let view = current
@@ -130,7 +140,11 @@ let private erasedHistory fixture =
             fixture
             "case.history"
             {|
-                caseReference = "DEMO-0001"
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = "DEMO-0001"
+                    |}
                 detail = "FULL"
                 limit = 50
             |}
@@ -176,7 +190,7 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "assignedToYou"; "caseReference"; "revision"; "state" ]
+        [ "advice"; "assignedToYou"; "caseId"; "caseReference"; "revision"; "state" ]
         "Erased views expose retained identity, assignment metadata and current advice"
 
     Expect.isFalse
@@ -228,7 +242,17 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
         |> ignore
 
     let erased =
-        automation fixture "case.get" {| caseReference = "DEMO-0001" |} 0
+        automation
+            fixture
+            "case.get"
+            {|
+                target =
+                    {|
+                        kind = "REFERENCE"
+                        caseReference = "DEMO-0001"
+                    |}
+            |}
+            0
         |> require "SUCCEEDED"
 
     erasedView erased
@@ -342,7 +366,11 @@ let private supplementary fixture =
         {|
             kind = "CASE"
             operationId = id ()
-            caseReference = reference
+            target =
+                {|
+                    kind = "REFERENCE"
+                    caseReference = reference
+                |}
             expectedRevision = 0L
             act =
                 {|
@@ -384,6 +412,7 @@ let private qualify () =
         CliDiscovery.qualify fixture
         setup fixture
         do! CliResolution.qualify fixture
+        CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         CliDisclosure.qualify fixture

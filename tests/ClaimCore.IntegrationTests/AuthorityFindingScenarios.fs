@@ -7,6 +7,7 @@ open ClaimCore.Protocol
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
@@ -33,7 +34,9 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(request 11 "another" 0L (AuthoredCaseAct.Open registration)))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request 11 "another" 0L (AuthoredCaseAct.Open registration)
+                ))
                 (token))
 
         do!
@@ -80,7 +83,9 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
                     })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord
+            |> AuthorityRequests.toRecord None
+            |> Result.defaultWith (fun _ ->
+                failtest "Synthetic permanent authority input must resolve")
 
         do! rewrite database (accepted granted).Position.Sequence (updateAuthority altered)
         do! finding VerificationFinding.HumanRequired database
@@ -102,7 +107,9 @@ let internal lastOwner (database: PostgresFixture.Database) =
             authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord
+            |> AuthorityRequests.toRecord None
+            |> Result.defaultWith (fun _ ->
+                failtest "Synthetic permanent authority input must resolve")
 
         do!
             rewrite
@@ -126,7 +133,7 @@ let internal permanentPolicyOnly (database: PostgresFixture.Database) =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
@@ -159,7 +166,25 @@ let internal precedence (database: PostgresFixture.Database) =
 
 let internal priorCaseRequired (database: PostgresFixture.Database) =
     task {
-        let! _ = populated database
+        let! actor = populated database
+
+        let! loaded =
+            Service.get
+                actor
+                {
+                    Target = CaseSelector.Reference "synthetic-a"
+                }
+                token
+
+        let snapshot =
+            match loaded with
+            | Outcome.Succeeded value -> value.Snapshot
+            | _ -> failtest "The real later case must exist for the historical-order control"
+
+        Expect.equal
+            snapshot.CaseId
+            (CaseFixtures.caseId (id 10))
+            "Independent later creation identity"
 
         let altered =
             authorityRequest
@@ -172,10 +197,12 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
                     })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord
+            |> AuthorityRequests.toRecord (Some snapshot)
+            |> Result.defaultWith (fun _ ->
+                failtest "Synthetic permanent authority input must resolve")
 
         do! rewrite database (CaseFixtures.sequence (3L)) (updateAuthority altered)
-        let caseId = CaseReferenceId.encode database.Fixture.InstallationId "synthetic-a"
+        let caseId = CaseFixtures.caseId (id 10)
 
         do!
             sql

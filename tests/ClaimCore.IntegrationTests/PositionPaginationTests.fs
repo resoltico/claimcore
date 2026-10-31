@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
@@ -111,7 +112,7 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let query =
             {
-                CaseReference = "HISTORY-1"
+                Target = CaseSelector.Reference("HISTORY-1")
                 AfterCursor = None
                 Limit = 1
                 Detail = HistoryDetail.Full
@@ -125,7 +126,7 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.history
                 actor
                 ({ query with
-                    CaseReference = "history-1"
+                    Target = CaseSelector.Reference("history-1")
                     AfterCursor = first.NextCursor
                     Limit = 2
                 })
@@ -235,7 +236,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.history
                 actor
                 ({
-                    CaseReference = "CASE-A"
+                    Target = CaseSelector.Reference("CASE-A")
                     AfterCursor = None
                     Limit = 1
                     Detail = HistoryDetail.Summary
@@ -326,7 +327,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let! opened =
             (Service.execute
                 actor
-                (OperationInput.Case(openRequest 10 "LONG-HISTORY"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "LONG-HISTORY"))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -335,7 +336,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let query =
             {
-                CaseReference = "LONG-HISTORY"
+                Target = CaseSelector.Reference("LONG-HISTORY")
                 AfterCursor = None
                 Limit = 50
                 Detail = HistoryDetail.Full
@@ -358,7 +359,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let revision =
             function
             | HistoryEntry.FullEntry r ->
-                match r.Subject with
+                match r.Receipt.Subject with
                 | ReceiptSubject.Case c -> Revision.value c.Revision
                 | _ -> failtest "case"
             | _ -> failtest "full"

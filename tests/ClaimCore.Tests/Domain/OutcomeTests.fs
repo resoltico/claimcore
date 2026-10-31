@@ -4,6 +4,7 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Json
 

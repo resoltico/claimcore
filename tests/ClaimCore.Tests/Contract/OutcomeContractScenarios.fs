@@ -16,6 +16,7 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.ContractScenarioInputs
 
@@ -35,6 +36,7 @@ let internal contextCodec () =
         Api.context.Output
         (Outcome.Succeeded
             {
+                InstallationId = System.Guid.Parse "90000000-0000-4000-8000-000000000001"
                 Runtime =
                     {
                         ProductVersion = "0.10.0"
@@ -84,11 +86,24 @@ let internal queryCodecs () =
 
     |> ignore
 
-    admitted Api.caseHistory.Output (Outcome.Succeeded { Entries = []; NextCursor = None })
+    admitted
+        Api.caseHistory.Output
+        (Outcome.Succeeded
+            {
+                CaseId = CaseFixtures.caseId id
+                Reference = CaseFixtures.reference "WIRE"
+                Entries = []
+                NextCursor = None
+            })
 
     |> ignore
 
-    admitted Api.operationObserve.Output (Outcome.Succeeded authority)
+    admitted
+        Api.operationObserve.Output
+        {
+            OperationReply.OperationId = id
+            Outcome = Outcome.Succeeded authority
+        }
 
     |> ignore
 
@@ -149,8 +164,12 @@ let internal disclosures () =
         let value =
             { receipt with
                 Subject =
-                    ClaimCore.Domain.ReceiptSubject.Case
+                    ClaimCore.Application.Contracts.ReceiptSubject.Case
                         {
+                            CaseId =
+                                CaseFixtures.caseId (
+                                    System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                )
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L
                             Act = CaseActKind.Open
@@ -158,7 +177,13 @@ let internal disclosures () =
                         }
             }
 
-        let result = admitted Api.operationObserve.Output (Outcome.Succeeded value)
+        let result =
+            admitted
+                Api.operationObserve.Output
+                {
+                    OperationReply.OperationId = id
+                    Outcome = Outcome.Succeeded value
+                }
 
         Expect.equal
             (result

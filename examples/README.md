@@ -49,7 +49,7 @@ claimcore call < examples/08-reinstate.json
 claimcore call < examples/09-erase.json
 ```
 
-Erasure retains the case reference and revision 9. Every historical snapshot for that
+Erasure retains the CaseId, case reference and revision 9. Every historical snapshot for that
 case is erased from the live database; ledger metadata remains. This does not delete WAL, backups or copies elsewhere.
 Fixed example identities deliberately support exact replay in one fresh installation.
 Do not change their request bytes when resending an uncertain operation.

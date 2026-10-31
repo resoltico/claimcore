@@ -6,6 +6,7 @@ open ClaimCore.Protocol
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application
 open ClaimCore.Tests.Fixtures
@@ -41,7 +42,7 @@ let private owner =
             }
         ]
 
-let private state = LedgerVerification.initial None None
+let private state = LedgerVerification.initial None
 let private unitResult result = Result.map (fun _ -> ()) result
 
 let private row payload =
@@ -50,6 +51,7 @@ let private row payload =
 
     let metadata: LedgerMetadata =
         {
+            CreationReference = None
             InstallationId = installation
             Sequence = CaseFixtures.sequence 1L
             PreviousHash = Array.zeroCreate 32
@@ -67,6 +69,7 @@ let private row payload =
 
     let entry: StoredEntry =
         {
+            CreationReference = None
             Sequence = CaseFixtures.sequence 1L
             EntryHash = LedgerEntry.hash metadata
             OperationId = (CaseFixtures.operationId id)
@@ -79,6 +82,102 @@ let private row payload =
         }
 
     entry, metadata
+
+[<Tests>]
+let requestEffectAgreement =
+    testCase "verification rejects a rehashed OPEN with a CLOSED result" (fun () ->
+        let request =
+            CaseFixtures.command
+                {
+                    OperationId = id
+                    CaseReference = "EFFECT-OPEN"
+                    ExpectedRevision = 0L
+                    Act = AuthoredCaseAct.Open Inputs.registration
+                }
+
+        let reference = CaseFixtures.reference "EFFECT-OPEN"
+
+        let expected: CaseSnapshot =
+            {
+                CaseId = CaseFixtures.caseId id
+                Reference = reference
+                Revision = Revision.first
+                State =
+                    CaseState.Active
+                        {
+                            CaseReference = reference
+                            Status = CaseStatus.Opened
+                            Registration = Inputs.admittedRegistration Inputs.registration
+                            Progress = PaymentProgress.Undecided
+                        }
+            }
+
+        let check snapshot =
+            let payload =
+                LedgerEntry.encodePayload
+                    {
+                        Request = RequestRecord.encode request
+                        Snapshot = CaseRecord.encodeSnapshot snapshot
+                    }
+
+            let entry, metadata = row payload
+            let caseId = CaseId.ofOperationId request.OperationId
+
+            let metadata =
+                { metadata with
+                    CreationReference = Some reference
+                    Subject =
+                        RecordedTarget.Case
+                            {
+                                CaseId = caseId
+                                Revision = Revision.first
+                                Act = CaseActKind.Open
+                                BusinessDate = DateOnly(2026, 9, 7)
+                            }
+                }
+
+            let entry =
+                { entry with
+                    CreationReference = Some reference
+                    Subject =
+                        EntryTarget.Case(
+                            caseId,
+                            Revision.first,
+                            CaseActKind.Open,
+                            DateOnly(2026, 9, 7)
+                        )
+                    EntryHash = LedgerEntry.hash metadata
+                }
+
+            LedgerVerification.append
+                installation
+                None
+                { state with
+                    Actors = Map.ofList [ CaseFixtures.actorId id, owner ]
+                }
+                entry
+                metadata
+
+        Expect.isOk (check expected) "An independently authored OPEN result passes"
+        let fields = CaseState.fields expected.State |> Option.get
+
+        let forged =
+            { expected with
+                State =
+                    CaseState.Active
+                        { fields with
+                            Status = CaseStatus.Closed
+                        }
+            }
+
+        Expect.equal
+            (check forged |> Result.map ignore)
+            (Error
+                {
+                    Sequence = Some Sequence.first
+                    Finding = VerificationFinding.StateSequence
+                })
+            "Correct commitments and hashes do not prove request effect agreement")
 
 let private history: CaseHistory =
     {
@@ -224,6 +323,11 @@ let private caseChecks =
                         }
                     ]
             )
+        VerificationFinding.FenceProjection,
+        fun () ->
+            ProjectionVerification.fences
+                (Map.ofList [ (CaseFixtures.actorId id, CaseFixtures.operationId id), instant ])
+                Map.empty
         VerificationFinding.CaseProjection,
         fun () ->
             ProjectionVerification.cases
@@ -260,7 +364,7 @@ let private authorityChecks =
 
             AuthorityFold.apply
                 installation
-                (fun _ -> false)
+                (fun _ -> None)
                 (Map.ofList [ (CaseFixtures.actorId id), owner ])
                 entry
                 request
@@ -276,7 +380,7 @@ let private finding expected run =
         Expect.equal divergence.Finding expected "Stable finding token and precedence"
     | Ok() -> failtest "Corrupt synthetic input was accepted"
 
-let private duplicatePrecedence () =
+let private acceptedIdentityPrecedence () =
     let bytes =
         LedgerEntry.encodePayload
             {
@@ -291,7 +395,16 @@ let private duplicatePrecedence () =
             }
 
     let entry, metadata = row bytes
-    let duplicate = LedgerVerification.initial None (Some(CaseFixtures.sequence 1L))
+
+    let duplicate =
+        { state with
+            Accepted =
+                Map.ofList
+                    [
+                        entry.OperationId,
+                        CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000001")
+                    ]
+        }
 
     let append state entry metadata =
         LedgerVerification.append installation None state entry metadata |> unitResult
@@ -315,9 +428,7 @@ let private duplicatePrecedence () =
             }
             metadata)
 
-    Expect.isOk
-        (append (LedgerVerification.initial None (Some(CaseFixtures.sequence 2L))) entry metadata)
-        "A later duplicate cannot hide an earlier valid row"
+    Expect.isOk (append state entry metadata) "A valid row remains admitted without a SQL prepass"
 
 let private invalidProjectionRows () =
     let row: Actor =
@@ -384,7 +495,9 @@ let tests =
     testList
         "pure verification findings"
         [
-            testCase "duplicate prepass preserves per-row precedence" duplicatePrecedence
+            testCase
+                "accepted identities are checked by the pure fold after payload integrity"
+                acceptedIdentityPrecedence
             testCase "every finding has a pure rejection case" (fun () ->
                 Expect.equal
                     (cases |> List.map fst |> Set.ofList)

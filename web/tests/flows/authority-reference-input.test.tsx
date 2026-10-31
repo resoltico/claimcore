@@ -1,3 +1,4 @@
+import { recoveryOptions } from "../support/recovery.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
 import { catalogs as coreCatalogs } from "@contracts/messages";
@@ -50,6 +51,7 @@ type Locale = (typeof locales)[number];
 const noLockChange = () => undefined;
 const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
   const model = useOperation({
+    ...recoveryOptions,
     subject: "AUTHORITY",
     kind,
     current: null,
@@ -150,7 +152,7 @@ const expectGrantReferencePath = (active: boolean) => {
         "act.scope.kind": "CASE",
       },
     ),
-  ).toBe("act.scope.caseReference");
+  ).toBe("act.scope.target.caseReference");
 };
 const referencePreferences = (language: string) => {
   localStorage.setItem(
@@ -180,7 +182,7 @@ it.each(
       }),
     ).toBeNull();
     const reference = await authorCaseGrant(user, locale);
-    expect(reference).toHaveAttribute("name", "act.scope.caseReference");
+    expect(reference).toHaveAttribute("name", "act.scope.target.caseReference");
     expectReferenceDescription(reference, locale, false);
     chooseRoleForReview();
     await user.click(
@@ -202,7 +204,7 @@ it.each(
         kind: active ? "GRANT" : "REVOKE",
         scope: {
           kind: "CASE",
-          caseReference: "bad reference",
+          target: { kind: "REFERENCE", caseReference: "bad reference" },
         },
       },
     });

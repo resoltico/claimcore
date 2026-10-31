@@ -1,7 +1,9 @@
 namespace ClaimCore.Protocol
 
+
 [<RequireQualifiedAccess>]
 type HostFailureReason =
+    | InstallationMismatch
     | ContractMismatch
     | ConnectionRejected
     | OriginRejected

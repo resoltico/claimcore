@@ -12,6 +12,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 
@@ -43,7 +44,9 @@ let private request reference =
     }
 
 let commandInput =
-    RequestCodecs.operationInput.Write(OperationInput.Case(request "WEB-001"))
+    RequestCodecs.operationInput.Write(
+        ClaimCore.TestSupport.Inputs.caseOperation (request "WEB-001")
+    )
     |> ClaimCore.Json.WireWriter.bytes
 
 let view reference =
@@ -58,6 +61,7 @@ let receipt id (reference: string) =
         Subject =
             ReceiptSubject.Case
                 {
+                    CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference reference
                     Revision = Revision.first
                     Act = CaseActKind.Open
@@ -134,7 +138,9 @@ type Stub() =
             Route.bind Api.operationPreview (fun _ input _ ->
                 let outcome =
                     match input with
-                    | OperationInput.Case request ->
+                    | OperationInput.Case input ->
+                        let request = Inputs.referencedCase input
+
                         (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                             receipt request.OperationId request.CaseReference
                         )
@@ -157,7 +163,8 @@ type Stub() =
 
                         let! outcome =
                             match input with
-                            | OperationInput.Case request -> this.Execute(request, token)
+                            | OperationInput.Case request ->
+                                this.Execute(Inputs.referencedCase request, token)
                             | OperationInput.Authority request ->
                                 this.ExecuteAuthority(request, token)
 

@@ -89,10 +89,7 @@ let private textFormats () =
                 ClaimCore.TestSupport.Inputs.registrationWith
                     [
                         BusinessField.ClaimantName,
-                        (PartyName.format (
-                            Registration.value BusinessField.ClaimantName (oldFields.Registration)
-                            |> FieldValue.name
-                        ))
+                        (PartyName.format (Registration.claimant (oldFields.Registration)))
                     ]
                     (registration)
             ))
@@ -143,7 +140,7 @@ let private envelope () =
 
     let asWire bytes =
         Encoding.UTF8.GetString(bytes: byte array)
-        |> fun value -> value.Replace("\"format\":1,", "")
+        |> fun value -> value.Replace("\"format\":2,", "")
 
         |> Encoding.UTF8.GetBytes
 
@@ -336,8 +333,8 @@ let private kindRoundTrips () =
 
     let grant =
         {
-            AuthoredGrant.Role = Role.CaseReader
-            Scope = GrantTarget.Installation
+            RecordedGrant.Role = Role.CaseReader
+            Scope = RecordedGrantScope.Installation
         }
 
     let acts = Inputs.authorityActs [ grant ]

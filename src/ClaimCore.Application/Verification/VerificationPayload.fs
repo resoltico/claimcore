@@ -3,11 +3,13 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal VerifiedPayload =
+    | NonAcceptance of OperationId
     | Case of CaseCommand * CaseSnapshot option
     | Authority of AuthorityRequestRecord
     | Erased
@@ -20,9 +22,10 @@ module internal VerificationPayload =
     let private decoded (entry: StoredEntry) =
         Result.mapError (fun _ -> problem entry.Sequence)
 
-    let private case installationId (entry: StoredEntry) (payload: LedgerPayload) =
+    let private case _installationId (entry: StoredEntry) (payload: LedgerPayload) =
         match entry.Subject with
-        | EntryTarget.Authority _ ->
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
             result {
@@ -37,11 +40,9 @@ module internal VerificationPayload =
                         (request.OperationId = entry.OperationId
                          && Revision.value request.ExpectedRevision = Revision.value revision - 1L
                          && CaseAct.kind request.Act = act
-                         && CaseReferenceId.encode
-                             installationId
-                             (CaseReference.format request.Reference)
-                             =
-                             id)
+                         && (act <> CaseActKind.Open
+                             || (id = CaseId.ofOperationId request.OperationId
+                                 && entry.CreationReference = Some request.Reference)))
 
                 if act = CaseActKind.Erase then
                     do!
@@ -60,7 +61,8 @@ module internal VerificationPayload =
                         require
                             (Some entry.Sequence)
                             VerificationFinding.PayloadFormat
-                            (snapshot.Revision = revision
+                            (snapshot.CaseId = id
+                             && snapshot.Revision = revision
                              && CaseReference.identity snapshot.Reference =
                                  CaseReference.identity request.Reference)
 
@@ -104,6 +106,15 @@ module internal VerificationPayload =
 
                 return!
                     match entry.Subject with
+                    | EntryTarget.NonAcceptance operation ->
+                        require
+                            (Some entry.Sequence)
+                            VerificationFinding.PayloadFormat
+                            (entry.OperationId = operation
+                             && entry.CreationReference.IsNone
+                             && Array.isEmpty payload.Snapshot
+                             && (ControlRecord.decode payload.Request |> Result.isOk))
+                        |> Result.map (fun () -> VerifiedPayload.NonAcceptance operation)
                     | EntryTarget.Case _ -> case installationId entry payload
                     | EntryTarget.Authority(_, kind) -> authority entry kind payload
             }

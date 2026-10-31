@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -22,7 +23,7 @@ let private summaries () =
                 let! result =
                     Service.execute
                         owner
-                        (OperationInput.Case(
+                        (ClaimCore.TestSupport.Inputs.caseOperation (
                             request number reference 0L (AuthoredCaseAct.Open Inputs.registration)
                         ))
                         token
@@ -33,7 +34,7 @@ let private summaries () =
             let! decided =
                 Service.execute
                     owner
-                    (OperationInput.Case(
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
                         request 102 "VISIBLE" 1L (AuthoredCaseAct.Decide Inputs.decision)
                     ))
                     token
@@ -90,7 +91,7 @@ let private summaries () =
                     Service.get
                         caller
                         {
-                            CaseReference = CaseReference.format row.Reference
+                            Target = CaseSelector.Reference(CaseReference.format row.Reference)
                         }
                         token
                     |> Async.AwaitTask
@@ -107,14 +108,12 @@ let private summaries () =
 
                 Expect.equal
                     summary.ClaimantName
-                    (Registration.value BusinessField.ClaimantName fields.Registration
-                     |> FieldValue.name)
+                    (Registration.claimant fields.Registration)
                     "Claimant is already disclosed by case.get"
 
                 Expect.equal
                     summary.InsurerName
-                    (Registration.value BusinessField.InsurerName fields.Registration
-                     |> FieldValue.name)
+                    (Registration.insurer fields.Registration)
                     "Insurer is already disclosed by case.get"
 
                 Expect.equal
@@ -136,7 +135,7 @@ let private summaries () =
                     Service.history
                         caller
                         {
-                            CaseReference = CaseReference.format row.Reference
+                            Target = CaseSelector.Reference(CaseReference.format row.Reference)
                             AfterCursor = None
                             Limit = 50
                             Detail = HistoryDetail.Summary

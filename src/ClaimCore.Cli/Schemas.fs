@@ -10,8 +10,15 @@ module CliSchemas =
         Api.all
         |> List.map (fun endpoint ->
             Schema.Object(
-                [ "endpoint", Schema.Const endpoint.Token; "input", endpoint.InputSchema ],
-                []
+                ([ "endpoint", Schema.Const endpoint.Token; "input", endpoint.InputSchema ]
+                 @ (if Api.requiresInstallation endpoint then
+                        [ "installationId", Codec.uuid.Schema ]
+                    else
+                        [])),
+                (if Api.requiresInstallation endpoint then
+                     [ "installationId" ]
+                 else
+                     [])
             ))
         |> fun variants -> Schema.OneOf(variants, None)
 
@@ -43,6 +50,15 @@ module CliSchemas =
                 frame (Schema.Const endpoint.Token) (endpoint.OutputSchema :: failures))
 
         Schema.OneOf(frame Schema.Null failures :: endpoints, None)
+
+    let internal recoveryList =
+        Codec.record id
+        |> Codec.field
+            "recovery"
+            id
+            (Codec.list System.Int32.MaxValue RecoveryJournal.identityCodec)
+        |> Codec.build
+        |> Codec.named "RecoveryList"
 
     let definitions =
         SchemaDefinitions.merge OpenApi.definitions Frames.failureCodec.Definitions

@@ -57,7 +57,15 @@ let private references () =
 
 let private businessAdmission () =
     for reference in [ ""; "a b"; "é" ] do
-        let raw = JsonSerializer.SerializeToUtf8Bytes {| caseReference = reference |}
+        let raw =
+            JsonSerializer.SerializeToUtf8Bytes
+                {|
+                    target =
+                        {|
+                            kind = "REFERENCE"
+                            caseReference = reference
+                        |}
+                |}
 
         Expect.isOk
             (Codec.decode Limits.MaximumRequestBytes Api.caseGet.Input raw)

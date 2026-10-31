@@ -340,12 +340,13 @@
     "status",
     "progress",
     "order",
-    "assignment"
+    "assignment",
+    "caseId"
   ],
   "cliFrameCount": 32,
   "readInputs": {
     "case.get": [
-      "caseReference"
+      "target"
     ],
     "case.list": [
       "cursor",
@@ -358,7 +359,7 @@
       "assignment"
     ],
     "case.history": [
-      "caseReference",
+      "target",
       "detail",
       "limit",
       "cursor"
@@ -431,6 +432,7 @@
     "CASE_PROGRESS_PROJECTION",
     "CASE_CHANGED_AT_PROJECTION",
     "CASE_SEARCH_PROJECTION",
+    "FENCE_PROJECTION",
     "AUTHORITY_PROJECTION",
     "HEAD",
     "EXPECTED_POSITION",

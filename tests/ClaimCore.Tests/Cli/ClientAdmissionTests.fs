@@ -9,6 +9,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 let private fixture name =

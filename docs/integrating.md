@@ -5,6 +5,27 @@ response shapes, endpoint effects and host statuses. The [generated CLI referenc
 flags and choices. [Case work](case-work.md) explains the business record; the [glossary](glossary.md)
 defines terms.
 
+Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
+References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
+reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
+Request, snapshot, authority, control and ledger entry records support format 2. Installation initialization
+requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
+
+Case reads/history and case operations use a tagged `target`: either
+`{"kind":"REFERENCE","caseReference":"Demo-0001"}` or
+`{"kind":"ID","caseId":"10000000-0000-4000-8000-000000000001"}`. UUID-shaped references stay
+references when tagged REFERENCE. OPEN supplies a new reference. Existing-case selectors resolve in the
+same read snapshot or locked write used for authorization and execution. Accepted-operation identity
+uses the resolved CaseId; changing selector form cannot redirect an existing operation.
+
+Case-scoped authority inputs use `scope: {"kind":"CASE","target": SELECTOR}`. Published grant scopes
+and retained authority records carry both CaseId and immutable creation reference. CLI/browser lookup
+forms remain reference-based; dynamic `call` and HTTP inputs also support ID selectors.
+
+Disclosed case fields include the core-supplied `progress` value. Clients render it directly, along with
+core review changes and correction choices. CLI reviews consume the supplied changes and lifecycle
+states; authority reviews render the supplied before/after states.
+
 ## Discover inputs
 
 `claimcore describe case open` describes one operation offline. `describe --format json` exposes catalog
@@ -72,7 +93,7 @@ consumers do not infer a family by trying prefixes. Authored principal fields ar
 principal outputs. Stored identity-token decoding belongs to storage adapters; corruption is an integrity
 fault, never a request-correction refusal.
 
-HTTP replies carry `outcome`; preview and execution also echo `operationId`. Receipts contain shared
+HTTP replies carry `outcome`; preview, execution, observe and resolve echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
 [host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
@@ -140,8 +161,8 @@ tokens are discarded; the next authenticated action signs in again. Refresh fail
 sign-in again. `exit`, EOF and SIGTERM discard tokens. Ctrl-C cancels the current command and returns
 to the prompt; a second Ctrl-C at an empty prompt exits. Outcomes use stdout; prompts and each command's
 exit code use stderr. Exit 4 prints the frozen retry frame and resolve command, then the shell continues.
-Interactive review still requires terminal stdout. `call` and NDJSON `session` retain their existing
-stop-on-uncertain-delivery behavior.
+Interactive review requires terminal stdout. `call` returns one result; NDJSON `session` stops on
+uncertain delivery or cancellation.
 
 Interactive login uses PKCE and a one-use loopback callback. Automation uses a registered service actor,
 client credentials and its private secret file. Optional explicit service/IdP trust-root files replace
@@ -199,9 +220,10 @@ entry's `recorded_at` descending, then folded reference ascending. NOTIFIED orde
 ascending, then folded reference; erased rows with no date sort last. A continuation encodes those keyset
 positions and its canonical filters/order. Use only continuations supported by the issuing endpoint.
 After request admission and authorization, unsupported cursor formats or invalid endpoint/filter/resource
-bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot.
+bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot. Concurrent changes to ordering or filter
+values can move, duplicate or omit rows during traversal. `--all` is a live traversal, not a pinned snapshot export.
 
-A live summary has root `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
+A live summary has root `caseId`, `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
 (`amount`/`currency`), `progress` and `incidentNotificationDate`. The amount strings are canonical; an undecided case has null payable.
 An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
@@ -217,8 +239,9 @@ count. Visibility, assignment and forbidden-role safeguards match `case.list`, w
 own read snapshot. Separate list and summary requests can observe different accepted writes.
 `case.get` reports `assignedToYou`; `context` reports `hasAssignedCases` for choosing an assigned worklist
 and the admitted requester's `actorId` for attribution without an authority lookup.
-Case-list continuations use format 3, binding assignment and notification-date keysets as well as
-the other admitted filters. Only that case-list cursor format is supported.
+Case-list continuations use format 4; other continuations use format 2. All bind InstallationId.
+Case-history continuations bind the retained CaseId. Case-list positions also bind the admitted filters,
+assignment and ordering. Unsupported cursor formats are refused.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent
@@ -297,10 +320,32 @@ uncertainty. A complete OS write and flush do not prove downstream persistence.
 
 The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
 
-The browser's Send again uses the frozen request; Check outcome uses final resolution. A reload retains
-only the unresolved ID, subject and act in its session-stored delivery-recovery record, so only Check
-outcome remains. That record has no submitted body or business values. Faults leave uncertainty visible; storage failure preserves the current
-page's flow.
+Authenticated context includes `installationId`. Execute and resolve requests carry its canonical UUID in
+the required `ClaimCore-Installation` header; a mismatch returns `INSTALLATION_MISMATCH / NOT_STARTED`
+before an acceptance or fence. All operation replies echo their operation ID; clients also check receipt
+and target identities after decoding. A schema-valid mismatched reply remains uncertain.
+
+Both clients commit an identity-only journal before dispatch and recheck credential, actor, target and
+installation context after storage completion. Failed initial storage is `NOT_SENT`; it blocks sending.
+Records contain format, service origin, installation, actor, local attempt, operation, subject and act.
+They contain no references, business values, credentials, secret paths or retry bodies. Separate attempts
+can share an operation ID; clearing one never clears another attempt.
+
+The browser uses IndexedDB transaction completion. A requester-context refresh with the same identity
+keeps an in-flight recovery check valid. Actor, installation, credential or session-epoch transitions
+invalidate its callbacks, including switchbacks; obsolete completions cannot unlock a newer check.
+Busy state lasts through journal removal, and a failed removal permits explicit retry.
+
+Send again uses the in-memory frozen request; after reload or tab closure, recovery can only check the
+final result. Storage denial, quota, clearing, eviction,
+device loss and universal crash/power-loss durability are outside the retained-storage guarantee. There
+is no automatic storage-permission prompt or reconstructed resubmission.
+
+The native client publishes private per-attempt files under `$XDG_STATE_HOME/claimcore`, defaulting to
+`~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
+current authenticated service/installation/actor scope; `claimcore recovery resolve ATTEMPT_ID` resolves
+and clears that selected attempt only after a complete correlated final reply. `claimcore schema recovery`
+describes the local listing. Prepared retry frames retain their original installation binding. Clients refuse a prepared request whose installation binding differs from authenticated context.
 
 ## Disclosure and cursors
 
@@ -310,8 +355,10 @@ views, and stale replies cannot populate a different actor or resource context.
 
 `case.history` returns newest revisions first. Start without a cursor, then follow `nextCursor` for older
 revisions. Each continuation selects revisions older than its last entry. The browser loads
-bounded pages and compares adjacent disclosed full receipts for changed fields; it does not fetch the
-complete history before displaying the timeline. Withheld or erased fields are never inferred.
+bounded pages. Core supplies each full entry's nullable `difference`, including lifecycle and field
+changes, using the predecessor already fetched in the same LIMIT+1 query. That context row is not an
+extra visible entry. Clients do no business comparison. Withheld or erased fields are never inferred;
+a missing comparison remains unavailable. This does not pin later pages or fetch the whole history.
 
 Treat continuation strings as opaque positions for their issuing endpoint and resource. Follow non-null
 `nextCursor`, even after a short page. Each page authorizes again before decoding a cursor and uses its own

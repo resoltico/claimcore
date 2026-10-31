@@ -28,6 +28,21 @@ let private members group admitted =
 
         generator |> Gen.map (fun value -> field, value))
     |> sequence
+    |> Gen.map (fun values ->
+        if admitted && group = "registration" then
+            let fields = Map.ofList values
+            let incident = fields[BusinessField.IncidentDate]
+            let notification = fields[BusinessField.IncidentNotificationDate]
+
+            values
+            |> List.map (fun (field, value) ->
+                field,
+                match field with
+                | BusinessField.IncidentDate -> min incident notification
+                | BusinessField.IncidentNotificationDate -> max incident notification
+                | _ -> value)
+        else
+            values)
 
 let groupValue (kind: Type) =
     if kind = typeof<RegistrationInput> then

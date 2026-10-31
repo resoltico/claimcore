@@ -16,6 +16,7 @@ import { wireResponse } from "../support/contract-corpus.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, definition, fields, runtime, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -67,6 +68,7 @@ const queueClosePreview = () => {
           subject: {
             kind: "CASE",
             before: {
+              caseId: "20000000-0000-4000-8000-000000000001",
               caseReference: fields.caseReference,
               revision: 1,
               state: {
@@ -75,6 +77,7 @@ const queueClosePreview = () => {
               },
             },
             after: {
+              caseId: "20000000-0000-4000-8000-000000000001",
               caseReference: fields.caseReference,
               revision: 2,
               state: {

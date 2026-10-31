@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.DurableVocabularyTests
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
@@ -108,7 +109,7 @@ let tests =
                     (fun database ->
                         guardedSql
                             database
-                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN' WHERE sequence=4"
+                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN',creation_reference=NULL WHERE sequence=4"
                             [||])
                     readEntry
                     rawEntry)

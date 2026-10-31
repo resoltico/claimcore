@@ -15,6 +15,7 @@ module RemoteServiceCall =
     type Access =
         {
             Service: Uri
+            InstallationId: Guid option
             Authorization: AuthenticationHeaderValue
         }
 
@@ -69,7 +70,13 @@ module RemoteServiceCall =
                     | _ -> return invalid frame
         }
 
-    let send (client: HttpClient) (access: Access) frame beforeSend (cancelled: CancellationToken) =
+    let private sendBound
+        (client: HttpClient)
+        (access: Access)
+        frame
+        beforeSend
+        (cancelled: CancellationToken)
+        =
         task {
             let service = access.Service
             let authorization = access.Authorization
@@ -78,6 +85,10 @@ module RemoteServiceCall =
 
             use request =
                 new HttpRequestMessage(Api.method endpoint, Uri(service, "/api/" + Api.id endpoint))
+
+            access.InstallationId
+            |> Option.iter (fun id ->
+                request.Headers.Add("ClaimCore-Installation", id.ToString("D")))
 
             request.Headers.Authorization <- authorization
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
@@ -108,4 +119,37 @@ module RemoteServiceCall =
                 return
                     CliReply.local ClientFailure.Unavailable
                     |> CliReply.forAttempt frame DeliveryState.Uncertain
+        }
+
+    let send (client: HttpClient) (access: Access) frame beforeSend (cancelled: CancellationToken) =
+        if Api.requiresInstallation (Frames.endpoint frame) && access.InstallationId.IsNone then
+            System.Threading.Tasks.Task.FromResult(
+                CliReply.local ClientFailure.Configuration
+                |> CliReply.forAttempt frame DeliveryState.NotSent
+            )
+        else
+            sendBound client access frame beforeSend cancelled
+
+    /// Preparation uses the same bounded transport admission and preserves structured host failures.
+    let context (client: HttpClient) (access: Access) (cancelled: CancellationToken) =
+        task {
+            let invocation =
+                Frames.create Api.context ()
+                |> Result.defaultWith (fun _ -> invalidOp "The empty context request must admit.")
+
+            try
+                let! reply = send client access invocation ignore cancelled
+
+                match reply.Frame.Result with
+                | FrameResult.Reply value ->
+                    match ServiceReply.value Api.context value with
+                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded context) ->
+                        return Ok context
+                    | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
+                | _ -> return Error reply
+            with
+            | :? HttpRequestException
+            | :? OperationCanceledException
+            | :? IO.IOException
+            | :? InvalidOperationException -> return Error(CliReply.local ClientFailure.Unavailable)
         }

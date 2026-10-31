@@ -6,6 +6,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
@@ -34,8 +35,26 @@ let private authorityInput vector side =
         AuthorityRecord.decode Limits.MaximumRequestBytes (encoded vector side)
         |> Result.defaultWith (fun _ -> failtest "The independent authority vector must decode")
 
-    AuthorityRequests.fromRecord record
-    |> Result.defaultWith (fun _ -> failtest "The independent authority vector must admit")
+    let command =
+        AuthorityRequests.fromRecord record
+        |> Result.defaultWith (fun _ -> failtest "The independent authority vector must admit")
+
+    // Exercise reference selectors at the current boundary; permanent scopes retain resolved IDs.
+    let act =
+        AuthorityAct.map
+            (fun (grant: RecordedGrant) ->
+                {
+                    AuthoredGrant.Role = grant.Role
+                    Scope =
+                        match grant.Scope with
+                        | RecordedGrantScope.Installation -> GrantTarget.Installation
+                        | RecordedGrantScope.Case(_, reference) ->
+                            GrantTarget.CaseReference(CaseReference.format reference)
+                })
+            record.Act
+
+    Authority.restore record.OperationId command.Target act
+    |> Result.defaultWith (fun _ -> failtest "The independent reference input must admit")
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -70,12 +89,14 @@ let private casePairs (database: PostgresFixture.Database) =
         Expect.equal cases.Length 4 "Equivalent amounts/references and distinct amounts/names"
 
         for vector, left, right in cases do
-            let! first = (Service.execute actor (OperationInput.Case left) (token))
+            let! first =
+                (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation left) (token))
 
             let receipt = accepted first
             let! before = verified database
 
-            let! replay = (Service.execute actor (OperationInput.Case right) (token))
+            let! replay =
+                (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
 
             let expected =
                 if vector.GetProperty("same").GetBoolean() then
@@ -108,7 +129,10 @@ let private authorityPairs (database: PostgresFixture.Database) =
             |> List.find (fun value -> value.GetProperty("name").GetString() = "equal reference")
 
         let! opened =
-            (Service.execute actor (OperationInput.Case(caseInput opening "left")) (token))
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation (caseInput opening "left"))
+                (token))
 
         accepted opened |> ignore
 
@@ -157,7 +181,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
             Expect.equal
                 authored
                 (encoded vector "left")
-                "Authority history keeps authored subject spelling"
+                "Authority history retains resolved creation identity and original principal spelling"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =
@@ -185,7 +209,8 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 CaseReference = left.CaseReference
             }
 
-        let! first = (Service.execute actor (OperationInput.Case left) (token))
+        let! first =
+            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation left) (token))
 
         accepted first |> ignore
 
@@ -202,9 +227,11 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedAuthority registered
         let other = core database.Fixture outsider
 
-        let! hiddenEqual = (Service.execute other (OperationInput.Case right) (token))
+        let! hiddenEqual =
+            (Service.execute other (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
 
-        let! hiddenDifferent = (Service.execute other (OperationInput.Case unequal) (token))
+        let! hiddenDifferent =
+            (Service.execute other (ClaimCore.TestSupport.Inputs.caseOperation unequal) (token))
 
         Expect.equal
             hiddenEqual.Outcome
@@ -232,7 +259,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! erased =
             (Service.execute
                 actor
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 922 left.CaseReference 1L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 (token))
@@ -240,7 +267,8 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         accepted erased |> ignore
         let! before = verified database
 
-        let! retry = (Service.execute actor (OperationInput.Case right) (token))
+        let! retry =
+            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
 
         Expect.equal
             retry.Outcome

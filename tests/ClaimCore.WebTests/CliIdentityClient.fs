@@ -24,7 +24,7 @@ let private serviceReply service (token: AccessToken) cancelled =
         let invocation =
             Frames.admit (
                 System.Text.Encoding.UTF8.GetBytes(
-                    """{"endpoint":"case.get","input":{"caseReference":"SYNTHETIC-001"}}"""
+                    """{"endpoint":"case.get","input":{"target":{"kind":"REFERENCE","caseReference":"SYNTHETIC-001"}}}"""
                 )
             )
             |> Result.defaultWith (fun _ -> failtest "Frame refused.")
@@ -33,6 +33,7 @@ let private serviceReply service (token: AccessToken) cancelled =
             RemoteServiceCall.send
                 service
                 {
+                    InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                     Service = (Uri "https://localhost:5443/")
                     Authorization = token.Authorization
                 }

@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.Protocol
 open ClaimCore.Json
@@ -13,7 +14,22 @@ module ResponseCodecs =
 
     let private principal = PrincipalCodecs.key
 
-    let private scope = RequestCodecs.scope
+    let private scope =
+        Codec.tagged
+            "GrantScope"
+            [
+                Codec.unitVariant "INSTALLATION" GrantScope.Installation
+                Codec.variant
+                    "CASE"
+                    (fun (id, reference) -> GrantScope.Case(id, reference))
+                    (function
+                    | GrantScope.Case(id, reference) -> Some(id, reference)
+                    | _ -> None)
+                    (Codec.record (fun id reference -> id, reference)
+                     |> Codec.field "caseId" fst caseId
+                     |> Codec.field "caseReference" snd caseReference)
+            ]
+        |> Codec.vocabulary "scope"
 
     let private scalar kind =
         let codec =
@@ -55,17 +71,19 @@ module ResponseCodecs =
     let private payment = group RecordGroup.Payment Payment.create Payment.values
 
     let caseFields =
-        (record (fun reference status registration decision payment ->
-            PaymentProgress.fromGroups
-                decision
-                (payment |> Option.map (fun (value: Payment) -> (Payment.date (value))))
-            |> Result.map (fun progress ->
-                {
-                    CaseFields.CaseReference = reference
-                    Status = status
-                    Registration = registration
-                    Progress = progress
-                }))
+        (record (fun reference status registration decision payment suppliedProgress ->
+            PaymentProgress.fromGroups decision payment
+            |> Result.bind (fun progress ->
+                if CaseProgress.ofPayment progress <> suppliedProgress then
+                    Error()
+                else
+                    Ok
+                        {
+                            CaseFields.CaseReference = reference
+                            Status = status
+                            Registration = registration
+                            Progress = progress
+                        }))
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
         |> field
@@ -75,10 +93,14 @@ module ResponseCodecs =
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
+        |> field
+            "progress"
+            (_.Progress >> CaseProgress.ofPayment)
+            (VocabularyCodec.create CaseProgress.vocabulary)
         |> buildResult (fun path () ->
             {
                 Path = path + ".payment"
-                Reason = "Payment requires a decision."
+                Reason = "Payment groups and supplied progress must agree."
             })
         |> named "CaseFields"
 
@@ -108,13 +130,15 @@ module ResponseCodecs =
         CaseStateCodecs.state "CaseState" (record id |> field "fields" id caseFields)
 
     let caseSnapshot =
-        (record (fun reference revision view ->
+        (record (fun id reference revision view ->
             {
-                CaseSnapshot.Reference = reference
+                CaseSnapshot.CaseId = id
+                Reference = reference
                 Revision = revision
                 State = view
             })
         : Fields<CaseSnapshot, _>)
+        |> field "caseId" _.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
         |> field "state" _.State caseState
@@ -180,10 +204,11 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun reference revision view advice assigned ->
+        (record (fun id reference revision view advice assigned ->
             {
                 Snapshot =
                     {
+                        CaseId = id
                         Reference = reference
                         Revision = revision
                         State = view
@@ -192,6 +217,7 @@ module ResponseCodecs =
                 AssignedToYou = assigned
             })
         : Fields<CaseReadModel, _>)
+        |> field "caseId" _.Snapshot.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
         |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState
@@ -234,9 +260,10 @@ module ResponseCodecs =
         |> field "hasAssignedCases" snd boolean
 
     let actorContext =
-        (record (fun runtime capabilities views offers (identity, assigned) ->
+        (record (fun installation runtime capabilities views offers (identity, assigned) ->
             {
-                ActorContext.ActorId = identity
+                ActorContext.InstallationId = installation
+                ActorId = identity
                 Runtime = runtime
                 Capability = capabilities
                 View = views
@@ -244,6 +271,7 @@ module ResponseCodecs =
                 HasAssignedCases = assigned
             })
         : Fields<ActorContext, _>)
+        |> field "installationId" _.InstallationId uuid
         |> flatten _.Runtime runtimeFields
         |> field
             "capabilities"
@@ -288,7 +316,7 @@ module ResponseCodecs =
         |> named "ActorSummary"
 
     let internal authorityGrantFields =
-        (record (fun v0 v1 -> { AuthoredGrant.Role = v0; Scope = v1 }): Fields<AuthoredGrant, _>)
+        (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope (scope)
 
@@ -329,10 +357,40 @@ module ResponseCodecs =
             | HistoryEntry.SummaryEntry value -> value
             | _ -> invalidArg "entry" "Expected summary history.")
 
+    let historyDifference =
+        let lifecycle =
+            (record (fun before after ->
+                {
+                    LifecycleChange.Before = before
+                    After = after
+                })
+            : Fields<LifecycleChange, _>)
+            |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
+            |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
+            |> build
+            |> named "LifecycleChange"
+
+        (record (fun lifecycle fields ->
+            {
+                HistoryDifference.Lifecycle = lifecycle
+                Fields = fields
+            })
+        : Fields<HistoryDifference, _>)
+        |> field "lifecycle" _.Lifecycle (nullable lifecycle)
+        |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
+        |> build
+        |> named "HistoryDifference"
+
     let private fullEntry receiptCodec =
-        record id
+        (record (fun receipt difference ->
+            {
+                FullHistoryEntry.Receipt = receipt
+                Difference = difference
+            })
+        : Fields<FullHistoryEntry, _>)
         |> fixedField "kind" "FULL"
-        |> field "receipt" id receiptCodec
+        |> field "receipt" _.Receipt receiptCodec
+        |> field "difference" _.Difference (nullable historyDifference)
         |> build
         |> map HistoryEntry.FullEntry (function
             | HistoryEntry.FullEntry value -> value
@@ -382,8 +440,16 @@ module ResponseCodecs =
             ]
 
     let historyPageFor receiptCodec =
-        (record (fun entries next -> { Entries = entries; NextCursor = next })
+        (record (fun id reference entries next ->
+            {
+                CaseId = id
+                Reference = reference
+                Entries = entries
+                NextCursor = next
+            })
         : Fields<HistoryResultPage, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
         |> field "entries" _.Entries (historyEntriesFor receiptCodec)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

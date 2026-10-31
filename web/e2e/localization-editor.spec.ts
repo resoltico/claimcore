@@ -65,7 +65,7 @@ const unacceptedCase = async (page: Page, reference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference: reference }),
+    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
   });
   if (reply.status !== 200 || !isResponse("case.get", reply.payload)) {
     throw new Error("E2E_UNACCEPTED_CASE_READ_INVALID");
@@ -87,7 +87,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
       body: JSON.stringify({
         kind: "CASE",
         operationId: randomUUID(),
-        caseReference: reference,
+        target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: 0,
         act: { kind: "OPEN", values: registration({ incidentDate }) },
       }),

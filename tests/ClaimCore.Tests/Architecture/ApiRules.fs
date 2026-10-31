@@ -99,6 +99,7 @@ let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
 let vocabularyModules () =
     [
         "ClaimCore.Domain"
+        "ClaimCore.Application.Contracts"
         "ClaimCore.Protocol"
         "ClaimCore.RecordFormat"
         "ClaimCore.Application"

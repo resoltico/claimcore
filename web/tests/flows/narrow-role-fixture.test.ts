@@ -48,7 +48,7 @@ it("restores only the confirmed baseline grant when narrow setup fails", async (
     {
       role: "CASE_READER",
       kind: "GRANT",
-      scope: { kind: "CASE", caseReference: fixture.reference },
+      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: fixture.reference } },
     },
     { role: "DATA_STEWARD", kind: "GRANT" },
   ]);

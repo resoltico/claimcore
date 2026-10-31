@@ -3,6 +3,7 @@ module ClaimCore.TestSupport.AuthorityHistoryContract
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -50,7 +51,7 @@ let internal factsAndPaging fixture =
         let! opened =
             Service.execute
                 owner
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 11 "HISTORY-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None
@@ -91,7 +92,15 @@ let internal factsAndPaging fixture =
 
         Expect.equal
             entries[3].Facts
-            (AuthorityHistoryFacts.Granted grant)
+            (AuthorityHistoryFacts.Granted
+                {
+                    Role = Role.CaseReader
+                    Scope =
+                        GrantScope.Case(
+                            CaseFixtures.caseId (id 11),
+                            CaseFixtures.reference "HISTORY-CASE"
+                        )
+                })
             "Typed case reference and role"
 
         Expect.equal
@@ -139,7 +148,7 @@ let internal permissions fixture =
         let! opened =
             Service.execute
                 owner
-                (OperationInput.Case(
+                (ClaimCore.TestSupport.Inputs.caseOperation (
                     request 10 "HISTORY-ACCESS" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None
@@ -238,6 +247,10 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Authority query = tx.Authority query
                                         member _.FindCase id = tx.FindCase id
+
+                                        member _.FindCaseByReference reference =
+                                            tx.FindCaseByReference reference
+
                                         member _.FindEntry id = tx.FindEntry id
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query

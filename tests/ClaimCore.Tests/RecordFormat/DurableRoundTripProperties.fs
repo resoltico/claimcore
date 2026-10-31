@@ -125,8 +125,12 @@ let private roles =
 
 let private scopes reference =
     [
-        GrantTarget.Installation, "INSTALLATION"
-        GrantTarget.CaseReference reference, "CASE"
+        RecordedGrantScope.Installation, "INSTALLATION"
+        RecordedGrantScope.Case(
+            (CaseFixtures.caseId (Guid.Parse "d0000000-0000-4000-8000-000000000001")),
+            CaseFixtures.reference reference
+        ),
+        "CASE"
     ]
 
 let private authorityActs reference =
@@ -135,7 +139,7 @@ let private authorityActs reference =
             for scope, _ in scopes reference do
                 yield
                     {
-                        AuthoredGrant.Role = role
+                        RecordedGrant.Role = role
                         Scope = scope
                     }
     ]
@@ -172,11 +176,14 @@ let private inventories () =
         (scopes "ref"
          |> List.map (fun (scope, _) ->
              let case, _ =
-                 Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(scope, typeof<GrantTarget>)
+                 Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(
+                     scope,
+                     typeof<RecordedGrantScope>
+                 )
 
              case.Name)
          |> Set.ofList)
-        (Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<GrantTarget>
+        (Microsoft.FSharp.Reflection.FSharpType.GetUnionCases typeof<RecordedGrantScope>
          |> Array.map _.Name
          |> Set.ofArray)
         "The authored scope inventory covers every durable scope case"
@@ -249,6 +256,10 @@ let private snapshotProperty =
                             [ CaseState.Active fields, "ACTIVE"; CaseState.Voided fields, "VOIDED" ] do
                             let expected: CaseSnapshot =
                                 {
+                                    CaseId =
+                                        CaseFixtures.caseId (
+                                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                        )
                                     Reference = reference
                                     Revision = (CaseFixtures.revision revision)
                                     State = state
@@ -270,8 +281,8 @@ let private grantTokens act bytes =
     | AuthorityAct.Revoke grant ->
         let scope =
             match grant.Scope with
-            | GrantTarget.Installation -> "INSTALLATION"
-            | GrantTarget.CaseReference _ -> "CASE"
+            | RecordedGrantScope.Installation -> "INSTALLATION"
+            | RecordedGrantScope.Case _ -> "CASE"
 
         tokenAt
             [ "act"; "role" ]

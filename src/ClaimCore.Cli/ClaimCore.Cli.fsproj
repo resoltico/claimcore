@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <Compile Include="InputDiagnostics.fs" />
     <Compile Include="FrameFailures.fs" />
     <Compile Include="Localization/CliMessages.fs" />
@@ -16,6 +17,7 @@
     <Compile Include="CliConfigure.fs" />
     <Compile Include="ServiceReply.fs" />
     <Compile Include="Frames.fs" />
+    <Compile Include="RecoveryJournal.fs" />
     <Compile Include="Schemas.fs" />
     <Compile Include="VerbOptions.fs" />
     <Compile Include="Grammar.fs" />
@@ -45,6 +47,7 @@
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
+    <Compile Include="RecoveryCommand.fs" />
     <Compile Include="TextReplyFormat.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
     <Compile Include="CsvCell.fs" />

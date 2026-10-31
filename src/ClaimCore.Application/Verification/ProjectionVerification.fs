@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open ClaimCore.Application.VerificationChecks
@@ -177,3 +178,6 @@ module ProjectionVerification =
                 (fun state row -> Result.bind (fun state -> grant state row) state)
                 (Ok actors))
         |> Result.bind (finishAuthority expected)
+
+    let fences expected actual =
+        require None VerificationFinding.FenceProjection (actual = expected)

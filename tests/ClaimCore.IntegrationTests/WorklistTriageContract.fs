@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -13,7 +14,10 @@ let private maximum = "999999999999999999.9999"
 let private execute owner number reference revision act =
     task {
         let! reply =
-            Service.execute owner (OperationInput.Case(request number reference revision act)) token
+            Service.execute
+                owner
+                (ClaimCore.TestSupport.Inputs.caseOperation (request number reference revision act))
+                token
 
         match reply.Outcome with
         | ExecuteResult.Accepted _ -> accepted reply |> ignore
@@ -205,7 +209,13 @@ let internal exactTotals fixture =
         | Outcome.Succeeded value -> Expect.isTrue value.HasAssignedCases "My cases can be offered"
         | _ -> failtest "Expected context"
 
-        let! case = Service.get owner { CaseReference = "TRIAGE-B" } token
+        let! case =
+            Service.get
+                owner
+                {
+                    Target = CaseSelector.Reference("TRIAGE-B")
+                }
+                token
 
         match case with
         | Outcome.Succeeded value ->
@@ -319,8 +329,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         Expect.equal first.Counts.Total 2L "A service's valid scoped grants define assignment"
         // An inconsistent projection is injected through the real store port, without changing
         // any SQL constraint or authorization rule. The visibility safeguards must exclude it.
-        let caseId =
-            ClaimCore.RecordFormat.CaseReferenceId.encode fixture.InstallationId "TRIAGE-B"
+        let caseId = CaseFixtures.caseId (id 21)
 
         let! altered =
             fixture.Store.Write
@@ -362,7 +371,13 @@ let internal assignmentExcludesForbiddenRoles fixture =
             3L
             "Installation visibility retains the same independent safeguard"
 
-        let! denied = Service.get viewer { CaseReference = "TRIAGE-B" } token
+        let! denied =
+            Service.get
+                viewer
+                {
+                    Target = CaseSelector.Reference("TRIAGE-B")
+                }
+                token
 
         Expect.equal
             denied

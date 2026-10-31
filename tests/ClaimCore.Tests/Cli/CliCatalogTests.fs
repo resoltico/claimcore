@@ -8,6 +8,7 @@ open Expecto
 open ClaimCore.Cli
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let private oracle () =
     let path =
@@ -62,7 +63,7 @@ let private byteLimits () =
         Grammar.prepare (fun () -> operationId) args
 
     let emptyInput =
-        """{"kind":"CASE","operationId":"11111111-2222-4333-8444-555555555555","caseReference":"REF","expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
+        """{"kind":"CASE","operationId":"11111111-2222-4333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
 
     let remaining =
         Limits.MaximumRequestBytes - System.Text.Encoding.UTF8.GetByteCount emptyInput
@@ -160,8 +161,11 @@ let tests =
                 let arguments =
                     [ "operation"; "resolve"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
 
-                Expect.equal
-                    (Grammar.prepare (fun () -> "unused") arguments)
-                    (Error [ UsageError.NotApplicable("--preview", "operation resolve") ])
-                    "Resolve is an operational write, so read-command wording is inaccurate")
+                match Grammar.prepare (fun () -> "unused") arguments with
+                | Error errors ->
+                    Expect.equal
+                        errors
+                        [ UsageError.NotApplicable("--preview", "operation resolve") ]
+                        "Resolve is an operational write, so read-command wording is accurate"
+                | Ok _ -> failtest "Resolve cannot be previewed")
         ]

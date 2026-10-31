@@ -1,6 +1,7 @@
 module ClaimCore.Tests.OwnerInputTests
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Text

@@ -9,7 +9,7 @@ Use `--dry-run` to print the prepared JSON frame without authentication. This ch
 Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
 
 Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--assignment assigned-to-me` restricts to valid case-scoped read grants; `--order reference|recent|notified` selects the page order. Cursors bind filters, assignment and order.
-`case list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+`case list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case and previews with that revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
 
@@ -35,10 +35,12 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore call`
 - `claimcore session`
 - `claimcore shell`
+- `claimcore recovery list`
+- `claimcore recovery resolve ATTEMPT_ID`
 - `claimcore configure --show`
 - `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]`
 
-Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
+Help topics: `overview`, `help`, `version`, `describe`, `schema`, `call`, `session`, `shell`, `recovery`, `configure`, `configuration`, `delivery`, `examples`, `verbs`, `CLI_PROTOCOL_GUIDANCE`, `CLI_CONFIGURATION_ISSUE`.
 
 ## Exit codes
 

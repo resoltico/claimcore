@@ -11,6 +11,7 @@ import { Dashboard } from "../../src/views/Dashboard";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, fields, response, runtime } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -41,6 +42,7 @@ const queueDefinitionAndList = () => {
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "OPENED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
         }),
@@ -142,6 +144,7 @@ const queueOpenPreview = () => {
             kind: "CASE",
             before: null,
             after: {
+              caseId: "20000000-0000-4000-8000-000000000001",
               caseReference: fields.caseReference,
               revision: 1,
               state: {
@@ -193,7 +196,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
     {
-      caseReference: fields.caseReference,
+      target: { kind: "REFERENCE", caseReference: fields.caseReference },
     },
   );
 });

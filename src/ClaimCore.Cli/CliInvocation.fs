@@ -24,6 +24,7 @@ type CliInvocation =
     | Call
     | Session
     | Shell
+    | Recovery of System.Guid option
     | Configure of Map<CliSetting, string> option
     | Verb of string list
 
@@ -116,6 +117,16 @@ module CliInvocations =
         else
             Error(UsageError.NotApplicable("arguments", "command"))
 
+    let private admitRecovery =
+        function
+        | [ "list" ] -> Ok(CliInvocation.Recovery None)
+        | [ "resolve"; raw ] ->
+            match System.Guid.TryParseExact(raw, "D") with
+            | true, attempt when attempt <> System.Guid.Empty ->
+                Ok(CliInvocation.Recovery(Some attempt))
+            | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
+        | _ -> Error(UsageError.MissingOperand "list | resolve ATTEMPT_ID")
+
     let private admitCommand command tail =
         match tail with
         | [ flag ] when List.contains flag CliCommands.aliases ->
@@ -127,6 +138,7 @@ module CliInvocations =
             | CliCommand.Describe -> admitDescribe tail
             | CliCommand.Schema -> admitSchema tail
             | CliCommand.Call -> noArguments CliInvocation.Call tail
+            | CliCommand.Recovery -> admitRecovery tail
             | CliCommand.Configure -> CliConfigure.admit tail |> Result.map CliInvocation.Configure
             | CliCommand.Shell -> noArguments CliInvocation.Shell tail
             | CliCommand.Session -> noArguments CliInvocation.Session tail

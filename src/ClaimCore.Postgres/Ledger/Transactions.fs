@@ -35,6 +35,7 @@ module internal Transactions =
 
     let head connection token =
         task {
+            FailureDiagnostics.phase FailurePhase.Head
             let started = System.Diagnostics.Stopwatch.GetTimestamp()
 
             let! rows =
@@ -94,6 +95,7 @@ module internal Transactions =
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
     let private transact source settings (token: CancellationToken) action =
         task {
+            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
             let mutable commitStarted = false
 
             try
@@ -109,12 +111,14 @@ module internal Transactions =
 
                                 if commit then
                                     token.ThrowIfCancellationRequested()
+                                    FailureDiagnostics.phase FailurePhase.Commit
                                     commitStarted <- true
                                     do! transaction.CommitAsync(token)
 
                                 return Ok result
                             })
             with error ->
+                FailureDiagnostics.report error
                 return Error(failure commitStarted error)
         }
 
@@ -123,15 +127,19 @@ module internal Transactions =
 
     let read source token action =
         task {
+            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
+
             try
                 let! value =
                     DatabaseSession.read source token (fun connection ->
                         task {
+                            FailureDiagnostics.phase FailurePhase.Read
                             let! _ = configure connection timeouts token
                             return! action connection
                         })
 
                 return Ok value
             with error ->
+                FailureDiagnostics.report error
                 return Error(failure false error)
         }

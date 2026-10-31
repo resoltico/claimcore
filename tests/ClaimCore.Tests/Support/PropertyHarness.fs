@@ -49,7 +49,7 @@ let private propertyNames =
             "invocation byte decoder"
             "durable record byte decoder"
             "case act slots"
-            "authority act slots"
+            "authority act traversal"
             "input issue subsets"
         ]
 

@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
@@ -17,7 +18,7 @@ let private lastOwner () =
         { view with
             Read =
                 { view.Read with
-                    EnabledHumanOwners = 1
+                    EnabledHumanOwners = Some 1
                 }
         }
 
@@ -66,8 +67,8 @@ let private humanOnly () =
                 }
             Read =
                 { view.Read with
-                    ActorCount = 0
-                    EnabledHumanOwners = 0
+                    ActorCount = Some 0
+                    EnabledHumanOwners = Some 0
                 }
         }
 
@@ -137,8 +138,8 @@ let private provision () =
                 }
             Read =
                 { initial.Read with
-                    ActorCount = 0
-                    EnabledHumanOwners = 0
+                    ActorCount = Some 0
+                    EnabledHumanOwners = Some 0
                 }
         }
 

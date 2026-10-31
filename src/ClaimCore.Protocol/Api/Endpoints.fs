@@ -3,6 +3,7 @@ namespace ClaimCore.Protocol
 open ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.Json
 
@@ -61,6 +62,61 @@ type Endpoint<'In, 'Out> =
 
     member this.Token = EndpointIds.token this.Id
 
+/// Dynamic transport boundaries retain typed values behind the registry's endpoint witness.
+type IEndpointInputVisitor<'result> =
+    abstract Visit<'input, 'output> : Endpoint<'input, 'output> * 'input -> 'result
+
+type IEndpointInput =
+    abstract Accept<'result> : IEndpointInputVisitor<'result> -> 'result
+
+type IEndpointOutputVisitor<'result> =
+    abstract Visit<'input, 'output> : Endpoint<'input, 'output> * 'output -> 'result
+
+type IEndpointOutput =
+    abstract Class: ReplyClass
+    abstract Accept<'result> : IEndpointOutputVisitor<'result> -> 'result
+
+module EndpointValues =
+    let input (endpoint: Endpoint<'input, 'output>) value =
+        { new IEndpointInput with
+            member _.Accept<'result>(visitor: IEndpointInputVisitor<'result>) =
+                visitor.Visit(endpoint, value)
+        }
+
+    let output (endpoint: Endpoint<'input, 'output>) value =
+        let classification = endpoint.Classify value
+
+        { new IEndpointOutput with
+            member _.Class = classification
+
+            member _.Accept<'result>(visitor: IEndpointOutputVisitor<'result>) =
+                visitor.Visit(endpoint, value)
+        }
+
+    let tryInput (endpoint: Endpoint<'input, 'output>) (value: IEndpointInput) =
+        value.Accept
+            { new IEndpointInputVisitor<'input option> with
+                member _.Visit<'actualInput, 'actualOutput>
+                    (actual: Endpoint<'actualInput, 'actualOutput>, value: 'actualInput)
+                    =
+                    if actual.Id = endpoint.Id && typeof<'input> = typeof<'actualInput> then
+                        Some(unbox<'input>(box value))
+                    else
+                        None
+            }
+
+    let tryOutput (endpoint: Endpoint<'input, 'output>) (value: IEndpointOutput) =
+        value.Accept
+            { new IEndpointOutputVisitor<'output option> with
+                member _.Visit<'actualInput, 'actualOutput>
+                    (actual: Endpoint<'actualInput, 'actualOutput>, value: 'actualOutput)
+                    =
+                    if actual.Id = endpoint.Id && typeof<'output> = typeof<'actualOutput> then
+                        Some(unbox<'output>(box value))
+                    else
+                        None
+            }
+
 /// A definition preserves its input/output types when a consumer visits the endpoint registry.
 type IEndpointVisitor<'Result> =
     abstract Visit<'Input, 'Output> : Endpoint<'Input, 'Output> -> 'Result
@@ -86,6 +142,8 @@ type Route =
         OutputSchema: Schema
         InputDefinitions: Map<string, Schema>
         OutputDefinitions: Map<string, Schema>
+        ReadInput: JsonValue -> Result<IEndpointInput, Problem>
+        ReadOutput: JsonValue -> Result<IEndpointOutput, Problem>
         NormalizeInput: JsonValue -> Result<JsonValue, Problem>
         NormalizeOutput: JsonValue -> Result<JsonValue, Problem>
         ClassifyOutput: JsonValue -> Result<ReplyClass, Problem>
@@ -103,6 +161,12 @@ module Route =
             OutputSchema = endpoint.Output.Schema
             InputDefinitions = endpoint.Input.Definitions
             OutputDefinitions = endpoint.Output.Definitions
+            ReadInput =
+                fun value ->
+                    endpoint.Input.Read "$" value |> Result.map (EndpointValues.input endpoint)
+            ReadOutput =
+                fun value ->
+                    endpoint.Output.Read "$" value |> Result.map (EndpointValues.output endpoint)
             NormalizeInput =
                 fun value -> endpoint.Input.Read "$" value |> Result.map endpoint.Input.Write
             ClassifyOutput =
@@ -225,23 +289,40 @@ module Api =
                     }
         }
 
+    let private lookup id output classify =
+        {
+            Id = id
+            Method = HttpMethod.Post
+            Effect = EndpointEffect.Read
+            Input = RequestCodecs.observeRequest
+            Output = output
+            Classify = classify
+            Correlation = fun input -> Some input.OperationId
+            Unavailable =
+                fun input ->
+                    {
+                        OperationReply.OperationId = input.OperationId
+                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
+                    }
+        }
+
     let operationResolve =
-        { read
+        { lookup
               (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
-              HttpMethod.Post
-              ResolutionCodecs.request
-              ResolutionCodecs.reply with
+              ResolutionCodecs.reply
+              (fun reply -> OutcomePresentation.classifyResolve reply.Outcome) with
+            Input = RequestCodecs.resolveRequest
             Effect = EndpointEffect.OperationalWrite
-            Classify = OutcomePresentation.classifyResolve
+            Classify = fun reply -> OutcomePresentation.classifyResolve reply.Outcome
             Correlation = fun input -> Some input.OperationId
         }
 
     let operationObserve =
-        { read
+        { lookup
               (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe))
-              HttpMethod.Post
-              RequestCodecs.observeRequest
-              (ReplyCodecs.readReply "ObservationReply" ReceiptCodecs.receipt) with
+              ReplyCodecs.observation
+              (fun reply -> OutcomePresentation.classify reply.Outcome) with
+            Classify = fun reply -> OutcomePresentation.classify reply.Outcome
             Correlation = fun input -> Some input.OperationId
         }
 
@@ -315,6 +396,9 @@ module Api =
     let method (endpoint: Route) = endpoint.Method
     let effect (endpoint: Route) = endpoint.Effect
 
+    let requiresInstallation (endpoint: Route) =
+        endpoint.Token = "operation.execute" || endpoint.Token = "operation.resolve"
+
     let executesLedger endpoint =
         effect endpoint = EndpointEffect.LedgerExecution
 
@@ -326,3 +410,94 @@ module Api =
 
     let admitOutput (endpoint: Route) value =
         endpoint.NormalizeOutput value |> Result.map ignore
+
+/// Transport identity admission follows structural decoding and precedes any client certainty.
+module ReplyCorrelation =
+    let private memberValue name value = JsonValue.tryMember name value
+
+    let private text =
+        function
+        | JsonValue.String value -> Some value
+        | _ -> None
+
+    let private stringMember name value =
+        memberValue name value |> Option.bind text
+
+    let private guid name value =
+        memberValue name value
+        |> Option.bind (fun value -> Codec.uuid.Read "$" value |> Result.toOption)
+
+    let private sameReference left right =
+        match left, right with
+        | Some left, Some right -> CaseReference.key left = CaseReference.key right
+        | _ -> false
+
+    let private caseTarget input actual =
+        match memberValue "target" input with
+        | None -> false
+        | Some selector ->
+            match stringMember "kind" selector with
+            | Some "REFERENCE" ->
+                sameReference
+                    (stringMember "caseReference" selector)
+                    (stringMember "caseReference" actual)
+            | Some "ID" ->
+                let expected = guid "caseId" selector
+                expected.IsSome && guid "caseId" actual = expected
+            | _ -> false
+
+    let matches token input reply =
+        let outcome = memberValue "outcome" reply
+        let kind = outcome |> Option.bind (stringMember "kind")
+        let data = outcome |> Option.bind (memberValue "data")
+        let operation = guid "operationId" input
+
+        let operationEndpoint =
+            List.contains
+                token
+                [
+                    "operation.execute"
+                    "operation.preview"
+                    "operation.observe"
+                    "operation.resolve"
+                ]
+
+        let envelope =
+            not operationEndpoint
+            || (operation.IsSome && guid "operationId" reply = operation)
+
+        let receipt =
+            match kind, token with
+            | Some("ACCEPTED" | "ALREADY_ACCEPTED"), _
+            | Some "SUCCEEDED", "operation.observe" -> data
+            | _ -> None
+
+        let receiptIdentity =
+            receipt |> Option.forall (fun value -> guid "operationId" value = operation)
+
+        let receiptTarget =
+            receipt
+            |> Option.forall (fun receipt ->
+                match stringMember "kind" input, memberValue "subject" receipt with
+                | Some "CASE", Some subject ->
+                    stringMember "kind" subject = Some "CASE" && caseTarget input subject
+                | _ -> true)
+
+        let readTarget =
+            match token, kind, data with
+            | ("case.get" | "case.history"), Some "SUCCEEDED", Some value -> caseTarget input value
+            | "authority.grants", Some "SUCCEEDED", Some value ->
+                memberValue "actor" value
+                |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
+            | _ -> true
+
+        let previewTarget =
+            match token, kind, stringMember "kind" input, data with
+            | "operation.preview", Some "REVIEWED", Some "CASE", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.bind (memberValue "after")
+                |> Option.exists (caseTarget input)
+            | _ -> true
+
+        envelope && receiptIdentity && receiptTarget && readTarget && previewTarget

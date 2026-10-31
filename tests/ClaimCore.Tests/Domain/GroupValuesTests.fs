@@ -9,6 +9,62 @@ let tests =
     testList
         "complete typed business groups"
         [
+            testCase
+                "registration constructors and permanent snapshots reject reversed chronology"
+                (fun () ->
+                    let original = Inputs.admittedRegistration Inputs.registration
+                    let values = Registration.values original
+
+                    let set field date =
+                        values
+                        |> List.map (fun (key, value) ->
+                            key,
+                            if key = field then
+                                Admitted.Date(CaseFixtures.date date)
+                            else
+                                value)
+
+                    Expect.isError
+                        (Registration.create (set BusinessField.IncidentDate "2026-08-04"))
+                        "Incident after notification is permanently invalid"
+
+                    Expect.isOk
+                        (Registration.create (set BusinessField.IncidentDate "2026-08-03"))
+                        "Same-day chronology is valid"
+
+                    let snapshot =
+                        CaseFixtures.decide
+                            (System.DateOnly(2026, 9, 7))
+                            {
+                                OperationId =
+                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                CaseReference = "CHRONOLOGY"
+                                ExpectedRevision = 0L
+                                Act = AuthoredCaseAct.Open Inputs.registration
+                            }
+                            None
+
+                    match snapshot with
+                    | Error _ -> failtest "The positive OPEN control must construct"
+                    | Ok record ->
+                        let bytes =
+                            record
+                            |> Case.snapshot
+                            |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot
+
+                        let text = System.Text.Encoding.UTF8.GetString bytes
+
+                        let reversed =
+                            text.Replace("2026-08-01", "2026-08-04")
+                            |> System.Text.Encoding.UTF8.GetBytes
+
+                        Expect.isOk
+                            (ClaimCore.RecordFormat.CaseRecord.decodeSnapshot bytes)
+                            "Valid permanent snapshot control"
+
+                        Expect.isError
+                            (ClaimCore.RecordFormat.CaseRecord.decodeSnapshot reversed)
+                            "Permanent decode must enforce chronology")
             testCase "authored constructors reject missing duplicate and foreign fields" (fun () ->
                 let values = RegistrationInput.values Inputs.registration
 

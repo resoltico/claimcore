@@ -13,6 +13,7 @@ import { prepareRequest } from "../../src/protocol/preparedRequest";
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
 export const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {

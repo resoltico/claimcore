@@ -1,6 +1,7 @@
 module ClaimCore.Database.Program
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 open System
@@ -21,7 +22,9 @@ let main arguments =
                 let mutates =
                     match command with
                     | Initialize _
-                    | ProvisionOwner -> true
+                    | ProvisionOwner
+                    | Rebuild _
+                    | InvalidateRestoredSessions -> true
                     | _ -> false
 
                 bytes,

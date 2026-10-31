@@ -2,6 +2,7 @@ module ClaimCore.Tests.ProjectionIndexChecks
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
@@ -12,8 +13,7 @@ let private unitResult result = Result.map (fun _ -> ()) result
 let checks installation instant =
     let snapshot = Case.snapshot (decided ())
 
-    let caseId =
-        CaseReferenceId.encode installation (CaseReference.format snapshot.Reference)
+    let caseId = snapshot.CaseId
 
     let index = CaseIndex.create instant snapshot
 

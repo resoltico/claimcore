@@ -1,3 +1,4 @@
+import { replyCorrelates } from "../protocol/replyCorrelation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { sendHttp } from "./transport";
 import { responseBytes } from "./responseBytes";
@@ -35,9 +36,10 @@ const result = async <K extends EndpointId>(
   id: K,
   response: Response,
   signal: AbortSignal,
+  input: unknown,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   const value = await readJson(response, signal);
-  if (response.status === 200 && isResponse(id, value)) {
+  if (response.status === 200 && isResponse(id, value) && replyCorrelates(id, input, value)) {
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
@@ -50,6 +52,8 @@ const send = async <K extends EndpointId>(
   credential: string | undefined,
   body: string | undefined,
   signal: AbortSignal,
+  input: unknown,
+  installationId?: string,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   if (signal.aborted) {
     return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
@@ -61,11 +65,17 @@ const send = async <K extends EndpointId>(
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("incomplete"), dispatched: false };
   }
+  if (["operation.execute", "operation.resolve"].includes(id) && installationId === undefined) {
+    return { kind: "deliveryFailure", notice: localNotice("invalidInput"), dispatched: false };
+  }
   const endpoint = endpoints.find((candidate) => candidate.id === id)!;
   const headers: Record<string, string> = {
     Accept: "application/json",
     "ClaimCore-Contract": consumerContractIdentity,
   };
+  if (installationId !== undefined) {
+    headers["ClaimCore-Installation"] = installationId;
+  }
   if (credential !== undefined) {
     headers["X-ClaimCore-Antiforgery"] = credential;
   }
@@ -74,7 +84,7 @@ const send = async <K extends EndpointId>(
   }
   try {
     const response = await sendHttp(endpoint, headers, body, signal);
-    return await result(id, response, signal);
+    return await result(id, response, signal, input);
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
@@ -84,9 +94,18 @@ const request = <K extends EndpointId>(
   credential: string | undefined,
   body: object | undefined,
   signal?: AbortSignal,
+  installationId?: string,
 ) =>
   withinResponseDeadline(
-    (owned) => send(id, credential, body === undefined ? undefined : JSON.stringify(body), owned),
+    (owned) =>
+      send(
+        id,
+        credential,
+        body === undefined ? undefined : JSON.stringify(body),
+        owned,
+        body,
+        installationId,
+      ),
     signal,
   );
 export const requestEndpoint = <K extends EndpointId>(
@@ -100,7 +119,7 @@ export const service = {
   logout: (credential: string) => request("session.logout", credential, {}),
   context: (credential: string, signal?: AbortSignal) => request("context", credential, {}, signal),
   get: (caseReference: string, credential: string, signal?: AbortSignal) =>
-    request("case.get", credential, { caseReference }, signal),
+    request("case.get", credential, { target: { kind: "REFERENCE", caseReference } }, signal),
   list: (cursor: string | null, limit: number, credential: string, signal?: AbortSignal) =>
     request("case.list", credential, { ...(cursor === null ? {} : { cursor }), limit }, signal),
   history: (
@@ -117,7 +136,7 @@ export const service = {
       "case.history",
       credential,
       {
-        caseReference: input.caseReference,
+        target: { kind: "REFERENCE", caseReference: input.caseReference },
         ...(input.cursor === null ? {} : { cursor: input.cursor }),
         limit: input.limit,
         detail: input.detail ?? "SUMMARY",
@@ -145,10 +164,18 @@ export const service = {
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
-  resolve: (operationId: string, credential: string) =>
-    request("operation.resolve", credential, { operationId }),
+  resolve: (operationId: string, credential: string, installationId: string | undefined) =>
+    request("operation.resolve", credential, { operationId }, undefined, installationId),
   preview: (prepared: PreparedRequest<"operation.execute">, credential: string) =>
-    withinResponseDeadline((owned) => send("operation.preview", credential, prepared.bytes, owned)),
-  execute: (prepared: PreparedRequest<"operation.execute">, credential: string) =>
-    withinResponseDeadline((owned) => send(prepared.endpoint, credential, prepared.bytes, owned)),
+    withinResponseDeadline((owned) =>
+      send("operation.preview", credential, prepared.bytes, owned, prepared.input),
+    ),
+  execute: (
+    prepared: PreparedRequest<"operation.execute">,
+    credential: string,
+    installationId: string | undefined,
+  ) =>
+    withinResponseDeadline((owned) =>
+      send(prepared.endpoint, credential, prepared.bytes, owned, prepared.input, installationId),
+    ),
 };

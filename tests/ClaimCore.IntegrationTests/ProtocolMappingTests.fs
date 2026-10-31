@@ -11,6 +11,7 @@ open ClaimCore.Web
 open ClaimCore.Web.Composition
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -158,7 +159,10 @@ let private cancellationPolicy () =
 
         let! _ = caseWorker fixture |> Async.AwaitTask
         let actor = core fixture owner
-        let input = OperationInput.Case(openRequest 91 "MAPPING-001")
+
+        let input =
+            ClaimCore.TestSupport.Inputs.caseOperation (openRequest 91 "MAPPING-001")
+
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
 

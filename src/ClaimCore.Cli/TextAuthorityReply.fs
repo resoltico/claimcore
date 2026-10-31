@@ -5,18 +5,19 @@ open System.Globalization
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextAuthorityReply =
     open TextReplyFormat
 
-    let grantRow language (grant: AuthoredGrant) =
+    let grantRow language (grant: ScopedGrant) =
         let scope, reference =
             match grant.Scope with
-            | GrantTarget.Installation ->
+            | GrantScope.Installation ->
                 term language ScopeKind.vocabulary ScopeKind.Installation, "—"
-            | GrantTarget.CaseReference reference ->
-                term language ScopeKind.vocabulary ScopeKind.Case, reference
+            | GrantScope.Case(_, reference) ->
+                term language ScopeKind.vocabulary ScopeKind.Case, CaseReference.format reference
 
         String.concat "  " [ term language Role.vocabulary grant.Role; scope; reference ]
 
@@ -84,22 +85,17 @@ module internal TextAuthorityReply =
                    ]))
         @ nextLines language page.NextCursor
 
-    let authorityChanges language (before: AuthorityState) (after: AuthorityState) =
+    let authorityStates language (before: AuthorityState) (after: AuthorityState) =
         [
             (CliMessages.key CliMessage.EnabledLabel), boolean before.Enabled, boolean after.Enabled
             (CliMessages.key CliMessage.GrantsLabel),
             (before.Grants |> List.map (grantRow language) |> String.concat "; "),
             (after.Grants |> List.map (grantRow language) |> String.concat "; ")
         ]
-        |> List.choose (fun (key, previous, next) ->
-            if previous = next then
-                None
-            else
-                Some(
-                    line
-                        language
-                        key
-                        ((if previous = "" then "—" else previous)
-                         + " → "
-                         + (if next = "" then "—" else next))
-                ))
+        |> List.map (fun (key, previous, next) ->
+            line
+                language
+                key
+                ((if previous = "" then "—" else previous)
+                 + " → "
+                 + (if next = "" then "—" else next)))

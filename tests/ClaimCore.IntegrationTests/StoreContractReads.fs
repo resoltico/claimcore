@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -37,12 +38,13 @@ let internal history fixture reference after limit =
             ReadOperation.Work =
                 (fun tx ->
                     task {
-                        let id =
-                            ClaimCore.RecordFormat.CaseReferenceId.encode
-                                fixture.InstallationId
-                                reference
+                        let! current = tx.FindCaseByReference reference
 
-                        let! current = tx.FindCase id
+                        let id =
+                            current
+                            |> Option.map _.CaseId
+                            |> Option.defaultWith (fun () ->
+                                failtest "Expected a case history target")
 
                         let! page =
                             tx.HistoryPage(
@@ -56,8 +58,8 @@ let internal history fixture reference after limit =
                         return
                             {
                                 Case = current
-                                Entries = page.Items
-                                Next = page.Next
+                                Entries = page.Page.Items
+                                Next = page.Page.Next
                             }
                     })
             CancellationToken = CancellationToken.None

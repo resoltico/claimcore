@@ -119,10 +119,7 @@ let private changed fields act =
     | AuthoredCaseAct.RecordPayment payment ->
         { fields with
             Progress =
-                PaymentProgress.Paid(
-                    Option.get fields.Decision,
-                    (Payment.date (CaseFixtures.payment payment))
-                )
+                PaymentProgress.Paid(Option.get fields.Decision, (CaseFixtures.payment payment))
         }
     | (AuthoredCaseAct.Bare BareAct.ClearPayment) ->
         { fields with

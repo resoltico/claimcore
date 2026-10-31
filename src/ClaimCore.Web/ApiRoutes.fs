@@ -2,6 +2,7 @@ namespace ClaimCore.Web
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Application
 
@@ -89,6 +90,14 @@ module internal ApiRoutes =
                     | Ok prepared -> return Ok prepared
         }
 
+    let private installationBinding (context: HttpContext) =
+        match context.Request.Headers.TryGetValue "ClaimCore-Installation" with
+        | true, values when values.Count = 1 ->
+            Codec.uuid.Read "$.installation" (JsonValue.String(string values[0]))
+            |> Result.toOption
+
+        | _ -> None
+
     let handle handler configuration withActor (context: HttpContext) =
         let endpoint = handler.Description
 
@@ -115,19 +124,42 @@ module internal ApiRoutes =
                             else
                                 context.RequestAborted
 
-                        let! result =
-                            withActor (AuthenticatedPrincipals.key principal) (fun core ->
-                                prepared.Invoke (Some core) cancellation (fun () ->
-                                    RouteSupport.markCompleted context))
+                        let binding = installationBinding context
 
-                        let! outcome =
-                            task {
-                                match result with
-                                | Some reply -> return reply
-                                | None ->
-                                    RouteSupport.markCompleted context
-                                    return! prepared.Invoke None cancellation ignore
-                            }
+                        if Api.requiresInstallation endpoint && binding.IsNone then
+                            RouteSupport.markCompleted context
+                            return RouteSupport.hostFailure context HostFailureReason.InputInvalid
+                        else
+                            let! result =
+                                withActor (AuthenticatedPrincipals.key principal) (fun core ->
+                                    task {
+                                        if
+                                            Api.requiresInstallation endpoint
+                                            && not (
+                                                binding
+                                                |> Option.exists (Service.matchesInstallation core)
+                                            )
+                                        then
+                                            return Error()
+                                        else
+                                            let! reply =
+                                                prepared.Invoke (Some core) cancellation (fun () ->
+                                                    RouteSupport.markCompleted context)
 
-                        return RouteSupport.reply outcome context
+                                            return Ok reply
+                                    })
+
+                            match result with
+                            | Some(Error()) ->
+                                RouteSupport.markCompleted context
+
+                                return
+                                    RouteSupport.hostFailure
+                                        context
+                                        HostFailureReason.InstallationMismatch
+                            | Some(Ok reply) -> return RouteSupport.reply reply context
+                            | None ->
+                                RouteSupport.markCompleted context
+                                let! reply = prepared.Invoke None cancellation ignore
+                                return RouteSupport.reply reply context
         }

@@ -7,6 +7,7 @@ const snapshot = (value: unknown): unknown => {
   }
   const { state } = value;
   return {
+    caseId: value["caseId"] ?? "20000000-0000-4000-8000-000000000001",
     caseReference: value["caseReference"],
     revision: value["revision"],
     state: isObject(state)
@@ -55,7 +56,11 @@ const responseData = (kind: string, data: unknown, request: Record<string, unkno
         ...(isObject(request["act"]) ? { act: request["act"]["kind"] } : {}),
         ...(subject["kind"] === "CASE" && request["kind"] === "CASE"
           ? {
-              caseReference: request["caseReference"],
+              caseId: "20000000-0000-4000-8000-000000000001",
+              caseReference:
+                isObject(request["target"]) && request["target"]["kind"] === "REFERENCE"
+                  ? request["target"]["caseReference"]
+                  : subject["caseReference"],
               revision: Number(request["expectedRevision"]) + 1,
             }
           : {}),
@@ -64,18 +69,58 @@ const responseData = (kind: string, data: unknown, request: Record<string, unkno
   }
   return reviewData(kind, data, request);
 };
+const historyData = (request: unknown, data: unknown): unknown => {
+  if (!isObject(data)) {
+    return data;
+  }
+  const selector = isObject(request) && isObject(request["target"]) ? request["target"] : {};
+  return {
+    ...data,
+    entries: Array.isArray(data["entries"])
+      ? data["entries"].map((entry: unknown) =>
+          isObject(entry) && entry["kind"] === "FULL" && !("difference" in entry)
+            ? { ...entry, difference: null }
+            : entry,
+        )
+      : data["entries"],
+    caseId:
+      selector["kind"] === "ID"
+        ? selector["caseId"]
+        : (data["caseId"] ?? "20000000-0000-4000-8000-000000000001"),
+    caseReference:
+      selector["kind"] === "REFERENCE"
+        ? selector["caseReference"]
+        : (data["caseReference"] ?? "CASE-1"),
+  };
+};
+const requestAddress = (value: RequestInfo | URL): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value instanceof URL) {
+    return value.href;
+  }
+  return value.url;
+};
 const envelope = (endpoint: string, kind: string, original: unknown) => {
-  const body = vi.mocked(globalThis.fetch).mock?.calls.at(-1)?.[1]?.body;
+  const body = vi
+    .mocked(globalThis.fetch)
+    .mock?.calls.findLast(([path]) => requestAddress(path).endsWith(`/api/${endpoint}`))?.[1]?.body;
   const request: unknown = typeof body === "string" ? JSON.parse(body) : null;
   let data = original;
   let echo: object = {};
   if (
     isObject(request) &&
     "operationId" in request &&
-    ["operation.preview", "operation.execute"].includes(endpoint)
+    ["operation.preview", "operation.execute", "operation.observe", "operation.resolve"].includes(
+      endpoint,
+    )
   ) {
     echo = { operationId: request["operationId"] };
     data = responseData(kind, data, request);
+  }
+  if (endpoint === "case.history" && kind === "SUCCEEDED") {
+    data = historyData(request, data);
   }
   return {
     ...echo,

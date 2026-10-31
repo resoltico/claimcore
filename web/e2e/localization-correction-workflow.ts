@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
-import { browserRequest, sessionToken } from "./session-helpers";
+import { browserRequest, sessionToken, installationId } from "./session-helpers";
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
@@ -33,12 +33,13 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   const opened: CaseFields = {
     caseReference: reference,
     status: "OPENED",
+    progress: "UNDECIDED",
     registration: { ...setupRegistration, claimedAmount: "1200.5" },
     decision: null,
     payment: null,
   };
-  const decided: CaseFields = { ...opened, decision: setupDecision };
-  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" } };
+  const decided: CaseFields = { ...opened, decision: setupDecision, progress: "DECIDED" };
+  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" }, progress: "PAID" };
   const steps: SeedStep[] = [
     { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
     { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
@@ -74,6 +75,7 @@ const acceptSetup = async (
     headers: {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": token,
+      "ClaimCore-Installation": await installationId(page, token),
     },
     body: JSON.stringify(request),
   });
@@ -92,7 +94,10 @@ const acceptSetup = async (
   const receipt: CaseReceipt = { ...outcome.data, subject: outcome.data.subject };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  expect(receipt.subject.caseReference).toBe(request.caseReference);
+  if (request.target.kind !== "REFERENCE") {
+    throw new Error("Reference fixture positive control");
+  }
+  expect(receipt.subject.caseReference).toBe(request.target.caseReference);
   expect(receipt.subject.act).toBe(request.act.kind);
   expect(receipt.subject.revision).toBe(revision);
   expect(receipt.subject.snapshot).toEqual({
@@ -113,7 +118,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       {
         kind: "CASE",
         operationId: randomUUID(),
-        caseReference: reference,
+        target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: revision,
         act: step.act,
       },
@@ -162,7 +167,7 @@ export const currentCase = async (page: Page, caseReference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference }),
+    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference } }),
   });
   if (!isResponse("case.get", result.payload)) {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
@@ -180,7 +185,11 @@ export const history = async (page: Page, caseReference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ caseReference, limit: 50, detail: "FULL" }),
+    body: JSON.stringify({
+      target: { kind: "REFERENCE", caseReference },
+      limit: 50,
+      detail: "FULL",
+    }),
   });
   if (!isResponse("case.history", result.payload)) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
@@ -206,6 +215,11 @@ export const expectResultFields = (
     REPLACE: { paymentDate: "2026-09-06" },
     CLEAR: null,
   };
+  const progress = {
+    KEEP: "PAID",
+    REPLACE: "PAID",
+    CLEAR: modes.decision === "CLEAR" ? "UNDECIDED" : "DECIDED",
+  } as const;
   expect(after).toEqual({
     revision: before.revision + 1,
     fields: {
@@ -218,6 +232,7 @@ export const expectResultFields = (
               claimedAmount: "1",
             }
           : before.fields.registration,
+      progress: progress[modes.payment],
       decision: decisions[modes.decision],
       payment: payments[modes.payment],
     },

@@ -8,11 +8,13 @@
     <Compile Include="Versions.fs" />
     <Compile Include="DecodeProblem.fs" />
     <Compile Include="LedgerPayload.fs" />
+    <Compile Include="AuthorityRecordTypes.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
+    <Compile Include="HistoricalCaseEffects.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
-    <Compile Include="CaseReferenceId.fs" />
+    <Compile Include="ControlRecord.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -17,7 +17,7 @@ let private snapshots =
 
         let current = viewFields original
         let decision = Option.get current.Decision
-        let payment = (Payment.date (Option.get current.Payment))
+        let payment = Option.get current.Payment
 
         let variants =
             [
@@ -52,7 +52,11 @@ let private snapshots =
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
                 { current with
-                    Progress = PaymentProgress.Paid(decision, CaseFixtures.date "2026-08-14")
+                    Progress =
+                        PaymentProgress.Paid(
+                            decision,
+                            Payment.onDate (CaseFixtures.date "2026-08-14")
+                        )
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDate)
             ]

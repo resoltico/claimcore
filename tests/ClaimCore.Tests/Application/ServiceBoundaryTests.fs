@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
@@ -18,7 +19,7 @@ let private unavailable () =
 
 let private inputs () =
     [
-        OperationInput.Case(opening 470 "BOUNDARY")
+        ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
         OperationInput.Authority(authorityRequest (id 471) other AuthorityAct.Register)
     ]
 
@@ -36,11 +37,11 @@ let private malformed () =
 
         let invalid =
             [
-                OperationInput.Case
+                ClaimCore.TestSupport.Inputs.caseOperation
                     { opening 470 "BOUNDARY" with
                         OperationId = Guid.Empty
                     }
-                OperationInput.Case(
+                ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
                 OperationInput.Authority(authorityRequest Guid.Empty other AuthorityAct.Register)
@@ -141,11 +142,19 @@ let private cancelled () =
         let! context = (Service.context core () cancellation.Token) |> Async.AwaitTask
 
         let! current =
-            (Service.get core ({ CaseReference = "BOUNDARY" }) (cancellation.Token))
+            (Service.get
+                core
+                ({
+                    Target = CaseSelector.Reference("BOUNDARY")
+                })
+                (cancellation.Token))
             |> Async.AwaitTask
 
         let! observed =
-            (Service.observe core ({ OperationId = id 470 }) (cancellation.Token))
+            (ClaimCore.TestSupport.StoreFixtures.observe
+                core
+                ({ OperationId = id 470 })
+                (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled context"
@@ -206,7 +215,7 @@ let private committed () =
             let! reply = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
             let! observed =
-                Service.observe
+                ClaimCore.TestSupport.StoreFixtures.observe
                     core
                     {
                         OperationId = OperationInput.operationId input

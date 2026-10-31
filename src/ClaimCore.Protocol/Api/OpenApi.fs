@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 open ClaimCore.Json
@@ -103,6 +104,12 @@ module OpenApi =
             else
                 parameters
                 @ [ header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema ]
+
+        let parameters =
+            if Api.requiresInstallation endpoint then
+                parameters @ [ header "ClaimCore-Installation" true Codec.uuid.Schema ]
+            else
+                parameters
 
         let fields =
             [

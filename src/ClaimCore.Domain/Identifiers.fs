@@ -45,6 +45,7 @@ module CaseId =
         if value = Guid.Empty then None else Some(CaseId value)
 
     let value (CaseId value) = value
+    let ofOperationId operation = CaseId(OperationId.value operation)
     let format id = (value id).ToString("D")
 
 [<Struct>]

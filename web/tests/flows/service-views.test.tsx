@@ -12,6 +12,7 @@ import { Dashboard } from "../../src/views/Dashboard";
 import { wireResponse, historyVariants } from "../support/contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
@@ -35,6 +36,7 @@ const queueListPages = () => {
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "OPENED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
         }),
@@ -48,6 +50,7 @@ const queueListPages = () => {
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "CLOSED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-2",
           revision: 2,
         }),
@@ -229,6 +232,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "OPENED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
         }),
@@ -242,6 +246,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE", status: "OPENED" },
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
         }),

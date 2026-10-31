@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Cli
 open ClaimCore.Database
@@ -58,6 +59,12 @@ let tests =
                     [
                         DatabaseSuccess.Initialized(OperationId.value accepted.OperationId)
                         DatabaseSuccess.Head position
+                        DatabaseSuccess.Rebuilt
+                            {
+                                Position = position
+                                PreviousDivergence = None
+                            }
+                        DatabaseSuccess.RestoredSessionsInvalidated 3L
                         DatabaseSuccess.Accepted accepted
                         DatabaseSuccess.AlreadyAccepted accepted
                         DatabaseSuccess.Verified(position, 12L)
