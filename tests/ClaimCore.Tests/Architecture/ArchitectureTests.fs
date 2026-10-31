@@ -1,6 +1,7 @@
 module ClaimCore.Tests.Architecture.ArchitectureTests
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.IO
@@ -93,6 +94,7 @@ let private ambientEffects () =
             "ClaimCore.Json"
             "ClaimCore.Protocol"
             "ClaimCore.Domain"
+            "ClaimCore.Application.Contracts"
             "ClaimCore.RecordFormat"
             "ClaimCore.Application"
         ] do

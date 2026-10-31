@@ -1,5 +1,6 @@
 namespace ClaimCore.Protocol
 
+
 type DiagnosticParameterDefinition =
     {
         Name: string

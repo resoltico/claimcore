@@ -8,6 +8,13 @@
         "resolved": "10.1.403",
         "contentHash": "SpKxPt90eSC3pfSKGLnSyucXXKVWokv1KVMTy2uQG36seOgJg14qUxjlcaWjZNWgxJtG5MeH9WpI6PQg4OR4tA=="
       },
+      "claimcore.application.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Domain": "[0.14.0, )",
+          "FSharp.Core": "[10.1.403, )"
+        }
+      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {

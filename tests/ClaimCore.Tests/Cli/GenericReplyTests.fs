@@ -3,6 +3,7 @@ module ClaimCore.Tests.GenericReplyTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Protocol
 open ClaimCore.Cli

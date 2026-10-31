@@ -2,6 +2,7 @@ module ClaimCore.Tests.ProjectionIndexChecks
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport

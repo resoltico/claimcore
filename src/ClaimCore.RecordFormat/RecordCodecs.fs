@@ -14,9 +14,30 @@ module internal RecordCodecs =
     let revision = integer 0L JsonValue.MaximumInteger
     let sequence = integer 1L JsonValue.MaximumInteger
 
+    // Frozen member inventory: adding a current domain descriptor cannot change this grammar.
+    let private members =
+        function
+        | RecordGroup.Registration ->
+            [
+                BusinessField.IncidentDate, FieldValueKind.CalendarDate
+                BusinessField.IncidentNotificationDate, FieldValueKind.CalendarDate
+                BusinessField.IncidentCountry, FieldValueKind.Country
+                BusinessField.ClaimantName, FieldValueKind.PartyName
+                BusinessField.InsurerName, FieldValueKind.PartyName
+                BusinessField.ClaimedAmount, FieldValueKind.Amount
+                BusinessField.ClaimedCurrency, FieldValueKind.Currency
+            ]
+        | RecordGroup.Decision ->
+            [
+                BusinessField.PaymentDecisionDate, FieldValueKind.CalendarDate
+                BusinessField.PayableAmount, FieldValueKind.Amount
+                BusinessField.PayableCurrency, FieldValueKind.Currency
+            ]
+        | RecordGroup.Payment -> [ BusinessField.PaymentDate, FieldValueKind.CalendarDate ]
+
     let private inputGroup group create values =
-        CaseFields.ofGroup group
-        |> List.map (fun field -> field, DurableNames.field field, Codec.text)
+        members group
+        |> List.map (fun (field, _) -> field, DurableNames.field field, Codec.text)
         |> Codec.fieldMap
         |> Codec.mapResult
             (fun path fields ->
@@ -209,12 +230,9 @@ module internal RecordCodecs =
     let private acceptedReference = scalar CaseReference.parse CaseReference.format
 
     let private acceptedGroup group create values =
-        CaseFields.declarations
-        |> List.filter (fun row -> row.Group = Some group)
-        |> List.map (fun row ->
-            row.Field,
-            DurableNames.field row.Field,
-            scalar (FieldValue.parse row.Kind) FieldValue.format)
+        members group
+        |> List.map (fun (field, kind) ->
+            field, DurableNames.field field, scalar (FieldValue.parse kind) FieldValue.format)
         |> Codec.fieldMap
         |> mapResult
             (fun path fields ->

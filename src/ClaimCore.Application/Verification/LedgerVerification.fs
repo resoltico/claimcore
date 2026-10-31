@@ -3,6 +3,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
@@ -31,7 +32,12 @@ module LedgerVerification =
             result {
                 let! cases = CaseFold.apply state.Cases entry payload
 
-                let human = (CaseActKind.describe act).Family = ActFamily.Stewardship
+                let human =
+                    match act with
+                    | CaseActKind.Void
+                    | CaseActKind.Reinstate
+                    | CaseActKind.Erase -> true
+                    | _ -> false
 
                 do! AuthorityFold.executor state.Actors entry human false
                 return cases, state.Actors

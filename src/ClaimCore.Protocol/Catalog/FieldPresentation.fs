@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Presentation maps validated values to client fields; Domain owns every field and scalar rule.
 module FieldPresentation =

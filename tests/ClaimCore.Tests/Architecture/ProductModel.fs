@@ -7,7 +7,12 @@ let products =
     lazy
         (let known =
             List.zip
-                [ "ClaimCore.Application"; "ClaimCore.RecordFormat"; "ClaimCore.Postgres" ]
+                [
+                    "ClaimCore.Application.Contracts"
+                    "ClaimCore.Application"
+                    "ClaimCore.RecordFormat"
+                    "ClaimCore.Postgres"
+                ]
                 core.Value
             |> Map.ofList
             |> Map.add "ClaimCore.Domain" domain.Value

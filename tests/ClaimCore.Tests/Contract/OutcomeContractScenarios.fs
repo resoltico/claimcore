@@ -16,6 +16,7 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.ContractScenarioInputs
 
@@ -149,7 +150,7 @@ let internal disclosures () =
         let value =
             { receipt with
                 Subject =
-                    ClaimCore.Domain.ReceiptSubject.Case
+                    ClaimCore.Application.Contracts.ReceiptSubject.Case
                         {
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L

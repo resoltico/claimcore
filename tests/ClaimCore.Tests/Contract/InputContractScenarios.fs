@@ -16,6 +16,7 @@ open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.ContractScenarioInputs
 open ClaimCore.Tests.OutcomeContractScenarios

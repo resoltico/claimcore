@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <Compile Include="InputDiagnostics.fs" />
     <Compile Include="FrameFailures.fs" />
     <Compile Include="Localization/CliMessages.fs" />

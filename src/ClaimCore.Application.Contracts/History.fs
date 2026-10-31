@@ -1,4 +1,6 @@
-namespace ClaimCore.Domain
+namespace ClaimCore.Application.Contracts
+
+open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type HistoryEntry =

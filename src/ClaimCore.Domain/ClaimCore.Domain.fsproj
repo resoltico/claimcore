@@ -31,18 +31,5 @@
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
     <Compile Include="Authority.fs" />
-    <Compile Include="Outcomes/Paging.fs" />
-    <Compile Include="Outcomes/Faults.fs" />
-    <Compile Include="Outcomes/Outcome.fs" />
-    <Compile Include="Outcomes/Advice.fs" />
-    <Compile Include="Outcomes/Receipts.fs" />
-    <Compile Include="Outcomes/Verification.fs" />
-    <Compile Include="Outcomes/History.fs" />
-    <Compile Include="Outcomes/CasePages.fs" />
-    <Compile Include="Outcomes/CaseTotals.fs" />
-    <Compile Include="Outcomes/AuthorityPages.fs" />
-    <Compile Include="Outcomes/Replies.fs" />
-    <Compile Include="Outcomes/Operations.fs" />
-    <Compile Include="Outcomes/Resolution.fs" />
   </ItemGroup>
 </Project>

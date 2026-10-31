@@ -6,6 +6,7 @@ open System
 open System.Threading
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport

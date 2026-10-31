@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open Microsoft.FSharp.Reflection
 
 [<RequireQualifiedAccess>]

@@ -10,6 +10,7 @@ open System
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 let private id = Guid.Parse "d0000000-0000-4000-8000-000000000001"

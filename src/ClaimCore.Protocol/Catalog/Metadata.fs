@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Exact declared member paths bind semantic inputs to one selected wire branch.
 type BindingCondition = { Path: string list; Value: string }

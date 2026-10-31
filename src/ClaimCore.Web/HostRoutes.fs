@@ -2,6 +2,7 @@ namespace ClaimCore.Web
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Json
 

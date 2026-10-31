@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 module internal Advice =
     let private can principal actor capability resource =

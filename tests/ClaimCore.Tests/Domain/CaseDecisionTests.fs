@@ -8,6 +8,7 @@ open System
 open Expecto
 open ClaimCore.Json
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures

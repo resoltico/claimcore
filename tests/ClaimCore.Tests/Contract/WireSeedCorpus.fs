@@ -2,6 +2,7 @@ module ClaimCore.Tests.WireSeedCorpus
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 open System

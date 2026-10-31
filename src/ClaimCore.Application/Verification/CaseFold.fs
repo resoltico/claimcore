@@ -3,6 +3,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application.VerificationChecks
 
 type CaseHistory =
@@ -71,6 +72,23 @@ module internal CaseFold =
                         (Some entry.Sequence)
                         VerificationFinding.HistoryStart
                         ((previous.IsNone) = (act = CaseActKind.Open))
+
+                do!
+                    match payload with
+                    | VerifiedPayload.Case(request, snapshot) ->
+                        let expected =
+                            ClaimCore.RecordFormat.HistoricalCaseEffects.apply
+                                request
+                                (previous |> Option.bind _.Snapshot)
+
+                        let agrees =
+                            match expected, snapshot with
+                            | Ok expected, Some actual -> expected = actual
+                            | Ok { State = CaseState.Erased }, None -> true
+                            | _ -> false
+
+                        require (Some entry.Sequence) VerificationFinding.StateSequence agrees
+                    | _ -> Ok()
 
                 let! state = nextState entry.Sequence previous act
                 let reference = previous |> Option.bind _.Reference

@@ -5,6 +5,7 @@ open System.IO
 open System.Threading.Tasks
 open ClaimCore.Cli
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.TestSupport
 open Expecto

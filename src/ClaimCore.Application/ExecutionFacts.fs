@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 type internal CaseFacts =
     {

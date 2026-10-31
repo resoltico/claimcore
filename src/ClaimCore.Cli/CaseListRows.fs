@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 module internal CaseListRows =

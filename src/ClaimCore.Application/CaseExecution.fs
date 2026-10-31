@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 module internal CaseExecution =

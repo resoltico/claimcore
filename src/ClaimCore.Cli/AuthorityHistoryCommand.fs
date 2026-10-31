@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open System.Text
 open System.Threading
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 module internal AuthorityHistoryCommand =

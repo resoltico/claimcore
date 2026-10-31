@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Review display is derived from an already-admitted projection; it decides no authority rules.
 module internal AuthorityReviews =

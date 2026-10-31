@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -42,7 +43,7 @@ let private rollback () =
         for verdict in
             [
                 Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-                Verdict.Fail ClaimCore.Domain.CoreFault.InternalError
+                Verdict.Fail ClaimCore.Application.Contracts.CoreFault.InternalError
             ] do
             let! result =
                 store.Write(

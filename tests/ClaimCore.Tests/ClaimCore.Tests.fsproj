@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <!-- The pinned SDK owns the compiler service used for source-level architecture checks. -->
     <Reference Include="FSharp.Compiler.Service">
       <HintPath>$(MSBuildToolsPath)/FSharp/FSharp.Compiler.Service.dll</HintPath>
@@ -23,7 +24,6 @@
     <Compile Include="Architecture/ProductModel.fs" />
     <Compile Include="Architecture/DeclarationFixtures.fs" />
     <Compile Include="Architecture/ProductDeclarationTests.fs" />
-    <Compile Include="Architecture/StructuralTypeTests.fs" />
     <Compile Include="Architecture/DomainOwnershipTests.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />

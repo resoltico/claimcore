@@ -1,5 +1,6 @@
 namespace ClaimCore.Protocol
 
+
 /// Language and display preferences are independent, finite consumer capabilities.
 module LocalizationPolicy =
     let languageOptions =

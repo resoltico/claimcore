@@ -11,6 +11,7 @@ open System.Text
 open System.Security.Cryptography
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 let private encode value = WireWriter.bytes value

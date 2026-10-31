@@ -3,6 +3,7 @@ namespace ClaimCore.Protocol
 open ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 

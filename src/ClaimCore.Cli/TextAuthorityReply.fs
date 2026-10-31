@@ -5,6 +5,7 @@ open System.Globalization
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextAuthorityReply =

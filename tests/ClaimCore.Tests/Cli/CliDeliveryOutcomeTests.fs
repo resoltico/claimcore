@@ -4,6 +4,7 @@ open ClaimCore.Protocol
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.Json
 open CliTransportFixture

@@ -5,6 +5,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Installation opening failures shared by persistence and the composition root.

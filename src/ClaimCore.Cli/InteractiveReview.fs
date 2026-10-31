@@ -5,6 +5,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Json
 

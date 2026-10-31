@@ -1,5 +1,7 @@
 namespace ClaimCore.Protocol
 
+open ClaimCore.Application.Contracts
+
 /// Technical request member names have one wire-contract owner.
 module WireMembers =
     [<Literal>]

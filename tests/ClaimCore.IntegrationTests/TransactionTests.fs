@@ -4,6 +4,7 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Threading

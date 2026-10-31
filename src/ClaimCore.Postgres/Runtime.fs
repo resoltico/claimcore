@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open System
 open System.Threading

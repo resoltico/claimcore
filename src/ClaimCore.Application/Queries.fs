@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Every read authorizes and decodes its continuation inside one store snapshot.

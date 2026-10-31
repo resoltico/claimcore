@@ -8,6 +8,7 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.TestSupport.MemoryStoreState
 

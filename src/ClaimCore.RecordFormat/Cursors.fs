@@ -194,7 +194,7 @@ module Cursors =
 
     let decodeCases (filter: CaseListFilter<CaseSearchText>) token =
         decode
-            Paging.MaximumCaseCursorCharacters
+            16384
             (function
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters

@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Loads and persists authority work; Domain owns parsing, policy and state decisions.

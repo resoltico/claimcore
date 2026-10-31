@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.Inputs
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open Expecto
 open ClaimCore.Protocol

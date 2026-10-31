@@ -10,6 +10,7 @@ open System.Text
 open System.Text.Json
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport
 

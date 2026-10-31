@@ -1,5 +1,6 @@
 namespace ClaimCore.Protocol
 
+
 [<RequireQualifiedAccess>]
 type HostFailureReason =
     | ContractMismatch

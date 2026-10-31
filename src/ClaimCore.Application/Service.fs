@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// The typed application boundary owns orchestration; hosts supply immutable request dependencies.
 module Service =
@@ -64,8 +65,8 @@ module Service =
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
-    let private businessFields =
-        function
+    let private businessFields (snapshot: CaseSnapshot option) =
+        match snapshot with
         | None -> Map.empty
         | Some {
                    State = (CaseState.Active(fields) | CaseState.Voided(fields))

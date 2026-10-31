@@ -3,6 +3,7 @@ namespace ClaimCore.Database
 open System
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open System.Threading
 open ClaimCore.Postgres
 

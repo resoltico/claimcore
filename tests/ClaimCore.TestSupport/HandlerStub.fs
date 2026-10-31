@@ -12,6 +12,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
 

@@ -5,12 +5,13 @@ open System.Globalization
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextCaseReply =
     open TextReplyFormat
 
-    let fieldLines language fields =
+    let fieldLines language (fields: CaseFields) =
         let rows placement =
             CaseFields.declarations
             |> List.filter (fun row -> row.Group = placement)

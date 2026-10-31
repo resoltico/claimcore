@@ -122,6 +122,18 @@ jobs:
               bash eng/verify.sh unit
             '
 
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-verification-${{ matrix.rid }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+
   integration:
     name: PostgreSQL ${{ matrix.major }} store tests
     needs: [configuration]
@@ -140,6 +152,18 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh postgres
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-verification-${{ matrix.major }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
 
   growth:
     name: Manual PostgreSQL ${{ matrix.major }} growth qualification
@@ -173,6 +197,18 @@ jobs:
         with:
           node: "false"
       - run: bash eng/verify.sh web
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-verification
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
 
   frontend:
     name: Frontend checks (SDK-free Node container)
@@ -257,6 +293,18 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
               summary.write(message + "\n")
           PYTHON
+
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: acceptance-verification-${{ matrix.engine }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
 
   comparison:
     name: Manual same-host growth comparison

@@ -10,6 +10,7 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 

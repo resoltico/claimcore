@@ -2,6 +2,7 @@ namespace ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Authorship permits receipt metadata; current authority still controls snapshot disclosure.
 module internal Resolution =

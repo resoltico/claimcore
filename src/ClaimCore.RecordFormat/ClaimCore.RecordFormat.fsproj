@@ -10,6 +10,7 @@
     <Compile Include="LedgerPayload.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
+    <Compile Include="HistoricalCaseEffects.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="CaseReferenceId.fs" />

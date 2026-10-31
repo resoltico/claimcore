@@ -7,38 +7,6 @@ type HistoryDetail =
     | Summary
     | Full
 
-type PageRequest =
-    {
-        AfterCursor: string option
-        Limit: int
-    }
-
-type HistoryRequest =
-    {
-        CaseReference: string
-        AfterCursor: string option
-        Limit: int
-        Detail: HistoryDetail
-    }
-
-type GrantsRequest =
-    {
-        ActorId: Guid
-        AfterCursor: string option
-        Limit: int
-    }
-
-type AuthorityHistoryRequest =
-    {
-        TargetActorId: Guid option
-        AfterCursor: string option
-        Limit: int
-    }
-
-type CaseGetRequest = { CaseReference: string }
-
-type OperationLookup = { OperationId: Guid }
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HistoryDetail =
     let vocabulary =
@@ -166,9 +134,3 @@ module CaseListFilter =
                 text
                 |> Option.exists (fun (text: string) ->
                     text.Contains(CaseSearchText.value query, StringComparison.Ordinal))))
-
-type CaseListRequest =
-    {
-        Page: PageRequest
-        Filter: CaseListFilter<string>
-    }

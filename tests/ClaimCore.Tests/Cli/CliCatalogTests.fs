@@ -8,6 +8,7 @@ open Expecto
 open ClaimCore.Cli
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let private oracle () =
     let path =

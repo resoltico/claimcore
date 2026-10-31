@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Conversion preserves the act stage and the record format's independent ownership.

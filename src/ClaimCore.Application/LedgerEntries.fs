@@ -4,6 +4,7 @@ namespace ClaimCore.Application
 open System
 open System.Security.Cryptography
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]

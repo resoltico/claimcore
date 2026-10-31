@@ -1,6 +1,7 @@
 namespace ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// One public code identifies one message and one parameter contract across all diagnostic families.
 type DiagnosticCode =

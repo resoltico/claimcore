@@ -2,6 +2,7 @@ namespace ClaimCore.Protocol
 
 open ClaimCore.Protocol
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HostFailureReason =

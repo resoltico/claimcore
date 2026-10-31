@@ -3,6 +3,7 @@ namespace ClaimCore.Protocol
 open System
 open System.Text.RegularExpressions
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 type BindingMember = string * string

@@ -24,22 +24,3 @@ module CaseConsumer =
         match value with
         | CaseSample.Used -> true
         | _ -> false
-
-[<RequireQualifiedAccess>]
-type DuplicateFirst =
-    | Empty
-    | Value of string
-
-[<RequireQualifiedAccess>]
-type DuplicateSecond =
-    | Empty
-    | Value of string
-
-[<RequireQualifiedAccess>]
-type Distinct =
-    | Empty
-    | Value of int
-
-type DuplicateRecordFirst<'value> = { Item: 'value; Count: int }
-type DuplicateRecordSecond<'item> = { Item: 'item; Count: int }
-type DistinctRecord<'value> = { Item: 'value; Total: int }

@@ -3,6 +3,7 @@ namespace ClaimCore.Protocol
 open System
 open Microsoft.FSharp.Reflection
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Json
 

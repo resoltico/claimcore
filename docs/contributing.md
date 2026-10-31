@@ -32,6 +32,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | --- | --- |
 | Json | Strict JSON values, writers, codecs and schemas |
 | Domain | JSON-free values and identifiers, typed acts, accepted state, outcomes, authority policy and decisions |
+| Application.Contracts | Use-case requests, replies, advice, paging and faults over Domain |
 | Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
@@ -41,17 +42,16 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | CLI | HTTPS, command grammar, typed replies and frames |
 | Database | Owner administration |
 
-Domain has no project dependencies. Protocol and RecordFormat build codecs over Domain structure using
-Json; Application uses Domain and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
+Domain has no project dependencies. Protocol builds codecs over Domain and Application.Contracts using Json. RecordFormat uses Domain and Json; Application uses Domain, Application.Contracts and RecordFormat. Protocol owns combined act/scope vocabularies, endpoint names and catalog read declarations. Postgres implements Application ports using Domain,
 RecordFormat and Json. Application and Postgres have no Protocol reference. Web and Database use the
-Application Service and port surface; the published CLI contains Domain, Protocol, Json and HostSecurity,
+Application Service and port surface; the published CLI contains Domain, Application.Contracts, Protocol, Json and HostSecurity,
 with Application and Postgres excluded. The
 [project-edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns the exact direct edges.
 
 [Compiled architecture controls](../tests/ClaimCore.Tests/Architecture/) run in Debug and cover Domain
 isolation, durable vocabulary ownership, service-model independence, host usage and vocabulary naming.
 [Domain ownership](../tests/ClaimCore.Tests/Architecture/DomainOwnershipTests.fs) checks actual product
-consumers; declaration controls check unused and duplicated structure. Their implementations own the
+consumers; declaration controls check unused declarations. Independently owned types may have identical shapes, and independent message keys may share translations. Their implementations own the
 compiler and negative-control details. Explicit exceptions need a concrete consumer or ownership reason.
 Product internals may be exposed to tests only.
 
@@ -88,11 +88,11 @@ derive from that description.
 interaction declarations; request codecs own wire paths, alternatives and vocabulary identity. Semantic
 annotations attach meaning by named definition/member. Durable codecs keep their own literal spellings.
 
-Private registration, decision and payment wrappers hold complete `GroupValues<Authored>` or
-`GroupValues<Admitted>` in [CaseFields.fs](../src/ClaimCore.Domain/CaseFields.fs). Their constructors check
-exact membership and admitted value kinds against the declarations. Group formatting and parsing iterate
-those fields through [FieldValue](../src/ClaimCore.Domain/FieldValues.fs), which dispatches to the owning
-value module. [Validation](../src/ClaimCore.Domain/Validation.fs) maps field failures to input issues;
+Private Registration, Decision and Payment records hold typed scalar values and complete Money values.
+Their boundary adapters check exact membership and scalar kinds. Registration construction also checks
+incident/notification chronology. PaymentProgress retains the complete Payment with its Decision.
+Field collections are transport and presentation projections; business accessors return their scalar types.
+
 [StateValidation](../src/ClaimCore.Domain/StateValidation.fs) admits newly asserted values generically.
 Named accessors retain date-order, payable and payment-acknowledgement rules. Adding a declared field
 does not require parallel authored/admitted record members or per-field codec and admission branches.
@@ -223,12 +223,10 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 without a matching source module. Categories, explicit rules and overrides together define the effective
 policy; review the complete `oxlint --print-config` output when changing it.
 
-Product and test F#/TypeScript files have a 500-line limit. Functions permit five parameters and F#
-tuples four items; generated contracts are excluded by path. Split files/functions by responsibility.
-Only a total table may suppress `CyclomaticComplexity`: its body is one exhaustive match from a closed
-union to values, with no nested branching. Put a concrete reason comment immediately before
-`// fsharplint:disable-next-line CyclomaticComplexity`. Rule bodies meet complexity 12 by splitting
-responsibilities; this exception does not apply to them. Other lint suppressions remain prohibited.
+Keep files and functions focused by responsibility. File length, parameter counts and change-locality
+measurements are review guidance, not representation requirements. Correctness, dependency, compiler,
+formatting and actionable lint controls remain enforced. Only a total exhaustive table may suppress
+CyclomaticComplexity, with a concrete reason immediately before the suppression.
 
 F# rules live in [eng/fsharplint.json](../eng/fsharplint.json); formatting policy
 lives in [web/prettier.config.mjs](../web/prettier.config.mjs). The permitted total-table suppression needs
@@ -345,14 +343,14 @@ changes when it answers the same question. Probes do not replace [product verifi
 ### Select the experiments
 
 Choose only the representative change needed and state the question, scope and expected evidence before
-implementing it. The locality targets below are diagnostic hypotheses, not architectural requirements.
+implementing it. The observations below are diagnostic hypotheses, not architectural requirements.
 Keep the change stable when comparing results, or disclose why the experiments are incomparable. A READ
 reusing existing request/result types measures registration cost, not novel query design. Fewer edits do
 not justify generic machinery, weaker types, shared production/oracle answers or removed safeguards.
 
 | Probe | Change | Locality target |
 | --- | --- | --- |
-| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. In Domain, only the new `BusinessField` case and its `describe` entry in `CaseFields.fs` change; no record, parsing, formatting, admission or other Domain function changes. |
+| P-FIELD | Add a required registration text field of `PartyName` kind. | No `db/`, PostgreSQL or renderer changes. Update typed records, validated constructors, projections and the explicitly versioned durable grammar as required. |
 | P-ACT | Add a payload-free case act allowed on an open, active case, changing no field. | No renderer, SQL or Protocol codec changes; slots derive the variant. |
 | P-ROLE | Add a role with one existing capability. | No renderer or `db/` changes; growing vocabularies are decoded by their permanent-name owner. |
 | P-READ | Add a read-only endpoint over existing case data. | No renderer changes except the one exhaustive endpoint-to-handler line in `src/ClaimCore.Web/ApiRoutes.fs` `route`. CLI verb/catalog derive; one store-port method is implemented by PostgreSQL and memory. |
