@@ -12,9 +12,11 @@
 - Final nonacceptance is an ordered actor/operation control. Verification and trusted-checkpoint rebuild restore fences, live projections and erased identity without reconstructing erased content.
 - Owners can rebuild projections with a trusted checkpoint and explicitly invalidate restored sessions. Keep actor traffic isolated during restore; older backups can resurrect data and cookies.
 - Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
+- Typed registration constructors and retained-state decoding reject incident dates after notification; input groups and snapshots must obey chronology.
 - Core supplies progress and review/history differences; clients retain typed requests through preparation, review and pagination and reject mismatched reply identities.
 - Storage diagnostics retain bounded safe failure context. Provider cleanup and throwing diagnostic observers preserve confirmed results and conservative commit uncertainty.
 - Contributor checks allow identical shapes and wording and remove mechanical size targets; actual ownership, dependency, byte, security and complete-test controls remain enforced.
+- CI retains bounded native, frontend and browser failure reports for 14 days; private fixture credentials and keys are excluded.
 - Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
 
 ## [0.14.0] - 2026-10-30
