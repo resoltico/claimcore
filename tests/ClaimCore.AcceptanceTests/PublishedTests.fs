@@ -416,7 +416,6 @@ let private qualify () =
         CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
-        CliDisclosure.qualify fixture
         inputBoundaries fixture
         RejectedDrafts.qualify fixture
         let position = walkthrough fixture

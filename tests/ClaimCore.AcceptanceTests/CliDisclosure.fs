@@ -40,9 +40,16 @@ let private amend (input: JsonNode) =
 
     pending
 
-let private staleReview fixture input reference =
+let private staleReview (fixture: PublishedFixture.Fixture) input reference =
     let pending = amend input
-    automation fixture "operation.preview" pending 0 |> require "REVIEWED" |> ignore
+    let bytes = frame "operation.preview" pending
+    FixtureFiles.write fixture.Directory "stale-review.frame.json" bytes |> ignore
+
+    Expect.isOk
+        (ClaimCore.Cli.Frames.admit bytes)
+        "Targeted preview frame is independently admitted before dispatch"
+
+    run fixture fixture.Environment bytes 0 |> require "REVIEWED" |> ignore
 
     let close =
         {|
@@ -167,3 +174,12 @@ let qualify fixture =
     summaryHistory fixture reference
     setGrant fixture target "CASE_HANDLER" true
     setGrant fixture target "CASE_REGISTRAR" false
+
+let published () =
+    task {
+        use fixture = new PublishedFixture.Fixture()
+        do! fixture.Start()
+        setup fixture
+        qualify fixture
+        fixture.Complete()
+    }

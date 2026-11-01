@@ -41,7 +41,7 @@ test("records future planned work and scoped responsibility, then finds My cases
   await chooseChoice(page, "act.values.followUpDate.kind", "SET");
   await fillBusinessField(page, "followUpDate", planned);
   await reviewDraft(page);
-  await recordReviewed(page);
+  await recordReviewed(page, "I confirm these work changes.");
   const accepted = await currentCase(page, reference);
   expect(accepted.fields.work).toEqual({ responsibleActor: actorId, followUpDate: planned });
   await expect(page.locator(".case-work")).toContainText("Upcoming");

@@ -30,14 +30,18 @@ const visibleFieldCount = (fields: CaseFields): number =>
   inventory.workFields.length -
   (fields.decision === null ? inventory.groups.decision.length : 0) -
   (fields.payment === null ? inventory.groups.payment.length : 0);
-export const recordReviewed = async (page: Page): Promise<void> => {
-  const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
+export const recordReviewed = async (
+  page: Page,
+  confirmation = "I confirm these changes.",
+): Promise<void> => {
+  const confirmed = page.getByRole("checkbox", { name: confirmation, exact: true });
+  await confirmed.waitFor({state:"visible"});
   await progress("confirm-click-start");
   if ((await confirmed.count()) !== 1) {
     throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
   }
   try {
-    await page.getByText("I confirm these changes.", { exact: true }).click({ timeout: 5_000 });
+    await page.getByText(confirmation, { exact: true }).click({ timeout: 5_000 });
   } catch {
     throw new Error("E2E_REVIEW_LABEL_CLICK_FAILED");
   }

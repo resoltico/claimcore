@@ -90,8 +90,18 @@ let private replyCount (source: byte array) =
         (0, 0)
     |> snd
 
+let private localFailureCodes (source: byte array) =
+    Encoding.UTF8.GetString(source).Split('\n', System.StringSplitOptions.RemoveEmptyEntries)
+    |> Array.choose (fun row ->
+        match Frames.decode (Encoding.UTF8.GetBytes row) with
+        | Ok {
+                 Result = FrameResult.LocalFailure failure
+             } -> Some(CliFailureCode.ofFailure failure |> CliFailureCode.token)
+        | _ -> None)
+    |> String.concat ","
+
 let private captured stage output errors =
-    $"CLI invocation evidence: authStage={safeStage stage}; validReplyFrames={replyCount output}; stdoutBytes={output.Length}; stderrBytes={Array.length errors}"
+    $"CLI invocation evidence: authStage={safeStage stage}; validReplyFrames={replyCount output}; stdoutBytes={output.Length}; stderrBytes={Array.length errors}; localFailures={localFailureCodes output}"
 
 let internal describe stage (failure: BoundedProcessFailure) =
     captured stage failure.StandardOutput failure.StandardError
