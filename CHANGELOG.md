@@ -2,47 +2,44 @@
 
 ## [Unreleased]
 
-- Load view modules and complete language pairs on demand; failed language changes retain the working language, direction and authored values.
-- Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
-- Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
-
-- Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
-
-- Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
-- Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
-
-- Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
-
+- Use a fresh database: case-work projections and request/snapshot/ledger format 3 replace the earlier baseline; Authority/Control stay at 2. Old installations are refused; no migration/readers.
+- Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
+- Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
+- Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
+- Web case links use /cases/id/CASE-ID; exact reference links use /cases/reference/REFERENCE. Replace bookmarks using the former unqualified reference path.
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
+- Replace CLI operation resolve with operation status for passive checks or explicit operation settle for permanent nonacceptance; interactive settlement requires confirmation.
+- Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
+- Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
+- Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
+- Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
+- Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
+- Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
+- Load view modules and complete language pairs on demand; failed language changes retain the working language, direction and authored values.
+- Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
+- Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
 - CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
 - Case views disclose assigned account identity and availability. Mine is factual responsibility; hasScopedCases describes access grants. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering.
 - Work pages and summaries report their observed business date/zone; close and void retain work, while erasure removes it. Rebuild restores actors before referenced case work.
 - Partial reviews show selected facts and exact amounts/dates; chronology issues identify the asserted field and its retained counterpart. Amount entry keeps its original display-locale meaning.
 - Catalogs add act family, affected sections, effect and wire-required input metadata; clients rank tasks explicitly and never select erasure as a default.
-
-- Replace CLI operation resolve with operation status for passive checks or explicit operation settle for permanent nonacceptance; interactive settlement requires confirmation.
 - Actor-scoped operation.status is an installation-bound read for valid roleless actors too; unresolved reads create no fence and foreign actors’ operation UUIDs remain undisclosed.
 - Fence guards validate retained control-node identity/hash and projection timestamps; missing, fabricated or contradictory evidence fails integrity instead of creating a false final answer.
 - The web Recovery area separates status checks, confirmed permanent settlement and general receipt lookup; cleanup failure retains identity and shows the known result.
-- Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
 - New case-scoped OWNER grants refuse as meaningless; owners can still revoke recognized obsolete grants. Disabled and overlapping meaningful grants remain allowed.
 - CLI human text escapes terminal controls, embedded line breaks and directional formatting; literal backslashes double. JSON/NDJSON remain exact and CSV keeps its export rules.
-- Use a fresh database: case-work projections and request/snapshot/ledger format 3 replace the earlier baseline; Authority/Control stay at 2. Old installations are refused; no migration/readers.
-- Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
-- Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
-- Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
 - Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
 - Recovery checks preserve ownership across same-identity refreshes and actor/epoch changes; stale completions cannot release newer checks or clear another scope’s records.
 - Use CLI recovery list/check/settle with text or JSON output; retain exact retry frames and their installation binding until uncertainty is settled.
 - Final nonacceptance is an ordered actor/operation control. Verification and trusted-checkpoint rebuild restore fences, live projections and erased identity without reconstructing erased content.
 - Owners can rebuild projections with a trusted checkpoint and explicitly invalidate restored sessions. Keep actor traffic isolated during restore; older backups can resurrect data and cookies.
-- Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
 - Typed registration constructors and retained-state decoding reject incident dates after notification; input groups and snapshots must obey chronology.
 - Core supplies progress and review/history differences; clients retain typed requests through preparation, review and pagination and reject mismatched reply identities.
 - Storage diagnostics retain bounded safe failure context. Provider cleanup and throwing diagnostic observers preserve confirmed results and conservative commit uncertainty.
 - Contributor checks allow identical shapes and wording and remove mechanical size targets; actual ownership, dependency, byte, security and complete-test controls remain enforced.
 - CI retains bounded native, frontend and browser failure reports for 14 days; private fixture credentials and keys are excluded.
 - Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
+- Work in a redesigned Cases, Recovery and Access workspace with grouped queue facts, task-specific editing, before/after review, case-work cards and accessible preferences.
 
 ## [0.14.0] - 2026-10-30
 

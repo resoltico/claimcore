@@ -7,11 +7,11 @@ export const RecoveryPanel = ({ initialOperationId }: { initialOperationId?: str
   const p = usePresentation();
   const operation = initialOperationId === "" ? undefined : initialOperationId;
   return (
-    <section aria-labelledby="recovery-title">
+    <section className="recovery-panel" aria-labelledby="recovery-title">
       <h1 id="recovery-title">{p.text("ui.recovery")}</h1>
-      <p>{p.text("ui.recoveryDescription")}</p>
+      <p className="page-description">{p.text("ui.recoveryDescription")}</p>
       <UnresolvedNotice showEmpty />
-      <details open={operation !== undefined}>
+      <details className="recovery-lookup" open={operation !== undefined}>
         <summary>{p.text("ui.generalOperationLookup")}</summary>
         <OperationLookup
           definition={productMetadata}

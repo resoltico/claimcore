@@ -6,7 +6,7 @@ import { SessionContext } from "../../src/session/SessionContext";
 import { context as baseContext } from "../support/service-ui.fixtures";
 import { wireReply } from "../support/contract-corpus.fixtures";
 import { navigate } from "../../src/routing/navigation";
-import { casePath } from "../../src/routing/routes";
+import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
 import type { CaseReceipt } from "../../src/api/service";
 import type { ActorContext } from "@contracts/client";
@@ -62,7 +62,7 @@ const start = async () => {
     actorId: audit.receipt.recordedBy,
     views: ["CASES", "OPERATIONS"],
   };
-  navigate(casePath(audit.receipt.subject.caseReference), true);
+  navigate(referencePath(audit.receipt.subject.caseReference), true);
   const view = render(shown("actor-a-token", 1));
   await userEvent.click(await view.findByRole("button", { name: "Simulate admitted acceptance" }));
   expect(view.container.querySelector(".success-toast")).not.toBeNull();

@@ -1,3 +1,4 @@
+import type { CaseSelector, CaseView } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { useCredential } from "../session/SessionContext";
@@ -9,7 +10,7 @@ import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
 import { CaseWork } from "./case/CaseWork";
 import { CaseFacts } from "./case/CaseFacts";
-import { CaseActions } from "./case/CaseActions";
+import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
 import { CaseProgress } from "./case/CaseProgress";
 import { CharacterWarning } from "../components/BusinessValue";
 import "./case.css";
@@ -18,11 +19,10 @@ import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
-import type { CaseView } from "@contracts/client";
 import { CaseStateBadge } from "../components/CaseStateBadge";
 
 type CaseDetailProps = {
-  caseReference: string;
+  target: CaseSelector;
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
@@ -90,55 +90,92 @@ const CurrentPresentation = ({
 };
 
 const CaseHeader = ({
-  caseReference,
+  target,
   onBack,
   state,
-}: Pick<CaseDetailProps, "caseReference" | "onBack"> & { state: CaseView | null }) => {
+  onAct,
+}: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & { state: CaseView | null }) => {
   const p = usePresentation();
+  const caseReference =
+    state?.caseReference ??
+    (target.kind === "REFERENCE" ? target.caseReference : p.text("ui.caseDetail"));
   const label = p.fieldLabel("caseReference");
   return (
     <>
-      <div className="section-heading">
-        <h1 id="case-detail-title" tabIndex={-1} aria-label={p.text("ui.caseDetail")}>
-          <bdi dir="ltr" className="identifier-value">
-            {caseReference}
-          </bdi>
-          <CharacterWarning value={caseReference} />
-        </h1>
-        {state === null ? null : (
-          <div className="case-header-state">
-            <CaseStateBadge
-              state={
-                state.state.kind === "ERASED"
-                  ? state.state
-                  : {
-                      kind: state.state.kind,
-                      status: state.state.fields.status,
-                      progress: state.state.fields.progress,
-                    }
-              }
-            />
-            <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
-            {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
-          </div>
-        )}
+      <div className="case-back">
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
+      </div>
+      <div className="section-heading case-heading">
+        <div>
+          <p className="eyebrow">{p.text("ui.caseWorkspace")}</p>
+          <h1 id="case-detail-title" tabIndex={-1} aria-label={p.text("ui.caseDetail")}>
+            <bdi dir="ltr" className="identifier-value">
+              {caseReference}
+            </bdi>
+            <CharacterWarning value={caseReference} />
+          </h1>
+          {state === null ? null : (
+            <div className="case-header-state">
+              <CaseStateBadge
+                state={
+                  state.state.kind === "ERASED"
+                    ? state.state
+                    : {
+                        kind: state.state.kind,
+                        status: state.state.fields.status,
+                        progress: state.state.fields.progress,
+                      }
+                }
+              />
+              <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
+              {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
+            </div>
+          )}
+        </div>
+        {state !== null && isCurrentCase(state) ? (
+          <CasePrimaryAction
+            current={state}
+            onAct={(act) => {
+              onAct(state, act);
+            }}
+          />
+        ) : null}
       </div>
       <p>
         <CopyValue icon label={label} value={caseReference} />
       </p>
+      {state === null ? null : (
+        <details className="case-technical">
+          <summary>{p.text("ui.technicalDetails")}</summary>
+          <dl>
+            <div>
+              <dt>{p.fieldLabel("caseId")}</dt>
+              <dd>
+                <bdi dir="ltr" className="identifier-value">
+                  {state.caseId}
+                </bdi>{" "}
+                <CopyValue label={p.fieldLabel("caseId")} value={state.caseId} />
+              </dd>
+            </div>
+            <div>
+              <dt>{p.text("label.revisionLabel")}</dt>
+              <dd>{p.integer(state.revision)}</dd>
+            </div>
+          </dl>
+        </details>
+      )}
     </>
   );
 };
 
-const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetailProps) => {
+const CaseDisclosure = ({ target, definition, onBack, onAct }: CaseDetailProps) => {
   const p = usePresentation();
-  const current = useCaseDisclosure(caseReference);
+  const current = useCaseDisclosure(target);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
-      <CaseHeader caseReference={caseReference} onBack={onBack} state={state} />
+      <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
       <CurrentFeedback message={current.message} loading={current.loading} />
       {state === null ? null : <LifecycleStatus value={state} />}
       {current.message === null ? null : (
@@ -162,7 +199,7 @@ const CaseDisclosure = ({ caseReference, definition, onBack, onAct }: CaseDetail
       ) : null}
       {current.historyModes.length ? (
         <CaseHistory
-          caseReference={caseReference}
+          target={target}
           fields={definition.fields}
           modes={current.historyModes}
           onDisclosureRefused={current.revalidate}
@@ -176,7 +213,7 @@ export const CaseDetail = (props: CaseDetailProps) => {
   const credential = useCredential();
   return (
     <CaseDisclosure
-      key={JSON.stringify([props.caseReference, credential, props.reloadSignal])}
+      key={JSON.stringify([props.target, credential, props.reloadSignal])}
       {...props}
     />
   );

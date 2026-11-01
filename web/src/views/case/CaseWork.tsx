@@ -13,11 +13,13 @@ const WorkAccount = ({ value }: { value: CaseWorkView["responsible"] }) => {
     <>
       <bdi dir="auto">{value.account.subject}</bdi>
       <CharacterWarning value={value.account.subject} />
+      <small className={value.available ? "assignee-available" : "assignee-unavailable"}>
+        {p.text(value.available ? "label.assigneeAvailable" : "label.assigneeUnavailable")}
+      </small>
       <details>
         <summary>{p.text("ui.accountDetails")}</summary>
         <IdentifierValue value={value.account.actorId} />{" "}
         <CopyValue label={p.fieldLabel("actorId")} value={value.account.actorId} />
-        <p>{p.text(value.available ? "label.assigneeAvailable" : "label.assigneeUnavailable")}</p>
       </details>
     </>
   );

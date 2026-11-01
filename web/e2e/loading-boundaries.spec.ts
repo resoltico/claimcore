@@ -71,5 +71,5 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await expect(page.getByRole("button", { name: "Retry loading", exact: true })).toBeVisible();
   await page.unroute(accessModule);
   await page.getByRole("button", { name: "Reload interface", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Authority", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Access", exact: true })).toBeVisible();
 });

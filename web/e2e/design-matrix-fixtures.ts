@@ -10,7 +10,7 @@ import {
   type CaseAct,
 } from "@contracts/client";
 import { isResponse } from "../src/protocol/client";
-import { casePath, actPath } from "../src/routing/routes";
+import { referencePath, actPath } from "../src/routing/routes";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
 
@@ -63,6 +63,7 @@ export type MatrixRoute = {
   expectedInput?: Readonly<Record<string, unknown>>;
   filtered?: boolean;
   summaryExpanded?: boolean;
+  expectedReference?: string;
 };
 const views = [
   {
@@ -75,13 +76,14 @@ const views = [
   { id: "voided", input: { lifecycle: ["VOIDED"] } },
   { id: "all", input: {} },
 ] as const;
-const worklistRoutes = (marker: string): MatrixRoute[] => [
+const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] => [
   {
     id: "cases-mine",
+    expectedReference: mineReference,
     path: "/cases?view=mine",
     ready: "#case-list-title",
     endpoint: "case.list",
-    expectedInput: { limit: 50, assignment: "ASSIGNED_TO_ME" },
+    expectedInput: { limit: 50, assignment: "MINE" },
   },
   {
     id: "cases-notified",
@@ -124,15 +126,21 @@ const worklistRoutes = (marker: string): MatrixRoute[] => [
 const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
   ...states.map((state) => ({
     id: `case-${state}`,
-    path: casePath(references[state]),
+    path: referencePath(references[state]),
     ready: "#case-detail-title",
     endpoint: "case.get" as const,
     expectedInput: { target: { kind: "REFERENCE", caseReference: references[state] } },
   })),
   { id: "editor-open", path: "/cases/new", ready: "#operation-title" },
-  ...(["DECIDE", "CORRECT", "VOID"] as const).map((act) => ({
-    id: `editor-${act.toLowerCase()}`,
-    path: actPath(act === "CORRECT" ? references.paid : references.undecided, act),
+  ...(["DECIDE", "CORRECT", "VOID", "UPDATE_WORK"] as const).map((act) => ({
+    id: `editor-${act === "UPDATE_WORK" ? "work" : act.toLowerCase()}`,
+    path: actPath(
+      {
+        kind: "REFERENCE",
+        caseReference: act === "CORRECT" ? references.paid : references.undecided,
+      },
+      act,
+    ),
     ready: "#operation-title",
     endpoint: "case.get" as const,
   })),
@@ -143,8 +151,21 @@ const routes = (data: {
   actorId: string;
   marker: string;
 }): MatrixRoute[] => [
-  ...worklistRoutes(data.marker),
+  ...worklistRoutes(data.marker, data.references.undecided),
   ...caseRoutes(data.references),
+  { id: "recovery", path: "/operations", ready: "#recovery-title" },
+  {
+    id: "paid-correction-review",
+    path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "CORRECT"),
+    ready: "#operation-title",
+    endpoint: "case.get",
+  },
+  {
+    id: "history-comparison",
+    path: referencePath(data.references.paid),
+    ready: "#case-detail-title",
+    endpoint: "case.get",
+  },
   {
     id: "operation-result",
     path: `/operations/${encodeURIComponent(data.operationId)}`,
@@ -334,39 +355,88 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   });
   return registered.subject.targetActorId;
 };
-const assignOwnerCase = async (
+const setOwnerCaseWork = async (
   page: Page,
-  inventory: { issuer: string; ownerSubject: string },
+  actorId: string,
   reference: string,
+  date: string,
   restore: () => Promise<void>,
 ) => {
-  const assignedTarget = {
-    kind: "HUMAN",
-    issuer: inventory.issuer,
-    subject: inventory.ownerSubject,
-  } as const;
-  const assignedScope = {
-    kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: reference },
-  } as const;
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
-    operationId: randomUUID(),
-    target: assignedTarget,
-    act: { kind: "GRANT", role: "CASE_READER", scope: assignedScope },
+  await caseAct(page, reference, 1, {
+    kind: "UPDATE_WORK",
+    values: {
+      responsibleActor: { kind: "SET", value: actorId },
+      followUpDate: { kind: "SET", value: date },
+    },
   });
+  const assigned = await request(page, "case.get", {
+    target: { kind: "REFERENCE", caseReference: reference },
+  });
+  if (assigned.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Matrix case work must be readable");
+  }
+  expect(assigned.outcome.data.mine).toBe(true);
+  expect(assigned.outcome.data.work.responsible?.account.actorId).toBe(actorId);
   return async () => {
     try {
-      await applyAuthority(page, {
-        kind: "AUTHORITY",
-        operationId: randomUUID(),
-        target: assignedTarget,
-        act: { kind: "REVOKE", role: "CASE_READER", scope: assignedScope },
+      await caseAct(page, reference, 2, {
+        kind: "UPDATE_WORK",
+        values: { responsibleActor: { kind: "CLEAR" }, followUpDate: { kind: "CLEAR" } },
       });
     } finally {
       await restore();
     }
   };
+};
+const unavailableCaseWork = async (page: Page, issuer: string, reference: string, date: string) => {
+  const target = { kind: "HUMAN", issuer, subject: `matrix-assignee-${randomUUID()}` } as const;
+  const registered = await execute(page, {
+    kind: "AUTHORITY",
+    operationId: randomUUID(),
+    target,
+    act: { kind: "REGISTER" },
+  });
+  if (registered.subject.kind !== "AUTHORITY") {
+    throw new Error("Expected the independently registered human assignee");
+  }
+  const actorId = registered.subject.targetActorId;
+  await applyAuthority(page, {
+    kind: "AUTHORITY",
+    operationId: randomUUID(),
+    target,
+    act: {
+      kind: "GRANT",
+      role: "CASE_HANDLER",
+      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
+    },
+  });
+  const yesterday = new Date(`${date}T12:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  await caseAct(page, reference, 2, {
+    kind: "UPDATE_WORK",
+    values: {
+      responsibleActor: { kind: "SET", value: actorId },
+      followUpDate: { kind: "SET", value: yesterday.toISOString().slice(0, 10) },
+    },
+  });
+  await applyAuthority(page, {
+    kind: "AUTHORITY",
+    operationId: randomUUID(),
+    target,
+    act: { kind: "DISABLE" },
+  });
+  const current = await request(page, "case.get", {
+    target: { kind: "REFERENCE", caseReference: reference },
+  });
+  if (current.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Unavailable work must remain readable to its actual reader");
+  }
+  expect(current.outcome.data.revision).toBe(3);
+  expect(current.outcome.data.work.responsible).toMatchObject({
+    account: { actorId },
+    available: false,
+  });
+  expect(current.outcome.data.mine).toBe(false);
 };
 export type DesignDataset = {
   routes: ReadonlyArray<MatrixRoute>;
@@ -391,11 +461,18 @@ export const prepareDesignDataset = async (
     }
     const marker = `DM-${randomUUID()}`;
     const cases = await seedCases(page, marker, contextReply.outcome.data.businessDate);
-    restore = await assignOwnerCase(
+    restore = await setOwnerCaseWork(
       page,
-      stewardship.inventory,
+      contextReply.outcome.data.actorId,
       cases.references.undecided,
+      contextReply.outcome.data.businessDate,
       restore,
+    );
+    await unavailableCaseWork(
+      page,
+      stewardship.inventory.issuer,
+      cases.references.decided,
+      contextReply.outcome.data.businessDate,
     );
     const actorId = await registerActor(
       page,

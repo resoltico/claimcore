@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openCase, reviewDraft, startAct } from "./case-workflow";
 import { browserRequest, login, openAuthenticated, expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
-import { actPath, casePath } from "../src/routing/routes";
+import { referencePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
 import { pauseJsonReply } from "./localization-support";
@@ -68,7 +68,9 @@ test("native beforeunload blocks document navigation only while execution is in 
     ]);
     await dismissed.promise;
     expect(dialogs).toEqual(["beforeunload"]);
-    await expect(page).toHaveURL((url) => url.pathname === actPath(reference, "CLOSE"));
+    await expect(page).toHaveURL(
+      (url) => url.pathname.endsWith("/acts/CLOSE") && url.pathname.startsWith("/cases/id/"),
+    );
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);
     await page.goto("/operations", { waitUntil: "commit" });
@@ -87,7 +89,7 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
   await openAuthenticated(page);
   const reference = `LOGIN.${randomUUID()}/part?#`;
   await openCase(page, reference);
-  const destination = new URL(casePath(reference), page.url());
+  const destination = new URL(referencePath(reference), page.url());
   const anonymous = await browser.newContext({ ignoreHTTPSErrors: true });
   try {
     const signedOutPage = await anonymous.newPage();
@@ -130,13 +132,13 @@ test("case deep links reload and browser back and forward preserve the reference
   await openAuthenticated(page);
   const reference = `ROUTE.${randomUUID()}/part?#`;
   await openCase(page, reference);
-  await expect(page).toHaveURL((url) => url.pathname === casePath(reference));
+  await expect(page).toHaveURL((url) => url.pathname === referencePath(reference));
   await page.reload();
   await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
   await expect(page).toHaveURL(/\/cases$/u);
   await page.goBack();
-  await expect(page).toHaveURL((url) => url.pathname === casePath(reference));
+  await expect(page).toHaveURL((url) => url.pathname === referencePath(reference));
   await page.goForward();
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 });

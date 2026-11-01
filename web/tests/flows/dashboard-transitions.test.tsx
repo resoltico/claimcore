@@ -118,7 +118,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   await user.click(await findButton(/Close the case/u));
   expect(
-    screen.getByRole("heading", {
+    await screen.findByRole("heading", {
       name: "Close the case",
     }),
   ).toBeVisible();
@@ -169,6 +169,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueDetail();
   renderDashboard();
   await user.click(await findButton("Open a case"));
+  await screen.findByLabelText("Handler's case reference");
   const fill = (label: string, value: string): void => {
     changeField(label, value);
   };
@@ -196,7 +197,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
     {
-      target: { kind: "REFERENCE", caseReference: fields.caseReference },
+      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
     },
   );
 });

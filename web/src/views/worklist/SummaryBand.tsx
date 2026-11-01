@@ -68,7 +68,7 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.data : null;
   if (query.loading) {
     return (
-      <p className="summary-band" role="status">
+      <p className="summary-band" role="status" aria-busy="true">
         {p.text("ui.loading")}
       </p>
     );

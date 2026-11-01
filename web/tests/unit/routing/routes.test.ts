@@ -1,16 +1,26 @@
 import { expect, it } from "vitest";
-import { actPath, casePath, parseRoute } from "../../../src/routing/routes";
+import { actPath, casePath, referencePath, parseRoute } from "../../../src/routing/routes";
 import { navigate, setNavigationLock } from "../../../src/routing/navigation";
 import { rememberLoginReturn, restoreLoginReturn } from "../../../src/routing/loginReturn";
 
 it.each(["CASE-0042", "new", "NEW", ".", "..", "/", "%", "~", "~bmV3", "A/B", "100%", '!~<>"'])(
   "round trips valid reference %s through actual URL normalization",
   (reference) => {
-    const location = new URL(casePath(reference), window.location.origin);
-    expect(parseRoute(location)).toEqual({ screen: "case", reference });
-    expect(parseRoute(new URL(actPath(reference, "CORRECT"), window.location.origin))).toEqual({
+    const location = new URL(referencePath(reference), window.location.origin);
+    expect(parseRoute(location)).toEqual({
+      screen: "case",
+      target: { kind: "REFERENCE", caseReference: reference },
+    });
+    expect(
+      parseRoute(
+        new URL(
+          actPath({ kind: "REFERENCE", caseReference: reference }, "CORRECT"),
+          window.location.origin,
+        ),
+      ),
+    ).toEqual({
       screen: "caseAct",
-      reference,
+      target: { kind: "REFERENCE", caseReference: reference },
       act: "CORRECT",
     });
   },
@@ -42,11 +52,11 @@ it("keeps worklist state in the URL and blocks mutation navigation and unload", 
   setNavigationLock(false);
 });
 it("restores a same-origin deep link once after login and refuses an external return", () => {
-  navigate("/cases/CASE-0042/acts/DECIDE");
+  navigate("/cases/reference/CASE-0042/acts/DECIDE");
   rememberLoginReturn();
   navigate("/cases");
   restoreLoginReturn();
-  expect(window.location.pathname).toBe("/cases/CASE-0042/acts/DECIDE");
+  expect(window.location.pathname).toBe("/cases/reference/CASE-0042/acts/DECIDE");
   navigate("/cases");
   restoreLoginReturn();
   expect(window.location.pathname).toBe("/cases");
@@ -54,4 +64,23 @@ it("restores a same-origin deep link once after login and refuses an external re
   restoreLoginReturn();
   expect(window.location.pathname).toBe("/cases");
   expect(sessionStorage.getItem("claimcore.loginReturn")).toBeNull();
+});
+
+it("keeps canonical case identity separate from a UUID-shaped reference", () => {
+  const caseId = "20000000-0000-4000-8000-000000000001";
+  expect(parseRoute(new URL(casePath(caseId), location.origin))).toEqual({
+    screen: "case",
+    target: { kind: "ID", caseId },
+  });
+  expect(parseRoute(new URL(referencePath(caseId), location.origin))).toEqual({
+    screen: "case",
+    target: { kind: "REFERENCE", caseReference: caseId },
+  });
+  for (const invalid of [
+    "/cases/id/not-a-uuid",
+    "/cases/CASE-0042",
+    "/cases/id/00000000-0000-0000-0000-000000000000",
+  ]) {
+    expect(parseRoute(new URL(invalid, location.origin))).toEqual({ screen: "missing" });
+  }
 });

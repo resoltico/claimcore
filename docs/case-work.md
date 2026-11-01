@@ -192,3 +192,17 @@ are not inferred; an unavailable comparison is shown as unavailable.
 
 History follows the current summary/full disclosure modes. Superseded snapshots need full-history rights;
 current case access alone does not grant them. See the [glossary](glossary.md) for project terms.
+
+## Web case navigation
+
+The Cases queue and accepted operations open `/cases/id/CASE-ID`. These canonical links retain case
+identity independently of how its reference looks. Exact reference lookup uses
+`/cases/reference/REFERENCE` with an encoded reference segment, including UUID-shaped references.
+The two selectors remain distinct through reads, history and editing; a UUID-shaped reference is never
+inferred to be a CaseId. Update bookmarks that used the former unqualified reference path. Task links add
+`/acts/ACT` to the selected route, and actual case actions use the admitted case identity.
+
+The case workspace groups current facts, case work, decision/payment and history. Its primary action is
+chosen from the actual offered tasks; closed and voided cases do not automatically recommend reopening.
+Technical details keep copyable CaseId and revision available. Targeted edits and review preserve raw
+entry context, exact canonical values and the authored expected revision.

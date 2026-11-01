@@ -10,7 +10,7 @@ import { authorityPreview } from "../support/authority-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
 import { navigate } from "../../src/routing/navigation";
-import { casePath } from "../../src/routing/routes";
+import { referencePath } from "../../src/routing/routes";
 import { Dashboard } from "../../src/views/Dashboard";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 const outcome = <const T,>(value: T) => ({ kind: "outcome" as const, status: 200, value });
@@ -53,7 +53,7 @@ const deferred = <T,>() => {
   return { promise, finish };
 };
 const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(await screen.findByRole("link", { name: "Authority" }));
+  await user.click(await screen.findByRole("link", { name: "Access" }));
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
@@ -122,8 +122,8 @@ it("retains the exact uncertain authority request when delayed context removes i
     delayed.finish(contextFor(["CASES", "OPERATIONS"]));
     await delayed.promise;
   });
-  expect(screen.getByRole("heading", { name: "Authority", level: 1 })).toBeVisible();
-  expect(screen.queryByRole("link", { name: "Authority" })).toBeNull();
+  expect(screen.getByRole("heading", { name: "Access", level: 1 })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Access" })).toBeNull();
   expect(document.body).not.toHaveTextContent("PREVIOUS_ACTOR_CANARY");
   await user.click(screen.getByRole("button", { name: "Send again" }));
   expect(execute.mock.calls.map(([prepared]) => prepared.bytes)).toEqual([
@@ -176,7 +176,7 @@ it("keeps the requested case route while an actual read refusal removes every cu
       },
     }),
   );
-  navigate(casePath(current.caseReference));
+  navigate(referencePath(current.caseReference));
   const user = userEvent.setup();
   render(
     <>

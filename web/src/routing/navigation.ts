@@ -11,8 +11,9 @@ export const setNavigationBlocker = (
     }
   };
 };
-let requestedFocus: string | null = null;
-export const takeRouteFocus = (): string | null => {
+type FocusRequest = { id: string | null; scrollY: number | null };
+let requestedFocus: FocusRequest | null = null;
+export const takeRouteFocus = (): FocusRequest | null => {
   const target = requestedFocus;
   requestedFocus = null;
   return target;
@@ -64,7 +65,12 @@ export const routeSnapshot = () => current;
 export const setNavigationLock = (value: boolean): void => {
   locked = value;
 };
-export const navigate = (path: string, replace = false, focusId?: string): boolean => {
+export const navigate = (
+  path: string,
+  replace = false,
+  focusId?: string,
+  scrollY?: number,
+): boolean => {
   const target = new URL(path, window.location.origin);
   if (target.origin !== window.location.origin) {
     return false;
@@ -73,7 +79,7 @@ export const navigate = (path: string, replace = false, focusId?: string): boole
     return true;
   }
   return guardedDeparture(() => {
-    requestedFocus = focusId ?? null;
+    requestedFocus = { id: focusId ?? null, scrollY: scrollY ?? null };
     window.history[replace ? "replaceState" : "pushState"](
       null,
       "",

@@ -1,3 +1,4 @@
+import type { ServiceResponse } from "../src/protocol/types";
 import { checkActionHierarchy } from "./action-hierarchy";
 import { checkAuthorityTable } from "./authority-table-checks";
 import { retainResponseBodies } from "./response-bodies";
@@ -37,6 +38,8 @@ export const dimensions = (engine: string): Dimension[] => {
   }
   return result;
 };
+export const displayLocaleFor = (language: Dimension["language"]) =>
+  ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" })[language];
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
   await page.setViewportSize({ width: dimension.width, height: 900 });
@@ -50,9 +53,7 @@ export const configureDimension = async (page: Page, dimension: Dimension) => {
       preferences: {
         version: 2,
         language: dimension.language,
-        displayLocale: { en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" }[
-          dimension.language
-        ],
+        displayLocale: displayLocaleFor(dimension.language),
         theme: dimension.theme.toUpperCase(),
       },
     },
@@ -96,6 +97,35 @@ const ready = async (page: Page, route: MatrixRoute) => {
   }
   await expect(page.locator("h1")).toBeFocused();
 };
+const assertListPresentation = async (
+  page: Page,
+  payload: ServiceResponse<"case.list">,
+  route: MatrixRoute,
+) => {
+  if (payload.outcome.kind !== "SUCCEEDED") {
+    return;
+  }
+  await expect(page.locator(".worklist-row")).toHaveCount(payload.outcome.data.items.length);
+  if (route.expectedReference === undefined) {
+    return;
+  }
+  const assigned = payload.outcome.data.items.find(
+    (item) => item.caseReference.toUpperCase() === route.expectedReference?.toUpperCase(),
+  );
+  expect(assigned, "The independently assigned matrix case must appear in Mine").toBeDefined();
+  await expect(page.locator(`.worklist-row a[href="/cases/id/${assigned!.caseId}"]`)).toBeVisible();
+};
+const assertCasePresentation = async (
+  page: Page,
+  payload: ServiceResponse<"case.get">,
+  route: MatrixRoute,
+) => {
+  if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
+    await expect(page.locator("#case-detail-title")).toContainText(
+      payload.outcome.data.caseReference,
+    );
+  }
+};
 const assertReadResponse = async (page: Page, reply: Response, route: MatrixRoute) => {
   expect(reply.status()).toBe(200);
   const payload: unknown = await reply.json();
@@ -103,6 +133,12 @@ const assertReadResponse = async (page: Page, reply: Response, route: MatrixRout
     throw new Error("E2E_MATRIX_READ_REPLY_INVALID");
   }
   expect(payload.outcome.kind).toBe("SUCCEEDED");
+  if (route.endpoint === "case.list" && isResponse("case.list", payload)) {
+    await assertListPresentation(page, payload, route);
+  }
+  if (route.endpoint === "case.get" && isResponse("case.get", payload)) {
+    await assertCasePresentation(page, payload, route);
+  }
   if (
     route.endpoint === "authority.grants" &&
     isResponse("authority.grants", payload) &&
@@ -233,7 +269,7 @@ const smallTargets = () => {
         (Math.max(...rects.map((box) => box.bottom)) - Math.min(...rects.map((box) => box.top))) /
         scale;
       const minimum = element.matches(
-        "button[type=submit], .case-actions button.primary, .case-action-bar .case-primary-action button, .worklist .section-heading button",
+        "button[type=submit], .case-heading button.primary, .case-actions button.primary, .case-action-bar .case-primary-action button, .worklist .section-heading button",
       )
         ? 44
         : 24;
@@ -277,16 +313,21 @@ const compactActionGeometry = async (page: Page, dimension: Dimension) => {
     return;
   }
   const viewport = await page.evaluate(() => window.innerHeight);
-  const primary = await bar.locator(".case-primary-action button").boundingBox();
-  expect(primary).not.toBeNull();
-  expect(primary!.y + primary!.height).toBeGreaterThanOrEqual(viewport - 24);
+  const primaryButton = bar.locator(".case-primary-action button");
+  const primary = (await primaryButton.count()) === 0 ? null : await primaryButton.boundingBox();
+  if (primary !== null) {
+    expect(primary.y + primary.height).toBeGreaterThanOrEqual(viewport - 24);
+  }
   const more = bar.locator(".case-more-actions > summary");
   if ((await more.count()) > 0) {
     const bounds = await more.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds!.y + bounds!.height).toBeGreaterThanOrEqual(viewport - 24);
-    expect(Math.abs(bounds!.y - primary!.y)).toBeLessThanOrEqual(1);
+    if (primary !== null) {
+      expect(Math.abs(bounds!.y - primary.y)).toBeLessThanOrEqual(1);
+    }
   }
+  expect(primary !== null || (await more.count()) === 1).toBe(true);
   await compactMoreGeometry(page, bar);
   const scroll = await page.evaluate(() => window.scrollY);
   await page.evaluate(() => {
@@ -335,26 +376,28 @@ const factCardReadability = () => {
   }
   return failures;
 };
-const compactRows = async (page: Page, dimension: Dimension) => {
+const readableRows = async (page: Page, dimension: Dimension) => {
   await checkAuthorityTable(page, dimension.width >= 1024);
-  if (dimension.zoom !== undefined || dimension.language === "en-XA") {
-    return;
-  }
-  const heights = await page
-    .locator(".worklist-row")
-    .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
-  const maximum = dimension.width >= 1024 ? 48 : 96;
-  for (const height of heights) {
-    expect(height).toBeLessThanOrEqual(maximum);
-  }
-  if (dimension.width < 640) {
-    const cards = await page
-      .locator(".authority-row")
-      .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
-    for (const height of cards) {
-      expect(height).toBeLessThanOrEqual(96);
-    }
-  }
+  const hiddenFacts = await page.locator(".worklist-row:not(.erased-row)").evaluateAll((rows) =>
+    rows.flatMap((row, index) =>
+      [".worklist-person > small", ".worklist-payable", ".worklist-work", ".worklist-changed"]
+        .filter((selector) => {
+          const element = row.querySelector(selector);
+          if (element === null) {
+            return true;
+          }
+          const box = element.getBoundingClientRect();
+          return (
+            box.width <= 0 || box.height <= 0 || getComputedStyle(element).visibility !== "visible"
+          );
+        })
+        .map((selector) => ({ row: index, selector })),
+    ),
+  );
+  expect(
+    hiddenFacts,
+    "Every queue presentation retains insurer, payable money, work and change observations",
+  ).toEqual([]);
 };
 const savedViewGeometry = async (page: Page) => {
   const tops = await page
@@ -366,11 +409,20 @@ const savedViewGeometry = async (page: Page) => {
     expect([...new Set(tops)]).toHaveLength(1);
   }
 };
-export const checkFrame = async (page: Page, dimension: Dimension) => {
+const primaryByFrame: Readonly<Record<string, string | null>> = {
+  "case-undecided": "DECIDE",
+  "case-decided": "RECORD_PAYMENT",
+  "case-paid": "CLOSE",
+  "case-closed": null,
+  "case-voided": null,
+  "case-erased": null,
+  "history-comparison": "CLOSE",
+};
+export const checkFrame = async (page: Page, dimension: Dimension, frame: string) => {
   await expectAccessible(page);
-  await checkActionHierarchy(page);
+  await checkActionHierarchy(page, primaryByFrame[frame]);
   await compactActionGeometry(page, dimension);
-  await compactRows(page, dimension);
+  await readableRows(page, dimension);
   await savedViewGeometry(page);
   expect(await page.evaluate(factCardReadability)).toEqual([]);
   const targets = await page.evaluate(smallTargets);
@@ -396,10 +448,11 @@ export const checkFrame = async (page: Page, dimension: Dimension) => {
 const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.zoom === undefined &&
   ((dimension.language === "en" && [390, 1280].includes(dimension.width)) ||
+    (dimension.language === "en" && dimension.width === 320 && dimension.theme === "light") ||
     (dimension.language === "ar" && dimension.width === 390 && dimension.theme === "light"));
 export const expectedCaptures = (engine: string, dimension: Dimension): number =>
   engine === "chromium" && screenshotDimension(dimension)
-    ? 11 +
+    ? 15 +
       Number(dimension.language === "en" && dimension.width === 390 && dimension.theme === "light")
     : 0;
 export const matrixEvidenceDirectory = async (): Promise<string> => {
@@ -450,6 +503,10 @@ const capturesFrame = (frame: string, dimension: Dimension): boolean => {
       "authority-detail",
       "authority-history",
       "not-found",
+      "recovery",
+      "editor-work",
+      "paid-correction-review",
+      "history-comparison",
     ].includes(frame)
   ) {
     return false;
@@ -473,7 +530,11 @@ export const captureFrame = async (
     root,
     `${dimension.language}-${dimension.width}-${dimension.theme}-${frame}.png`,
   );
-  await page.screenshot({ path, fullPage: true, animations: "disabled" });
+  await page.screenshot({
+    path,
+    fullPage: frame !== "paid-correction-review",
+    animations: "disabled",
+  });
   await info.attach(`design-${frame}`, { path, contentType: "image/png" });
   return path;
 };

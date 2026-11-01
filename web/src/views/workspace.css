@@ -65,7 +65,12 @@
   min-inline-size: 0;
 }
 .editor-current {
-  display: none;
+  display: block;
+  min-inline-size: 0;
+}
+.editor-current > details > summary {
+  color: var(--color-accent);
+  cursor: pointer;
 }
 @media (width >= 64rem) {
   .editor-layout {
@@ -78,7 +83,10 @@
 }
 
 .correction-current {
-  display: none;
+  display: block;
+  background: var(--color-surface-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 .correction-group {
   border: var(--border-width) solid var(--color-border);
@@ -171,10 +179,13 @@
 .authority-table {
   display: block;
   inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
   border-collapse: collapse;
   table-layout: fixed;
 }
 .authority-columns {
+  display: block;
   position: absolute;
   inline-size: 1px;
   block-size: 1px;

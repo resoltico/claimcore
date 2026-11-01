@@ -171,6 +171,8 @@ export const WorklistFilters = (props: Props) => {
     <>
       <button
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => {
           setOpen(true);
         }}

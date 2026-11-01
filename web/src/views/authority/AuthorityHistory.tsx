@@ -32,10 +32,10 @@ const HistoryFacts = ({ entry }: { entry: AuthorityHistoryEntry }) => {
       {p.term("role", act.role)} ·{" "}
       {scope.kind === "CASE" ? (
         <a
-          href={casePath(scope.caseReference)}
+          href={casePath(scope.caseId)}
           onClick={(event) => {
             followLink(event, () => {
-              navigate(casePath(scope.caseReference));
+              navigate(casePath(scope.caseId));
             });
           }}
         >

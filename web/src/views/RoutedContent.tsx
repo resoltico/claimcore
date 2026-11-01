@@ -1,3 +1,5 @@
+import { useRequesterContext } from "../hooks/useRequesterContext";
+import type { CaseSelector } from "@contracts/client";
 import { useEffect, useState, type ComponentProps } from "react";
 import { ViewModule } from "./ViewModule";
 import type { Notice } from "../protocol/notices";
@@ -8,7 +10,7 @@ import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
 import { isCaseAct } from "../operation/metadata";
-import { actPath, casePath, type Route } from "../routing/routes";
+import { actPath, casePath, referencePath, type Route } from "../routing/routes";
 import { navigate } from "../routing/navigation";
 import type { AuthorityPanel as AuthorityPanelType } from "./AuthorityPanel";
 import type { CaseDetail as CaseDetailType } from "./CaseDetail";
@@ -49,17 +51,36 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
     </section>
   );
 };
-const selectCase = (reference: string): void => {
-  navigate(casePath(reference));
-};
-const openCase = (): void => {
-  navigate("/cases/new");
-};
-const backToCases = (): void => {
-  navigate("/cases");
+/** A return observation belongs to this mounted requester workspace, never history or a journal. */
+const useCaseNavigation = () => {
+  const verified = useRequesterContext() !== null;
+  const [returnTo, setReturnTo] = useState<{
+    url: string;
+    scrollY: number;
+    focusId: string;
+  } | null>(null);
+  const remember = (focusId: string) => {
+    setReturnTo({ url: location.pathname + location.search, scrollY: window.scrollY, focusId });
+  };
+  return {
+    selectCase: (target: CaseSelector) => {
+      remember(target.kind === "ID" ? `case-${target.caseId}` : "case-lookup");
+      navigate(
+        target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference),
+      );
+    },
+    openCase: () => {
+      remember("open-case");
+      navigate("/cases/new");
+    },
+    backToCases: () => {
+      const owned = verified ? returnTo : null;
+      navigate(owned?.url ?? "/cases", false, owned?.focusId, owned?.scrollY);
+    },
+  };
 };
 const selectAct = (current: CurrentCase, act: string): void => {
-  navigate(actPath(current.caseReference, act));
+  navigate(actPath({ kind: "ID", caseId: current.caseId }, act));
 };
 export type EditorCallbacks = {
   setLocked: (value: boolean) => void;
@@ -73,7 +94,7 @@ const EditorBootstrap = ({
   onReady: (current: CurrentCase) => void;
 }) => {
   const p = usePresentation();
-  const current = useCaseDisclosure(route.reference);
+  const current = useCaseDisclosure(route.target);
   useEffect(() => {
     if (
       current.value !== null &&
@@ -103,7 +124,11 @@ const EditorBootstrap = ({
         <button
           type="button"
           onClick={() => {
-            navigate(casePath(route.reference));
+            navigate(
+              route.target.kind === "ID"
+                ? casePath(route.target.caseId)
+                : referencePath(route.target.caseReference),
+            );
           }}
         >
           {p.text("ui.backToCase")}
@@ -132,7 +157,11 @@ const RoutedEditor = (
       initialAct={props.route.act}
       disclosureAvailable={props.disclosureAvailable}
       onClose={() => {
-        navigate(casePath(props.route.reference));
+        navigate(
+          props.route.target.kind === "ID"
+            ? casePath(props.route.target.caseId)
+            : referencePath(props.route.target.caseReference),
+        );
       }}
       onCommitted={props.committed}
       onMutationLockChange={props.setLocked}
@@ -144,13 +173,14 @@ const NewCaseEditor = ({
   setLocked,
   committed,
   disclosureAvailable,
-}: EditorCallbacks & { disclosureAvailable: boolean }) => (
+  onClose,
+}: EditorCallbacks & { disclosureAvailable: boolean; onClose: () => void }) => (
   <OperationEditor
     definition={productMetadata}
     current={null}
     initialAct="OPEN"
     disclosureAvailable={disclosureAvailable}
-    onClose={backToCases}
+    onClose={onClose}
     onCommitted={committed}
     onMutationLockChange={setLocked}
   />
@@ -168,13 +198,14 @@ export const RoutedContent = ({
   authorityAvailable?: boolean;
   caseAvailable?: boolean;
 }) => {
+  const { selectCase, openCase, backToCases } = useCaseNavigation();
   switch (route.screen) {
     case "cases":
       return <CaseList onSelect={selectCase} onOpen={openCase} />;
     case "case":
       return (
         <CaseDetail
-          caseReference={route.reference}
+          target={route.target}
           reloadSignal={refresh}
           definition={productMetadata.catalog}
           onBack={backToCases}
@@ -184,6 +215,7 @@ export const RoutedContent = ({
     case "newCase":
       return (
         <NewCaseEditor
+          onClose={backToCases}
           setLocked={setLocked}
           committed={committed}
           disclosureAvailable={caseAvailable}
@@ -192,7 +224,7 @@ export const RoutedContent = ({
     case "caseAct":
       return (
         <RoutedEditor
-          key={`${route.reference}:${route.act}`}
+          key={`${JSON.stringify(route.target)}:${route.act}`}
           route={route}
           disclosureAvailable={caseAvailable}
           setLocked={setLocked}

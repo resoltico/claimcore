@@ -196,7 +196,7 @@ button.case-action-danger {
     inset-block-start: var(--space-4);
   }
   .case-fact-groups {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .case-fact-card .field-row {
@@ -287,4 +287,77 @@ button.case-action-danger {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.case-back {
+  margin-block-end: var(--space-4);
+}
+.case-heading {
+  align-items: start;
+  gap: var(--space-5);
+}
+.case-heading > div {
+  min-inline-size: 0;
+  flex: 1;
+}
+.case-heading h1 {
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+}
+.case-header-state {
+  margin-block-start: var(--space-3);
+}
+.case-technical {
+  font-size: var(--text-sm);
+  margin-block: var(--space-3);
+  color: var(--color-text-muted);
+}
+.case-technical summary {
+  cursor: pointer;
+  color: var(--color-accent);
+}
+.case-technical dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.case-technical dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.case-workspace > .case-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.case-fact-card .section-heading {
+  gap: var(--space-2);
+}
+.case-fact-card .field-row {
+  border: 0;
+}
+.case-fact-card .field-row dd {
+  font-weight: 550;
+}
+.case-timeline > li {
+  border: 1px solid var(--color-border);
+  padding: var(--space-4);
+}
+@media (width >= 64rem) {
+  .case-fact-card dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+.assignee-available,
+.assignee-unavailable {
+  display: block;
+  font-size: var(--text-sm);
+}
+.assignee-unavailable {
+  color: var(--color-danger);
+  font-weight: 650;
 }

@@ -83,7 +83,10 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
       },
     ),
   );
-  expect(select).toHaveBeenCalledWith("CASE-1");
+  expect(select).toHaveBeenCalledWith({
+    kind: "ID",
+    caseId: "20000000-0000-4000-8000-000000000001",
+  });
   await user.click(getButton("Open a case"));
   expect(open).toHaveBeenCalledOnce();
   await user.click(getButton("Load more cases"));
@@ -93,7 +96,10 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   expect(select).toHaveBeenCalledTimes(1);
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
   await user.click(getButton("Open by exact reference"));
-  expect(select).toHaveBeenCalledWith("CASE-9");
+  expect(select).toHaveBeenCalledWith({
+    kind: "ID",
+    caseId: "20000000-0000-4000-8000-000000000001",
+  });
   await user.click(getButton("Reload cases"));
 });
 const historyWithTwoReceipts = () => {
@@ -133,7 +139,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
-      caseReference="CASE-1"
+      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={back}

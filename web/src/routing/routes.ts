@@ -1,8 +1,10 @@
+import type { CaseSelector } from "@contracts/client";
+import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
   | { screen: "newCase" }
-  | { screen: "case"; reference: string }
-  | { screen: "caseAct"; reference: string; act: string }
+  | { screen: "case"; target: CaseSelector }
+  | { screen: "caseAct"; target: CaseSelector; act: string }
   | { screen: "operations"; operationId: string }
   | { screen: "authority"; actorId: string; history: boolean }
   | { screen: "missing" };
@@ -14,7 +16,7 @@ const opaque = (value: string): string =>
     .replace(/=+$/u, "");
 
 const referenceSegment = (reference: string): string =>
-  ["new", ".", ".."].includes(reference) || reference.startsWith("~")
+  [".", ".."].includes(reference) || reference.startsWith("~")
     ? `~${opaque(reference)}`
     : encodeURIComponent(reference);
 
@@ -32,27 +34,32 @@ const referenceFrom = (segment: string): string => {
   return reference;
 };
 
-export const casePath = (reference: string): string => `/cases/${referenceSegment(reference)}`;
-export const actPath = (reference: string, act: string): string =>
-  `${casePath(reference)}/acts/${encodeURIComponent(act)}`;
+export const casePath = (caseId: string): string => `/cases/id/${encodeURIComponent(caseId)}`;
+export const referencePath = (reference: string): string =>
+  `/cases/reference/${referenceSegment(reference)}`;
+export const actPath = (target: CaseSelector, act: string): string =>
+  `${target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference)}/acts/${encodeURIComponent(act)}`;
 
 const caseRoute = (segments: string[]): Route => {
-  if (segments.length === 1) {
-    return { screen: "cases", query: "" };
+  if (segments.length === 2 && segments[1] === "new") {
+    return { screen: "newCase" };
   }
-  if (segments.length === 2) {
-    return segments[1] === "new"
-      ? { screen: "newCase" }
-      : { screen: "case", reference: referenceFrom(segments[1]!) };
+  if (segments.length !== 3 && segments.length !== 5) {
+    return { screen: "missing" };
   }
-  if (segments[2] === "acts" && segments.length === 4) {
-    return {
-      screen: "caseAct",
-      reference: referenceFrom(segments[1]!),
-      act: decodeURIComponent(segments[3]!),
-    };
+  const target =
+    segments[1] === "id"
+      ? { kind: "ID" as const, caseId: decodeURIComponent(segments[2]!) }
+      : { kind: "REFERENCE" as const, caseReference: referenceFrom(segments[2]!) };
+  if (!["id", "reference"].includes(segments[1]!) || !isRequest("case.get", { target })) {
+    return { screen: "missing" };
   }
-  return { screen: "missing" };
+  if (segments.length === 3) {
+    return { screen: "case", target };
+  }
+  return segments[3] === "acts"
+    ? { screen: "caseAct", target, act: decodeURIComponent(segments[4]!) }
+    : { screen: "missing" };
 };
 export const parseRoute = (location: Pick<Location, "pathname" | "search">): Route => {
   const segments = location.pathname.split("/").filter(Boolean);

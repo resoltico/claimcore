@@ -108,7 +108,12 @@ it("a failed history read stops loading without inventing a successful empty pag
     },
     dispatched: false,
   });
-  render(<CaseHistory caseReference="SYNTHETIC" fields={productMetadata.catalog.fields} />);
+  render(
+    <CaseHistory
+      target={{ kind: "REFERENCE", caseReference: "SYNTHETIC" }}
+      fields={productMetadata.catalog.fields}
+    />,
+  );
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.queryByText("No accessible history entries returned.")).toBeNull();

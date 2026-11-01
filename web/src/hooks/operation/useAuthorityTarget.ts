@@ -1,3 +1,4 @@
+import { authorityPrimaryAction } from "../../operation/authorityActionPriority";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ActorSummary, PrincipalInput } from "@contracts/client";
 import type { FormValues } from "../../protocol/forms";
@@ -17,8 +18,6 @@ const matches = (values: FormValues, principal: PrincipalInput) =>
   values["target.subject"] === principal.subject;
 const retained = (model: OperationModel) =>
   model.phase !== "ACCEPTED" && (model.dirty || model.prepared !== null || model.priorUncertain);
-const defaultKind = (offered: ReadonlyArray<string>) =>
-  offered.includes("GRANT") ? "GRANT" : offered[0];
 const sameSnapshot = (left: Snapshot | null, right: Snapshot) =>
   left !== null &&
   left.key === right.key &&
@@ -75,7 +74,7 @@ const useActorDefault = (model: OperationModel, source: Snapshot | null, fixed: 
       }
       return;
     }
-    const kind = defaultKind(source.offered);
+    const kind = authorityPrimaryAction(source.offered);
     if (kind !== undefined) {
       model.discard(false, kind, targetValues(source.actor.principal));
     }
@@ -110,7 +109,7 @@ const useActorConsent = (
   };
   const discard = (
     acknowledged = false,
-    kind = source === null ? "REGISTER" : (defaultKind(source.offered) ?? "REGISTER"),
+    kind = source === null ? "REGISTER" : (authorityPrimaryAction(source.offered) ?? "REGISTER"),
   ) => {
     const fallback = fixed && source !== null ? source.actor.principal : undefined;
     const principal = resetPrincipal(intent, kind, epoch, available, fallback);
@@ -151,6 +150,7 @@ export const useAuthorityTarget = (model: OperationModel, revision: number, avai
     ...consent,
     observe,
     offered: source?.offered ?? [],
+    primary: authorityPrimaryAction(source?.offered ?? []),
     actor: source?.actor ?? null,
     mode: targetMode(model, actorId, fixed),
   };

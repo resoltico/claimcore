@@ -1,6 +1,14 @@
 import "./styles.css";
 import { guardedDeparture } from "../routing/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { I18nProvider } from "react-aria-components/I18nProvider";
 import { PresentationContext } from "./context";
 import { createPresenter } from "./presenter";
@@ -85,7 +93,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     () => (state.ready ? createPresenter(preferences) : null),
     [preferences, state.ready],
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.lang = catalogLanguage(preferences.language);
     document.documentElement.dir = languageDirection(preferences.language);
     if (preferences.theme === "SYSTEM") {

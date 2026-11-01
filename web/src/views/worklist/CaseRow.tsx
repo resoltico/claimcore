@@ -1,3 +1,4 @@
+import type { CaseSelector } from "@contracts/client";
 import type { CaseSummary } from "../../api/service";
 import { CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
@@ -24,31 +25,34 @@ const Changed = ({ value }: { value: string }) => {
   );
 };
 type LiveSummary = Exclude<CaseSummary["state"], { kind: "ERASED" }>;
-const CaseRowFacts = ({ live }: { live: LiveSummary | null }) => {
+const Parties = ({ live }: { live: LiveSummary | null }) =>
+  live === null ? null : (
+    <span className="worklist-person">
+      <bdi>{live.claimantName}</bdi>
+      <CharacterWarning value={live.claimantName} />
+      <small>
+        <bdi>{live.insurerName}</bdi>
+        <CharacterWarning value={live.insurerName} />
+      </small>
+    </span>
+  );
+const Money = ({ live }: { live: LiveSummary | null }) => {
   const p = usePresentation();
-  const payable = live?.payable ?? null;
+  if (live === null) {
+    return null;
+  }
   return (
     <>
-      <td className="worklist-person">
-        {live === null ? null : (
-          <>
-            <bdi>{live.claimantName}</bdi>
-            <CharacterWarning value={live.claimantName} />
-            <small>
-              <bdi>{live.insurerName}</bdi>
-              <CharacterWarning value={live.insurerName} />
-            </small>
-          </>
+      <span className="worklist-cell-label">{p.fieldLabel("claimedAmount")}</span>
+      <bdi dir="ltr">{p.money(live.claimed.amount, live.claimed.currency)}</bdi>
+      <small className="worklist-payable">
+        <span>{p.fieldLabel("payableAmount")}: </span>
+        {live.payable === null ? (
+          p.text("ui.notRecorded")
+        ) : (
+          <bdi dir="ltr">{p.money(live.payable.amount, live.payable.currency)}</bdi>
         )}
-      </td>
-      <td className="worklist-money">
-        {live === null ? null : (
-          <bdi dir="ltr">{p.money(live.claimed.amount, live.claimed.currency)}</bdi>
-        )}
-      </td>
-      <td className="worklist-money worklist-payable">
-        {payable === null ? null : <bdi dir="ltr">{p.money(payable.amount, payable.currency)}</bdi>}
-      </td>
+      </small>
     </>
   );
 };
@@ -58,7 +62,7 @@ export const CaseRow = ({
   businessDate,
 }: {
   value: CaseSummary;
-  onSelect: (reference: string) => void;
+  onSelect: (target: CaseSelector) => void;
   businessDate: string;
 }) => {
   const p = usePresentation();
@@ -70,23 +74,28 @@ export const CaseRow = ({
       <td className="worklist-reference">
         <a
           className="reference row-link"
-          href={casePath(value.caseReference)}
+          id={`case-${value.caseId}`}
+          href={casePath(value.caseId)}
           title={value.caseReference}
           aria-label={value.caseReference}
           onClick={(event) => {
             followLink(event, () => {
-              onSelect(value.caseReference);
+              onSelect({ kind: "ID", caseId: value.caseId });
             });
           }}
         >
           <RowReference value={value.caseReference} />
         </a>
+        <Parties live={live} />
       </td>
-      <CaseRowFacts live={live} />
+      <td className="worklist-money">
+        <Money live={live} />
+      </td>
       <td className="worklist-badges">
         <CaseStateBadge state={state} />
       </td>
       <td className="worklist-work">
+        <span className="worklist-cell-label">{p.term("section", "work")}</span>
         {live === null ? null : (
           <>
             {live.work.responsible === null ? (
@@ -114,9 +123,13 @@ export const CaseRow = ({
           </>
         )}
       </td>
-      <td className="worklist-age">{age}</td>
       <td className="worklist-changed">
+        <span className="worklist-cell-label">{p.text("label.changedAt")}</span>
         <Changed value={value.changedAt} />
+        <small>
+          <span>{p.text("ui.age")}: </span>
+          <span>{age}</span>
+        </small>
       </td>
     </tr>
   );

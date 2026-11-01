@@ -108,6 +108,7 @@ export const OperationForm = (props: OperationFormProps) => {
   const allowed = offered.includes(model.entry.kind) && !paused;
   return (
     <form
+      className="operation-form-card"
       ref={form}
       onSubmit={(event) => {
         event.preventDefault();

@@ -8,7 +8,7 @@ import {
   type RecoveryRecord,
   type RecoveryJournal,
 } from "../../protocol/recoveryJournal";
-import { useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { useContext, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   service,
   requestEndpoint,
@@ -546,6 +546,14 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   state.context.epoch === epoch &&
   state.target === targetKey(options) &&
   !state.disclosureRefused;
+/** The first verified requester owns this coordinator; refresh never adopts a different owner. */
+const useVerifiedOperationOwner = (scope: RecoveryScope | undefined): boolean => {
+  const [owner, setOwner] = useState<RecoveryScope | null>(null);
+  if (owner === null && scope !== undefined) {
+    setOwner(scope);
+  }
+  return owner !== null && scope !== undefined && sameRecoveryScope(owner, scope);
+};
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
@@ -567,6 +575,7 @@ export const useOperation = (supplied: Options) => {
     journal: supplied.journal ?? journal,
     ...(recoveryScope === undefined ? {} : { recoveryScope }),
   };
+  const ownerVerified = useVerifiedOperationOwner(options.recoveryScope);
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
@@ -583,6 +592,7 @@ export const useOperation = (supplied: Options) => {
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   return {
     ...view,
+    ownerVerified,
     ...actions(state, dispatch, options),
     dirty: dirtyValues(state.values, state.baseline),
     disclosureCurrent,

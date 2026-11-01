@@ -84,3 +84,38 @@
   cursor: default;
   opacity: 0.7;
 }
+
+.review-intent {
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+.review-intent dd {
+  margin: 0;
+}
+.review-groups {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+.review-groups > div {
+  display: grid;
+  gap: var(--space-1);
+  margin-block: var(--space-3);
+}
+.review-groups dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.review-groups dd {
+  margin: 0;
+}
+.review-request {
+  margin-block: var(--space-4);
+}
+.review-request > summary {
+  color: var(--color-accent);
+  cursor: pointer;
+}
+.review-advisory {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

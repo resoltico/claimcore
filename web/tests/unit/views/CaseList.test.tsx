@@ -27,7 +27,10 @@ it("opens an exact reference match using ASCII case identity", async () => {
   const select = vi.fn();
   render(<CaseList onOpen={vi.fn()} onSelect={select} />);
   fireEvent.click(await screen.findByRole("button", { name: "Open ADVISED-CASE" }));
-  expect(select).toHaveBeenCalledWith("ADVISED-CASE");
+  expect(select).toHaveBeenCalledWith({
+    kind: "ID",
+    caseId: "20000000-0000-4000-8000-000000000001",
+  });
 });
 it("does not expand non-ASCII search text into a reference identity", async () => {
   vi.stubGlobal(
@@ -51,7 +54,7 @@ it.each([
   ["recent", "Recently changed"],
   ["closed", "Closed"],
   ["voided", "Voided"],
-  ["all", "All"],
+  ["all", "All accessible"],
 ])("names the empty %s saved worklist", async (view, label) => {
   vi.stubGlobal(
     "fetch",

@@ -520,7 +520,8 @@
     "followUpDate": "2026-11-02"
   },
   "caseAssignments": [
-    "ASSIGNED_TO_ME"
+    "MINE",
+    "UNASSIGNED"
   ],
   "workFields": [
     {

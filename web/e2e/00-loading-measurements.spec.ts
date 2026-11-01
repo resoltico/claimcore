@@ -118,7 +118,17 @@ const measureRoute = async (
   try {
     page.on("response", (response) => {
       if (new URL(response.url()).pathname.startsWith("/assets/") && response.status() >= 400) {
-        errors.push(`${new URL(response.url()).pathname}: ${response.status()}`);
+        errors.push(
+          `${new URL(response.url()).pathname}: ${response.status()}, ${response.headers()["content-type"]}, ${response.headers()["cache-control"]}`,
+        );
+        void response
+          .text()
+          .then((body) => {
+            errors.push(`Asset error body: ${body.slice(0, 512)}`);
+          })
+          .catch(() => {
+            errors.push("Asset error body unavailable");
+          });
       }
     });
     page.on("requestfailed", (request) => {

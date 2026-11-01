@@ -227,6 +227,9 @@ const EditableOperation = (props: Props) => {
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true } = props;
   const p = usePresentation();
+  if (!model.ownerVerified) {
+    return <UnavailableDisclosure model={model} available={false} />;
+  }
   if (model.phase === "ACCEPTED") {
     return (
       <button

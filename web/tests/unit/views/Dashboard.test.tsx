@@ -76,7 +76,7 @@ it("replaces an unavailable initial case route with the first advertised workspa
     value: wireReply("authority.list"),
   });
   render(<Dashboard />);
-  expect(await screen.findByRole("heading", { name: "Authority", level: 1 })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Access", level: 1 })).toBeVisible();
   expect(window.location.pathname).toBe("/authority");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();

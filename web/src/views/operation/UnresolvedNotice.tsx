@@ -29,7 +29,7 @@ const RecoveryRows = ({
         <p>{p.text("ui.recoveryEmpty")}</p>
       ) : null}
       {operations.map((record) => (
-        <div key={record.attemptId}>
+        <div className="recovery-attempt" key={record.attemptId}>
           <p>{p.text("ui.savedRecoveryAttempt")}</p>
           <p>
             <IdentifierValue value={record.operationId} />

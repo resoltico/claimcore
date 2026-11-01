@@ -1,6 +1,6 @@
 import "./worklist/worklist.css";
 import { useCallback, useMemo } from "react";
-import type { ActorContext } from "@contracts/client";
+import type { ActorContext, CaseSelector } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -19,7 +19,7 @@ import {
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { CaseRow } from "./worklist/CaseRow";
 import { savedViewLabel } from "./worklist/savedViewLabel";
-type Props = { onSelect: (caseReference: string) => void; onOpen: () => void };
+type Props = { onSelect: (target: CaseSelector) => void; onOpen: () => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 const useWorklist = () => {
@@ -47,13 +47,10 @@ const WorklistColumns = () => {
   return (
     <thead className="worklist-columns">
       <tr>
-        <th scope="col">{p.fieldLabel("caseReference")}</th>
-        <th scope="col">{p.fieldLabel("claimantName")}</th>
-        <th scope="col">{p.fieldLabel("claimedAmount")}</th>
-        <th scope="col">{p.fieldLabel("payableAmount")}</th>
+        <th scope="col">{p.text("ui.caseParties")}</th>
+        <th scope="col">{p.text("ui.claimedPayable")}</th>
         <th scope="col">{p.text("ui.caseState")}</th>
         <th scope="col">{p.term("section", "work")}</th>
-        <th scope="col">{p.text("ui.age")}</th>
         <th scope="col">{p.text("label.changedAt")}</th>
       </tr>
     </thead>
@@ -144,7 +141,7 @@ const ExactResult = ({
     <button
       type="button"
       onClick={() => {
-        onSelect(value.caseReference);
+        onSelect({ kind: "ID", caseId: value.caseId });
       }}
     >
       {p.text("ui.openExactCase", { reference: value.caseReference })}
@@ -200,11 +197,15 @@ const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorCo
   const p = usePresentation();
   const page = useWorklist();
   return (
-    <section aria-labelledby="case-list-title" className="worklist">
+    <section aria-labelledby="case-list-title" className="worklist" aria-busy={page.loading}>
       <div className="section-heading">
-        <h1 id="case-list-title">{p.text("ui.cases")}</h1>
+        <div>
+          <p className="eyebrow">{p.text("ui.workQueue")}</p>
+          <h1 id="case-list-title">{p.text("ui.cases")}</h1>
+          <p className="page-description">{p.text("ui.queueDescription")}</p>
+        </div>
         {page.mayOpen ? (
-          <button className="primary" type="button" onClick={onOpen}>
+          <button id="open-case" className="primary" type="button" onClick={onOpen}>
             {p.actLabel("OPEN")}
           </button>
         ) : null}
@@ -212,7 +213,9 @@ const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorCo
       <WorklistToolbar
         query={page.query}
         onChange={page.change}
-        onSelect={onSelect}
+        onSelect={(caseReference) => {
+          onSelect({ kind: "REFERENCE", caseReference });
+        }}
         loading={page.loading}
         onReload={() => {
           void page.load(null);

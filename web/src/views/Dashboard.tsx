@@ -35,8 +35,29 @@ const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>) => {
     }
   }, [route, views]);
 };
-const useRouteHeading = (route: Route) => {
-  const identity = route.screen === "cases" ? "cases" : JSON.stringify(route);
+const routeFocusTarget = (root: HTMLElement, id: string | null) => {
+  const requested = id === null ? null : document.getElementById(id);
+  const heading =
+    [...root.querySelectorAll<HTMLElement>("h1")].find(
+      (candidate) => candidate.closest("[hidden],[inert]") === null,
+    ) ?? null;
+  return { element: requested ?? heading, restored: requested !== null };
+};
+const moveRouteFocus = (element: HTMLElement, scrollY: number | null) => {
+  const closed = element.closest<HTMLDetailsElement>("details:not([open])");
+  if (closed !== null) {
+    closed.open = true;
+  }
+  if (element.matches("h1,h2,h3")) {
+    element.tabIndex = -1;
+  }
+  element.focus({ preventScroll: scrollY !== null });
+  if (scrollY !== null) {
+    window.scrollTo(0, scrollY);
+  }
+};
+const useRouteHeading = (route: Route, owner: string | null) => {
+  const identity = `${owner}:${route.screen === "cases" ? "cases" : JSON.stringify(route)}`;
   const content = useRef<HTMLDivElement>(null);
   const focused = useRef<string | null>(null);
   useEffect(() => {
@@ -44,23 +65,18 @@ const useRouteHeading = (route: Route) => {
     if (target === null || focused.current === identity) {
       return;
     }
-    const focusId = takeRouteFocus();
+    const { id, scrollY } = takeRouteFocus() ?? { id: null, scrollY: null };
     const focus = () => {
-      const heading =
-        focusId === null
-          ? ([...target.querySelectorAll<HTMLElement>("h1")].find(
-              (candidate) => candidate.closest("[hidden],[inert]") === null,
-            ) ?? null)
-          : document.getElementById(focusId);
-      if (heading) {
-        focused.current = identity;
-        if (heading.matches("h1,h2,h3")) {
-          heading.tabIndex = -1;
-        }
-        heading.focus();
-        return true;
+      if (id !== null && target.querySelector('[aria-busy="true"]') !== null) {
+        return false;
       }
-      return false;
+      const destination = routeFocusTarget(target, id);
+      if (destination.element === null) {
+        return false;
+      }
+      focused.current = identity;
+      moveRouteFocus(destination.element, destination.restored ? scrollY : null);
+      return true;
     };
     if (focus()) {
       return;
@@ -70,7 +86,12 @@ const useRouteHeading = (route: Route) => {
         observer.disconnect();
       }
     });
-    observer.observe(target, { childList: true, subtree: true });
+    observer.observe(target, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["aria-busy"],
+    });
     return () => {
       observer.disconnect();
     };
@@ -106,7 +127,9 @@ const AcceptedToast = ({
   if (
     receipt === null ||
     route.screen !== "case" ||
-    route.reference !== receipt.subject.caseReference
+    (route.target.kind === "ID"
+      ? route.target.caseId !== receipt.subject.caseId
+      : route.target.caseReference !== receipt.subject.caseReference)
   ) {
     return null;
   }
@@ -262,7 +285,7 @@ export const Dashboard = () => {
   const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
   const [locked, setLocked] = useState(false);
   const [refresh, setRefresh] = useState(0);
-  const content = useRouteHeading(route);
+  const content = useRouteHeading(route, owner);
   useNavigationLock(locked);
   const committed = (receipt: CaseReceipt) => {
     if (!feedback.accept(receipt)) {
@@ -272,7 +295,7 @@ export const Dashboard = () => {
     setLocked(false);
     cache?.invalidate();
     setRefresh((value) => value + 1);
-    navigate(casePath(receipt.subject.caseReference));
+    navigate(casePath(receipt.subject.caseId));
   };
   return (
     <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>

@@ -1,3 +1,4 @@
+import { useCompact } from "../hooks/useCompact";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
@@ -54,6 +55,7 @@ const CurrentFacts = ({
   disclosureAvailable = true,
 }: OperationEditorProps & { model: ReturnType<typeof useOperation> }) => {
   const p = usePresentation();
+  const compact = useCompact();
   if (
     !disclosureAvailable ||
     current === null ||
@@ -66,12 +68,15 @@ const CurrentFacts = ({
   }
   return (
     <aside className="editor-current">
-      <CaseFieldsView
-        values={current.state.fields}
-        revision={current.revision}
-        fields={definition.catalog.fields}
-        context={p.text("ui.currentCase")}
-      />
+      <details open={!compact}>
+        <summary>{p.text("ui.currentCase")}</summary>
+        <CaseFieldsView
+          values={current.state.fields}
+          revision={current.revision}
+          fields={definition.catalog.fields}
+          context={p.text("ui.currentCase")}
+        />
+      </details>
     </aside>
   );
 };

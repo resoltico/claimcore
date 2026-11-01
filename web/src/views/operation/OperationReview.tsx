@@ -1,9 +1,10 @@
+import type { OperationInput } from "@contracts/client";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { lifecycleMessageIds } from "../LifecycleStatus";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
-import { BusinessValue } from "../../components/BusinessValue";
+import { BusinessValue, CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
 import type { FieldCatalogEntry } from "../../api/service";
@@ -63,32 +64,36 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
           return (
             <div key={change.field}>
               <dt>{p.fieldLabel(change.field)}</dt>
-              <dd>
-                <BusinessValue
-                  value={change.before}
-                  field={field}
-                  context="ui.before"
-                  {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
-                />
-                <ExactReviewValue
-                  value={change.before}
-                  field={field}
-                  {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
-                />
+              <dd className="review-comparison">
+                <div className="review-before">
+                  <BusinessValue
+                    value={change.before}
+                    field={field}
+                    context="ui.before"
+                    {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
+                  />
+                  <ExactReviewValue
+                    value={change.before}
+                    field={field}
+                    {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
+                  />
+                </div>
                 <span className="review-arrow" aria-hidden="true">
                   {" → "}
                 </span>
-                <BusinessValue
-                  value={change.after}
-                  field={field}
-                  context="ui.after"
-                  {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
-                />
-                <ExactReviewValue
-                  value={change.after}
-                  field={field}
-                  {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
-                />
+                <div className="review-after">
+                  <BusinessValue
+                    value={change.after}
+                    field={field}
+                    context="ui.after"
+                    {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
+                  />
+                  <ExactReviewValue
+                    value={change.after}
+                    field={field}
+                    {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
+                  />
+                </div>
               </dd>
             </div>
           );
@@ -172,6 +177,79 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
     </>
   );
 };
+const ReviewIntent = ({ input, review }: { input: OperationInput; review: Review["subject"] }) => {
+  const p = usePresentation();
+  if (input.kind === "AUTHORITY") {
+    return (
+      <dl className="review-intent">
+        <div>
+          <dt>{p.text("ui.principal")}</dt>
+          <dd>
+            {p.term("principalKind", input.target.kind)} · <bdi>{input.target.subject}</bdi>
+            <CharacterWarning value={input.target.subject} />
+          </dd>
+        </div>
+        <div>
+          <dt>{p.fieldLabel("principal.issuer")}</dt>
+          <dd>
+            <bdi>{input.target.issuer}</bdi>
+            <CharacterWarning value={input.target.issuer} />
+          </dd>
+        </div>
+        {input.act.kind === "GRANT" || input.act.kind === "REVOKE" ? (
+          <div>
+            <dt>{p.fieldLabel("role")}</dt>
+            <dd>{p.term("role", input.act.role)}</dd>
+          </div>
+        ) : null}
+      </dl>
+    );
+  }
+  const reference = review.kind === "CASE" ? review.after.caseReference : "";
+  return (
+    <p className="review-intent">
+      <bdi dir="ltr" className="identifier-value">
+        {reference}
+      </bdi>{" "}
+      · {p.fieldLabel("expectedRevision")}: <bdi dir="ltr">{p.integer(input.expectedRevision)}</bdi>
+    </p>
+  );
+};
+const CorrectionIntent = ({
+  input,
+  review,
+}: {
+  input: OperationInput;
+  review: Review["subject"];
+}) => {
+  const p = usePresentation();
+  if (input.kind !== "CASE" || input.act.kind !== "CORRECT") {
+    return null;
+  }
+  const { groups } = input.act;
+  const prior =
+    review.kind === "CASE" && review.before !== null && review.before.state.kind !== "ERASED"
+      ? review.before.state.fields.payment
+      : null;
+  return (
+    <dl className="review-groups">
+      {(["registration", "decision", "payment"] as const).map((group) => (
+        <div key={group}>
+          <dt>{p.text(`group.${group}.label`)}</dt>
+          <dd>
+            {p.term("correction", groups[group].kind)}
+            {group === "payment" && groups.payment.kind === "REAFFIRM" && prior !== null ? (
+              <small className="exact-recorded-value">
+                {p.fieldLabel("paymentDate")}: <bdi dir="ltr">{p.date(prior.paymentDate)}</bdi> ·{" "}
+                <bdi dir="ltr">{prior.paymentDate}</bdi>
+              </small>
+            ) : null}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
 const ReviewConfirmation = ({
   model,
   confirmationId,
@@ -247,7 +325,6 @@ export const OperationReview = ({
       onOpenChange={model.returnToEdit}
     >
       <>
-        <p>{p.text("ui.unchangedUntilSubmit")}</p>
         <h3>
           {input.kind === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
         </h3>
@@ -256,12 +333,18 @@ export const OperationReview = ({
             ? p.actMeaning(input.act.kind)
             : p.authorityMeaning(input.act.kind)}
         </p>
-        <ProtocolSummary value={display} entry={act} />
+        <ReviewIntent input={input} review={model.review.subject} />
         {model.review.subject.kind === "CASE" ? (
           <ReviewValues review={model.review.subject} />
         ) : (
           <AuthorityValues review={model.review.subject} />
         )}
+        <CorrectionIntent input={input} review={model.review.subject} />
+        <details className="review-request">
+          <summary>{p.text("ui.technicalDetails")}</summary>
+          <ProtocolSummary value={display} entry={act} />
+        </details>
+        <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
         <ReviewConfirmation model={model} confirmationId={act.confirmationId!} paused={stopped} />
       </>
     </AccessibleModal>
