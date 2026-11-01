@@ -54,6 +54,7 @@ let private selectedSpecifications =
             "resolution.spec.ts"
             "reply-correlation.spec.ts"
             "work-surface-foundations.spec.ts"
+            "workspace-recovery.spec.ts"
             "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
             "uncertain-execution.spec.ts"
