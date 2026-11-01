@@ -2127,6 +2127,9 @@
           },
           "hasScopedCases": {
             "type": "boolean"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/RegisterMaintenance"
           }
         },
         "required": [
@@ -2138,7 +2141,8 @@
           "views",
           "offers",
           "actorId",
-          "hasScopedCases"
+          "hasScopedCases",
+          "maintenance"
         ]
       },
       "ActorSummary": {
@@ -3280,11 +3284,15 @@
             },
             "minItems": 0,
             "maxItems": 2
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/RegisterMaintenance"
           }
         },
         "required": [
           "acts",
-          "history"
+          "history",
+          "maintenance"
         ]
       },
       "CaseFields": {
@@ -4906,6 +4914,9 @@
             "$ref": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT"
           },
           {
+            "$ref": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE"
+          },
+          {
             "$ref": "#/components/schemas/Diagnostic.INVALID_CURSOR"
           }
         ],
@@ -4941,6 +4952,7 @@
             "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "OPERATION_RESOLVED": "#/components/schemas/Diagnostic.OPERATION_RESOLVED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
+            "REGISTER_MAINTENANCE": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE",
             "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
           }
         }
@@ -5024,6 +5036,22 @@
           "code",
           "action",
           "target"
+        ]
+      },
+      "Diagnostic.REGISTER_MAINTENANCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REGISTER_MAINTENANCE"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
         ]
       },
       "Diagnostic.REVISION_CONFLICT": {
@@ -7172,6 +7200,24 @@
           "revision",
           "act",
           "snapshot"
+        ]
+      },
+      "RegisterMaintenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "active",
+          "generation"
         ]
       },
       "Registration": {

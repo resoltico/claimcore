@@ -7,7 +7,7 @@ import { service } from "../../src/api/service";
 it("keeps a primary heading and a case return when a reloaded act is no longer offered", async () => {
   const closed = {
     ...current,
-    advice: { acts: ["REOPEN"] as const, history: [] },
+    advice: { ...current.advice, acts: ["REOPEN"] as const, history: [] },
     state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" as const } },
   };
   mockEndpoint("case.get").mockResolvedValue({

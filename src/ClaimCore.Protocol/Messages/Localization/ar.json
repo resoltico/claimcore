@@ -121,6 +121,7 @@
   "diagnostic.PAYMENT_NOT_RECORDED": "لا يوجد سجل دفع لمسحه.",
   "diagnostic.PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
   "diagnostic.REFERENCE_FORMAT": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
+  "diagnostic.REGISTER_MAINTENANCE": "كتابة السجل متوقفة للصيانة. يمكنك متابعة القراءة والتحقق من حالة العمليات.",
   "diagnostic.RESOURCE_UNAVAILABLE": "هذا المورد غير متاح.",
   "diagnostic.REVISION_CONFLICT": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": "ليس لهذا الدور أي صلاحية تنطبق على النطاق المحدد.",

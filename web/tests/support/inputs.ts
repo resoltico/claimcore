@@ -18,6 +18,7 @@ export const workBasis: WorkDateBasis = {
   businessDate: "2026-09-01",
   timeZone: "Etc/UTC",
 };
+export const initialMaintenance = { active: false, generation: 0 } as const;
 export const emptyCaseWork = { responsibleActor: null, followUpDate: null } as const;
 export const unscheduledWork: CaseWorkView = {
   responsible: null,
@@ -29,9 +30,12 @@ type LiveStateSeed = {
   kind: "ACTIVE" | "VOIDED";
   fields: Omit<CaseFields, "work"> & Partial<Pick<CaseFields, "work">>;
 };
-type CaseViewSeed = Omit<CaseView, "mine" | "caseId" | "work" | "state"> &
+type AdviceSeed = Omit<CaseView["advice"], "maintenance"> &
+  Partial<Pick<CaseView["advice"], "maintenance">>;
+type CaseViewSeed = Omit<CaseView, "mine" | "caseId" | "work" | "state" | "advice"> &
   Partial<Pick<CaseView, "mine" | "caseId" | "work">> & {
     state: LiveStateSeed | { kind: "ERASED" };
+    advice: AdviceSeed;
   };
 type LiveViewSeed = CaseViewSeed & { state: LiveStateSeed };
 export function caseViewInput(
@@ -49,16 +53,21 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
     ...value,
+    advice: { ...value.advice, maintenance: value.advice.maintenance ?? initialMaintenance },
     state,
     work: value.work ?? { ...unscheduledWork, due: active ? "UNSCHEDULED" : "INACTIVE" },
     mine: value.mine ?? false,
     caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
   };
 }
-type ActorContextSeed = Omit<ActorContext, "hasScopedCases" | "actorId" | "installationId"> &
-  Partial<Pick<ActorContext, "hasScopedCases" | "actorId" | "installationId">>;
+type ActorContextSeed = Omit<
+  ActorContext,
+  "hasScopedCases" | "actorId" | "installationId" | "maintenance"
+> &
+  Partial<Pick<ActorContext, "hasScopedCases" | "actorId" | "installationId" | "maintenance">>;
 export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   ...value,
+  maintenance: value.maintenance ?? initialMaintenance,
   hasScopedCases: value.hasScopedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
   installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
@@ -152,7 +161,13 @@ const childGroup = (key: string, payload: Group | undefined): Group | undefined 
   }
   return isGroup(key) ? key : undefined;
 };
+const isAdviceOrContext = (value: Record<string, unknown>): boolean =>
+  (Object.hasOwn(value, "acts") && Object.hasOwn(value, "history")) ||
+  (Object.hasOwn(value, "installationId") && Object.hasOwn(value, "capabilities"));
 const completeRead = (completed: Record<string, unknown>): unknown => {
+  if (isAdviceOrContext(completed)) {
+    return { maintenance: initialMaintenance, ...completed };
+  }
   if (
     Object.hasOwn(completed, "registration") &&
     Object.hasOwn(completed, "status") &&

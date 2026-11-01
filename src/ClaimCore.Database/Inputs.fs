@@ -1,6 +1,7 @@
 namespace ClaimCore.Database
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.Protocol
 
@@ -20,6 +21,9 @@ type Command =
     | Rebuild of LedgerPosition
     | InvalidateRestoredSessions
     | Head
+    | Status
+    | Maintenance of MaintenanceChange
+    | PruneSessions of int
     | Help
     | Version
 
@@ -31,6 +35,9 @@ type CommandName =
     | Rebuild
     | InvalidateRestoredSessions
     | Head
+    | Status
+    | Maintenance
+    | PruneSessions
     | Help
     | Version
 
@@ -55,6 +62,9 @@ module Command =
         | Rebuild _ -> CommandName.Rebuild
         | InvalidateRestoredSessions -> CommandName.InvalidateRestoredSessions
         | Head -> CommandName.Head
+        | Status -> CommandName.Status
+        | Maintenance _ -> CommandName.Maintenance
+        | PruneSessions _ -> CommandName.PruneSessions
         | Help -> CommandName.Help
         | Version -> CommandName.Version
 
@@ -83,9 +93,12 @@ module CommandName =
         | CommandName.Initialize -> [ CommandArgument.Operand "TIME_ZONE" ]
         | CommandName.Verify -> [ CommandArgument.Optional("--expect", "SEQUENCE:HASH") ]
         | CommandName.Rebuild -> [ CommandArgument.Operand "--expect SEQUENCE:HASH" ]
+        | CommandName.Maintenance -> [ CommandArgument.Operand "enter|resume --generation N" ]
+        | CommandName.PruneSessions -> [ CommandArgument.Optional("--limit", "N") ]
         | CommandName.InvalidateRestoredSessions -> []
         | CommandName.ProvisionOwner
         | CommandName.Head
+        | CommandName.Status
         | CommandName.Help
         | CommandName.Version -> []
 
@@ -142,6 +155,40 @@ module Inputs =
             |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
         | _ -> Error(UsageError.NotApplicable("arguments", "command"))
 
+    let private positive maximum flag (raw: string) =
+        match Int64.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
+        | true, value when
+            value > 0L
+            && value <= maximum
+            && value.ToString(CultureInfo.InvariantCulture) = raw
+            ->
+            Ok value
+        | _ -> Error(UsageError.InvalidValue(flag, raw))
+
+    let private maintenance arguments =
+        match arguments with
+        | [ "enter" ] -> Ok(Maintenance MaintenanceChange.Enter)
+        | [ "resume"; "--generation"; raw ] ->
+            positive SafeInteger.Maximum "--generation" raw
+            |> Result.map (MaintenanceChange.Resume >> Maintenance)
+        | _ -> Error(UsageError.MissingOperand "enter|resume --generation N")
+
+    let private pruneSessions arguments =
+        match arguments with
+        | [] -> Ok(PruneSessions SessionPruning.DefaultBatch)
+        | [ "--limit"; raw ] ->
+            positive (int64 SessionPruning.MaximumBatch) "--limit" raw
+            |> Result.map (int >> PruneSessions)
+        | _ -> Error(UsageError.NotApplicable("arguments", "prune-sessions"))
+
+    let private rebuild arguments =
+        match arguments with
+        | [ "--expect"; value ] ->
+            expected value
+            |> Option.map (Rebuild >> Ok)
+            |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
+        | _ -> Error(UsageError.MissingOperand "--expect SEQUENCE:HASH")
+
     let private parse name arguments =
         match name with
         | CommandName.Help -> noArguments Help arguments
@@ -149,14 +196,11 @@ module Inputs =
         | CommandName.Initialize -> initialize arguments
         | CommandName.ProvisionOwner -> noArguments ProvisionOwner arguments
         | CommandName.Head -> noArguments Head arguments
+        | CommandName.Status -> noArguments Status arguments
+        | CommandName.Maintenance -> maintenance arguments
+        | CommandName.PruneSessions -> pruneSessions arguments
         | CommandName.Verify -> verify arguments
-        | CommandName.Rebuild ->
-            match arguments with
-            | [ "--expect"; value ] ->
-                expected value
-                |> Option.map (Rebuild >> Ok)
-                |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
-            | _ -> Error(UsageError.MissingOperand "--expect SEQUENCE:HASH")
+        | CommandName.Rebuild -> rebuild arguments
         | CommandName.InvalidateRestoredSessions -> noArguments InvalidateRestoredSessions arguments
 
     let command arguments =

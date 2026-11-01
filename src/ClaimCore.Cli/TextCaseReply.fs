@@ -77,6 +77,10 @@ module internal TextCaseReply =
                 (CliMessages.key CliMessage.StateLabel)
                 (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
         ]
+        @ (if value.Advice.Maintenance.Active then
+               [ label language "diagnostic.REGISTER_MAINTENANCE" ]
+           else
+               [])
         @ workAccount language value.Work
         @ (CaseState.fields value.Snapshot.State
            |> Option.map (fieldLines language)

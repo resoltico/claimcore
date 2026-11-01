@@ -136,6 +136,7 @@ type internal PausedPageStore
                             work
                                 { new IReadTx with
                                     member _.ObservedAt = tx.ObservedAt
+                                    member _.Maintenance() = tx.Maintenance()
 
                                     member _.Authority
                                         ({

@@ -1,3 +1,4 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useLayoutEffect, useRef } from "react";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase } from "../../api/service";
@@ -105,8 +106,10 @@ export const CaseActions = ({
 }) => {
   const p = usePresentation();
   const compact = useCompact();
-  const acts = current.advice.acts.filter(isCaseAct);
-  const primary = casePrimaryAction(current);
+  const requester = useRequesterContext();
+  const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
+  const acts = paused ? [] : current.advice.acts.filter(isCaseAct);
+  const primary = paused ? undefined : casePrimaryAction(current);
   if (acts.length === 0) {
     return null;
   }

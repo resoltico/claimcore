@@ -1,3 +1,4 @@
+import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
 import { RequesterContext } from "../hooks/useRequesterContext";
@@ -230,6 +231,11 @@ export const Dashboard = () => {
         />
         <main className="app-shell">
           <WorkspaceStatus context={context} />
+          <MaintenanceNotice
+            active={
+              response?.outcome.kind === "SUCCEEDED" && response.outcome.data.maintenance.active
+            }
+          />
           <div ref={content}>
             <WorkspaceRoute
               route={route}

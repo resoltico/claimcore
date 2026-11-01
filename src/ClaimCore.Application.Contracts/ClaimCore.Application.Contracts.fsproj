@@ -5,6 +5,7 @@
     <Compile Include="Paging.fs" />
     <Compile Include="Faults.fs" />
     <Compile Include="Outcome.fs" />
+    <Compile Include="Maintenance.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />

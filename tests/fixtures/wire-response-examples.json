@@ -104,10 +104,18 @@
             "timeZone": "x",
             "offers": [],
             "capabilities": [],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ],
             "hasScopedCases": false,
             "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001"
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
           }
         }
       },
@@ -187,7 +195,11 @@
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1090,10 +1102,18 @@
               "MANAGE_AUTHORITY",
               "READ_AUTHORITY"
             ],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ],
             "hasScopedCases": false,
             "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001"
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
           }
         }
       }
@@ -1126,11 +1146,30 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": ["SUMMARY", "FULL"],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
               "correction": {
-                "registration": ["KEEP", "UPDATE"],
-                "decision": ["KEEP", "UPDATE", "CLEAR"],
-                "payment": ["KEEP", "REPLACE", "REAFFIRM", "CLEAR"]
+                "registration": [
+                  "KEEP",
+                  "UPDATE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "UPDATE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "REPLACE",
+                  "REAFFIRM",
+                  "CLEAR"
+                ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
               }
             },
             "mine": false,
@@ -1177,11 +1216,30 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": ["SUMMARY", "FULL"],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
               "correction": {
-                "registration": ["KEEP", "UPDATE"],
-                "decision": ["KEEP", "UPDATE", "CLEAR"],
-                "payment": ["KEEP", "REPLACE", "REAFFIRM", "CLEAR"]
+                "registration": [
+                  "KEEP",
+                  "UPDATE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "UPDATE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "REPLACE",
+                  "REAFFIRM",
+                  "CLEAR"
+                ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
               }
             },
             "mine": false,
@@ -3082,7 +3140,11 @@
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             }
           }
         }
@@ -3130,7 +3192,11 @@
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             }
           }
         }
@@ -3177,7 +3243,11 @@
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -3786,19 +3856,25 @@
                     {
                       "capability": "READ_CASE",
                       "directRoles": [],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     },
                     {
                       "capability": "READ_HISTORY",
                       "directRoles": [],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     },
                     {
                       "capability": "REGISTER",
                       "directRoles": [],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     }
                   ]
@@ -3818,20 +3894,30 @@
                   "access": [
                     {
                       "capability": "READ_CASE",
-                      "directRoles": ["CASE_READER"],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     },
                     {
                       "capability": "READ_HISTORY",
-                      "directRoles": ["CASE_READER"],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     },
                     {
                       "capability": "REGISTER",
                       "directRoles": [],
-                      "installationRoles": ["CASE_REGISTRAR"],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
                       "effective": false
                     }
                   ]
@@ -4122,11 +4208,28 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": ["SUMMARY", "FULL"],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
               "correction": {
-                "registration": ["KEEP", "UPDATE"],
-                "decision": ["KEEP", "UPDATE", "CLEAR"],
-                "payment": ["KEEP", "UPDATE"]
+                "registration": [
+                  "KEEP",
+                  "UPDATE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "UPDATE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "UPDATE"
+                ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
               }
             },
             "mine": false,
@@ -4178,8 +4281,14 @@
               }
             },
             "advice": {
-              "acts": ["UPDATE_WORK"],
-              "history": []
+              "acts": [
+                "UPDATE_WORK"
+              ],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4218,10 +4327,18 @@
               "CLOSE",
               "MANAGE_CASE_WORK"
             ],
-            "views": ["CASES", "AUTHORITY", "OPERATIONS"],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ],
             "hasScopedCases": false,
             "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001"
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
           }
         }
       },
@@ -4245,6 +4362,84 @@
           }
         }
       }
+    },
+    {
+      "name": "register-maintenance-refusal",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REGISTER_MAINTENANCE",
+            "action": "READ_CURRENT"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case-maintenance-advice",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": true,
+                "generation": 3
+              }
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

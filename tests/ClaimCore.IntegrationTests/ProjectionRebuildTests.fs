@@ -57,6 +57,7 @@ let private seeded database =
 let private repairs database =
     task {
         let! _, checkpoint = seeded database
+        do! enterMaintenance database
         let! ledger = rows database "ledger"
         do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! sql database "UPDATE claimcore.actors SET enabled=false" [||]
@@ -112,6 +113,7 @@ let private repairs database =
 let private checkpointRefusal database =
     task {
         let! _, checkpoint = seeded database
+        do! enterMaintenance database
         do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         let! before = rows database "cases"
 
@@ -138,6 +140,7 @@ let private checkpointRefusal database =
 let private readerSnapshot database =
     task {
         let! _, checkpoint = seeded database
+        do! enterMaintenance database
         use! reader = database.OwnerSource.OpenConnectionAsync()
 
         use! transaction =
@@ -191,6 +194,7 @@ let private erasedIdentity database =
                 token
 
         accepted erased |> ignore
+        do! enterMaintenance database
         let! checkpoint = verified database
 
         do!

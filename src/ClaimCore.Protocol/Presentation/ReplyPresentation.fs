@@ -16,6 +16,7 @@ module Refusals =
         | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
         | Refusal.OperationResolved
+        | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | Refusal.Case _

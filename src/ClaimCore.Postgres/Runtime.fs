@@ -193,6 +193,15 @@ type Administration(connectionString: string, productVersion: string) =
     member _.InvalidateRestoredSessions(cancellationToken) =
         ProjectionRebuild.invalidateRestoredSessions source cancellationToken
 
+    member _.Status(cancellationToken) =
+        InstallationStatus.read source cancellationToken
+
+    member _.Maintenance(change, cancellationToken) =
+        RegisterMaintenanceStore.change source change cancellationToken
+
+    member _.PruneExpiredSessions(limit, cancellationToken) =
+        SessionPruning.prune source limit cancellationToken
+
     member _.Head(cancellationToken) =
         LedgerAdministration.head source cancellationToken
 

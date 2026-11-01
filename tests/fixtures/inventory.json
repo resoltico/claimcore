@@ -339,7 +339,8 @@
     "REVISION_CONFLICT",
     "ZERO_DECISION_CANNOT_BE_PAID",
     "WORK_NO_CHANGES",
-    "ASSIGNEE_UNAVAILABLE"
+    "ASSIGNEE_UNAVAILABLE",
+    "REGISTER_MAINTENANCE"
   ],
   "technicalInputs": [
     "operationId",

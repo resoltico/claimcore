@@ -219,6 +219,7 @@ type Host
     let client = application.GetTestClient()
     let mutable cookies = Map.empty<string, string>
     do client.BaseAddress <- origin
+    member _.Services = application.Services
     member _.HandlerStub = facade
     member _.Log = sink.ToString()
 

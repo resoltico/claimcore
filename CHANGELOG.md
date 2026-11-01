@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
+
+- Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
+- Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
+
 - Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
 
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.

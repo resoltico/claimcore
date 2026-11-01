@@ -21,6 +21,9 @@ type DatabaseSuccess =
     | Rebuilt of ProjectionRebuildReport
     | RestoredSessionsInvalidated of int64
     | Head of LedgerPosition
+    | Status of InstallationStatus
+    | Maintenance of MaintenanceObservation
+    | SessionsPruned of SessionPruneReport
     | Accepted of OwnerAcceptance
     | AlreadyAccepted of OwnerAcceptance
     | Verified of LedgerPosition * elapsedMilliseconds: int64
@@ -34,6 +37,8 @@ type Reply =
     | Usage of UsageFrame
     | Help of HelpFrame
     | Version of VersionFrame
+    | MaintenanceConflict of MaintenanceObservation
+    | MaintenanceRequired
 
 /// Administrative successes share failures with other public outcomes; uncertainty remains distinct.
 module Replies =
@@ -99,10 +104,125 @@ module Replies =
         |> field "position" _.Position administrativePosition
         |> field "previousDivergence" _.PreviousDivergence (nullable divergenceCodec)
 
+    let private maintenanceFields: Fields<MaintenanceObservation, _> =
+        record (fun state instant position changed ->
+            {
+                MaintenanceObservation.State = state
+                ObservedAt = instant
+                Position = position
+                Changed = changed
+            })
+        |> field
+            "maintenance"
+            (fun (value: MaintenanceObservation) -> value.State)
+            ResponseCodecs.registerMaintenance
+        |> field "observedAt" _.ObservedAt instant
+        |> field "position" _.Position administrativePosition
+        |> field "changed" _.Changed boolean
+
+    let private formats: Codec<SupportedRecordFormats> =
+        record (fun request snapshot authority control ledger ->
+            {
+                SupportedRecordFormats.CaseRequest = request
+                Snapshot = snapshot
+                Authority = authority
+                Control = control
+                LedgerEntry = ledger
+            })
+        |> field "caseRequest" _.CaseRequest (integer 1L 32767L |> map int int64)
+        |> field "snapshot" _.Snapshot (integer 1L 32767L |> map int int64)
+        |> field "authority" _.Authority (integer 1L 32767L |> map int int64)
+        |> field "control" _.Control (integer 1L 32767L |> map int int64)
+        |> field "ledgerEntry" _.LedgerEntry (integer 1L 32767L |> map int int64)
+        |> build
+
+    let private countCodec = integer 0L SafeInteger.Maximum
+
+    let private statusFields: Fields<InstallationStatus, _> =
+        record
+            (fun
+                installation
+                baseline
+                digest
+                zone
+                instant
+                position
+                maintenance
+                formats
+                actors
+                cases
+                fences
+                sessions
+                expired ->
+                {
+                    InstallationStatus.InstallationId = installation
+                    Baseline = baseline
+                    BaselineSha256 = digest
+                    BusinessTimeZone = zone
+                    ObservedAt = instant
+                    Position = position
+                    Maintenance = maintenance
+                    Formats = formats
+                    Actors = actors
+                    Cases = cases
+                    Fences = fences
+                    Sessions = sessions
+                    ExpiredSessions = expired
+                })
+        |> field "installationId" (fun (value: InstallationStatus) -> value.InstallationId) uuid
+        |> field "baseline" _.Baseline (boundedText 1 64)
+        |> field "baselineSha256" _.BaselineSha256 ResponseScalars.digest
+        |> field "businessTimeZone" _.BusinessTimeZone (boundedText 1 128)
+        |> field "observedAt" _.ObservedAt instant
+        |> field "position" _.Position administrativePosition
+        |> field "maintenance" _.Maintenance ResponseCodecs.registerMaintenance
+        |> field "formats" _.Formats formats
+        |> field "actors" _.Actors countCodec
+        |> field "cases" _.Cases countCodec
+        |> field "fences" _.Fences countCodec
+        |> field "sessions" _.Sessions countCodec
+        |> field "expiredSessions" _.ExpiredSessions countCodec
+
+    let private pruneFields: Fields<SessionPruneReport, _> =
+        record (fun instant limit expired deleted ->
+            {
+                SessionPruneReport.ObservedAt = instant
+                Limit = limit
+                ExpiredAtObservation = expired
+                Deleted = deleted
+            })
+        |> field "observedAt" (fun (value: SessionPruneReport) -> value.ObservedAt) instant
+        |> field "limit" _.Limit (integer 1L (int64 SessionPruning.MaximumBatch) |> map int int64)
+        |> field "expiredAtObservation" _.ExpiredAtObservation countCodec
+        |> field "deleted" _.Deleted countCodec
+
     // This closed codec table pairs every success constructor with its inverse projection; it has no nested decisions.
     // fsharplint:disable-next-line CyclomaticComplexity
     let private successVariants =
         [
+            variant
+                "STATUS"
+                (DatabaseSuccess.Status >> Outcome.Succeeded >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Status value)) -> Some value
+                | _ -> None)
+                statusFields
+            variant
+                "MAINTENANCE"
+                (DatabaseSuccess.Maintenance >> Outcome.Succeeded >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Maintenance value)) ->
+                    Some value
+                | _ -> None)
+                maintenanceFields
+            variant
+                "SESSIONS_PRUNED"
+                (DatabaseSuccess.SessionsPruned >> Outcome.Succeeded >> Reply.Operation)
+                (function
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.SessionsPruned value)) ->
+                    Some value
+                | _ -> None)
+                pruneFields
             variant
                 "REBUILT"
                 (DatabaseSuccess.Rebuilt >> Outcome.Succeeded >> Reply.Operation)
@@ -163,6 +283,14 @@ module Replies =
 
     let private operationVariants =
         [
+            variant
+                "MAINTENANCE_CONFLICT"
+                Reply.MaintenanceConflict
+                (function
+                | Reply.MaintenanceConflict value -> Some value
+                | _ -> None)
+                maintenanceFields
+            unitVariant "MAINTENANCE_REQUIRED" Reply.MaintenanceRequired
             variant
                 "REJECTED"
                 (Outcome.Rejected >> Reply.Operation)
@@ -240,7 +368,9 @@ module Replies =
     let exitCode =
         function
         | Reply.Operation outcome -> (OutcomePresentation.classify outcome).ExitCode
-        | Reply.Usage _ -> ExitCode.Rejected
+        | Reply.Usage _
+        | Reply.MaintenanceConflict _
+        | Reply.MaintenanceRequired -> ExitCode.Rejected
         | Reply.Cancelled -> ExitCode.Failed
         | Reply.OutcomeUnknown _ -> ExitCode.OutcomeUnknown
         | Reply.Diverged _ -> ExitCode.Diverged
@@ -255,6 +385,21 @@ module Replies =
 
     let head position =
         Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) |> encode
+
+    let status value =
+        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Status value)) |> encode
+
+    let maintenance =
+        function
+        | Ok value ->
+            Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Maintenance value)) |> encode
+        | Error actual -> Reply.MaintenanceConflict actual |> encode
+
+    let maintenanceRequired () = Reply.MaintenanceRequired |> encode
+
+    let sessionsPruned value =
+        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.SessionsPruned value))
+        |> encode
 
     let rejected refusal =
         Reply.Operation(Outcome.Rejected refusal) |> encode

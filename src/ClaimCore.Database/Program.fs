@@ -24,7 +24,9 @@ let main arguments =
                     | Initialize _
                     | ProvisionOwner
                     | Rebuild _
-                    | InvalidateRestoredSessions -> true
+                    | InvalidateRestoredSessions
+                    | Maintenance _
+                    | PruneSessions _ -> true
                     | _ -> false
 
                 bytes,

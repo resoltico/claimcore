@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Domain
 
@@ -19,6 +20,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
 
     let mutable state =
         {
+            Maintenance = RegisterMaintenance.initial
             Head =
                 {
                     Sequence = Sequence.zero
@@ -36,6 +38,26 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
         function
         | AuthorityFact.ActorCount -> events.Add "actor-count"
         | AuthorityFact.EnabledHumanOwners -> events.Add "enabled-owner-count"
+
+    member _.ChangeMaintenance(change) =
+        task {
+            do! gate.WaitAsync()
+
+            try
+                let proposed =
+                    match change with
+                    | MaintenanceChange.Enter -> RegisterMaintenance.enter state.Maintenance
+                    | MaintenanceChange.Resume generation ->
+                        RegisterMaintenance.resume generation state.Maintenance
+
+                match proposed with
+                | Ok after -> state <- { state with Maintenance = after }
+                | Error _ -> ()
+
+                return proposed
+            finally
+                gate.Release() |> ignore
+        }
 
     member val ObservedAt = observed with get, set
 

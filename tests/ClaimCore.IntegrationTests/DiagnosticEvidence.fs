@@ -14,6 +14,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
@@ -296,7 +297,7 @@ let internal principalEvidence (actor: ServiceContext) =
 
 let internal boundaryEvidence () =
     task {
-        let! _, fixture = fixture ()
+        let! database, fixture = fixture ()
 
         use _owned =
             { new System.IDisposable with
@@ -323,5 +324,18 @@ let internal boundaryEvidence () =
         let! fenced =
             execute actor (request 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
-        return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
+        let! maintenance =
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter ct
+
+        Expect.isOk maintenance "The owner explicitly pauses actual register writes"
+
+        let! paused =
+            execute actor (request 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+
+        return
+            identity
+            @ [ refused denied; refused fenced; refused paused ]
+            @ queries
+            @ authority
+            @ principals
     }

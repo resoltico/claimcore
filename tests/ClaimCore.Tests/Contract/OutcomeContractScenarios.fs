@@ -47,6 +47,7 @@ let internal contextCodec () =
                     ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
                     |> Option.get
                 HasScopedCases = false
+                Maintenance = RegisterMaintenance.initial
                 Capability = []
                 View = []
                 Offers = []

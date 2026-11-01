@@ -49,12 +49,21 @@ CREATE TABLE claimcore.installation (
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 
+-- Operational mode is owner-controlled and survives process restarts. It is not a ledger projection.
+CREATE TABLE claimcore.register_maintenance (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    active boolean NOT NULL,
+    generation bigint NOT NULL CHECK (generation BETWEEN 0 AND 9007199254740991),
+    CHECK (NOT active OR generation > 0)
+);
+INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (true,false,0);
+
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 2). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 3). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -373,7 +382,7 @@ REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
-GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head
+GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.actors TO claimcore_runtime;

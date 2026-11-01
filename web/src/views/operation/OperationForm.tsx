@@ -1,3 +1,4 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { OperationErrors } from "./OperationErrors";
 import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
@@ -101,7 +102,10 @@ export const OperationForm = (props: OperationFormProps) => {
     }
     form.current?.querySelector<HTMLElement>("[data-error-summary]")?.focus();
   }, [model.notice]);
-  const allowed = offered.includes(model.entry.kind);
+  const paused =
+    useRequesterContext()?.maintenance.active === true ||
+    current?.advice.maintenance.active === true;
+  const allowed = offered.includes(model.entry.kind) && !paused;
   return (
     <form
       ref={form}

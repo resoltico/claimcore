@@ -111,6 +111,7 @@ module internal ProjectionRebuild =
                     ServerSupport.require connection.PostgreSqlVersion
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
+                    do! RegisterMaintenanceStore.requireActive connection token
                     let! installation, _ = Baseline.require connection token
 
                     let! scanned =

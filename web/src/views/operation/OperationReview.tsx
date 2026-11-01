@@ -1,3 +1,4 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { lifecycleMessageIds } from "../LifecycleStatus";
 import { AccessibleModal } from "../../components/AccessibleModal";
@@ -174,11 +175,14 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
 const ReviewConfirmation = ({
   model,
   confirmationId,
+  paused,
 }: {
   model: ReviewModel;
   confirmationId: string;
+  paused: boolean;
 }) => {
   const p = usePresentation();
+
   const submitText = () => {
     if (model.phase === "PREPARING") {
       return p.text("ui.preparingRecovery");
@@ -205,7 +209,7 @@ const ReviewConfirmation = ({
       <button
         className="primary"
         type="button"
-        disabled={!model.confirmed || model.busy}
+        disabled={!model.confirmed || model.busy || paused}
         onClick={() => void model.execute()}
       >
         {submitText()}
@@ -213,8 +217,16 @@ const ReviewConfirmation = ({
     </>
   );
 };
-export const OperationReview = ({ model }: { model: ReviewModel }) => {
+export const OperationReview = ({
+  model,
+  paused = false,
+}: {
+  model: ReviewModel;
+  paused?: boolean;
+}) => {
   const p = usePresentation();
+  const requester = useRequesterContext();
+  const stopped = paused || requester?.maintenance.active === true;
   if (model.review === null || model.prepared === null) {
     return null;
   }
@@ -250,7 +262,7 @@ export const OperationReview = ({ model }: { model: ReviewModel }) => {
         ) : (
           <AuthorityValues review={model.review.subject} />
         )}
-        <ReviewConfirmation model={model} confirmationId={act.confirmationId!} />
+        <ReviewConfirmation model={model} confirmationId={act.confirmationId!} paused={stopped} />
       </>
     </AccessibleModal>
   );

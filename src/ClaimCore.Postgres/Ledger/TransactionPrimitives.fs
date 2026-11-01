@@ -217,6 +217,9 @@ type private ReadTx
     interface IReadTx with
         member _.ObservedAt = observedAt
 
+        member _.Maintenance() =
+            RegisterMaintenanceStore.read connection token
+
         member _.Authority
             ({
                  AuthorityQuery.Principal = principal

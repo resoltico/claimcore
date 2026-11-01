@@ -223,7 +223,11 @@ module internal CaseExecution =
         let identity = RequestRecord.identity id command
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
+        |> Verdict.bind (fun () ->
+            if view.Maintenance.Active then
+                Verdict.Refuse Refusal.RegisterMaintenance
+            else
+                propose services.InstallationId services.Calendar command view)
 
     let execute
         (services: ServiceContext)
@@ -243,7 +247,11 @@ module internal CaseExecution =
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
-        |> Verdict.bind (fun () -> propose services.InstallationId services.Calendar command view)
+        |> Verdict.bind (fun () ->
+            if view.Maintenance.Active then
+                Verdict.Refuse Refusal.RegisterMaintenance
+            else
+                propose services.InstallationId services.Calendar command view)
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after
 

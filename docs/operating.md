@@ -34,9 +34,13 @@ Runtime credentials have no schema-owner authority. Offline help/version do not 
 | `initialize ZONE` | Initialize the exact SQL baseline and immutable business zone. |
 | `provision-owner` | Bootstrap an empty authority installation with one human owner. |
 | `head` | Read the installation's current sequence/hash position. |
+| `status` | Observe identity, baseline/formats, zone, head, maintenance and bounded resource counts in one read snapshot. |
+| `maintenance enter` | Serialize with prior register writes and enter or report the active maintenance generation. |
+| `maintenance resume --generation N` | Resume only the specified active generation. |
+| `prune-sessions [--limit N]` | Delete a locked/rechecked batch of expired sessions (default 128, maximum 1000). |
 | `verify` | Reconstruct retained ledger state and compare projections and head. |
 | `verify --expect SEQUENCE:ENTRY_HASH` | Also check an independently retained checkpoint. |
-| `rebuild --expect SEQUENCE:ENTRY_HASH` | Reconstruct derived projections under writer exclusion; return prior divergence evidence. |
+| `rebuild --expect SEQUENCE:ENTRY_HASH` | Require explicit maintenance and a trusted checkpoint; replace projections under writer exclusion and return prior divergence. |
 | `invalidate-restored-sessions` | Delete restored sessions before reopening actor traffic. |
 
 Command errors return `USAGE_ERROR` with the applicable syntax. Read `REJECTED` diagnostics and `FAILED`
@@ -48,6 +52,34 @@ incompatible schemas are refused unchanged. Initialization does not migrate or a
 only the matching baseline and durable formats are supported. Supported PostgreSQL versions and image pins
 are owned by
 [postgresql-baseline.json](../db/postgresql-baseline.json).
+
+## Register-write maintenance
+
+Maintenance uses database-owner credentials, independently of application OWNER grants. Inspect
+`claimcore-database status`, then use `maintenance enter`. Entry takes the ledger head, so earlier accepted
+register transactions commit or roll back before entry commits. It pauses new case/authority writes,
+initial owner provisioning and new final-resolution controls. Existing acceptance and final-control
+observations remain readable. Case/authority reads, passive status and authentication/session operations
+continue under their existing rules. Read advice is a snapshot; execution checks actual mode under the head.
+
+Repeated entry reports the same active generation. `maintenance resume --generation N` requires that
+active generation; `MAINTENANCE_CONFLICT` returns the observed state if it is stale or no longer active.
+A later interval advances the generation. Lost acknowledgement returns uncertainty: inspect fresh status
+before another command. Do not automatically reverse state or resume after failed work.
+
+This is register-write maintenance, not database read-only mode, a history verification or an all-host drain.
+Status reports the actual observed head and counts, not proof that every process is idle. Stop new traffic
+and drain each host separately when an operating procedure needs resource quiescence. Readiness continues
+to mean reachable supported schema, including during maintenance.
+
+Rebuild requires explicit active maintenance in addition to its trusted checkpoint and head exclusion.
+It neither auto-enters nor auto-resumes maintenance, resets sessions, rewrites business history nor changes
+the operational generation. Inspect the result and verify before explicitly resuming.
+
+Expired-session pruning is independent of register maintenance. It skips locked rows, rechecks deadlines
+under row locks and leaves live tickets, history, fences and key material intact. `expiredAtObservation`
+is the statement snapshot's count; `deleted` is the bounded action result. Concurrent renewal/logout or
+other pruning can make them differ. These are observations, not a pinned session inventory.
 
 ## Access review and sessions
 
@@ -100,8 +132,9 @@ checkpoint before reopening actor access. A data-only restore into an initialize
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
 newer acceptance or recovery control existed elsewhere.
 
-If authoritative verification succeeds but projections diverge, run `claimcore-database rebuild --expect
-SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
+Inspect restored status while traffic and owner mutations remain isolated. Enter register-write maintenance
+explicitly before any reconstruction. If authoritative verification succeeds but projections diverge, run
+`claimcore-database rebuild --expect SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
 head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
 replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
 for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
@@ -165,7 +198,9 @@ issuer/subject, executor/target attribution and grants remain. The reference its
 Erasure does not reach dead row versions, WAL, replicas, exports, logs, browser history/shared URLs or
 backups. Operators decide retention,
 copy custody and physical disposal. VOID preserves history. A pre-erasure restore can resurrect content;
-address affected erasures before reopening access.
+address affected erasures before reopening access. Restored operational generations come from that
+backup too: discard outstanding resume instructions and inspect the restored state while traffic and
+owner mutations remain isolated.
 
 The append-only guard permits case-payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
@@ -230,7 +265,8 @@ grant before interactive sign-in. Discard drops the session's references to mana
 
 Admission is per Web process, with no multi-host quota or response-time guarantee. The
 [admission policy](../src/ClaimCore.Web/Admission.fs) owns the bounded resource budgets. A process admits
-at most 24 requests before authentication, four authentication stages and four session-provider calls.
+at most 24 requests before authentication, two cookie validations, two bearer validations, two interactive
+authentication stages and four session-provider calls.
 Actor work has separate pools of four ordinary reads, four register writes and two passive recovery reads.
 One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
 caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not

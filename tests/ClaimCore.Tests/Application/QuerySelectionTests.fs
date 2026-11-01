@@ -218,7 +218,11 @@ let private context () =
     let view = ungranted
 
     match
-        Queries.contextResult (DecisionFixtures.services installation calendar owner) instant view
+        Queries.contextResult
+            (DecisionFixtures.services installation calendar owner)
+            instant
+            RegisterMaintenance.initial
+            view
     with
     | Outcome.Succeeded value ->
         Expect.equal
@@ -247,6 +251,7 @@ let private context () =
         (Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
+            RegisterMaintenance.initial
             AuthorityView.empty)
         (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Unregistered actor has no context"
@@ -260,6 +265,7 @@ let private context () =
         (Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
+            RegisterMaintenance.initial
             disabled)
         (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Disabled actor has no context"

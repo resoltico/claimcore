@@ -30,6 +30,7 @@
     <Compile Include="Architecture/MessageKeyTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
+    <Compile Include="Contract/MaintenanceContractTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
     <Compile Include="Contract/DatabaseTimingTests.fs" />

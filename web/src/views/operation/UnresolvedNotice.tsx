@@ -1,3 +1,4 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useState } from "react";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { IdentifierValue } from "../../components/IdentifierValue";
@@ -21,6 +22,7 @@ const RecoveryRows = ({
 }) => {
   const p = usePresentation();
   const { operations, busy, notice, cleanup, check } = useRecovery();
+  const paused = useRequesterContext()?.maintenance.active === true;
   return (
     <>
       {showEmpty && operations.length === 0 && notice === null ? (
@@ -38,7 +40,7 @@ const RecoveryRows = ({
           </button>
           <button
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || paused}
             onClick={() => {
               requestSettlement(record);
             }}
@@ -59,12 +61,13 @@ const RecoveryRows = ({
 export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean }) => {
   const p = usePresentation();
   const { operations, busy, notice, owner, settle } = useRecovery();
+  const paused = useRequesterContext()?.maintenance.active === true;
   // Confirmation belongs to this view; leaving it discards unconfirmed intent, not recovery work.
   const [pending, setPending] = useState<Settlement | null>(null);
   const selected = pending?.owner === owner ? pending : null;
   const settlement = selected?.record ?? null;
   const requestSettlement = (record: RecoveryRecord) => {
-    if (owner !== null && busy === null) {
+    if (owner !== null && busy === null && !paused) {
       setPending({ owner, record });
     }
   };
@@ -72,7 +75,7 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
     setPending(null);
   };
   const confirmSettlement = () => {
-    if (selected !== null) {
+    if (selected !== null && !paused) {
       setPending(null);
       void settle(selected.record, selected.owner);
     }
@@ -124,7 +127,7 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
         <button type="button" className="secondary-button" onClick={cancelSettlement}>
           {p.text("ui.keepChecking")}
         </button>
-        <button type="button" onClick={confirmSettlement}>
+        <button type="button" disabled={paused} onClick={confirmSettlement}>
           {p.text("ui.confirmSettlement")}
         </button>
       </AccessibleModal>

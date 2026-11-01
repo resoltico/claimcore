@@ -22,7 +22,13 @@ module internal Queries =
             unavailable
         else
             match view.Case with
-            | Some record -> caseRecord services view.Actor work record |> succeeded
+            | Some record ->
+                caseRecord services view.Actor work record
+                |> Result.map (fun model ->
+                    { model with
+                        Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
+                    })
+                |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
     let get (services: ServiceContext) selector token =
@@ -153,7 +159,12 @@ module internal Queries =
                     return readResult result
         }
 
-    let contextResult (services: ServiceContext) observedAt actor =
+    let contextResult
+        (services: ServiceContext)
+        observedAt
+        (maintenance: RegisterMaintenance)
+        actor
+        =
         let productVersion = services.ProductVersion
         let calendar = services.Calendar
         let principal = services.Principal
@@ -162,6 +173,7 @@ module internal Queries =
         | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    Maintenance = maintenance
                     InstallationId = services.InstallationId
                     ActorId = requester.ActorId
                     Runtime =
@@ -172,7 +184,11 @@ module internal Queries =
                         }
                     HasScopedCases = actor.HasScopedCases
                     View = Advice.views principal actor
-                    Offers = Advice.installationOffers principal actor
+                    Offers =
+                        if maintenance.Active then
+                            []
+                        else
+                            Advice.installationOffers principal actor
                     Capability =
                         Capability.all
                         |> List.filter (fun capability ->
@@ -199,7 +215,8 @@ module internal Queries =
                                             }
                                         )
 
-                                    return contextResult services tx.ObservedAt actor
+                                    let! maintenance = tx.Maintenance()
+                                    return contextResult services tx.ObservedAt maintenance actor
                                 })
                         CancellationToken = token
                     }
@@ -309,6 +326,7 @@ module internal Queries =
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
+                                            let! maintenance = tx.Maintenance()
 
                                             if page.Items.Length > Paging.MaximumPageSize then
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
@@ -328,9 +346,12 @@ module internal Queries =
                                                                 selection.DateBasis
                                                             Items = items
                                                             Offers =
-                                                                Advice.installationOffers
-                                                                    principal
-                                                                    actor
+                                                                if maintenance.Active then
+                                                                    []
+                                                                else
+                                                                    Advice.installationOffers
+                                                                        principal
+                                                                        actor
                                                             NextCursor =
                                                                 page.Next
                                                                 |> Option.map (

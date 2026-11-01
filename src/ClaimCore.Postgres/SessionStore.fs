@@ -34,6 +34,9 @@ type ISessionStore =
 
 module internal SessionRows =
     let maximumPayload = 1048576
+    // Every operational expiry query uses the same database-instant deadline predicate.
+    let expiredPredicate =
+        "(absolute_expiry <= $1 OR last_activity + idle_seconds * interval '1 second' <= $1)"
 
     let admitPayload (payload: byte array) =
         if payload.Length = 0 || payload.Length > maximumPayload then
@@ -124,7 +127,9 @@ module internal SessionRows =
     let cleanup connection instant token =
         DatabaseSession.execute
             connection
-            "DELETE FROM claimcore.sessions WHERE session_key IN (SELECT session_key FROM claimcore.sessions WHERE absolute_expiry <= $1 OR last_activity + idle_seconds * interval '1 second' <= $1 ORDER BY absolute_expiry LIMIT 128 FOR UPDATE SKIP LOCKED)"
+            ("DELETE FROM claimcore.sessions WHERE session_key IN (SELECT session_key FROM claimcore.sessions WHERE "
+             + expiredPredicate
+             + " ORDER BY absolute_expiry LIMIT 128 FOR UPDATE SKIP LOCKED)")
             [| box instant |]
             token
 

@@ -237,6 +237,11 @@ let tests =
                             "state.payable.currency"
                             "state.progress"
                             "state.incidentNotificationDate"
+                            "state.work.responsible.account.actorId"
+                            "state.work.followUpDate"
+                            "state.work.due"
+                            "state.work.basis.businessDate"
+                            "state.work.basis.timeZone"
                             "changedAt"
                         ]
                         "The independently specified wire-path header"
@@ -256,6 +261,11 @@ let tests =
                             ""
                             "UNDECIDED"
                             "2026-08-03"
+                            ""
+                            ""
+                            "UNSCHEDULED"
+                            "2026-08-31"
+                            "UTC"
                             "2026-10-28T12:30:00.000000Z"
                         ]
                         "Canonical values and authored punctuation survive"
@@ -275,9 +285,62 @@ let tests =
                             ""
                             ""
                             ""
+                            ""
+                            ""
+                            ""
+                            ""
+                            ""
                             "2026-10-28T12:30:00.000000Z"
                         ]
                         "Erased rows carry no business values")
+            testCase
+                "CSV includes explicit work facts and their authoritative date basis"
+                (fun () ->
+                    let assigned =
+                        { facts.Work with
+                            Responsible =
+                                Some
+                                    {
+                                        Account =
+                                            {
+                                                ActorId =
+                                                    CaseFixtures.actorId (
+                                                        Guid.Parse
+                                                            "80000000-0000-4000-8000-000000000001"
+                                                    )
+                                                Subject = "=retained account subject"
+                                            }
+                                        Available = false
+                                    }
+                            FollowUp = Some(Inputs.date "2026-08-31")
+                            Due = CaseDue.Today
+                        }
+
+                    let item =
+                        { row "WORK-CSV" with
+                            State = CaseState.Active { facts with Work = assigned }
+                        }
+
+                    let code, bytes, _, _ =
+                        run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ item ] None) ]
+
+                    Expect.equal code 0 "The actual CLI exports a successful work page"
+                    let cells = (parseCsv bytes)[1]
+
+                    Expect.equal
+                        (cells |> List.skip 12 |> List.take 5)
+                        [
+                            "80000000-0000-4000-8000-000000000001"
+                            "2026-08-31"
+                            "TODAY"
+                            "2026-08-31"
+                            "UTC"
+                        ]
+                        "ID, planned date, due meaning and observation basis remain distinct"
+
+                    Expect.isFalse
+                        (Encoding.UTF8.GetString(bytes).Contains "retained account subject")
+                        "The fact export does not invent another account-directory column")
             testCase "CSV all follows cursors with one header and unchanged filters" (fun () ->
                 let code, bytes, _, calls =
                     run

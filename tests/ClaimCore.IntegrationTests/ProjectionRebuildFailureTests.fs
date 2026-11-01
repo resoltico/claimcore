@@ -21,6 +21,7 @@ let private image (database: PostgresFixture.Database) =
             [
                 "baseline_identity"
                 "installation"
+                "register_maintenance"
                 "ledger"
                 "ledger_head"
                 "cases"
@@ -48,6 +49,7 @@ let private seed database =
         let! actor = populated database
         let! _ = resolve actor { OperationId = id 99 } token
         let! checkpoint = verified database
+        do! enterMaintenance database
         return actor, checkpoint
     }
 
@@ -253,13 +255,18 @@ let private writerRace database =
             "Reconstruction used its locked checkpoint"
 
         let! appended = writing
-        accepted appended |> ignore
+
+        Expect.equal
+            appended.Outcome
+            (ExecuteResult.Rejected Refusal.RegisterMaintenance)
+            "A queued actor must observe the maintenance state after replacement"
+
         let! after = verified database
 
         Expect.equal
-            after.Sequence
-            (Sequence.successor checkpoint.Sequence)
-            "The later acceptance is never overwritten by an older scan"
+            after
+            checkpoint
+            "A rebuild cannot let a queued actor append during maintenance"
     }
 
 let private commitLoss drop landed database =

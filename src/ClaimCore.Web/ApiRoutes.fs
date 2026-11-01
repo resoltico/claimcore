@@ -65,7 +65,7 @@ module internal ApiRoutes =
     let private admit (configuration: WebConfiguration) (context: HttpContext) =
         task {
             let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
-            use lease = budget.Acquire()
+            use lease = budget.Acquire(context)
 
             if not lease.IsAcquired then
                 return Error GateFailure.AdmissionRejected
@@ -144,7 +144,12 @@ module internal ApiRoutes =
                     match lease with
                     | None -> return RouteSupport.hostFailure context HostFailureReason.RateLimited
                     | Some lease ->
-                        use _capacity = lease
+                        // DI releases this after result writing, not at the Task<IResult> boundary.
+                        try
+                            context.RequestServices.GetRequiredService<RequestCapacity>().Own lease
+                        with error ->
+                            lease.Dispose()
+                            raise error
 
                         match! input handler configuration context with
                         | Error result -> return result

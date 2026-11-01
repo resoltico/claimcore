@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Domain
 open ClaimCore.Web
 
@@ -158,6 +159,29 @@ let private identities () =
         Expect.equal admission.ActivePartitions 0 "No completed identity remains resident"
     }
 
+let private responseLifetime () =
+    task {
+        use admission = new PrincipalAdmission(1, 0)
+        let services = ServiceCollection()
+        services.AddScoped<RequestCapacity>() |> ignore
+        use provider = services.BuildServiceProvider()
+        let scope = provider.CreateScope()
+
+        try
+            let! lease = acquire admission "response" RequestWorkload.Write
+            scope.ServiceProvider.GetRequiredService<RequestCapacity>().Own(require lease)
+            let! whileWriting = acquire admission "response" RequestWorkload.Write
+
+            Expect.isNone
+                whileWriting
+                "Returning a handler result does not release the request's deferred response capacity"
+        finally
+            scope.Dispose()
+
+        use! _next = acquire admission "response" RequestWorkload.Write |> admitted
+        Expect.equal admission.ActivePartitions 1 "Scope cleanup makes response capacity reusable"
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -175,4 +199,7 @@ let tests =
             testCaseAsync
                 "discards completed principal partitions"
                 (async { do! identities () |> Async.AwaitTask })
+            testCaseAsync
+                "owns workload capacity through deferred response writing"
+                (async { do! responseLifetime () |> Async.AwaitTask })
         ]

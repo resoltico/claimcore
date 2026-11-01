@@ -1,3 +1,5 @@
+import { useRequesterContext } from "../hooks/useRequesterContext";
+import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { useCredential } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -49,38 +51,43 @@ const CurrentPresentation = ({
   current: CurrentCase;
   definition: CatalogDocument;
   onAct: (current: CurrentCase, act: ActKind) => void;
-}) => (
-  <>
-    <p className="case-claimant">
-      <bdi>{current.state.fields.registration.claimantName}</bdi>
-      <CharacterWarning value={current.state.fields.registration.claimantName} />
-    </p>
-    <CaseProgress current={current} definition={definition} />
-    <CaseWork
-      value={current.work}
-      {...(current.advice.acts.includes("UPDATE_WORK")
-        ? {
-            onUpdate: () => {
-              onAct(current, "UPDATE_WORK");
-            },
-          }
-        : {})}
-    />
-    <div className="case-workspace">
-      <CaseFacts
-        values={current.state.fields}
-        revision={current.revision}
-        fields={definition.fields}
+}) => {
+  const globalPaused = useRequesterContext()?.maintenance.active === true;
+  const paused = globalPaused || current.advice.maintenance.active;
+  return (
+    <>
+      <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
+      <p className="case-claimant">
+        <bdi>{current.state.fields.registration.claimantName}</bdi>
+        <CharacterWarning value={current.state.fields.registration.claimantName} />
+      </p>
+      <CaseProgress current={current} definition={definition} />
+      <CaseWork
+        value={current.work}
+        {...(current.advice.acts.includes("UPDATE_WORK") && !paused
+          ? {
+              onUpdate: () => {
+                onAct(current, "UPDATE_WORK");
+              },
+            }
+          : {})}
       />
-      <CaseActions
-        current={current}
-        onAct={(act) => {
-          onAct(current, act);
-        }}
-      />
-    </div>
-  </>
-);
+      <div className="case-workspace">
+        <CaseFacts
+          values={current.state.fields}
+          revision={current.revision}
+          fields={definition.fields}
+        />
+        <CaseActions
+          current={current}
+          onAct={(act) => {
+            onAct(current, act);
+          }}
+        />
+      </div>
+    </>
+  );
+};
 
 const CaseHeader = ({
   caseReference,

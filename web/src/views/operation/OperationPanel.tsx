@@ -219,7 +219,7 @@ const EditableOperation = (props: Props) => {
             })}
         onAct={requestChange}
       />
-      <OperationReview model={model} />
+      <OperationReview model={model} paused={props.current?.advice.maintenance.active === true} />
     </>
   );
 };

@@ -12,6 +12,7 @@
     <Compile Include="Ledger/StoredEntries.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />
+    <Compile Include="RegisterMaintenanceStore.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />
     <Compile Include="Ledger/TransactionPrimitives.fs" />
@@ -19,6 +20,8 @@
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
     <Compile Include="SessionStore.fs" />
+    <Compile Include="SessionPruning.fs" />
+    <Compile Include="InstallationStatus.fs" />
     <Compile Include="Runtime.fs" />
   </ItemGroup>
   <ItemGroup>

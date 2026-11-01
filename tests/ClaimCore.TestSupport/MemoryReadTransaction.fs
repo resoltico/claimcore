@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -90,6 +91,7 @@ type internal Reader
 
     interface IReadTx with
         member _.ObservedAt = observed
+        member _.Maintenance() = Task.FromResult((get ()).Maintenance)
 
         member _.Authority
             ({

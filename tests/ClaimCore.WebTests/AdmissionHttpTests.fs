@@ -7,6 +7,9 @@ open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open ClaimCore.Web
+open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.TestSupport
@@ -142,8 +145,45 @@ let private pressure () =
             "Previously admitted reads complete normally"
     }
 
+let private authenticationIsolation () =
+    task {
+        use host = new Host(true)
+        let! login, _ = host.Login()
+        Expect.equal login 200 "Valid cookie control before authentication pressure"
+        let admission = host.Services.GetRequiredService<AuthenticationAdmission>()
+        let callback = DefaultHttpContext()
+        callback.Request.Path <- PathString "/SIGNIN-OIDC"
+        use first = admission.Acquire callback
+        use second = admission.Acquire callback
+        use excess = admission.Acquire callback
+
+        Expect.isTrue
+            (first.IsAcquired && second.IsAcquired)
+            "The bounded callback workload is held"
+
+        Expect.isFalse excess.IsAcquired "A case variant cannot evade callback admission"
+        let! status, _ = host.Bootstrap()
+
+        Expect.equal
+            status
+            200
+            "Slow interactive authentication cannot occupy valid cookie validation capacity"
+
+        let bearer = DefaultHttpContext()
+        bearer.Request.Headers.Authorization <- "Bearer synthetic-invalid-token"
+        use bearerLease = admission.Acquire bearer
+        Expect.isTrue bearerLease.IsAcquired "Bearer validation has an independent bounded budget"
+    }
+
 [<Tests>]
 let tests =
-    testCaseAsync
-        "HTTP admission preserves passive recovery under one noisy principal's held reads"
-        (async { do! pressure () |> Async.AwaitTask })
+    testList
+        "HTTP admission pressure"
+        [
+            testCaseAsync
+                "preserves passive recovery under one noisy principal's held reads"
+                (async { do! pressure () |> Async.AwaitTask })
+            testCaseAsync
+                "isolates interactive authentication from cookie and bearer validation"
+                (async { do! authenticationIsolation () |> Async.AwaitTask })
+        ]

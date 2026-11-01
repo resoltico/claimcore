@@ -222,20 +222,34 @@ module ResponseCodecs =
         |> build
         |> named "CorrectionAdvice"
 
-    let caseAdvice =
-        record (fun acts correction history -> acts, correction, history)
-        |> field
-            "acts"
-            (fun (acts, _, _) -> acts)
-            (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
-        |> optionalField "correction" (fun (_, correction, _) -> correction) correctionAdvice
-        |> field "history" (fun (_, _, history) -> history) (list 2 historyDetail)
+    let registerMaintenance =
+        record (fun active generation -> active, generation)
+        |> field "active" fst boolean
+        |> field "generation" snd (integer 0L SafeInteger.Maximum)
         |> build
         |> mapResult
-            (fun path (acts, correction, history) ->
-                CaseAdvice.create acts correction history
+            (fun path (active, generation) ->
+                RegisterMaintenance.create active generation
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (fun (advice: CaseAdvice) -> advice.Acts, advice.Correction, advice.History)
+            (fun (state: RegisterMaintenance) -> state.Active, state.Generation)
+        |> named "RegisterMaintenance"
+
+    let caseAdvice =
+        record (fun acts correction history maintenance -> acts, correction, history, maintenance)
+        |> field
+            "acts"
+            (fun (acts, _, _, _) -> acts)
+            (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
+        |> optionalField "correction" (fun (_, correction, _, _) -> correction) correctionAdvice
+        |> field "history" (fun (_, _, history, _) -> history) (list 2 historyDetail)
+        |> field "maintenance" (fun (_, _, _, maintenance) -> maintenance) registerMaintenance
+        |> build
+        |> mapResult
+            (fun path (acts, correction, history, maintenance) ->
+                CaseAdvice.createDuringMaintenance maintenance acts correction history
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (fun (advice: CaseAdvice) ->
+                advice.Acts, advice.Correction, advice.History, advice.Maintenance)
         |> named "CaseAdvice"
 
     let caseView =
@@ -297,16 +311,18 @@ module ResponseCodecs =
         |> field "hasScopedCases" snd boolean
 
     let actorContext =
-        (record (fun installation runtime capabilities views offers (identity, assigned) ->
-            {
-                ActorContext.InstallationId = installation
-                ActorId = identity
-                Runtime = runtime
-                Capability = capabilities
-                View = views
-                Offers = offers
-                HasScopedCases = assigned
-            })
+        (record
+            (fun installation runtime capabilities views offers (identity, assigned) maintenance ->
+                {
+                    ActorContext.InstallationId = installation
+                    Maintenance = maintenance
+                    ActorId = identity
+                    Runtime = runtime
+                    Capability = capabilities
+                    View = views
+                    Offers = offers
+                    HasScopedCases = assigned
+                })
         : Fields<ActorContext, _>)
         |> field "installationId" _.InstallationId uuid
         |> flatten _.Runtime runtimeFields
@@ -317,6 +333,7 @@ module ResponseCodecs =
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
+        |> field "maintenance" _.Maintenance registerMaintenance
         |> build
         |> named "ActorContext"
 

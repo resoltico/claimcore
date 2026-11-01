@@ -212,7 +212,11 @@ module internal AuthorityExecution =
             let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
 
             authorizeIdentity services command.OperationId bytes view
-            |> Verdict.bind (fun () -> propose services.InstallationId command view))
+            |> Verdict.bind (fun () ->
+                if view.Maintenance.Active then
+                    Verdict.Refuse Refusal.RegisterMaintenance
+                else
+                    propose services.InstallationId command view))
 
     let private executeRecord
         (services: ServiceContext)

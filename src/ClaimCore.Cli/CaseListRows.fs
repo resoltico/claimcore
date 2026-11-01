@@ -85,6 +85,37 @@ module internal CaseListRows =
                 Value = live (fun facts -> CalendarDate.format facts.IncidentNotificationDate)
             }
             {
+                Key = "state.work.responsible.account.actorId"
+                Label = field BusinessField.ResponsibleActor
+                Value =
+                    optional (fun facts ->
+                        facts.Work.Responsible
+                        |> Option.map (fun account -> ActorId.format account.Account.ActorId))
+            }
+            {
+                Key = "state.work.followUpDate"
+                Label = field BusinessField.FollowUpDate
+                Value =
+                    optional (fun facts -> facts.Work.FollowUp |> Option.map CalendarDate.format)
+            }
+            {
+                Key = "state.work.due"
+                Label = "input.due.label"
+                Value = live (fun facts -> CaseDue.token facts.Work.Due)
+            }
+            {
+                Key = "state.work.basis.businessDate"
+                Label = CliMessages.key CliMessage.WorkBusinessDateLabel
+                Value =
+                    live (fun facts ->
+                        CalendarDate.format (CalendarDate.ofDate facts.Work.Basis.BusinessDate))
+            }
+            {
+                Key = "state.work.basis.timeZone"
+                Label = CliMessages.key CliMessage.WorkTimeZoneLabel
+                Value = live (fun facts -> facts.Work.Basis.TimeZoneId)
+            }
+            {
                 Key = "changedAt"
                 Label = "label.changedAt"
                 Value = fun row -> Some(TextReplyFormat.instant row.ChangedAt)
@@ -123,6 +154,8 @@ module internal CaseListRows =
                         (CaseState.lifecycle row.State)
                 | "state.status", (CaseState.Active facts | CaseState.Voided facts) ->
                     TextReplyFormat.term language CaseStatus.vocabulary facts.Status
+                | "state.work.due", (CaseState.Active facts | CaseState.Voided facts) ->
+                    TextReplyFormat.term language CaseDue.vocabulary facts.Work.Due
                 | "state.progress", (CaseState.Active facts | CaseState.Voided facts) ->
                     TextReplyFormat.term language CaseProgress.vocabulary facts.Progress
                 | _ -> TextReplyFormat.displayed language (column.Value row))

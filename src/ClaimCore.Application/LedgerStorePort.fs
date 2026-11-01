@@ -218,6 +218,7 @@ type CaseHistorySlice =
 
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
+    abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>

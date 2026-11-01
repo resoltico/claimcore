@@ -80,6 +80,7 @@ type Refusal =
     | OperationResolved
     | IdempotencyConflict
     | InvalidCursor
+    | RegisterMaintenance
 
 module Refusal =
     let invalidInput (target, violation) =

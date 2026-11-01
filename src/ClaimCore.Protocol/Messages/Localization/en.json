@@ -121,6 +121,7 @@
   "diagnostic.PAYMENT_NOT_RECORDED": "There is no payment record to clear.",
   "diagnostic.PRINCIPAL_FORMAT": "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
   "diagnostic.REFERENCE_FORMAT": "Use 1 to 80 printable non-space ASCII characters.",
+  "diagnostic.REGISTER_MAINTENANCE": "Register writes are paused for maintenance. You can keep reading and checking existing operation status.",
   "diagnostic.RESOURCE_UNAVAILABLE": "The requested resource is unavailable.",
   "diagnostic.REVISION_CONFLICT": "Read the current case before making a changed request.",
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": "This role has no applicable capability at the selected scope.",

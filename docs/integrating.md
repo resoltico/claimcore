@@ -299,11 +299,20 @@ JSON and text output retain authored values.
 The header order is:
 
 ```text
-caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,changedAt
+caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,state.work.responsible.account.actorId,state.work.followUpDate,state.work.due,state.work.basis.businessDate,state.work.basis.timeZone,changedAt
 ```
 
+Work columns export the responsible ActorId, planned date, due token and that row's business-date/zone basis.
+They remain empty for erased rows; current account subjects are available through authorized JSON/detail reads.
 Amounts and timestamps use their canonical wire values; tokens and references are not localized. `--all` follows continuations to the end, emits the header once and stops on refusal, reporting the cursor
 reached. Each page is its own snapshot; the complete export is not an installation-wide snapshot.
+
+`context.maintenance` and case `advice.maintenance` contain the observed `active` flag and monotonic
+interval `generation`. Active maintenance removes register-write offers while retaining authorized reads.
+The server returns `REGISTER_MAINTENANCE` when an otherwise admissible new register/control write reaches
+the actual paused action state. Retained accepted operations and committed nonacceptance observations do
+not need another append. Advice never substitutes for the execution guard, and resumption never
+implicitly retries a prepared client request.
 
 ## Browser routes and presentation
 

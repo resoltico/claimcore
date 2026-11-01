@@ -27,11 +27,26 @@ type internal DynamicIngress() =
         member _.Dispose() = limiter.Dispose()
 
 type internal AuthenticationAdmission() =
-    let limiter = AdmissionLease.limiter AdmissionPolicy.authentication 0
-    member _.Acquire() = limiter.AttemptAcquire 1
+    let cookie = AdmissionLease.limiter AdmissionPolicy.cookieAuthentication 0
+    let bearer = AdmissionLease.limiter AdmissionPolicy.bearerAuthentication 0
+    let interactive = AdmissionLease.limiter AdmissionPolicy.interactiveAuthentication 0
+
+    member _.Acquire(context: HttpContext) =
+        let limiter =
+            if AuthMiddleware.interactiveRequest context.Request.Path then
+                interactive
+            elif RequestGate.credentialMode context = CredentialMode.Bearer then
+                bearer
+            else
+                cookie
+
+        limiter.AttemptAcquire 1
 
     interface IDisposable with
-        member _.Dispose() = limiter.Dispose()
+        member _.Dispose() =
+            cookie.Dispose()
+            bearer.Dispose()
+            interactive.Dispose()
 
 module internal RateLimits =
     let private busy context =
@@ -54,6 +69,18 @@ module internal RateLimits =
                 do! busy context
         }
 
+    let private authenticate (budget: AuthenticationAdmission) (handler: RequestDelegate) context =
+        task {
+            use lease = budget.Acquire context
+
+            if lease.IsAcquired then
+                do! handler.Invoke context
+                return true
+            else
+                do! busy context
+                return false
+        }
+
     /// Run authentication as its own bounded stage, releasing capacity before the actor workload.
     let authentication (application: WebApplication) =
         let passed = obj ()
@@ -66,7 +93,7 @@ module internal RateLimits =
                 Task.CompletedTask)
         )
 
-        let authenticate = stage.Build()
+        let authenticationStage = stage.Build()
 
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->
@@ -74,15 +101,10 @@ module internal RateLimits =
                     let budget =
                         context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
-                    use lease = budget.Acquire()
-
-                    if lease.IsAcquired then
-                        do! authenticate.Invoke context
-
-                        if context.Items.Remove passed then
-                            do! next.Invoke context
-                    else
-                        do! busy context
+                    let! admitted = authenticate budget authenticationStage context
+                    // The authentication lease has ended before workload admission and result writing.
+                    if admitted && context.Items.Remove passed then
+                        do! next.Invoke context
                 })
         )
         |> ignore
@@ -90,6 +112,7 @@ module internal RateLimits =
     let configure (limits: RequestGateLimits) (services: IServiceCollection) =
         services.AddSingleton<DynamicIngress>() |> ignore
         services.AddSingleton<AuthenticationAdmission>() |> ignore
+        services.AddScoped<RequestCapacity>() |> ignore
 
         services.AddSingleton<PrincipalAdmission>(fun _ ->
             new PrincipalAdmission(limits.CorePermitLimit, limits.CoreQueueLimit))

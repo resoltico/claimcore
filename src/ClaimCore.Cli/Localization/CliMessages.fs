@@ -92,6 +92,8 @@ type CliMessage =
         operationId: string
     | [<MessageKey("cli.text.statusUnresolved")>] StatusUnresolved
     | [<MessageKey("cli.text.state")>] StateLabel
+    | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
+    | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel
     | [<MessageKey("cli.text.next")>] NextLabel
     | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty
     | [<MessageKey("cli.text.accessSources")>] AccessSources of

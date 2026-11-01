@@ -89,8 +89,11 @@ let internal inspectOperation fixture principal operation token =
                         let! actor, entry, current =
                             ExecutionFacts.operation tx principal operation
 
+                        let! maintenance = tx.Maintenance()
+
                         return
                             {
+                                Maintenance = maintenance
                                 CaseFacts.Assignee = None
                                 ObservedAt = tx.ObservedAt
                                 Actor = actor

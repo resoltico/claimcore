@@ -8,13 +8,24 @@ open ClaimCore.Domain
 /// Per-process resource policy. Queued writers cannot consume every ingress slot.
 module internal AdmissionPolicy =
     let ingress = 24
-    let authentication = 4
+    let cookieAuthentication = 2
+    let bearerAuthentication = 2
+    let interactiveAuthentication = 2
     let sessions = 4
     let readiness = 2
     let reads = 4
     let recovery = 2
     let maximumWriters = 4
-    let maximumQueuedWriters = 8
+
+    let maximumQueuedWriters =
+        ingress
+        - maximumWriters
+        - reads
+        - recovery
+        - cookieAuthentication
+        - bearerAuthentication
+        - interactiveAuthentication
+
     let maximumPartitions = 64
     // Every concurrently admitted storage user, including both readiness probes, needs a pool slot.
     let minimumPoolCapacity writers =
@@ -48,6 +59,20 @@ module internal AdmissionLease =
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst
             )
         )
+
+/// Minimal API results execute after the handler returns. The request scope owns their permit.
+type internal RequestCapacity() =
+    let mutable owned: IDisposable option = None
+
+    member _.Own(lease: IDisposable) =
+        match owned with
+        | Some _ -> invalidOp "A request already owns its workload capacity."
+        | None -> owned <- Some lease
+
+    interface IDisposable with
+        member _.Dispose() =
+            owned |> Option.iter _.Dispose()
+            owned <- None
 
 [<NoEquality; NoComparison>]
 type private PrincipalPartition =

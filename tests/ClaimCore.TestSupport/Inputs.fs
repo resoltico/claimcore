@@ -363,6 +363,21 @@ let private payloadGroup group members =
         |> Option.filter (fun group -> Map.containsKey group groupBaselines)
     | _ -> None
 
+let private maintenanceDefaults fields =
+    let keys = fields |> List.map fst |> Set.ofList
+    let advice = Set.contains "acts" keys && Set.contains "history" keys
+    let context = Set.contains "installationId" keys && Set.contains "capabilities" keys
+
+    if (advice || context) && not (Set.contains "maintenance" keys) then
+        fields
+        @ [
+            "maintenance",
+            JsonValue.Object
+                [ "active", JsonValue.Boolean false; "generation", JsonValue.Integer 0L ]
+        ]
+    else
+        fields
+
 let positiveValue value =
     let rec complete group =
         function
@@ -382,7 +397,7 @@ let positiveValue value =
             match group with
             | Some group when not (members |> List.exists (fst >> (=) "kind")) ->
                 groupOverride group fields
-            | _ -> JsonValue.Object fields
+            | _ -> JsonValue.Object(maintenanceDefaults fields)
         | JsonValue.Array values -> JsonValue.Array(List.map (complete None) values)
         | value -> value
 
