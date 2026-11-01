@@ -226,6 +226,33 @@ It writes neither a token cache nor a history file. Fifteen idle minutes at a co
 prompt discard credentials; exit, EOF and SIGTERM also discard them. A refresh failure discards the old
 grant before interactive sign-in. Discard drops the session's references to managed token strings.
 
+## Request admission
+
+Admission is per Web process, with no multi-host quota or response-time guarantee. The
+[admission policy](../src/ClaimCore.Web/Admission.fs) owns the bounded resource budgets. A process admits
+at most 24 requests before authentication, four authentication stages and four session-provider calls.
+Actor work has separate pools of four ordinary reads, four register writes and two passive recovery reads.
+One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
+caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not
+remain in a partition cache.
+
+`CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
+`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
+The bounded queue leaves ingress slots for authentication and read/recovery work. Final settlement still
+uses the write budget and ledger head; it cannot jump erasure or maintenance.
+
+The private runtime connection string must enable pooling and supply enough connections for all workload
+budgets and both readiness probes: 16 at the defaults. `POOL_CAPACITY_INSUFFICIENT` identifies this setup
+problem without printing connection values. Lowering only the provider pool is not an admission policy.
+Other processes and owner tools require their own capacity planning.
+
+Permits and runtime leases last through the awaited provider operation and cleanup. A canceled client or
+expired drain bound does not make a still-running transaction release capacity early. Predispatch overload
+returns a bounded transport refusal; it does not imply a permanent operation rejection. Retry reads as
+appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
+Context reads that establish journal ownership remain fresh; permission and action-state checks always
+execute on the server.
+
 ## Serialized writes and verification growth
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams

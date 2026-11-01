@@ -130,7 +130,7 @@ type Host
         application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
         |> ignore
 
-        application.UseAuthentication() |> ignore
+        RateLimits.authentication application
         application.UseRateLimiter() |> ignore
         application.UseAuthorization() |> ignore
 

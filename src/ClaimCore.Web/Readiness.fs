@@ -7,7 +7,8 @@ open System.Threading.Tasks
 /// Each permit owns the probe through provider cleanup, even if cancellation is ignored.
 [<Sealed>]
 type Readiness(probe: CancellationToken -> Task<bool>, stopping: CancellationToken) =
-    let permits = new SemaphoreSlim(2, 2)
+    let permits =
+        new SemaphoreSlim(AdmissionPolicy.readiness, AdmissionPolicy.readiness)
 
     member _.Check(aborted: CancellationToken) =
         task {

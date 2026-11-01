@@ -170,8 +170,7 @@ module HostRoutes =
                     Func<HttpContext, Task<IResult>>(exact)
                 )
 
-            if (Api.id endpoint) <> "session" then
-                route.RequireRateLimiting "core" |> ignore
+            route |> ignore
 
         application
             .MapGet(

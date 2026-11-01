@@ -63,15 +63,32 @@ module internal ApiRoutes =
         }
 
     let private admit (configuration: WebConfiguration) (context: HttpContext) =
-        match configuration.Oidc with
-        | None -> Task.FromResult(Error GateFailure.SessionRejected)
-        | Some oidc ->
-            RequestGate.actorPost
-                oidc
-                configuration.Binding
-                configuration.RequestGate.MaximumJsonBytes
-                (context.RequestServices.GetRequiredService<IAntiforgery>())
-                context
+        task {
+            let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
+            use lease = budget.Acquire()
+
+            if not lease.IsAcquired then
+                return Error GateFailure.AdmissionRejected
+            else
+                match configuration.Oidc with
+                | None -> return Error GateFailure.SessionRejected
+                | Some oidc ->
+                    return!
+                        RequestGate.actorPost
+                            oidc
+                            configuration.Binding
+                            configuration.RequestGate.MaximumJsonBytes
+                            (context.RequestServices.GetRequiredService<IAntiforgery>())
+                            context
+        }
+
+    let private workload endpoint =
+        if Api.identity endpoint = EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) then
+            RequestWorkload.Recovery
+        elif Api.effect endpoint = EndpointEffect.Read then
+            RequestWorkload.Read
+        else
+            RequestWorkload.Write
 
     let private input
         (handler: ClaimCore.Web.Route)
@@ -115,56 +132,77 @@ module internal ApiRoutes =
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.gateFailure context reason
                 | Ok principal ->
-                    match! input handler configuration context with
-                    | Error result -> return result
-                    | Ok prepared ->
-                        prepared.OperationId
-                        |> Option.iter (fun id -> RequestLog.operation id context)
+                    let admission = context.RequestServices.GetRequiredService<PrincipalAdmission>()
 
-                        RouteSupport.markDispatched context
+                    let! lease =
+                        admission.Acquire(
+                            AuthenticatedPrincipals.key principal,
+                            workload endpoint,
+                            context.RequestAborted
+                        )
 
-                        let cancellation =
-                            if Api.effect endpoint <> EndpointEffect.Read then
-                                System.Threading.CancellationToken.None
-                            else
-                                context.RequestAborted
+                    match lease with
+                    | None -> return RouteSupport.hostFailure context HostFailureReason.RateLimited
+                    | Some lease ->
+                        use _capacity = lease
 
-                        let binding = installationBinding context
+                        match! input handler configuration context with
+                        | Error result -> return result
+                        | Ok prepared ->
+                            prepared.OperationId
+                            |> Option.iter (fun id -> RequestLog.operation id context)
 
-                        if Api.requiresInstallation endpoint && binding.IsNone then
-                            RouteSupport.markCompleted context
-                            return RouteSupport.hostFailure context HostFailureReason.InputInvalid
-                        else
-                            let! result =
-                                withActor (AuthenticatedPrincipals.key principal) (fun core ->
-                                    task {
-                                        if
-                                            Api.requiresInstallation endpoint
-                                            && not (
-                                                binding
-                                                |> Option.exists (Service.matchesInstallation core)
-                                            )
-                                        then
-                                            return Error()
-                                        else
-                                            let! reply =
-                                                prepared.Invoke (Some core) cancellation (fun () ->
-                                                    RouteSupport.markCompleted context)
+                            RouteSupport.markDispatched context
 
-                                            return Ok reply
-                                    })
+                            let cancellation =
+                                if Api.effect endpoint <> EndpointEffect.Read then
+                                    System.Threading.CancellationToken.None
+                                else
+                                    context.RequestAborted
 
-                            match result with
-                            | Some(Error()) ->
+                            let binding = installationBinding context
+
+                            if Api.requiresInstallation endpoint && binding.IsNone then
                                 RouteSupport.markCompleted context
 
                                 return
-                                    RouteSupport.hostFailure
-                                        context
-                                        HostFailureReason.InstallationMismatch
-                            | Some(Ok reply) -> return RouteSupport.reply reply context
-                            | None ->
-                                RouteSupport.markCompleted context
-                                let! reply = prepared.Invoke None cancellation ignore
-                                return RouteSupport.reply reply context
+                                    RouteSupport.hostFailure context HostFailureReason.InputInvalid
+                            else
+                                let! result =
+                                    withActor (AuthenticatedPrincipals.key principal) (fun core ->
+                                        task {
+                                            if
+                                                Api.requiresInstallation endpoint
+                                                && not (
+                                                    binding
+                                                    |> Option.exists (
+                                                        Service.matchesInstallation core
+                                                    )
+                                                )
+                                            then
+                                                return Error()
+                                            else
+                                                let! reply =
+                                                    prepared.Invoke
+                                                        (Some core)
+                                                        cancellation
+                                                        (fun () ->
+                                                            RouteSupport.markCompleted context)
+
+                                                return Ok reply
+                                        })
+
+                                match result with
+                                | Some(Error()) ->
+                                    RouteSupport.markCompleted context
+
+                                    return
+                                        RouteSupport.hostFailure
+                                            context
+                                            HostFailureReason.InstallationMismatch
+                                | Some(Ok reply) -> return RouteSupport.reply reply context
+                                | None ->
+                                    RouteSupport.markCompleted context
+                                    let! reply = prepared.Invoke None cancellation ignore
+                                    return RouteSupport.reply reply context
         }

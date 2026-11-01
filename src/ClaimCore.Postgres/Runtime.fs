@@ -40,6 +40,11 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
         member _.Dispose() = source.Dispose()
 
 module Runtime =
+    /// Hosts compare their bounded concurrent storage users with the configured provider pool.
+    let supportsCapacity required (connectionString: string) =
+        let settings = NpgsqlConnectionStringBuilder connectionString
+        settings.Pooling && settings.MaxPoolSize >= required
+
     let store (runtime: IRuntime) = (runtime :?> RuntimeResource).Store
 
     let openConnection (connectionString: string) cancellationToken =

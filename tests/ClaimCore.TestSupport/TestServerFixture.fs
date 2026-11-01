@@ -42,7 +42,7 @@ let limits =
     {
         MaximumJsonBytes = 65536
         CorePermitLimit = 4
-        CoreQueueLimit = 16
+        CoreQueueLimit = 8
         LoginPermitLimit = 5
     }
 
@@ -139,7 +139,7 @@ let private pipeline (application: WebApplication) sink readiness =
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
-    application.UseAuthentication() |> ignore
+    RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 

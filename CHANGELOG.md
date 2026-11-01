@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
+
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
 - CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
 - Case views disclose assigned account identity and availability. Mine is factual responsibility; hasScopedCases describes access grants. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering.

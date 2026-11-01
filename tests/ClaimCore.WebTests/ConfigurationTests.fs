@@ -21,7 +21,7 @@ let private configured action =
             Environment.SetEnvironmentVariable(name, null)
 
         let connection = Path.Combine(directory, "connection")
-        File.WriteAllText(connection, "synthetic configuration is never opened")
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
         let certificate = Path.Combine(directory, "server.pfx")
         use key = RSA.Create 2048
 
@@ -101,16 +101,44 @@ let private limits () =
         Expect.equal value.RequestGate.MaximumJsonBytes 65536 "Default bound"
         Expect.equal value.RequestGate.CorePermitLimit 4 "Default permits"
 
+        Expect.equal
+            value.RequestGate.CoreQueueLimit
+            8
+            "Queued writers leave ingress capacity for reads and recovery"
+
         for name, value in
             [
                 "CLAIMCORE_WEB_MAX_JSON_BYTES", "0"
                 "CLAIMCORE_WEB_CORE_PERMITS", "5"
                 "CLAIMCORE_WEB_CORE_QUEUE", "-1"
+                "CLAIMCORE_WEB_CORE_QUEUE", "9"
                 "CLAIMCORE_WEB_LOGIN_PERMITS", "nonnumeric"
             ] do
             Environment.SetEnvironmentVariable(name, value)
             Expect.throws (fun () -> Configuration.load () |> ignore) "Invalid bounds fail closed"
             Environment.SetEnvironmentVariable(name, null))
+
+let private poolCapacity () =
+    configured (fun _ connection ->
+        for settings in [ "Host=localhost;Maximum Pool Size=15"; "Host=localhost;Pooling=false" ] do
+            File.WriteAllText(connection, settings)
+            let mutable refused = false
+
+            try
+                let configured = Configuration.load ()
+                use _certificates = Configuration.ownCertificates configured
+                ()
+            with WebStartupException WebStartupProblem.PoolCapacityInsufficient ->
+                refused <- true
+
+            Expect.isTrue
+                refused
+                "The default resource budgets require a real pool with sixteen connections"
+
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+        let configured = Configuration.load ()
+        use _certificates = Configuration.ownCertificates configured
+        ())
 
 let private privateConnection () =
     configured (fun _ connection ->
@@ -159,5 +187,6 @@ let tests =
             testCase "the service setting registry has exactly nineteen names" catalogue
             testCase "defaults are bounded and out-of-range settings are refused" limits
             testCase "the connection input is owner-private and strict UTF-8" privateConnection
+            testCase "provider capacity must cover the concurrent workload budgets" poolCapacity
         ]
     |> testSequenced

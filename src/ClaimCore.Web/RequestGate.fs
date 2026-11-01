@@ -20,6 +20,7 @@ type GateFailure =
     | BodyTooLarge
     | SessionRejected
     | AntiforgeryRejected
+    | AdmissionRejected
 
 [<RequireQualifiedAccess>]
 type internal CredentialMode =

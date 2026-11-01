@@ -17,6 +17,7 @@
     <Compile Include="AuthenticationFailure.fs" />
     <Compile Include="Composition/AuthenticatedPrincipal.fs" />
     <Compile Include="Composition/BusinessCalendar.fs" />
+    <Compile Include="Admission.fs" />
     <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
     <Compile Include="Composition/ServiceRuntime.fs" />
