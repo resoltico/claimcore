@@ -20,6 +20,12 @@ export default {
     ],
   },
   build: {
+    // Failed JS modulepreloads can poison WebKit's cache across reloads (https://bugs.webkit.org/show_bug.cgi?id=270357).
+    // Native imports fetch dynamic JS; retain async CSS and initial HTML preloads.
+    modulePreload: {
+      resolveDependencies: (_filename, dependencies, { hostType }) =>
+        hostType === "js" ? dependencies.filter((path) => path.endsWith(".css")) : dependencies,
+    },
     chunkSizeWarningLimit: 600,
     rolldownOptions: {
       output: {

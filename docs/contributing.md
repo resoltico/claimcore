@@ -195,6 +195,11 @@ Check mode refuses missing, stale or extra outputs and does not repair them. Rev
 producer. Custom output directories contain only contract artifacts. Core message metadata is locale-neutral;
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
+Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
+Failed JavaScript modulepreloads can poison the WebKit resource cache across document reloads
+([WebKit 270357](https://bugs.webkit.org/show_bug.cgi?id=270357)). The published failure/recovery journeys
+exercise missing chunks, actual document replacement and offline draft preservation; do not replace them
+with shape or build-only checks.
 
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
