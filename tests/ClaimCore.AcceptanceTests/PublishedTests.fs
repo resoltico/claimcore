@@ -190,12 +190,29 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "caseId"; "caseReference"; "mine"; "revision"; "state" ]
-        "Erased views expose retained identity, assignment metadata and current advice"
+        [ "advice"; "caseId"; "caseReference"; "mine"; "revision"; "state"; "work" ]
+        "Erased views contain retained identity, empty work and current read advice"
 
     Expect.isFalse
         (tombstone.GetProperty("mine").GetBoolean())
         "Installation stewardship does not invent a case-scoped assignment"
+
+    let work = tombstone.GetProperty "work"
+
+    Expect.equal
+        (work.GetProperty("responsible").ValueKind)
+        JsonValueKind.Null
+        "Erasure discloses no responsible account"
+
+    Expect.equal
+        (work.GetProperty("followUpDate").ValueKind)
+        JsonValueKind.Null
+        "Erasure discloses no follow-up payload"
+
+    Expect.equal
+        (work.GetProperty("due").GetString())
+        "INACTIVE"
+        "An erased identity cannot remain actionable work"
 
     let advice = tombstone.GetProperty "advice"
 

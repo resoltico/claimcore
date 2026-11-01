@@ -96,7 +96,7 @@ let private examples =
                     "keep"
                 ]
             Message = "invalidChoice"
-            Values = [ "flag", "--registration"; "value", "swap"; "allowed", "keep|replace" ]
+            Values = [ "flag", "--registration"; "value", "swap"; "allowed", "keep|update" ]
             Suggestion = None
         }
         {

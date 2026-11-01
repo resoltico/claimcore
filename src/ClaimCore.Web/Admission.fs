@@ -156,6 +156,11 @@ type internal PrincipalAdmission(writers, queuedWriters) =
                         None))
 
     member _.ActivePartitions = lock sync (fun () -> partitions.Count)
+
+    member _.ActiveReads =
+        int64 AdmissionPolicy.reads
+        - (reads.GetStatistics() |> nonNull).CurrentAvailablePermits
+
     member _.QueuedWriters = (writes.GetStatistics() |> nonNull).CurrentQueuedCount
 
     member _.Acquire(principal, kind, token: CancellationToken) =

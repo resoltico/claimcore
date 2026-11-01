@@ -150,7 +150,15 @@ let private login (context: HttpContext) : Task =
     task {
         let identity =
             ClaimsIdentity(
-                [ System.Security.Claims.Claim("sub", "synthetic-human") ],
+                [
+                    System.Security.Claims.Claim(
+                        "sub",
+                        (if context.Request.Query.ContainsKey "subject" then
+                             context.Request.Query["subject"].ToString()
+                         else
+                             "synthetic-human")
+                    )
+                ],
                 CookieAuthenticationDefaults.AuthenticationScheme
             )
 

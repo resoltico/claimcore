@@ -208,6 +208,18 @@ type Fixture() =
         |> Option.defaultWith (fun () -> invalidOp "The owned database proxy is not started.")
         |> fun proxy -> proxy.Arm 1
 
+    member _.RequestWebStop() =
+        web
+        |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
+        |> _.RequestStop()
+
+    member _.WebHasExited = web |> Option.exists _.HasExited
+
+    member _.WaitForWebExit(bound) =
+        web
+        |> Option.defaultWith (fun () -> invalidOp "The owned Web process is not started.")
+        |> _.WaitForExit(bound)
+
     member _.RestartWeb() =
         task {
             let current =

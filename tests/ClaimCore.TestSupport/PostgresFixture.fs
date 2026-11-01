@@ -39,14 +39,6 @@ let private owner =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner"
     |> Result.defaultWith (string >> invalidOp)
 
-let private calendar =
-    { new IBusinessCalendar with
-        member _.TimeZoneId = "Etc/UTC"
-
-        member _.DateAt instant =
-            DateOnly.FromDateTime instant.UtcDateTime
-    }
-
 [<NoEquality; NoComparison>]
 type internal Database =
     {
@@ -90,6 +82,7 @@ let private admittedDatabase
     (connections: AdmittedConnections)
     installationId
     owner
+    timeZone
     =
     let ownerSource = connections.Owner
     let runtime = connections.Runtime
@@ -102,7 +95,7 @@ let private admittedDatabase
             Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
             InstallationId = installationId
             Owner = owner
-            Calendar = calendar
+            Calendar = ClaimCore.Web.Composition.BusinessCalendar.resolve timeZone
             Dispose = dispose
         }
 
@@ -113,7 +106,7 @@ let private admittedDatabase
         Fixture = fixture
     }
 
-let internal createFor owner =
+let private createInZone owner timeZone poolCapacity =
     task {
         let container = container ()
         let mutable sources: NpgsqlDataSource list = []
@@ -140,12 +133,13 @@ let internal createFor owner =
             stage <- SetupStage.SchemaInitialization
 
             let! installationId =
-                SchemaAdministration.initialize ownerSource "Etc/UTC" CancellationToken.None
+                SchemaAdministration.initialize ownerSource timeZone CancellationToken.None
 
             stage <- SetupStage.RuntimeAdmission
             let settings = NpgsqlConnectionStringBuilder(container.GetConnectionString())
             settings.Username <- "claimcore_runtime"
             settings.Password <- "synthetic-only"
+            poolCapacity |> Option.iter (fun capacity -> settings.MaxPoolSize <- capacity)
             let runtime = NpgsqlDataSource.Create(settings.ConnectionString)
             sources <- runtime :: sources
             let! admitted = InstallationCheck.openRuntime runtime CancellationToken.None
@@ -163,6 +157,7 @@ let internal createFor owner =
                     }
                     installationId
                     owner
+                    admitted.BusinessTimeZone
         with error ->
             // A broken diagnostic sink must not bypass owned cleanup or replace setup failure.
             try
@@ -180,6 +175,13 @@ let internal createFor owner =
 
             return Unchecked.defaultof<Database>
     }
+
+let internal createFor principal = createInZone principal "Etc/UTC" None
+
+let internal createWithZone timeZone = createInZone owner timeZone None
+
+let internal createForPool principal capacity =
+    createInZone principal "Etc/UTC" (Some capacity)
 
 let internal create () = createFor owner
 

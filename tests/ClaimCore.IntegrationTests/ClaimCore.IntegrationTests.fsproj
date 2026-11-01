@@ -13,6 +13,8 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="OperationRecoveryContract.fs" />
     <Compile Include="CaseWorkContract.fs" />
+    <Compile Include="WorkDateBasisTests.fs" />
+    <Compile Include="HttpAdmissionPressureTests.fs" />
     <Compile Include="AuthorityHistoryContract.fs" />
     <Compile Include="WorklistTriageContract.fs" />
     <Compile Include="CaseSelectorContract.fs" />

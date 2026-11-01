@@ -176,6 +176,14 @@ let qualifyBearers
                 (value credentials "serviceClientId")
                 (value credentials "serviceClientSecret")
 
+        // Exercise the real JWT handler with unrelated malformed identities before its
+        // independently issued valid-token control; no token values enter evidence.
+        for _ in 1..128 do
+            let! denied = bearerRequest local ("malformed-" + Guid.NewGuid().ToString("N"))
+
+            if denied <> 401 then
+                raise (InvalidBearerAdmission(-1, denied))
+
         let! allowed = bearerRequest local token
         let! caseAllowed, first = caseRequest local token None "SYNTHETIC-001"
         let! mixed, _ = caseRequest local token (Some browserCookies) "SYNTHETIC-001"
