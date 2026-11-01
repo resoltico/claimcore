@@ -3,11 +3,8 @@ import { businessFieldCount, inventory } from "../support/inventory";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
 import { fields, definition } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";

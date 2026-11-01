@@ -36,12 +36,10 @@ const editor = (maintenance: RegisterMaintenance) => (
 );
 
 it("keeps an authored draft through maintenance entry and explicit resumption without sending it", async () => {
-  const preview = vi
-    .spyOn(service, "preview")
-    .mockResolvedValue({
-      kind: "deliveryFailure",
-      notice: { kind: "local", reason: "unreachable" },
-    });
+  const preview = vi.spyOn(service, "preview").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+  });
   const view = render(editor({ active: false, generation: 0 }));
   await userEvent.setup().click(screen.getByRole("checkbox", { name: "Change Claimant name" }));
   changeField("Claimant name", "Retained local draft");
@@ -69,13 +67,11 @@ it("keeps an authored draft through maintenance entry and explicit resumption wi
 it("keeps passive recovery usable and its identity retained while settlement is paused", async () => {
   const record = recoveryRecord();
   await testJournal.put(record);
-  const status = vi
-    .spyOn(service, "status")
-    .mockResolvedValue({
-      kind: "outcome",
-      status: 200,
-      value: { operationId: record.operationId, outcome: { kind: "UNRESOLVED", data: null } },
-    });
+  const status = vi.spyOn(service, "status").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { operationId: record.operationId, outcome: { kind: "UNRESOLVED", data: null } },
+  });
   const settle = vi.spyOn(service, "resolve");
   render(
     <RequesterContext value={{ ...requester, maintenance: { active: true, generation: 1 } }}>

@@ -2,11 +2,8 @@ import { caseViewInput } from "./inputs";
 import type { CurrentCase } from "../../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseAdvice } from "./case-advice.fixtures";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
 import { type FormValues } from "../../src/protocol/forms";
 import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";

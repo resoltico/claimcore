@@ -1,10 +1,11 @@
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
+import { useSessionContext } from "../session/SessionContext";
 import { RequesterContext } from "../hooks/useRequesterContext";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CaseReceipt } from "../api/service";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -47,7 +48,9 @@ const useRouteHeading = (route: Route) => {
     const focus = () => {
       const heading =
         focusId === null
-          ? target.querySelector<HTMLElement>("h1")
+          ? ([...target.querySelectorAll<HTMLElement>("h1")].find(
+              (candidate) => candidate.closest("[hidden],[inert]") === null,
+            ) ?? null)
           : document.getElementById(focusId);
       if (heading) {
         focused.current = identity;
@@ -153,17 +156,19 @@ const WorkspaceUnavailable = ({ route }: { route: Route }) => {
     </section>
   );
 };
-/** Only the authority editor keeps its operation state; fresh context still fences all disclosures. */
+/** Visibility can change without destroying a scoped draft; verified identity changes replace its owner. */
 const WorkspaceContents = ({
   advertised,
   retainOperation,
   noViews,
+  known,
   fallback,
   children,
 }: {
   advertised: boolean;
   retainOperation: boolean;
   noViews: boolean;
+  known: boolean;
   fallback: ReactNode;
   children: ReactNode;
 }) => {
@@ -177,11 +182,14 @@ const WorkspaceContents = ({
   if (opened) {
     return fallback;
   }
-  return noViews ? (
-    <h1 tabIndex={-1}>
-      <Message id="ui.noViews" />
-    </h1>
-  ) : null;
+  if (noViews) {
+    return (
+      <h1 tabIndex={-1}>
+        <Message id="ui.noViews" />
+      </h1>
+    );
+  }
+  return known ? fallback : null;
 };
 type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "authorityAvailable"> & {
   views: ReadonlyArray<string>;
@@ -193,29 +201,77 @@ const WorkspaceRoute = ({ views, noViews, ...routing }: WorkspaceRouteProps) => 
     <WorkspaceContents
       key={active}
       advertised={views.includes(active.toUpperCase())}
-      retainOperation={routing.route.screen === "authority"}
+      retainOperation={["authority", "caseAct", "newCase"].includes(routing.route.screen)}
       noViews={noViews}
+      known={views.length > 0}
       fallback={<WorkspaceUnavailable route={routing.route} />}
     >
-      <RoutedContent {...routing} authorityAvailable={views.includes("AUTHORITY")} />
+      <RoutedContent
+        {...routing}
+        authorityAvailable={views.includes("AUTHORITY")}
+        caseAvailable={views.includes("CASES")}
+      />
     </WorkspaceContents>
   );
 };
+/** Feedback is a disclosure owned by this verified requester and session generation. */
+const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: boolean) => {
+  const { state: session } = useSessionContext();
+  const [accepted, setAccepted] = useState<{ owner: object; receipt: CaseReceipt } | null>(null);
+  const credential = session.kind === "authenticated" ? session.token : null;
+  const feedbackOwner = useMemo(
+    () =>
+      credential === null || observedOwner === null || !caseAvailable
+        ? null
+        : { identity: observedOwner, epoch: session.epoch, credential },
+    [credential, observedOwner, session.epoch, caseAvailable],
+  );
+  const latestFeedbackOwner = useRef(feedbackOwner);
+  useLayoutEffect(() => {
+    latestFeedbackOwner.current = feedbackOwner;
+    return () => {
+      latestFeedbackOwner.current = null;
+    };
+  }, [feedbackOwner]);
+  return {
+    receipt: accepted?.owner === feedbackOwner ? accepted.receipt : null,
+    clear: () => {
+      setAccepted(null);
+    },
+    accept: (receipt: CaseReceipt) => {
+      if (feedbackOwner === null || latestFeedbackOwner.current !== feedbackOwner) {
+        return false;
+      }
+      setAccepted({ owner: feedbackOwner, receipt });
+      return true;
+    },
+  };
+};
 export const Dashboard = () => {
   const route = useRoute();
-  const [accepted, setAccepted] = useState<CaseReceipt | null>(null);
   const { context, response, views, active } = useWorkspaceAccess(route);
   const cache = useEndpointCache();
+  const [owner, setOwner] = useState<string | null>(null);
+  const observedOwner =
+    response?.outcome.kind === "SUCCEEDED"
+      ? `${response.outcome.data.installationId}:${response.outcome.data.actorId}`
+      : null;
+  if (observedOwner !== null && observedOwner !== owner) {
+    setOwner(observedOwner);
+  }
+  const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
   const [locked, setLocked] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route);
   useNavigationLock(locked);
   const committed = (receipt: CaseReceipt) => {
+    if (!feedback.accept(receipt)) {
+      return;
+    }
     setNavigationLock(false);
     setLocked(false);
     cache?.invalidate();
     setRefresh((value) => value + 1);
-    setAccepted(receipt);
     navigate(casePath(receipt.subject.caseReference));
   };
   return (
@@ -224,9 +280,9 @@ export const Dashboard = () => {
         <WorkspaceHeader active={active} views={views} locked={locked} />
         <AcceptedToast
           route={route}
-          receipt={accepted}
+          receipt={feedback.receipt}
           close={() => {
-            setAccepted(null);
+            feedback.clear();
           }}
         />
         <main className="app-shell">
@@ -238,6 +294,7 @@ export const Dashboard = () => {
           />
           <div ref={content}>
             <WorkspaceRoute
+              key={owner}
               route={route}
               views={views}
               noViews={

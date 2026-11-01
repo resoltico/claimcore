@@ -167,7 +167,7 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "Recovery" }));
-  await user.click(screen.getByText("General operation lookup", { selector: "summary" }));
+  await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
   expect(await screen.findByText(/Accepted operation/u)).toBeVisible();
@@ -258,7 +258,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   render(<Dashboard />);
   await user.click(await findButton("Open a case"));
   expect(
-    screen.getByRole("heading", {
+    await screen.findByRole("heading", {
       name: "Open a case",
     }),
   ).toBeVisible();

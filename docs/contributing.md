@@ -189,9 +189,12 @@ dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --n
 ```
 
 The [generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns its exact inventory under
-[contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome messages](../web/src/generated/chrome-messages.ts).
+[contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome metadata](../web/src/generated/chrome-messages.ts), its bootstrap text and the
+explicit test catalog loaders in [web/src/generated](../web/src/generated/).
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
-producer. Custom output directories contain only contract artifacts.
+producer. Custom output directories contain only contract artifacts. Core message metadata is locale-neutral;
+production presentation loads and admits one complete core/chrome language pair before activation.
+The generated eager catalog loaders are for tests and do not belong in the production import graph.
 
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no

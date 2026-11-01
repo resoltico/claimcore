@@ -4,7 +4,7 @@ import { CharacterWarning } from "../../components/BusinessValue";
 import { CopyValue } from "../../components/CopyValue";
 import { usePresentation } from "../../presentation/context";
 
-export const WorkAccount = ({ value }: { value: CaseWorkView["responsible"] }) => {
+const WorkAccount = ({ value }: { value: CaseWorkView["responsible"] }) => {
   const p = usePresentation();
   if (value === null) {
     return <span>{p.term("assignment", "UNASSIGNED")}</span>;

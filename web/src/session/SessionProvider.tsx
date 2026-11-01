@@ -13,7 +13,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }, [authenticated]);
   return (
     <SessionContext value={session}>
-      <EndpointProvider key={session.state.epoch}>{children}</EndpointProvider>
+      <EndpointProvider scope={String(session.state.epoch)}>{children}</EndpointProvider>
     </SessionContext>
   );
 };

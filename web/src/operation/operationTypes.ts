@@ -73,7 +73,7 @@ export type OperationEffect =
       identity: EffectIdentity;
       notice: Notice;
     };
-export type OperationContext = Readonly<{
+type OperationContext = Readonly<{
   generation: number;
   epoch: number;
   credential: string;

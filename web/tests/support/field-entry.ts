@@ -1,5 +1,5 @@
 import { productMetadata } from "../../src/protocol/productMetadata";
-import { catalogs } from "@contracts/messages";
+import { catalogs } from "../../src/generated/core-catalogs";
 import { fireEvent, screen } from "@testing-library/react";
 /** Fact selection is explicit in the editor, including when a test authors it by field label. */
 export const selectFact = (target: string): void => {

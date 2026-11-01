@@ -6,7 +6,7 @@ import { CatalogInputs } from "../../components/CatalogInputs";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { operationEntry } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 
 export type OperationFormProps = {
   model: OperationModel;

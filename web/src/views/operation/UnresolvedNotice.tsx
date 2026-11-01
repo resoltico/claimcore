@@ -5,7 +5,7 @@ import { IdentifierValue } from "../../components/IdentifierValue";
 import { useRecovery } from "../../recovery/RecoveryContext";
 import type { RecoveryRecord } from "../../protocol/recoveryJournal";
 import { NoticeView } from "../../presentation/Message";
-import { operationEntry } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { usePresentation } from "../../presentation/context";
 

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
+import { operationEntry } from "../../../src/protocol/operationCatalog";
 import { current, firstId } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
 import { payment } from "../../support/inputs";

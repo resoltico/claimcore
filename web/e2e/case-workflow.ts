@@ -2,7 +2,7 @@ import type { CaseFields } from "../src/api/service";
 import { showExactLookup } from "./workspace-navigation";
 import { fillNamedField } from "./typed-entry";
 import { businessFieldCount, inventory } from "../tests/support/inventory";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type Response } from "@playwright/test";
 
 import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -35,7 +35,7 @@ export const recordReviewed = async (
   confirmation = "I confirm these changes.",
 ): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: confirmation, exact: true });
-  await confirmed.waitFor({state:"visible"});
+  await confirmed.waitFor({ state: "visible" });
   await progress("confirm-click-start");
   if ((await confirmed.count()) !== 1) {
     throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
@@ -82,8 +82,37 @@ export const recordReviewed = async (
 
 export const startOpen = async (page: Page, caseReference: string): Promise<void> => {
   await progress("start-open");
+  const failures: string[] = [];
+  const bodies: Promise<void>[] = [];
+  const failedAsset = (response: Response) => {
+    const path = new URL(response.url()).pathname;
+    if (path.startsWith("/assets/") && response.status() >= 400) {
+      failures.push(`${path}: ${response.status()}, ${response.headers()["content-type"]}`);
+      bodies.push(
+        response
+          .text()
+          .then((body) => {
+            failures.push(body.slice(0, 512));
+          })
+          .catch(() => {
+            failures.push("Response body unavailable");
+          }),
+      );
+    }
+  };
+  page.on("response", failedAsset);
   await page.getByRole("button", { name: "Open a case" }).click();
   await progress("open-editor");
+  await page
+    .getByRole("heading", { name: "Open a case", exact: true })
+    .or(page.getByRole("button", { name: "Retry loading", exact: true }))
+    .first()
+    .waitFor({ state: "visible" });
+  page.off("response", failedAsset);
+  await Promise.all(bodies);
+  if (await page.getByRole("button", { name: "Retry loading", exact: true }).isVisible()) {
+    throw new Error(`E2E_EDITOR_LOAD_FAILURE ${failures.join("; ")}`);
+  }
   await fill(page, {
     "Incident date": "2026-09-01",
     "Incident notification date (FNOL)": "2026-09-02",

@@ -189,6 +189,8 @@ let private configureRoutes
     )
     |> ignore
 
+    HostRoutes.publicAssets assets application
+
     let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness.Check))

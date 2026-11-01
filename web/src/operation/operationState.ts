@@ -1,5 +1,5 @@
 import { roleAdmitted } from "./roleAvailability";
-import { operationEntry } from "./operationForm";
+import { operationEntry } from "../protocol/operationCatalog";
 import { inputErrors } from "./inputErrors";
 import {
   operationSource,

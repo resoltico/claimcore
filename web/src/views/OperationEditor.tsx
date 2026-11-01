@@ -1,6 +1,6 @@
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useCredential } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
@@ -20,6 +20,14 @@ const useCaseOperation = (props: OperationEditorProps) => {
     captureValue: (path, value, entry) => captureAmountEntry(path, value, entry, p.displayLocale),
     onLockChange: props.onMutationLockChange,
   });
+  const invalidate = useEffectEvent(() => {
+    model.invalidateDisclosure();
+  });
+  useLayoutEffect(() => {
+    if (props.disclosureAvailable === false) {
+      invalidate();
+    }
+  }, [props.disclosureAvailable]);
   const navigation = useOperationNavigation(model, props.onClose);
   const recorded = useRef<string | null>(null);
   const commit = useCallback(
@@ -43,9 +51,11 @@ const CurrentFacts = ({
   model,
   current,
   definition,
+  disclosureAvailable = true,
 }: OperationEditorProps & { model: ReturnType<typeof useOperation> }) => {
   const p = usePresentation();
   if (
+    !disclosureAvailable ||
     current === null ||
     !model.disclosureCurrent ||
     model.disclosureRefused ||
@@ -68,7 +78,7 @@ const CurrentFacts = ({
 export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();
   const { model, navigation, commit } = useCaseOperation(props);
-  if (model.receipt?.subject.kind === "CASE") {
+  if (props.disclosureAvailable !== false && model.receipt?.subject.kind === "CASE") {
     return (
       <AcceptedOperation
         definition={props.definition}
@@ -91,6 +101,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
             model={model}
             current={current}
             offered={offered}
+            disclosureAvailable={props.disclosureAvailable !== false}
             onClose={navigation.close}
           />
         </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRoute } from "./routing/useRoute";
 import { MissingPage } from "./views/MissingPage";
 import { usePresentation } from "./presentation/context";
@@ -7,7 +7,7 @@ import { Dashboard } from "./views/Dashboard";
 import { useSessionContext } from "./session/SessionContext";
 import { SessionProvider } from "./session/SessionProvider";
 import { Message, NoticeView } from "./presentation/Message";
-const SessionContent = () => {
+const SessionFeedback = () => {
   const { state, refresh } = useSessionContext();
   if (state.kind === "loading") {
     return (
@@ -28,10 +28,23 @@ const SessionContent = () => {
       </main>
     );
   }
-  if (state.kind === "authenticated") {
-    return <Dashboard key={`dashboard:${state.epoch}`} />;
+  return state.kind === "anonymous" ? <LoginScreen message={state.message} /> : null;
+};
+const SessionContent = () => {
+  const { state } = useSessionContext();
+  const [established, setEstablished] = useState(false);
+  const authenticated = state.kind === "authenticated";
+  if (authenticated && !established) {
+    setEstablished(true);
   }
-  return <LoginScreen message={state.message} />;
+  return (
+    <>
+      <div hidden={!authenticated} inert={!authenticated}>
+        {established ? <Dashboard /> : null}
+      </div>
+      {authenticated ? null : <SessionFeedback />}
+    </>
+  );
 };
 export const App = () => {
   const route = useRoute();

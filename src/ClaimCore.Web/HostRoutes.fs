@@ -134,6 +134,15 @@ module HostRoutes =
                         context
         }
 
+    let publicAssets assets (application: WebApplication) =
+        let publicFiles = PublicAssets.Inventory assets
+
+        application.Use(
+            Func<HttpContext, RequestDelegate, Task>(fun context next ->
+                publicFiles.Serve(context, next))
+        )
+        |> ignore
+
     let map assets configuration handlers withActor (application: WebApplication) =
         let files = StaticFileOptions()
 

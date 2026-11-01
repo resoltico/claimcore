@@ -1,10 +1,13 @@
 import { createContext, useContext } from "react";
 import type { createPresenter } from "./presenter";
-import type { PreferenceChange } from "./preferences";
+import type { Language, PreferenceChange } from "./preferences";
 export type Presentation = ReturnType<typeof createPresenter> & {
   setPreferences: (change: PreferenceChange) => void;
   persistenceFailed: boolean;
   changed: boolean;
+  requestedLanguage: Language | null;
+  languageFailure: Language | null;
+  retryLanguage: () => void;
 };
 export const PresentationContext = createContext<Presentation | null>(null);
 export const usePresentation = (): Presentation => {

@@ -19,8 +19,8 @@ export const workBasis: WorkDateBasis = {
   timeZone: "Etc/UTC",
 };
 export const initialMaintenance = { active: false, generation: 0 } as const;
-export const emptyCaseWork = { responsibleActor: null, followUpDate: null } as const;
-export const unscheduledWork: CaseWorkView = {
+const emptyCaseWork = { responsibleActor: null, followUpDate: null } as const;
+const unscheduledWork: CaseWorkView = {
   responsible: null,
   followUpDate: null,
   due: "UNSCHEDULED",
@@ -91,7 +91,7 @@ export const registration = (changes: Partial<Registration> = {}): Registration 
   ...changes,
 });
 
-export const decision = (changes: Partial<Decision> = {}): Decision => ({
+const decision = (changes: Partial<Decision> = {}): Decision => ({
   ...(Object.fromEntries(
     inventory.groups.decision.map(({ key, kind }) => [key, samples[kind]]),
   ) as Decision),

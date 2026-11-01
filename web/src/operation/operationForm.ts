@@ -1,4 +1,4 @@
-import { productMetadata } from "../protocol/productMetadata";
+import { operationEntry } from "../protocol/operationCatalog";
 import { buildRequest } from "../protocol/client";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
@@ -9,19 +9,9 @@ import {
   bindingPath,
   type CatalogInput,
   type CatalogEntry,
-  type CatalogEntryIdentity,
 } from "../protocol/catalogAssembly";
 export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 
-export const operationEntry = (identity: CatalogEntryIdentity): CatalogEntry => {
-  const definition = productMetadata.catalog.entries.find(
-    (item) => item.subject === identity.subject && item.kind === identity.kind,
-  );
-  if (definition === undefined) {
-    throw new Error("Unknown operation catalog entry.");
-  }
-  return definition;
-};
 export const prefilledValue = (
   current: CurrentCase | null,
   path: ReadonlyArray<string> | null,

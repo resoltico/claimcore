@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Load view modules and complete language pairs on demand; failed language changes retain the working language, direction and authored values.
+- Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
+- Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
+
 - Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
 
 - Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.

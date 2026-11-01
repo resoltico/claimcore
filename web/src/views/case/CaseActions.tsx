@@ -5,7 +5,7 @@ import type { CurrentCase } from "../../api/service";
 import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
-import { operationEntry } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 import { casePrimaryAction } from "../../operation/caseActionPriority";
 const stewardship = (act: ActKind) =>
   operationEntry({ subject: "CASE", kind: act }).family === "STEWARDSHIP";

@@ -5,6 +5,11 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 
 module HttpHeaders =
+    let private publicAssetKey = obj ()
+
+    let internal publicAsset (context: HttpContext) =
+        context.Items[publicAssetKey] <- box true
+
     let private contentSecurityPolicy =
         "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; "
         + "img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; "
@@ -33,6 +38,18 @@ module HttpHeaders =
         context.Response.OnStarting(
             Func<Task>(fun () ->
                 apply context
-                noStore context
+
+                let publicResponse =
+                    context.Items.ContainsKey publicAssetKey
+                    && (context.Response.StatusCode = 200 || context.Response.StatusCode = 304)
+                    && not (context.Response.Headers.ContainsKey "Set-Cookie")
+
+                if publicResponse then
+                    context.Response.Headers.CacheControl <- "public, max-age=31536000, immutable"
+                    context.Response.Headers.Remove "Pragma" |> ignore
+                    context.Response.Headers.Remove "Expires" |> ignore
+                else
+                    noStore context
+
                 Task.CompletedTask)
         )

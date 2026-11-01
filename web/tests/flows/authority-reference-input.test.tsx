@@ -1,7 +1,7 @@
 import { recoveryOptions } from "../support/recovery.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
-import { catalogs as coreCatalogs } from "@contracts/messages";
+import { catalogs as coreCatalogs } from "../../src/generated/core-catalogs";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -10,11 +10,8 @@ import lvChrome from "@locales/lv.json";
 import arChrome from "@locales/ar.json";
 import { service } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
-import {
-  initialOperationValues,
-  refusalPath,
-  operationEntry,
-} from "../../src/operation/operationForm";
+import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { OperationForm } from "../../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "../support/presentation-test-support";

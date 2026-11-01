@@ -31,6 +31,7 @@
     <Compile Include="TransportGuards.fs" />
     <Compile Include="HostTransportTests.fs" />
     <Compile Include="SpaRouteTests.fs" />
+    <Compile Include="PublicAssetTests.fs" />
     <Compile Include="ReadinessTests.fs" />
     <Compile Include="RequestLogTests.fs" />
   </ItemGroup>

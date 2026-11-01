@@ -24,11 +24,8 @@ import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
 import type { FormValues, FormValue } from "../../protocol/forms";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 import {
   operationReducer,
   operationView,

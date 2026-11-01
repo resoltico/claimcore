@@ -1,3 +1,4 @@
+import { guardedDeparture } from "../routing/navigation";
 import {
   presentationLanguageOptions,
   presentationDisplayOptions,
@@ -21,7 +22,7 @@ const LanguageControl = ({ id }: { id: string }) => {
       <label htmlFor={`${id}-language`}>{p.text("ui.language")}</label>
       <select
         id={`${id}-language`}
-        value={p.language}
+        value={p.requestedLanguage ?? p.language}
         aria-describedby={`${id}-hint`}
         onChange={(e) => {
           p.setPreferences({
@@ -39,6 +40,25 @@ const LanguageControl = ({ id }: { id: string }) => {
           <option value={presentationPseudolanguage}>{p.text("ui.pseudo")}</option>
         ) : null}
       </select>
+      {p.requestedLanguage === null ? null : <p role="status">{p.text("ui.loadingLanguage")}</p>}
+      {p.languageFailure === null ? null : (
+        <div role="alert">
+          <p>{p.text("ui.languageLoadFailed")}</p>
+          <button type="button" onClick={p.retryLanguage}>
+            {p.text("ui.retryLanguage")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              guardedDeparture(() => {
+                window.location.reload();
+              });
+            }}
+          >
+            {p.text("ui.reloadInterface")}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

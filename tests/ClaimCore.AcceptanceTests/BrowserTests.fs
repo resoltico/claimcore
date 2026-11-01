@@ -92,6 +92,10 @@ let private report root output engine =
         | value -> value
 
     Directory.CreateDirectory directory |> ignore
+    let measurement = Path.Combine(output, "loading-measurements.json")
+
+    if File.Exists measurement then
+        File.Copy(measurement, Path.Combine(directory, "loading-" + engine + ".json"), true)
 
     JsonSerializer.SerializeToUtf8Bytes
         {|

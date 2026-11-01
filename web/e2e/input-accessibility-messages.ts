@@ -1,4 +1,4 @@
-import type { catalogs } from "../../contracts/messages";
+import type { catalogs } from "../src/generated/core-catalogs";
 import type { MessageKey } from "../src/presentation/types";
 
 // Handwritten accessible-label and guidance expectations, independent of the browser renderer.
