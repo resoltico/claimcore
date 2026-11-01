@@ -327,7 +327,9 @@ let private decisionEditingTests =
             testCase "registration amendment requires withdrawal of an existing decision" (fun () ->
                 let amendment =
                     decided ()
-                    |> apply (AuthoredCaseAct.AmendRegistration registration)
+                    |> apply (
+                        AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
+                    )
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
@@ -338,7 +340,9 @@ let private decisionEditingTests =
                     (decided ()
                      |> apply (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
                      |> accepted
-                     |> apply (AuthoredCaseAct.AmendRegistration registration)
+                     |> apply (
+                         AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
+                     )
                      |> accepted
                      |> Case.snapshot
                      |> viewFields)

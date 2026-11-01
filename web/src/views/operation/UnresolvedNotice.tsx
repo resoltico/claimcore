@@ -4,6 +4,8 @@ import { IdentifierValue } from "../../components/IdentifierValue";
 import { useRecovery } from "../../recovery/RecoveryContext";
 import type { RecoveryRecord } from "../../protocol/recoveryJournal";
 import { NoticeView } from "../../presentation/Message";
+import { operationEntry } from "../../operation/operationForm";
+import { renderCatalogKey } from "../../presentation/messages";
 import { usePresentation } from "../../presentation/context";
 
 type Settlement = {
@@ -89,10 +91,35 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
         isDismissable
         onOpenChange={cancelSettlement}
       >
-        {settlement === null ? null : (
-          <p>
-            <IdentifierValue value={settlement.operationId} />
-          </p>
+        {selected === null ? null : (
+          <>
+            <dl>
+              <div>
+                <dt>{p.fieldLabel("actorId")}</dt>
+                <dd>
+                  <IdentifierValue value={selected.owner.scope.actorId} />
+                </dd>
+              </div>
+              <div>
+                <dt>{p.term("scope", "INSTALLATION")}</dt>
+                <dd>
+                  <IdentifierValue value={selected.owner.scope.installationId} />
+                </dd>
+              </div>
+              <div>
+                <dt>{p.fieldLabel("operationId")}</dt>
+                <dd>
+                  <IdentifierValue value={selected.record.operationId} />
+                </dd>
+              </div>
+            </dl>
+            <p>
+              {renderCatalogKey(
+                p,
+                operationEntry({ subject: "OPERATION", kind: "operation.resolve" }).confirmationId!,
+              )}
+            </p>
+          </>
         )}
         <button type="button" className="secondary-button" onClick={cancelSettlement}>
           {p.text("ui.keepChecking")}

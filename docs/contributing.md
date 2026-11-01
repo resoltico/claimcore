@@ -169,14 +169,14 @@ Baseline edits require a rebuild and a fresh installation. The runtime refuses u
 identities without modifying them.
 
 The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
-last-change time, normalized search text, notification date and exact claimed/payable amount/currency
+last-change time, normalized search text, notification date, responsible actor, planned follow-up and exact claimed/payable amount/currency
 pairs. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
 returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
 UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
-text, notification date and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
+text, notification date, responsibility, follow-up and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts

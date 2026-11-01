@@ -8,11 +8,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private correct registration decision payment =
+let private correctAllValues registration decision payment =
     AuthoredCaseAct.Correct
         {
-            Registration = registration
-            Decision = decision
+            Registration = Inputs.registrationChoice registration
+            Decision = Inputs.decisionChoice decision
             Payment = payment
         }
 
@@ -29,14 +29,14 @@ let private paidCorrectionTests =
                 let before = paid ()
 
                 let act =
-                    correct
-                        (Amendment.Replace changedRegistration)
-                        (Change.Replace(
+                    correctAllValues
+                        (Amendment.Update changedRegistration)
+                        (Change.Update(
                             ClaimCore.TestSupport.Inputs.decisionWith
                                 [ BusinessField.PayableAmount, ("650.00") ]
                                 (decision)
                         ))
-                        (Change.Replace(
+                        (PaymentChange.Replace(
                             ClaimCore.TestSupport.Inputs.paymentFrom
                                 [ BusinessField.PaymentDate, ("2026-08-21") ]
                         ))
@@ -75,20 +75,20 @@ let private paidCorrectionTests =
                 let before = paid ()
 
                 let act =
-                    correct
+                    correctAllValues
                         Amendment.Keep
-                        (Change.Replace(
+                        (Change.Update(
                             ClaimCore.TestSupport.Inputs.decisionWith
                                 [ BusinessField.PayableAmount, ("650") ]
                                 (decision)
                         ))
-                        Change.Keep
+                        PaymentChange.Keep
 
                 Expect.isError (before |> apply act) "Paid decision is not silently reused")
             testCase "clearing a paid decision requires clearing its payment record" (fun () ->
                 let before = paid ()
 
-                let act = correct Amendment.Keep Change.Clear Change.Keep
+                let act = correctAllValues Amendment.Keep Change.Clear PaymentChange.Keep
 
                 Expect.isError (before |> apply act) "Payment cannot outlive a cleared decision")
         ]
@@ -103,7 +103,10 @@ let private closedCorrectionTests =
                 let after =
                     closed
                     |> apply (
-                        correct (Amendment.Replace changedRegistration) Change.Keep Change.Keep
+                        correctAllValues
+                            (Amendment.Update changedRegistration)
+                            Change.Keep
+                            PaymentChange.Keep
                     )
                     |> accepted
                     |> Case.snapshot
@@ -120,7 +123,9 @@ let private closedCorrectionTests =
             testCase "all-keep correction is refused without changing the accepted case" (fun () ->
                 let before = paid ()
 
-                let result = before |> apply (correct Amendment.Keep Change.Keep Change.Keep)
+                let result =
+                    before
+                    |> apply (correctAllValues Amendment.Keep Change.Keep PaymentChange.Keep)
 
                 Expect.equal
                     result
@@ -139,10 +144,10 @@ let private closedCorrectionTests =
                     let result =
                         before
                         |> apply (
-                            correct
+                            correctAllValues
                                 Amendment.Keep
-                                (Change.Replace decision)
-                                (Change.Replace(
+                                (Change.Update decision)
+                                (PaymentChange.Replace(
                                     ClaimCore.TestSupport.Inputs.paymentFrom
                                         [ BusinessField.PaymentDate, ("2026-08-20") ]
                                 ))
@@ -160,10 +165,10 @@ let private validationTests =
         [
             testCase "correction cannot add a decision to an undecided case" (fun () ->
                 let act =
-                    correct
-                        (Amendment.Replace changedRegistration)
-                        (Change.Replace decision)
-                        Change.Keep
+                    correctAllValues
+                        (Amendment.Update changedRegistration)
+                        (Change.Update decision)
+                        PaymentChange.Keep
 
                 Expect.equal
                     (opened () |> apply act)
@@ -171,8 +176,8 @@ let private validationTests =
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =
-                    correct
-                        (Amendment.Replace(
+                    correctAllValues
+                        (Amendment.Update(
                             ClaimCore.TestSupport.Inputs.registrationWith
                                 [
                                     BusinessField.IncidentDate, ("2026-09-08")
@@ -181,7 +186,7 @@ let private validationTests =
                                 (changedRegistration)
                         ))
                         Change.Keep
-                        Change.Keep
+                        PaymentChange.Keep
 
                 Expect.isTrue
                     (paid () |> apply act |> isInvalid)

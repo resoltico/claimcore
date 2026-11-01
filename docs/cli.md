@@ -8,7 +8,7 @@ Use `--dry-run` to print the prepared JSON frame without authentication. This ch
 
 Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
 
-Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--assignment assigned-to-me` restricts to valid case-scoped read grants; `--order reference|recent|notified` selects the page order. Cursors bind filters, assignment and order.
+Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches claimant, responsible insurer and case reference; `--assignment mine|unassigned` selects responsibility within current access; `--due` selects actionable due state using the returned business-date basis; `--order reference|recent|notified|follow-up` selects the page order. Cursors bind all filters and order.
 `case list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all` follows continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting `--expected-revision` on an existing-case act reads the case and previews with that revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
@@ -85,10 +85,10 @@ claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE 
 
 Amend registration
 
-Replace the initial facts. The handler's case reference remains unchanged.
+Update selected registration facts. Omitted facts and the case reference stay unchanged.
 
 ```sh
-claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE
+claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -103,15 +103,35 @@ claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expect
 | `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. Up to 200 characters. |  |  |
 | `--claimed-amount` | Amount claimed — Amount requested by the claimant. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
 | `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. 3 uppercase ASCII letters (A–Z). |  |  |
+
+## case update-work
+
+Update case work
+
+Set or clear responsibility and a follow-up date. Omitted work values stay unchanged. Assignment does not grant access.
+
+```sh
+claimcore case update-work [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--responsible-actor-action clear|set] [--responsible-actor VALUE] [--follow-up-date-action clear|set] [--follow-up-date VALUE]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `--responsible-actor-action` | Responsibility change — Choose set or clear; omit to keep the current responsible account. | clear, set |  |
+| `--responsible-actor` | Responsible account — The registered human account responsible for this case. Current read and work permissions are required for assignment. Use the exact registered account UUID. |  |  |
+| `--follow-up-date-action` | Follow-up change — Choose set or clear; omit to keep the current follow-up date. | clear, set |  |
+| `--follow-up-date` | Follow-up date — A planned Gregorian date. Past and future dates are valid; an unassigned case may have a follow-up. Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## case correct
 
 Correct case facts
 
-Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money.
+Correct selected existing facts together. A paid decision change requires explicit payment reaffirmation, replacement or clearing. Clearing a payment date does not refund money.
 
 ```sh
-claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|replace [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|replace|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|clear [--payment-date VALUE]
+claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|update [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|update|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|reaffirm|clear [--payment-date VALUE]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -119,7 +139,7 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--registration` | Registration — Keep the current registration details or replace all seven details together. | keep, replace |  |
+| `--registration` | Registration — Keep the current registration details or replace all seven details together. | keep, update |  |
 | `--incident-date` | Incident date — Date on which the incident occurred. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. Use two uppercase letters. ZZ means unknown or international. |  |  |
@@ -127,11 +147,11 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. Up to 200 characters. |  |  |
 | `--claimed-amount` | Amount claimed — Amount requested by the claimant. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
 | `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. 3 uppercase ASCII letters (A–Z). |  |  |
-| `--decision` | Payment decision — Keep the current payment decision, replace its date, amount and currency together, or clear the decision. | keep, replace, clear |  |
+| `--decision` | Payment decision — Keep the current payment decision, replace its date, amount and currency together, or clear the decision. | keep, update, clear |  |
 | `--payment-decision-date` | Payment decision date — Date when this claims handler decided the amount to be paid. Not recorded until a decision is made. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--payable-amount` | Amount to be paid — Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
 | `--payable-currency` | Currency of amount to be paid — Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency. 3 uppercase ASCII letters (A–Z). |  |  |
-| `--payment` | Payment record — Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money. | keep, replace, clear |  |
+| `--payment` | Payment record — Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money. | keep, replace, reaffirm, clear |  |
 | `--payment-date` | Payment date — Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 
 ## case decide
@@ -373,6 +393,22 @@ claimcore authority disable [--operation-id VALUE] --principal-kind human|servic
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 
+## case assignees
+
+Eligible responsible accounts
+
+List enabled human accounts currently eligible for assignment to this case. Selection uses the exact account ID.
+
+```sh
+claimcore case assignees CASE-REFERENCE [--cursor VALUE] [--limit N]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
 ## case get
 
 Read a case
@@ -394,7 +430,7 @@ List cases
 Read one page of cases visible to the actor.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -405,8 +441,9 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
-| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
-| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
+| `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
+| `--due` | Follow-up state — Filter by the database snapshot business date. Closed and voided cases have inactive work. | overdue, today, upcoming, unscheduled, inactive |  |
 
 ## case summary
 
@@ -415,7 +452,7 @@ Case summary
 Count matching visible cases and sum claimed and payable amounts separately for each currency.
 
 ```sh
-claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified] [--assignment assigned-to-me]
+claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -424,8 +461,9 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
-| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified | REFERENCE |
-| `--assignment` | Assignment — Restrict results to cases assigned to the requesting actor. | assigned-to-me |  |
+| `--order` | Order — Order by reference, latest accepted change, or oldest notification date; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
+| `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
+| `--due` | Follow-up state — Filter by the database snapshot business date. Closed and voided cases have inactive work. | overdue, today, upcoming, unscheduled, inactive |  |
 
 ## case history
 
@@ -440,7 +478,7 @@ claimcore case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N]
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--full` | Full history — Include accepted snapshots when full history is visible to the actor. |  |  |
+| `--full` | Full history — Include accepted snapshots when full history is visible to the actor. |  | SUMMARY |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

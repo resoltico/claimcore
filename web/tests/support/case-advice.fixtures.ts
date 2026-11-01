@@ -5,9 +5,9 @@ export const caseAdvice = (acts: ReadonlyArray<Act>): Omit<CaseView["advice"], "
   ...(acts.includes("CORRECT")
     ? {
         correction: {
-          registration: ["KEEP", "REPLACE"],
-          decision: ["KEEP", "REPLACE", "CLEAR"],
-          payment: ["KEEP", "REPLACE", "CLEAR"],
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+          payment: ["KEEP", "REPLACE", "REAFFIRM", "CLEAR"],
         },
       }
     : {}),

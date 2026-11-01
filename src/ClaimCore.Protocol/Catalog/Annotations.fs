@@ -132,9 +132,45 @@ module CatalogAnnotations =
                     RequestSchemas.Registration, RecordGroup.Registration
                     RequestSchemas.Decision, RecordGroup.Decision
                     RequestSchemas.Payment, RecordGroup.Payment
+                    "RegistrationUpdate", RecordGroup.Registration
+                    "DecisionUpdate", RecordGroup.Decision
                 ] do
                 for value in CaseFields.ofGroup group do
-                    yield (owner, BusinessField.key value), business group value
+                    if
+                        (owner <> "RegistrationUpdate" && owner <> "DecisionUpdate")
+                        || not (
+                            List.contains
+                                value
+                                [
+                                    BusinessField.ClaimedAmount
+                                    BusinessField.ClaimedCurrency
+                                    BusinessField.PayableAmount
+                                    BusinessField.PayableCurrency
+                                ]
+                        )
+                    then
+                        yield (owner, BusinessField.key value), business group value
+            for owner, group, amount, currency in
+                [
+                    "RegistrationUpdate",
+                    RecordGroup.Registration,
+                    BusinessField.ClaimedAmount,
+                    BusinessField.ClaimedCurrency
+                    "DecisionUpdate",
+                    RecordGroup.Decision,
+                    BusinessField.PayableAmount,
+                    BusinessField.PayableCurrency
+                ] do
+                yield (owner, "amount"), business group amount
+                yield (owner, "currency"), business group currency
+            for owner, value in
+                [
+                    "ResponsibleActorChange", BusinessField.ResponsibleActor
+                    "FollowUpChange", BusinessField.FollowUpDate
+                ] do
+                yield (owner, "kind"), constant (annotation (InteractionInput.WorkChoice value))
+                let set = Bindings.branchDefinition definitions owner "SET"
+                yield (set, "value"), constant (field value)
             for owner, group in
                 [
                     RequestSchemas.RegistrationGroup, RecordGroup.Registration
@@ -162,6 +198,7 @@ module CatalogAnnotations =
             for owner in
                 [
                     RequestSchemas.PageRequest
+                    RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest
                     RequestSchemas.GrantsRequest
@@ -180,6 +217,7 @@ module CatalogAnnotations =
                     yield (owner, name), constant (annotation input)
 
                 yield (owner, "assignment"), constant (annotation InteractionInput.Assignment)
+                yield (owner, "due"), constant (annotation InteractionInput.Due)
 
                 yield
                     (owner, "order"),

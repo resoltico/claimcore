@@ -22,6 +22,89 @@ let tests =
         "core operation catalog"
         [
             testCase
+                "interaction meaning is core-owned and erasure metadata cannot masquerade as a read"
+                (fun () ->
+                    let expected =
+                        [
+                            CaseActKind.UpdateWork,
+                            Some ActFamily.Business,
+                            [ CaseSection.Work ],
+                            InteractionEffect.Case CaseEffect.UpdateWork
+                            CaseActKind.Correct,
+                            Some ActFamily.Business,
+                            [ CaseSection.Registration; CaseSection.Decision; CaseSection.Payment ],
+                            InteractionEffect.Case CaseEffect.RecordFacts
+                            CaseActKind.Erase,
+                            Some ActFamily.Stewardship,
+                            [
+                                CaseSection.Registration
+                                CaseSection.Decision
+                                CaseSection.Payment
+                                CaseSection.Work
+                            ],
+                            InteractionEffect.Case CaseEffect.ErasePayload
+                            CaseActKind.Close,
+                            Some ActFamily.Business,
+                            [],
+                            InteractionEffect.Case CaseEffect.ChangeStatus
+                            CaseActKind.Void,
+                            Some ActFamily.Stewardship,
+                            [],
+                            InteractionEffect.Case CaseEffect.ChangeLifecycle
+                        ]
+
+                    for kind, family, sections, effect in expected do
+                        let entry =
+                            OperationCatalog.entries
+                            |> List.find (fun entry ->
+                                entry.Kind = CatalogOperation.Act(ActKind.Case kind))
+
+                        Expect.equal
+                            (entry.Family, entry.AffectedSections, entry.Effect)
+                            (family, sections, effect)
+                            "Independent effect and section witnesses"
+
+                    let settlement =
+                        OperationCatalog.entries
+                        |> List.find (fun entry ->
+                            entry.Kind = CatalogOperation.Query QueryEndpoint.Resolve)
+
+                    Expect.equal
+                        settlement.Effect
+                        InteractionEffect.FinalNonAcceptance
+                        "Settlement has its own irreversible meaning"
+
+                    Expect.equal
+                        settlement.ConfirmationId
+                        (Some "endpoint.operation.resolve.confirmation")
+                        "Both clients receive the same confirmation identity"
+
+                    let erase =
+                        OperationCatalog.entries
+                        |> List.find (fun entry ->
+                            entry.Kind = CatalogOperation.Act(ActKind.Case CaseActKind.Erase))
+
+                    let encoded = CatalogCodecs.entry.Write erase
+
+                    let changed =
+                        match encoded with
+                        | JsonValue.Object fields ->
+                            JsonValue.Object(
+                                fields
+                                |> List.map (fun (name, value) ->
+                                    name,
+                                    if name = "effect" then JsonValue.String "READ" else value)
+                            )
+                        | _ -> failtest "Catalog object control"
+
+                    Expect.isOk
+                        (CatalogCodecs.entry.Read "$" encoded)
+                        "Current truthful metadata admits"
+
+                    Expect.isError
+                        (CatalogCodecs.entry.Read "$" changed)
+                        "A shape-valid but false effect is refused")
+            testCase
                 "role principal admission metadata matches independent policy witnesses"
                 (fun () ->
                     let both = [ PrincipalKind.Human; PrincipalKind.Service ]
@@ -206,8 +289,11 @@ let tests =
 
                 Expect.equal
                     inputs.Length
-                    (3 + 3 + Inventory.fieldCount - 2)
-                    "Three control inputs, group selectors and the inventoried group fields"
+                    (3
+                     + 3
+                     + ([ "registration"; "decision"; "payment" ]
+                        |> List.sumBy (Inventory.fieldKeys >> List.length)))
+                    "Three controls, three correction selectors and independent correction fields; work is separate"
 
                 let payment =
                     inputs

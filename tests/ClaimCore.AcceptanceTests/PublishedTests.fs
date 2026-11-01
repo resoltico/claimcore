@@ -190,11 +190,11 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "assignedToYou"; "caseId"; "caseReference"; "revision"; "state" ]
+        [ "advice"; "caseId"; "caseReference"; "mine"; "revision"; "state" ]
         "Erased views expose retained identity, assignment metadata and current advice"
 
     Expect.isFalse
-        (tombstone.GetProperty("assignedToYou").GetBoolean())
+        (tombstone.GetProperty("mine").GetBoolean())
         "Installation stewardship does not invent a case-scoped assignment"
 
     let advice = tombstone.GetProperty "advice"
@@ -411,6 +411,7 @@ let private qualify () =
         PublishedAssets.qualify fixture
         CliDiscovery.qualify fixture
         setup fixture
+        CliCaseWork.qualify fixture
         do! CliResolution.qualify fixture
         CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture

@@ -35,7 +35,7 @@ let private subject (vector: JsonElement) =
             {
                 CaseId = CaseFixtures.caseId (Guid.Parse(text vector "subjectId"))
                 Revision = CaseFixtures.revision (vector.GetProperty("caseRevision").GetInt64())
-                Act = CaseActKind.Open
+                Act = CaseActKind.parse (text vector "act") |> Option.get
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
             }
@@ -43,7 +43,7 @@ let private subject (vector: JsonElement) =
 let private metadata vector : LedgerMetadata =
     {
         CreationReference =
-            if text vector "subject" = "CASE" then
+            if text vector "subject" = "CASE" && text vector "act" = "OPEN" then
                 Some(CaseFixtures.reference (text vector "creationReference"))
             else
                 None
@@ -77,28 +77,14 @@ let private withVectors action =
     )
 
 let private expectedPayload vector =
-    let path =
-        Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
-
-    use document = JsonDocument.Parse(File.ReadAllBytes path)
-    let payloads = document.RootElement.GetProperty "ledgerPayloads"
-
-    let request, snapshot =
-        if text vector "subject" = "CASE" then
-            text payloads "caseRequest", text payloads "caseSnapshot" |> Encoding.UTF8.GetBytes
-        elif text vector "subject" = "CONTROL" then
-            "{\"format\":2,\"kind\":\"NOT_ACCEPTED\"}", Array.empty
-        else
-            text payloads "authorityRequest", Array.empty
-
     {
-        Request = Encoding.UTF8.GetBytes request
-        Snapshot = snapshot
+        Request = Encoding.UTF8.GetBytes(text vector "requestUtf8")
+        Snapshot = Encoding.UTF8.GetBytes(text vector "snapshotUtf8")
     }
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 3 "All independent business and control vectors"
+        Expect.equal vectors.Length 4 "All independent business, work and control vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector

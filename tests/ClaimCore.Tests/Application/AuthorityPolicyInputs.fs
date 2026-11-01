@@ -57,6 +57,7 @@ let internal allCapabilities =
         Capability.ReadCase
         Capability.ReadHistory
         Capability.ReadHistoryFull
+        Capability.ManageCaseWork
         Capability.Register
         Capability.Decide
         Capability.RecordPayment
@@ -90,3 +91,4 @@ let internal expectedPermission (rule: PermissionRule) principal grant resource 
     List.contains capability capabilities
     && scope
     && (not humanRole || principal = human)
+    && (capability <> Capability.ManageCaseWork || principal = human)

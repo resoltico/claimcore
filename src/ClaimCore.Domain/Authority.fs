@@ -79,6 +79,7 @@ module Authority =
                 Capability.Register
                 Capability.Decide
                 Capability.Close
+                Capability.ManageCaseWork
             ]
         | Role.PaymentRecorder ->
             [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
@@ -108,6 +109,7 @@ module Authority =
         | Capability.Decide
         | Capability.RecordPayment
         | Capability.Close
+        | Capability.ManageCaseWork
         | Capability.Steward -> ScopeKind.all
 
     let roleScopes role =
@@ -120,6 +122,7 @@ module Authority =
     let humanOnlyCapability =
         function
         | Capability.Steward
+        | Capability.ManageCaseWork
         | Capability.ManageAuthority -> true
         | Capability.ReadCase
         | Capability.ReadHistory
@@ -207,13 +210,6 @@ module Authority =
                         Effective = can principal view capability resource
                     })
 
-    let assignedTo principal (view: AuthorityView) id =
-        validActor principal view
-        && (view.Cases
-            |> Map.tryFind id
-            |> Option.defaultValue []
-            |> List.exists (fun role -> List.contains role (readRoles principal)))
-
     let correctionCapability =
         function
         | RecordGroup.Registration -> Capability.Register
@@ -243,14 +239,19 @@ module Authority =
                 | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
-                | Change.Keep -> ()
+                | PaymentChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
         | act -> capabilities (CaseAct.kind act)
 
     let canAdvertise principal actor resource kind =
-        capabilities kind
-        |> List.exists (fun capability -> can principal actor capability resource)
+        match (CaseActKind.describe kind).Capabilities with
+        | ActCapabilities.Required values ->
+            values
+            |> List.forall (fun capability -> can principal actor capability resource)
+        | ActCapabilities.CorrectionGroups ->
+            correctionCapabilities
+            |> List.exists (fun capability -> can principal actor capability resource)
 
     let canAct principal actor resource act =
         canAdvertise principal actor resource (CaseAct.kind act)
@@ -262,8 +263,8 @@ module Authority =
             None
         elif can principal view Capability.ReadCase Scope.Installation then
             Some CaseVisibility.Every
-        elif view.HasAssignedCases then
-            Some CaseVisibility.Assigned
+        elif view.HasScopedCases then
+            Some CaseVisibility.Scoped
         else
             None
 

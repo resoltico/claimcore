@@ -240,7 +240,24 @@ let private unicodeFrames fixture =
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
 
     Expect.equal rows.Length 2 "One complete newline-delimited frame per read"
-    Expect.isTrue (rows[0] = rows[1]) "Repeated Unicode frames never overwrite one another"
+
+    let stableRead (text: string) =
+        let frame = JsonNode.Parse(text) |> nonNull
+
+        let basis =
+            [ "result"; "outcome"; "data"; "work"; "basis" ]
+            |> List.fold (fun (current: JsonNode) key -> current[key] |> nonNull) frame
+
+        Expect.isTrue
+            (basis.AsObject().Remove "observedAt")
+            "Each read declares its own database observation"
+
+        frame.ToJsonString()
+
+    Expect.equal
+        (stableRead rows[0])
+        (stableRead rows[1])
+        "Repeated frames preserve all Unicode facts across separate read observations"
 
     Expect.equal
         result.StandardOutput[result.StandardOutput.Length - 1]

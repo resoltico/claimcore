@@ -61,6 +61,8 @@ module LedgerEntry =
         BinaryPrimitives.WriteUInt32BigEndian(Span bytes, value)
         bytes
 
+    // The permanent act-byte table is exhaustive; splitting it would obscure the frozen grammar.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let actCode =
         function
         | CaseActKind.Open -> 1uy
@@ -75,6 +77,7 @@ module LedgerEntry =
         | CaseActKind.Void -> 10uy
         | CaseActKind.Reinstate -> 11uy
         | CaseActKind.Erase -> 12uy
+        | CaseActKind.UpdateWork -> 13uy
 
     let private authorityCode =
         function

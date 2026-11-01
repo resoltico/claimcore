@@ -27,6 +27,7 @@ const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
 
 const visibleFieldCount = (fields: CaseFields): number =>
   businessFieldCount -
+  inventory.workFields.length -
   (fields.decision === null ? inventory.groups.decision.length : 0) -
   (fields.payment === null ? inventory.groups.payment.length : 0);
 export const recordReviewed = async (page: Page): Promise<void> => {

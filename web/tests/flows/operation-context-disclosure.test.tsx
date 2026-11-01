@@ -1,3 +1,5 @@
+import { selectFact } from "../support/field-entry";
+import { response } from "../support/service-ui.fixtures";
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -29,6 +31,7 @@ it("fences prior actor prefills through token change and discard until a new aut
       {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
     </TestSession>,
   );
+  selectFact("claimantName");
   expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
   view.rerender(
     <TestSession credential="new-token">
@@ -43,16 +46,26 @@ it("fences prior actor prefills through token change and discard until a new aut
   expect(screen.queryByDisplayValue(canary)).toBeNull();
   const pending = deferredResponse();
   vi.mocked(fetch).mockReturnValueOnce(pending.promise);
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(screen.getByRole("button", { name: "Reload current case" }));
   expect(screen.queryByDisplayValue(canary)).toBeNull();
   expect(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).toMatchObject({
     "X-ClaimCore-Antiforgery": "new-token",
   });
   await act(async () => {
-    pending.resolve(previewReply());
+    pending.resolve(response("case.get", "SUCCEEDED", disclosed));
     await pending.promise;
   });
-  expect(await screen.findByRole("dialog", { name: "Review changes" })).toBeVisible();
+  await screen.findByRole("checkbox", { name: "Change Claimant name" });
+  const body = vi.mocked(fetch).mock.calls[0]?.[1]?.body;
+  if (typeof body !== "string") {
+    throw new Error("Case read must have a JSON text body.");
+  }
+  expect(JSON.parse(body)).toEqual({
+    target: { kind: "ID", caseId: current.caseId },
+  });
+  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/case.get");
+  selectFact("claimantName");
+  expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(canary);
 });
 it("requires an explicit warning before discarding a possibly accepted request", async () => {
   vi.mocked(fetch)

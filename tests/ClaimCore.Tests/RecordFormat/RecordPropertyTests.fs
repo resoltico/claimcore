@@ -53,17 +53,18 @@ let private actsGenerator =
                 ])
 
         let corrections =
-            [ Amendment.Keep; Amendment.Replace registration ]
+            [ Amendment.Keep; Amendment.Update(Inputs.registrationUpdate registration) ]
             |> List.collect (fun registration ->
-                [ Change.Keep; Change.Replace decision; Change.Clear ]
+                [ Change.Keep; Change.Update(Inputs.decisionUpdate decision); Change.Clear ]
                 |> List.collect (fun decision ->
                     [
-                        Change.Keep
-                        Change.Replace(
+                        PaymentChange.Keep
+                        PaymentChange.Reaffirm
+                        PaymentChange.Replace(
                             ClaimCore.TestSupport.Inputs.paymentFrom
                                 [ BusinessField.PaymentDate, ("2026-08-20") ]
                         )
-                        Change.Clear
+                        PaymentChange.Clear
                     ]
                     |> List.map (fun payment ->
                         AuthoredCaseAct.Correct
@@ -76,7 +77,12 @@ let private actsGenerator =
         return
             [
                 AuthoredCaseAct.Open registration
-                AuthoredCaseAct.AmendRegistration registration
+                AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
+                AuthoredCaseAct.UpdateWork
+                    {
+                        Responsible = WorkValue.Keep
+                        FollowUp = WorkValue.Set "2027-01-02"
+                    }
                 AuthoredCaseAct.Decide decision
                 (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
                 AuthoredCaseAct.RecordPayment(
@@ -120,19 +126,20 @@ let private correctionKindsMatch (request: UnvalidatedCaseRequest) (encoded: byt
         let registration =
             match correction.Registration with
             | Amendment.Keep -> "KEEP"
-            | Amendment.Replace _ -> "REPLACE"
+            | Amendment.Update _ -> "UPDATE"
 
         let decision =
             match correction.Decision with
             | Change.Keep -> "KEEP"
-            | Change.Replace _ -> "REPLACE"
+            | Change.Update _ -> "UPDATE"
             | Change.Clear -> "CLEAR"
 
         let payment =
             match correction.Payment with
-            | Change.Keep -> "KEEP"
-            | Change.Replace _ -> "REPLACE"
-            | Change.Clear -> "CLEAR"
+            | PaymentChange.Keep -> "KEEP"
+            | PaymentChange.Replace _ -> "REPLACE"
+            | PaymentChange.Reaffirm -> "REAFFIRM"
+            | PaymentChange.Clear -> "CLEAR"
 
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
         let groups = document.RootElement.GetProperty("act").GetProperty("groups")

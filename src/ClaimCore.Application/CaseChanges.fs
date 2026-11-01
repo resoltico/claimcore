@@ -29,11 +29,12 @@ module internal CaseChanges =
                     })
 
     let review act (before: CaseSnapshot option) (after: CaseSnapshot) =
-        match act with
-        | CaseAct.Void _
-        | CaseAct.Reinstate _
-        | CaseAct.Bare BareAct.Erase -> []
-        | _ ->
+        match (CaseActKind.describe (CaseAct.kind act)).Effect with
+        | CaseEffect.ChangeLifecycle
+        | CaseEffect.ErasePayload -> []
+        | CaseEffect.RecordFacts
+        | CaseEffect.UpdateWork
+        | CaseEffect.ChangeStatus ->
             fields
                 (before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
                 (CaseState.fields after.State)
@@ -62,7 +63,7 @@ module internal CaseChanges =
             Fields = fields (before |> Option.map (live >> snd)) (Some afterFields)
         }
 
-    let history previous (receipt: OperationReceipt) =
+    let history (previous: OperationReceipt option) (receipt: OperationReceipt) =
         match receipt.Subject with
         | ReceiptSubject.Authority _ -> Error CoreFault.StoreIntegrityError
         | ReceiptSubject.Case current ->

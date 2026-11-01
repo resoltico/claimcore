@@ -33,7 +33,7 @@ export const CaseFacts = ({ values, fields, revision }: Props) => {
       </div>
       <CaseFactRows
         values={values}
-        fields={fields.filter((field) => field.group === null)}
+        fields={fields.filter((field) => field.section === null)}
         explain={explain}
       />
       <div className="case-fact-groups">

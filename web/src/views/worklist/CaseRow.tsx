@@ -86,6 +86,34 @@ export const CaseRow = ({
       <td className="worklist-badges">
         <CaseStateBadge state={state} />
       </td>
+      <td className="worklist-work">
+        {live === null ? null : (
+          <>
+            {live.work.responsible === null ? (
+              <span>{p.term("assignment", "UNASSIGNED")}</span>
+            ) : (
+              <>
+                <bdi dir="auto">{live.work.responsible.account.subject}</bdi>
+                <CharacterWarning value={live.work.responsible.account.subject} />
+                {live.work.responsible.available ? null : (
+                  <small>{p.text("label.assigneeUnavailable")}</small>
+                )}
+              </>
+            )}
+            <small>
+              {live.work.followUpDate === null ? (
+                p.term("due", "UNSCHEDULED")
+              ) : (
+                <time dateTime={live.work.followUpDate}>
+                  <bdi dir="ltr">{p.date(live.work.followUpDate)}</bdi>
+                </time>
+              )}
+              {" · "}
+              {p.term("due", live.work.due)}
+            </small>
+          </>
+        )}
+      </td>
       <td className="worklist-age">{age}</td>
       <td className="worklist-changed">
         <Changed value={value.changedAt} />

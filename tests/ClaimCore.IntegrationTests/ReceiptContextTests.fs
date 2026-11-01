@@ -49,9 +49,11 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         "PROBE-1"
                         1L
                         (AuthoredCaseAct.AmendRegistration(
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.ClaimantName, ("Later Party") ]
-                                (registration)
+                            Inputs.registrationUpdate (
+                                ClaimCore.TestSupport.Inputs.registrationWith
+                                    [ BusinessField.ClaimantName, ("Later Party") ]
+                                    (registration)
+                            )
                         ))
 
                 let! amended =

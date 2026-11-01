@@ -24,6 +24,7 @@ it("uses the binding vocabulary to label an option at an unfamiliar catalog path
       disabled={false}
       fieldErrors={{}}
       onChange={vi.fn()}
+      onFieldsChange={vi.fn()}
     />,
   );
   expect(screen.getByRole("radio", { name: catalogs.en["role.CASE_READER.label"] })).toBeChecked();

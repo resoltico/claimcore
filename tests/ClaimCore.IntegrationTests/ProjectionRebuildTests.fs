@@ -27,6 +27,25 @@ let private seeded database =
     task {
         let! actor = populated database
 
+        let! work =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request
+                        100
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.UpdateWork
+                            {
+                                CaseWorkInput.Responsible =
+                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                FollowUp = WorkValue.Set "2027-12-31"
+                            })
+                ))
+                token
+
+        accepted work |> ignore
+
         let! resolved =
             ClaimCore.TestSupport.StoreFixtures.resolve actor { OperationId = id 99 } token
 
@@ -56,6 +75,36 @@ let private repairs database =
 
         let! current = verified database
         Expect.equal current checkpoint "All projections agree after reconstruction"
+
+        let! returned =
+            Service.get
+                (core database.Fixture database.Fixture.Owner)
+                {
+                    Target = CaseSelector.Reference "synthetic-a"
+                }
+                token
+
+        match returned with
+        | Outcome.Succeeded current ->
+            Expect.equal
+                current.Work.Responsible
+                (Some
+                    {
+                        Account =
+                            {
+                                ActorId = CaseFixtures.actorId (id 1)
+                                Subject = "synthetic-owner"
+                            }
+                        Available = true
+                    })
+                "Actor rows and authority are restored before referenced case work"
+
+            Expect.equal
+                current.Work.FollowUp
+                (Some(Inputs.date "2027-12-31"))
+                "Planned date survives replacement"
+        | _ -> failtest "Rebuilt work must remain readable"
+
         let! unchanged = rows database "ledger"
         Expect.equal unchanged ledger "Every ledger byte remains unchanged"
     }
@@ -121,7 +170,7 @@ let private erasedIdentity database =
         let! permission =
             grant
                 actor
-                (id 100)
+                (id 102)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -129,13 +178,15 @@ let private erasedIdentity database =
                 }
                 true
 
-        acceptedAuthority permission
+        match permission.Outcome with
+        | ExecuteResult.Accepted _ -> acceptedAuthority permission
+        | _ -> failtestf "Erasure grant refused: %A" permission
 
         let! erased =
             Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 101 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request 101 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
 

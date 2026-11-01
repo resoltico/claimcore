@@ -23,6 +23,8 @@ let private expected =
             "changed_at"
             "search_text"
             "notified_on"
+            "responsible_actor"
+            "follow_up"
             "claimed_amount"
             "claimed_currency"
             "payable_amount"

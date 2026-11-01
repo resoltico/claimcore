@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloa
 salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 2 --snapshot 2 --authority 2
+  python3 -I generate_vectors.py --request 3 --snapshot 3 --authority 2 --ledger 3
 
 Writes JSON to standard output.
 """
@@ -24,10 +24,9 @@ SHORT = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
 ACT_CODES = {
     "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
-    "REINSTATE": 11, "ERASE": 12, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
+    "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 13, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
     "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
 }
-ENTRY_TAG = b"claimcore/ledger-entry/2\n"
 
 
 def string(value):
@@ -96,14 +95,21 @@ def canonical_identity(request, case_id=None):
     act = result["act"]
     if result["kind"] == "CASE":
         result["caseReference"] = fold_reference(result["caseReference"])
-        if act["kind"] in ("OPEN", "AMEND_REGISTRATION"):
+        if act["kind"] == "OPEN":
             amount(act["values"], "claimedAmount")
+        elif act["kind"] == "AMEND_REGISTRATION" and "claimed" in act["values"]:
+            amount(act["values"]["claimed"], "amount")
+        elif act["kind"] == "UPDATE_WORK":
+            actor = act["values"].get("responsibleActor")
+            if actor and actor["kind"] == "SET":
+                actor["value"] = str(uuid.UUID(actor["value"]))
         elif act["kind"] == "DECIDE":
             amount(act["values"], "payableAmount")
         elif act["kind"] == "CORRECT":
-            for group, key in (("registration", "claimedAmount"), ("decision", "payableAmount")):
-                if act["groups"][group]["kind"] == "REPLACE":
-                    amount(act["groups"][group]["values"], key)
+            for group, key in (("registration", "claimed"), ("decision", "payable")):
+                choice = act["groups"][group]
+                if choice["kind"] == "UPDATE" and key in choice["values"]:
+                    amount(choice["values"][key], "amount")
         result["caseId"] = case_id
         if act["kind"] != "OPEN":
             del result["caseReference"]
@@ -144,15 +150,17 @@ def day_number(text):
     return datetime.date.fromisoformat(text).toordinal() - 1 if text else 0
 
 
-def ledger(sources, requests, snapshot, authority):
+def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots):
     installation = sources["installationId"]
     previous = bytes(32)
     vectors = []
     for spec in sources["ledgerEntries"]:
         if spec["subject"] == "CASE":
-            request_bytes = canonical(requests[0]).encode("utf-8")
-            snapshot_bytes = canonical(snapshot).encode("utf-8")
-            subject = requests[0]["operationId"]
+            selected_request = requests[spec.get("requestIndex", 0)]
+            selected_snapshot = work_snapshots[spec["workSnapshotIndex"]] if "workSnapshotIndex" in spec else snapshot
+            request_bytes = canonical(selected_request).encode("utf-8")
+            snapshot_bytes = canonical(selected_snapshot).encode("utf-8")
+            subject = spec.get("subjectId", selected_request["operationId"])
             subject_byte, revision = 1, spec["caseRevision"]
         elif spec["subject"] == "CONTROL":
             request_bytes = b'{"format":2,"kind":"NOT_ACCEPTED"}'
@@ -168,7 +176,7 @@ def ledger(sources, requests, snapshot, authority):
         nonce = bytes.fromhex(spec["payloadNonce"])
         commitment = hashlib.sha256(nonce + payload).digest()
         preimage = b"".join([
-            ENTRY_TAG,
+            f"claimcore/ledger-entry/{ledger_format}\n".encode("ascii"),
             uuid.UUID(spec["installationId"]).bytes,
             spec["sequence"].to_bytes(8, "big"),
             previous,
@@ -179,7 +187,7 @@ def ledger(sources, requests, snapshot, authority):
             uuid.UUID(subject).bytes,
             revision.to_bytes(8, "big", signed=True),
             day_number(spec["businessDate"]).to_bytes(4, "big", signed=True),
-            (b"\x01" + len(requests[0]["caseReference"].encode("utf-8")).to_bytes(4,"big") + requests[0]["caseReference"].encode("utf-8")) if spec["subject"] == "CASE" else b"\x00",
+            (b"\x01" + len(requests[0]["caseReference"].encode("utf-8")).to_bytes(4,"big") + requests[0]["caseReference"].encode("utf-8")) if spec["subject"] == "CASE" and spec["act"] == "OPEN" else b"\x00",
             commitment,
         ])
         entry_hash = hashlib.sha256(preimage).digest()
@@ -190,14 +198,15 @@ def ledger(sources, requests, snapshot, authority):
             "operationId": spec["operationId"], "actorId": spec["actorId"],
             "recordedAt": spec["recordedAt"], "recordedAtUnixMicroseconds": micros(spec["recordedAt"]),
             "subjectId": subject, "caseRevision": spec["caseRevision"],
-            "businessDate": spec["businessDate"], "creationReference": requests[0]["caseReference"] if spec["subject"] == "CASE" else None,
+            "businessDate": spec["businessDate"], "creationReference": requests[0]["caseReference"] if spec["subject"] == "CASE" and spec["act"] == "OPEN" else None,
             "businessDateDayNumber": day_number(spec["businessDate"]),
+            "requestUtf8": request_bytes.decode("utf-8"), "snapshotUtf8": snapshot_bytes.decode("utf-8"),
             "payloadNonce": spec["payloadNonce"], "payload": payload.hex(),
             "payloadCommitment": commitment.hex(), "preimage": preimage.hex(),
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": 2, "tag": ENTRY_TAG.decode("ascii"), "preimageBytes": "variable: 184 plus OPEN reference framing",
+    return {"entryFormat": ledger_format, "tag": f"claimcore/ledger-entry/{ledger_format}\n", "preimageBytes": "variable: 184 plus OPEN reference framing",
             "actCodes": ACT_CODES, "vectors": vectors}
 
 
@@ -219,12 +228,14 @@ def main():
     parser.add_argument("--request", type=int, required=True)
     parser.add_argument("--snapshot", type=int, required=True)
     parser.add_argument("--authority", type=int, required=True)
+    parser.add_argument("--ledger", type=int, required=True)
     parser.add_argument("--sources", default=str(pathlib.Path(__file__).with_name("sources.json")))
     arguments = parser.parse_args()
     sources = json.loads(pathlib.Path(arguments.sources).read_text(encoding="utf-8"))
     requests = [with_format(item["value"], arguments.request) for item in sources["caseRequests"]]
     snapshot = with_format(sources["snapshot"]["value"], arguments.snapshot)
     authority = with_format(sources["authorityRecord"]["value"], arguments.authority)
+    work_snapshots = [with_format(item["value"], arguments.snapshot) for item in sources["workSnapshots"]]
     document = {
         "purpose": "Independent Python oracle for ClaimCore durable formats; regenerate with "
                    "python3 -I generate_vectors.py",
@@ -234,6 +245,7 @@ def main():
                          for item, value in zip(sources["caseRequests"], requests)],
         "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
+        "workSnapshots": [vector(item["name"], value) for item, value in zip(sources["workSnapshots"], work_snapshots)],
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
         "ledgerPayloads": {
             "caseRequest": canonical(requests[0]),
@@ -241,9 +253,7 @@ def main():
             "authorityRequest": canonical(authority),
         },
         "permanentLimits": permanent_limits(sources, arguments.request, arguments.snapshot, arguments.authority),
-        "ledgerEntries": ledger(sources, [requests[0]],
-                                snapshot,
-                                authority),
+        "ledgerEntries": ledger(sources, requests, snapshot, authority, arguments.ledger, work_snapshots),
     }
     print(json.dumps(document, ensure_ascii=False, indent=2))
 

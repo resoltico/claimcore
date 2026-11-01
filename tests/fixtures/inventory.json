@@ -71,7 +71,12 @@
     {
       "token": "AMEND_REGISTRATION",
       "family": "BUSINESS",
-      "payload": "REGISTRATION"
+      "payload": "REGISTRATION_UPDATE"
+    },
+    {
+      "token": "UPDATE_WORK",
+      "family": "BUSINESS",
+      "payload": "WORK"
     },
     {
       "token": "CORRECT",
@@ -184,7 +189,8 @@
         "READ_HISTORY_FULL",
         "REGISTER",
         "DECIDE",
-        "CLOSE"
+        "CLOSE",
+        "MANAGE_CASE_WORK"
       ],
       "humanOnly": false
     },
@@ -296,6 +302,11 @@
       "token": "operation.status",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "case.assignees",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -326,7 +337,9 @@
     "PAYMENT_ALREADY_RECORDED",
     "PAYMENT_NOT_RECORDED",
     "REVISION_CONFLICT",
-    "ZERO_DECISION_CANNOT_BE_PAID"
+    "ZERO_DECISION_CANNOT_BE_PAID",
+    "WORK_NO_CHANGES",
+    "ASSIGNEE_UNAVAILABLE"
   ],
   "technicalInputs": [
     "operationId",
@@ -347,9 +360,12 @@
     "progress",
     "order",
     "assignment",
-    "caseId"
+    "caseId",
+    "due",
+    "responsibleActorAction",
+    "followUpDateAction"
   ],
-  "cliFrameCount": 33,
+  "cliFrameCount": 39,
   "readInputs": {
     "case.get": [
       "target"
@@ -362,7 +378,8 @@
       "progress",
       "text",
       "order",
-      "assignment"
+      "assignment",
+      "due"
     ],
     "case.history": [
       "target",
@@ -397,10 +414,16 @@
       "progress",
       "text",
       "order",
-      "assignment"
+      "assignment",
+      "due"
     ],
     "operation.status": [
       "operationId"
+    ],
+    "case.assignees": [
+      "target",
+      "cursor",
+      "limit"
     ]
   },
   "caseLifecycles": [
@@ -449,7 +472,8 @@
     "CASE_CLAIMED_AMOUNT_PROJECTION",
     "CASE_CLAIMED_CURRENCY_PROJECTION",
     "CASE_PAYABLE_AMOUNT_PROJECTION",
-    "CASE_PAYABLE_CURRENCY_PROJECTION"
+    "CASE_PAYABLE_CURRENCY_PROJECTION",
+    "CASE_WORK_PROJECTION"
   ],
   "renderedVocabularies": [
     "status",
@@ -467,7 +491,12 @@
     "caseOrder",
     "progress",
     "assignment",
-    "capability"
+    "capability",
+    "section",
+    "due",
+    "workChange",
+    "actFamily",
+    "interactionEffect"
   ],
   "goldens": [
     "wire-request-examples.json",
@@ -485,9 +514,21 @@
     "status": "OPENED",
     "progress": "UNDECIDED",
     "text": "synthetic",
-    "order": "REFERENCE"
+    "order": "REFERENCE",
+    "responsibleActor": "00000000-0000-4000-8000-000000000042",
+    "followUpDate": "2026-11-02"
   },
   "caseAssignments": [
     "ASSIGNED_TO_ME"
+  ],
+  "workFields": [
+    {
+      "key": "responsibleActor",
+      "kind": "ACTOR_ID"
+    },
+    {
+      "key": "followUpDate",
+      "kind": "PLANNED_DATE"
+    }
   ]
 }

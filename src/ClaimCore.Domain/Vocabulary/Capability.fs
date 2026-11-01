@@ -7,6 +7,7 @@ type Capability =
     | ReadCase
     | ReadHistory
     | ReadHistoryFull
+    | ManageCaseWork
     | Register
     | Decide
     | RecordPayment

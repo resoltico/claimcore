@@ -115,6 +115,13 @@ module ProjectionVerification =
             do!
                 require
                     None
+                    VerificationFinding.CaseWorkProjection
+                    (record.Index.Responsible = expected.Responsible
+                     && record.Index.FollowUp = expected.FollowUp)
+
+            do!
+                require
+                    None
                     VerificationFinding.CaseNotifiedOnProjection
                     (record.Index.NotifiedOn = expected.NotifiedOn)
 

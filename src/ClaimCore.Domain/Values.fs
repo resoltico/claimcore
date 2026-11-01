@@ -57,6 +57,7 @@ type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
 [<RequireQualifiedAccess>]
 type ScalarRule =
     | CalendarDate of CalendarDateScalarRule
+    | PlannedDate of CalendarDateScalarRule
     | Text of ScalarTextConstraints
     | Amount of AmountScalarRule
     | Currency of CurrencyScalarRule

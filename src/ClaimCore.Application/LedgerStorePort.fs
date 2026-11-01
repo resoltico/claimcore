@@ -19,6 +19,8 @@ type StoreFailure =
 
 type CaseIndex =
     {
+        Responsible: ActorId option
+        FollowUp: CalendarDate option
         Status: CaseStatus option
         Progress: CaseProgress option
         ChangedAt: DateTimeOffset
@@ -33,6 +35,8 @@ module CaseIndex =
         let fields = CaseState.fields snapshot.State
 
         {
+            Responsible = fields |> Option.bind _.Work.Responsible
+            FollowUp = fields |> Option.bind _.Work.FollowUp
             Status = fields |> Option.map _.Status
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
             ChangedAt = changedAt
@@ -112,6 +116,7 @@ type AuthorityQuery =
 
 type CaseSelection =
     {
+        DateBasis: WorkDateBasis
         Visibility: CaseVisibility
         ActorId: ActorId
         ReadRoles: Role list
@@ -121,6 +126,7 @@ type CaseSelection =
 
 type CasePageQuery =
     {
+        DateBasis: WorkDateBasis
         Visibility: CaseVisibility
         ActorId: ActorId
         ReadRoles: Role list
@@ -132,12 +138,22 @@ type CasePageQuery =
 
     member this.Selection =
         {
-            CaseSelection.Visibility = this.Visibility
+            CaseSelection.DateBasis = this.DateBasis
+            Visibility = this.Visibility
             ActorId = this.ActorId
             ReadRoles = this.ReadRoles
             ForbiddenRoles = this.ForbiddenRoles
             Filter = this.Filter
         }
+
+type AssigneePageQuery =
+    {
+        CaseId: CaseId
+        ReadRoles: Role list
+        WorkRoles: Role list
+        AfterActorId: ActorId option
+        Limit: int
+    }
 
 type HistoryPageQuery =
     {
@@ -218,6 +234,7 @@ type IReadTx =
     abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
     abstract FindActor: ActorId -> Task<Actor option>
+    abstract AssigneePage: AssigneePageQuery -> Task<Page<AccountSubject, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
 

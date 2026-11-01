@@ -87,7 +87,7 @@ module internal TextOperationReply =
     let private changeAction =
         function
         | Change.Keep -> CorrectionGroupAction.Keep
-        | Change.Replace _ -> CorrectionGroupAction.Replace
+        | Change.Update _ -> CorrectionGroupAction.Update
         | Change.Clear -> CorrectionGroupAction.Clear
 
     let private correctionActions language input =
@@ -96,12 +96,17 @@ module internal TextOperationReply =
             let registration =
                 match correction.Registration with
                 | Amendment.Keep -> CorrectionGroupAction.Keep
-                | Amendment.Replace _ -> CorrectionGroupAction.Replace
+                | Amendment.Update _ -> CorrectionGroupAction.Update
 
             [
                 RecordGroup.Registration, registration
                 RecordGroup.Decision, changeAction correction.Decision
-                RecordGroup.Payment, changeAction correction.Payment
+                RecordGroup.Payment,
+                (match correction.Payment with
+                 | PaymentChange.Keep -> CorrectionGroupAction.Keep
+                 | PaymentChange.Clear -> CorrectionGroupAction.Clear
+                 | PaymentChange.Reaffirm -> CorrectionGroupAction.Reaffirm
+                 | PaymentChange.Replace _ -> CorrectionGroupAction.Replace)
             ]
             |> List.map (fun (group, action) ->
                 line

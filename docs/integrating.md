@@ -8,7 +8,7 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-Request, snapshot, authority, control and ledger entry records support format 2. Installation initialization
+Case request, snapshot and ledger entry records support format 3. Authority and control records retain format 2. Installation initialization
 requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
@@ -214,8 +214,9 @@ order is `REFERENCE`. For example:
 | `status` | Set of OPENED and CLOSED; erased cases have no status. |
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
 | `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
-| `order` | REFERENCE, RECENT for last change first, or NOTIFIED for oldest notification first. |
-| `assignment` | ASSIGNED_TO_ME restricts to valid case-scoped grants with ReadCase; omitted means the whole visible scope. |
+| `order` | REFERENCE, RECENT for last change first, NOTIFIED for oldest notification, or FOLLOW_UP for dated work first. |
+| `assignment` | MINE selects factual responsibility for this actor; UNASSIGNED selects no responsible actor. Both apply within current visibility. |
+| `due` | OVERDUE, TODAY, UPCOMING, UNSCHEDULED or INACTIVE, evaluated at the returned database/business-date basis. |
 | `cursor` | Opaque continuation bound to the admitted filters and order. |
 | `limit` | Bounded page size from the catalog and contract. |
 
@@ -233,23 +234,54 @@ values can move, duplicate or omit rows during traversal. `--all` is a live trav
 
 A live summary has root `caseId`, `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
 contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
-(`amount`/`currency`), `progress` and `incidentNotificationDate`. The amount strings are canonical; an undecided case has null payable.
+(`amount`/`currency`), `progress`, `incidentNotificationDate` and a current `work` view. The amount strings are canonical; an undecided case has null payable.
 An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
 requires the same `ReadCase` capability as `case.get`. Names, amounts, status and progress agree with the
 same actor's current case read. `changedAt` comes from the latest accepted case ledger/history entry;
-`case.get` itself has no timestamp member.
+the page and each work view report the observation basis used for due meaning.
 
 `case.summary` accepts the same filter members, without `cursor` or `limit`. Its `counts` contain
-`total` and `lifecycle`, `status` and `progress` value/count arrays. `claimed` and `payable` contain
+`total` and `lifecycle`, `status`, `progress`, `assignment` and `due` value/count arrays. `claimed` and `payable` contain
 currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string with at most 40 integer
 and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
 count. Visibility, assignment and forbidden-role safeguards match `case.list`, within the summary's
 own read snapshot. Separate list and summary requests can observe different accepted writes.
-`case.get` reports `assignedToYou`; `context` reports `hasAssignedCases` for choosing an assigned worklist
-and the admitted requester's `actorId` for attribution without an authority lookup.
-Case-list continuations use format 4; other continuations use format 2. All bind InstallationId.
-Case-history continuations bind the retained CaseId. Case-list positions also bind the admitted filters,
-assignment and ordering. Unsupported cursor formats are refused.
+`case.get` reports `mine` from the responsible ActorId. `context.hasScopedCases` reports grant-based
+visibility, independently of responsibility. A case-scoped read grant does not make a case Mine;
+assignment does not grant access. `context.actorId` identifies the current requester.
+
+Case work is a separate erasable section with optional `responsibleActor` and `followUpDate`.
+`UPDATE_WORK` sets or clears either named value, preserving omissions, under the expected revision.
+Empty or unchanged work refuses without a revision. Only human CASE_HANDLER accounts with both current
+ReadCase and ManageCaseWork can update work. Service CASE_HANDLER rights remain valid and exclude
+ManageCaseWork. `case.assignees` is a bounded case-scoped read for eligible human ActorIds and subjects;
+it requires both capabilities and exposes no issuer or grant directory. Selection uses ActorId.
+
+An assignee must be currently enabled and eligible when the write locks its action state. Later disable
+or revocation retains factual work and reports the account as unavailable; it creates no case revision.
+Current case readers see only that relation-scoped subject and availability. Closing and voiding retain
+work; erasure clears work payloads, indexes and the assignee foreign-key relationship.
+
+Follow-up accepts representable past and future Gregorian dates. Due state uses the database snapshot
+instant and installation business zone. Closed, voided and erased cases have inactive work. List and
+summary results carry the exact date basis. `assignment` accepts `MINE` or `UNASSIGNED`; `due` accepts
+`OVERDUE`, `TODAY`, `UPCOMING`, `UNSCHEDULED` or `INACTIVE`; `FOLLOW_UP` orders planned dates ascending,
+with absent dates last and case reference as tie-breaker. Filters follow current visibility. List and
+summary observations are separate; live pages may move across writes or business-date boundaries.
+
+OPEN and DECIDE retain complete inputs. AMEND_REGISTRATION takes typed optional facts, with
+`claimed: {amount,currency}` as a complete money assertion. CORRECT uses registration KEEP/UPDATE,
+decision KEEP/UPDATE/CLEAR and payment KEEP/REPLACE/REAFFIRM/CLEAR. A paid decision update needs explicit
+payment intent and its capability. Reaffirmation requires an existing payment and retains its date;
+it cannot create a payment. Omitted and unchanged accepted values retain their meaning; changed values
+use current admission. Empty partial updates, null required facts, half money and unknown members
+refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
+fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
+The old whole-group partial-update shapes and REPLACE tags for registration/decision are refused.
+
+Case-list continuations use format 5; assignee continuations use format 1; other continuations use
+format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
+positions bind admitted filters and ordering. Unsupported formats are refused.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent

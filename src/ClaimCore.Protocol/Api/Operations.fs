@@ -11,6 +11,7 @@ type OperationEndpoint =
 [<RequireQualifiedAccess>]
 type QueryEndpoint =
     | CaseGet
+    | CaseAssignees
     | CaseList
     | CaseSummary
     | CaseHistory
@@ -37,6 +38,7 @@ module ActorEndpoint =
             [
                 (ActorEndpoint.Operation OperationEndpoint.Preview)
                 (ActorEndpoint.Operation OperationEndpoint.Execute)
+                (ActorEndpoint.Query QueryEndpoint.CaseAssignees)
                 (ActorEndpoint.Query QueryEndpoint.CaseGet)
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
@@ -52,6 +54,7 @@ module ActorEndpoint =
             (function
              | (ActorEndpoint.Operation OperationEndpoint.Preview) -> "operation.preview"
              | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
+             | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) -> "case.assignees"
              | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"

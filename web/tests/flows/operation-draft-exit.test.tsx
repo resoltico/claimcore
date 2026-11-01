@@ -1,3 +1,4 @@
+import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -57,6 +58,7 @@ it("keeps a routed amendment fixed until returning to the case", async () => {
 it("protects an amendment changed to all empty strings on Back", async () => {
   const user = userEvent.setup();
   const close = open();
+  selectFact("claimantName");
   for (const input of screen.getAllByRole("textbox")) {
     await user.clear(input);
   }
@@ -84,9 +86,10 @@ it("protects an amendment changed to all empty strings on Back", async () => {
   );
   expect(close).toHaveBeenCalledOnce();
 });
-it("recognizes edit then exact revert but preserves distinct amount spelling", async () => {
+it("recognizes deselection as exact intent revert while preserving distinct amount spelling", async () => {
   const user = userEvent.setup();
   const close = open();
+  selectFact("claimedAmount");
   const amount = screen.getByLabelText("Amount claimed", {
     exact: true,
   });
@@ -105,6 +108,7 @@ it("recognizes edit then exact revert but preserves distinct amount spelling", a
   );
   await user.clear(amount);
   await user.type(amount, "12.34");
+  await user.click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
   await user.click(
     screen.getByRole("button", {
       name: "Back to case",
@@ -116,7 +120,8 @@ it("protects hidden correction replacement edits after returning its mode to KEE
   const user = userEvent.setup();
   const close = open("CORRECT");
   const mode = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
-  await chooseOption(user, mode, "REPLACE");
+  await chooseOption(user, mode, "UPDATE");
+  selectFact("claimantName");
   await user.clear(
     screen.getByLabelText("Claimant name", {
       exact: true,
@@ -155,6 +160,7 @@ it("protects exact authored edits after retaining the review", async () => {
     vi.fn().mockImplementationOnce(() => Promise.resolve(previewReply())),
   );
   const close = open();
+  selectFact("claimantName");
   await user.click(
     screen.getByRole("button", {
       name: "Review changes",
@@ -165,6 +171,7 @@ it("protects exact authored edits after retaining the review", async () => {
       name: "Return to editing",
     }),
   );
+  selectFact("claimedAmount");
   const amount = screen.getByLabelText("Amount claimed", {
     exact: true,
   });

@@ -132,10 +132,13 @@ module Service =
                                                     (CaseExecution.operationId request)
                                                     (CaseExecution.target request)
 
-                                            return
-                                                match CaseExecution.complete request view.Case with
-                                                | Error refusal -> Outcome.Rejected refusal
-                                                | Ok admitted ->
+                                            match CaseExecution.complete request view.Case with
+                                            | Error refusal -> return Outcome.Rejected refusal
+                                            | Ok admitted ->
+                                                let! view =
+                                                    CaseExecution.assignment tx admitted view
+
+                                                return
                                                     CaseExecution.review services admitted view
                                                     |> Verdict.outcome
                                                         (fun (before, after) ->
@@ -216,6 +219,7 @@ module Service =
 
     let get services (input: CaseGetRequest) ct = Queries.get services input.Target ct
 
+    let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
     let history = Queries.history

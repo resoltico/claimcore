@@ -113,6 +113,48 @@ module internal CaseExecution =
                 }
                 (LedgerEntries.receipt principal view.Actor view.Case)
 
+    /// The same read/action snapshot supplies target eligibility; assignment never creates authority.
+    let assignment (tx: IReadTx) (request: CaseCommand) (view: CaseFacts) =
+        task {
+            match request.Act, view.Case with
+            | CaseAct.UpdateWork { Responsible = WorkValue.Set id }, Some current ->
+                let! target = tx.FindActor id
+
+                match target with
+                | None -> return view
+                | Some target ->
+                    let! authority =
+                        tx.Authority
+                            {
+                                Principal = target.Principal
+                                CaseId = Some current.CaseId
+                            }
+
+                    return { view with Assignee = Some authority }
+            | _ -> return view
+        }
+
+    let private eligibleAssignee (request: CaseCommand) (view: CaseFacts) =
+        match request.Act, view.Case with
+        | CaseAct.UpdateWork { Responsible = WorkValue.Set id }, Some current ->
+            view.Assignee
+            |> Option.exists (fun authority ->
+                authority.Actor
+                |> Option.exists (fun actor ->
+                    actor.ActorId = id
+                    && PrincipalKey.isHuman actor.Principal
+                    && Authority.can
+                        actor.Principal
+                        authority
+                        Capability.ReadCase
+                        (Scope.Case current.CaseId)
+                    && Authority.can
+                        actor.Principal
+                        authority
+                        Capability.ManageCaseWork
+                        (Scope.Case current.CaseId)))
+        | _ -> true
+
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
         try
             let before =
@@ -122,6 +164,8 @@ module internal CaseExecution =
 
             match before with
             | Error fault -> Verdict.Fail fault
+            | Ok _ when not (eligibleAssignee request view) ->
+                Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
             | Ok before ->
                 match Case.decide (calendar.DateAt view.ObservedAt) request before with
                 | Error refusal -> Verdict.Refuse(refusal)
@@ -223,6 +267,8 @@ module internal CaseExecution =
                             match complete request view.Case with
                             | Error refusal -> return Verdict.Refuse refusal
                             | Ok command ->
+                                let! view = assignment tx command view
+
                                 let! fenced =
                                     ExecutionFacts.fenced
                                         services

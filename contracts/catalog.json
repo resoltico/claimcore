@@ -11,7 +11,9 @@
         "maximum": "9999-12-31"
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "incidentNotificationDate",
@@ -24,7 +26,9 @@
         "maximum": "9999-12-31"
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "incidentCountry",
@@ -40,7 +44,9 @@
         "maximumCharacters": null
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "claimantName",
@@ -55,7 +61,9 @@
         "maximumCharacters": 200
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "insurerName",
@@ -70,7 +78,9 @@
         "maximumCharacters": 200
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "claimedAmount",
@@ -90,7 +100,9 @@
         "maximumFractionalDigits": 4
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": "claimedCurrency"
     },
     {
       "name": "claimedCurrency",
@@ -109,7 +121,9 @@
         "exactCharacters": 3
       },
       "allowsAbsence": false,
-      "group": "registration"
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
     },
     {
       "name": "caseReference",
@@ -124,7 +138,9 @@
         "maximumCharacters": null
       },
       "allowsAbsence": false,
-      "group": null
+      "group": null,
+      "section": null,
+      "pairs": null
     },
     {
       "name": "paymentDecisionDate",
@@ -137,7 +153,9 @@
         "maximum": "9999-12-31"
       },
       "allowsAbsence": true,
-      "group": "decision"
+      "group": "decision",
+      "section": "decision",
+      "pairs": null
     },
     {
       "name": "payableAmount",
@@ -157,7 +175,9 @@
         "maximumFractionalDigits": 4
       },
       "allowsAbsence": true,
-      "group": "decision"
+      "group": "decision",
+      "section": "decision",
+      "pairs": "payableCurrency"
     },
     {
       "name": "payableCurrency",
@@ -176,7 +196,9 @@
         "exactCharacters": 3
       },
       "allowsAbsence": true,
-      "group": "decision"
+      "group": "decision",
+      "section": "decision",
+      "pairs": null
     },
     {
       "name": "paymentDate",
@@ -189,7 +211,9 @@
         "maximum": "9999-12-31"
       },
       "allowsAbsence": true,
-      "group": "payment"
+      "group": "payment",
+      "section": "payment",
+      "pairs": null
     },
     {
       "name": "status",
@@ -203,7 +227,41 @@
         ]
       },
       "allowsAbsence": false,
-      "group": null
+      "group": null,
+      "section": null,
+      "pairs": null
+    },
+    {
+      "name": "responsibleActor",
+      "labelId": "field.responsibleActor.label",
+      "meaningId": "field.responsibleActor.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 36,
+          "grammar": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        },
+        "maximumCharacters": 36
+      },
+      "allowsAbsence": true,
+      "group": null,
+      "section": "work",
+      "pairs": null
+    },
+    {
+      "name": "followUpDate",
+      "labelId": "field.followUpDate.label",
+      "meaningId": "field.followUpDate.meaning",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      },
+      "allowsAbsence": true,
+      "group": null,
+      "section": "work",
+      "pairs": null
     }
   ],
   "inputFields": [
@@ -334,6 +392,24 @@
       "labelId": "input.assignment.label",
       "meaningId": "input.assignment.meaning",
       "scalar": null
+    },
+    {
+      "name": "due",
+      "labelId": "input.due.label",
+      "meaningId": "input.due.meaning",
+      "scalar": null
+    },
+    {
+      "name": "responsibleActorAction",
+      "labelId": "input.responsibleActorAction.label",
+      "meaningId": "input.responsibleActorAction.meaning",
+      "scalar": null
+    },
+    {
+      "name": "followUpDateAction",
+      "labelId": "input.followUpDateAction.label",
+      "meaningId": "input.followUpDateAction.meaning",
+      "scalar": null
     }
   ],
   "characterWarnings": {
@@ -358,6 +434,11 @@
       "labelId": "act.OPEN.label",
       "meaningId": "act.OPEN.meaning",
       "confirmationId": "act.OPEN.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "registration"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -375,6 +456,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -400,6 +482,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -424,6 +507,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -448,6 +532,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -472,6 +557,7 @@
           "order": 4,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -496,6 +582,7 @@
           "order": 5,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -520,6 +607,7 @@
           "order": 6,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -544,6 +632,7 @@
           "order": 7,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -568,6 +657,7 @@
           "order": 8,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
@@ -619,6 +709,11 @@
       "labelId": "act.AMEND_REGISTRATION.label",
       "meaningId": "act.AMEND_REGISTRATION.meaning",
       "confirmationId": "act.AMEND_REGISTRATION.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "registration"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -636,6 +731,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -661,6 +757,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -683,6 +780,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -709,7 +807,8 @@
             "registration",
             "incidentDate"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -736,7 +835,8 @@
             "registration",
             "incidentNotificationDate"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -763,7 +863,8 @@
             "registration",
             "incidentCountry"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -790,7 +891,8 @@
             "registration",
             "claimantName"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -817,7 +919,8 @@
             "registration",
             "insurerName"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -825,12 +928,13 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.values.claimedAmount",
+          "identity": "act.values.claimed.amount",
           "field": "claimedAmount",
           "path": [
             "act",
             "values",
-            "claimedAmount"
+            "claimed",
+            "amount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -844,7 +948,8 @@
             "registration",
             "claimedAmount"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -852,12 +957,13 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.values.claimedCurrency",
+          "identity": "act.values.claimed.currency",
           "field": "claimedCurrency",
           "path": [
             "act",
             "values",
-            "claimedCurrency"
+            "claimed",
+            "currency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -871,7 +977,8 @@
             "registration",
             "claimedCurrency"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
@@ -911,10 +1018,15 @@
     {
       "endpoint": "operation.execute",
       "subject": "CASE",
-      "kind": "CORRECT",
-      "labelId": "act.CORRECT.label",
-      "meaningId": "act.CORRECT.meaning",
-      "confirmationId": "act.CORRECT.confirmation",
+      "kind": "UPDATE_WORK",
+      "labelId": "act.UPDATE_WORK.label",
+      "meaningId": "act.UPDATE_WORK.meaning",
+      "confirmationId": "act.UPDATE_WORK.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "UPDATE_WORK",
       "inputs": [
         {
           "identity": "operationId",
@@ -932,6 +1044,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -957,6 +1070,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -979,6 +1093,258 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.values.responsibleActor.kind",
+          "field": null,
+          "path": [
+            "act",
+            "values",
+            "responsibleActor",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "vocabulary": "workChange",
+            "options": [
+              "CLEAR",
+              "SET"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.responsibleActorAction.label",
+          "meaningId": "input.responsibleActorAction.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "default": null,
+          "diagnosticTargets": [
+            "responsibleActor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.responsibleActor.value",
+          "field": "responsibleActor",
+          "path": [
+            "act",
+            "values",
+            "responsibleActor",
+            "value"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "values",
+                "responsibleActor",
+                "kind"
+              ],
+              "value": "SET"
+            }
+          ],
+          "labelId": "field.responsibleActor.label",
+          "meaningId": "field.responsibleActor.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "responsibleActor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.followUpDate.kind",
+          "field": null,
+          "path": [
+            "act",
+            "values",
+            "followUpDate",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "vocabulary": "workChange",
+            "options": [
+              "CLEAR",
+              "SET"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.followUpDateAction.label",
+          "meaningId": "input.followUpDateAction.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "default": null,
+          "diagnosticTargets": [
+            "followUpDate"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.followUpDate.value",
+          "field": "followUpDate",
+          "path": [
+            "act",
+            "values",
+            "followUpDate",
+            "value"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "values",
+                "followUpDate",
+                "kind"
+              ],
+              "value": "SET"
+            }
+          ],
+          "labelId": "field.followUpDate.label",
+          "meaningId": "field.followUpDate.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "followUpDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "CASE",
+          "branches": [],
+          "vocabulary": "subject"
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "UPDATE_WORK",
+          "branches": [],
+          "vocabulary": "act"
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "CASE",
+      "kind": "CORRECT",
+      "labelId": "act.CORRECT.label",
+      "meaningId": "act.CORRECT.meaning",
+      "confirmationId": "act.CORRECT.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "registration",
+        "decision",
+        "payment"
+      ],
+      "effect": "RECORD_FACTS",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": null,
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedRevision.label",
+          "meaningId": "field.expectedRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -999,7 +1365,7 @@
             "vocabulary": "correction",
             "options": [
               "KEEP",
-              "REPLACE"
+              "UPDATE"
             ]
           },
           "adviceGroup": "registration",
@@ -1009,6 +1375,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "registration"
@@ -1037,7 +1404,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.incidentDate.label",
@@ -1047,7 +1414,8 @@
             "registration",
             "incidentDate"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -1076,7 +1444,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.incidentNotificationDate.label",
@@ -1086,7 +1454,8 @@
             "registration",
             "incidentNotificationDate"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -1115,7 +1484,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.incidentCountry.label",
@@ -1125,7 +1494,8 @@
             "registration",
             "incidentCountry"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -1154,7 +1524,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.claimantName.label",
@@ -1164,7 +1534,8 @@
             "registration",
             "claimantName"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -1193,7 +1564,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.insurerName.label",
@@ -1203,7 +1574,8 @@
             "registration",
             "insurerName"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -1211,14 +1583,15 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.registration.values.claimedAmount",
+          "identity": "act.groups.registration.values.claimed.amount",
           "field": "claimedAmount",
           "path": [
             "act",
             "groups",
             "registration",
             "values",
-            "claimedAmount"
+            "claimed",
+            "amount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1232,7 +1605,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.claimedAmount.label",
@@ -1242,7 +1615,8 @@
             "registration",
             "claimedAmount"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -1250,14 +1624,15 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.registration.values.claimedCurrency",
+          "identity": "act.groups.registration.values.claimed.currency",
           "field": "claimedCurrency",
           "path": [
             "act",
             "groups",
             "registration",
             "values",
-            "claimedCurrency"
+            "claimed",
+            "currency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1271,7 +1646,7 @@
                 "registration",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.claimedCurrency.label",
@@ -1281,7 +1656,8 @@
             "registration",
             "claimedCurrency"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
@@ -1302,7 +1678,7 @@
             "vocabulary": "correction",
             "options": [
               "KEEP",
-              "REPLACE",
+              "UPDATE",
               "CLEAR"
             ]
           },
@@ -1313,6 +1689,7 @@
           "order": 11,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "decision"
@@ -1341,7 +1718,7 @@
                 "decision",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.paymentDecisionDate.label",
@@ -1351,7 +1728,8 @@
             "decision",
             "paymentDecisionDate"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "paymentDecisionDate"
@@ -1359,14 +1737,15 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.decision.values.payableAmount",
+          "identity": "act.groups.decision.values.payable.amount",
           "field": "payableAmount",
           "path": [
             "act",
             "groups",
             "decision",
             "values",
-            "payableAmount"
+            "payable",
+            "amount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1380,7 +1759,7 @@
                 "decision",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.payableAmount.label",
@@ -1390,7 +1769,8 @@
             "decision",
             "payableAmount"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "payableAmount"
@@ -1398,14 +1778,15 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.decision.values.payableCurrency",
+          "identity": "act.groups.decision.values.payable.currency",
           "field": "payableCurrency",
           "path": [
             "act",
             "groups",
             "decision",
             "values",
-            "payableCurrency"
+            "payable",
+            "currency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1419,7 +1800,7 @@
                 "decision",
                 "kind"
               ],
-              "value": "REPLACE"
+              "value": "UPDATE"
             }
           ],
           "labelId": "field.payableCurrency.label",
@@ -1429,7 +1810,8 @@
             "decision",
             "payableCurrency"
           ],
-          "required": true,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "payableCurrency"
@@ -1451,6 +1833,7 @@
             "options": [
               "KEEP",
               "REPLACE",
+              "REAFFIRM",
               "CLEAR"
             ]
           },
@@ -1461,6 +1844,7 @@
           "order": 15,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "payment"
@@ -1500,6 +1884,7 @@
             "paymentDate"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "paymentDate"
@@ -1543,6 +1928,11 @@
       "labelId": "act.DECIDE.label",
       "meaningId": "act.DECIDE.meaning",
       "confirmationId": "act.DECIDE.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "decision"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -1560,6 +1950,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -1585,6 +1976,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -1607,6 +1999,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -1634,6 +2027,7 @@
             "paymentDecisionDate"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "paymentDecisionDate"
@@ -1661,6 +2055,7 @@
             "payableAmount"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "payableAmount"
@@ -1688,6 +2083,7 @@
             "payableCurrency"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "payableCurrency"
@@ -1731,6 +2127,11 @@
       "labelId": "act.WITHDRAW_DECISION.label",
       "meaningId": "act.WITHDRAW_DECISION.meaning",
       "confirmationId": "act.WITHDRAW_DECISION.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "decision"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -1748,6 +2149,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -1773,6 +2175,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -1795,6 +2198,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -1838,6 +2242,11 @@
       "labelId": "act.RECORD_PAYMENT.label",
       "meaningId": "act.RECORD_PAYMENT.meaning",
       "confirmationId": "act.RECORD_PAYMENT.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "payment"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -1855,6 +2264,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -1880,6 +2290,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -1902,6 +2313,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -1926,6 +2338,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "paymentDate"
@@ -1969,6 +2382,11 @@
       "labelId": "act.CLEAR_PAYMENT.label",
       "meaningId": "act.CLEAR_PAYMENT.meaning",
       "confirmationId": "act.CLEAR_PAYMENT.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "payment"
+      ],
+      "effect": "RECORD_FACTS",
       "inputs": [
         {
           "identity": "operationId",
@@ -1986,6 +2404,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2011,6 +2430,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2033,6 +2453,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2076,6 +2497,9 @@
       "labelId": "act.CLOSE.label",
       "meaningId": "act.CLOSE.meaning",
       "confirmationId": "act.CLOSE.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_STATUS",
       "inputs": [
         {
           "identity": "operationId",
@@ -2093,6 +2517,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2118,6 +2543,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2140,6 +2566,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2183,6 +2610,9 @@
       "labelId": "act.REOPEN.label",
       "meaningId": "act.REOPEN.meaning",
       "confirmationId": "act.REOPEN.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_STATUS",
       "inputs": [
         {
           "identity": "operationId",
@@ -2200,6 +2630,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2225,6 +2656,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2247,6 +2679,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2290,6 +2723,9 @@
       "labelId": "act.VOID.label",
       "meaningId": "act.VOID.meaning",
       "confirmationId": "act.VOID.confirmation",
+      "family": "STEWARDSHIP",
+      "affectedSections": [],
+      "effect": "CHANGE_LIFECYCLE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2307,6 +2743,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2332,6 +2769,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2354,6 +2792,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2377,6 +2816,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "reason"
@@ -2420,6 +2860,9 @@
       "labelId": "act.REINSTATE.label",
       "meaningId": "act.REINSTATE.meaning",
       "confirmationId": "act.REINSTATE.confirmation",
+      "family": "STEWARDSHIP",
+      "affectedSections": [],
+      "effect": "CHANGE_LIFECYCLE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2437,6 +2880,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2462,6 +2906,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2484,6 +2929,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2507,6 +2953,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "reason"
@@ -2550,6 +2997,14 @@
       "labelId": "act.ERASE.label",
       "meaningId": "act.ERASE.meaning",
       "confirmationId": "act.ERASE.confirmation",
+      "family": "STEWARDSHIP",
+      "affectedSections": [
+        "registration",
+        "decision",
+        "payment",
+        "work"
+      ],
+      "effect": "ERASE_PAYLOAD",
       "inputs": [
         {
           "identity": "operationId",
@@ -2567,6 +3022,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2592,6 +3048,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2614,6 +3071,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2657,6 +3115,9 @@
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
       "confirmationId": "act.REGISTER.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
       "inputs": [
         {
           "identity": "operationId",
@@ -2674,6 +3135,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2702,6 +3164,7 @@
           "order": 1,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -2725,6 +3188,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -2748,6 +3212,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -2782,6 +3247,9 @@
       "labelId": "act.GRANT.label",
       "meaningId": "act.GRANT.meaning",
       "confirmationId": "act.GRANT.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
       "inputs": [
         {
           "identity": "operationId",
@@ -2799,6 +3267,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2827,6 +3296,7 @@
           "order": 1,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -2850,6 +3320,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -2873,6 +3344,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -2906,6 +3378,7 @@
           "order": 4,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "role"
@@ -2935,7 +3408,8 @@
           "order": 5,
           "prefill": null,
           "required": false,
-          "default": null,
+          "wireRequired": true,
+          "default": "INSTALLATION",
           "diagnosticTargets": [],
           "source": "AUTHORED"
         },
@@ -2969,6 +3443,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3023,6 +3498,9 @@
       "labelId": "act.REVOKE.label",
       "meaningId": "act.REVOKE.meaning",
       "confirmationId": "act.REVOKE.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
       "inputs": [
         {
           "identity": "operationId",
@@ -3040,6 +3518,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3068,6 +3547,7 @@
           "order": 1,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3091,6 +3571,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3114,6 +3595,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3147,6 +3629,7 @@
           "order": 4,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "role"
@@ -3176,7 +3659,8 @@
           "order": 5,
           "prefill": null,
           "required": false,
-          "default": null,
+          "wireRequired": true,
+          "default": "INSTALLATION",
           "diagnosticTargets": [],
           "source": "AUTHORED"
         },
@@ -3210,6 +3694,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3264,6 +3749,9 @@
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
       "confirmationId": "act.ENABLE.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
       "inputs": [
         {
           "identity": "operationId",
@@ -3281,6 +3769,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3309,6 +3798,7 @@
           "order": 1,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3332,6 +3822,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3355,6 +3846,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3389,6 +3881,9 @@
       "labelId": "act.DISABLE.label",
       "meaningId": "act.DISABLE.meaning",
       "confirmationId": "act.DISABLE.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
       "inputs": [
         {
           "identity": "operationId",
@@ -3406,6 +3901,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3434,6 +3930,7 @@
           "order": 1,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3457,6 +3954,7 @@
           "order": 2,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3480,6 +3978,7 @@
           "order": 3,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3508,12 +4007,15 @@
       ]
     },
     {
-      "endpoint": "case.get",
+      "endpoint": "case.assignees",
       "subject": "CASE",
-      "kind": "case.get",
-      "labelId": "endpoint.case.get.label",
-      "meaningId": "endpoint.case.get.meaning",
+      "kind": "case.assignees",
+      "labelId": "endpoint.case.assignees.label",
+      "meaningId": "endpoint.case.assignees.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -3534,6 +4036,103 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector"
+        }
+      ]
+    },
+    {
+      "endpoint": "case.get",
+      "subject": "CASE",
+      "kind": "case.get",
+      "labelId": "endpoint.case.get.label",
+      "meaningId": "endpoint.case.get.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3560,6 +4159,9 @@
       "labelId": "endpoint.case.list.label",
       "meaningId": "endpoint.case.list.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "cursor",
@@ -3577,6 +4179,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -3599,6 +4202,7 @@
           "order": 1,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -3627,6 +4231,7 @@
           "order": 2,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3652,6 +4257,7 @@
           "order": 3,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3678,6 +4284,7 @@
           "order": 4,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3698,6 +4305,7 @@
           "order": 5,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "text"
@@ -3716,7 +4324,8 @@
             "options": [
               "REFERENCE",
               "RECENT",
-              "NOTIFIED"
+              "NOTIFIED",
+              "FOLLOW_UP"
             ]
           },
           "adviceGroup": null,
@@ -3726,6 +4335,7 @@
           "order": 6,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": "REFERENCE",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3740,7 +4350,8 @@
             "kind": "CHOICE",
             "vocabulary": "assignment",
             "options": [
-              "ASSIGNED_TO_ME"
+              "MINE",
+              "UNASSIGNED"
             ]
           },
           "adviceGroup": null,
@@ -3750,6 +4361,36 @@
           "order": 7,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "due",
+          "field": null,
+          "path": [
+            "due"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "due",
+            "options": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.due.label",
+          "meaningId": "input.due.meaning",
+          "order": 8,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3764,6 +4405,9 @@
       "labelId": "endpoint.case.summary.label",
       "meaningId": "endpoint.case.summary.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "lifecycle",
@@ -3787,6 +4431,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3812,6 +4457,7 @@
           "order": 1,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3838,6 +4484,7 @@
           "order": 2,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3858,6 +4505,7 @@
           "order": 3,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "text"
@@ -3876,7 +4524,8 @@
             "options": [
               "REFERENCE",
               "RECENT",
-              "NOTIFIED"
+              "NOTIFIED",
+              "FOLLOW_UP"
             ]
           },
           "adviceGroup": null,
@@ -3886,6 +4535,7 @@
           "order": 4,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": "REFERENCE",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3900,7 +4550,8 @@
             "kind": "CHOICE",
             "vocabulary": "assignment",
             "options": [
-              "ASSIGNED_TO_ME"
+              "MINE",
+              "UNASSIGNED"
             ]
           },
           "adviceGroup": null,
@@ -3910,6 +4561,36 @@
           "order": 5,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "due",
+          "field": null,
+          "path": [
+            "due"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "due",
+            "options": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.due.label",
+          "meaningId": "input.due.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3924,6 +4605,9 @@
       "labelId": "endpoint.case.history.label",
       "meaningId": "endpoint.case.history.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -3944,6 +4628,7 @@
             "caseReference"
           ],
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3971,7 +4656,8 @@
           "order": 1,
           "prefill": null,
           "required": false,
-          "default": null,
+          "wireRequired": true,
+          "default": "SUMMARY",
           "diagnosticTargets": [],
           "source": "AUTHORED"
         },
@@ -3991,6 +4677,7 @@
           "order": 2,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4013,6 +4700,7 @@
           "order": 3,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4039,6 +4727,9 @@
       "labelId": "endpoint.operation.observe.label",
       "meaningId": "endpoint.operation.observe.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "operationId",
@@ -4056,6 +4747,7 @@
           "order": 0,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4072,6 +4764,9 @@
       "labelId": "endpoint.operation.status.label",
       "meaningId": "endpoint.operation.status.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "operationId",
@@ -4089,6 +4784,7 @@
           "order": 0,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4104,7 +4800,10 @@
       "kind": "operation.resolve",
       "labelId": "endpoint.operation.resolve.label",
       "meaningId": "endpoint.operation.resolve.meaning",
-      "confirmationId": null,
+      "confirmationId": "endpoint.operation.resolve.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "FINAL_NON_ACCEPTANCE",
       "inputs": [
         {
           "identity": "operationId",
@@ -4122,6 +4821,7 @@
           "order": 0,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4138,6 +4838,9 @@
       "labelId": "endpoint.authority.list.label",
       "meaningId": "endpoint.authority.list.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "cursor",
@@ -4155,6 +4858,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4177,6 +4881,7 @@
           "order": 1,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4193,6 +4898,9 @@
       "labelId": "endpoint.authority.grants.label",
       "meaningId": "endpoint.authority.grants.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "actorId",
@@ -4210,6 +4918,7 @@
           "order": 0,
           "prefill": null,
           "required": true,
+          "wireRequired": true,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4230,6 +4939,7 @@
           "order": 1,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4252,6 +4962,7 @@
           "order": 2,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4268,6 +4979,9 @@
       "labelId": "endpoint.authority.history.label",
       "meaningId": "endpoint.authority.history.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [
         {
           "identity": "actorId",
@@ -4285,6 +4999,7 @@
           "order": 0,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4305,6 +5020,7 @@
           "order": 1,
           "prefill": null,
           "required": false,
+          "wireRequired": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4327,6 +5043,7 @@
           "order": 2,
           "prefill": null,
           "required": false,
+          "wireRequired": true,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4343,6 +5060,9 @@
       "labelId": "endpoint.context.label",
       "meaningId": "endpoint.context.meaning",
       "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
       "inputs": [],
       "constants": []
     }
@@ -4451,6 +5171,16 @@
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
+      ],
+      "admittedScopes": [
+        "INSTALLATION",
+        "CASE"
+      ]
+    },
+    {
+      "capability": "MANAGE_CASE_WORK",
+      "admittedPrincipalKinds": [
+        "HUMAN"
       ],
       "admittedScopes": [
         "INSTALLATION",

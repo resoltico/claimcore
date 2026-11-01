@@ -13,7 +13,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport.MemoryStoreState
 
 let private selected (state: State) (selection: CaseSelection) (record: StoredCase) =
-    let assigned =
+    let scopedRead =
         state.Grants
         |> Seq.exists (fun (id, role, scope) ->
             id = selection.ActorId
@@ -27,8 +27,25 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
             && scope = Some record.CaseId
             && List.contains role selection.ForbiddenRoles)
 
-    (selection.Visibility = CaseVisibility.Every || assigned)
-    && (selection.Filter.Assignment.IsNone || assigned)
+    (selection.Visibility = CaseVisibility.Every || scopedRead)
+    && (selection.Filter.Assignment
+        |> Option.forall (function
+            | CaseAssignment.Mine -> record.Index.Responsible = Some selection.ActorId
+            | CaseAssignment.Unassigned ->
+                record.Index.Responsible.IsNone
+                && CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased))
+    && (selection.Filter.Due
+        |> Option.forall (fun due ->
+            CaseDue.at
+                selection.DateBasis.BusinessDate
+                (CaseState.lifecycle record.Snapshot.State)
+                record.Index.Status
+                {
+                    Responsible = record.Index.Responsible
+                    FollowUp = record.Index.FollowUp
+                }
+                =
+                due))
     && not forbidden
     && CaseListFilter.matches
         selection.Filter
@@ -46,6 +63,20 @@ let private total money =
                 DecimalTotal.parse (Money.format value)
                 |> Result.defaultWith (string >> failwith)
         })
+
+let private compareDates (left: CalendarDate option) right =
+    match left, right with
+    | None, None -> 0
+    | None, Some _ -> 1
+    | Some _, None -> -1
+    | Some left, Some right -> compare left right
+
+let private dateAfter (found: CalendarDate option) boundary referenceAfter =
+    match found, boundary with
+    | None, Some _ -> true
+    | Some _, None -> false
+    | None, None -> referenceAfter
+    | Some found, Some boundary -> found > boundary || (found = boundary && referenceAfter)
 
 type internal Reader
     (
@@ -115,7 +146,7 @@ type internal Reader
 
             Task.FromResult
                 { view with
-                    HasAssignedCases = caseId.IsNone && assigned
+                    HasScopedCases = caseId.IsNone && assigned
                 }
 
         member _.FindCase id =
@@ -163,6 +194,39 @@ type internal Reader
                     ProjectedAt = Map.tryFind (key.ActorId, key.OperationId) (get ()).Fences
                 }
 
+        member _.AssigneePage query =
+            read ()
+            let state = get ()
+
+            let permitted roles id =
+                state.Grants
+                |> Seq.exists (fun (actor, role, caseId) ->
+                    actor = id
+                    && (caseId.IsNone || caseId = Some query.CaseId)
+                    && List.contains role roles)
+
+            let rows =
+                state.Actors
+                |> Map.values
+                |> Seq.filter (fun actor ->
+                    actor.Enabled
+                    && PrincipalKey.isHuman actor.Principal
+                    && (query.AfterActorId |> Option.forall (fun after -> actor.ActorId > after))
+                    && permitted query.ReadRoles actor.ActorId
+                    && permitted query.WorkRoles actor.ActorId)
+                |> Seq.sortBy _.ActorId
+                |> Seq.truncate (query.Limit + 1)
+                |> Seq.map (fun actor ->
+                    let _, _, subject = PrincipalKey.parts actor.Principal
+
+                    {
+                        AccountSubject.ActorId = actor.ActorId
+                        Subject = subject
+                    })
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit _.ActorId rows)
+
         member _.FindActor id =
             read ()
             Task.FromResult(Map.tryFind id (get ()).Actors)
@@ -200,11 +264,9 @@ type internal Reader
                     | CaseListOrder.Reference -> 0
                     | CaseListOrder.Recent -> compare right.Index.ChangedAt left.Index.ChangedAt
                     | CaseListOrder.Notified ->
-                        match left.Index.NotifiedOn, right.Index.NotifiedOn with
-                        | None, None -> 0
-                        | None, Some _ -> 1
-                        | Some _, None -> -1
-                        | Some left, Some right -> compare left right
+                        compareDates left.Index.NotifiedOn right.Index.NotifiedOn
+                    | CaseListOrder.FollowUp ->
+                        compareDates left.Index.FollowUp right.Index.FollowUp
 
                 if time <> 0 then
                     time
@@ -221,14 +283,15 @@ type internal Reader
                     || (record.Index.ChangedAt = time
                         && StringComparer.Ordinal.Compare(reference record, value) > 0)
                 | Some(CaseListPosition.Notified(date, value)) ->
-                    match record.Index.NotifiedOn, date with
-                    | None, Some _ -> true
-                    | Some _, None -> false
-                    | None, None -> StringComparer.Ordinal.Compare(reference record, value) > 0
-                    | Some found, Some after ->
-                        found > after
-                        || (found = after
-                            && StringComparer.Ordinal.Compare(reference record, value) > 0)
+                    dateAfter
+                        record.Index.NotifiedOn
+                        date
+                        (StringComparer.Ordinal.Compare(reference record, value) > 0)
+                | Some(CaseListPosition.FollowUp(date, value)) ->
+                    dateAfter
+                        record.Index.FollowUp
+                        date
+                        (StringComparer.Ordinal.Compare(reference record, value) > 0)
 
 
             let rows =
@@ -247,6 +310,7 @@ type internal Reader
                             query.Filter.Order
                             record.Index.ChangedAt
                             record.Index.NotifiedOn
+                            record.Index.FollowUp
                             (CaseReference.format record.Snapshot.Reference))
                     rows
             )
@@ -261,7 +325,26 @@ type internal Reader
                 |> Seq.filter (selected state selection)
                 |> Seq.map (fun record ->
                     {
-                        CaseCountGroup.Lifecycle = CaseState.lifecycle record.Snapshot.State
+                        CaseCountGroup.Responsibility =
+                            if record.Index.Responsible = Some selection.ActorId then
+                                Some CaseAssignment.Mine
+                            elif
+                                record.Index.Responsible.IsNone
+                                && CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased
+                            then
+                                Some CaseAssignment.Unassigned
+                            else
+                                None
+                        Due =
+                            CaseDue.at
+                                selection.DateBasis.BusinessDate
+                                (CaseState.lifecycle record.Snapshot.State)
+                                record.Index.Status
+                                {
+                                    Responsible = record.Index.Responsible
+                                    FollowUp = record.Index.FollowUp
+                                }
+                        Lifecycle = CaseState.lifecycle record.Snapshot.State
                         Status = record.Index.Status
                         Progress = record.Index.Progress
                         Count = 1L
@@ -270,7 +353,10 @@ type internal Reader
                     })
                 |> Seq.toList
 
-            Task.FromResult(CaseWorklistSummary.fromGroups groups |> Result.defaultWith failwith)
+            Task.FromResult(
+                CaseWorklistSummary.fromGroups selection.DateBasis groups
+                |> Result.defaultWith failwith
+            )
 
         member _.HistoryPage
             ({

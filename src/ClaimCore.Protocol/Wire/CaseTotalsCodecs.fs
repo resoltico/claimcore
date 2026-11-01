@@ -59,9 +59,11 @@ module CaseTotalsCodecs =
         |> named name
 
     let private counts =
-        (record (fun total lifecycles statuses progress ->
+        (record (fun total lifecycles statuses progress assignment due ->
             {
-                CaseWorklistCounts.Total = total
+                CaseWorklistCounts.Assignment = assignment
+                Due = due
+                Total = total
                 Lifecycles = lifecycles
                 Statuses = statuses
                 Progress = progress
@@ -84,13 +86,24 @@ module CaseTotalsCodecs =
             (list
                 (Vocabulary.all CaseProgress.vocabulary).Length
                 (count "ProgressCount" CaseProgress.vocabulary))
+        |> field
+            "assignment"
+            _.Assignment
+            (list
+                (Vocabulary.all CaseAssignment.vocabulary).Length
+                (count "AssignmentCount" CaseAssignment.vocabulary))
+        |> field
+            "due"
+            _.Due
+            (list (Vocabulary.all CaseDue.vocabulary).Length (count "DueCount" CaseDue.vocabulary))
         |> build
         |> named "CaseWorklistCounts"
 
     let summary =
-        (record (fun counts claimed payable ->
+        (record (fun counts claimed payable basis ->
             {
-                CaseWorklistSummary.Counts = counts
+                CaseWorklistSummary.Basis = basis
+                Counts = counts
                 Claimed = claimed
                 Payable = payable
             })
@@ -98,5 +111,6 @@ module CaseTotalsCodecs =
         |> field "counts" _.Counts counts
         |> field "claimed" _.Claimed (list 17576 currencyTotal)
         |> field "payable" _.Payable (list 17576 currencyTotal)
+        |> field "basis" _.Basis ReadRowCodecs.dateBasis
         |> build
         |> named "CaseWorklistSummary"

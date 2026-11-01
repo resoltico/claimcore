@@ -126,8 +126,22 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableCurrencyProjection
                                             (fun () -> Projections.casePayableCurrency row)
 
+                                    let! responsible =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () -> Projections.caseResponsibleActor row)
+
+                                    let! followUp =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () -> Projections.caseFollowUp row)
+
                                     let index: CaseIndex =
                                         {
+                                            Responsible = responsible
+                                            FollowUp = followUp
                                             Status = status
                                             Progress = progress
                                             ChangedAt = changedAt

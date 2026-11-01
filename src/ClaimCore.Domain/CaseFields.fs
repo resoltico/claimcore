@@ -8,6 +8,17 @@ type RecordGroup =
     | Payment
 
 [<RequireQualifiedAccess>]
+type CaseSection =
+    | Registration
+    | Decision
+    | Payment
+    | Work
+
+module CaseSection =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseSection> "section" TokenCasing.CamelCase None
+
+[<RequireQualifiedAccess>]
 type BusinessField =
     | IncidentDate
     | IncidentNotificationDate
@@ -22,6 +33,8 @@ type BusinessField =
     | PayableCurrency
     | PaymentDate
     | Status
+    | ResponsibleActor
+    | FollowUpDate
 
 [<RequireQualifiedAccess>]
 type InputTarget =
@@ -45,6 +58,7 @@ type FieldDescriptor =
         Key: string
         Kind: FieldValueKind
         Group: RecordGroup option
+        Section: CaseSection option
         AllowsAbsence: bool
         IsAuthored: bool
         Searchable: bool
@@ -78,6 +92,12 @@ module BusinessField =
             Key = key field
             Kind = kind
             Group = group
+            Section =
+                match group with
+                | Some RecordGroup.Registration -> Some CaseSection.Registration
+                | Some RecordGroup.Decision -> Some CaseSection.Decision
+                | Some RecordGroup.Payment -> Some CaseSection.Payment
+                | None -> None
             AllowsAbsence = group.IsSome && group <> Some RecordGroup.Registration
             IsAuthored = field <> BusinessField.Status
             Searchable = searchable
@@ -121,6 +141,18 @@ module BusinessField =
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
+        | BusinessField.ResponsibleActor
+        | BusinessField.FollowUpDate ->
+            let kind =
+                if field = BusinessField.ResponsibleActor then
+                    FieldValueKind.ActorId
+                else
+                    FieldValueKind.PlannedDate
+
+            { descriptor field kind None false None with
+                Section = Some CaseSection.Work
+                AllowsAbsence = true
+            }
 
     let declarations = Vocabulary.all vocabulary |> List.map describe
 

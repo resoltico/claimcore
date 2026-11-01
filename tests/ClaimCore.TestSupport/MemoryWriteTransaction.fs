@@ -114,6 +114,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = Array.empty
                             Index =
                                 {
+                                    Responsible = None
+                                    FollowUp = None
                                     Status = None
                                     Progress = None
                                     SearchText = None

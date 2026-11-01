@@ -39,17 +39,19 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Lifecycles", (Inventory.tokens "caseLifecycles").Length
                 "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
+                "CaseWorklistCounts.Assignment", 2
+                "CaseWorklistCounts.Due", 5
                 "AuthorityState.Grants", 1
-                "AuthorityState.Access", 10
+                "AuthorityState.Access", 11
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2
-                "ActorContext.Capability", 10
+                "ActorContext.Capability", 11
                 "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
-                "CorrectionChoices.Payment", 3
+                "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "AdvisoryReview.Changes", Inventory.fieldCount

@@ -128,7 +128,8 @@ let private caseActCapabilities () =
     let cases =
         [
             AuthoredCaseAct.Open registration, Capability.Register
-            AuthoredCaseAct.AmendRegistration registration, Capability.Register
+            AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration),
+            Capability.Register
             AuthoredCaseAct.Decide decision, Capability.Decide
             (AuthoredCaseAct.Bare BareAct.WithdrawDecision), Capability.Decide
             AuthoredCaseAct.RecordPayment(
@@ -170,22 +171,22 @@ let private replacementCorrection
     {
         Registration =
             (if registrationChanged then
-                 Amendment.Replace registration
+                 Amendment.Update(Inputs.registrationUpdate registration)
              else
                  Amendment.Keep)
         Decision =
             (if decisionChanged then
-                 Change.Replace decision
+                 Change.Update(Inputs.decisionUpdate decision)
              else
                  Change.Keep)
         Payment =
             (if paymentChanged then
-                 Change.Replace(
+                 PaymentChange.Replace(
                      ClaimCore.TestSupport.Inputs.paymentFrom
                          [ BusinessField.PaymentDate, ("2026-08-20") ]
                  )
              else
-                 Change.Keep)
+                 PaymentChange.Keep)
     }
 
 let private corrections () =
@@ -202,7 +203,11 @@ let private corrections () =
 
         let clearedDecision = if decisionChanged then Change.Clear else Change.Keep
 
-        let clearedPayment = if paymentChanged then Change.Clear else Change.Keep
+        let clearedPayment =
+            if paymentChanged then
+                PaymentChange.Clear
+            else
+                PaymentChange.Keep
 
         let cleared =
             { correction with
@@ -232,7 +237,7 @@ let private reaffirmations () =
                 Registration = Amendment.Keep
                 Decision = Change.Keep
                 Payment =
-                    Change.Replace(
+                    PaymentChange.Replace(
                         ClaimCore.TestSupport.Inputs.paymentFrom
                             [ BusinessField.PaymentDate, ("2026-08-20") ]
                     )
@@ -251,7 +256,7 @@ let private reaffirmations () =
             {
                 Registration = Amendment.Keep
                 Decision = Change.Keep
-                Payment = Change.Keep
+                Payment = PaymentChange.Keep
             })
 
     Expect.isError
@@ -295,6 +300,7 @@ let private scopedAdvice () =
             Queries.caseRecord
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
                 (AuthorityView.ofActor (Some authority))
+                (Inputs.workView record.Snapshot.State)
                 record
             |> accepted
 
@@ -379,6 +385,7 @@ let private noUsableCorrectionOffer () =
         Queries.caseRecord
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
             (AuthorityView.ofActor (Some authority))
+            (Inputs.workView record.Snapshot.State)
             record
         |> accepted
 
@@ -387,30 +394,53 @@ let private noUsableCorrectionOffer () =
         "An all-KEEP form is never offered"
 
 let private humanOnlyCapabilities () =
-    let derived policy =
-        Role.all
-        |> List.filter (fun role -> policy role |> List.exists Authority.humanOnlyCapability)
-
-    Expect.equal (derived Authority.policy) humanRoles "Current human-only roles"
-
     Expect.equal
         (Role.all |> List.filter Authority.humanOnlyRole)
-        humanRoles
-        "Production roles derive from capabilities"
+        [ Role.Owner; Role.DataSteward ]
+        "Role principal restrictions are independent of optional human-only capabilities"
 
-    let withSteward role =
-        let granted = Authority.policy role
+    Expect.isTrue
+        (Authority.humanOnlyCapability Capability.ManageCaseWork)
+        "The capability is human-only"
 
-        if role = Role.CaseReader then
-            Capability.Steward :: granted
-        else
-            granted
+    Expect.isFalse
+        (Authority.humanOnlyRole Role.CaseHandler)
+        "Services retain CASE_HANDLER admission"
 
-    Expect.equal
-        (derived withSteward)
-        (Role.all
-         |> List.filter (fun role -> role = Role.CaseReader || List.contains role humanRoles))
-        "Negative control: granting Steward changes the principal restriction"
+    let current =
+        actor
+            service
+            [
+                {
+                    Role = Role.CaseHandler
+                    Scope = Scope.Installation
+                }
+            ]
+
+    let view = AuthorityView.ofActor (Some current)
+    Expect.isTrue (Authority.validActor service view) "Positive service handler control"
+
+    Expect.isTrue
+        (Authority.can service view Capability.Decide Scope.Installation)
+        "Retained service capability"
+
+    Expect.isFalse
+        (Authority.can service view Capability.ManageCaseWork Scope.Installation)
+        "New capability is withheld"
+
+    let forbidden =
+        { current with
+            Grants =
+                {
+                    Role = Role.DataSteward
+                    Scope = Scope.Installation
+                }
+                :: current.Grants
+        }
+
+    Expect.isFalse
+        (Authority.validActor service (AuthorityView.ofActor (Some forbidden)))
+        "A real human-only role remains an invalid service grant"
 
 [<Tests>]
 let tests =
@@ -418,7 +448,7 @@ let tests =
         "actor authorization policy"
         [
             testCase
-                "human-only roles derive from capabilities with a Steward-grant negative control"
+                "role admission and human-only capabilities remain independent with a forbidden-role control"
                 humanOnlyCapabilities
             testCase
                 "all role, capability, principal and scope combinations match independent expectations"

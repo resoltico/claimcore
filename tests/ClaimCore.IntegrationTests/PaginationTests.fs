@@ -166,7 +166,8 @@ type internal PausedPageStore
 
                                     member _.CasePage
                                         ({
-                                             CasePageQuery.Visibility = visibility
+                                             CasePageQuery.DateBasis = basis
+                                             Visibility = visibility
                                              ActorId = actor
                                              ReadRoles = roles
                                              ForbiddenRoles = invalid
@@ -177,7 +178,8 @@ type internal PausedPageStore
                                         =
                                         tx.CasePage(
                                             {
-                                                CasePageQuery.Visibility = visibility
+                                                CasePageQuery.DateBasis = basis
+                                                Visibility = visibility
                                                 ActorId = actor
                                                 ReadRoles = roles
                                                 ForbiddenRoles = invalid
@@ -236,6 +238,7 @@ type internal PausedPageStore
                                         )
 
                                     member _.FindActor id = tx.FindActor id
+                                    member _.AssigneePage query = tx.AssigneePage query
                                     member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
                                     member _.ActorCount() = tx.ActorCount()
                                 })

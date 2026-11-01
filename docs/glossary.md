@@ -74,3 +74,18 @@ consumed. Controls advance the head/checkpoint and reconstruct fence projections
 An enabled valid registered actor's read of its own accepted metadata, previously committed final
 nonacceptance, or unresolved outcome. It appends no control and does not block acceptance. Authorship
 permits recovery metadata even without current case roles; content disclosure remains independently authorized.
+
+## Responsibility and follow-up
+
+Case work holds an optional responsible ActorId and planned follow-up date. Responsibility is a factual
+assignment, independent of grants and visibility. My cases means that the requester is responsible;
+Unassigned means no account is responsible. An unavailable assignee remains recorded until explicitly
+changed. Due state uses the query snapshot's database instant and installation business zone; only active,
+open cases are actionable.
+
+## Targeted update and reaffirmation
+
+A partial update changes selected facts while retaining omissions from locked state. A money assertion
+always contains amount and currency together. Payment reaffirmation explicitly acknowledges the existing
+payment when correcting a paid decision; it requires payment-recording authority and does not transfer
+money. Read reviews do not authorize execution or replace the expected revision.

@@ -10,6 +10,7 @@ export type MessageArgs = {
   "ui.acceptedHistory": Readonly<Record<string, never>>;
   "ui.acceptedOperation": Readonly<Record<string, never>>;
   "ui.acceptedSummary": Readonly<Record<string, never>>;
+  "ui.accountDetails": Readonly<Record<string, never>>;
   "ui.actDescription": { readonly "label": string; readonly "meaning": string };
   "ui.actor": Readonly<Record<string, never>>;
   "ui.actorGrants": Readonly<Record<string, never>>;
@@ -18,7 +19,7 @@ export type MessageArgs = {
   "ui.after": { readonly "value": string };
   "ui.age": Readonly<Record<string, never>>;
   "ui.amountEntryHint": { readonly "maximumFractionDigits": string };
-  "ui.assignedToYou": Readonly<Record<string, never>>;
+  "ui.anyFilter": Readonly<Record<string, never>>;
   "ui.authorityAction": Readonly<Record<string, never>>;
   "ui.authorityReceipt": { readonly "act": string; readonly "actor": string };
   "ui.backToActors": Readonly<Record<string, never>>;
@@ -30,10 +31,10 @@ export type MessageArgs = {
   "ui.caseDetail": Readonly<Record<string, never>>;
   "ui.caseRecorded": { readonly "act": string; readonly "revision": string };
   "ui.caseState": Readonly<Record<string, never>>;
-  "ui.caseStewardship": Readonly<Record<string, never>>;
   "ui.cases": Readonly<Record<string, never>>;
   "ui.changeActDescription": Readonly<Record<string, never>>;
   "ui.changeActTitle": Readonly<Record<string, never>>;
+  "ui.changeFact": { readonly "field": string };
   "ui.checkOutcome": Readonly<Record<string, never>>;
   "ui.checkUnresolvedOperation": Readonly<Record<string, never>>;
   "ui.chooseRole": Readonly<Record<string, never>>;
@@ -61,6 +62,7 @@ export type MessageArgs = {
   "ui.emptyInput": Readonly<Record<string, never>>;
   "ui.exactCaseReference": { readonly "label": string };
   "ui.exactOperationId": Readonly<Record<string, never>>;
+  "ui.exactRecordedValue": Readonly<Record<string, never>>;
   "ui.exactReference": { readonly "label": string; readonly "reference": string };
   "ui.exactUtc": Readonly<Record<string, never>>;
   "ui.explainFields": Readonly<Record<string, never>>;
@@ -85,6 +87,7 @@ export type MessageArgs = {
   "ui.knownGrantCount": { readonly "count": string };
   "ui.language": Readonly<Record<string, never>>;
   "ui.leaveDraftDescription": Readonly<Record<string, never>>;
+  "ui.leaveUnchanged": Readonly<Record<string, never>>;
   "ui.loading": Readonly<Record<string, never>>;
   "ui.loadingCases": Readonly<Record<string, never>>;
   "ui.loadingCurrentCase": Readonly<Record<string, never>>;
@@ -93,11 +96,13 @@ export type MessageArgs = {
   "ui.loginInstructions": Readonly<Record<string, never>>;
   "ui.lookingUp": Readonly<Record<string, never>>;
   "ui.menu": Readonly<Record<string, never>>;
+  "ui.mine": Readonly<Record<string, never>>;
   "ui.moreActors": Readonly<Record<string, never>>;
   "ui.moreCaseActions": Readonly<Record<string, never>>;
   "ui.moreCases": Readonly<Record<string, never>>;
   "ui.moreGrants": Readonly<Record<string, never>>;
   "ui.moreHistory": Readonly<Record<string, never>>;
+  "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
   "ui.no": Readonly<Record<string, never>>;
   "ui.noAccessibleActors": Readonly<Record<string, never>>;
@@ -105,6 +110,7 @@ export type MessageArgs = {
   "ui.noAccessibleHistory": Readonly<Record<string, never>>;
   "ui.noCasesForSavedView": { readonly "view": string };
   "ui.noCasesForView": Readonly<Record<string, never>>;
+  "ui.noEligibleAccounts": Readonly<Record<string, never>>;
   "ui.noViews": Readonly<Record<string, never>>;
   "ui.notRecorded": Readonly<Record<string, never>>;
   "ui.observeOperation": Readonly<Record<string, never>>;
@@ -119,12 +125,14 @@ export type MessageArgs = {
   "ui.pageNotFound": Readonly<Record<string, never>>;
   "ui.pageNotFoundDescription": Readonly<Record<string, never>>;
   "ui.pagePartial": Readonly<Record<string, never>>;
+  "ui.pairedFacts": { readonly "first": string; readonly "second": string };
   "ui.payableTotal": Readonly<Record<string, never>>;
   "ui.preferencesChanged": Readonly<Record<string, never>>;
   "ui.preferencesHint": Readonly<Record<string, never>>;
   "ui.preferencesNotSaved": Readonly<Record<string, never>>;
   "ui.preparingRecovery": Readonly<Record<string, never>>;
   "ui.previewing": Readonly<Record<string, never>>;
+  "ui.previousAccounts": Readonly<Record<string, never>>;
   "ui.previousMonth": Readonly<Record<string, never>>;
   "ui.primary": Readonly<Record<string, never>>;
   "ui.principal": Readonly<Record<string, never>>;
@@ -138,10 +146,12 @@ export type MessageArgs = {
   "ui.recoveryListingUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryUnavailable": Readonly<Record<string, never>>;
   "ui.reference": { readonly "label": string; readonly "reference": string };
+  "ui.refreshAccounts": Readonly<Record<string, never>>;
   "ui.registerLabel": Readonly<Record<string, never>>;
   "ui.reloadActors": Readonly<Record<string, never>>;
   "ui.reloadCases": Readonly<Record<string, never>>;
   "ui.reloadContract": Readonly<Record<string, never>>;
+  "ui.reloadCurrentCase": Readonly<Record<string, never>>;
   "ui.reloadGrants": Readonly<Record<string, never>>;
   "ui.reloadHistory": Readonly<Record<string, never>>;
   "ui.retryExact": Readonly<Record<string, never>>;
@@ -155,6 +165,7 @@ export type MessageArgs = {
   "ui.savedRecoveryAttempt": Readonly<Record<string, never>>;
   "ui.savedViews": Readonly<Record<string, never>>;
   "ui.search": Readonly<Record<string, never>>;
+  "ui.selectedAccount": Readonly<Record<string, never>>;
   "ui.settings": Readonly<Record<string, never>>;
   "ui.signIn": Readonly<Record<string, never>>;
   "ui.signOut": Readonly<Record<string, never>>;
@@ -163,6 +174,7 @@ export type MessageArgs = {
   "ui.submitExact": Readonly<Record<string, never>>;
   "ui.submitting": Readonly<Record<string, never>>;
   "ui.summaryCounts": { readonly "count": string };
+  "ui.summaryDateBasis": { readonly "date": string; readonly "zone": string };
   "ui.summaryDetails": Readonly<Record<string, never>>;
   "ui.targetActor": Readonly<Record<string, never>>;
   "ui.technicalDetails": Readonly<Record<string, never>>;
@@ -178,9 +190,10 @@ export type MessageArgs = {
   "ui.viewOpenUndecided": Readonly<Record<string, never>>;
   "ui.wasProgress": { readonly "progress": string };
   "ui.webIdentity": { readonly "digest": string };
+  "ui.workDateBasis": { readonly "date": string; readonly "zone": string };
   "ui.worklistSearch": Readonly<Record<string, never>>;
   "ui.yes": Readonly<Record<string, never>>;
   "ui.you": Readonly<Record<string, never>>;
 };
 export type MessageKey = keyof MessageArgs;
-export const messageShapes = {"ui.about":{},"ui.accepted":{},"ui.acceptedContext":{"operationId":"string"},"ui.acceptedHistory":{},"ui.acceptedOperation":{},"ui.acceptedSummary":{},"ui.actDescription":{"label":"string","meaning":"string"},"ui.actor":{},"ui.actorGrants":{},"ui.actorRequestRetained":{},"ui.actors":{},"ui.after":{"value":"string"},"ui.age":{},"ui.amountEntryHint":{"maximumFractionDigits":"string"},"ui.assignedToYou":{},"ui.authorityAction":{},"ui.authorityReceipt":{"act":"string","actor":"string"},"ui.backToActors":{},"ui.backToCase":{},"ui.backToCases":{},"ui.before":{"value":"string"},"ui.calendar":{},"ui.canonicalCopyHint":{},"ui.caseDetail":{},"ui.caseRecorded":{"act":"string","revision":"string"},"ui.caseState":{},"ui.caseStewardship":{},"ui.cases":{},"ui.changeActDescription":{},"ui.changeActTitle":{},"ui.checkOutcome":{},"ui.checkUnresolvedOperation":{},"ui.chooseRole":{},"ui.claimedTotal":{},"ui.clearFilters":{},"ui.close":{},"ui.confirmSettlement":{},"ui.continueAuthorityRequest":{},"ui.copied":{"label":"string"},"ui.copy":{"label":"string"},"ui.copyFallback":{"label":"string"},"ui.correctionHint":{},"ui.countryName":{"code":"string","name":"string"},"ui.countryUnassigned":{"code":"string"},"ui.currentCase":{},"ui.dateEntryHint":{},"ui.directRoles":{},"ui.discardAndChange":{},"ui.discardAndLeave":{},"ui.discardUnknownDescription":{},"ui.displayLocale":{},"ui.dormant":{},"ui.effective":{},"ui.effectiveAccess":{},"ui.emptyInput":{},"ui.exactCaseReference":{"label":"string"},"ui.exactOperationId":{},"ui.exactReference":{"label":"string","reference":"string"},"ui.exactUtc":{},"ui.explainFields":{},"ui.filters":{},"ui.findCase":{},"ui.generalOperationLookup":{},"ui.grantCount":{},"ui.grantsEnd":{},"ui.grantsPartial":{},"ui.historyChanges":{},"ui.historyComparisonUnavailable":{},"ui.historyContext":{"operationId":"string"},"ui.historyDetail":{},"ui.historyForActor":{},"ui.historyHint":{},"ui.historyNoChanges":{},"ui.historySummary":{"act":"string","revision":"string","timestamp":"string"},"ui.incompleteResponse":{},"ui.inheritedRoles":{},"ui.keepChecking":{},"ui.keepEditing":{},"ui.knownGrantCount":{"count":"string"},"ui.language":{},"ui.leaveDraftDescription":{},"ui.loading":{},"ui.loadingCases":{},"ui.loadingCurrentCase":{},"ui.loadingHistory":{},"ui.loadingSession":{},"ui.loginInstructions":{},"ui.lookingUp":{},"ui.menu":{},"ui.moreActors":{},"ui.moreCaseActions":{},"ui.moreCases":{},"ui.moreGrants":{},"ui.moreHistory":{},"ui.nextMonth":{},"ui.no":{},"ui.noAccessibleActors":{},"ui.noAccessibleCases":{},"ui.noAccessibleHistory":{},"ui.noCasesForSavedView":{"view":"string"},"ui.noCasesForView":{},"ui.noViews":{},"ui.notRecorded":{},"ui.observeOperation":{},"ui.observedContext":{"operationId":"string"},"ui.observedReceipt":{"act":"string","actor":"string","operationId":"string"},"ui.openExactCase":{"reference":"string"},"ui.operationAccepted":{"operationId":"string"},"ui.operationLookup":{},"ui.operationUnresolved":{},"ui.operations":{},"ui.pageEnd":{},"ui.pageNotFound":{},"ui.pageNotFoundDescription":{},"ui.pagePartial":{},"ui.payableTotal":{},"ui.preferencesChanged":{},"ui.preferencesHint":{},"ui.preferencesNotSaved":{},"ui.preparingRecovery":{},"ui.previewing":{},"ui.previousMonth":{},"ui.primary":{},"ui.principal":{},"ui.productVersion":{"version":"string"},"ui.pseudo":{},"ui.recordedBy":{},"ui.recovery":{},"ui.recoveryCleanupUnavailable":{},"ui.recoveryDescription":{},"ui.recoveryEmpty":{},"ui.recoveryListingUnavailable":{},"ui.recoveryUnavailable":{},"ui.reference":{"label":"string","reference":"string"},"ui.registerLabel":{},"ui.reloadActors":{},"ui.reloadCases":{},"ui.reloadContract":{},"ui.reloadGrants":{},"ui.reloadHistory":{},"ui.retryExact":{},"ui.retryExactDescription":{},"ui.returnToCase":{},"ui.returnToEdit":{},"ui.reviewDescription":{},"ui.revision":{"revision":"string"},"ui.roleNotAvailableAtScope":{},"ui.roleNotAvailableForService":{},"ui.savedRecoveryAttempt":{},"ui.savedViews":{},"ui.search":{},"ui.settings":{},"ui.signIn":{},"ui.signOut":{},"ui.snapshotWithheld":{},"ui.startAnotherOperation":{},"ui.submitExact":{},"ui.submitting":{},"ui.summaryCounts":{"count":"string"},"ui.summaryDetails":{},"ui.targetActor":{},"ui.technicalDetails":{},"ui.theme":{},"ui.themeDark":{},"ui.themeLight":{},"ui.themeSystem":{},"ui.tryAgain":{},"ui.unchangedUntilSubmit":{},"ui.viewAll":{},"ui.viewDecidedUnpaid":{},"ui.viewMine":{},"ui.viewOpenUndecided":{},"ui.wasProgress":{"progress":"string"},"ui.webIdentity":{"digest":"string"},"ui.worklistSearch":{},"ui.yes":{},"ui.you":{}} as const;
+export const messageShapes = {"ui.about":{},"ui.accepted":{},"ui.acceptedContext":{"operationId":"string"},"ui.acceptedHistory":{},"ui.acceptedOperation":{},"ui.acceptedSummary":{},"ui.accountDetails":{},"ui.actDescription":{"label":"string","meaning":"string"},"ui.actor":{},"ui.actorGrants":{},"ui.actorRequestRetained":{},"ui.actors":{},"ui.after":{"value":"string"},"ui.age":{},"ui.amountEntryHint":{"maximumFractionDigits":"string"},"ui.anyFilter":{},"ui.authorityAction":{},"ui.authorityReceipt":{"act":"string","actor":"string"},"ui.backToActors":{},"ui.backToCase":{},"ui.backToCases":{},"ui.before":{"value":"string"},"ui.calendar":{},"ui.canonicalCopyHint":{},"ui.caseDetail":{},"ui.caseRecorded":{"act":"string","revision":"string"},"ui.caseState":{},"ui.cases":{},"ui.changeActDescription":{},"ui.changeActTitle":{},"ui.changeFact":{"field":"string"},"ui.checkOutcome":{},"ui.checkUnresolvedOperation":{},"ui.chooseRole":{},"ui.claimedTotal":{},"ui.clearFilters":{},"ui.close":{},"ui.confirmSettlement":{},"ui.continueAuthorityRequest":{},"ui.copied":{"label":"string"},"ui.copy":{"label":"string"},"ui.copyFallback":{"label":"string"},"ui.correctionHint":{},"ui.countryName":{"code":"string","name":"string"},"ui.countryUnassigned":{"code":"string"},"ui.currentCase":{},"ui.dateEntryHint":{},"ui.directRoles":{},"ui.discardAndChange":{},"ui.discardAndLeave":{},"ui.discardUnknownDescription":{},"ui.displayLocale":{},"ui.dormant":{},"ui.effective":{},"ui.effectiveAccess":{},"ui.emptyInput":{},"ui.exactCaseReference":{"label":"string"},"ui.exactOperationId":{},"ui.exactRecordedValue":{},"ui.exactReference":{"label":"string","reference":"string"},"ui.exactUtc":{},"ui.explainFields":{},"ui.filters":{},"ui.findCase":{},"ui.generalOperationLookup":{},"ui.grantCount":{},"ui.grantsEnd":{},"ui.grantsPartial":{},"ui.historyChanges":{},"ui.historyComparisonUnavailable":{},"ui.historyContext":{"operationId":"string"},"ui.historyDetail":{},"ui.historyForActor":{},"ui.historyHint":{},"ui.historyNoChanges":{},"ui.historySummary":{"act":"string","revision":"string","timestamp":"string"},"ui.incompleteResponse":{},"ui.inheritedRoles":{},"ui.keepChecking":{},"ui.keepEditing":{},"ui.knownGrantCount":{"count":"string"},"ui.language":{},"ui.leaveDraftDescription":{},"ui.leaveUnchanged":{},"ui.loading":{},"ui.loadingCases":{},"ui.loadingCurrentCase":{},"ui.loadingHistory":{},"ui.loadingSession":{},"ui.loginInstructions":{},"ui.lookingUp":{},"ui.menu":{},"ui.mine":{},"ui.moreActors":{},"ui.moreCaseActions":{},"ui.moreCases":{},"ui.moreGrants":{},"ui.moreHistory":{},"ui.nextAccounts":{},"ui.nextMonth":{},"ui.no":{},"ui.noAccessibleActors":{},"ui.noAccessibleCases":{},"ui.noAccessibleHistory":{},"ui.noCasesForSavedView":{"view":"string"},"ui.noCasesForView":{},"ui.noEligibleAccounts":{},"ui.noViews":{},"ui.notRecorded":{},"ui.observeOperation":{},"ui.observedContext":{"operationId":"string"},"ui.observedReceipt":{"act":"string","actor":"string","operationId":"string"},"ui.openExactCase":{"reference":"string"},"ui.operationAccepted":{"operationId":"string"},"ui.operationLookup":{},"ui.operationUnresolved":{},"ui.operations":{},"ui.pageEnd":{},"ui.pageNotFound":{},"ui.pageNotFoundDescription":{},"ui.pagePartial":{},"ui.pairedFacts":{"first":"string","second":"string"},"ui.payableTotal":{},"ui.preferencesChanged":{},"ui.preferencesHint":{},"ui.preferencesNotSaved":{},"ui.preparingRecovery":{},"ui.previewing":{},"ui.previousAccounts":{},"ui.previousMonth":{},"ui.primary":{},"ui.principal":{},"ui.productVersion":{"version":"string"},"ui.pseudo":{},"ui.recordedBy":{},"ui.recovery":{},"ui.recoveryCleanupUnavailable":{},"ui.recoveryDescription":{},"ui.recoveryEmpty":{},"ui.recoveryListingUnavailable":{},"ui.recoveryUnavailable":{},"ui.reference":{"label":"string","reference":"string"},"ui.refreshAccounts":{},"ui.registerLabel":{},"ui.reloadActors":{},"ui.reloadCases":{},"ui.reloadContract":{},"ui.reloadCurrentCase":{},"ui.reloadGrants":{},"ui.reloadHistory":{},"ui.retryExact":{},"ui.retryExactDescription":{},"ui.returnToCase":{},"ui.returnToEdit":{},"ui.reviewDescription":{},"ui.revision":{"revision":"string"},"ui.roleNotAvailableAtScope":{},"ui.roleNotAvailableForService":{},"ui.savedRecoveryAttempt":{},"ui.savedViews":{},"ui.search":{},"ui.selectedAccount":{},"ui.settings":{},"ui.signIn":{},"ui.signOut":{},"ui.snapshotWithheld":{},"ui.startAnotherOperation":{},"ui.submitExact":{},"ui.submitting":{},"ui.summaryCounts":{"count":"string"},"ui.summaryDateBasis":{"date":"string","zone":"string"},"ui.summaryDetails":{},"ui.targetActor":{},"ui.technicalDetails":{},"ui.theme":{},"ui.themeDark":{},"ui.themeLight":{},"ui.themeSystem":{},"ui.tryAgain":{},"ui.unchangedUntilSubmit":{},"ui.viewAll":{},"ui.viewDecidedUnpaid":{},"ui.viewMine":{},"ui.viewOpenUndecided":{},"ui.wasProgress":{"progress":"string"},"ui.webIdentity":{"digest":"string"},"ui.workDateBasis":{"date":"string","zone":"string"},"ui.worklistSearch":{},"ui.yes":{},"ui.you":{}} as const;

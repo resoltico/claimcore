@@ -64,6 +64,7 @@
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
+    <Compile Include="Domain/CaseWorkAndUpdateTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
     <Compile Include="Contract/TextFormatTests.fs" />
@@ -89,6 +90,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/OperationRecoveryContract.fs" Link="Application/OperationRecoveryContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/CaseWorkContract.fs" Link="Application/CaseWorkContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/CaseSelectorContract.fs" Link="Application/CaseSelectorContract.fs" />

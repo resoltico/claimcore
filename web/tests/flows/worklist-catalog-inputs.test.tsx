@@ -15,6 +15,7 @@ it("renders finite worklist sets as independent catalogue-labelled checkboxes", 
       disabled={false}
       fieldErrors={{}}
       onChange={change}
+      onFieldsChange={vi.fn()}
     />,
   );
   const active = screen.getByRole("checkbox", { name: "Active" });

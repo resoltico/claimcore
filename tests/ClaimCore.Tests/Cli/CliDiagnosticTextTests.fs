@@ -176,10 +176,12 @@ let accumulated =
             [
                 {
                     Target = InputTarget.Field BusinessField.ClaimantName
+                    RelatedDate = None
                     Violation = Violation.TextRequired
                 }
                 {
                     Target = InputTarget.Field BusinessField.InsurerName
+                    RelatedDate = None
                     Violation = Violation.TextRequired
                 }
             ]

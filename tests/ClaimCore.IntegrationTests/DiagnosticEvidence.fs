@@ -51,14 +51,26 @@ let internal scalarEvidence () =
 let internal stateScenarios () =
     [
         [], (AuthoredCaseAct.Open registration)
+        [],
+        AuthoredCaseAct.UpdateWork
+            {
+                Responsible = WorkValue.Clear
+                FollowUp = WorkValue.Clear
+            }
+        [],
+        AuthoredCaseAct.UpdateWork
+            {
+                Responsible = WorkValue.Set "80000000-0000-4000-8000-000000000999"
+                FollowUp = WorkValue.Keep
+            }
         [], (AuthoredCaseAct.Bare BareAct.Reopen)
         [ closed ], (AuthoredCaseAct.Bare BareAct.Close)
         [ closed ], decided
-        [ decided ], (AuthoredCaseAct.AmendRegistration registration)
+        [ decided ], (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
         [ decided ],
         correction
             { keep with
-                Registration = Amendment.Replace registration
+                Registration = Amendment.Update(Inputs.registrationUpdate registration)
             }
         [], correction { keep with Decision = Change.Clear }
         [], payment
@@ -81,7 +93,7 @@ let internal stateScenarios () =
         [ decided; payment ],
         correction
             { keep with
-                Decision = Change.Replace decision
+                Decision = Change.Update(Inputs.decisionUpdate decision)
             }
     ]
 
@@ -193,7 +205,25 @@ let internal authorityEvidence actor =
                 }
                 true
 
-        return [ refused registered; refused unknown; refused last; refused human ]
+        let! scope =
+            grant
+                actor
+                (id 39)
+                owner
+                {
+                    Role = Role.Owner
+                    Scope = GrantTarget.CaseId(CaseFixtures.caseId (id 10))
+                }
+                true
+
+        return
+            [
+                refused registered
+                refused unknown
+                refused last
+                refused human
+                refused scope
+            ]
     }
 
 let internal identityEvidence actor =

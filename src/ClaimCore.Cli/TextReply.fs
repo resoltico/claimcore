@@ -26,6 +26,7 @@ module internal TextReply =
     let private presenters =
         [
             read Api.caseGet TextCaseReply.caseLines
+            read Api.caseAssignees TextCaseReply.assigneePage
             read Api.caseList TextCaseReply.casePage
             read Api.caseHistory TextCaseReply.historyLines
             presenter Api.operationObserve (fun language _ reply ->

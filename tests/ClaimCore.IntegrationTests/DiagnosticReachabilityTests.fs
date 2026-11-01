@@ -41,7 +41,20 @@ let private completeVocabulary () =
                 @ (DiagnosticCodecs.violationDefinitions |> List.map _.Id)
             ))
             baselineCodes
-            "The codec preserves captured refusal semantics and includes principal and role admission."
+            (sprintf
+                "Public diagnostic inventory differs: unrecorded=%A obsolete=%A"
+                (Set.difference
+                    (Set.ofList (
+                        DiagnosticCodecs.codes
+                        @ (DiagnosticCodecs.violationDefinitions |> List.map _.Id)
+                    ))
+                    baselineCodes)
+                (Set.difference
+                    baselineCodes
+                    (Set.ofList (
+                        DiagnosticCodecs.codes
+                        @ (DiagnosticCodecs.violationDefinitions |> List.map _.Id)
+                    ))))
 
         let produced = Set.ofList evidence
 

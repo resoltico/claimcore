@@ -356,6 +356,7 @@ let expected (filter: CaseListFilter<string>) =
 
     let ordered =
         match filter.Order with
+        | CaseListOrder.FollowUp // These foundation witnesses have no scheduled follow-up.
         | CaseListOrder.Reference ->
             cases
             |> List.sortWith (fun a b ->

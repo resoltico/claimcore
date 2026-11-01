@@ -54,7 +54,7 @@ let actor principal actorId roles cases : AuthorityView =
                 }
         Installation = roles
         Cases = Map.ofList cases
-        HasAssignedCases = not cases.IsEmpty
+        HasScopedCases = not cases.IsEmpty
     }
 
 let worker =
@@ -90,6 +90,7 @@ let locked authority current existing : LockedFacts<CaseFacts> =
         IsFenced = false
         Read =
             {
+                Assignee = None
                 ObservedAt = instant
                 Actor = authority
                 ExistingOperation = existing

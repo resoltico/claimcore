@@ -163,6 +163,8 @@ let internal generatedString response (source: Seeds) context =
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
         scalarText
+    elif response && context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
+        scalarText
     elif response then
         responseString field
     else

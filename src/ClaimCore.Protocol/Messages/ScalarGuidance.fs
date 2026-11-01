@@ -29,6 +29,8 @@ module ScalarGuidance =
 
     let forField field =
         match (BusinessField.describe field).Kind with
+        | FieldValueKind.ActorId -> Some(message "scalar.actorId.guidance" [])
+        | FieldValueKind.PlannedDate -> Some(message "scalar.plannedDate.guidance" [])
         | FieldValueKind.CalendarDate -> Some(message "scalar.calendarDate.guidance" [])
         | FieldValueKind.Amount ->
             Some(

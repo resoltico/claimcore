@@ -8,6 +8,7 @@ type internal CaseFacts =
     {
         ObservedAt: DateTimeOffset
         Actor: AuthorityView
+        Assignee: AuthorityView option
         ExistingOperation: StoredEntry option
         Case: StoredCase option
     }
@@ -97,7 +98,8 @@ module internal ExecutionFacts =
 
             return
                 {
-                    CaseFacts.ObservedAt = tx.ObservedAt
+                    CaseFacts.Assignee = None
+                    ObservedAt = tx.ObservedAt
                     Actor = actor
                     ExistingOperation = existing
                     Case = record

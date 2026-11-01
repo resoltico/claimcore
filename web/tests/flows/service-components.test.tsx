@@ -83,7 +83,7 @@ it("renders absent and suspicious accepted values without changing the recorded 
       context="synthetic current case"
     />,
   );
-  expect(screen.getAllByText("Not recorded")).toHaveLength(2);
+  expect(screen.getAllByText("Not recorded")).toHaveLength(4);
   expect(screen.getByText("Contains U+202E")).toBeVisible();
 });
 

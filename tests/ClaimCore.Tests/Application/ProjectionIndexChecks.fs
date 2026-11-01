@@ -72,6 +72,11 @@ let checks installation instant =
             { index with
                 SearchText = Some "tampered"
             })
+        VerificationFinding.CaseWorkProjection,
+        check (fun index ->
+            { index with
+                FollowUp = Some(Inputs.date "2027-12-31")
+            })
         VerificationFinding.CaseNotifiedOnProjection,
         check (fun index ->
             { index with

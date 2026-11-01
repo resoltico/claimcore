@@ -5,13 +5,43 @@ import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { productMetadata } from "../../protocol/productMetadata";
+import type { FieldCatalogEntry } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { OperationReview as Review, CaseReview } from "../../protocol/types";
 import { renderCatalogKey } from "../../presentation/messages";
+import { caseFieldValue } from "../../protocol/caseFields";
 type ReviewModel = Pick<
   OperationModel,
   "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
 >;
+const ExactReviewValue = ({
+  value,
+  field,
+  currency,
+}: {
+  value: string | null;
+  field: FieldCatalogEntry;
+  currency?: string;
+}) => {
+  const p = usePresentation();
+  return value !== null &&
+    ["AMOUNT", "CURRENCY", "CALENDAR_DATE", "PLANNED_DATE"].includes(field.scalar.kind) ? (
+    <small className="exact-recorded-value">
+      {p.text("ui.exactRecordedValue")}:{" "}
+      <bdi dir="ltr">
+        {value}
+        {currency === undefined ? "" : ` ${currency}`}
+      </bdi>
+    </small>
+  ) : null;
+};
+const reviewCurrency = (
+  field: (typeof productMetadata.catalog.fields)[number],
+  snapshot: CaseReview["before"],
+) =>
+  field.pairs === null || snapshot === null || snapshot.state.kind === "ERASED"
+    ? undefined
+    : (caseFieldValue(snapshot.state.fields, field.pairs) ?? undefined);
 const ReviewValues = ({ review }: { review: CaseReview }) => {
   const p = usePresentation();
   return (
@@ -23,26 +53,45 @@ const ReviewValues = ({ review }: { review: CaseReview }) => {
       )}
       <p>{p.text("ui.after", { value: p.text(lifecycleMessageIds[review.after.state.kind]) })}</p>
       <dl className="review-values">
-        {review.changes.map((change) => (
-          <div key={change.field}>
-            <dt>{p.fieldLabel(change.field)}</dt>
-            <dd>
-              <BusinessValue
-                value={change.before}
-                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
-                context="ui.before"
-              />
-              <span className="review-arrow" aria-hidden="true">
-                {" → "}
-              </span>
-              <BusinessValue
-                value={change.after}
-                field={productMetadata.catalog.fields.find((field) => field.name === change.field)!}
-                context="ui.after"
-              />
-            </dd>
-          </div>
-        ))}
+        {review.changes.map((change) => {
+          const field = productMetadata.catalog.fields.find(
+            (candidate) => candidate.name === change.field,
+          )!;
+          const beforeCurrency = reviewCurrency(field, review.before);
+          const afterCurrency = reviewCurrency(field, review.after);
+          return (
+            <div key={change.field}>
+              <dt>{p.fieldLabel(change.field)}</dt>
+              <dd>
+                <BusinessValue
+                  value={change.before}
+                  field={field}
+                  context="ui.before"
+                  {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
+                />
+                <ExactReviewValue
+                  value={change.before}
+                  field={field}
+                  {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
+                />
+                <span className="review-arrow" aria-hidden="true">
+                  {" → "}
+                </span>
+                <BusinessValue
+                  value={change.after}
+                  field={field}
+                  context="ui.after"
+                  {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
+                />
+                <ExactReviewValue
+                  value={change.after}
+                  field={field}
+                  {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
+                />
+              </dd>
+            </div>
+          );
+        })}
       </dl>
     </>
   );

@@ -5,6 +5,7 @@ import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
+import { CaseWork } from "./case/CaseWork";
 import { CaseFacts } from "./case/CaseFacts";
 import { CaseActions } from "./case/CaseActions";
 import { CaseProgress } from "./case/CaseProgress";
@@ -55,6 +56,16 @@ const CurrentPresentation = ({
       <CharacterWarning value={current.state.fields.registration.claimantName} />
     </p>
     <CaseProgress current={current} definition={definition} />
+    <CaseWork
+      value={current.work}
+      {...(current.advice.acts.includes("UPDATE_WORK")
+        ? {
+            onUpdate: () => {
+              onAct(current, "UPDATE_WORK");
+            },
+          }
+        : {})}
+    />
     <div className="case-workspace">
       <CaseFacts
         values={current.state.fields}
@@ -101,9 +112,7 @@ const CaseHeader = ({
               }
             />
             <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
-            {state.assignedToYou ? (
-              <span className="assigned-marker">{p.text("ui.assignedToYou")}</span>
-            ) : null}
+            {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
           </div>
         )}
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>

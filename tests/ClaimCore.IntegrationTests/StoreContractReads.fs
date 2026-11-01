@@ -83,7 +83,8 @@ let internal casePage fixture principal visibility after limit =
                         return!
                             tx.CasePage(
                                 {
-                                    CasePageQuery.Visibility = visibility
+                                    CasePageQuery.DateBasis = Inputs.workBasis
+                                    Visibility = visibility
                                     ActorId = actor.Actor.Value.ActorId
                                     ReadRoles = Authority.readRoles principal
                                     ForbiddenRoles = Authority.invalidRoles principal

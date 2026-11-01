@@ -69,18 +69,6 @@ module internal ProjectionRebuild =
                         (AuthorityProjection.SetEnabled(id, actor.Enabled))
                         token
 
-                for grant in actor.Grants do
-                    let caseId =
-                        match grant.Scope with
-                        | Scope.Installation -> None
-                        | Scope.Case id -> Some id
-
-                    do!
-                        Persistence.authority
-                            connection
-                            (AuthorityProjection.AddGrant(id, grant.Role, caseId))
-                            token
-
             for KeyValue((actor, operation), instant) in state.Fences do
                 let! _ =
                     DatabaseSession.execute
@@ -94,6 +82,23 @@ module internal ProjectionRebuild =
                         token
 
                 ()
+        }
+
+    let private replaceGrants connection (state: LedgerVerification.Scan) token =
+        task {
+            for KeyValue(id, actor) in state.Actors do
+                for grant in actor.Grants do
+                    let caseId =
+                        match grant.Scope with
+                        | Scope.Installation -> None
+                        | Scope.Case id -> Some id
+
+                    do!
+                        Persistence.authority
+                            connection
+                            (AuthorityProjection.AddGrant(id, grant.Role, caseId))
+                            token
+
         }
 
     let rebuild (source: NpgsqlDataSource) expected (token: CancellationToken) =
@@ -116,7 +121,7 @@ module internal ProjectionRebuild =
                     | Ok state ->
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
-                        for table in [ "grants"; "actors"; "cases"; "operation_fences" ] do
+                        for table in [ "grants"; "cases"; "actors"; "operation_fences" ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection
@@ -126,8 +131,9 @@ module internal ProjectionRebuild =
 
                             ()
 
-                        do! replaceCases connection state token
                         do! replaceAuthority connection state token
+                        do! replaceCases connection state token
+                        do! replaceGrants connection state token
 
                         let! validated =
                             Verification.projections connection installation state token

@@ -74,7 +74,7 @@ let act revision =
             Inputs.registration
 
     match (revision - 1L) % 8L with
-    | 0L -> AuthoredCaseAct.AmendRegistration amended
+    | 0L -> AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate amended)
     | 1L ->
         AuthoredCaseAct.Decide(
             Inputs.decisionFrom
@@ -92,9 +92,9 @@ let act revision =
     | 4L ->
         AuthoredCaseAct.Correct
             {
-                Registration = Amendment.Replace amended
+                Registration = Amendment.Update(Inputs.registrationUpdate amended)
                 Decision = Change.Keep
-                Payment = Change.Keep
+                Payment = PaymentChange.Keep
             }
     | 5L -> AuthoredCaseAct.Bare BareAct.WithdrawDecision
     | 6L -> AuthoredCaseAct.Bare BareAct.Close

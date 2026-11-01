@@ -1,4 +1,5 @@
 import type { OperationReceipt, OperationReview } from "@contracts/client";
+import type { CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
 import type { FormValues, FormValue } from "../protocol/forms";
@@ -46,6 +47,7 @@ export type OperationPhase =
       receipt: OperationReceipt | null;
     };
 export type OperationEffect =
+  | { kind: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | {
       kind: "PREVIEW";
       identity: EffectIdentity;
@@ -71,16 +73,19 @@ export type OperationEffect =
       identity: EffectIdentity;
       notice: Notice;
     };
+export type OperationContext = Readonly<{
+  generation: number;
+  epoch: number;
+  credential: string;
+  target: string;
+}>;
 export type OperationState = {
   entry: CatalogEntryIdentity;
   target: string;
-  context: {
-    generation: number;
-    epoch: number;
-    credential: string;
-    target: string;
-  };
-  disclosureToken: string;
+  context: OperationContext;
+  disclosureContext: OperationContext;
+  caseObservation: CurrentCase | null;
+  disclosureRead: EffectIdentity | null;
   disclosureRefused: boolean;
   values: FormValues;
   baseline: FormValues;
@@ -92,6 +97,9 @@ export type OperationState = {
   pendingDiscard: string | null;
 };
 export type OperationAction =
+  | { type: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
+  | { type: "DISCLOSED"; identity: EffectIdentity; value: CurrentCase }
+  | { type: "DISCLOSURE_READ_FAILED"; identity: EffectIdentity; notice: Notice; refused: boolean }
   | { type: "HANDOFF"; identity: EffectIdentity }
   | {
       type: "RESET";
@@ -102,6 +110,12 @@ export type OperationAction =
       type: "EDIT";
       path: string;
       value: FormValue;
+      id: string;
+    }
+  | {
+      type: "EDIT_FIELDS";
+      values: FormValues;
+      omitted: ReadonlyArray<string>;
       id: string;
     }
   | {

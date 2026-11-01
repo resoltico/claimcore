@@ -25,6 +25,7 @@ let private authorityAndCursor () =
         (Queries.selectCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
+            Inputs.workBasis
             (ClaimCore.TestSupport.Inputs.caseListPage (page))
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
@@ -180,14 +181,18 @@ let private resources () =
     let expected = Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     Expect.equal
-        (Queries.caseResult (DecisionFixtures.services installation calendar owner) read)
+        (Queries.caseResult
+            (DecisionFixtures.services installation calendar owner)
+            read
+            (Inputs.workView current.Snapshot.State))
         expected
         "Inaccessible live case"
 
     Expect.equal
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
-            { read with Case = None })
+            { read with Case = None }
+            (Inputs.workView current.Snapshot.State))
         expected
         "Absent case is indistinguishable"
 
@@ -202,7 +207,8 @@ let private resources () =
     Expect.equal
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
-            { read with Case = Some erased })
+            { read with Case = Some erased }
+            (Inputs.workView erased.Snapshot.State))
         expected
         "Erased beyond view is indistinguishable"
 

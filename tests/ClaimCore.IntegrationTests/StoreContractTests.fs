@@ -18,6 +18,18 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "case work assignment is scoped and rechecked without granting visibility"
+                (withFixture factory CaseWorkContract.assignmentAndDisclosure)
+            testCaseAsync
+                "case work due filters summaries and keysets use the snapshot business date"
+                (withFixture factory CaseWorkContract.dueFiltersAndOrder)
+            testCaseAsync
+                "case work lifecycle and erasure remove every assignment relationship"
+                (withFixture factory CaseWorkContract.lifecycleAndErasure)
+            testCaseAsync
+                "targeted partial updates preserve facts and require authorized payment reaffirmation"
+                (withFixture factory CaseWorkContract.partialUpdatesAndReaffirmation)
+            testCaseAsync
                 "ID-scoped grants retain their case identity through review replay revocation and erasure"
                 (withFixture factory CaseSelectorContract.grantScopes)
             testCase
@@ -33,7 +45,7 @@ let internal tests factory =
                 "triage notification order pages null dates last and binds assignment"
                 (withFixture factory WorklistTriageContract.oldestPaging)
             testCaseAsync
-                "triage assignment excludes forbidden roles for installation and scoped visibility"
+                "triage visibility excludes forbidden roles independently of responsibility"
                 (withFixture factory WorklistTriageContract.assignmentExcludesForbiddenRoles)
             testCaseAsync
                 "authority history preserves typed facts and filtered newest-first pages"

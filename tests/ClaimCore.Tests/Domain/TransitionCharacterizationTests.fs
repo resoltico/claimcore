@@ -49,6 +49,7 @@ let snapshot status progress state : CaseSnapshot =
         State =
             state
                 {
+                    Work = CaseWork.empty
                     CaseReference = CaseFixtures.reference "DEMO-1"
                     Status = status
                     Registration = registration "Synthetic claimant" |> CaseFixtures.registration
@@ -73,15 +74,19 @@ let erased: CaseSnapshot =
 let correction =
     AuthoredCaseAct.Correct
         {
-            Registration = Amendment.Replace(registration "Corrected claimant")
+            Registration =
+                Amendment.Update(Inputs.registrationUpdate (registration "Corrected claimant"))
             Decision = Change.Keep
-            Payment = Change.Keep
+            Payment = PaymentChange.Keep
         }
 
 let acts =
     [
         "OPEN", AuthoredCaseAct.Open(registration "Synthetic claimant")
-        "AMEND_REGISTRATION", AuthoredCaseAct.AmendRegistration(registration "Amended claimant")
+        "AMEND_REGISTRATION",
+        AuthoredCaseAct.AmendRegistration(
+            Inputs.registrationUpdate (registration "Amended claimant")
+        )
         "CORRECT", correction
         "DECIDE", AuthoredCaseAct.Decide(decision "60")
         "WITHDRAW_DECISION", (AuthoredCaseAct.Bare BareAct.WithdrawDecision)

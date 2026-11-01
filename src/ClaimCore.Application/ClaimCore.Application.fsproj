@@ -16,6 +16,7 @@
     <Compile Include="AuthorityExecution.fs" />
     <Compile Include="AuthorityReviews.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="CaseWorkReads.fs" />
     <Compile Include="QueryResults.fs" />
     <Compile Include="AuthorityQueries.fs" />
     <Compile Include="Queries.fs" />

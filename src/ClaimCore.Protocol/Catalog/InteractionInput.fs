@@ -16,6 +16,8 @@ type InteractionInput =
     | Progress
     | Order
     | Assignment
+    | Due
+    | WorkChoice of BusinessField
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InteractionInput =
@@ -32,8 +34,12 @@ module InteractionInput =
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
         | InteractionInput.Order -> "order"
+        | InteractionInput.Due -> "due"
+        | InteractionInput.WorkChoice field -> BusinessField.key field + "Action"
         | InteractionInput.Assignment -> "assignment"
 
+    // This total semantic-input to message-namespace table contains no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let messageKey input part =
         match input with
         | InteractionInput.Target(InputTarget.Field field) ->
@@ -41,6 +47,7 @@ module InteractionInput =
         | InteractionInput.Target(InputTarget.Group group) ->
             Vocabulary.messageKey RecordGroup.vocabulary group part
         | InteractionInput.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
+        | InteractionInput.WorkChoice _
         | InteractionInput.Scope
         | InteractionInput.ActorId
         | InteractionInput.CaseId
@@ -49,6 +56,7 @@ module InteractionInput =
         | InteractionInput.Status
         | InteractionInput.Progress
         | InteractionInput.Order
+        | InteractionInput.Due
         | InteractionInput.Assignment -> vocabularyName + "." + key input + "." + part
 
     let extras =
@@ -66,3 +74,7 @@ module InteractionInput =
              | InputTarget.Group _ -> None
              | _ -> Some(InteractionInput.Target target)))
         @ extras
+        @ [
+            InteractionInput.WorkChoice BusinessField.ResponsibleActor
+            InteractionInput.WorkChoice BusinessField.FollowUpDate
+        ]

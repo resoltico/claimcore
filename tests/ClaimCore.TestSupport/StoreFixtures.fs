@@ -91,7 +91,8 @@ let internal inspectOperation fixture principal operation token =
 
                         return
                             {
-                                CaseFacts.ObservedAt = tx.ObservedAt
+                                CaseFacts.Assignee = None
+                                ObservedAt = tx.ObservedAt
                                 Actor = actor
                                 ExistingOperation = entry
                                 Case = current

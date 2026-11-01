@@ -154,6 +154,28 @@ const UnavailableDisclosure = ({
   available?: boolean;
 }) => {
   const p = usePresentation();
+  let reload = null;
+  if (available && !model.contextChanged) {
+    if (model.canRevalidateCase) {
+      reload = (
+        <button type="button" disabled={model.revalidating} onClick={model.revalidateDisclosure}>
+          {p.text("ui.reloadCurrentCase")}
+        </button>
+      );
+    } else if (!model.disclosureRefused) {
+      reload = (
+        <button
+          type="button"
+          disabled={model.busy}
+          onClick={() => {
+            void model.preview();
+          }}
+        >
+          {p.text("label.reviewTitle")}
+        </button>
+      );
+    }
+  }
   return (
     <section role="alert">
       <NoticeView
@@ -166,11 +188,7 @@ const UnavailableDisclosure = ({
               }
         }
       />
-      {available && !model.disclosureRefused && !model.contextChanged ? (
-        <button type="button" disabled={model.busy} onClick={() => void model.preview()}>
-          {p.text("label.reviewTitle")}
-        </button>
-      ) : null}
+      {reload}
     </section>
   );
 };

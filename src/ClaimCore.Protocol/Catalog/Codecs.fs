@@ -122,6 +122,14 @@ module CatalogCodecs =
                     calendarDate
 
                 variant
+                    "PLANNED_DATE"
+                    ScalarRule.PlannedDate
+                    (function
+                    | ScalarRule.PlannedDate value -> Some value
+                    | _ -> None)
+                    calendarDate
+
+                variant
                     "AMOUNT"
                     ScalarRule.Amount
                     (function
@@ -148,7 +156,7 @@ module CatalogCodecs =
             ]
 
     let private businessField =
-        (record (fun v0 v1 v2 v3 v4 v5 ->
+        (record (fun v0 v1 v2 v3 v4 v5 section pairs ->
             {
                 FieldPresentationDefinition.Name = v0
                 LabelId = v1
@@ -156,6 +164,8 @@ module CatalogCodecs =
                 Scalar = v3
                 AllowsAbsence = v4
                 Group = v5
+                Section = section
+                Pairs = pairs
             })
         : Fields<FieldPresentationDefinition, _>)
         |> field "name" _.Name (fieldName)
@@ -164,6 +174,8 @@ module CatalogCodecs =
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
         |> field "group" _.Group (nullable (VocabularyCodec.create RecordGroup.vocabulary))
+        |> field "section" _.Section (nullable (VocabularyCodec.create CaseSection.vocabulary))
+        |> field "pairs" _.Pairs (nullable fieldName)
         |> build
         |> named "Presentation.FieldPresentationDefinition"
 
@@ -310,6 +322,7 @@ module CatalogCodecs =
                 order
                 prefill
                 required
+                wireRequired
                 defaultValue
                 targets
                 source ->
@@ -325,6 +338,7 @@ module CatalogCodecs =
                     Order = order
                     Prefill = prefill
                     Required = required
+                    WireRequired = wireRequired
                     Default = defaultValue
                     DiagnosticTargets = targets
                     Source = source
@@ -343,6 +357,7 @@ module CatalogCodecs =
         |> field "order" _.Order count
         |> field "prefill" _.Prefill (nullable (many text))
         |> field "required" _.Required boolean
+        |> field "wireRequired" _.WireRequired boolean
         |> field "default" _.Default (nullable bindingValue)
         |> field "diagnosticTargets" _.DiagnosticTargets (many text)
         |> field "source" _.Source inputSource
@@ -362,28 +377,52 @@ module CatalogCodecs =
             LabelId: string
             MeaningId: string
             ConfirmationId: string option
+            Family: ActFamily option
+            AffectedSections: CaseSection list
+            Effect: InteractionEffect
             Inputs: CatalogInput list
             Constants: BindingAssignment list
         }
 
     let entry =
-        record (fun endpoint subject kind label meaning confirmation inputs constants ->
-            {
-                EntryWire.Endpoint = endpoint
-                Subject = subject
-                Kind = kind
-                LabelId = label
-                MeaningId = meaning
-                ConfirmationId = confirmation
-                Inputs = inputs
-                Constants = constants
-            })
+        record
+            (fun
+                endpoint
+                subject
+                kind
+                label
+                meaning
+                confirmation
+                family
+                sections
+                effect
+                inputs
+                constants ->
+                {
+                    EntryWire.Endpoint = endpoint
+                    Subject = subject
+                    Kind = kind
+                    LabelId = label
+                    MeaningId = meaning
+                    ConfirmationId = confirmation
+                    Family = family
+                    AffectedSections = sections
+                    Effect = effect
+                    Inputs = inputs
+                    Constants = constants
+                })
         |> field "endpoint" _.Endpoint text
         |> field "subject" _.Subject (VocabularyCodec.create CatalogSubject.vocabulary)
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text
         |> field "confirmationId" _.ConfirmationId (nullable text)
+        |> field "family" _.Family (nullable (VocabularyCodec.create ActFamily.vocabulary))
+        |> field
+            "affectedSections"
+            _.AffectedSections
+            (many (VocabularyCodec.create CaseSection.vocabulary))
+        |> field "effect" _.Effect (VocabularyCodec.create InteractionEffect.vocabulary)
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
@@ -405,6 +444,8 @@ module CatalogCodecs =
                 | Some operation when
                     ActorEndpoint.token operation.Endpoint = wire.Endpoint
                     && operation.Subject = wire.Subject
+                    && (wire.Family, wire.AffectedSections, wire.Effect) =
+                        CatalogOperation.interaction operation
                     ->
                     Ok
                         {
@@ -412,6 +453,9 @@ module CatalogCodecs =
                             LabelId = wire.LabelId
                             MeaningId = wire.MeaningId
                             ConfirmationId = wire.ConfirmationId
+                            Family = wire.Family
+                            AffectedSections = wire.AffectedSections
+                            Effect = wire.Effect
                             Inputs = wire.Inputs
                             Constants = wire.Constants
                         }
@@ -429,6 +473,9 @@ module CatalogCodecs =
                     LabelId = value.LabelId
                     MeaningId = value.MeaningId
                     ConfirmationId = value.ConfirmationId
+                    Family = value.Family
+                    AffectedSections = value.AffectedSections
+                    Effect = value.Effect
                     Inputs = value.Inputs
                     Constants = value.Constants
                 })

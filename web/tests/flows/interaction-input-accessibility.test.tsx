@@ -29,6 +29,7 @@ it.each(["en", "lv", "ar"] as const)(
       current: null,
       disabled: false,
       onChange: vi.fn(),
+      onFieldsChange: vi.fn(),
     };
     const view = render(<CatalogInputs {...props} fieldErrors={{}} />);
     for (const field of ["issuer", "subject"] as const) {
@@ -66,6 +67,7 @@ it.each(["en", "lv", "ar"] as const)(
         disabled={false}
         fieldErrors={{}}
         onChange={vi.fn()}
+        onFieldsChange={vi.fn()}
       />,
     );
     for (const name of ["registration", "decision", "payment"] as const) {

@@ -101,7 +101,7 @@ export const displayField = (
   if (field.scalar.kind === "AMOUNT") {
     return exactAmount(value, locale);
   }
-  if (field.scalar.kind === "CALENDAR_DATE") {
+  if (field.scalar.kind === "CALENDAR_DATE" || field.scalar.kind === "PLANNED_DATE") {
     return calendarDate(value, locale);
   }
   return value;

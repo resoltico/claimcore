@@ -39,6 +39,7 @@
     <Compile Include="CliDisclosure.fs" />
     <Compile Include="CliDescriptions.fs" />
     <Compile Include="CliDiscovery.fs" />
+    <Compile Include="CliCaseWork.fs" />
     <Compile Include="PublishedTests.fs" />
     <Compile Include="MetricsTests.fs" />
     <Compile Include="BrowserReadback.fs" />

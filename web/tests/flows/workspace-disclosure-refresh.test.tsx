@@ -1,4 +1,4 @@
-import { actorContextInput } from "../support/inputs";
+import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
@@ -71,7 +71,12 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
 };
 const authorityReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
-    outcome({ outcome: { kind: "SUCCEEDED", data: { offers: [], items: [], nextCursor: null } } }),
+    outcome({
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { basis: workBasis, offers: [], items: [], nextCursor: null },
+      },
+    }),
   );
   const actor = {
     actorId: "00000000-0000-4000-8000-000000000001",

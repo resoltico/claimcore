@@ -1,5 +1,5 @@
 import { CaseFieldsView } from "../components/CaseFieldsView";
-import { normalizeAmountValues } from "../presentation/amountEntry";
+import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useCredential } from "../session/SessionContext";
@@ -16,7 +16,8 @@ const useCaseOperation = (props: OperationEditorProps) => {
     kind: props.initialAct,
     current: props.current,
     credential,
-    normalizeValues: (values, entry) => normalizeAmountValues(values, entry, p.displayLocale),
+    normalizeValues: normalizeAmountValues,
+    captureValue: (path, value, entry) => captureAmountEntry(path, value, entry, p.displayLocale),
     onLockChange: props.onMutationLockChange,
   });
   const navigation = useOperationNavigation(model, props.onClose);
@@ -77,7 +78,8 @@ export const OperationEditor = (props: OperationEditorProps) => {
       />
     );
   }
-  const offered = props.current?.advice.acts ?? [props.initialAct];
+  const current = model.currentCase;
+  const offered = current?.advice.acts ?? (props.current === null ? [props.initialAct] : []);
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
       <h1 id="operation-title">{p.actLabel(model.entry.kind)}</h1>
@@ -87,12 +89,12 @@ export const OperationEditor = (props: OperationEditorProps) => {
           <OperationDiscard model={model} onClose={navigation.close} />
           <OperationPanel
             model={model}
-            current={props.current}
+            current={current}
             offered={offered}
             onClose={navigation.close}
           />
         </div>
-        <CurrentFacts {...props} model={model} />
+        <CurrentFacts {...props} current={current} model={model} />
       </div>
     </section>
   );

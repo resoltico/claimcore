@@ -16,6 +16,7 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
+        Work = Inputs.unscheduledWork
         Status = CaseStatus.Opened
         ClaimantName = Inputs.name "Synthetic, \"quoted\"\r\nclaimant"
         InsurerName = Inputs.name "Synthetic insurer"
@@ -36,6 +37,7 @@ let private row reference =
 
 let private page items next =
     {
+        Basis = Inputs.workBasis
         Items = items
         Offers = []
         NextCursor = next

@@ -34,7 +34,10 @@ module OperationCatalog =
     let meaningId operation = message operation "meaning"
 
     let confirmationId (operation: CatalogOperation) =
-        operation.SelectedAct |> Option.map (fun _ -> message operation "confirmation")
+        match operation.SelectedAct, operation.Endpoint with
+        | Some _, _ -> Some(message operation "confirmation")
+        | None, ActorEndpoint.Query QueryEndpoint.Resolve -> Some(message operation "confirmation")
+        | _ -> None
 
     let private structure (operation: CatalogOperation) =
         let route = Api.forActor operation.Endpoint
@@ -82,9 +85,13 @@ module OperationCatalog =
         all
         |> List.map (fun operation ->
             let inputs, constants = derive operation
+            let family, sections, effect = CatalogOperation.interaction operation
 
             {
                 Kind = operation
+                Family = family
+                AffectedSections = sections
+                Effect = effect
                 LabelId = labelId operation
                 MeaningId = meaningId operation
                 ConfirmationId = confirmationId operation

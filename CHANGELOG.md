@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
+- CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
+- Case views disclose assigned account identity and availability. Mine is factual responsibility; hasScopedCases describes access grants. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering.
+- Work pages and summaries report their observed business date/zone; close and void retain work, while erasure removes it. Rebuild restores actors before referenced case work.
+- Partial reviews show selected facts and exact amounts/dates; chronology issues identify the asserted field and its retained counterpart. Amount entry keeps its original display-locale meaning.
+- Catalogs add act family, affected sections, effect and wire-required input metadata; clients rank tasks explicitly and never select erasure as a default.
+
 - Replace CLI operation resolve with operation status for passive checks or explicit operation settle for permanent nonacceptance; interactive settlement requires confirmation.
 - Actor-scoped operation.status is an installation-bound read for valid roleless actors too; unresolved reads create no fence and foreign actors’ operation UUIDs remain undisclosed.
 - Fence guards validate retained control-node identity/hash and projection timestamps; missing, fabricated or contradictory evidence fails integrity instead of creating a false final answer.
@@ -9,10 +16,10 @@
 - Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
 - New case-scoped OWNER grants refuse as meaningless; owners can still revoke recognized obsolete grants. Disabled and overlapping meaningful grants remain allowed.
 - CLI human text escapes terminal controls, embedded line breaks and directional formatting; literal backslashes double. JSON/NDJSON remain exact and CSV keeps its export rules.
-- Use a fresh database: retained creation identity, logged recovery controls and format 2 replace the earlier baseline. Old installations are refused; migrations and compatibility readers are excluded.
+- Use a fresh database: case-work projections and request/snapshot/ledger format 3 replace the earlier baseline; Authority/Control stay at 2. Old installations are refused; no migration/readers.
 - Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
-- Discard older cursors: case lists use format 4 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
+- Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
 - Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
 - Recovery checks preserve ownership across same-identity refreshes and actor/epoch changes; stale completions cannot release newer checks or clear another scope’s records.
 - Use CLI recovery list/check/settle with text or JSON output; retain exact retry frames and their installation binding until uncertainty is settled.

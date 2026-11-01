@@ -13,6 +13,7 @@ let tests =
         (fun () ->
             let value: CaseFields =
                 {
+                    Work = CaseWork.empty
                     CaseReference = Inputs.reference "PROGRESS-CORE"
                     Status = CaseStatus.Opened
                     Registration = Inputs.admittedRegistration Inputs.registration

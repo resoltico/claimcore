@@ -39,6 +39,8 @@ module ResponseCodecs =
             | FieldValueKind.PartyName -> nonempty
             | FieldValueKind.Amount -> amount
             | FieldValueKind.Currency -> currency
+            | FieldValueKind.ActorId
+            | FieldValueKind.PlannedDate
             | FieldValueKind.Reference
             | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains business values."
 
@@ -70,8 +72,28 @@ module ResponseCodecs =
     let private decision = group RecordGroup.Decision Decision.create Decision.values
     let private payment = group RecordGroup.Payment Payment.create Payment.values
 
+    let private caseWork =
+        (record (fun actor followUp ->
+            {
+                CaseWork.Responsible = actor
+                FollowUp = followUp
+            })
+        : Fields<CaseWork, _>)
+        |> field "responsibleActor" _.Responsible (nullable actorId)
+        |> field
+            "followUpDate"
+            _.FollowUp
+            (nullable (
+                date
+                |> map
+                    (CalendarDate.parse >> Result.defaultWith (fun _ -> invalidOp "Admitted date"))
+                    CalendarDate.format
+            ))
+        |> build
+        |> named "CaseWork"
+
     let caseFields =
-        (record (fun reference status registration decision payment suppliedProgress ->
+        (record (fun reference status registration decision payment work suppliedProgress ->
             PaymentProgress.fromGroups decision payment
             |> Result.bind (fun progress ->
                 if CaseProgress.ofPayment progress <> suppliedProgress then
@@ -79,7 +101,8 @@ module ResponseCodecs =
                 else
                     Ok
                         {
-                            CaseFields.CaseReference = reference
+                            CaseFields.Work = work
+                            CaseReference = reference
                             Status = status
                             Registration = registration
                             Progress = progress
@@ -93,6 +116,7 @@ module ResponseCodecs =
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
+        |> field "work" _.Work caseWork
         |> field
             "progress"
             (_.Progress >> CaseProgress.ofPayment)
@@ -145,9 +169,6 @@ module ResponseCodecs =
         |> build
         |> named "CaseSnapshot"
 
-    let private correctionAction =
-        VocabularyCodec.create CorrectionGroupAction.vocabulary
-
     let private historyDetail = VocabularyCodec.create HistoryDetail.vocabulary
 
     let private authorityKind =
@@ -182,8 +203,22 @@ module ResponseCodecs =
                 (VocabularyCodec.select
                     (fun value -> List.contains value Amendment.actions)
                     CorrectionGroupAction.vocabulary))
-        |> field "decision" _.Decision (list 3 correctionAction)
-        |> field "payment" _.Payment (list 3 correctionAction)
+        |> field
+            "decision"
+            _.Decision
+            (list
+                Change.actions.Length
+                (VocabularyCodec.select
+                    (fun value -> List.contains value Change.actions)
+                    CorrectionGroupAction.vocabulary))
+        |> field
+            "payment"
+            _.Payment
+            (list
+                PaymentChange.actions.Length
+                (VocabularyCodec.select
+                    (fun value -> List.contains value PaymentChange.actions)
+                    CorrectionGroupAction.vocabulary))
         |> build
         |> named "CorrectionAdvice"
 
@@ -204,7 +239,7 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun id reference revision view advice assigned ->
+        (record (fun id reference revision view advice assigned work ->
             {
                 Snapshot =
                     {
@@ -214,7 +249,8 @@ module ResponseCodecs =
                         State = view
                     }
                 Advice = advice
-                AssignedToYou = assigned
+                Mine = assigned
+                Work = work
             })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
@@ -222,7 +258,8 @@ module ResponseCodecs =
         |> field "revision" _.Snapshot.Revision positiveRevision
         |> field "state" _.Snapshot.State caseState
         |> field "advice" _.Advice caseAdvice
-        |> field "assignedToYou" _.AssignedToYou boolean
+        |> field "mine" _.Mine boolean
+        |> field "work" _.Work ReadRowCodecs.workView
         |> build
         |> named "CaseView"
 
@@ -257,7 +294,7 @@ module ResponseCodecs =
     let private contextActor =
         (record (fun identity assigned -> identity, assigned): Fields<ActorId * bool, _>)
         |> field "actorId" fst actorId
-        |> field "hasAssignedCases" snd boolean
+        |> field "hasScopedCases" snd boolean
 
     let actorContext =
         (record (fun installation runtime capabilities views offers (identity, assigned) ->
@@ -268,7 +305,7 @@ module ResponseCodecs =
                 Capability = capabilities
                 View = views
                 Offers = offers
-                HasAssignedCases = assigned
+                HasScopedCases = assigned
             })
         : Fields<ActorContext, _>)
         |> field "installationId" _.InstallationId uuid
@@ -279,7 +316,7 @@ module ResponseCodecs =
             (list 16 (VocabularyCodec.create Capability.vocabulary))
         |> field "views" _.View (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
-        |> flatten (fun context -> context.ActorId, context.HasAssignedCases) contextActor
+        |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> build
         |> named "ActorContext"
 
@@ -472,8 +509,9 @@ module ResponseCodecs =
     let caseSummary = ReadRowCodecs.caseSummary
 
     let casesPage =
-        (record (fun items next offers ->
+        (record (fun items next offers basis ->
             {
+                Basis = basis
                 Items = items
                 NextCursor = next
                 Offers = offers
@@ -485,5 +523,18 @@ module ResponseCodecs =
             _.NextCursor
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
+        |> field "basis" _.Basis ReadRowCodecs.dateBasis
         |> build
         |> named "CasesPage"
+
+    let assigneePage =
+        (record (fun items next ->
+            {
+                AssigneePage.Items = items
+                NextCursor = next
+            })
+        : Fields<AssigneePage, _>)
+        |> field "items" _.Items (list Paging.MaximumPageSize ReadRowCodecs.accountSubject)
+        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> build
+        |> named "AssigneePage"

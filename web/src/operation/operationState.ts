@@ -82,6 +82,34 @@ const edit = (state: OperationState, action: EditAction): OperationState => {
     fieldErrors: {},
   };
 };
+/** Fact selection and money-pair removal are one authoring transition. */
+const editFields = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "EDIT_FIELDS" }>,
+): OperationState => {
+  if (!canEdit(state)) {
+    return state;
+  }
+  const values = { ...state.values, ...action.values };
+  for (const path of action.omitted) {
+    delete values[path];
+  }
+  const changed =
+    action.omitted.some((path) => Object.hasOwn(state.values, path)) ||
+    Object.entries(action.values).some(([path, value]) => state.values[path] !== value);
+  if (!changed) {
+    return state;
+  }
+  const source = operationSource(state.operation);
+  return {
+    ...state,
+    generation: state.generation + 1,
+    operation: { kind: "EDITING", exposed: null },
+    values: { ...values, operationId: source === null ? state.values["operationId"]! : action.id },
+    notice: null,
+    fieldErrors: {},
+  };
+};
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
   const phase = state.operation;
   let operation: OperationPhase;
@@ -106,6 +134,7 @@ const invalidate = (state: OperationState, refused: boolean): OperationState => 
     ...state,
     operation,
     disclosureRefused: refused,
+    disclosureRead: null,
     effects: [],
   };
 };
@@ -155,7 +184,7 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     phase.kind === "REVIEWING" &&
     phase.confirmed &&
     !state.disclosureRefused &&
-    state.disclosureToken === identity.credential;
+    state.disclosureContext === state.context;
   if (operationBusy(state) || (phase.kind !== "UNRESOLVED" && !reviewed)) {
     return state;
   }
@@ -259,7 +288,7 @@ const record = (
       },
       pendingDiscard: null,
       notice: null,
-      disclosureToken: action.identity.credential,
+      disclosureContext: state.context,
       disclosureRefused: false,
     },
     {
@@ -289,7 +318,7 @@ const reviewed = (
       review: action.review,
       confirmed: false,
     },
-    disclosureToken: action.identity.credential,
+    disclosureContext: state.context,
     disclosureRefused: false,
   };
 };
@@ -348,7 +377,8 @@ const reset = (
     ? state
     : {
         ...action.state,
-        disclosureToken: state.disclosureToken,
+        context: state.context,
+        disclosureContext: state.disclosureContext,
       };
 const checkingStatus = (state: OperationState, identity: EffectIdentity): OperationState =>
   state.operation.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
@@ -401,11 +431,48 @@ const stillUnresolved = (state: OperationState, identity: EffectIdentity): Opera
         notice: { kind: "local", reason: "unresolved" },
       }
     : state;
+const readCurrent = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "READ_CURRENT" }>,
+): OperationState =>
+  current(state, action.identity) && !operationBusy(state) && state.disclosureRead === null
+    ? append(
+        { ...state, disclosureRead: action.identity, notice: null },
+        {
+          kind: "READ_CURRENT",
+          identity: action.identity,
+          caseId: action.caseId,
+          reference: action.reference,
+        },
+      )
+    : state;
+const disclosed = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "DISCLOSED" | "DISCLOSURE_READ_FAILED" }>,
+): OperationState => {
+  if (!current(state, action.identity) || state.disclosureRead?.id !== action.identity.id) {
+    return state;
+  }
+  return action.type === "DISCLOSED"
+    ? {
+        ...state,
+        caseObservation: action.value,
+        disclosureRead: null,
+        disclosureContext: state.context,
+        disclosureRefused: false,
+        notice: null,
+      }
+    : { ...state, disclosureRead: null, notice: action.notice, disclosureRefused: action.refused };
+};
 type NavigationAction = Exclude<
   OperationAction,
   {
     type:
       | "EDIT"
+      | "EDIT_FIELDS"
+      | "READ_CURRENT"
+      | "DISCLOSED"
+      | "DISCLOSURE_READ_FAILED"
       | "PREVIEW"
       | "EXECUTE"
       | "REFUSE"
@@ -454,14 +521,29 @@ const handoff = (state: OperationState, identity: EffectIdentity): OperationStat
   completing(state, identity) && state.operation.kind === "PREPARING"
     ? { ...state, operation: { ...state.operation, kind: "SUBMITTING" } }
     : state;
+type DisclosureAction = Extract<
+  OperationAction,
+  { type: "READ_CURRENT" | "DISCLOSED" | "DISCLOSURE_READ_FAILED" }
+>;
+const isDisclosureAction = (action: OperationAction): action is DisclosureAction =>
+  action.type === "READ_CURRENT" ||
+  action.type === "DISCLOSED" ||
+  action.type === "DISCLOSURE_READ_FAILED";
+const disclosureTransition = (state: OperationState, action: DisclosureAction): OperationState =>
+  action.type === "READ_CURRENT" ? readCurrent(state, action) : disclosed(state, action);
 /** Effects are issued only by explicit events; completions are fenced by epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
   action: OperationAction,
 ): OperationState => {
+  if (isDisclosureAction(action)) {
+    return disclosureTransition(state, action);
+  }
   switch (action.type) {
     case "EDIT":
       return edit(state, action);
+    case "EDIT_FIELDS":
+      return editFields(state, action);
     case "PREVIEW":
       return preview(state, action);
     case "EXECUTE":

@@ -1,5 +1,5 @@
 import "./worklist/worklist.css";
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo } from "react";
 import type { ActorContext } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
@@ -14,7 +14,6 @@ import {
   parseWorklistQuery,
   worklistPath,
   listRequest,
-  viewQuery,
   type WorklistQuery,
 } from "../routing/worklistQuery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
@@ -23,19 +22,10 @@ import { savedViewLabel } from "./worklist/savedViewLabel";
 type Props = { onSelect: (caseReference: string) => void; onOpen: () => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
-const useWorklist = (context: ActorContext) => {
+const useWorklist = () => {
   const route = useRoute();
   const search = route.screen === "cases" ? route.query : "";
-  const defaultMine = search === "" && context.hasAssignedCases;
-  const query = useMemo(
-    () => (defaultMine ? viewQuery("mine") : parseWorklistQuery(search)),
-    [search, defaultMine],
-  );
-  useEffect(() => {
-    if (defaultMine) {
-      navigate(worklistPath(viewQuery("mine")), true);
-    }
-  }, [defaultMine]);
+  const query = useMemo(() => parseWorklistQuery(search), [search]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
   const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof casePage>>>(
     "case.list",
@@ -62,6 +52,7 @@ const WorklistColumns = () => {
         <th scope="col">{p.fieldLabel("claimedAmount")}</th>
         <th scope="col">{p.fieldLabel("payableAmount")}</th>
         <th scope="col">{p.text("ui.caseState")}</th>
+        <th scope="col">{p.term("section", "work")}</th>
         <th scope="col">{p.text("ui.age")}</th>
         <th scope="col">{p.text("label.changedAt")}</th>
       </tr>
@@ -207,7 +198,7 @@ const WorklistResults = ({
 };
 const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorContext }) => {
   const p = usePresentation();
-  const page = useWorklist(context);
+  const page = useWorklist();
   return (
     <section aria-labelledby="case-list-title" className="worklist">
       <div className="section-heading">
@@ -220,7 +211,6 @@ const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorCo
       </div>
       <WorklistToolbar
         query={page.query}
-        hasAssignedCases={context.hasAssignedCases}
         onChange={page.change}
         onSelect={onSelect}
         loading={page.loading}
@@ -230,7 +220,11 @@ const ReadyCaseList = ({ onSelect, onOpen, context }: Props & { context: ActorCo
       />
       <SummaryBand filter={(({ view: _view, ...filters }) => filters)(page.query)} />
       <WorklistLoading page={page} />
-      <WorklistResults page={page} onSelect={onSelect} businessDate={context.businessDate} />
+      <WorklistResults
+        page={page}
+        onSelect={onSelect}
+        businessDate={page.page?.basis.businessDate ?? context.businessDate}
+      />
       <WorklistFeedback page={page} />
     </section>
   );

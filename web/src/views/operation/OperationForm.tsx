@@ -67,6 +67,7 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
+          onFieldsChange={model.editFields}
         />
       )}
     </>

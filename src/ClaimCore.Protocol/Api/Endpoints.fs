@@ -232,6 +232,13 @@ module Api =
             RequestCodecs.caseGetRequest
             (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
 
+    let caseAssignees =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees))
+            HttpMethod.Post
+            RequestCodecs.assigneeRequest
+            (ReplyCodecs.readReply "AssigneePageReply" ResponseCodecs.assigneePage)
+
     let caseList =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
@@ -368,6 +375,8 @@ module Api =
         function
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
+        | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
+            EndpointDefinition.create caseAssignees
         | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
         | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory

@@ -192,10 +192,12 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":4", "\"v\":4.0")
+            baseJson.Replace("\"v\":5", "\"v\":5.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
+        Expect.notEqual json baseJson "Each rejection control actually changes the accepted token"
+
         Expect.equal
             (Cursors.decodeCases
                 (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
@@ -304,7 +306,7 @@ let private worklistBinding () =
             }
             { selected with Text = None }
             { selected with
-                Assignment = Some CaseAssignment.AssignedToMe
+                Assignment = Some CaseAssignment.Mine
             }
             { selected with
                 Order = CaseListOrder.Reference
@@ -394,7 +396,7 @@ let triageCursors =
         let selected =
             { CaseListFilter.empty<CaseSearchText> with
                 Order = CaseListOrder.Notified
-                Assignment = Some CaseAssignment.AssignedToMe
+                Assignment = Some CaseAssignment.Mine
             }
 
         for date in [ None; Some(CaseFixtures.date "2026-08-03") ] do

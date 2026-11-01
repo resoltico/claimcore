@@ -42,3 +42,14 @@ module ActKind =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
+
+/// A wire choice has no KEEP token: optional presence is the transport's preservation form.
+[<RequireQualifiedAccess>]
+type WorkChoice =
+    | Set
+    | Clear
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module WorkChoice =
+    let vocabulary =
+        Vocabulary.ofUnion<WorkChoice> "workChange" TokenCasing.ScreamingSnake None

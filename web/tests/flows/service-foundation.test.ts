@@ -12,7 +12,7 @@ import { fields, definition } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 describe("core act metadata", () => {
-  it("prefills registration from catalog and builds scoped input from the root schema", () => {
+  it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
     expect(definition.catalog.fields).toHaveLength(businessFieldCount);
     expect(
       definition.catalog.entries.filter(
@@ -38,7 +38,7 @@ describe("core act metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(values["act.values.claimantName"]).toBe(fields.registration.claimantName);
+    expect(values["act.values.claimantName"]).toBeUndefined();
     const close = initialOperationValues(
       "CASE",
       "CLOSE",

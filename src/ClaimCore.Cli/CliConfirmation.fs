@@ -57,6 +57,11 @@ module internal CliConfirmation =
             + "\n"
             + MessageCatalogs.render language (OperationCatalog.meaningId operation) Map.empty
             + "\n"
+            + MessageCatalogs.render
+                language
+                (OperationCatalog.confirmationId operation |> Option.get)
+                Map.empty
+            + "\n"
             + MessageCatalogs.renderCli language CliMessage.ReviewConfirmation
             |> Encoding.UTF8.GetBytes
             |> console.Write

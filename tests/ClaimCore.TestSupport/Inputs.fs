@@ -35,6 +35,41 @@ let referencedCase (input: CaseOperationRequest) : UnvalidatedCaseRequest =
     | CaseSelector.Id _ ->
         failtest "This reference-only test stub requires an explicit reference fixture."
 
+let workBasis: WorkDateBasis =
+    {
+        ObservedAt = System.DateTimeOffset(2026, 8, 31, 12, 0, 0, System.TimeSpan.Zero)
+        BusinessDate = System.DateOnly(2026, 8, 31)
+        TimeZoneId = "UTC"
+    }
+
+let unscheduledWork: CaseWorkView =
+    {
+        Responsible = None
+        FollowUp = None
+        Due = CaseDue.Unscheduled
+        Basis = workBasis
+    }
+
+/// Presentation fixture for an unassigned case. Tests of relation disclosure supply explicit accounts.
+let workView (state: CaseState<CaseFields>) : CaseWorkView =
+    let fields = CaseState.fields state
+    let work = fields |> Option.map _.Work |> Option.defaultValue CaseWork.empty
+
+    if work.Responsible.IsSome then
+        failtest "An assigned case needs an explicit account presentation fixture."
+
+    {
+        Responsible = None
+        FollowUp = work.FollowUp
+        Due =
+            CaseDue.at
+                workBasis.BusinessDate
+                (CaseState.lifecycle state)
+                (fields |> Option.map _.Status)
+                work
+        Basis = workBasis
+    }
+
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
     let samples =
@@ -122,8 +157,50 @@ let correction: AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = Change.Keep
-        Payment = Change.Keep
+        Payment = PaymentChange.Keep
     }
+
+/// Build a request asserting all registration values; this is not a compatibility reader or an oracle.
+let registrationUpdate (input: RegistrationInput) : RegistrationUpdateInput =
+    let value field = RegistrationInput.value field input
+
+    {
+        IncidentDate = Some(value BusinessField.IncidentDate)
+        NotificationDate = Some(value BusinessField.IncidentNotificationDate)
+        Country = Some(value BusinessField.IncidentCountry)
+        Claimant = Some(value BusinessField.ClaimantName)
+        Insurer = Some(value BusinessField.InsurerName)
+        Claimed =
+            Some
+                {
+                    Amount = value BusinessField.ClaimedAmount
+                    Currency = value BusinessField.ClaimedCurrency
+                }
+    }
+
+let decisionUpdate (input: DecisionInput) : DecisionUpdateInput =
+    let value field = DecisionInput.value field input
+
+    {
+        Date = Some(value BusinessField.PaymentDecisionDate)
+        Payable =
+            Some
+                {
+                    Amount = value BusinessField.PayableAmount
+                    Currency = value BusinessField.PayableCurrency
+                }
+    }
+
+let registrationChoice =
+    function
+    | Amendment.Keep -> Amendment.Keep
+    | Amendment.Update value -> Amendment.Update(registrationUpdate value)
+
+let decisionChoice =
+    function
+    | Change.Keep -> Change.Keep
+    | Change.Clear -> Change.Clear
+    | Change.Update value -> Change.Update(decisionUpdate value)
 
 let principal: PrincipalInput =
     {
@@ -183,14 +260,15 @@ let caseActs registration decision payment reason =
                 "registration",
                 JsonValue.Object
                     [
-                        "kind", JsonValue.String "REPLACE"
-                        "values", RequestCodecs.registration.Write registration
+                        "kind", JsonValue.String "UPDATE"
+                        "values",
+                        RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
                     ]
                 "decision",
                 JsonValue.Object
                     [
-                        "kind", JsonValue.String "REPLACE"
-                        "values", RequestCodecs.decision.Write decision
+                        "kind", JsonValue.String "UPDATE"
+                        "values", RequestCodecs.decisionUpdate.Write(decisionUpdate decision)
                     ]
                 "payment",
                 JsonValue.Object
@@ -209,6 +287,20 @@ let caseActs registration decision payment reason =
             match payload with
             | "BARE" -> []
             | "REGISTRATION" -> [ "values", RequestCodecs.registration.Write registration ]
+            | "REGISTRATION_UPDATE" ->
+                [
+                    "values",
+                    RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
+                ]
+            | "WORK" ->
+                [
+                    "values",
+                    RequestCodecs.work.Write
+                        {
+                            CaseWorkInput.Responsible = WorkValue.Keep
+                            FollowUp = WorkValue.Set "2026-09-01"
+                        }
+                ]
             | "DECISION" -> [ "values", RequestCodecs.decision.Write decision ]
             | "PAYMENT" -> [ "values", RequestCodecs.payment.Write payment ]
             | "REASON" -> [ "reason", JsonValue.String reason ]

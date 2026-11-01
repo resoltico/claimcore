@@ -105,13 +105,28 @@ let private setup fixture =
                     Currency = "JPY"
                 }
 
+        // Responsibility is a separate business fact; the read grants below do not set it.
+        for number, reference in [ 40, "TRIAGE-B"; 41, "TRIAGE-C" ] do
+            do!
+                execute
+                    owner
+                    number
+                    reference
+                    1L
+                    (AuthoredCaseAct.UpdateWork
+                        {
+                            CaseWorkInput.Responsible =
+                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                            FollowUp = WorkValue.Keep
+                        })
+
         let decision =
             Inputs.decisionWith [ BusinessField.PayableAmount, maximum ] Inputs.decision
 
         do! execute owner 24 "TRIAGE-A" 1L (AuthoredCaseAct.Decide decision)
         do! execute owner 25 "TRIAGE-A" 2L (AuthoredCaseAct.Bare BareAct.Close)
-        do! execute owner 26 "TRIAGE-B" 1L (AuthoredCaseAct.Decide decision)
-        do! execute owner 27 "TRIAGE-B" 2L (AuthoredCaseAct.Void "Synthetic triage review")
+        do! execute owner 26 "TRIAGE-B" 2L (AuthoredCaseAct.Decide decision)
+        do! execute owner 27 "TRIAGE-B" 3L (AuthoredCaseAct.Void "Synthetic triage review")
         do! execute owner 28 "TRIAGE-D" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
         for number, reference in [ 30, "TRIAGE-B"; 31, "TRIAGE-C" ] do
@@ -188,25 +203,23 @@ let internal exactTotals fixture =
 
         let mine =
             { CaseListFilter.empty<string> with
-                Assignment = Some CaseAssignment.AssignedToMe
+                Assignment = Some CaseAssignment.Mine
             }
 
         let! assigned = summary owner mine
 
-        Expect.equal
-            assigned.Counts.Total
-            2L
-            "Installation visibility does not replace scoped assignment"
+        Expect.equal assigned.Counts.Total 2L "Mine filters the two explicitly assigned cases"
 
         Expect.equal
             (totals assigned.Payable)
             [ "EUR", maximum ]
-            "Assigned scope filters payable totals"
+            "Factual responsibility filters payable totals"
 
         let! context = Service.context owner () token
 
         match context with
-        | Outcome.Succeeded value -> Expect.isTrue value.HasAssignedCases "My cases can be offered"
+        | Outcome.Succeeded value ->
+            Expect.isTrue value.HasScopedCases "Scoped read visibility remains independent"
         | _ -> failtest "Expected context"
 
         let! case =
@@ -219,7 +232,7 @@ let internal exactTotals fixture =
 
         match case with
         | Outcome.Succeeded value ->
-            Expect.isTrue value.AssignedToYou "Case detail derives its assignment"
+            Expect.isTrue value.Mine "Case detail reports its explicit responsibility"
         | _ -> failtest "Expected assigned case"
     }
 
@@ -272,7 +285,7 @@ let internal oldestPaging fixture =
                         }
                     Filter =
                         { filter with
-                            Assignment = Some CaseAssignment.AssignedToMe
+                            Assignment = Some CaseAssignment.Mine
                         }
                 }
                 token
@@ -322,11 +335,19 @@ let internal assignmentExcludesForbiddenRoles fixture =
 
         let mine =
             { CaseListFilter.empty<string> with
-                Assignment = Some CaseAssignment.AssignedToMe
+                Assignment = Some CaseAssignment.Mine
             }
 
-        let! first = summary viewer mine
-        Expect.equal first.Counts.Total 2L "A service's valid scoped grants define assignment"
+        let! mineResult = summary viewer mine
+        Expect.equal mineResult.Counts.Total 0L "A service read grant is never an assignment"
+
+        let opened =
+            { CaseListFilter.empty<string> with
+                Statuses = [ CaseStatus.Opened ]
+            }
+
+        let! first = summary viewer opened
+        Expect.equal first.Counts.Total 2L "The two opened cases are visible"
         // An inconsistent projection is injected through the real store port, without changing
         // any SQL constraint or authorization rule. The visibility safeguards must exclude it.
         let caseId = CaseFixtures.caseId (id 21)
@@ -352,7 +373,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 }
 
         Expect.isOk altered "Owned fixture projection corruption committed"
-        let! filtered = summary viewer mine
+        let! filtered = summary viewer opened
 
         Expect.equal
             filtered.Counts.Total
@@ -362,7 +383,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         Expect.equal
             (totals filtered.Claimed)
             [ "USD", "0.0001" ]
-            "Only the valid assigned case contributes"
+            "Only the valid opened case contributes"
 
         let! visible = summary viewer CaseListFilter.empty<string>
 
@@ -384,6 +405,25 @@ let internal assignmentExcludesForbiddenRoles fixture =
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "An assignment marker cannot bypass the case read boundary"
 
+        let! installationRevoked =
+            grant
+                owner
+                (id 105)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                false
+
+        acceptedAuthority installationRevoked
+        let! scoped = summary viewer opened
+
+        Expect.equal
+            scoped.Counts.Total
+            1L
+            "Scoped visibility preserves the independent forbidden-role safeguard"
+
         let! revoked =
             grant
                 owner
@@ -396,6 +436,10 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 false
 
         acceptedAuthority revoked
-        let! empty = summary viewer mine
-        Expect.equal empty.Counts.Total 0L "Invalid grants never become fallback assignments"
+        let! deniedSummary = Service.caseSummary viewer opened token
+
+        Expect.equal
+            deniedSummary
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "Invalid grants never become fallback visibility"
     }

@@ -12,6 +12,30 @@ type RuntimeContext =
         TimeZoneId: string
     }
 
+/// The database snapshot and installation zone define due state, never the display clock.
+type WorkDateBasis =
+    {
+        ObservedAt: DateTimeOffset
+        BusinessDate: DateOnly
+        TimeZoneId: string
+    }
+
+type AccountSubject = { ActorId: ActorId; Subject: string }
+
+type AssignedAccount =
+    {
+        Account: AccountSubject
+        Available: bool
+    }
+
+type CaseWorkView =
+    {
+        Responsible: AssignedAccount option
+        FollowUp: CalendarDate option
+        Due: CaseDue
+        Basis: WorkDateBasis
+    }
+
 [<RequireQualifiedAccess>]
 type View =
     | Cases
@@ -62,14 +86,15 @@ type ActorContext =
         Capability: Capability list
         View: View list
         Offers: InstallationOffer list
-        HasAssignedCases: bool
+        HasScopedCases: bool
     }
 
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
         Advice: CaseAdvice
-        AssignedToYou: bool
+        Mine: bool
+        Work: CaseWorkView
     }
 
 type FieldDiff =

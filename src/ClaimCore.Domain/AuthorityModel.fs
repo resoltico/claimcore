@@ -151,7 +151,7 @@ type AuthorityView =
         Actor: Actor option
         Installation: Role list
         Cases: Map<CaseId, Role list>
-        HasAssignedCases: bool
+        HasScopedCases: bool
     }
 
 module AuthorityView =
@@ -160,7 +160,7 @@ module AuthorityView =
             Actor = None
             Installation = []
             Cases = Map.empty
-            HasAssignedCases = false
+            HasScopedCases = false
         }
 
     let ofActor (actor: ActorAuthority option) =
@@ -189,10 +189,10 @@ module AuthorityView =
                 Actor = Some actor.Actor
                 Installation = installation
                 Cases = cases
-                HasAssignedCases = false
+                HasScopedCases = false
             }
 
 [<RequireQualifiedAccess>]
 type CaseVisibility =
     | Every
-    | Assigned
+    | Scoped

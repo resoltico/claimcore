@@ -1,3 +1,4 @@
+import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -15,7 +16,12 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: { offers: installationOffers(["OPEN"]), items: [], nextCursor: null },
+        data: {
+          basis: workBasis,
+          offers: installationOffers(["OPEN"]),
+          items: [],
+          nextCursor: null,
+        },
       },
     },
   });

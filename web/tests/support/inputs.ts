@@ -6,22 +6,60 @@ import type {
   Registration,
   Decision,
   Payment,
+  CaseFields,
+  CaseWorkView,
+  WorkDateBasis,
 } from "@contracts/client";
 
 import { inventory } from "./inventory";
 
-type CaseViewSeed = Omit<CaseView, "assignedToYou" | "caseId"> &
-  Partial<Pick<CaseView, "assignedToYou" | "caseId">>;
-export const caseViewInput = <T extends CaseViewSeed>(value: T) => ({
-  ...value,
-  assignedToYou: value.assignedToYou ?? false,
-  caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
-});
-type ActorContextSeed = Omit<ActorContext, "hasAssignedCases" | "actorId" | "installationId"> &
-  Partial<Pick<ActorContext, "hasAssignedCases" | "actorId" | "installationId">>;
+export const workBasis: WorkDateBasis = {
+  observedAt: "2026-09-01T12:00:00.000000Z",
+  businessDate: "2026-09-01",
+  timeZone: "Etc/UTC",
+};
+export const emptyCaseWork = { responsibleActor: null, followUpDate: null } as const;
+export const unscheduledWork: CaseWorkView = {
+  responsible: null,
+  followUpDate: null,
+  due: "UNSCHEDULED",
+  basis: workBasis,
+};
+type LiveStateSeed = {
+  kind: "ACTIVE" | "VOIDED";
+  fields: Omit<CaseFields, "work"> & Partial<Pick<CaseFields, "work">>;
+};
+type CaseViewSeed = Omit<CaseView, "mine" | "caseId" | "work" | "state"> &
+  Partial<Pick<CaseView, "mine" | "caseId" | "work">> & {
+    state: LiveStateSeed | { kind: "ERASED" };
+  };
+type LiveViewSeed = CaseViewSeed & { state: LiveStateSeed };
+export function caseViewInput(
+  value: LiveViewSeed,
+): Omit<CaseView, "state"> & { state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> };
+export function caseViewInput(value: CaseViewSeed): CaseView;
+export function caseViewInput(value: CaseViewSeed): CaseView {
+  const state =
+    value.state.kind === "ERASED"
+      ? value.state
+      : {
+          ...value.state,
+          fields: { ...value.state.fields, work: value.state.fields.work ?? emptyCaseWork },
+        };
+  const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
+  return {
+    ...value,
+    state,
+    work: value.work ?? { ...unscheduledWork, due: active ? "UNSCHEDULED" : "INACTIVE" },
+    mine: value.mine ?? false,
+    caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
+  };
+}
+type ActorContextSeed = Omit<ActorContext, "hasScopedCases" | "actorId" | "installationId"> &
+  Partial<Pick<ActorContext, "hasScopedCases" | "actorId" | "installationId">>;
 export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   ...value,
-  hasAssignedCases: value.hasAssignedCases ?? false,
+  hasScopedCases: value.hasScopedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
   installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
@@ -73,6 +111,10 @@ type SummarySeed = Partial<Omit<Summary, "state">> & {
 export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
   const state = changes.state ?? { kind: "ACTIVE", status: "OPENED" };
   const live: Omit<LiveSummary, "kind" | "status"> = {
+    work: {
+      ...unscheduledWork,
+      due: state.kind === "ACTIVE" && state.status === "OPENED" ? "UNSCHEDULED" : "INACTIVE",
+    },
     claimantName: "Synthetic claimant",
     insurerName: "Synthetic insurer",
     claimed: { amount: "12.34", currency: "EUR" },
@@ -110,6 +152,35 @@ const childGroup = (key: string, payload: Group | undefined): Group | undefined 
   }
   return isGroup(key) ? key : undefined;
 };
+const completeRead = (completed: Record<string, unknown>): unknown => {
+  if (
+    Object.hasOwn(completed, "registration") &&
+    Object.hasOwn(completed, "status") &&
+    Object.hasOwn(completed, "caseReference")
+  ) {
+    return { work: emptyCaseWork, ...completed };
+  }
+  if (
+    Object.hasOwn(completed, "items") &&
+    Object.hasOwn(completed, "offers") &&
+    Object.hasOwn(completed, "nextCursor")
+  ) {
+    return { basis: workBasis, ...completed };
+  }
+  if (
+    Object.hasOwn(completed, "counts") &&
+    Object.hasOwn(completed, "claimed") &&
+    Object.hasOwn(completed, "payable")
+  ) {
+    const { counts } = completed;
+    return {
+      basis: workBasis,
+      ...completed,
+      counts: isObject(counts) ? { assignment: [], due: [], ...counts } : counts,
+    };
+  }
+  return completed;
+};
 export const positiveValue = (seed: unknown): unknown => {
   const complete = (value: unknown, group?: Group): unknown => {
     if (Array.isArray(value)) {
@@ -122,9 +193,11 @@ export const positiveValue = (seed: unknown): unknown => {
     const members = Object.fromEntries(
       Object.entries(value).map(([key, child]) => [key, complete(child, childGroup(key, payload))]),
     );
-    return group !== undefined && value["kind"] === undefined
-      ? { ...groupInput(group), ...members }
-      : members;
+    const completed =
+      group !== undefined && value["kind"] === undefined
+        ? { ...groupInput(group), ...members }
+        : members;
+    return completeRead(completed);
   };
   return complete(seed);
 };

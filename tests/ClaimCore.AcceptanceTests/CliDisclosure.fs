@@ -27,8 +27,17 @@ let private amend (input: JsonNode) =
     pending["expectedRevision"] <- JsonValue.Create 1L
     let act = pending["act"] |> nonNull
     act["kind"] <- JsonValue.Create "AMEND_REGISTRATION"
-    let values = act["values"] |> nonNull
-    values["claimedAmount"] <- JsonValue.Create "2.0000"
+
+    act["values"] <-
+        JsonSerializer.SerializeToNode
+            {|
+                claimed =
+                    {|
+                        amount = "2.0000"
+                        currency = "EUR"
+                    |}
+            |}
+
     pending
 
 let private staleReview fixture input reference =

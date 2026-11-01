@@ -11,6 +11,8 @@
     <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
     <Compile Include="CaseFields.fs" />
+    <Compile Include="CaseWork.fs" />
+    <Compile Include="CaseUpdates.fs" />
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />

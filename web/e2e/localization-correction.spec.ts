@@ -27,8 +27,8 @@ test.setTimeout(45_000);
 // The mode cross-product is checked with literal serialization oracles in unit tests.
 // These real-boundary cases retain acceptance, refusal, focus guidance and RTL per language.
 const outcomes = [
-  ["REPLACE", "CLEAR", "CLEAR", null],
-  ["KEEP", "REPLACE", "KEEP", "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"],
+  ["UPDATE", "CLEAR", "CLEAR", null],
+  ["KEEP", "UPDATE", "KEEP", "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"],
 ] as const;
 const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
@@ -90,9 +90,9 @@ const preserveChoice = async (page: Page, modes: Modes) => {
         inputMessage(language, `group.${group}.meaning`),
       );
     }
-    if (modes.registration === "REPLACE") {
+    if (modes.registration === "UPDATE") {
       await expect(
-        page.locator('input[name="act.groups.registration.values.claimedAmount"]'),
+        page.locator('input[name="act.groups.registration.values.claimed.amount"]'),
       ).toHaveValue("1.0000");
     }
   }

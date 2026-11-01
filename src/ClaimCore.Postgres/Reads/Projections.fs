@@ -23,7 +23,9 @@ module internal Projections =
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
         + DatabaseSession.dateExpression "notified_on"
-        + " AS notified_on,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
+        + " AS notified_on,responsible_actor,"
+        + DatabaseSession.dateExpression "follow_up"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -49,6 +51,14 @@ module internal Projections =
         DatabaseSession.namedOptionalCalendarDate "notified_on" row
         |> Option.map CalendarDate.ofDate
 
+    let caseResponsibleActor row =
+        DatabaseSession.namedOptional<Guid> "responsible_actor" row
+        |> Option.map (DatabaseSession.admitted ActorId.create)
+
+    let caseFollowUp row =
+        DatabaseSession.namedOptionalCalendarDate "follow_up" row
+        |> Option.map CalendarDate.ofDate
+
     let private amount column row =
         DatabaseSession.namedOptional<string> column row
         |> Option.map (Amount.parse >> parsed)
@@ -70,6 +80,8 @@ module internal Projections =
 
     let caseIndex row : CaseIndex =
         {
+            Responsible = caseResponsibleActor row
+            FollowUp = caseFollowUp row
             Status = caseStatus row
             Progress = caseProgress row
             ChangedAt = caseChangedAt row
@@ -223,7 +235,7 @@ module internal Projections =
             return authorityRows principal rows
         }
 
-    let assigned connection principal readRoles (view: AuthorityView) token =
+    let scopedCases connection principal readRoles (view: AuthorityView) token =
         task {
             match view.Actor with
             | None -> return view
@@ -244,7 +256,7 @@ module internal Projections =
 
                 return
                     { view with
-                        HasAssignedCases = DatabaseSession.value<bool> 0 rows.Head
+                        HasScopedCases = DatabaseSession.value<bool> 0 rows.Head
                     }
         }
 

@@ -12,6 +12,8 @@ module Catalog =
                     {
                         Name = row.Field
                         Group = row.Group
+                        Section = row.Section
+                        Pairs = row.Pairs
                         LabelId = FieldPresentation.labelId row.Field
                         MeaningId = FieldPresentation.meaningId row.Field
                         Scalar = FieldPresentation.descriptor row.Field

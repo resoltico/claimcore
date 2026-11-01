@@ -12,16 +12,17 @@ module internal Queries =
     let fault = QueryResults.fault
     let failure = QueryResults.failure
 
-    let caseRecord (services: ServiceContext) actor record = Advice.caseRecord services actor record
+    let caseRecord (services: ServiceContext) actor work record =
+        Advice.caseRecord services actor work record
 
-    let caseResult (services: ServiceContext) (view: CaseFacts) =
+    let caseResult (services: ServiceContext) (view: CaseFacts) work =
         let principal = services.Principal
 
         if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
             unavailable
         else
             match view.Case with
-            | Some record -> caseRecord services view.Actor record |> succeeded
+            | Some record -> caseRecord services view.Actor work record |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
     let get (services: ServiceContext) selector token =
@@ -39,13 +40,117 @@ module internal Queries =
                                     task {
                                         let! view = ExecutionFacts.case services tx None selector
 
-                                        return caseResult services view
+                                        match view.Case with
+                                        | Some record when
+                                            CaseExecution.authorize
+                                                services.Principal
+                                                view.Actor
+                                                Capability.ReadCase
+                                                view.Case
+                                            ->
+                                            let! work =
+                                                CaseWorkReads.view
+                                                    tx
+                                                    (CaseWorkReads.basis services tx.ObservedAt)
+                                                    record
+
+                                            return
+                                                work
+                                                |> Result.map (caseResult services view)
+                                                |> Result.defaultWith Outcome.Failed
+                                        | _ -> return unavailable
                                     })
                             CancellationToken = token
                         }
                     )
 
                 return readResult result
+        }
+
+    let assignees (services: ServiceContext) (request: AssigneeRequest) token =
+        task {
+            if not (validLimit request.Limit) then
+                return invalidLimit ()
+            else
+                match CaseExecution.validateSelector request.Target with
+                | Error refusal -> return Outcome.Rejected refusal
+                | Ok() ->
+                    let! result =
+                        services.Store.Read
+                            {
+                                Work =
+                                    fun tx ->
+                                        task {
+                                            let! record = ExecutionFacts.findCase tx request.Target
+
+                                            let! actor =
+                                                tx.Authority
+                                                    {
+                                                        Principal = services.Principal
+                                                        CaseId = record |> Option.map _.CaseId
+                                                    }
+
+                                            match record with
+                                            | Some record when
+                                                Authority.can
+                                                    services.Principal
+                                                    actor
+                                                    Capability.ReadCase
+                                                    (Scope.Case record.CaseId)
+                                                && Authority.can
+                                                    services.Principal
+                                                    actor
+                                                    Capability.ManageCaseWork
+                                                    (Scope.Case record.CaseId)
+                                                && (CaseState.fields record.Snapshot.State).IsSome
+                                                ->
+                                                match
+                                                    cursor
+                                                        (Cursors.decodeAssignees
+                                                            services.InstallationId
+                                                            record.CaseId)
+                                                        request.AfterCursor
+                                                with
+                                                | Error refusal -> return Outcome.Rejected refusal
+                                                | Ok after ->
+                                                    let! page =
+                                                        tx.AssigneePage
+                                                            {
+                                                                CaseId = record.CaseId
+                                                                ReadRoles =
+                                                                    Authority.rolesFor
+                                                                        Capability.ReadCase
+                                                                WorkRoles =
+                                                                    Authority.rolesFor
+                                                                        Capability.ManageCaseWork
+                                                                AfterActorId = after
+                                                                Limit = request.Limit
+                                                            }
+
+                                                    if page.Items.Length > request.Limit then
+                                                        return
+                                                            Outcome.Failed
+                                                                CoreFault.StoreIntegrityError
+                                                    else
+                                                        return
+                                                            Outcome.Succeeded
+                                                                {
+                                                                    AssigneePage.Items = page.Items
+                                                                    NextCursor =
+                                                                        page.Next
+                                                                        |> Option.map (
+                                                                            Cursors.encodeAssignees
+                                                                                services
+                                                                                    .InstallationId
+                                                                                record.CaseId
+                                                                        )
+                                                                }
+                                            | _ -> return unavailable
+                                        }
+                                CancellationToken = token
+                            }
+
+                    return readResult result
         }
 
     let contextResult (services: ServiceContext) observedAt actor =
@@ -65,7 +170,7 @@ module internal Queries =
                             EffectiveBusinessDate = calendar.DateAt observedAt
                             TimeZoneId = calendar.TimeZoneId
                         }
-                    HasAssignedCases = actor.HasAssignedCases
+                    HasScopedCases = actor.HasScopedCases
                     View = Advice.views principal actor
                     Offers = Advice.installationOffers principal actor
                     Capability =
@@ -103,7 +208,7 @@ module internal Queries =
             return readResult result
         }
 
-    let selectCases installation principal (request: CaseListRequest) actor =
+    let selectCases installation principal basis (request: CaseListRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Authority.visibility principal actor with
@@ -116,6 +221,7 @@ module internal Queries =
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
+                            DateBasis = basis
                             Visibility = visibility
                             ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
                             ReadRoles = Authority.readRoles principal
@@ -126,7 +232,7 @@ module internal Queries =
                         })))
 
 
-    let private summary installation record =
+    let private summary installation work record =
         CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
@@ -138,6 +244,7 @@ module internal Queries =
                     CaseState.map
                         (fun (fields: CaseFields) ->
                             {
+                                Work = work
                                 Status = fields.Status
                                 ClaimantName = Registration.claimant fields.Registration
                                 InsurerName = Registration.insurer fields.Registration
@@ -150,9 +257,27 @@ module internal Queries =
                         record.Snapshot.State
             })
 
+    let private summaries (services: ServiceContext) (tx: IReadTx) basis records =
+        task {
+            let mutable result = Ok []
+
+            for record in records do
+                if Result.isOk result then
+                    let! work = CaseWorkReads.view tx basis record
+
+                    result <-
+                        result
+                        |> Result.bind (fun values ->
+                            work
+                            |> Result.bind (fun work ->
+                                summary services.InstallationId work record)
+                            |> Result.map (fun item -> item :: values))
+
+            return result |> Result.map List.rev
+        }
+
     let list (services: ServiceContext) (request: CaseListRequest) token =
         let store = services.Store
-        let installation = services.InstallationId
         let principal = services.Principal
 
         task {
@@ -177,6 +302,7 @@ module internal Queries =
                                             selectCases
                                                 services.InstallationId
                                                 principal
+                                                (CaseWorkReads.basis services tx.ObservedAt)
                                                 request
                                                 actor
                                         with
@@ -187,13 +313,20 @@ module internal Queries =
                                             if page.Items.Length > Paging.MaximumPageSize then
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
+                                                let! items =
+                                                    summaries
+                                                        services
+                                                        tx
+                                                        selection.DateBasis
+                                                        page.Items
+
                                                 return
-                                                    page.Items
-                                                    |> List.map (summary installation)
-                                                    |> collect
+                                                    items
                                                     |> Result.map (fun items ->
                                                         {
-                                                            CaseSummaryPage.Items = items
+                                                            CaseSummaryPage.Basis =
+                                                                selection.DateBasis
+                                                            Items = items
                                                             Offers =
                                                                 Advice.installationOffers
                                                                     principal
@@ -240,6 +373,7 @@ module internal Queries =
                                         selectCases
                                             services.InstallationId
                                             services.Principal
+                                            (CaseWorkReads.basis services tx.ObservedAt)
                                             request
                                             actor
                                     with

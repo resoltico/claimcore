@@ -12,9 +12,9 @@ import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";
 
 export type Modes = Readonly<{
-  registration: "KEEP" | "REPLACE";
-  decision: "KEEP" | "REPLACE" | "CLEAR";
-  payment: "KEEP" | "REPLACE" | "CLEAR";
+  registration: "KEEP" | "UPDATE";
+  decision: "KEEP" | "UPDATE" | "CLEAR";
+  payment: "KEEP" | "REPLACE" | "REAFFIRM" | "CLEAR";
 }>;
 type SeedStep = Readonly<{
   act: OperationDraft["act"];
@@ -31,6 +31,7 @@ const setupDecision = {
 
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
+    work: { responsibleActor: null, followUpDate: null },
     caseReference: reference,
     status: "OPENED",
     progress: "UNDECIDED",
@@ -153,7 +154,13 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
     payment: { paymentDate: "2026-09-06" },
   };
   for (const group of ["registration", "decision", "payment"] as const) {
-    if (modes[group] === "REPLACE") {
+    if (modes[group] === "UPDATE" || modes[group] === "REPLACE") {
+      if (group !== "payment") {
+        for (const name of Object.keys(replacements[group])) {
+          const selected = page.locator(`input[data-selects-fields~="${name}"]`);
+          await selected.check();
+        }
+      }
       for (const [name, value] of Object.entries(replacements[group])) {
         await fillControl(page.locator(`[data-field-name="${name}"]:not(.field-row)`), value);
       }
@@ -207,16 +214,18 @@ export const expectResultFields = (
 ) => {
   const decisions = {
     KEEP: before.fields.decision,
-    REPLACE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "USD" },
+    UPDATE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "USD" },
     CLEAR: null,
   };
   const payments = {
     KEEP: before.fields.payment,
+    REAFFIRM: before.fields.payment,
     REPLACE: { paymentDate: "2026-09-06" },
     CLEAR: null,
   };
   const progress = {
     KEEP: "PAID",
+    REAFFIRM: "PAID",
     REPLACE: "PAID",
     CLEAR: modes.decision === "CLEAR" ? "UNDECIDED" : "DECIDED",
   } as const;
@@ -225,7 +234,7 @@ export const expectResultFields = (
     fields: {
       ...before.fields,
       registration:
-        modes.registration === "REPLACE"
+        modes.registration === "UPDATE"
           ? {
               ...before.fields.registration,
               claimantName: "A\u0308 العربية\u200D <tag>",

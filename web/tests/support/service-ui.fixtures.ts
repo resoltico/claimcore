@@ -1,4 +1,4 @@
-import { actorContextInput } from "./inputs";
+import { actorContextInput, positiveValue } from "./inputs";
 import { transportResponse } from "./transport-response.fixtures";
 import { consumerContractIdentity } from "@contracts/client";
 export { productMetadata as definition } from "../../src/protocol/productMetadata";
@@ -21,7 +21,7 @@ const fixtureData = (endpoint: string, kind: string, data: unknown): unknown => 
       ...(typeof data === "object" && data !== null ? data : {}),
     };
   }
-  return data;
+  return positiveValue(data);
 };
 export const response = (endpoint: string, kind: string, data: unknown, status = 200): Response =>
   transportResponse(endpoint, kind, fixtureData(endpoint, kind, data), status);

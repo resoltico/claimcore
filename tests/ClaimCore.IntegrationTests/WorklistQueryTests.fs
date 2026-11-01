@@ -35,6 +35,7 @@ let private walk pair filter limit expected =
 
         while not finished do
             let! postgres = page pair.Postgres filter limit cursor
+            pair.Clock.ObservedAt <- postgres.Basis.ObservedAt
             let! memory = page pair.Memory filter limit cursor
             Expect.equal memory postgres "Both stores return the same complete page and cursor"
             let visible = remaining |> List.truncate limit

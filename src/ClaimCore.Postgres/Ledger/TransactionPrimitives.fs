@@ -36,10 +36,10 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Reference value) -> Some value
                     | _ -> invalidArg (nameof query) "Expected a reference position."
 
-                key + " > $10 COLLATE \"C\"",
+                key + " > $12 COLLATE \"C\"",
                 key + " ASC",
                 [| DatabaseSession.parameter reference |],
-                "$11"
+                "$13"
             | CaseListOrder.Recent, position ->
                 let reference, changedAt =
                     match position with
@@ -47,12 +47,12 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Recent(time, reference)) -> Some reference, Some time
                     | _ -> invalidArg (nameof query) "Expected a recent position."
 
-                "(c.changed_at < $11::timestamptz OR (c.changed_at = $11 AND "
+                "(c.changed_at < $13::timestamptz OR (c.changed_at = $13 AND "
                 + key
-                + " > $10 COLLATE \"C\"))",
+                + " > $12 COLLATE \"C\"))",
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
-                "$12"
+                "$14"
             | CaseListOrder.Notified, position ->
                 let reference, date =
                     match position with
@@ -60,20 +60,39 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                "(($11::date IS NULL AND c.notified_on IS NULL AND "
+                "(($13::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $10 COLLATE \"C\") OR ($11::date IS NOT NULL AND (c.notified_on > $11 OR c.notified_on IS NULL OR (c.notified_on=$11 AND "
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13 OR c.notified_on IS NULL OR (c.notified_on=$13 AND "
                 + key
-                + " > $10 COLLATE \"C\"))))",
+                + " > $12 COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.value)
                 |],
-                "$12"
+                "$14"
+
+            | CaseListOrder.FollowUp, position ->
+                let reference, date =
+                    match position with
+                    | None -> None, None
+                    | Some(CaseListPosition.FollowUp(date, reference)) -> Some reference, date
+                    | _ -> invalidArg (nameof query) "Expected a follow-up position."
+
+                "(($13::date IS NULL AND c.follow_up IS NULL AND "
+                + key
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13 OR c.follow_up IS NULL OR (c.follow_up=$13 AND "
+                + key
+                + " > $12 COLLATE \"C\"))))",
+                "c.follow_up ASC NULLS LAST," + key + " ASC",
+                [|
+                    DatabaseSession.parameter reference
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                |],
+                "$14"
 
         let sql =
-            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} AND ($10::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
+            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} AND ($12::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
 
         let parameters =
             Array.concat
@@ -98,6 +117,7 @@ module internal TransactionPages =
                         query.Filter.Order
                         record.Index.ChangedAt
                         record.Index.NotifiedOn
+                        record.Index.FollowUp
                         (CaseReference.format record.Snapshot.Reference))
         }
 
@@ -210,7 +230,7 @@ type private ReadTx
                 | Some _ -> return actor
                 | None ->
                     return!
-                        Projections.assigned
+                        Projections.scopedCases
                             connection
                             principal
                             (Authority.readRoles principal)
@@ -283,6 +303,35 @@ type private ReadTx
              })
             =
             TransactionPages.grants connection id after limit token
+
+        member _.AssigneePage query =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT a.actor_id,a.subject FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
+                        [|
+                            box (CaseId.value query.CaseId)
+                            box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
+                            box (query.WorkRoles |> List.map DurableNames.role |> List.toArray)
+                            DatabaseSession.parameter (
+                                query.AfterActorId |> Option.map ActorId.value
+                            )
+                            box (query.Limit + 1)
+                        |]
+                        token
+
+                return
+                    rows
+                    |> List.map (fun row ->
+                        {
+                            AccountSubject.ActorId =
+                                DatabaseSession.value<Guid> 0 row
+                                |> DatabaseSession.admitted ActorId.create
+                            Subject = DatabaseSession.value<string> 1 row
+                        })
+                    |> TransactionPages.page query.Limit _.ActorId
+            }
 
         member _.FindActor id =
             task {

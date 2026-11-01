@@ -43,7 +43,27 @@ let identities (fixture: Fixture) =
                 token
 
         let! byId = Service.get actor { Target = CaseSelector.Id expected } token
-        Expect.equal byId byReference "Both selectors return the same case and current authority"
+
+        match byId, byReference with
+        | Outcome.Succeeded actual, Outcome.Succeeded expected ->
+            for view in [ actual; expected ] do
+                Expect.equal view.Work.Basis.TimeZoneId "Etc/UTC" "The fixture uses UTC"
+
+                Expect.equal
+                    view.Work.Basis.BusinessDate
+                    (DateOnly.FromDateTime view.Work.Basis.ObservedAt.UtcDateTime)
+                    "Each read reports its own observation basis"
+
+            Expect.equal
+                { actual with
+                    Work =
+                        { actual.Work with
+                            Basis = expected.Work.Basis
+                        }
+                }
+                expected
+                "Both selectors return the same case facts and current authority across distinct observations"
+        | _ -> failtest "Both positive selectors must resolve"
 
         match byId with
         | Outcome.Succeeded view ->

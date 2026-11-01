@@ -36,7 +36,7 @@ module internal Advice =
             else
                 None)
 
-    let caseRecord (services: ServiceContext) actor (record: StoredCase) =
+    let caseRecord (services: ServiceContext) actor work (record: StoredCase) =
         let installationId = services.InstallationId
         let principal = services.Principal
 
@@ -64,9 +64,14 @@ module internal Advice =
                 |> Result.defaultWith invalidOp
 
             {
+                Work = work
                 Snapshot = record.Snapshot
                 Advice = advice
-                AssignedToYou = Authority.assignedTo principal actor record.CaseId
+                Mine =
+                    match actor.Actor, CaseState.fields record.Snapshot.State with
+                    | Some requester, Some fields ->
+                        fields.Work.Responsible = Some requester.ActorId
+                    | _ -> false
             })
 
     let installationOffers principal actor =

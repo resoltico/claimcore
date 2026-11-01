@@ -1,4 +1,4 @@
-import { principal, registration } from "../support/inputs";
+import { principal } from "../support/inputs";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
@@ -28,8 +28,8 @@ const correction: OperationInput = {
     kind: "CORRECT",
     groups: {
       registration: {
-        kind: "REPLACE",
-        values: registration({ claimantName: "KEEP", claimedAmount: "12.3400" }),
+        kind: "UPDATE",
+        values: { claimantName: "KEEP", claimed: { amount: "12.3400", currency: "EUR" } },
       },
       decision: {
         kind: "KEEP",

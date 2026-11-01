@@ -27,15 +27,23 @@ let private principal () =
                     [
                         {
                             Target = InputTarget.PrincipalIssuer
+                            RelatedDate = None
                             Violation = Violation.TextRequired
                         }
                         {
                             Target = InputTarget.PrincipalSubject
+                            RelatedDate = None
                             Violation = Violation.TextRequired
                         }
                     ]
                 else
-                    [ { Target = target; Violation = issue } ]
+                    [
+                        {
+                            Target = target
+                            Violation = issue
+                            RelatedDate = None
+                        }
+                    ]
                 |> InputIssues.ofList
                 |> Option.get
                 |> Refusal.InvalidInput

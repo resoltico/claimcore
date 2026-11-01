@@ -209,6 +209,7 @@ module Grammar =
                     | BindingKind.Group(_, choices) ->
                         match input item with
                         | Some(JsonValue.String value) -> Some(JsonValue.String value)
+                        | None when not item.Binding.Required && item.Binding.Default.IsNone -> None
                         | _ -> Some(JsonValue.String choices.Head)
                     | _ -> input item
 

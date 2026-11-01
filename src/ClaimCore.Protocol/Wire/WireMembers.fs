@@ -131,3 +131,6 @@ module RequestSchemas =
 
     [<Literal>]
     let Empty = "Empty"
+
+    [<Literal>]
+    let AssigneeRequest = "AssigneeRequest"

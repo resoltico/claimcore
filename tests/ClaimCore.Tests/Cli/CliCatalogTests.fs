@@ -112,7 +112,7 @@ let private replacement () =
                 "--expected-revision"
                 "1"
                 "--registration"
-                "REPLACE"
+                "UPDATE"
                 "--decision"
                 "KEEP"
                 "--payment"
@@ -131,16 +131,16 @@ let private replacement () =
     match request with
     | OperationInput.Case {
                               Act = AuthoredCaseAct.Correct {
-                                                                Registration = Amendment.Replace value
+                                                                Registration = Amendment.Update value
                                                             }
                           } ->
         Expect.equal
-            (RegistrationInput.value BusinessField.ClaimedAmount (value))
+            (value.Claimed |> Option.get |> _.Amount)
             "1.0000"
             "Authored amount spelling is preserved"
 
         Expect.equal
-            (RegistrationInput.value BusinessField.ClaimantName (value))
+            (value.Claimant |> Option.get)
             "Synthetic claimant"
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"

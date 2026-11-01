@@ -29,7 +29,11 @@ let private bytes element =
 let private requests () =
     withVectors (fun root ->
         let vectors = root.GetProperty("caseRequests").EnumerateArray() |> Seq.toList
-        Expect.equal vectors.Length 4 "All independent request vectors"
+
+        Expect.equal
+            vectors.Length
+            9
+            "All independent creation, partial, work and stewardship request vectors"
 
         for vector in vectors do
             let encoded = bytes vector
@@ -175,19 +179,19 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 2; 2; 2; 2 ]
+            [ 3; 2; 3; 3 ]
             "Each retained grammar has its adopted format number"
 
-        for format in [ "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
+        for format in [ "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":2", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":3", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":2", "\"format\":1"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":3", "\"format\":1"))
             ))
             "No old snapshot reinterpretation"
 
@@ -226,7 +230,11 @@ let private operationIdentity () =
 let private identityForms () =
     withVectors (fun root ->
         let vectors = root.GetProperty("canonicalIdentity").EnumerateArray() |> Seq.toList
-        Expect.equal vectors.Length 10 "Every amount carrier and both authority reference acts"
+
+        Expect.equal
+            vectors.Length
+            13
+            "Amount carriers, partial intent, reaffirmation and authority reference acts"
 
         for vector in vectors do
             let normalize (side: string) =
@@ -287,6 +295,32 @@ let private malformedIdentity () =
             (Error(Refusal.invalidInput (InputTarget.Field BusinessField.ClaimedAmount, expected)))
             "The original malformed spelling reaches its field-specific diagnostic"
 
+let private workSnapshots () =
+    withVectors (fun root ->
+        let vectors = root.GetProperty("workSnapshots").EnumerateArray() |> Seq.toList
+        Expect.equal vectors.Length 1 "Independent nonempty work snapshot is discovered"
+
+        for vector in vectors do
+            let encoded = bytes vector
+            let snapshot = CaseRecord.decodeSnapshot encoded |> Fixtures.accepted
+
+            Expect.equal
+                (CaseRecord.encodeSnapshot snapshot)
+                encoded
+                "Independent complete work bytes"
+
+            let fields = CaseState.fields snapshot.State |> Option.get
+
+            Expect.equal
+                (fields.Work.Responsible |> Option.map ActorId.format)
+                (Some "b0000000-0000-4000-8000-000000000002")
+                "Retained identity, without copied label or issuer"
+
+            Expect.equal
+                (fields.Work.FollowUp |> Option.map CalendarDate.format)
+                (Some "2027-12-31")
+                "Planned future date survives permanent grammar")
+
 [<Tests>]
 let tests =
     testList
@@ -297,6 +331,7 @@ let tests =
             testCase "durable requests retain their own subject envelope" operationIdentity
             testCase "case requests reproduce independent bytes and meaning" requests
             testCase "snapshots reproduce independent bytes and meaning" snapshot
+            testCase "nonempty work snapshots reproduce independent bytes and meaning" workSnapshots
             testCase "authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]
