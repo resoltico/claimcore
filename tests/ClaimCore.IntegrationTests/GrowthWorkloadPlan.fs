@@ -232,7 +232,7 @@ let authorityEntries = 100000
 let authorityOperationStart = 2000000
 let authorityRole = Role.Auditor
 let authorityOwner = CaseFixtures.actorId (StoreFixtures.id 1)
-let readProfileCount = readPopulations.Length * 4 + 2
+let readProfileCount = readPopulations.Length * 6 + 2
 
 let authorityFingerprint cases target =
     fingerprint
@@ -265,6 +265,35 @@ let summaryFingerprint cases =
             query = element Api.caseSummary.Input CaseListFilter.empty<string>
             expectedClaimedPerCase = "1000"
             expectedPayablePerDecision = "750"
+            warmupRequests = warmupRequests
+            measuredRequests = measuredRequests
+        |}
+
+let workReadFingerprint cases filter summary =
+    fingerprint
+        {|
+            cases = cases
+            caseSeed = readFingerprint cases CaseListFilter.empty<string>
+            workFirstIndex = 1
+            workEvery = 1000
+            workOperationStart = 3000000
+            followUpDaysBeforeDatabaseBusinessDate = 1
+            responsible = "bootstrap human case handler"
+            seedAfterCommonQueries = true
+            query =
+                if summary then
+                    element Api.caseSummary.Input filter
+                else
+                    element
+                        Api.caseList.Input
+                        {
+                            Page =
+                                {
+                                    AfterCursor = None
+                                    Limit = readLimit
+                                }
+                            Filter = filter
+                        }
             warmupRequests = warmupRequests
             measuredRequests = measuredRequests
         |}

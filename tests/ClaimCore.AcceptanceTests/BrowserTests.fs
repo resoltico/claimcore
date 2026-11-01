@@ -44,6 +44,7 @@ let private selectedSpecifications =
             "authority-uncertainty.spec.ts"
             "authority-grants.spec.ts"
             "act-lifecycle.spec.ts"
+            "loading-boundaries.spec.ts"
             "localization-correction.spec.ts"
             "localization-editor.spec.ts"
             "localization-pseudolocale.spec.ts"
@@ -55,6 +56,7 @@ let private selectedSpecifications =
             "work-surface-foundations.spec.ts"
             "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
+            "uncertain-execution.spec.ts"
             "unicode-parity.spec.ts"
         ]
     else
@@ -96,6 +98,20 @@ let private report root output engine =
 
     if File.Exists measurement then
         File.Copy(measurement, Path.Combine(directory, "loading-" + engine + ".json"), true)
+
+    let featureMeasurement = Path.Combine(output, "loading-new-work.json")
+
+    if not smoke then
+        Expect.isTrue
+            (File.Exists featureMeasurement)
+            "Complete scope retains the new work-editor measurement"
+
+    if File.Exists featureMeasurement then
+        File.Copy(
+            featureMeasurement,
+            Path.Combine(directory, "loading-work-" + engine + ".json"),
+            true
+        )
 
     JsonSerializer.SerializeToUtf8Bytes
         {|

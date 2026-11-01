@@ -81,7 +81,7 @@ test("failed language activation and a declined update reload preserve raw entry
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `CHUNK-DRAFT-${randomUUID()}`);
-  const amount = page.locator('input[name="act.values.claimed.amount"]');
+  const amount = page.locator('input[name="act.values.claimedAmount"]');
   await amount.fill("1,234");
   const executions: string[] = [];
   page.on("request", (request) => {
@@ -100,7 +100,12 @@ test("failed language activation and a declined update reload preserve raw entry
     .getByRole("dialog", { name: "Discard these draft changes?" })
     .getByRole("button", { name: "Keep editing" })
     .click();
-  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
+  await page
+    .getByRole("dialog", { name: "Settings", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
   await expect(amount).toHaveValue("1,234");
   const event = page.waitForRequest(
     (request) => new URL(request.url()).pathname === "/api/operation.preview",
@@ -108,17 +113,17 @@ test("failed language activation and a declined update reload preserve raw entry
   const identity = await reviewDraft(page);
   expect((await event).postDataJSON()).toMatchObject({
     operationId: identity.operationId,
-    act: { values: { claimed: { amount: "1234", currency: "EUR" } } },
+    act: { values: { claimedAmount: "1234", claimedCurrency: "EUR" } },
   });
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.locator("[data-settings-button]").click();
-  await page.getByRole("button", { name: "Reload interface", exact: true }).click();
+  const review = page.getByRole("dialog", { name: "Review changes", exact: true });
+  await review.getByText("I confirm these changes.", { exact: true }).click();
+  // Reviewed operations expose preferences inside the modal; the background header is inert.
+  await review.getByRole("button", { name: "Reload interface", exact: true }).click();
   await page
     .getByRole("dialog", { name: "Discard these draft changes?" })
     .getByRole("button", { name: "Keep editing" })
     .click();
-  await page.keyboard.press("Escape");
-  const review = page.getByRole("dialog", { name: "Review changes", exact: true });
+  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
   await expect(review).toContainText(identity.operationId);
   await expect(review.getByRole("checkbox")).toBeChecked();
   expect(executions).toEqual([]);

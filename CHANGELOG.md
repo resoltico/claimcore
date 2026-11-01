@@ -7,6 +7,7 @@
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
 - Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
 - Web case links use /cases/id/CASE-ID; exact reference links use /cases/reference/REFERENCE. Replace bookmarks using the former unqualified reference path.
+- Remove ASSIGNED_TO_ME filters and rename context hasAssignedCases to hasScopedCases. MINE now requires explicit responsibility; scoped read grants provide visibility only.
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
 - Replace CLI operation resolve with operation status for passive checks or explicit operation settle for permanent nonacceptance; interactive settlement requires confirmation.
 - Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
@@ -19,7 +20,7 @@
 - Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
 - Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
 - CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
-- Case views disclose assigned account identity and availability. Mine is factual responsibility; hasScopedCases describes access grants. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering.
+- Case views disclose assigned account identity and availability. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering for explicit case work.
 - Work pages and summaries report their observed business date/zone; close and void retain work, while erasure removes it. Rebuild restores actors before referenced case work.
 - Partial reviews show selected facts and exact amounts/dates; chronology issues identify the asserted field and its retained counterpart. Amount entry keeps its original display-locale meaning.
 - Catalogs add act family, affected sections, effect and wire-required input metadata; clients rank tasks explicitly and never select erasure as a default.

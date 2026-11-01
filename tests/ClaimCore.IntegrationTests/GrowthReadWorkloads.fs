@@ -225,6 +225,148 @@ let private readSummary actor (cases: int) =
         | _ -> return failtestf "Summary growth workload failed: %A" result
     }
 
+// These new-feature measurements follow every common query, keeping its population unchanged.
+let private workProfiles (actor: ServiceContext) cases =
+    task {
+        let! context = Service.context actor () token
+
+        let context =
+            match context with
+            | Outcome.Succeeded value -> value
+            | _ -> failtest "Case-work growth requires the actual registered handler context"
+
+        let followUp =
+            CalendarDate.ofDate (context.Runtime.EffectiveBusinessDate.AddDays -1)
+
+        let references = ResizeArray<string>()
+
+        for index in 1..1000 .. cases - 1 do
+            let reference = GrowthWorkloadPlan.readReference index
+
+            let! changed =
+                Service.execute
+                    actor
+                    (Inputs.caseOperation (
+                        request
+                            (3000000 + index)
+                            reference
+                            1L
+                            (AuthoredCaseAct.UpdateWork
+                                {
+                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                                    FollowUp = WorkValue.Set(CalendarDate.format followUp)
+                                })
+                    ))
+                    token
+
+            accepted changed |> ignore
+            references.Add reference
+
+        // Independent population/count and row-content witnesses, rather than an empty Mine query.
+        Expect.equal references.Count (cases / 1000) "One open case per thousand has explicit work"
+
+        let expected =
+            [
+                for index in 0 .. cases - 1 do
+                    if index % 1000 = 1 then
+                        yield sprintf "READ-GROWTH-%07d" index
+            ]
+            |> List.truncate 50
+
+        let filter =
+            { CaseListFilter.empty<string> with
+                Assignment = Some CaseAssignment.Mine
+                Due = Some CaseDue.Overdue
+                Order = CaseListOrder.FollowUp
+            }
+
+        let read () =
+            task {
+                let! result =
+                    Service.list
+                        actor
+                        {
+                            Page = { AfterCursor = None; Limit = 50 }
+                            Filter = filter
+                        }
+                        token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    Expect.equal
+                        (page.Items |> List.map (fun row -> CaseReference.format row.Reference))
+                        expected
+                        "Follow-up order returns the independently named actual assigned cases"
+
+                    for row in page.Items do
+                        match row.State with
+                        | CaseState.Active facts ->
+                            Expect.equal
+                                facts.Work.FollowUp
+                                (Some followUp)
+                                "The planned date survives actual PostgreSQL reads"
+
+                            Expect.equal
+                                facts.Work.Due
+                                CaseDue.Overdue
+                                "The database observation classifies actual past follow-up"
+
+                            Expect.equal
+                                (facts.Work.Responsible |> Option.map _.Account.ActorId)
+                                (Some context.ActorId)
+                                "Mine is explicit responsibility, not grant-based visibility"
+                        | _ -> failtest "Only seeded active work can match the work filter"
+
+                    return page.Items.Length
+                | _ -> return failtest "Actual work-list growth query must succeed"
+            }
+
+        let summary () =
+            task {
+                let! result = Service.caseSummary actor filter token
+
+                match result with
+                | Outcome.Succeeded value ->
+                    Expect.equal
+                        value.Counts.Total
+                        (int64 (cases / 1000))
+                        "Filtered summary counts the independently expected assigned population"
+
+                    let overdue =
+                        value.Counts.Due |> List.find (fun count -> count.Value = CaseDue.Overdue)
+
+                    Expect.equal
+                        overdue.Count
+                        value.Counts.Total
+                        "Every matched work case is actually overdue"
+
+                    return int value.Counts.Total
+                | _ -> return failtest "Actual filtered work summary must succeed"
+            }
+
+        let! listing =
+            measure
+                cases
+                ("case-work-follow-up",
+                 "FOLLOW_UP",
+                 min 50 (cases / 1000),
+                 GrowthWorkloadPlan.workReadFingerprint cases filter false)
+                (Nullable 50)
+                read
+
+        let! totals =
+            measure
+                cases
+                ("case-work-summary",
+                 "GROUPED",
+                 cases / 1000,
+                 GrowthWorkloadPlan.workReadFingerprint cases filter true)
+                (Nullable())
+                summary
+
+        return [| listing; totals |]
+    }
+
 let profile cases =
     task {
         let! database = PostgresFixture.create ()
@@ -289,6 +431,9 @@ let profile cases =
             if cases = 100000 then
                 let! history = authorityProfiles database actor cases
                 reports.AddRange history
+
+            let! work = workProfiles actor cases
+            reports.AddRange work
 
             return
                 {|

@@ -110,14 +110,14 @@ export const CaseRow = ({
               </>
             )}
             <small>
-              {live.work.followUpDate === null ? (
-                p.term("due", "UNSCHEDULED")
-              ) : (
-                <time dateTime={live.work.followUpDate}>
-                  <bdi dir="ltr">{p.date(live.work.followUpDate)}</bdi>
-                </time>
+              {live.work.followUpDate === null ? null : (
+                <>
+                  <time dateTime={live.work.followUpDate}>
+                    <bdi dir="ltr">{p.date(live.work.followUpDate)}</bdi>
+                  </time>
+                  {" · "}
+                </>
               )}
-              {" · "}
               {p.term("due", live.work.due)}
             </small>
           </>

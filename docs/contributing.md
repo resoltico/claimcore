@@ -374,9 +374,9 @@ It refuses source changes during capture. Both source-stable inputs build in dis
 detached worktrees with locked restore. The comparison alternates
 reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
 read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and six read profiles
-at 100k cases: search, filtered, notification order, summary, global authority history and actor-filtered
-authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
+is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and eight read profiles
+at 100k cases: search, filtered, notification order, summary, explicit-work follow-up/summary, global
+authority history and actor-filtered authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
 are reported as not applicable.
 
@@ -408,11 +408,15 @@ stays at the recorded commit. The comparison removes its worktrees, build output
 containers on success or failure, while preserving reports and failure output.
 
 The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
-three cardinality comparisons and search/filtered, notification-order and summary workloads at 1k,
-10k and 100k cases. At the
+three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
+follow-up/summary workloads at 1k, 10k and 100k cases. At the
 100k case population, global and actor-filtered authority-history reads also run after 100k additional
 grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
 their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
+After those common measurements, one open case per thousand receives explicit responsibility and a past
+follow-up based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
+independently named cases, account identity, dates and counts before recording their separate latency
+samples. These feature workloads have their own fingerprints; older references without them yield no ratio.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements

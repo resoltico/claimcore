@@ -112,7 +112,12 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
     .getByRole("dialog", { name: "Discard these draft changes?" })
     .getByRole("button", { name: "Keep editing" })
     .click();
-  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
+  await page
+    .getByRole("dialog", { name: "Settings", exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
   expect(requests).toEqual([original]);
   await page.unroute(failedLanguage);
   await refuseRetryBeforeDispatch(page, requests);
