@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { preferenceKey } from "../src/presentation/preferences";
+import { openCase } from "./case-workflow";
 import { selectLanguage } from "./localization-support";
 
 type Resource = {
@@ -61,6 +62,15 @@ const heading = (page: Page) =>
     .locator("main h1:visible")
     .filter({ hasNotText: /^ClaimCore$/u })
     .first();
+const reference = "LOADING-COMMON-CASE";
+const ready = async (page: Page, route: string) => {
+  await expect(heading(page)).toBeVisible();
+  if (route === "/cases") {
+    await expect(
+      page.locator(".worklist-rows").getByRole("link", { name: reference, exact: true }),
+    ).toBeVisible();
+  }
+};
 type Measurements = unknown[];
 const measureLanguages = async (page: Page, observations: Measurements) => {
   for (const language of ["lv", "ar", "en"] as const) {
@@ -90,6 +100,7 @@ const measureNavigation = async (
     await page.locator(`.workspace-header nav a[href="${route}"]`).click();
     await expect(page).toHaveURL(new URL(route, baseURL).href);
     await expect.poll(() => heading(page).textContent()).not.toBe(before);
+    await ready(page, route);
     const rendered = performance.now() - started;
     await page.waitForLoadState("networkidle");
     observations.push({
@@ -100,6 +111,18 @@ const measureNavigation = async (
       resources: (await resources(page)).slice(count),
     });
   }
+  const count = (await resources(page)).length;
+  const started = performance.now();
+  await page.locator(".worklist-rows").getByRole("link", { name: reference, exact: true }).click();
+  await expect(page.locator("section.case-fields")).toContainText(reference);
+  const rendered = performance.now() - started;
+  await page.waitForLoadState("networkidle");
+  observations.push({
+    task: "warm-case-inspection",
+    language,
+    renderMilliseconds: rendered,
+    resources: (await resources(page)).slice(count),
+  });
   if (language === "en") {
     await measureLanguages(page, observations);
   }
@@ -141,7 +164,7 @@ const measureRoute = async (
     });
     const started = performance.now();
     await page.goto(new URL(route, baseURL).href, { waitUntil: "commit" });
-    await expect(heading(page)).toBeVisible();
+    await ready(page, route);
     await expect(page.locator("html")).toHaveAttribute("lang", language);
     const rendered = performance.now() - started;
     await page.waitForLoadState("networkidle");
@@ -151,7 +174,7 @@ const measureRoute = async (
       route,
       renderMilliseconds: rendered,
       resources: await resources(page),
-      visibleCaseRows: await page.locator(".worklist-row").count(),
+      visibleCaseRows: await page.locator(".worklist-rows > tr").count(),
     });
     if (route === "/cases") {
       await measureNavigation(page, baseURL, language, observations);
@@ -178,6 +201,17 @@ test("records comparable cold routes warm navigation and language activation", a
   const state: unknown = JSON.parse(
     await readFile(resolve(directory, "authenticated-state.json"), "utf8"),
   );
+  // Setup is outside every measured browser context. Both revisions use their maintained
+  // OPEN UI driver with the same eight independently specified business values.
+  const seed = await authenticated(browser, "en", state);
+  try {
+    const page = await seed.newPage();
+    await page.goto(new URL("/cases", baseURL).href);
+    await expect(heading(page)).toBeVisible();
+    await openCase(page, reference);
+  } finally {
+    await seed.close();
+  }
   const observations: Measurements = [];
   for (const language of ["en", "lv", "ar"]) {
     for (const route of ["/cases", "/operations", "/authority"]) {
@@ -188,15 +222,28 @@ test("records comparable cold routes warm navigation and language activation", a
     resolve(directory, "loading-measurements.json"),
     JSON.stringify(
       {
-        schema: 2,
+        schema: 3,
         engine: test.info().project.name,
         timing:
-          "Area heading visible; warm navigation excludes resource-idle wait; resources collected after idle",
+          "Usable area heading plus common case row for Cases; case inspection waits for complete case fields; all render timings exclude resource-idle wait; all requested asset resources collected after idle",
+        workload: {
+          reference,
+          cases: 1,
+          registration: {
+            incidentDate: "2026-09-01",
+            notificationDate: "2026-09-02",
+            country: "LV",
+            claimant: "Synthetic claimant",
+            insurer: "Synthetic insurer",
+            amount: "1200.50",
+            currency: "EUR",
+          },
+        },
         observations,
       },
       null,
       2,
     ),
   );
-  expect(observations).toHaveLength(21);
+  expect(observations).toHaveLength(24);
 });

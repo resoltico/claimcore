@@ -12,6 +12,8 @@ export const chooseChoice = (page: Page, name: string, value: string): Promise<v
 export const choiceGroup = (page: Page, name: string): Locator =>
   page.getByRole("radiogroup").filter({ has: page.locator(`input[name="${name}"]`) });
 export const showExactLookup = async (page: Page): Promise<Locator> => {
+  await page.locator('.worklist[aria-busy="false"]').waitFor({ state: "visible" });
+  await page.locator('.summary-band[aria-busy="true"]').waitFor({ state: "detached" });
   const input = page.locator("#case-lookup");
   if (!(await input.isVisible())) {
     await page.locator(".exact-lookup > summary").click();

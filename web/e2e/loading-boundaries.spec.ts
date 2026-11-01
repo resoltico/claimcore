@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { startOpen, reviewDraft } from "./case-workflow";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage } from "./localization-support";
@@ -72,4 +74,52 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await page.unroute(accessModule);
   await page.getByRole("button", { name: "Reload interface", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Access", exact: true })).toBeVisible();
+});
+
+test("failed language activation and a declined update reload preserve raw entry, review identity and confirmation", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await startOpen(page, `CHUNK-DRAFT-${randomUUID()}`);
+  const amount = page.locator('input[name="act.values.claimed.amount"]');
+  await amount.fill("1,234");
+  const executions: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/operation.execute") {
+      executions.push(request.postData() ?? "");
+    }
+  });
+  await page.route(latvianModule, (route) => route.abort("failed"));
+  await page.locator("[data-settings-button]").click();
+  await page.getByRole("combobox", { name: "Interface language" }).selectOption("lv");
+  await expect(page.getByRole("alert")).toContainText("The language could not be loaded");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await page.getByRole("button", { name: "Reload interface", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Discard these draft changes?" })
+    .getByRole("button", { name: "Keep editing" })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(amount).toHaveValue("1,234");
+  const event = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/operation.preview",
+  );
+  const identity = await reviewDraft(page);
+  expect((await event).postDataJSON()).toMatchObject({
+    operationId: identity.operationId,
+    act: { values: { claimed: { amount: "1234", currency: "EUR" } } },
+  });
+  await page.getByText("I confirm these changes.", { exact: true }).click();
+  await page.locator("[data-settings-button]").click();
+  await page.getByRole("button", { name: "Reload interface", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Discard these draft changes?" })
+    .getByRole("button", { name: "Keep editing" })
+    .click();
+  await page.keyboard.press("Escape");
+  const review = page.getByRole("dialog", { name: "Review changes", exact: true });
+  await expect(review).toContainText(identity.operationId);
+  await expect(review.getByRole("checkbox")).toBeChecked();
+  expect(executions).toEqual([]);
 });

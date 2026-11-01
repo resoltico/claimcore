@@ -37,7 +37,12 @@ export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
   ({ en, lv, ar })[language]["act.OPEN.label"];
 const openPreferences = async (page: Page): Promise<boolean> => {
-  if (await page.locator('select[id$="-language"]:visible').count()) {
+  const controls = page.locator('select[id$="-language"]:visible');
+  await controls
+    .or(page.locator(".workspace-header:visible"))
+    .first()
+    .waitFor({ state: "visible" });
+  if (await controls.count()) {
     return false;
   }
   await settledWorkspaceHeader(page);

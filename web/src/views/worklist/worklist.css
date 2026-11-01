@@ -12,11 +12,11 @@
   min-inline-size: 0;
 }
 .worklist-search {
-  flex: 1;
+  flex: 1 1 28rem;
 }
 .worklist-search input {
-  flex: 1;
-  inline-size: 100%;
+  flex: 1 1 16rem;
+  inline-size: auto;
   min-inline-size: var(--target-minimum);
   padding: var(--space-3);
   border: 1px solid var(--color-border);

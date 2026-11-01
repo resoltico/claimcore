@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -18,9 +19,13 @@ afterEach(() => {
     }
   }
 });
-it.each([true, false])(
-  "returns to the exact work query with row availability=%s and leaves history state empty",
-  async (retained) => {
+it.each([
+  { retained: true, interrupt: false },
+  { retained: false, interrupt: false },
+  { retained: true, interrupt: true },
+])(
+  "returns to the exact work query with row availability=$retained and user override=$interrupt and leaves history state empty",
+  async ({ retained, interrupt }) => {
     stubDashboardContext();
     const value = caseSummaryInput({
       caseId: current.caseId,
@@ -38,9 +43,13 @@ it.each([true, false])(
           },
         },
       }) as const;
-    mockEndpoint("case.list")
-      .mockResolvedValueOnce(page([value]))
-      .mockResolvedValue(page(retained ? [value] : []));
+    const pending = Promise.withResolvers<ReturnType<typeof page>>();
+    const listing = mockEndpoint("case.list").mockResolvedValueOnce(page([value]));
+    if (interrupt) {
+      listing.mockReturnValue(pending.promise);
+    } else {
+      listing.mockResolvedValue(page(retained ? [value] : []));
+    }
     mockEndpoint("case.summary").mockResolvedValue({
       kind: "outcome",
       status: 200,
@@ -88,7 +97,19 @@ it.each([true, false])(
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?q=CASE&order=RECENT");
     });
-    if (retained) {
+    if (interrupt) {
+      const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;
+      await user.pointer({ target: summary, keys: "[MouseLeft>]" });
+      await act(async () => {
+        pending.resolve(page([value]));
+        await pending.promise;
+      });
+      await user.pointer({ target: summary, keys: "[/MouseLeft]" });
+      await waitFor(() => {
+        expect(document.querySelector(".exact-lookup")).toHaveAttribute("open", "");
+      });
+      expect(scroll).not.toHaveBeenCalled();
+    } else if (retained) {
       await waitFor(() => {
         expect(screen.getByRole("link", { name: current.caseReference })).toHaveFocus();
       });

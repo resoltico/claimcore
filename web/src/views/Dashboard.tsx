@@ -81,11 +81,21 @@ const useRouteHeading = (route: Route, owner: string | null) => {
     if (focus()) {
       return;
     }
+    const cancellation = new window.AbortController();
     const observer = new MutationObserver(() => {
       if (focus()) {
         observer.disconnect();
+        cancellation.abort();
       }
     });
+    const interrupt = () => {
+      focused.current = identity;
+      observer.disconnect();
+      cancellation.abort();
+    };
+    const options = { capture: true, signal: cancellation.signal };
+    document.addEventListener("pointerdown", interrupt, options);
+    document.addEventListener("keydown", interrupt, options);
     observer.observe(target, {
       childList: true,
       subtree: true,
@@ -94,6 +104,7 @@ const useRouteHeading = (route: Route, owner: string | null) => {
     });
     return () => {
       observer.disconnect();
+      cancellation.abort();
     };
   }, [identity]);
   return content;
