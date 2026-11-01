@@ -45,7 +45,7 @@ type CliMessage =
     | [<MessageKey("cli.usage.requestTooLarge")>] RequestTooLarge of maximumBytes: string
     | [<MessageKey("cli.delivery.unresolved")>] UnresolvedDelivery of
         retryCommand: string *
-        resolveCommand: string
+        statusCommand: string
     | [<MessageKey("cli.configurationIssue")>] ConfigurationIssue of setting: string * issue: string
     | [<MessageKey("label.characterWarning")>] CharacterWarning of characters: string
     | [<MessageKey("cli.help.layout")>] HelpLayout of body: string
@@ -54,7 +54,8 @@ type CliMessage =
         maximumRequestBytes: string *
         maximumResponseBytes: string *
         retryCommand: string *
-        resolveCommand: string
+        statusCommand: string *
+        settlementCommand: string
     | [<MessageKey("cli.help.session")>] HelpSession of
         maximumInvocationBytes: string *
         maximumRequestBytes: string *
@@ -71,13 +72,25 @@ type CliMessage =
         maximumTrustRootBytes: string
     | [<MessageKey("cli.help.delivery")>] HelpDelivery of
         retryCommand: string *
-        resolveCommand: string
+        statusCommand: string *
+        settlementCommand: string
     | [<MessageKey("label.action")>] ActionLabel
     | [<MessageKey("label.availableActs")>] AvailableActsLabel
     | [<MessageKey("label.enabled")>] EnabledLabel
     | [<MessageKey("label.reviewTitle")>] ReviewTitle
     | [<MessageKey("label.revisionLabel")>] RevisionLabel
 
+    | [<MessageKey("cli.text.recoveryCleanupUnavailable")>] RecoveryCleanupUnavailable
+    | [<MessageKey("cli.text.settlementScope")>] SettlementScope of
+        actorId: string *
+        installationId: string
+    | [<MessageKey("cli.text.recoveryEmpty")>] RecoveryEmpty
+    | [<MessageKey("cli.text.recoveryAttempt")>] RecoveryAttempt of
+        attemptId: string *
+        subject: string *
+        act: string *
+        operationId: string
+    | [<MessageKey("cli.text.statusUnresolved")>] StatusUnresolved
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.next")>] NextLabel
     | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty

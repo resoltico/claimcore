@@ -13,7 +13,7 @@ import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import { OperationEditor } from "./OperationEditor";
-import { OperationLookup } from "./OperationLookup";
+import { RecoveryPanel } from "./RecoveryPanel";
 
 const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void }) => {
   const p = usePresentation();
@@ -136,11 +136,9 @@ export const RoutedContent = ({
       );
     case "operations":
       return (
-        <OperationLookup
+        <RecoveryPanel
           key={route.operationId}
-          initialOperationId={route.operationId}
-          definition={productMetadata}
-          onLockChange={setLocked}
+          {...(route.operationId === "" ? {} : { initialOperationId: route.operationId })}
         />
       );
     case "authority":

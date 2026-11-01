@@ -10,14 +10,6 @@ open ClaimCore.Protocol
 open ClaimCore.Json
 
 [<NoEquality; NoComparison>]
-type internal InteractiveConsole =
-    {
-        IsInteractive: bool
-        ReadLine: unit -> string option
-        Write: byte array -> unit
-    }
-
-[<NoEquality; NoComparison>]
 type internal InteractiveTransport =
     {
         Exchange: Invocation -> CancellationToken -> Task<CliReply>
@@ -134,21 +126,8 @@ module internal InteractiveReview =
         | FrameResult.Reply _ -> invalidOp "A review response must retain its requested endpoint."
         | _ -> None
 
-    let private confirmed language answer =
-        let words =
-            match language with
-            | "lv" -> [ "j"; "jā" ]
-            | "ar" -> [ "نعم" ]
-            | _ -> [ "y"; "yes" ]
-
-        answer
-        |> Option.exists (fun (answer: string) ->
-            words
-            |> List.exists (fun word ->
-                String.Equals(answer.Trim(), word, StringComparison.OrdinalIgnoreCase)))
-
     let private review
-        console
+        (console: InteractiveConsole)
         transport
         (draft: InteractiveCaseDraft)
         (request: CaseOperationRequest)
@@ -169,7 +148,7 @@ module internal InteractiveReview =
                 |> Encoding.UTF8.GetBytes
                 |> console.Write
 
-                if confirmed draft.Language (console.ReadLine()) then
+                if CliConfirmation.confirmed draft.Language (console.ReadLine()) then
                     let execute =
                         invocation Api.operationExecute input
                         |> Frames.bindInstallation installation

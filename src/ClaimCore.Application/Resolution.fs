@@ -59,46 +59,50 @@ module internal Resolution =
                                         let! actor, entry, current =
                                             ExecutionFacts.operation tx principal operationId
 
-                                        match resolve services operationId actor entry current with
-                                        | Verdict.Proceed actor ->
-                                            let key =
-                                                {
-                                                    FenceKey.ActorId = actor
-                                                    OperationId = operationId
-                                                }
+                                        let! fenced =
+                                            ExecutionFacts.fenced
+                                                services
+                                                tx
+                                                actor
+                                                operationId
+                                                entry
 
-                                            let! fenced = tx.IsFenced key
-
-                                            if not fenced then
-                                                let control =
-                                                    LedgerEntries.create
-                                                        {
-                                                            InstallationId =
-                                                                services.InstallationId
-                                                            Head = tx.Head
-                                                            Instant = tx.ObservedAt
-                                                            Nonce = tx.Nonce
-                                                            ActorId = actor
-                                                            OperationId = operationId
-                                                            Subject =
-                                                                EntryTarget.NonAcceptance
-                                                                    operationId
-                                                            Request = ControlRecord.encode ()
-                                                            Snapshot = Array.empty
-                                                        }
-
-                                                do! tx.Append control
-
-                                            do!
-                                                tx.Fence(
+                                        match fenced with
+                                        | Error fault -> return Verdict.Fail fault
+                                        | Ok fenced ->
+                                            match
+                                                resolve services operationId actor entry current
+                                            with
+                                            | Verdict.Proceed actor ->
+                                                let key =
                                                     {
                                                         FenceKey.ActorId = actor
                                                         OperationId = operationId
                                                     }
-                                                )
 
-                                            return Verdict.Proceed()
-                                        | other -> return Verdict.map ignore other
+                                                if not fenced then
+                                                    let control =
+                                                        LedgerEntries.create
+                                                            {
+                                                                InstallationId =
+                                                                    services.InstallationId
+                                                                Head = tx.Head
+                                                                Instant = tx.ObservedAt
+                                                                Nonce = tx.Nonce
+                                                                ActorId = actor
+                                                                OperationId = operationId
+                                                                Subject =
+                                                                    EntryTarget.NonAcceptance
+                                                                        operationId
+                                                                Request = ControlRecord.encode ()
+                                                                Snapshot = Array.empty
+                                                            }
+
+                                                    do! tx.Append control
+                                                    do! tx.Fence key
+
+                                                return Verdict.Proceed()
+                                            | other -> return Verdict.map ignore other
                                     })
                             CancellationToken = token
                         }

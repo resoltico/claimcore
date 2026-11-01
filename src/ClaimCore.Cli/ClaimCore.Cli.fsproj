@@ -26,6 +26,7 @@
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="MessageCatalogs.fs" />
+    <Compile Include="CliConfirmation.fs" />
     <Compile Include="TerminalText.fs" />
     <Compile Include="UsageText.fs" />
     <Compile Include="ContractDiscovery.fs" />
@@ -48,7 +49,6 @@
     <Compile Include="FrameDelivery.fs" />
     <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
-    <Compile Include="RecoveryCommand.fs" />
     <Compile Include="TextReplyFormat.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
     <Compile Include="CsvCell.fs" />
@@ -59,6 +59,7 @@
     <Compile Include="TextOperationReply.fs" />
     <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
+    <Compile Include="RecoveryCommand.fs" />
     <Compile Include="ReadPageIO.fs" />
     <Compile Include="CaseListCommand.fs" />
     <Compile Include="AuthorityHistoryCommand.fs" />

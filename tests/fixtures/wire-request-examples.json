@@ -1187,6 +1187,15 @@
           "caseReference": "OTHER"
         }
       }
+    },
+    {
+      "id": "passive-operation-status",
+      "endpoint": "operation.status",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
     }
   ]
 }

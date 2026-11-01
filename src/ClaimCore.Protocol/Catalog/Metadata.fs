@@ -98,7 +98,7 @@ type CatalogOperation =
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
-        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) ->
+        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Status | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation
         | CatalogOperation.Query QueryEndpoint.Context -> CatalogSubject.Context
 

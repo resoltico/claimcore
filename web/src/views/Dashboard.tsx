@@ -1,7 +1,7 @@
+import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
 import { RequesterContext } from "../hooks/useRequesterContext";
 import { WorkspaceHeader } from "./WorkspaceHeader";
-import { UnresolvedNotice } from "./operation/UnresolvedNotice";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { CaseReceipt } from "../api/service";
@@ -219,30 +219,31 @@ export const Dashboard = () => {
   };
   return (
     <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>
-      <WorkspaceHeader active={active} views={views} locked={locked} />
-      <UnresolvedNotice />
-      <AcceptedToast
-        route={route}
-        receipt={accepted}
-        close={() => {
-          setAccepted(null);
-        }}
-      />
-      <main className="app-shell">
-        <WorkspaceStatus context={context} />
-        <div ref={content}>
-          <WorkspaceRoute
-            route={route}
-            views={views}
-            noViews={
-              !context.loading && response?.outcome.kind === "SUCCEEDED" && views.length === 0
-            }
-            setLocked={setLocked}
-            committed={committed}
-            refresh={refresh}
-          />
-        </div>
-      </main>
+      <RecoveryProvider>
+        <WorkspaceHeader active={active} views={views} locked={locked} />
+        <AcceptedToast
+          route={route}
+          receipt={accepted}
+          close={() => {
+            setAccepted(null);
+          }}
+        />
+        <main className="app-shell">
+          <WorkspaceStatus context={context} />
+          <div ref={content}>
+            <WorkspaceRoute
+              route={route}
+              views={views}
+              noViews={
+                !context.loading && response?.outcome.kind === "SUCCEEDED" && views.length === 0
+              }
+              setLocked={setLocked}
+              committed={committed}
+              refresh={refresh}
+            />
+          </div>
+        </main>
+      </RecoveryProvider>
     </RequesterContext>
   );
 };

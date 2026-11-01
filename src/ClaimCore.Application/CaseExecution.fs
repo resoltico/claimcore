@@ -224,19 +224,28 @@ module internal CaseExecution =
                             | Error refusal -> return Verdict.Refuse refusal
                             | Ok command ->
                                 let! fenced =
-                                    ExecutionFacts.fenced tx view.Actor command.OperationId
-
-                                return!
-                                    execute
+                                    ExecutionFacts.fenced
                                         services
-                                        command
-                                        {
-                                            Head = tx.Head
-                                            Fenced = fenced
-                                            Nonce = tx.Nonce
-                                        }
-                                        view
-                                    |> ExecutionFacts.persist tx tx.ProjectCase
+                                        tx
+                                        view.Actor
+                                        command.OperationId
+                                        view.ExistingOperation
+
+                                let verdict =
+                                    match fenced with
+                                    | Error fault -> Verdict.Fail fault
+                                    | Ok fenced ->
+                                        execute
+                                            services
+                                            command
+                                            {
+                                                Head = tx.Head
+                                                Fenced = fenced
+                                                Nonce = tx.Nonce
+                                            }
+                                            view
+
+                                return! ExecutionFacts.persist tx tx.ProjectCase verdict
                         })
                 CancellationToken = token
             }

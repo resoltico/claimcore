@@ -291,6 +291,11 @@
       "token": "case.summary",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "operation.status",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -344,7 +349,7 @@
     "assignment",
     "caseId"
   ],
-  "cliFrameCount": 32,
+  "cliFrameCount": 33,
   "readInputs": {
     "case.get": [
       "target"
@@ -393,6 +398,9 @@
       "text",
       "order",
       "assignment"
+    ],
+    "operation.status": [
+      "operationId"
     ]
   },
   "caseLifecycles": [

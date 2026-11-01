@@ -36,8 +36,9 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore call`
 - `claimcore session`
 - `claimcore shell`
-- `claimcore recovery list`
-- `claimcore recovery resolve ATTEMPT_ID`
+- `claimcore recovery list [--format text|json] [--language en|lv|ar]`
+- `claimcore recovery check ATTEMPT_ID [--format text|json] [--language en|lv|ar]`
+- `claimcore recovery settle ATTEMPT_ID [--format text|json] [--language en|lv|ar]`
 - `claimcore configure --show`
 - `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]`
 
@@ -457,14 +458,28 @@ claimcore operation observe OPERATION-ID
 | --- | --- | --- | --- |
 | `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 
-## operation resolve
+## operation status
 
-Resolve an operation
+Check operation status
 
-Read the author’s receipt or durably prevent the operation from being accepted.
+Read this actor’s known outcome without blocking the operation or changing the register.
 
 ```sh
-claimcore operation resolve OPERATION-ID
+claimcore operation status OPERATION-ID
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+
+## operation settle
+
+Settle operation permanently
+
+Return this account’s accepted receipt, or permanently block its operation ID if it has not been accepted for this account. This cannot be undone. Checking status is a separate read.
+
+```sh
+claimcore operation settle OPERATION-ID
 ```
 
 | Input | Meaning | Choices | Default |

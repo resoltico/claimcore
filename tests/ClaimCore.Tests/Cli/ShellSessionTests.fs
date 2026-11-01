@@ -135,8 +135,8 @@ let private uncertainContinues () =
 
         Expect.stringContains
             (text terminal.Errors)
-            "operation resolve 10000000-0000-4000-8000-000000000001"
-            "Exact resolve command retains operation ID"
+            "operation status 10000000-0000-4000-8000-000000000001"
+            "Passive status guidance retains the exact operation ID"
     }
 
 let private interruptCommand () =

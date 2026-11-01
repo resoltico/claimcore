@@ -15,6 +15,7 @@ type QueryEndpoint =
     | CaseSummary
     | CaseHistory
     | Observe
+    | Status
     | Resolve
     | AuthorityList
     | AuthorityGrants
@@ -28,6 +29,8 @@ type ActorEndpoint =
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActorEndpoint =
+    // This total endpoint-token table owns stable public spellings and has no nested decisions; every closed endpoint remains compiler-checked.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
         Vocabulary.define
             "endpoint"
@@ -39,6 +42,7 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
                 (ActorEndpoint.Query QueryEndpoint.Observe)
+                (ActorEndpoint.Query QueryEndpoint.Status)
                 (ActorEndpoint.Query QueryEndpoint.Resolve)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityList)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
@@ -53,6 +57,7 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
              | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
+             | (ActorEndpoint.Query QueryEndpoint.Status) -> "operation.status"
              | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"

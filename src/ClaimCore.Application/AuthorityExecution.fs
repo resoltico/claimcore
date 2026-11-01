@@ -286,19 +286,29 @@ module internal AuthorityExecution =
                                     command.Target
                                     (AuthorityRequests.targetCase command)
 
-                            let! fenced = ExecutionFacts.fenced tx view.Actor command.OperationId
-
-                            return!
-                                execute
+                            let! fenced =
+                                ExecutionFacts.fenced
                                     services
-                                    command
-                                    {
-                                        Head = tx.Head
-                                        Fenced = fenced
-                                        Nonce = tx.Nonce
-                                    }
-                                    view
-                                |> ExecutionFacts.persist tx tx.ProjectAuthority
+                                    tx
+                                    view.Actor
+                                    command.OperationId
+                                    view.ExistingOperation
+
+                            let verdict =
+                                match fenced with
+                                | Error fault -> Verdict.Fail fault
+                                | Ok fenced ->
+                                    execute
+                                        services
+                                        command
+                                        {
+                                            Head = tx.Head
+                                            Fenced = fenced
+                                            Nonce = tx.Nonce
+                                        }
+                                        view
+
+                            return! ExecutionFacts.persist tx tx.ProjectAuthority verdict
                         })
                 CancellationToken = token
             }
@@ -327,19 +337,29 @@ module internal AuthorityExecution =
                                     target
                                     None
 
-                            let! fenced = ExecutionFacts.fenced tx view.Actor operationId
-
-                            return!
-                                provision
+                            let! fenced =
+                                ExecutionFacts.fenced
                                     services
+                                    tx
+                                    view.Actor
                                     operationId
-                                    {
-                                        Head = tx.Head
-                                        Fenced = fenced
-                                        Nonce = tx.Nonce
-                                    }
-                                    view
-                                |> ExecutionFacts.persist tx tx.ProjectAuthority
+                                    view.ExistingOperation
+
+                            let verdict =
+                                match fenced with
+                                | Error fault -> Verdict.Fail fault
+                                | Ok fenced ->
+                                    provision
+                                        services
+                                        operationId
+                                        {
+                                            Head = tx.Head
+                                            Fenced = fenced
+                                            Nonce = tx.Nonce
+                                        }
+                                        view
+
+                            return! ExecutionFacts.persist tx tx.ProjectAuthority verdict
                         })
                 CancellationToken = token
             }

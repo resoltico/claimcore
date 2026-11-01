@@ -32,7 +32,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
   fillRegistrationInputs({ caseReference: "DRAFT-CONSENT" });
   const name = screen.getByRole("textbox", { name: "Claimant name" });
   const authored = name.getAttribute("value");
-  await user.click(screen.getByRole("link", { name: "Operations" }));
+  await user.click(screen.getByRole("link", { name: "Recovery" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Keep editing" }));

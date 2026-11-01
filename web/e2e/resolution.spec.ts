@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openCase, startAct, reviewDraft } from "./case-workflow";
@@ -58,6 +59,7 @@ for (const reload of [false, true]) {
     ]);
     if (reload) {
       await page.reload();
+      await goToView(page, "operations");
       await expect(
         page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
       ).toHaveCount(0);
@@ -66,11 +68,12 @@ for (const reload of [false, true]) {
         page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
       ).toBeVisible();
     }
-    const resolved = page.waitForResponse((reply) =>
-      reply.url().endsWith("/api/operation.resolve"),
-    );
+    const resolved = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.status"));
     const check = reload
-      ? page.getByRole("status").filter({ hasText: operationId }).getByRole("button")
+      ? page
+          .getByRole("status")
+          .filter({ hasText: operationId })
+          .getByRole("button", { name: ui("en", "ui.checkUnresolvedOperation"), exact: true })
       : page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true });
     await check.click();
     expect((await resolved).status()).toBe(200);

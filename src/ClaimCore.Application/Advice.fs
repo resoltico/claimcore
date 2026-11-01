@@ -89,6 +89,6 @@ module internal Advice =
                 yield View.Cases
             if authority then
                 yield View.Authority
-            if cases || authority then
+            if Authority.validActor principal actor then
                 yield View.Operations
         ]

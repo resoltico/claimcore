@@ -166,7 +166,8 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   );
   fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
   render(<Dashboard />);
-  await user.click(await screen.findByRole("link", { name: "Operations" }));
+  await user.click(await screen.findByRole("link", { name: "Recovery" }));
+  await user.click(screen.getByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
   expect(await screen.findByText(/Accepted operation/u)).toBeVisible();
@@ -212,7 +213,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   );
   const first = render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
-  expect(screen.getByRole("link", { name: "Operations" })).not.toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );

@@ -91,7 +91,12 @@ module CliCommands =
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
         | CliCommand.Shell -> [ "shell" ]
-        | CliCommand.Recovery -> [ "recovery list"; "recovery resolve ATTEMPT_ID" ]
+        | CliCommand.Recovery ->
+            [
+                "recovery list [--format text|json] [--language en|lv|ar]"
+                "recovery check ATTEMPT_ID [--format text|json] [--language en|lv|ar]"
+                "recovery settle ATTEMPT_ID [--format text|json] [--language en|lv|ar]"
+            ]
         | CliCommand.Configure ->
             [
                 "configure --show"

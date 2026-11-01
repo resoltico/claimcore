@@ -24,8 +24,23 @@ export const goToView = async (
 ): Promise<void> => {
   await settledWorkspaceHeader(page);
   const link = page.locator(`nav a[href="/${name}"]`);
+  // The header mounts before the current-context reply supplies authorized navigation.
+  await link.waitFor({ state: "attached" });
   if (!(await link.isVisible())) {
     await page.locator(".workspace-header button[aria-expanded]").click();
   }
   await link.click();
+};
+
+/** General receipt observation is secondary to the actor's dedicated recovery list. */
+export const showOperationLookup = async (page: Page): Promise<Locator> => {
+  const input = page.locator('section[aria-labelledby="operation-lookup-title"] input');
+  if (!(await input.isVisible())) {
+    await page
+      .locator("details")
+      .filter({ has: page.locator("#operation-lookup-title") })
+      .locator(":scope > summary")
+      .click();
+  }
+  return input;
 };

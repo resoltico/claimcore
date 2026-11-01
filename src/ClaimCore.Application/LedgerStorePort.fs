@@ -172,6 +172,20 @@ type FenceKey =
         OperationId: OperationId
     }
 
+/// Point reads retain enough metadata to validate the control node without scanning history.
+type RetainedControl =
+    {
+        Entry: StoredEntry
+        PreviousHash: EntryHash
+    }
+
+/// A derived fence is evidence only when it agrees with its retained committed control.
+type NonAcceptanceEvidence =
+    {
+        Control: RetainedControl option
+        ProjectedAt: DateTimeOffset option
+    }
+
 /// A page carries only rows and a continuation position from the same transaction snapshot.
 type Page<'Item, 'Position> =
     {
@@ -192,6 +206,7 @@ type IReadTx =
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract FindEntry: OperationId -> Task<StoredEntry option>
+    abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
     abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
@@ -210,7 +225,6 @@ type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerPosition
     abstract Nonce: byte array
-    abstract IsFenced: FenceKey -> Task<bool>
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>

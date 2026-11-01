@@ -63,10 +63,14 @@ const diagnosticText = (
 };
 const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): MessageKey => {
   switch (reason) {
+    case "recoveryCleanupUnavailable":
+      return "ui.recoveryCleanupUnavailable";
     case "recoveryListingUnavailable":
       return "ui.recoveryListingUnavailable";
     case "recoveryUnavailable":
       return "ui.recoveryUnavailable";
+    case "unresolved":
+      return "ui.operationUnresolved";
     case "incomplete":
       return "ui.incompleteResponse";
     default:

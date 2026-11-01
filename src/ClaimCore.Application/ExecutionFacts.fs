@@ -156,16 +156,18 @@ module internal ExecutionFacts =
             return actor, entry, record
         }
 
-    let fenced (tx: IWriteTx) (actor: AuthorityView) operation =
+    let fenced (services: ServiceContext) (tx: IReadTx) (actor: AuthorityView) operation existing =
         match actor.Actor with
-        | None -> System.Threading.Tasks.Task.FromResult false
-        | Some actor ->
-            tx.IsFenced(
+        | Some requester when Authority.validActor services.Principal actor ->
+            NonAcceptance.read
+                services.InstallationId
+                tx
                 {
-                    FenceKey.ActorId = actor.ActorId
+                    FenceKey.ActorId = requester.ActorId
                     OperationId = operation
                 }
-            )
+                existing
+        | _ -> System.Threading.Tasks.Task.FromResult(Ok false)
 
     let persist (tx: IWriteTx) project verdict =
         task {

@@ -14,11 +14,11 @@ type internal State =
     {
         Head: LedgerPosition
         Entries: Map<OperationId, StoredEntry>
-        Controls: Map<Sequence, StoredEntry>
+        Controls: Map<Sequence, RetainedControl>
         Cases: Map<CaseId, StoredCase>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
-        Fences: Set<ActorId * OperationId>
+        Fences: Map<ActorId * OperationId, DateTimeOffset>
     }
 
 let internal compareId format left right =

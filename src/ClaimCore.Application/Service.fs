@@ -231,6 +231,17 @@ module Service =
                 }
         }
 
+    let status services (input: OperationLookup) ct =
+        task {
+            let! outcome = RecoveryStatus.run services input ct
+
+            return
+                {
+                    OperationReply.OperationId = input.OperationId
+                    Outcome = outcome
+                }
+        }
+
     let resolve services (input: OperationLookup) ct =
         task {
             let! outcome = Resolution.run services input ct

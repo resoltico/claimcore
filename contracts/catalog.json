@@ -4066,6 +4066,39 @@
       "constants": []
     },
     {
+      "endpoint": "operation.status",
+      "subject": "OPERATION",
+      "kind": "operation.status",
+      "labelId": "endpoint.operation.status.label",
+      "meaningId": "endpoint.operation.status.meaning",
+      "confirmationId": null,
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": true,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
+    },
+    {
       "endpoint": "operation.resolve",
       "subject": "OPERATION",
       "kind": "operation.resolve",

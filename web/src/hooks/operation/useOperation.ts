@@ -131,13 +131,13 @@ const runNetwork = async (
   effect: Extract<
     OperationEffect,
     {
-      kind: "PREVIEW" | "EXECUTE" | "RESOLVE";
+      kind: "PREVIEW" | "EXECUTE" | "CHECK_STATUS";
     }
   >,
   installationId?: string,
 ): Promise<OperationAction> => {
-  if (effect.kind === "RESOLVE") {
-    const result = await service.resolve(
+  if (effect.kind === "CHECK_STATUS") {
+    const result = await service.status(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
       installationId,
@@ -149,6 +149,9 @@ const runNetwork = async (
           identity: effect.identity,
           receipt: result.value.outcome.data,
         };
+      }
+      if (result.value.outcome.kind === "UNRESOLVED") {
+        return { type: "STATUS_UNRESOLVED", identity: effect.identity };
       }
       if (result.value.outcome.kind === "NOT_ACCEPTED") {
         return {
@@ -173,6 +176,31 @@ const runNetwork = async (
       ? await service.preview(effect.source.prepared, effect.identity.credential)
       : await service.execute(effect.source.prepared, effect.identity.credential, installationId),
   );
+};
+const checkOwnedStatus = async (
+  effect: Extract<OperationEffect, { kind: "CHECK_STATUS" }>,
+  scope: RecoveryScope,
+  owned: RecoveryRecord | undefined,
+  journal: RecoveryJournal,
+  current: () => boolean,
+): Promise<OperationAction> => {
+  const stillCurrent = () => current() && owned !== undefined && sameRecoveryScope(scope, owned);
+  if (owned === undefined || !stillCurrent()) {
+    return {
+      type: "REFUSE",
+      identity: effect.identity,
+      notice: { kind: "local", reason: "recoveryUnavailable" },
+      target: null,
+      uncertain: true,
+      disclosure: false,
+    };
+  }
+  // A passive read uses the existing attempt; it never publishes another journal write.
+  const action = await runNetwork(effect, owned.installationId);
+  if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
+    await journal.remove(owned).catch(() => undefined);
+  }
+  return action;
 };
 const useEffects = (
   state: OperationState,
@@ -239,6 +267,15 @@ const useEffects = (
             };
           }
           const { operationId } = effect.source.prepared.input;
+          if (effect.kind === "CHECK_STATUS") {
+            return checkOwnedStatus(
+              effect,
+              scope,
+              attempts.current.get(operationId),
+              journal,
+              current,
+            );
+          }
           let record = attempts.current.get(operationId);
           if (record === undefined) {
             record = {
@@ -398,9 +435,9 @@ const actions = (state: OperationState, dispatch: Dispatch, options: Options) =>
       refused: true,
     });
   },
-  resolve: () => {
+  checkStatus: () => {
     dispatch({
-      type: "RESOLVE",
+      type: "CHECK_STATUS",
       identity: identity(options, state.context.generation),
     });
   },

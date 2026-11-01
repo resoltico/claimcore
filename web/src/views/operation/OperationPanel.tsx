@@ -92,7 +92,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
       <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
         {p.text("ui.retryExact")}
       </button>
-      <button className="primary" type="button" disabled={model.busy} onClick={model.resolve}>
+      <button className="primary" type="button" disabled={model.busy} onClick={model.checkStatus}>
         {p.text("ui.checkOutcome")}
       </button>
     </section>

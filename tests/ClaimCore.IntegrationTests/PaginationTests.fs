@@ -162,6 +162,7 @@ type internal PausedPageStore
                                         tx.FindCaseByReference reference
 
                                     member _.FindEntry id = tx.FindEntry id
+                                    member _.NonAcceptance key = tx.NonAcceptance key
 
                                     member _.CasePage
                                         ({

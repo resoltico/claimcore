@@ -60,11 +60,17 @@ make UUID-shaped references unambiguous. See [Integration](integrating.md) for t
 ## Recovery attempt
 
 An identity-only client record scoped to service origin, installation, actor and local attempt. It must
-commit before mutation handoff. It contains no business request or credentials; restart recovery resolves
-the operation instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
+commit before mutation handoff. It contains no business request or credentials; restart recovery reads
+actor-scoped status or deliberately settles the operation instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
 
 ## Final nonacceptance
 
 A committed actor/operation control promises that this pair cannot later be accepted in the supported
 state. Repeated resolution appends no second control; another actor's same raw operation UUID is not
 consumed. Controls advance the head/checkpoint and reconstruct fence projections.
+
+## Passive operation status
+
+An enabled valid registered actor's read of its own accepted metadata, previously committed final
+nonacceptance, or unresolved outcome. It appends no control and does not block acceptance. Authorship
+permits recovery metadata even without current case roles; content disclosure remains independently authorized.

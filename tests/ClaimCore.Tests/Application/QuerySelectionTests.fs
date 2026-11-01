@@ -103,7 +103,11 @@ let private authorityAndCursor () =
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Grant review needs installation authority"
 
-    Expect.isEmpty (Advice.views owner ungranted) "Ungrantable views are absent"
+    Expect.equal
+        (Advice.views owner ungranted)
+        [ View.Operations ]
+        "A valid ungranted actor retains recovery without business or authority views"
+
     Expect.isEmpty (Advice.installationOffers owner ungranted) "Context carries no implied offers"
 
     Expect.isTrue
@@ -217,7 +221,12 @@ let private context () =
             "Context identifies its admitted requester"
 
         Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
-        Expect.isEmpty value.View "No views before grants"
+
+        Expect.equal
+            value.View
+            [ View.Operations ]
+            "Roleless valid actors retain their own recovery area"
+
         Expect.isEmpty value.Offers "No offers before grants"
 
         Expect.equal

@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -94,7 +95,26 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
   await second.reload();
-  await second.getByRole("button", { name: "Check unresolved operation", exact: true }).click();
+  await goToView(second, "operations");
+  const checked = second.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.status"),
+  );
+  await second.getByRole("button", { name: "Check operation status", exact: true }).click();
+  const status: unknown = await (await checked).json();
+  expect(isResponse("operation.status", status) && status.outcome.kind === "UNRESOLVED").toBe(true);
+  expect(await records(page, scope)).toEqual([secondRecord]);
+  await second.getByRole("button", { name: "Settle operation permanently", exact: true }).click();
+  await expect(second.getByRole("dialog", { name: "Settle operation permanently" })).toContainText(
+    operationId,
+  );
+  const settled = second.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.resolve"),
+  );
+  await second.getByRole("button", { name: "Confirm permanent settlement", exact: true }).click();
+  const final: unknown = await (await settled).json();
+  expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
+    true,
+  );
   await expect.poll(() => records(page, scope)).toEqual([]);
   await second.close();
 });
@@ -154,21 +174,43 @@ test("tab loss after transaction commit and before notification leaves identity 
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
+  await goToView(replacement, "operations");
   const scope = await scopeFor(replacement);
   const saved = await records(replacement, scope);
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
   const resolved = replacement.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.status"),
+  );
+  await replacement.getByRole("button", { name: "Check operation status", exact: true }).click();
+  const reply: unknown = await (await resolved).json();
+  expect(isResponse("operation.status", reply) && reply.outcome.kind === "UNRESOLVED").toBe(true);
+  expect(await records(replacement, scope)).toHaveLength(1);
+  let settlements = 0;
+  replacement.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.resolve")) {
+      settlements += 1;
+    }
+  });
+  await replacement
+    .getByRole("button", { name: "Settle operation permanently", exact: true })
+    .click();
+  await expect(
+    replacement.getByRole("dialog", { name: "Settle operation permanently" }),
+  ).toContainText(identity.operationId);
+  expect(settlements).toBe(0);
+  const settled = replacement.waitForResponse((response) =>
     response.url().endsWith("/api/operation.resolve"),
   );
   await replacement
-    .getByRole("button", { name: "Check unresolved operation", exact: true })
+    .getByRole("button", { name: "Confirm permanent settlement", exact: true })
     .click();
-  const reply: unknown = await (await resolved).json();
-  expect(isResponse("operation.resolve", reply) && reply.outcome.kind === "NOT_ACCEPTED").toBe(
+  const final: unknown = await (await settled).json();
+  expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
     true,
   );
+  expect(settlements).toBe(1);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   expect(executions).toBe(0);
   await replacement.close();
@@ -203,15 +245,14 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
+  await goToView(replacement, "operations");
   const resolved = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.resolve"),
+    response.url().endsWith("/api/operation.status"),
   );
-  await replacement
-    .getByRole("button", { name: "Check unresolved operation", exact: true })
-    .click();
+  await replacement.getByRole("button", { name: "Check operation status", exact: true }).click();
   const value: unknown = await (await resolved).json();
   expect(
-    isResponse("operation.resolve", value) &&
+    isResponse("operation.status", value) &&
       value.outcome.kind === "ACCEPTED" &&
       value.outcome.data.operationId === identity.operationId,
   ).toBe(true);
@@ -453,15 +494,29 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     const module = (await import(path)) as typeof IndexedJournalModule;
     await module.createIndexedJournal(indexedDB).put(identity);
   }, record);
+  const promised = await browserRequest(page, "/api/operation.resolve", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+      "ClaimCore-Installation": scope.installationId,
+    },
+    body: JSON.stringify({ operationId: record.operationId }),
+  });
+  expect(
+    isResponse("operation.resolve", promised.payload) &&
+      promised.payload.outcome.kind === "NOT_ACCEPTED",
+  ).toBe(true);
   await page.reload();
+  await goToView(page, "operations");
   const ready = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   let resolutions = 0;
-  await page.route("**/api/operation.resolve", async (route) => {
+  await page.route("**/api/operation.status", async (route) => {
     resolutions += 1;
     const response = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await response.json();
-    expect(isResponse("operation.resolve", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(
+    expect(isResponse("operation.status", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(
       true,
     );
     ready.resolve();
@@ -469,11 +524,12 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     await route.fulfill({ response });
   });
   try {
-    await page.getByRole("button", { name: "Check unresolved operation", exact: true }).click();
+    await page.getByRole("button", { name: "Check operation status", exact: true }).click();
     await ready.promise;
     await expect(
-      page.getByRole("button", { name: "Check unresolved operation", exact: true }),
+      page.getByRole("button", { name: "Check operation status", exact: true }),
     ).toBeDisabled();
+    await goToView(page, "cases");
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
     const value: unknown = await (await refreshed).json();
@@ -485,7 +541,7 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(
-      page.getByRole("button", { name: "Check unresolved operation", exact: true }),
+      page.getByRole("button", { name: "Check operation status", exact: true }),
     ).toHaveCount(0);
     expect(resolutions).toBe(1);
   } finally {

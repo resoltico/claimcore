@@ -380,11 +380,158 @@ let private privileges (database: PostgresFixture.Database) =
             "Operational fences are append only and the body store is absent"
     }
 
+let private passiveWhileHeadHeld (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! transaction = connection.BeginTransactionAsync()
+        let! _ = Transactions.head connection token
+        use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 3.)
+
+        let! status =
+            Service.status actor { OperationLookup.OperationId = id 111 } deadline.Token
+
+        Expect.equal
+            status.Outcome
+            (Outcome.Succeeded OperationStatus.Unresolved)
+            "A passive status read completes while the global write head is held"
+
+        let settling = resolve actor (id 111)
+        do! waiters database 1L
+        do! transaction.RollbackAsync()
+        let! settled = settling
+
+        Expect.equal
+            settled
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "Explicit settlement still waits for ordered write admission"
+    }
+
+let private fenceEvidenceCorruption (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+        let! settled = resolve actor (id 112)
+
+        Expect.equal
+            settled
+            (Outcome.Succeeded Resolved.NotAccepted)
+            "The control is genuinely committed before projection corruption"
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        let parameters = [| box (id 1); box (id 112) |]
+
+        let! removed =
+            DatabaseSession.execute
+                connection
+                "DELETE FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2"
+                parameters
+                token
+
+        Expect.equal removed 1 "The intended projection was actually removed"
+
+        let assertIntegrity label =
+            task {
+                let! status = Service.status actor { OperationLookup.OperationId = id 112 } token
+
+                Expect.equal
+                    status.Outcome
+                    (Outcome.Failed CoreFault.StoreIntegrityError)
+                    (label + ": passive status")
+
+                let! resolved = resolve actor (id 112)
+
+                Expect.equal
+                    resolved
+                    (Outcome.Failed CoreFault.StoreIntegrityError)
+                    (label + ": final settlement")
+
+                let! executed =
+                    Service.execute
+                        actor
+                        (Inputs.caseOperation (
+                            request 112 "RETAINED-CONTROL" 0L (AuthoredCaseAct.Open registration)
+                        ))
+                        token
+
+                Expect.equal
+                    executed.Outcome
+                    (ExecuteResult.Failed CoreFault.StoreIntegrityError)
+                    (label + ": execute cannot contradict retained history")
+            }
+
+        do! assertIntegrity "Missing projection"
+
+        let! inserted =
+            DatabaseSession.execute
+                connection
+                "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) SELECT actor_id,operation_id,recorded_at + interval '1 microsecond' FROM claimcore.ledger WHERE actor_id=$1 AND operation_id=$2 AND subject_kind='CONTROL'"
+                parameters
+                token
+
+        Expect.equal inserted 1 "A real projection timestamp disagreement was installed"
+        do! assertIntegrity "Corrupted projection time"
+
+        let! aligned =
+            DatabaseSession.execute
+                connection
+                "UPDATE claimcore.operation_fences f SET fenced_at=l.recorded_at FROM claimcore.ledger l WHERE f.actor_id=$1 AND f.operation_id=$2 AND l.actor_id=f.actor_id AND l.operation_id=f.operation_id AND l.subject_kind='CONTROL'"
+                parameters
+                token
+
+        Expect.equal aligned 1 "The projection agrees again before testing control-node corruption"
+
+        do!
+            VerificationSupport.guardedSql
+                database
+                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,get_byte(previous_hash,0)#1) WHERE actor_id=$1 AND operation_id=$2 AND subject_kind='CONTROL'"
+                parameters
+
+        let key =
+            {
+                FenceKey.ActorId = CaseFixtures.actorId (id 1)
+                OperationId = CaseFixtures.operationId (id 112)
+            }
+
+        let! evidence =
+            database.Fixture.Store.Read
+                {
+                    Work = (fun tx -> tx.NonAcceptance key)
+                    CancellationToken = token
+                }
+
+        match evidence with
+        | Ok { Control = Some control } ->
+            Expect.isOk
+                (LedgerEntries.validate database.Fixture.InstallationId control.Entry)
+                "Payload/static identity validation alone still passes: the node hash must detect this corruption"
+        | _ -> failtest "The retained corruption control must remain structurally readable"
+
+        do! assertIntegrity "Corrupted retained node hash"
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.ledger WHERE actor_id=$1 AND operation_id=$2 AND subject_kind='CONTROL'"
+                parameters
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 rows.Head)
+            1L
+            "Faults never append a replacement control"
+    }
+
 [<Tests>]
 let tests =
     testList
         "operation resolution"
         [
+            testCaseAsync
+                "passive status avoids the write head while explicit settlement remains ordered"
+                (run passiveWhileHeadHeld)
+            testCaseAsync
+                "missing and corrupted fence projections cannot bypass retained controls"
+                (run fenceEvidenceCorruption)
             testCaseAsync
                 "NOT_ACCEPTED fences a delayed execute under the head lock"
                 (run delayedExecute)

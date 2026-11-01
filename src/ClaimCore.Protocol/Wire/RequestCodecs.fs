@@ -464,6 +464,15 @@ module RequestCodecs =
         |> operationOperand _.OperationId
         |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
 
+    let statusRequest =
+        (read (fun operation ->
+            {
+                OperationLookup.OperationId = operation
+            })
+        : ReadFields<OperationLookup, _>)
+        |> operationOperand _.OperationId
+        |> finishRead RequestSchemas.StatusRequest QueryEndpoint.Status
+
     let grantsRequest =
         (read (fun actor cursor limit ->
             {

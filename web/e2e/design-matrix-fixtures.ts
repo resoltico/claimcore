@@ -21,10 +21,9 @@ const request = async <K extends EndpointId>(
 ): Promise<ResponseByEndpoint[K]> => {
   const metadata = endpoints.find((entry) => entry.id === endpoint)!;
   const antiforgery = await sessionToken(page);
-  const binding =
-    endpoint === "operation.execute" || endpoint === "operation.resolve"
-      ? { "ClaimCore-Installation": await installationId(page, antiforgery) }
-      : {};
+  const binding = metadata.requiresInstallation
+    ? { "ClaimCore-Installation": await installationId(page, antiforgery) }
+    : {};
   const reply = await browserRequest(page, metadata.path, {
     method: metadata.method,
     headers: {

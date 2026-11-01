@@ -3693,6 +3693,115 @@
           }
         }
       }
+    },
+    {
+      "name": "passive-status-not_accepted",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "NOT_ACCEPTED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "passive-status-unresolved",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "UNRESOLVED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "passive-status-own-accepted",
+      "endpoint": "operation.status",
+      "value": {
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "OPEN",
+              "snapshot": {
+                "kind": "DISCLOSED",
+                "view": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "x",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    },
+                    "progress": "PAID"
+                  }
+                }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      },
+      "valid": true
+    },
+    {
+      "name": "passive-status-rejected",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "passive-status-failed",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_INTEGRITY_ERROR",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
     }
   ]
 }

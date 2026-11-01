@@ -159,6 +159,9 @@ The PostgreSQL adapter creates a write transaction capability after taking the h
 repeatable-read snapshot; writes read decision state under the lock and commit only on Proceed. Receipt
 construction uses that same state, without a later read changing disclosure. Runtime leases remain held
 through actual provider cleanup.
+`IReadTx.NonAcceptance` supplies the retained control node, typed previous hash and fence instant from
+one snapshot. Application validates node identity/hash and projection agreement before status or write guards
+use it. Passive recovery uses `IStore.Read`; a derived fence alone cannot establish a permanent promise.
 
 Permanent decoding does not reapply current admission. [baseline.sql](../db/baseline.sql) is the
 checksum-bound schema source; its SHA-256 installation identity derives from the exact embedded bytes.

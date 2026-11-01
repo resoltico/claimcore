@@ -11,6 +11,7 @@ type ReplyKind =
     | Accepted
     | AlreadyAccepted
     | NotAccepted
+    | Unresolved
     | Rejected
     | Failed
     | OutcomeUnknown
@@ -66,4 +67,14 @@ module OutcomePresentation =
             classification ReplyKind.Accepted ExitCode.Success
         | Outcome.Succeeded Resolved.NotAccepted ->
             classification ReplyKind.NotAccepted ExitCode.Rejected
+        | outcome -> classify outcome
+
+    let classifyStatus =
+        function
+        | Outcome.Succeeded(OperationStatus.Accepted _) ->
+            classification ReplyKind.Accepted ExitCode.Success
+        | Outcome.Succeeded OperationStatus.NotAccepted ->
+            classification ReplyKind.NotAccepted ExitCode.Rejected
+        | Outcome.Succeeded OperationStatus.Unresolved ->
+            classification ReplyKind.Unresolved ExitCode.OutcomeUnknown
         | outcome -> classify outcome

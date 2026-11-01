@@ -227,6 +227,34 @@ type private ReadTx
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
+        member _.NonAcceptance(key: FenceKey) =
+            task {
+                let! control = StoredEntries.nonAcceptance connection installation key token
+                let fenceInstant = DatabaseSession.instantExpression "fenced_at"
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT {fenceInstant} FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2")
+                        [|
+                            box (ActorId.value key.ActorId)
+                            box (OperationId.value key.OperationId)
+                        |]
+                        token
+
+                let projectedAt =
+                    match rows with
+                    | [] -> None
+                    | [ row ] -> Some(DatabaseSession.recordedInstant 0 row)
+                    | _ -> raise (RecordCorruptException "Duplicate fence projection.")
+
+                return
+                    {
+                        NonAcceptanceEvidence.Control = control
+                        ProjectedAt = projectedAt
+                    }
+            }
+
         member _.CasePage query =
             TransactionPages.cases connection installation query token
 
@@ -299,23 +327,6 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
     interface IWriteTx with
         member _.Head = head
         member _.Nonce = nonce
-
-        member _.IsFenced
-            ({
-                 FenceKey.ActorId = actor
-                 OperationId = operation
-             })
-            =
-            task {
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT EXISTS (SELECT 1 FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2)"
-                        [| box (ActorId.value actor); box (OperationId.value operation) |]
-                        token
-
-                return DatabaseSession.value<bool> 0 rows.Head
-            }
 
         member _.Append entry =
             task {

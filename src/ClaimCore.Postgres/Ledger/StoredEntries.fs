@@ -135,3 +135,29 @@ module internal StoredEntries =
             | [ row ] -> return Some((decode installationId row).Entry)
             | _ -> return raise (RecordCorruptException "Duplicate operation identity.")
         }
+
+    let nonAcceptance connection installationId (key: FenceKey) token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ($"SELECT {columns} FROM claimcore.ledger WHERE actor_id=$1 AND operation_id=$2 AND subject_kind='CONTROL'")
+                    [| box (ActorId.value key.ActorId); box (OperationId.value key.OperationId) |]
+                    token
+
+            match rows with
+            | [] -> return None
+            | [ row ] ->
+                let stored = decode installationId row
+
+                return
+                    Some
+                        {
+                            RetainedControl.Entry = stored.Entry
+                            PreviousHash =
+                                DatabaseSession.admitted
+                                    EntryHash.ofBytes
+                                    stored.Metadata.PreviousHash
+                        }
+            | _ -> return raise (RecordCorruptException "Duplicate nonacceptance control identity.")
+        }

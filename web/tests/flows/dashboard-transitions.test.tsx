@@ -122,7 +122,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
       name: "Close the case",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("link", { name: "Operations" })).not.toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );

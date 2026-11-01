@@ -20,6 +20,9 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
       diagnostic: outcome.data,
     };
   }
+  if (outcome.kind === "UNRESOLVED") {
+    return localNotice("unresolved");
+  }
   if (outcome.kind === "OUTCOME_UNKNOWN") {
     return localNotice("outcomeUnknown");
   }

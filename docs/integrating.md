@@ -317,10 +317,26 @@ means commit confirmation was lost after commit could have started.
 
 `operation.observe` is a read-only audit lookup under current resource rights, including authority receipt
 lookup for auditors. Its absence proves nothing about an uncertain submission, and metadata alone cannot
-prove that submitted content matched it. `operation.resolve` gives the enabled author a final answer: its
-accepted receipt with current disclosure, or a permanent actor/ID fence and `NOT_ACCEPTED`. The fence blocks
-delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. Repeat resolution if
-its response fails. After final non-acceptance, load current state and prepare a new operation with a new ID.
+prove that submitted content matched it.
+
+`operation.status` is a separate actor-scoped passive read. Every enabled valid registered actor, including
+one with no remaining business or authority roles, can recover its own accepted metadata, known final
+`NOT_ACCEPTED`, or `UNRESOLVED`. Current rights still govern case-content disclosure. A foreign actor's same
+raw operation UUID is not disclosed as this actor's acceptance. Status appends nothing, creates no fence,
+and takes no ledger-head write lock. An unresolved status never establishes nonacceptance or business eligibility.
+
+`operation.resolve` is the deliberate ordered settlement write: it returns the author's accepted receipt
+with current disclosure or records permanent actor/ID nonacceptance. The CLI names this command
+`operation settle OPERATION_ID`; the former `operation resolve` verb is refused. Final settlement blocks
+delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. After a lost reply,
+inspect status before deciding whether to settle again. After final nonacceptance, load current state and
+prepare a new operation with a new ID. Human interactive settlement identifies the exact operation and
+requires explicit confirmation; status checking, navigation and login never settle automatically.
+
+Status, execution and final settlement validate the retained control node's identity, payload and hash,
+and agreement with the fence projection's recorded instant, using bounded indexed lookup in the action
+snapshot. Missing, fabricated, mismatched or contradictory projections fail integrity; they are not repaired
+by status or settlement. This check does not replace whole-history verification.
 
 For ordinary verbs, call and session, uncertain exit 4 leaves the exact prepared call frame on the last stderr line; retain it privately. In the shell it appears before the next prompt.
 Session processing stops on exit 4 or 130, or an oversized frame. Output loss after dispatch preserves
@@ -328,12 +344,12 @@ uncertainty. A complete OS write and flush do not prove downstream persistence.
 
 The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
 
-Authenticated context includes `installationId`. Execute and resolve requests carry its canonical UUID in
+Authenticated context includes `installationId`. Execute, passive status and final resolve requests carry its canonical UUID in
 the required `ClaimCore-Installation` header; a mismatch returns `INSTALLATION_MISMATCH / NOT_STARTED`
 before an acceptance or fence. All operation replies echo their operation ID; clients also check receipt
 and target identities after decoding. A schema-valid mismatched reply remains uncertain.
 
-Both clients commit an identity-only journal before dispatch and recheck credential, actor, target and
+Both clients commit an identity-only journal before mutation dispatch and recheck credential, actor, target and
 installation context after storage completion. Failed initial storage is `NOT_SENT`; it blocks sending.
 Records contain format, service origin, installation, actor, local attempt, operation, subject and act.
 They contain no references, business values, credentials, secret paths or retry bodies. Separate attempts
@@ -345,15 +361,19 @@ invalidate its callbacks, including switchbacks; obsolete completions cannot unl
 Busy state lasts through journal removal, and a failed removal permits explicit retry.
 
 Send again uses the in-memory frozen request; after reload or tab closure, recovery can only check the
-final result. Storage denial, quota, clearing, eviction,
+known status or deliberately settle, without reconstructing a request. Storage denial, quota, clearing, eviction,
 device loss and universal crash/power-loss durability are outside the retained-storage guarantee. There
 is no automatic storage-permission prompt or reconstructed resubmission.
 
 The native client publishes private per-attempt files under `$XDG_STATE_HOME/claimcore`, defaulting to
 `~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
-current authenticated service/installation/actor scope; `claimcore recovery resolve ATTEMPT_ID` resolves
-and clears that selected attempt only after a complete correlated final reply. `claimcore schema recovery`
-describes the local listing. Prepared retry frames retain their original installation binding. Clients refuse a prepared request whose installation binding differs from authenticated context.
+current authenticated service/installation/actor scope. `claimcore recovery check ATTEMPT_ID` reads status;
+`claimcore recovery settle ATTEMPT_ID` explicitly requests permanent settlement. Text is the default;
+`--format json` preserves machine output, and `--language en|lv|ar` selects text. Interactive mode requires
+terminal confirmation for settlement; automation must explicitly choose `settle`. The former recovery
+`resolve` command is refused. Only complete correlated accepted/final results can clear the selected owned
+record. Unresolved/error/stale replies and storage failures retain identity; a cleanup failure does not
+hide the known server result. `claimcore schema recovery` describes the unchanged identity-only listing. Prepared retry frames retain their original installation binding. Clients refuse a prepared request whose installation binding differs from authenticated context.
 
 ## Disclosure and cursors
 

@@ -44,6 +44,10 @@ module ReadCatalog =
                 Inputs = [ ReadInput.OperationOperand ]
             }
             {
+                Endpoint = QueryEndpoint.Status
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
                 Endpoint = QueryEndpoint.Resolve
                 Inputs = [ ReadInput.OperationOperand ]
             }

@@ -137,6 +137,32 @@ type internal Reader
             read ()
             Task.FromResult(Map.tryFind id (get ()).Entries |> Option.map copyEntry)
 
+        member _.NonAcceptance(key: FenceKey) =
+            read ()
+
+            let controls =
+                (get ()).Controls
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    entry.Entry.ActorId = key.ActorId && entry.Entry.OperationId = key.OperationId)
+                |> Seq.toList
+
+            let control =
+                match controls with
+                | [] -> None
+                | [ entry ] ->
+                    Some
+                        { entry with
+                            Entry = copyEntry entry.Entry
+                        }
+                | _ -> raise CorruptProjection
+
+            Task.FromResult
+                {
+                    NonAcceptanceEvidence.Control = control
+                    ProjectedAt = Map.tryFind (key.ActorId, key.OperationId) (get ()).Fences
+                }
+
         member _.FindActor id =
             read ()
             Task.FromResult(Map.tryFind id (get ()).Actors)

@@ -29,7 +29,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
             Cases = Map.empty
             Actors = Map.empty
             Grants = Set.empty
-            Fences = Set.empty
+            Fences = Map.empty
         }
 
     let factRead =

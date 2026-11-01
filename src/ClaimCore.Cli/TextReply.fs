@@ -39,6 +39,8 @@ module internal TextReply =
             presenter Api.operationPreview TextOperationReply.previewLines
             presenter Api.operationExecute (fun language _ reply ->
                 TextOperationReply.executeLines language reply)
+            presenter Api.operationStatus (fun language _ reply ->
+                TextOperationReply.statusLines language reply.Outcome)
             presenter Api.operationResolve (fun language _ reply ->
                 TextOperationReply.resolveLines language reply.Outcome)
         ]

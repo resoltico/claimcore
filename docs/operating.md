@@ -175,6 +175,10 @@ Final nonacceptance is an actor/operation-scoped retained ledger control. It adv
 checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
 resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
 Verification reconstructs the complete fence projection from controls, including their recorded instants.
+Use actor-scoped `operation.status` for passive checks; it takes no write-head lock and never creates a
+control. Point reads and write guards validate a retained control node and its projection agreement;
+integrity faults require investigation and authoritative verification, not blind repeat settlement.
+The CLI names the permanent write `operation settle`; its human confirmation is separate from status reads.
 
 ## Trust model
 

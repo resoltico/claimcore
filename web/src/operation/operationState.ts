@@ -350,7 +350,7 @@ const reset = (
         ...action.state,
         disclosureToken: state.disclosureToken,
       };
-const resolving = (state: OperationState, identity: EffectIdentity): OperationState =>
+const checkingStatus = (state: OperationState, identity: EffectIdentity): OperationState =>
   state.operation.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
     ? append(
         {
@@ -361,7 +361,7 @@ const resolving = (state: OperationState, identity: EffectIdentity): OperationSt
           },
         },
         {
-          kind: "RESOLVE",
+          kind: "CHECK_STATUS",
           identity,
           source: state.operation.source,
         },
@@ -393,10 +393,26 @@ const notAccepted = (
         },
       }
     : state;
+const stillUnresolved = (state: OperationState, identity: EffectIdentity): OperationState =>
+  completing(state, identity) && state.operation.kind === "UNRESOLVED"
+    ? {
+        ...state,
+        operation: { ...state.operation, effect: null },
+        notice: { kind: "local", reason: "unresolved" },
+      }
+    : state;
 type NavigationAction = Exclude<
   OperationAction,
   {
-    type: "EDIT" | "PREVIEW" | "EXECUTE" | "REFUSE" | "RECORD" | "REVIEW" | "HANDOFF";
+    type:
+      | "EDIT"
+      | "PREVIEW"
+      | "EXECUTE"
+      | "REFUSE"
+      | "RECORD"
+      | "REVIEW"
+      | "HANDOFF"
+      | "STATUS_UNRESOLVED";
   }
 >;
 const navigation = (state: OperationState, action: NavigationAction): OperationState => {
@@ -423,8 +439,8 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
           };
     case "RESET":
       return reset(state, action);
-    case "RESOLVE":
-      return resolving(state, action.identity);
+    case "CHECK_STATUS":
+      return checkingStatus(state, action.identity);
     case "NOT_ACCEPTED":
       return notAccepted(state, action);
     case "EFFECT_STARTED":
@@ -456,6 +472,8 @@ export const operationReducer = (
       return refuse(state, action);
     case "RECORD":
       return record(state, action);
+    case "STATUS_UNRESOLVED":
+      return stillUnresolved(state, action.identity);
     case "REVIEW":
       return reviewed(state, action);
     default:

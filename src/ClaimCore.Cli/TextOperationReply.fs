@@ -178,3 +178,13 @@ module internal TextOperationReply =
             | Resolved.Accepted receipt -> receiptLines language "ACCEPTED" receipt
             | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
             reply
+
+    let statusLines language (reply: Outcome<OperationStatus>) =
+        readLines
+            language
+            (function
+            | OperationStatus.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | OperationStatus.NotAccepted -> [ label language "notice.notAccepted" ]
+            | OperationStatus.Unresolved ->
+                [ MessageCatalogs.renderCli language CliMessage.StatusUnresolved ])
+            reply

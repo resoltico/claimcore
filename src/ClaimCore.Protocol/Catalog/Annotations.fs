@@ -149,7 +149,12 @@ module CatalogAnnotations =
             for kind in [ AuthorityKind.Grant; AuthorityKind.Revoke ] do
                 yield (authorityBranch kind, WireMembers.Role), constant (target InputTarget.Role)
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
-            for owner in [ RequestSchemas.ObserveRequest; RequestSchemas.ResolveRequest ] do
+            for owner in
+                [
+                    RequestSchemas.ObserveRequest
+                    RequestSchemas.ResolveRequest
+                    RequestSchemas.StatusRequest
+                ] do
                 yield (owner, WireMembers.OperationId), operationIdentity
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
                 yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)

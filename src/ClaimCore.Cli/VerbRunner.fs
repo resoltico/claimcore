@@ -12,6 +12,7 @@ type internal VerbConsole =
         Output: Stream
         Errors: Stream
         Review: InteractiveConsole
+        WriteSettlementPrompt: byte array -> unit
     }
 
 /// Ordinary verbs and the shell share preparation, review, pagination and delivery.
@@ -44,6 +45,26 @@ module internal VerbRunner =
         else
             CaseListCommand.run pageIO prepared token
 
+    let private settlement (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
+        task {
+            let input = Frames.value Api.operationResolve prepared.Invocation |> Option.get
+
+            let console =
+                { io.Review with
+                    Write = io.WriteSettlementPrompt
+                }
+
+            let consent mode context =
+                match mode with
+                | RemoteClientMode.Automation -> true
+                | RemoteClientMode.Interactive ->
+                    CliConfirmation.settlement console prepared.Language context input.OperationId
+
+            let! reply = processor.ExchangeSettlement(prepared.Invocation, consent, token)
+            processor.Deliver(render prepared prepared.Invocation, reply)
+            return reply.ExitCode
+        }
+
     let private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
             match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
@@ -58,6 +79,8 @@ module internal VerbRunner =
                 return ExitCode.value ExitCode.Success
             | Ok prepared when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
+            | Ok prepared when (Frames.endpoint prepared.Invocation).Id = Api.operationResolve.Id ->
+                return! settlement io processor prepared token
             | Ok prepared ->
                 let frame = prepared.Invocation
 

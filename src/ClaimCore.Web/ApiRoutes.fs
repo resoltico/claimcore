@@ -14,6 +14,8 @@ open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Web.Composition
 
 module internal ApiRoutes =
+    // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let route =
         function
         | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
@@ -35,6 +37,7 @@ module internal ApiRoutes =
             Route.bind Api.operationPreview Service.preview
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.bind Api.operationExecute Service.execute
+        | ActorEndpoint.Query QueryEndpoint.Status -> Route.bind Api.operationStatus Service.status
         | ActorEndpoint.Query QueryEndpoint.Resolve ->
             Route.bind Api.operationResolve Service.resolve
 

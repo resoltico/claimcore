@@ -57,7 +57,7 @@ export type OperationEffect =
       source: LocalSource;
     }
   | {
-      kind: "RESOLVE";
+      kind: "CHECK_STATUS";
       identity: EffectIdentity;
       source: LocalSource;
     }
@@ -157,7 +157,11 @@ export type OperationAction =
       identity: EffectIdentity;
     }
   | {
-      type: "RESOLVE";
+      type: "CHECK_STATUS";
+      identity: EffectIdentity;
+    }
+  | {
+      type: "STATUS_UNRESOLVED";
       identity: EffectIdentity;
     }
   | {

@@ -159,6 +159,7 @@ let private terminal root directory cli =
         [
             "history"
             "literalMetacharacters"
+            "terminalDataEscaped"
             "quoting"
             "interrupt"
             "exit"

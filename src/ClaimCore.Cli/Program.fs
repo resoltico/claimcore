@@ -70,6 +70,10 @@ let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments
             Output = output
             Errors = errors
             Review = console
+            WriteSettlementPrompt =
+                fun bytes ->
+                    errors.Write(bytes: byte array)
+                    errors.Flush()
         }
 
     withRemote
@@ -131,12 +135,22 @@ let private dispatch output errors argv =
         | Ok CliInvocation.Shell -> ShellRuntime.run output errors
         | Ok(CliInvocation.Recovery selected) ->
             let result =
-                RecoveryCommand.run selected CancellationToken.None
+                let console =
+                    {
+                        IsInteractive =
+                            not Console.IsInputRedirected && not Console.IsOutputRedirected
+                        ReadLine = fun () -> Console.ReadLine() |> Option.ofObj
+                        Write =
+                            fun bytes ->
+                                errors.Write(bytes: byte array)
+                                errors.Flush()
+                    }
+
+                RecoveryCommand.run selected console CancellationToken.None
                 |> _.GetAwaiter().GetResult()
 
             try
                 output.Write result.Bytes
-                output.WriteByte(byte '\n')
                 output.Flush()
                 result.ExitCode
             with _ ->

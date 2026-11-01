@@ -62,6 +62,7 @@ module TypeScript =
                 method = (Api.method endpoint).Method
                 path = Api.path endpoint
                 effect = EndpointEffect.token (Api.effect endpoint)
+                requiresInstallation = Api.requiresInstallation endpoint
             |})
         |> JsonSerializer.Serialize
 

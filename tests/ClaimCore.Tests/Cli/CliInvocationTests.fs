@@ -201,7 +201,7 @@ let private nonLedgerCoverageControls () =
 
 let private resolveVerb () =
     let operationId = "10000000-0000-4000-8000-000000000003"
-    let invocation = prepared [ "operation"; "resolve"; operationId ]
+    let invocation = prepared [ "operation"; "settle"; operationId ]
 
     let admitted =
         Frames.admit invocation.Bytes
@@ -451,4 +451,121 @@ let authorityTextTests =
             testCase "disable" (fun () -> authorityPreviewText "disable" true false false false)
             testCase "grant" (fun () -> authorityPreviewText "grant" true true false true)
             testCase "revoke" (fun () -> authorityPreviewText "revoke" true true true false)
+        ]
+
+[<Tests>]
+let recoveryCommands =
+    testList
+        "CLI passive recovery and explicit settlement"
+        [
+            testCase
+                "list check and settle have explicit format language and attempt identity"
+                (fun () ->
+                    let attempt = Guid.Parse "10000000-0000-4000-8000-000000000003"
+
+                    for arguments, action, text, language in
+                        [
+                            [ "recovery"; "list" ], RecoveryAction.List, true, "en"
+                            [
+                                "recovery"
+                                "check"
+                                string attempt
+                                "--format"
+                                "json"
+                                "--language"
+                                "lv"
+                            ],
+                            RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt),
+                            false,
+                            "lv"
+                            [ "recovery"; "settle"; string attempt; "--language"; "ar" ],
+                            RecoveryAction.Attempt(RecoveryAttemptAction.Settle, attempt),
+                            true,
+                            "ar"
+                        ] do
+                        match CliInvocations.admit arguments with
+                        | Ok(CliInvocation.Recovery request) ->
+                            Expect.equal
+                                (request.Action, request.Text, request.Language)
+                                (action, text, language)
+                                "Independent command meaning"
+                        | _ -> failtest "Expected an admitted recovery command"
+
+                    Expect.isError
+                        (CliInvocations.admit [ "recovery"; "resolve"; string attempt ])
+                        "The superseded ambiguous command is not an alias"
+
+                    let status = prepared [ "operation"; "status"; string attempt ]
+
+                    Expect.equal
+                        (Frames.endpoint status.Invocation).Id
+                        Api.operationStatus.Id
+                        "Status selects a passive read"
+
+                    Expect.equal
+                        (Api.effect (Frames.endpoint status.Invocation))
+                        EndpointEffect.Read
+                        "The CLI cannot turn status into a write"
+
+                    Expect.isTrue
+                        (Api.requiresInstallation (Frames.endpoint status.Invocation))
+                        "Passive recovery remains installation bound"
+
+                    let settle = prepared [ "operation"; "settle"; string attempt ]
+
+                    Expect.equal
+                        (Frames.endpoint settle.Invocation).Id
+                        Api.operationResolve.Id
+                        "Settlement explicitly selects the ordered control write")
+            testCase
+                "human settlement shows the exact operation and never defaults to yes"
+                (fun () ->
+                    let operation = Guid.Parse "10000000-0000-4000-8000-000000000004"
+
+                    let context =
+                        match ClaimCore.TestSupport.ResponseExamples.defaultReply Api.context with
+                        | Outcome.Succeeded value -> value
+                        | _ -> failtest "Settlement needs an authenticated context fixture"
+
+                    for language, yes in [ "en", "yes"; "lv", "jā"; "ar", "نعم" ] do
+                        for answer, expected in
+                            [ None, false; Some "", false; Some "no", false; Some yes, true ] do
+                            let captured = StringBuilder()
+
+                            let console: InteractiveConsole =
+                                {
+                                    IsInteractive = true
+                                    ReadLine = fun () -> answer
+                                    Write =
+                                        fun bytes ->
+                                            captured.Append(Encoding.UTF8.GetString bytes)
+                                            |> ignore
+                                }
+
+                            Expect.equal
+                                (CliConfirmation.settlement console language context operation)
+                                expected
+                                "Explicit localized affirmation is required"
+
+                            Expect.stringContains
+                                (captured.ToString())
+                                (operation.ToString("D"))
+                                "The exact operation is identified before confirmation"
+
+                        let console: InteractiveConsole =
+                            {
+                                IsInteractive = false
+                                ReadLine =
+                                    fun () ->
+                                        failtest
+                                            "A redirected human confirmation cannot consume input"
+                                Write =
+                                    fun _ ->
+                                        failtest
+                                            "A redirected human confirmation cannot pretend to prompt"
+                            }
+
+                        Expect.isFalse
+                            (CliConfirmation.settlement console language context operation)
+                            "No interactive confirmation is invented")
         ]

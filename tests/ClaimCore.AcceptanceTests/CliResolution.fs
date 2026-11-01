@@ -154,7 +154,7 @@ let private responseLoss (fixture: PublishedFixture.Fixture) =
         do! fixture.RestartWeb()
 
         let reply =
-            verb fixture fixture.Environment [ "operation"; "resolve"; submitted.OperationId ] 0
+            verb fixture fixture.Environment [ "operation"; "settle"; submitted.OperationId ] 0
 
         let receipt = require "ACCEPTED" reply
 
@@ -171,7 +171,7 @@ let qualify fixture =
         let operationId = id ()
         let before = head fixture
 
-        verb fixture fixture.Environment [ "operation"; "resolve"; operationId ] 2
+        verb fixture fixture.Environment [ "operation"; "settle"; operationId ] 2
         |> require "NOT_ACCEPTED"
         |> ignore
 
@@ -185,7 +185,7 @@ let qualify fixture =
              + 1L)
             "First final resolution appends one retained control"
 
-        verb fixture fixture.Environment [ "operation"; "resolve"; operationId ] 2
+        verb fixture fixture.Environment [ "operation"; "settle"; operationId ] 2
         |> require "NOT_ACCEPTED"
         |> ignore
 

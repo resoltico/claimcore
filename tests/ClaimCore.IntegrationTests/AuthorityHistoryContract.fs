@@ -252,6 +252,7 @@ let private changingHistory (fixture: Fixture) change =
                                             tx.FindCaseByReference reference
 
                                         member _.FindEntry id = tx.FindEntry id
+                                        member _.NonAcceptance key = tx.NonAcceptance key
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query
                                         member _.HistoryPage query = tx.HistoryPage query

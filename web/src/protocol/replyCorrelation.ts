@@ -28,9 +28,13 @@ const operationEnvelopeMatches = (
   envelope: Record<string, unknown>,
 ): boolean => {
   if (
-    !["operation.preview", "operation.execute", "operation.observe", "operation.resolve"].includes(
-      endpoint,
-    )
+    ![
+      "operation.preview",
+      "operation.execute",
+      "operation.observe",
+      "operation.status",
+      "operation.resolve",
+    ].includes(endpoint)
   ) {
     return true;
   }

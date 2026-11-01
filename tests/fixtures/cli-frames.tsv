@@ -24,9 +24,10 @@ case list --limit 5 --cursor abc	{"endpoint":"case.list","input":{"cursor":"abc"
 case history R-1 --full	{"endpoint":"case.history","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"FULL","limit":50}}
 case history R-1	{"endpoint":"case.history","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"SUMMARY","limit":50}}
 operation observe 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.observe","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}
-operation resolve 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.resolve","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}
+operation settle 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.resolve","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}
 authority list	{"endpoint":"authority.list","input":{"limit":50}}
 authority grants 11111111-2222-4333-8444-555555555555	{"endpoint":"authority.grants","input":{"actorId":"11111111-2222-4333-8444-555555555555","limit":50}}
 context	{"endpoint":"context","input":{}}
 authority history --limit 1	{"endpoint":"authority.history","input":{"limit":1}}
 case summary	{"endpoint":"case.summary","input":{}}
+operation status 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.status","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}

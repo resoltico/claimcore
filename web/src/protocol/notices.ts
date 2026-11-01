@@ -11,8 +11,10 @@ export type LocalNoticeReason =
   | "missingCsrf"
   | "outcomeUnknown"
   | "notAccepted"
+  | "unresolved"
   | "recoveryUnavailable"
-  | "recoveryListingUnavailable";
+  | "recoveryListingUnavailable"
+  | "recoveryCleanupUnavailable";
 export type Notice =
   | { readonly kind: "issues"; readonly issues: ReadonlyArray<InputIssue> }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }

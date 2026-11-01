@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Replace CLI operation resolve with operation status for passive checks or explicit operation settle for permanent nonacceptance; interactive settlement requires confirmation.
+- Actor-scoped operation.status is an installation-bound read for valid roleless actors too; unresolved reads create no fence and foreign actors’ operation UUIDs remain undisclosed.
+- Fence guards validate retained control-node identity/hash and projection timestamps; missing, fabricated or contradictory evidence fails integrity instead of creating a false final answer.
+- The web Recovery area separates status checks, confirmed permanent settlement and general receipt lookup; cleanup failure retains identity and shows the known result.
 - Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
 - New case-scoped OWNER grants refuse as meaningless; owners can still revoke recognized obsolete grants. Disabled and overlapping meaningful grants remain allowed.
 - CLI human text escapes terminal controls, embedded line breaks and directional formatting; literal backslashes double. JSON/NDJSON remain exact and CSV keeps its export rules.
@@ -10,8 +14,8 @@
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
 - Discard older cursors: case lists use format 4 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
 - Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
-- Recovery checks settle across same-identity refreshes; obsolete completions cannot release newer checks or clear another scope's records.
-- Use CLI recovery list/resolve for private per-attempt recovery; retain exact prepared retry frames and their installation binding until uncertainty is settled.
+- Recovery checks preserve ownership across same-identity refreshes and actor/epoch changes; stale completions cannot release newer checks or clear another scope’s records.
+- Use CLI recovery list/check/settle with text or JSON output; retain exact retry frames and their installation binding until uncertainty is settled.
 - Final nonacceptance is an ordered actor/operation control. Verification and trusted-checkpoint rebuild restore fences, live projections and erased identity without reconstructing erased content.
 - Owners can rebuild projections with a trusted checkpoint and explicitly invalidate restored sessions. Keep actor traffic isolated during restore; older backups can resurrect data and cookies.
 - Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.

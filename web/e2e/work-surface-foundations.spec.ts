@@ -9,9 +9,9 @@ import { isResponse } from "../src/protocol/client";
 import { pauseJsonReply } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
-const settleAcceptedClose = async (page: Page, operationId: string) => {
+const recoverAcceptedClose = async (page: Page, operationId: string) => {
   const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
-  const check = page.getByRole("button", { name: "Check outcome", exact: true });
+  const check = page.getByRole("button", { name: "Check status", exact: true });
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
@@ -20,12 +20,12 @@ const settleAcceptedClose = async (page: Page, operationId: string) => {
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
-      response.url().endsWith("/api/operation.resolve"),
+      response.url().endsWith("/api/operation.status"),
     );
     await check.click();
     const response = await resolved;
     const reply: unknown = await response.json();
-    if (!isResponse("operation.resolve", reply) || reply.outcome.kind !== "ACCEPTED") {
+    if (!isResponse("operation.status", reply) || reply.outcome.kind !== "ACCEPTED") {
       throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
     }
     expect(response.status()).toBe(200);
@@ -70,11 +70,9 @@ test("native beforeunload blocks document navigation only while execution is in 
     expect(dialogs).toEqual(["beforeunload"]);
     await expect(page).toHaveURL((url) => url.pathname === actPath(reference, "CLOSE"));
     execution.release();
-    await settleAcceptedClose(page, identity.operationId);
+    await recoverAcceptedClose(page, identity.operationId);
     await page.goto("/operations", { waitUntil: "commit" });
-    await expect(
-      page.getByRole("heading", { name: "Operation lookup", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
     execution.release();
