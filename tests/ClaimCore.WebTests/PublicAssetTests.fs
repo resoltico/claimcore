@@ -5,6 +5,8 @@ open System.IO
 open System.Net
 open System.Text
 open System.Text.Json
+open System.Threading.Tasks
+open ClaimCore.Postgres
 open Expecto
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
@@ -98,6 +100,60 @@ let private independentAdmission () =
             "Rejected unknown paths remain private"
     }
 
+let private cookieStorageIsolation () =
+    task {
+        let mutable payload = [||]
+        let mutable reads = 0
+        let mutable refuse = false
+
+        let storage =
+            { new ISessionStore with
+                member _.Create(bytes, _, _, _, _) =
+                    payload <- bytes
+                    Task.FromResult(SessionChanges.unchanged (String.replicate 64 "a"))
+
+                member _.Retrieve(_, _) =
+                    reads <- reads + 1
+
+                    if refuse then
+                        Task.FromException<SessionChanges<byte array option>>(
+                            AdmissionRejectedException()
+                        )
+                    else
+                        Task.FromResult(SessionChanges.unchanged (Some payload))
+
+                member _.Renew(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
+
+                member _.Remove(_, _, _) =
+                    Task.FromResult(SessionChanges.unchanged ())
+            }
+
+        let bytes = Encoding.UTF8.GetBytes "export const publicValue = 3;"
+
+        use host =
+            new Host(true, sessions = storage, buildAssets = [ "assets/public-34567890.js", bytes ])
+
+        let! login, _ = host.Login()
+        Expect.equal login 200 "A real protected cookie names a stored ticket"
+        refuse <- true
+
+        let! status, actual =
+            host.Send(System.Net.Http.HttpMethod.Get, "/assets/public-34567890.js", None, [])
+
+        Expect.equal status 200 "A cookie-bearing public asset cannot enter session storage"
+        Expect.equal actual bytes "Only verified public content is served"
+        Expect.equal reads 0 "No hidden automatic authentication runs before the public boundary"
+        let! denied, _ = host.Bootstrap()
+
+        Expect.equal
+            denied
+            429
+            "Private authentication capacity refusal remains a structured transport result"
+
+        Expect.equal reads 1 "The owned authentication stage actually enforces the storage boundary"
+    }
+
 let private mismatch () =
     let directory = Directory.CreateTempSubdirectory("claimcore-public-inventory-")
 
@@ -142,5 +198,8 @@ let tests =
             testCaseAsync
                 "serves verified public bytes independently of saturated authentication"
                 (async { do! independentAdmission () |> Async.AwaitTask })
+            testCaseAsync
+                "keeps cookie-bearing public requests outside session storage and contains private capacity rejection"
+                (async { do! cookieStorageIsolation () |> Async.AwaitTask })
             testCase "refuses an inventory that disagrees with the published content" mismatch
         ]

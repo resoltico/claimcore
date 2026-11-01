@@ -5,6 +5,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
 open System
+open Microsoft.Extensions.Logging
 open System.Diagnostics
 open System.IO
 open System.Text.Json
@@ -138,3 +139,30 @@ module internal RequestLog =
             else
                 do! next.Invoke context
         }
+
+/// Framework failures can occur before or after the owned request delegate.
+/// Retain only the same safe exception representation, never framework state or formatted text.
+type internal FrameworkExceptionLog(sink: TextWriter) =
+    let enabled level =
+        level = LogLevel.Error || level = LogLevel.Critical
+
+    let scope =
+        { new IDisposable with
+            member _.Dispose() = ()
+        }
+
+    let logger =
+        { new ILogger with
+            member _.BeginScope<'State when 'State: not null>(_: 'State) = scope
+            member _.IsEnabled level = enabled level
+
+            member _.Log<'State>(level, _, _: 'State, error, _) =
+                if enabled level then
+                    error |> Option.ofObj |> Option.iter (RequestLog.reportException sink)
+        }
+
+    interface ILoggerProvider with
+        member _.CreateLogger _ = logger
+
+    interface IDisposable with
+        member _.Dispose() = ()

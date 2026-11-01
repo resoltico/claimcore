@@ -149,6 +149,7 @@ let private configuredBuilder
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     builder.Logging.ClearProviders() |> ignore
+    builder.Logging.AddProvider(new FrameworkExceptionLog(Console.Error)) |> ignore
     configureKestrel configuration builder
 
     configureAntiforgery

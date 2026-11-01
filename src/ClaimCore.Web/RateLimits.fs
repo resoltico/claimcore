@@ -69,31 +69,10 @@ module internal RateLimits =
                 do! busy context
         }
 
-    let private authenticate (budget: AuthenticationAdmission) (handler: RequestDelegate) context =
-        task {
-            use lease = budget.Acquire context
-
-            if lease.IsAcquired then
-                do! handler.Invoke context
-                return true
-            else
-                do! busy context
-                return false
-        }
-
-    /// Run authentication as its own bounded stage, releasing capacity before the actor workload.
+    /// Register on the root builder so WebApplication cannot insert authentication ahead of guards.
+    /// Ordinary authentication releases before actor work; interactive handlers retain their owner.
     let authentication (application: WebApplication) =
-        let passed = obj ()
-        let stage = (application :> IApplicationBuilder).New()
-        stage.UseAuthentication() |> ignore
-
-        stage.Run(
-            RequestDelegate(fun context ->
-                context.Items[passed] <- box true
-                Task.CompletedTask)
-        )
-
-        let authenticationStage = stage.Build()
+        let capacityKey = obj ()
 
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->
@@ -101,11 +80,33 @@ module internal RateLimits =
                     let budget =
                         context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
-                    let! admitted = authenticate budget authenticationStage context
-                    // The authentication lease has ended before workload admission and result writing.
-                    if admitted && context.Items.Remove passed then
-                        do! next.Invoke context
+                    let lease = budget.Acquire context
+
+                    if lease.IsAcquired then
+                        use owner = AdmissionLease.once (fun () -> lease.Dispose())
+                        context.Items[capacityKey] <- owner
+
+                        try
+                            do! next.Invoke context
+                        finally
+                            context.Items.Remove capacityKey |> ignore
+                    else
+                        lease.Dispose()
+                        do! busy context
                 })
+        )
+        |> ignore
+
+        application.UseAuthentication() |> ignore
+
+        application.Use(
+            Func<HttpContext, RequestDelegate, Task>(fun context next ->
+                if not (AuthMiddleware.interactiveRequest context.Request.Path) then
+                    match context.Items.TryGetValue capacityKey with
+                    | true, (:? IDisposable as owner) -> owner.Dispose()
+                    | _ -> invalidOp "Authentication capacity has no request owner."
+
+                next.Invoke context)
         )
         |> ignore
 
