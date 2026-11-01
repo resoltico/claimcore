@@ -24,8 +24,9 @@ let private database (image: string) runId =
         .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
         .Build()
 
-let private client (certificate: X509Certificate2) =
-    let handler = new HttpClientHandler(AllowAutoRedirect = false, UseCookies = false)
+let private observedClient (certificate: X509Certificate2) observe =
+    let handler =
+        new HttpClientHandler(AllowAutoRedirect = false, UseCookies = false, UseProxy = false)
 
     handler.ServerCertificateCustomValidationCallback <-
         fun _ supplied _ errors ->
@@ -37,10 +38,14 @@ let private client (certificate: X509Certificate2) =
             match supplied with
             | null -> false
             | value ->
+                observe value
+
                 errors &&& SslPolicyErrors.RemoteCertificateNameMismatch = SslPolicyErrors.None
                 && chain.Build value
 
     new HttpClient(handler, Timeout = TimeSpan.FromSeconds(5.))
+
+let private client certificate = observedClient certificate ignore
 
 let private awaitReady (http: HttpClient) (origin: string) (web: PublishedProcesses.Web) =
     task {
@@ -223,6 +228,42 @@ type Fixture() =
 
             web <- Some replacement
             do! awaitReady http origin replacement
+        }
+
+    member this.ReplaceWebCertificate() =
+        task {
+            use replacement = FixtureFiles.serverCertificate certificate
+            let path = webSettings["CLAIMCORE_WEB_CERTIFICATE_PATH"]
+
+            FixtureFiles.write
+                directory
+                (Path.GetFileName path |> nonNull)
+                (replacement.Export X509ContentType.Pfx)
+            |> ignore
+
+            do! this.RestartWeb()
+            let mutable observed = ""
+            use probe = observedClient certificate (fun actual -> observed <- actual.Thumbprint)
+            use request = new HttpRequestMessage(HttpMethod.Get, backend + "/health/ready")
+            request.Headers.Host <- Uri(origin).Authority
+            use! response = probe.SendAsync request
+
+            Expect.equal
+                (int response.StatusCode)
+                200
+                "Replacement process is ready under the retained trust anchor"
+
+            Expect.equal
+                observed
+                replacement.Thumbprint
+                "The actual TLS peer presents the replacement leaf"
+
+            Expect.notEqual
+                observed
+                certificate.Thumbprint
+                "The process no longer presents its original certificate"
+
+            return observed
         }
 
     member _.WithAdditionalWeb(action: (unit -> unit) * (unit -> unit) -> Task<'Value>) =

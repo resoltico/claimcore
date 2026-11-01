@@ -121,6 +121,31 @@ tickets and protected backups, and back up the database and key ring together. U
 invalidated with `OIDC_SESSION_UNREADABLE`; storage failure closes authentication with
 `OIDC_SESSION_UNAVAILABLE`. Diagnostics exclude payloads, credentials and provider text.
 
+## Certificate, key and host replacement
+
+Prepare the replacement TLS certificate and private key in a private file with the configured hostname,
+server authentication purpose, supported algorithm and validity period. Distribute its issuing trust chain
+to affected clients before switching to a new issuer. Replace the configured PFX as a complete file, stop
+new traffic to the affected host, and restart that host. A running host keeps its admitted certificate;
+changing the file does not perform a hot reload. Verify the actual peer certificate, hostname and readiness
+before returning traffic. Reusing a trusted issuer does not waive hostname or private-file checks.
+
+Keep all Web instances on the same protected key-ring directory and application identity. ASP.NET Core
+Data Protection owns key creation and default-key rollover; ClaimCore has no key deletion or manual
+rotation command. When arranging rollover through that platform, distribute the new key before processes
+need it, retain old keys for live cookies, database tickets, antiforgery values and retained backups, and
+restart or otherwise qualify key propagation for every host. A certificate change does not require key
+loss or session invalidation. Confirm an old live session and a newly issued session against each host,
+then confirm that logout remains effective on its peers. Expired-session pruning never removes keys.
+
+For work that needs quiescence, remove each host from new traffic and request its normal graceful shutdown.
+The host gives admitted runtime users a bounded drain interval; cancellation or a timeout cannot make an
+unfinished provider operation release its lease early. Inspect process exit and outstanding database work
+separately. Do not treat readiness, register maintenance, a shutdown deadline or session counts as proof
+that every process and provider has stopped. Preserve uncertain operation identities and inspect their
+status after restart. Keep traffic isolated after a failed owner procedure until its actual state is known;
+maintenance never resumes itself.
+
 ## Backups and restore
 
 Retain sequence/hash checkpoints independently of the database and protect backups as sensitive data.
@@ -288,6 +313,22 @@ returns a bounded transport refusal; it does not imply a permanent operation rej
 appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
 Context reads that establish journal ownership remain fresh; permission and action-state checks always
 execute on the server.
+
+## Published interface assets
+
+The web build emits `public-assets.json` beside `index.html`, identifying the actual hashed JavaScript,
+CSS and other public build assets by SHA-256. Publish the complete build directory together. Startup
+refuses an absent, inconsistent or incomplete inventory. Each running process serves the verified bytes
+it captured at startup; replacing files under a running process does not update that process's interface.
+Restart processes to install a replacement build. Keep prior hashed assets available at the hosting
+boundary while old tabs may request their deferred views or language catalogs.
+
+Only verified build assets without a cookie-setting response receive public immutable caching.
+HTML, session/authentication responses, APIs, refusals, errors and fallback routes remain `no-store`.
+No business response or recovery identity is placed in an asset cache or service worker. A failed view
+load offers explicit retry or an interface reload; an unsuccessful language activation retains the
+previous working language and direction. Reload only after protecting an unresolved operation's
+identity through Recovery; a reload cannot reconstruct a discarded in-memory request body.
 
 ## Serialized writes and verification growth
 

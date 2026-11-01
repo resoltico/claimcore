@@ -66,3 +66,33 @@ let certificate () =
     names.AddDnsName "localhost"
     request.CertificateExtensions.Add(names.Build())
     request.CreateSelfSigned(DateTimeOffset.UtcNow.AddHours(-1.), DateTimeOffset.UtcNow.AddDays(1.))
+
+/// A replacement leaf preserves the owned trust anchor and localhost identity.
+let serverCertificate (issuer: X509Certificate2) =
+    use key = RSA.Create(2048)
+
+    let request =
+        CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+
+    request.CertificateExtensions.Add(X509BasicConstraintsExtension(false, false, 0, true))
+
+    request.CertificateExtensions.Add(
+        X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, true)
+    )
+
+    let usages = OidCollection()
+    usages.Add(Oid "1.3.6.1.5.5.7.3.1") |> ignore
+    request.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(usages, true))
+    let names = SubjectAlternativeNameBuilder()
+    names.AddDnsName "localhost"
+    request.CertificateExtensions.Add(names.Build())
+
+    use publicCertificate =
+        request.Create(
+            issuer,
+            DateTimeOffset.UtcNow.AddMinutes(-1.),
+            DateTimeOffset.UtcNow.AddHours(12.),
+            RandomNumberGenerator.GetBytes 16
+        )
+
+    publicCertificate.CopyWithPrivateKey key
