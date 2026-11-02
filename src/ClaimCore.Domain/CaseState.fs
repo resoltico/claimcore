@@ -5,7 +5,6 @@ namespace ClaimCore.Domain
 type Claim =
     internal
         {
-            Work: CaseWork
             Facts: Registration
             Progress: PaymentProgress
             Status: CaseStatus

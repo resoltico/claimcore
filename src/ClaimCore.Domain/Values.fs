@@ -53,12 +53,22 @@ type CurrencyScalarRule =
 /// Catalog supplies closed status vocabulary; Domain owns transitions.
 type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
 
+/// Count is Unicode scalar values, independent of UTF-16 code units and encoded bytes.
+/// Admission preserves authored whitespace and spelling. Only LF is a paragraph separator.
+type PlainTextConstraints =
+    {
+        MaximumScalars: int
+        MaximumUtf8Bytes: int
+        AllowsLineFeed: bool
+    }
+
 /// Typed scalar rules are the Domain authority for adapter-visible field constraints.
 [<RequireQualifiedAccess>]
 type ScalarRule =
     | CalendarDate of CalendarDateScalarRule
     | PlannedDate of CalendarDateScalarRule
     | Text of ScalarTextConstraints
+    | PlainText of PlainTextConstraints
     | Amount of AmountScalarRule
     | Currency of CurrencyScalarRule
     | CaseStatus of CaseStatusScalarRule

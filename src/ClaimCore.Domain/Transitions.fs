@@ -4,11 +4,10 @@ open ClaimCore.Domain.ResultFlow
 
 /// Eligibility carries the accepted sub-state required to perform the selected change.
 [<RequireQualifiedAccess; NoComparison>]
-type internal Applicable<'r, 'd, 'du, 'p, 'w, 's> =
+type internal Applicable<'r, 'd, 'du, 'p, 's> =
     private
     | Amending of Claim * 'r
     | Correcting of Claim * Correction<'r, 'du, 'p>
-    | Working of Claim * 'w
     | Deciding of Claim * 'd
     | Withdrawing of Claim
     | Paying of Claim * Decision * 'p
@@ -79,8 +78,6 @@ module internal Transitions =
         function
         | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
         | CaseAct.AmendRegistration facts -> whenOpened (amend facts) claim
-        | CaseAct.UpdateWork update ->
-            whenOpened (fun claim -> Ok(Applicable.Working(claim, update))) claim
         | CaseAct.Correct correction -> correct correction claim
         | CaseAct.Decide decision -> whenOpened (decide decision) claim
         | CaseAct.Bare BareAct.WithdrawDecision -> whenOpened withdraw claim
@@ -131,13 +128,6 @@ module internal Transitions =
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
     let private change evidence =
         match evidence with
-        | Applicable.Working(claim, update) ->
-            let work = CaseWork.apply update claim.Work
-
-            if work = claim.Work then
-                businessChange claim (Error(Refusal.Case CaseRefusal.WorkNoChanges))
-            else
-                businessChange claim (Ok { claim with Work = work })
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
             |> Validation.registrationMerge
@@ -240,7 +230,6 @@ module internal Transitions =
                     today
                     (Some current)
                     (RegistrationUpdate.values update)
-            | Applicable.Working _ -> Ok()
             | Applicable.Deciding _
             | Applicable.Withdrawing _
             | Applicable.Paying _

@@ -1,14 +1,5 @@
 namespace ClaimCore.Domain
 
-/// Count is Unicode scalar values, independent of UTF-16 code units and encoded bytes.
-/// Admission preserves authored whitespace and spelling. Only LF is a paragraph separator.
-type PlainTextConstraints =
-    {
-        MaximumScalars: int
-        MaximumUtf8Bytes: int
-        AllowsLineFeed: bool
-    }
-
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type IncidentDescription = private IncidentDescription of string
 

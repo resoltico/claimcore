@@ -208,3 +208,54 @@ module Reminder =
                     | Some reminder when reminder.Revision <> expected ->
                         Error(ReminderRefusal.RevisionConflict reminder.Revision)
                     | Some reminder -> change operation newIdReserved isOpen reminder act
+
+
+[<RequireQualifiedAccess>]
+type ReminderActKind =
+    | Create
+    | Update
+    | Complete
+    | Cancel
+    | Reopen
+    | CompleteAndPlanNext
+
+module ReminderActKind =
+    let vocabulary = Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+type ReminderPlanInput = { Action: string; Due: string }
+
+[<RequireQualifiedAccess>]
+type AuthoredReminderAct =
+    | Create of ReminderPlanInput
+    | Update of reminderId: Guid * expectedRevision: int64 * ReminderPlanInput
+    | Complete of reminderId: Guid * expectedRevision: int64
+    | Cancel of reminderId: Guid * expectedRevision: int64
+    | Reopen of reminderId: Guid * expectedRevision: int64 * due: string
+    | CompleteAndPlanNext of reminderId: Guid * expectedRevision: int64 * ReminderPlanInput
+
+module AuthoredReminderAct =
+    let kind = function
+        | AuthoredReminderAct.Create _ -> ReminderActKind.Create
+        | AuthoredReminderAct.Update _ -> ReminderActKind.Update
+        | AuthoredReminderAct.Complete _ -> ReminderActKind.Complete
+        | AuthoredReminderAct.Cancel _ -> ReminderActKind.Cancel
+        | AuthoredReminderAct.Reopen _ -> ReminderActKind.Reopen
+        | AuthoredReminderAct.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
+
+[<RequireQualifiedAccess>]
+type ReminderDue =
+    | Overdue
+    | Today
+    | Upcoming
+
+module ReminderDue =
+    let vocabulary = Vocabulary.ofUnion<ReminderDue> "reminderDue" TokenCasing.ScreamingSnake None
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+module ReminderState =
+    let vocabulary = Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary

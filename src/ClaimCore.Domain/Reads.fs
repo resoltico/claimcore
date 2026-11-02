@@ -42,11 +42,11 @@ module CaseDue =
     let vocabulary = Vocabulary.ofUnion<CaseDue> "due" TokenCasing.ScreamingSnake None
     let token = Vocabulary.token vocabulary
 
-    let at (today: DateOnly) lifecycle status (work: CaseWork) =
+    let at (today: DateOnly) lifecycle status (nextDue: CalendarDate option) =
         if lifecycle <> Lifecycle.Active || status <> Some CaseStatus.Opened then
             CaseDue.Inactive
         else
-            match work.FollowUp with
+            match nextDue with
             | None -> CaseDue.Unscheduled
             | Some date when CalendarDate.value date < today -> CaseDue.Overdue
             | Some date when CalendarDate.value date = today -> CaseDue.Today
