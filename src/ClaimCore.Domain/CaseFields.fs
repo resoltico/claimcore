@@ -35,7 +35,7 @@ type BusinessField =
     | PaymentDate
     | Status
     | ResponsibleActor
-    | FollowUpDate
+    | HandlingSummary
 
 [<RequireQualifiedAccess>]
 type InputTarget =
@@ -145,12 +145,12 @@ module BusinessField =
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
         | BusinessField.ResponsibleActor
-        | BusinessField.FollowUpDate ->
+        | BusinessField.HandlingSummary ->
             let kind =
                 if field = BusinessField.ResponsibleActor then
                     FieldValueKind.ActorId
                 else
-                    FieldValueKind.PlannedDate
+                    FieldValueKind.HandlingSummary
 
             { descriptor field kind None false None with
                 Section = Some CaseSection.Work

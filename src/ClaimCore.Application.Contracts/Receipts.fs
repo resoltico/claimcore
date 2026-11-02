@@ -28,9 +28,50 @@ type AuthorityReceipt =
     }
 
 [<RequireQualifiedAccess>]
+type WorkDisclosure =
+    | Disclosed of CaseWorkSnapshot
+    | Withheld
+    | Erased
+
+type WorkReceipt =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Act: WorkActKind
+        Snapshot: WorkDisclosure
+    }
+
+[<RequireQualifiedAccess>]
+type ReminderDisclosure =
+    | Disclosed of Reminder
+    | Withheld
+    | Erased
+
+type ReminderVersion =
+    {
+        ReminderId: ReminderId
+        Revision: Revision
+        Snapshot: ReminderDisclosure
+    }
+
+[<RequireQualifiedAccess>]
+type ReminderReceiptEffects =
+    | Single of ReminderVersion
+    | CompletedAndPlanned of completed: ReminderVersion * next: ReminderVersion
+
+type ReminderReceipt =
+    {
+        CaseId: CaseId
+        Act: ReminderActKind
+        Effects: ReminderReceiptEffects
+    }
+
+[<RequireQualifiedAccess>]
 type ReceiptSubject =
     | Case of CaseReceipt
     | Authority of AuthorityReceipt
+    | Work of WorkReceipt
+    | Reminder of ReminderReceipt
 
 type OperationReceipt =
     {

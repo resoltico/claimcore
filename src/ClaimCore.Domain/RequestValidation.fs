@@ -54,7 +54,6 @@ module internal RequestValidation =
                 Validation.decision
                 Validation.decisionUpdate
                 Validation.payment
-                Validation.work
                 reason
                 input
 
