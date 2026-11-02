@@ -17,6 +17,160 @@ let private parsed =
 let private target = CaseSelector.Reference "synthetic-a"
 let private parent = CaseFixtures.caseId (id 10)
 
+let private identicalOther actor =
+    task {
+        let registration =
+            Inputs.registrationWith
+                [ BusinessField.IncidentDescription, "Restorable incident\nSecond paragraph" ]
+                registration
+
+        let! opened =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request 820 "synthetic-b" 0L (CaseAct.Open registration)))
+                token
+
+        accepted opened |> ignore
+
+        let work =
+            OperationInput.Work
+                {
+                    OperationId = id 821
+                    Target = CaseSelector.Reference "synthetic-b"
+                    ExpectedRevision = 0L
+                    Act =
+                        WorkAct.UpdateWork
+                            {
+                                Responsible =
+                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                Summary = WorkValue.Set "Restorable handling summary"
+                            }
+                }
+
+        let! updated = Service.execute actor work token
+        accepted updated |> ignore
+
+        for operation, act in
+            [
+                822,
+                AuthoredReminderAct.Create
+                    {
+                        Action = "Earlier action"
+                        Due = "2027-01-01"
+                    }
+                823,
+                AuthoredReminderAct.Update(
+                    id 822,
+                    1L,
+                    {
+                        Action = "Current completed action"
+                        Due = "2027-02-01"
+                    }
+                )
+                824, AuthoredReminderAct.Complete(id 822, 2L)
+                825,
+                AuthoredReminderAct.Create
+                    {
+                        Action = "Action to replace"
+                        Due = "2027-03-01"
+                    }
+                826,
+                AuthoredReminderAct.Create
+                    {
+                        Action = "Cancelled action"
+                        Due = "2027-04-01"
+                    }
+                827, AuthoredReminderAct.Cancel(id 826, 1L)
+                828,
+                AuthoredReminderAct.CompleteAndPlanNext(
+                    id 825,
+                    1L,
+                    {
+                        Action = "Pending replacement"
+                        Due = "2027-05-01"
+                    }
+                )
+            ] do
+            let! result =
+                Service.execute
+                    actor
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id operation
+                            Target = CaseSelector.Reference "synthetic-b"
+                            Act = act
+                        })
+                    token
+
+            accepted result |> ignore
+    }
+
+let private otherRows (database: PostgresFixture.Database) =
+    task {
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        return!
+            DatabaseSession.rows
+                connection
+                "SELECT 'ledger',row_to_json(l)::text FROM claimcore.ledger l WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
+                [| box (id 820) |]
+                token
+    }
+
+let private assertOther database expected =
+    task {
+        let! current = otherRows database
+
+        Expect.equal
+            current
+            expected
+            "Another case with identical narrative, summary, reminder texts/dates and assignee retains every current/historical byte and nonce"
+
+        let! view =
+            Service.get
+                (core database.Fixture database.Fixture.Owner)
+                {
+                    Target = CaseSelector.Reference "synthetic-b"
+                }
+                token
+
+        match view with
+        | Outcome.Succeeded view ->
+            let fields = CaseState.fields view.Snapshot.State |> Option.get
+
+            Expect.equal
+                (Registration.description fields.Registration
+                 |> Option.map IncidentDescription.format)
+                (Some "Restorable incident\nSecond paragraph")
+                "The unrelated incident remains readable exactly"
+
+            Expect.equal
+                (view.Work.Summary |> Option.map HandlingSummary.format,
+                 view.Work.Responsible |> Option.map _.Account.ActorId)
+                (Some "Restorable handling summary", Some(CaseFixtures.actorId (id 1)))
+                "Identical current context and inherited responsibility remain"
+        | other -> failtestf "The unrelated readable case was affected: %A" other
+
+        let! next =
+            Service.reminder
+                (core database.Fixture database.Fixture.Owner)
+                {
+                    Target = CaseSelector.Reference "synthetic-b"
+                    ReminderId = id 828
+                }
+                token
+
+        match next with
+        | Outcome.Succeeded next ->
+            Expect.equal
+                (ReminderAction.format (Reminder.action next.Item.Reminder),
+                 CalendarDate.format (Reminder.due next.Item.Reminder),
+                 Reminder.state next.Item.Reminder)
+                ("Pending replacement", "2027-05-01", ReminderState.Pending)
+                "The unrelated compound replacement remains current"
+        | other -> failtestf "The unrelated compound child was affected: %A" other
+    }
+
 let private seeded database =
     task {
         let! actor = populated database
@@ -122,6 +276,7 @@ let private seeded database =
                 true
 
         acceptedAuthority permission
+        do! identicalOther actor
         let! _ = verified database
         return actor
     }
@@ -210,11 +365,13 @@ let private restore database path =
 let private oldHead database =
     task {
         let! actor = seeded database
+        let! other = otherRows database
         let! before = verified database
         let! entered = mode database MaintenanceChange.Enter
         do! dump database "/tmp/reminders-before-erasure.sql"
         let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
         do! erase actor
+        do! assertOther database other
         let! acceptedErasure = verified database
 
         Expect.notEqual
@@ -251,11 +408,13 @@ let private oldHead database =
             "The isolated copy is checked against retained post-erasure evidence before any traffic admission"
 
         do! assertErased database
+        do! assertOther database other
     }
 
 let private mixedPayload database =
     task {
         let! actor = seeded database
+        let! other = otherRows database
         let! entered = mode database MaintenanceChange.Enter
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
@@ -273,6 +432,7 @@ let private mixedPayload database =
 
         let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
         do! erase actor
+        do! assertOther database other
         let! checkpoint = verified database
         let! _ = mode database MaintenanceChange.Enter
 
@@ -328,6 +488,7 @@ let private mixedPayload database =
             "Payload reconciliation and projection rebuild do not change accepted ledger evidence"
 
         do! assertErased database
+        do! assertOther database other
     }
 
 [<Tests>]
