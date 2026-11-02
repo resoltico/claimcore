@@ -123,6 +123,19 @@ module CaseFields =
         match field with
         | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
         | BusinessField.Status -> Some(CaseStatus.token fields.Status)
+        | BusinessField.ClaimantName ->
+            Registration.claimant fields.Registration
+            |> Admitted.Name
+            |> FieldValue.format
+            |> Some
+        | BusinessField.InsurerName ->
+            Registration.insurer fields.Registration
+            |> Admitted.Name
+            |> FieldValue.format
+            |> Some
+        | BusinessField.IncidentDescription ->
+            Registration.description fields.Registration
+            |> Option.map (Admitted.Description >> FieldValue.format)
         | BusinessField.ResponsibleActor
         | BusinessField.HandlingSummary -> None
         | _ ->
