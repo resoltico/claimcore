@@ -182,7 +182,7 @@ module Grammar =
                 incomplete
                 && raw.IsNone
                 && (item.Binding.Source = InputSource.OperationIdentity
-                    || item.Binding.Identity = "expectedRevision")
+                    || item.Binding.Source = InputSource.ExpectedRevision)
                 ->
                 None
             | _ when
@@ -352,11 +352,28 @@ module Grammar =
             let format = option "--format" "text"
             let language = option "--language" "en"
 
-            let listing = entry.Endpoint = ActorEndpoint.Query QueryEndpoint.CaseList
+            let listing =
+                List.contains
+                    entry.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseList
+                        ActorEndpoint.Query QueryEndpoint.ReminderList
+                        ActorEndpoint.Query QueryEndpoint.CaseActivity
+                        ActorEndpoint.Query QueryEndpoint.CaseHistory
+                    ]
+
+            let csvListing =
+                List.contains
+                    entry.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseList
+                        ActorEndpoint.Query QueryEndpoint.ReminderList
+                    ]
 
             let formats =
                 if
-                    listing || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                    csvListing
+                    || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
                 then
                     [ "text"; "json"; "csv" ]
                 else
@@ -453,11 +470,11 @@ module Grammar =
         prepareWith false admit finish newId arguments
 
     /// Authored intent is admitted without inventing an executable operation or revision.
-    let internal caseIntent arguments =
+    let private intent actCodec arguments =
         let codec =
             Codec.record (fun reference act operation -> reference, act, operation)
             |> Codec.field "target" (fun (target, _, _) -> target) RequestCodecs.caseSelector
-            |> Codec.field "act" (fun (_, act, _) -> act) RequestCodecs.caseAct
+            |> Codec.field "act" (fun (_, act, _) -> act) actCodec
             |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
             |> Codec.build
 
@@ -478,3 +495,6 @@ module Grammar =
             finish
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
+
+    let internal caseIntent arguments = intent RequestCodecs.caseAct arguments
+    let internal workIntent arguments = intent RequestCodecs.workAct arguments
