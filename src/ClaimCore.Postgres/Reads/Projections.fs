@@ -93,7 +93,7 @@ module internal Projections =
         }
 
 
-    let caseRowWithIndex _installationId index (row: Map<string, obj>) : StoredCase =
+    let caseRowWithIndex _installationId index (row: NamedRow) : StoredCase =
         let reference =
             DatabaseSession.namedValue<string> "case_reference" row
             |> CaseReference.parse

@@ -5,6 +5,7 @@ open ClaimCore.Json
 
 open System
 open System.Globalization
+open System.Collections.Generic
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
@@ -19,6 +20,22 @@ type AdministrationOutcomeUnknownException() =
 /// Raised only where persisted rows fail their format contract.
 type internal RecordCorruptException(reason: string) =
     inherit Exception(reason)
+
+/// Rows share an immutable column lookup for their result set and own their captured values.
+type internal NamedRow private (ordinals: Dictionary<string, int>, values: obj array) =
+    member _.TryValue name =
+        match ordinals.TryGetValue name with
+        | true, index -> Some values[index]
+        | _ -> None
+
+    static member Reader(reader: System.Data.Common.DbDataReader) =
+        let ordinals = Dictionary<string, int>(reader.FieldCount, StringComparer.Ordinal)
+
+        // Map.ofArray previously retained the last value for a duplicated column name.
+        for index in 0 .. reader.FieldCount - 1 do
+            ordinals[reader.GetName index] <- index
+
+        fun () -> NamedRow(ordinals, Array.init reader.FieldCount reader.GetValue)
 
 module internal DatabaseSession =
     let admitted create raw =
@@ -43,9 +60,8 @@ module internal DatabaseSession =
     let row (reader: NpgsqlDataReader) =
         Array.init reader.FieldCount reader.GetValue
 
-    let namedRow (reader: NpgsqlDataReader) =
-        Array.init reader.FieldCount (fun index -> reader.GetName index, reader.GetValue index)
-        |> Map.ofArray
+    /// Initialize once for each result set, then capture independent rows as the reader advances.
+    let namedRow (reader: System.Data.Common.DbDataReader) = NamedRow.Reader reader
 
     let rows connection sql parameters (token: CancellationToken) =
         task {
@@ -66,29 +82,28 @@ module internal DatabaseSession =
         task {
             use statement = statement connection sql parameters
             use! reader = statement.ExecuteReaderAsync(token)
-            let rows = ResizeArray<Map<string, obj>>()
+            let read = namedRow reader
+            let rows = ResizeArray<NamedRow>()
             let mutable reading = true
 
             while reading do
                 let! found = reader.ReadAsync(token)
 
-                if found then
-                    rows.Add(namedRow reader)
-                else
-                    reading <- false
+                if found then rows.Add(read ()) else reading <- false
 
             return List.ofSeq rows
         }
 
-    let namedValue<'T> name (row: Map<string, obj>) =
-        match Map.tryFind name row with
+    let namedValue<'T> name (row: NamedRow) =
+        match row.TryValue name with
         | Some(:? 'T as value) -> value
         | _ -> raise (RecordCorruptException "Invalid stored column type or name.")
 
-    let namedOptional<'T> name (row: Map<string, obj>) =
-        match Map.tryFind name row with
+    let namedOptional<'T> name (row: NamedRow) =
+        match row.TryValue name with
         | Some value when Convert.IsDBNull value -> None
-        | _ -> Some(namedValue<'T> name row)
+        | Some(:? 'T as value) -> Some value
+        | _ -> raise (RecordCorruptException "Invalid stored column type or name.")
 
     let value<'T> index (row: obj array) =
         match row[index] with

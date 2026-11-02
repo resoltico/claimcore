@@ -253,6 +253,18 @@ let private projectionFields: CaseFields =
     }
 
 
+let private namedRow (columns: Map<string, obj>) =
+    use table = new System.Data.DataTable()
+
+    for name, _ in Map.toList columns do
+        table.Columns.Add(name, typeof<obj>) |> ignore
+
+    table.Rows.Add(columns |> Map.toArray |> Array.map snd) |> ignore
+    use reader = table.CreateDataReader()
+    let read = DatabaseSession.namedRow reader
+    Expect.isTrue (reader.Read()) "Independent projection columns contain a row"
+    read ()
+
 let private projectionBindings () =
     let snapshot =
         {
@@ -290,7 +302,7 @@ let private projectionBindings () =
     let row = row |> Map.map (fun _ value -> nonNull value)
 
     Expect.equal
-        (Projections.caseRow installation row)
+        (Projections.caseRow installation (namedRow row))
         expected
         "Snapshot bytes round-trip with their independent metadata"
 
@@ -311,7 +323,8 @@ let private projectionBindings () =
         ] do
         Expect.throwsT<RecordCorruptException>
             (fun () ->
-                Projections.caseRow installation (Map.add name (nonNull value) row) |> ignore)
+                Projections.caseRow installation (namedRow (Map.add name (nonNull value) row))
+                |> ignore)
             "Every identity and snapshot mismatch is an integrity fault"
 
     let histories =

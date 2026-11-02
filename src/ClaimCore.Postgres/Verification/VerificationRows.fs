@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 [<NoEquality; NoComparison>]
 type private ProjectionScan<'value, 'state> =
     {
-        Read: Npgsql.NpgsqlDataReader -> 'value
+        Read: Npgsql.NpgsqlDataReader -> (unit -> 'value)
         Append: 'state -> 'value -> Result<'state, VerificationDivergence>
         Initial: 'state
         Finding: VerificationFinding
@@ -43,6 +43,7 @@ module internal VerificationRows =
         task {
             use statement = DatabaseSession.statement connection sql [||]
             use! reader = statement.ExecuteReaderAsync(token)
+            let read = scan.Read reader
             let mutable state = Ok scan.Initial
             let mutable reading = true
 
@@ -55,8 +56,7 @@ module internal VerificationRows =
                     state <-
                         state
                         |> Result.bind (fun state ->
-                            capture None scan.Finding (fun () -> scan.Read reader)
-                            |> Result.bind (scan.Append state))
+                            capture None scan.Finding read |> Result.bind (scan.Append state))
 
             return state
         }
@@ -193,7 +193,7 @@ module internal VerificationRows =
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
                     {
-                        Read = DatabaseSession.row >> Projections.actorRow
+                        Read = fun reader () -> DatabaseSession.row reader |> Projections.actorRow
                         Append = ProjectionVerification.actor
                         Initial = Map.empty
                         Finding = VerificationFinding.AuthorityProjection
@@ -208,7 +208,7 @@ module internal VerificationRows =
                         connection
                         "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
                         {
-                            Read = DatabaseSession.row >> grant
+                            Read = fun reader () -> DatabaseSession.row reader |> grant
                             Append = ProjectionVerification.grant
                             Initial = actors
                             Finding = VerificationFinding.AuthorityProjection
