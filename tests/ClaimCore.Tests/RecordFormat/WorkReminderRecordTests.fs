@@ -84,6 +84,20 @@ let tests =
                         (WorkRecord.decodeSnapshot (WorkRecord.encodeSnapshot root))
                         (Ok root)
                         "Zero root roundtrip")
+            testCase "revision-zero work cannot contain authored state" (fun () ->
+                let invalid =
+                    """{"caseId":"96000000-0000-4000-8000-000000000002","format":1,"revision":0,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
+
+                Expect.isError
+                    (WorkRecord.decodeSnapshot (utf8 invalid))
+                    "OPEN creates exactly an empty zero root"
+
+                let valid =
+                    """{"caseId":"96000000-0000-4000-8000-000000000002","format":1,"revision":1,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
+
+                Expect.isOk
+                    (WorkRecord.decodeSnapshot (utf8 valid))
+                    "Same authored value at first edit is representable")
             testCase
                 "reminder creation request has explicit format parent and operation identity"
                 (fun () ->
@@ -272,4 +286,58 @@ let tests =
                             (ReminderRecord.decodeEffects (ReminderRecord.encodeEffects effects))
                             (Ok effects)
                             "Both effects survive encoded bytes")
+            testCase
+                "actual maximum case description and required facts fit the combined permanent payload"
+                (fun () ->
+                    for text in
+                        [
+                            String.replicate 600 "😀"
+                            String.replicate 600 "\""
+                            String.replicate 600 "\\"
+                            String.replicate 300 "a\n"
+                        ] do
+                        let facts =
+                            RegistrationInput.create
+                                [
+                                    BusinessField.IncidentDate, "2026-11-02"
+                                    BusinessField.IncidentNotificationDate, "2026-11-02"
+                                    BusinessField.IncidentCountry, "ZZ"
+                                    BusinessField.ClaimantName, String.replicate 200 "😀"
+                                    BusinessField.InsurerName, String.replicate 200 "😀"
+                                    BusinessField.ClaimedAmount, "999999999999999999.9999"
+                                    BusinessField.ClaimedCurrency, "EUR"
+                                    BusinessField.IncidentDescription, text
+                                ]
+                            |> required
+
+                        let command =
+                            Case.parse
+                                {
+                                    OperationId = OperationId.value operation
+                                    CaseReference = String.replicate 80 "\\"
+                                    ExpectedRevision = 0L
+                                    Act = CaseAct.Open facts
+                                }
+                            |> required
+
+                        let snapshot =
+                            Case.decide (DateOnly(2026, 11, 2)) command None
+                            |> required
+                            |> Case.snapshot
+
+                        let request = RequestRecord.encode command
+                        let bytes = CaseRecord.encodeSnapshot snapshot
+
+                        let combined =
+                            LedgerEntry.encodePayload { Request = request; Snapshot = bytes }
+
+                        Expect.isLessThanOrEqual
+                            combined.Length
+                            32768
+                            "Canonical quotes, slashes and supplementary scalars including framing"
+
+                        Expect.equal
+                            (CaseRecord.decodeSnapshot bytes)
+                            (Ok snapshot)
+                            "Maximum snapshot retains exact description and facts")
         ]

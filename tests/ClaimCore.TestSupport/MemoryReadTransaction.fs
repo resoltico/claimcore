@@ -158,6 +158,45 @@ type internal Reader
                     HasScopedCases = caseId.IsNone && assigned
                 }
 
+        member _.AuthorityCases(principal, caseIds) =
+            read ()
+            let state = get ()
+
+            let actor =
+                state.Actors
+                |> Map.values
+                |> Seq.tryFind (fun actor -> actor.Principal = principal)
+
+            let view =
+                actor
+                |> Option.map (fun actor ->
+                    {
+                        ActorAuthority.Actor = actor
+                        Grants =
+                            state.Grants
+                            |> Seq.choose (fun (id, role, scope) ->
+                                if
+                                    id = actor.ActorId
+                                    && (scope.IsNone
+                                        || (scope
+                                            |> Option.exists (fun id -> List.contains id caseIds)))
+                                then
+                                    Some
+                                        {
+                                            ActorGrant.Role = role
+                                            Scope =
+                                                scope
+                                                |> Option.map Scope.Case
+                                                |> Option.defaultValue Scope.Installation
+                                        }
+                                else
+                                    None)
+                            |> Seq.toList
+                    })
+                |> AuthorityView.ofActor
+
+            Task.FromResult view
+
         member _.FindCase id =
             read ()
             Task.FromResult(Map.tryFind id (get ()).Cases |> Option.map (readCase (get ()).Entries))
@@ -190,11 +229,6 @@ type internal Reader
                 |> List.map (fun id ->
                     let work = state.Work[id]
                     let pending = pendingReminders state id
-                    let parent = state.Cases[id]
-
-                    let actionable =
-                        CaseState.lifecycle parent.Snapshot.State = Lifecycle.Active
-                        && parent.Index.Status = Some CaseStatus.Opened
 
                     id,
                     {
@@ -202,14 +236,11 @@ type internal Reader
                         Next = List.tryHead pending
                         Pending = int64 pending.Length
                         Overdue =
-                            if actionable then
-                                pending
-                                |> List.filter (fun reminder ->
-                                    CalendarDate.value (Reminder.due reminder) < today)
-                                |> List.length
-                                |> int64
-                            else
-                                0L
+                            pending
+                            |> List.filter (fun reminder ->
+                                CalendarDate.value (Reminder.due reminder) < today)
+                            |> List.length
+                            |> int64
                     })
                 |> Map.ofList
 

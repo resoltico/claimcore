@@ -105,28 +105,37 @@ let private setup fixture =
                     Currency = "JPY"
                 }
 
-        // Responsibility is a separate business fact; the read grants below do not set it.
+        // Work revision is independent of the financial revision used by later decisions.
         for number, reference in [ 40, "TRIAGE-B"; 41, "TRIAGE-C" ] do
-            do!
-                execute
+            let! changed =
+                Service.execute
                     owner
-                    number
-                    reference
-                    1L
-                    (AuthoredCaseAct.UpdateWork
+                    (OperationInput.Work
                         {
-                            CaseWorkInput.Responsible =
-                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
-                            FollowUp = WorkValue.Keep
+                            OperationId = id number
+                            Target = CaseSelector.Reference reference
+                            ExpectedRevision = 0L
+                            Act =
+                                WorkAct.UpdateWork
+                                    {
+                                        Responsible =
+                                            WorkValue.Set(
+                                                ActorId.format (CaseFixtures.actorId (id 1))
+                                            )
+                                        Summary = WorkValue.Keep
+                                    }
                         })
+                    token
+
+            accepted changed |> ignore
 
         let decision =
             Inputs.decisionWith [ BusinessField.PayableAmount, maximum ] Inputs.decision
 
         do! execute owner 24 "TRIAGE-A" 1L (AuthoredCaseAct.Decide decision)
         do! execute owner 25 "TRIAGE-A" 2L (AuthoredCaseAct.Bare BareAct.Close)
-        do! execute owner 26 "TRIAGE-B" 2L (AuthoredCaseAct.Decide decision)
-        do! execute owner 27 "TRIAGE-B" 3L (AuthoredCaseAct.Void "Synthetic triage review")
+        do! execute owner 26 "TRIAGE-B" 1L (AuthoredCaseAct.Decide decision)
+        do! execute owner 27 "TRIAGE-B" 2L (AuthoredCaseAct.Void "Synthetic triage review")
         do! execute owner 28 "TRIAGE-D" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
         for number, reference in [ 30, "TRIAGE-B"; 31, "TRIAGE-C" ] do

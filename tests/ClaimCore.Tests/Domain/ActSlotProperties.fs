@@ -19,7 +19,6 @@ let private caseActs value =
             (fun _ -> value)
             (fun _ -> value)
             (fun _ -> value)
-            (fun _ -> value)
             act)
 
 let private caseRoundTrip expected kind (inject, project) candidates =
@@ -45,11 +44,10 @@ let private caseProperty =
         return
             CaseActKind.all
             |> List.forall (fun kind ->
-                match (CaseAct.slot kind: CaseActSlot<int, int, int, int, int, int, int>) with
+                match (CaseAct.slot kind: CaseActSlot<int, int, int, int, int, int>) with
                 | CaseActSlot.Bare act -> CaseAct.kind act = kind && List.contains act candidates
                 | CaseActSlot.Registration(inject, project)
                 | CaseActSlot.RegistrationUpdate(inject, project)
-                | CaseActSlot.Work(inject, project)
                 | CaseActSlot.Decision(inject, project)
                 | CaseActSlot.Payment(inject, project)
                 | CaseActSlot.Reason(inject, project) ->
@@ -99,7 +97,6 @@ let private descriptions () =
             | ActPayload.Bare _ -> "BARE"
             | ActPayload.Registration -> "REGISTRATION"
             | ActPayload.RegistrationUpdate -> "REGISTRATION_UPDATE"
-            | ActPayload.Work -> "WORK"
             | ActPayload.Decision -> "DECISION"
             | ActPayload.Payment -> "PAYMENT"
             | ActPayload.Reason -> "REASON"

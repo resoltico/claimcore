@@ -170,66 +170,6 @@
           }
         }
       }
-    },
-    {
-      "name": "WORK assignment and future follow-up",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "60000000-0000-4000-8000-000000000006",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 1,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "responsibleActor": {
-              "kind": "SET",
-              "value": "b0000000-0000-4000-8000-000000000002"
-            },
-            "followUpDate": {
-              "kind": "SET",
-              "value": "2027-12-31"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "WORK clear follow-up while preserving responsibility",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "70000000-0000-4000-8000-000000000007",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 2,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "followUpDate": {
-              "kind": "CLEAR"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "WORK representable past date",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "80000000-0000-4000-8000-000000000008",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 1,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "followUpDate": {
-              "kind": "SET",
-              "value": "0001-01-01"
-            }
-          }
-        }
-      }
     }
   ],
   "snapshot": {
@@ -249,14 +189,11 @@
             "claimantName": "Rīgas Tulkojumu Birojs SIA",
             "insurerName": "شركة التأمين المثال",
             "claimedAmount": "1000",
-            "claimedCurrency": "EUR"
+            "claimedCurrency": "EUR",
+            "incidentDescription": null
           },
           "decision": null,
-          "payment": null,
-          "work": {
-            "responsibleActor": null,
-            "followUpDate": null
-          }
+          "payment": null
         }
       },
       "caseId": "10000000-0000-4000-8000-000000000001"
@@ -327,20 +264,20 @@
       "subject": "CONTROL"
     },
     {
-      "name": "work act 13 with erasable assignment and planned date",
+      "name": "independent work subject and revision",
       "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
       "sequence": 4,
       "act": "UPDATE_WORK",
       "operationId": "60000000-0000-4000-8000-000000000006",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:27.123456+00:00",
-      "caseRevision": 2,
+      "caseRevision": 1,
       "businessDate": "2026-08-03",
       "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-      "subject": "CASE",
+      "subject": "WORK",
       "subjectId": "10000000-0000-4000-8000-000000000001",
-      "requestIndex": 6,
-      "workSnapshotIndex": 0
+      "workSnapshotIndex": 0,
+      "workRequestIndex": 0
     }
   ],
   "canonicalIdentity": [
@@ -1944,14 +1881,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1976,14 +1910,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2008,14 +1939,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2040,14 +1968,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2072,14 +1997,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2104,14 +2026,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2121,33 +2040,74 @@
   "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
   "workSnapshots": [
     {
-      "name": "Work state retains only actor ID and planned date",
+      "name": "independent work revision with summary and assignment",
       "value": {
-        "format": 3,
-        "revision": 2,
-        "state": {
-          "kind": "ACTIVE",
-          "fields": {
-            "caseReference": "Demo-0001",
-            "status": "OPENED",
-            "registration": {
-              "incidentDate": "2026-08-01",
-              "incidentNotificationDate": "2026-08-03",
-              "incidentCountry": "LV",
-              "claimantName": "Rīgas Tulkojumu Birojs SIA",
-              "insurerName": "شركة التأمين المثال",
-              "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
-            },
-            "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": "b0000000-0000-4000-8000-000000000002",
-              "followUpDate": "2027-12-31"
-            }
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "format": 1,
+        "revision": 1,
+        "work": {
+          "responsibleActor": "b0000000-0000-4000-8000-000000000002",
+          "handlingSummary": "Awaiting supporting documents.\nReview on receipt."
+        }
+      }
+    }
+  ],
+  "workRequests": [
+    {
+      "name": "assignment and paragraph summary",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "60000000-0000-4000-8000-000000000006",
+        "values": {
+          "responsibleActor": {
+            "kind": "SET",
+            "value": "b0000000-0000-4000-8000-000000000002"
+          },
+          "handlingSummary": {
+            "kind": "SET",
+            "value": "Awaiting supporting documents.\nReview on receipt."
           }
-        },
-        "caseId": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "clear summary and preserve responsibility",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 1,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "70000000-0000-4000-8000-000000000007",
+        "values": {
+          "responsibleActor": {
+            "kind": "KEEP"
+          },
+          "handlingSummary": {
+            "kind": "CLEAR"
+          }
+        }
+      }
+    },
+    {
+      "name": "Arabic handling summary",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 2,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "80000000-0000-4000-8000-000000000008",
+        "values": {
+          "responsibleActor": {
+            "kind": "KEEP"
+          },
+          "handlingSummary": {
+            "kind": "SET",
+            "value": "متابعة الحادث"
+          }
+        }
       }
     }
   ]

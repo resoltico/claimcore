@@ -158,7 +158,7 @@ let internal accepted (reply: ExecuteReply) =
             "Accepted reply echoes its operation identity"
 
         receipt
-    | _ -> failtest "Expected accepted operation."
+    | other -> failtestf "Expected accepted operation, received %A." other
 
 let internal acceptedAuthority outcome =
     match accepted outcome with

@@ -45,6 +45,8 @@ let workBasis: WorkDateBasis =
 let unscheduledWork: CaseWorkView =
     {
         Revision = Revision.zero
+        ChangedAt = None
+        RecordedBy = None
         Summary = None
         NextAction = None
         PendingReminders = 0L

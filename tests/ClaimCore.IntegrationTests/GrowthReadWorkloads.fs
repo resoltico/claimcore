@@ -246,20 +246,39 @@ let private workProfiles (actor: ServiceContext) cases =
             let! changed =
                 Service.execute
                     actor
-                    (Inputs.caseOperation (
-                        request
-                            (3000000 + index)
-                            reference
-                            1L
-                            (AuthoredCaseAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    FollowUp = WorkValue.Set(CalendarDate.format followUp)
-                                })
-                    ))
+                    (OperationInput.Work
+                        {
+                            OperationId = id (3000000 + index * 2)
+                            Target = CaseSelector.Reference reference
+                            ExpectedRevision = 0L
+                            Act =
+                                WorkAct.UpdateWork
+                                    {
+                                        Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                                        Summary = WorkValue.Keep
+                                    }
+                        })
                     token
 
             accepted changed |> ignore
+
+            let! planned =
+                Service.execute
+                    actor
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id (3000001 + index * 2)
+                            Target = CaseSelector.Reference reference
+                            Act =
+                                AuthoredReminderAct.Create
+                                    {
+                                        Action = "Growth planned action"
+                                        Due = CalendarDate.format followUp
+                                    }
+                        })
+                    token
+
+            accepted planned |> ignore
             references.Add reference
 
         // Independent population/count and row-content witnesses, rather than an empty Mine query.
@@ -367,6 +386,291 @@ let private workProfiles (actor: ServiceContext) cases =
         return [| listing; totals |]
     }
 
+// Large child populations are seeded after common-case measurements, so feature cost cannot
+// change the unchanged-read comparison inputs. Each population is checked independently.
+let private reminderProfiles actor cases =
+    task {
+        let! contextResult = Service.context actor () token
+
+        let context =
+            match contextResult with
+            | Outcome.Succeeded value -> value
+            | other -> failtestf "Reminder growth context unavailable: %A" other
+
+        let reference = GrowthWorkloadPlan.readReference 3
+        let population = cases / 10
+
+        let due =
+            context.Runtime.EffectiveBusinessDate
+                .AddDays(-2)
+                .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
+
+        let target = CaseSelector.Reference reference
+        let pendingIds = ResizeArray<string>()
+        let completedIds = ResizeArray<string>()
+
+        for index in 0 .. population - 1 do
+            let pendingOperation = id (4000000 + index * 3)
+            let terminalOperation = id (4000001 + index * 3)
+
+            for operation in [ pendingOperation; terminalOperation ] do
+                let! reply =
+                    Service.execute
+                        actor
+                        (OperationInput.Reminder
+                            {
+                                OperationId = operation
+                                Target = target
+                                Act =
+                                    AuthoredReminderAct.Create
+                                        {
+                                            Action = "High fanout action"
+                                            Due = due
+                                        }
+                            })
+                        token
+
+                let receipt = accepted reply
+
+                match receipt.Subject with
+                | ReceiptSubject.Reminder {
+                                              Effects = ReminderReceiptEffects.Single version
+                                          } ->
+                    Expect.equal
+                        (ReminderId.value version.ReminderId)
+                        operation
+                        "Every creation uses the operation ID"
+                | other -> failtestf "Creation must have one correlated reminder effect: %A" other
+
+            let! completed =
+                Service.execute
+                    actor
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id (4000002 + index * 3)
+                            Target = target
+                            Act = AuthoredReminderAct.Complete(terminalOperation, 1L)
+                        })
+                    token
+
+            accepted completed |> ignore
+            pendingIds.Add(pendingOperation.ToString("D"))
+            completedIds.Add(terminalOperation.ToString("D"))
+
+        let request state cursor : ReminderListRequest =
+            {
+                Target = Some target
+                State = Some state
+                Due = None
+                Assignment = None
+                Text = Some "High fanout action"
+                AfterCursor = cursor
+                Limit = 50
+                IncludeInactive = false
+            }
+
+        let assertPage state expected =
+            task {
+                let! result = Service.reminders actor (request state None) token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    let actual =
+                        page.Items
+                        |> List.map (fun item -> Reminder.id item.Reminder |> ReminderId.format)
+
+                    Expect.equal
+                        actual
+                        (expected |> List.sort |> List.truncate 50)
+                        "Stable due/identity first-page order"
+
+                    for row in page.Items do
+                        Expect.equal (Reminder.state row.Reminder) state "Explicit state filter"
+
+                        Expect.equal
+                            (ReminderAction.format (Reminder.action row.Reminder))
+                            "High fanout action"
+                            "Bounded current action"
+
+                        Expect.equal
+                            (CalendarDate.format (Reminder.due row.Reminder))
+                            due
+                            "Retained planned date"
+
+                    return page.Items.Length
+                | other -> return failtestf "Actual reminder page failed: %A" other
+            }
+        // Walk each actual continuation once before latency sampling. Missing/duplicate rows fail.
+        for state, expected in
+            [
+                ReminderState.Pending, List.ofSeq pendingIds
+                ReminderState.Completed, List.ofSeq completedIds
+            ] do
+            let found = ResizeArray<string>()
+            let mutable cursor = None
+            let mutable more = true
+
+            while more do
+                let! result = Service.reminders actor (request state cursor) token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    for row in page.Items do
+                        found.Add(Reminder.id row.Reminder |> ReminderId.format)
+
+                    Expect.isLessThanOrEqual
+                        found.Count
+                        population
+                        "Continuation must make bounded progress"
+
+                    if page.NextCursor = cursor && page.NextCursor.IsSome then
+                        failtest "Continuation repeated without progress"
+
+                    cursor <- page.NextCursor
+                    more <- cursor.IsSome
+                | other -> failtestf "Continuation query failed: %A" other
+
+            Expect.equal
+                (List.ofSeq found)
+                (List.sort expected)
+                "Exact independent population, no omissions or duplicates"
+
+        let fingerprint name =
+            GrowthWorkloadPlan.reminderReadFingerprint cases population name
+
+        let! pending =
+            measure
+                cases
+                ("reminder-pending", "DUE_ID", min 50 population, fingerprint "pending")
+                (Nullable 50)
+                (fun () -> assertPage ReminderState.Pending (List.ofSeq pendingIds))
+
+        let! completed =
+            measure
+                cases
+                ("reminder-completed", "DUE_ID", min 50 population, fingerprint "completed")
+                (Nullable 50)
+                (fun () -> assertPage ReminderState.Completed (List.ofSeq completedIds))
+
+        let current () =
+            task {
+                let! result = Service.get actor { Target = target } token
+
+                match result with
+                | Outcome.Succeeded view ->
+                    Expect.equal
+                        (Revision.value view.Snapshot.Revision)
+                        1L
+                        "Child activity does not advance financial facts"
+
+                    Expect.equal
+                        view.Work.PendingReminders
+                        (int64 population)
+                        "Pending count ignores completed rows"
+
+                    Expect.equal
+                        view.Work.OverdueReminders
+                        (int64 population)
+                        "Past-due reminders remain pending"
+
+                    Expect.equal
+                        (view.Work.FollowUp |> Option.map CalendarDate.format)
+                        (Some due)
+                        "Minimum pending date"
+
+                    Expect.isFalse view.Work.NeedsNextAction "Pending work supplies coverage"
+                    return 1
+                | other -> return failtestf "Bounded current case query failed: %A" other
+            }
+
+        let! currentReport =
+            measure
+                cases
+                ("reminder-current-case", "CASE_ID", 1, fingerprint "current")
+                (Nullable 1)
+                current
+
+        let financial () =
+            task {
+                let filter =
+                    { CaseListFilter.empty<string> with
+                        Text = Some reference
+                    }
+
+                let! result = Service.caseSummary actor filter token
+
+                match result with
+                | Outcome.Succeeded summary ->
+                    Expect.equal summary.Counts.Total 1L "Child fanout selects exactly one case"
+
+                    Expect.equal
+                        (summary.Claimed
+                         |> List.map (fun total ->
+                             Currency.format total.Currency, DecimalTotal.format total.Amount))
+                        [ ("EUR", "1000") ]
+                        "Money is counted once despite high pending and completed fanout"
+
+                    Expect.isEmpty summary.Payable "Seeded case 3 has no decision"
+                    return 1
+                | other -> return failtestf "Fanout financial query failed: %A" other
+            }
+
+        let! financialReport =
+            measure
+                cases
+                ("reminder-financial-isolation", "GROUPED", 1, fingerprint "financial")
+                (Nullable())
+                financial
+
+        let overview () =
+            task {
+                let! result = Service.workOverview actor { Mine = false } token
+
+                match result with
+                | Outcome.Succeeded overview ->
+                    Expect.equal
+                        overview.ActionableCases
+                        (int64 (cases / 2))
+                        "Only active open cases"
+
+                    Expect.equal
+                        overview.MissingPlanCases
+                        (int64 (cases / 2 - cases / 1000 - 1))
+                        "Each covered case counted once"
+
+                    Expect.equal overview.OverdueCases (int64 (cases / 1000 + 1)) "Case units"
+
+                    Expect.equal
+                        overview.OverdueReminders
+                        (int64 (cases / 1000 + population))
+                        "Reminder units"
+
+                    Expect.equal
+                        overview.UnassignedCases
+                        (int64 (cases / 2 - cases / 1000))
+                        "Inherited assignment"
+
+                    Expect.equal overview.UnavailableAssigneeCases 0L "Enabled seeded assignee"
+
+                    Expect.equal
+                        overview.AttentionCases
+                        (int64 (cases / 2))
+                        "Union of overlapping attention conditions"
+
+                    return int overview.ActionableCases
+                | other -> return failtestf "Accessible-scope overview failed: %A" other
+            }
+
+        let! overviewReport =
+            measure
+                cases
+                ("reminder-work-overview", "ACCESSIBLE", cases / 2, fingerprint "overview")
+                (Nullable())
+                overview
+
+        return [| pending; completed; currentReport; financialReport; overviewReport |]
+    }
+
 let profile cases =
     task {
         let! database = PostgresFixture.create ()
@@ -434,6 +738,9 @@ let profile cases =
 
             let! work = workProfiles actor cases
             reports.AddRange work
+
+            let! reminders = reminderProfiles actor cases
+            reports.AddRange reminders
 
             return
                 {|

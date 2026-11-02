@@ -32,6 +32,10 @@ let checks installation instant =
             Snapshot = Some snapshot
             Reference = Some snapshot.Reference
             State = CaseState.map ignore snapshot.State
+            Status =
+                CaseState.fields snapshot.State
+                |> Option.map _.Status
+                |> Option.defaultValue CaseStatus.Opened
             MissingPayloadAt = None
             PresentPayloadAt = Some(CaseFixtures.sequence 1L)
             ErasedAt = None
@@ -49,6 +53,35 @@ let checks installation instant =
             histories
             Set.empty
             { record with Index = mutate index }
+        |> unitResult
+
+    let root =
+        {
+            CaseWorkSnapshot.CaseId = caseId
+            Revision = Revision.zero
+            Work = CaseWork.empty
+        }
+
+    let work: Map<CaseId, WorkHistory> =
+        Map.ofList
+            [
+                (caseId,
+                 {
+                     Revision = Revision.zero
+                     Snapshot = Some root
+                     ChangedAt = None
+                     RecordedBy = None
+                     MissingPayloadAt = None
+                     PresentPayloadAt = None
+                 })
+            ]
+
+    let checkWork mutate () =
+        Expect.isOk
+            (ProjectionVerification.workIndex work Map.empty record)
+            "Valid independent work-index control"
+
+        ProjectionVerification.workIndex work Map.empty { record with Index = mutate index }
         |> unitResult
 
     [
@@ -73,7 +106,7 @@ let checks installation instant =
                 SearchText = Some "tampered"
             })
         VerificationFinding.CaseWorkProjection,
-        check (fun index ->
+        checkWork (fun index ->
             { index with
                 FollowUp = Some(Inputs.date "2027-12-31")
             })

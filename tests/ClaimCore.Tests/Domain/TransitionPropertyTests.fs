@@ -33,7 +33,6 @@ let private initial: CaseSnapshot =
         State =
             CaseState.Active(
                 {
-                    Work = CaseWork.empty
                     CaseReference = CaseFixtures.reference "UNIT-001"
                     Status = CaseStatus.Opened
                     Registration =
@@ -58,7 +57,7 @@ let private checkSequence steps =
     let _, _, valid =
         steps
         |> List.fold
-            (fun (current, expected, valid) step ->
+            (fun (current, (expected: CaseSnapshot), valid) step ->
                 let candidate =
                     actRequest
                         (if step.Stale then

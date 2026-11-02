@@ -232,7 +232,7 @@ let authorityEntries = 100000
 let authorityOperationStart = 2000000
 let authorityRole = Role.Auditor
 let authorityOwner = CaseFixtures.actorId (StoreFixtures.id 1)
-let readProfileCount = readPopulations.Length * 6 + 2
+let readProfileCount = readPopulations.Length * 11 + 2
 
 let authorityFingerprint cases target =
     fingerprint
@@ -277,6 +277,9 @@ let workReadFingerprint cases filter summary =
             workFirstIndex = 1
             workEvery = 1000
             workOperationStart = 3000000
+            operationsPerWorkCase = 2
+            reminderAction = "Growth planned action"
+            separateWorkRevision = 0
             followUpDaysBeforeDatabaseBusinessDate = 1
             responsible = "bootstrap human case handler"
             seedAfterCommonQueries = true
@@ -294,6 +297,25 @@ let workReadFingerprint cases filter summary =
                                 }
                             Filter = filter
                         }
+            warmupRequests = warmupRequests
+            measuredRequests = measuredRequests
+        |}
+
+
+let reminderReadFingerprint cases population name =
+    fingerprint
+        {|
+            cases = cases
+            pendingReminders = population
+            completedReminders = population
+            parent = readReference 3
+            operationStart = 4000000
+            operationsPerPair = 3
+            action = "High fanout action"
+            dueDaysBeforeBusinessDate = 2
+            seedAfterCommonQueries = true
+            query = name
+            limit = 50
             warmupRequests = warmupRequests
             measuredRequests = measuredRequests
         |}

@@ -47,6 +47,7 @@
     <Compile Include="Contract/WireValueGenerators.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/ProjectionIndexChecks.fs" />
+    <Compile Include="Application/WorkProjectionTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />

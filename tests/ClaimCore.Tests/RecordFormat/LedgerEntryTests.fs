@@ -30,6 +30,15 @@ let private subject (vector: JsonElement) =
                 TargetActorId = CaseFixtures.actorId (Guid.Parse(text vector "subjectId"))
                 Act = AuthorityKind.Grant
             }
+    elif text vector "subject" = "WORK" then
+        RecordedTarget.Work
+            {
+                CaseId = CaseFixtures.caseId (Guid.Parse(text vector "subjectId"))
+                Revision = CaseFixtures.revision (vector.GetProperty("caseRevision").GetInt64())
+                Act = WorkActKind.UpdateWork
+                BusinessDate =
+                    DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
+            }
     else
         RecordedTarget.Case
             {
