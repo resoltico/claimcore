@@ -262,6 +262,27 @@ module Api =
                 "HistoryReply"
                 (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
 
+    let reminders =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList))
+            HttpMethod.Post
+            RequestCodecs.reminderListRequest
+            (ReplyCodecs.readReply "ReminderListReply" WorkReadCodecs.reminders)
+
+    let workOverview =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkOverview))
+            HttpMethod.Post
+            RequestCodecs.workOverviewRequest
+            (ReplyCodecs.readReply "WorkOverviewReply" WorkReadCodecs.overview)
+
+    let caseActivity =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseActivity))
+            HttpMethod.Post
+            RequestCodecs.caseActivityRequest
+            (ReplyCodecs.readReply "CaseActivityReply" WorkReadCodecs.activityPage)
+
     let operationPreview =
         {
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
@@ -373,6 +394,9 @@ module Api =
     // fsharplint:disable-next-line CyclomaticComplexity
     let private defineActor =
         function
+        | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders
+        | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> EndpointDefinition.create workOverview
+        | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> EndpointDefinition.create caseActivity
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
         | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
@@ -472,6 +496,62 @@ module ReplyCorrelation =
                 expected.IsSome && guid "caseId" actual = expected
             | _ -> false
 
+    let private integerMember name value =
+        memberValue name value
+        |> Option.bind (function
+            | JsonValue.Integer value -> Some value
+            | _ -> None)
+
+    let private reminderEffects preview input receipt =
+        let act = memberValue "act" input
+        let tag = act |> Option.bind (stringMember "kind")
+        let expectedId = act |> Option.bind (guid "reminderId")
+        let expectedRevision = act |> Option.bind (integerMember "expectedRevision")
+        let successor = expectedRevision |> Option.map ((+) 1L)
+        let operation = guid "operationId" input
+        let effects = memberValue "effects" receipt
+
+        let version (expectedId: System.Guid option) (expectedRevision: int64 option) value =
+            expectedId.IsSome
+            && guid "reminderId" value = expectedId
+            && expectedRevision.IsSome
+            && integerMember "revision" value = expectedRevision
+
+        match tag, effects with
+        | Some "COMPLETE_AND_PLAN_NEXT", Some effects ->
+            stringMember "kind" effects = Some "COMPLETED_AND_PLANNED"
+            && (memberValue "completed" effects |> Option.exists (version expectedId successor))
+            && (memberValue "next" effects |> Option.exists (version operation (Some 1L)))
+        | Some tag, Some effects ->
+            stringMember "kind" effects =
+                Some(
+                    if preview then
+                        (if tag = "CREATE" then "CREATED" else "CHANGED")
+                    else
+                        "SINGLE"
+                )
+            && (memberValue "reminder" effects
+                |> Option.exists (
+                    version
+                        (if tag = "CREATE" then operation else expectedId)
+                        (if tag = "CREATE" then Some 1L else successor)
+                ))
+        | _ -> false
+
+    let private newFamilyReceipt input subject =
+        let family = stringMember "kind" input
+        let act = memberValue "act" input |> Option.bind (stringMember "kind")
+
+        stringMember "kind" subject = family
+        && caseTarget input subject
+        && stringMember "act" subject = act
+        && (match family with
+            | Some "WORK" ->
+                integerMember "revision" subject =
+                    (integerMember "expectedRevision" input |> Option.map ((+) 1L))
+            | Some "REMINDER" -> reminderEffects false input subject
+            | _ -> false)
+
     let matches token input reply =
         let outcome = memberValue "outcome" reply
         let kind = outcome |> Option.bind (stringMember "kind")
@@ -507,7 +587,12 @@ module ReplyCorrelation =
             |> Option.forall (fun receipt ->
                 match stringMember "kind" input, memberValue "subject" receipt with
                 | Some "CASE", Some subject ->
-                    stringMember "kind" subject = Some "CASE" && caseTarget input subject
+                    stringMember "kind" subject = Some "CASE"
+                    && caseTarget input subject
+                    && stringMember "act" subject =
+                        (memberValue "act" input |> Option.bind (stringMember "kind"))
+                | Some("WORK" | "REMINDER"), Some subject -> newFamilyReceipt input subject
+                | Some("CASE" | "WORK" | "REMINDER"), None -> false
                 | _ -> true)
 
         let readTarget =
@@ -525,6 +610,34 @@ module ReplyCorrelation =
                 |> Option.bind (memberValue "subject")
                 |> Option.bind (memberValue "after")
                 |> Option.exists (caseTarget input)
+            | "operation.preview", Some "REVIEWED", Some "WORK", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.exists (fun subject ->
+                    stringMember "kind" subject = Some "WORK"
+                    && (memberValue "proposed" subject
+                        |> Option.exists (fun proposed ->
+                            let actual =
+                                match proposed with
+                                | JsonValue.Object fields ->
+                                    JsonValue.Object(
+                                        ("caseReference",
+                                         memberValue "caseReference" subject
+                                         |> Option.defaultValue JsonValue.Null)
+                                        :: fields
+                                    )
+                                | _ -> proposed
+
+                            caseTarget input actual
+                            && integerMember "revision" proposed =
+                                (integerMember "expectedRevision" input |> Option.map ((+) 1L)))))
+            | "operation.preview", Some "REVIEWED", Some "REMINDER", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.exists (fun subject ->
+                    stringMember "kind" subject = Some "REMINDER"
+                    && caseTarget input subject
+                    && reminderEffects true input subject)
             | _ -> true
 
         envelope && receiptIdentity && receiptTarget && readTarget && previewTarget

@@ -191,7 +191,8 @@ module internal InteractiveReview =
             | Some(Outcome.Succeeded current) ->
                 let request =
                     {
-                        OperationId = draft.SuppliedId |> Option.defaultWith newId
+                        CaseOperationRequest.OperationId =
+                            draft.SuppliedId |> Option.defaultWith newId
                         Target = CaseSelector.Id current.Snapshot.CaseId
                         ExpectedRevision = Revision.value current.Snapshot.Revision
                         Act = draft.Act

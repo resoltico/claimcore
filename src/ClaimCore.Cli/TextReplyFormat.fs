@@ -47,6 +47,31 @@ module internal TextReplyFormat =
                 + MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
                 + "]"
 
+    let narrative language (value: string option) =
+        match value with
+        | None -> "—"
+        | Some text ->
+            // LF is expected paragraph layout, not a character warning. The stored value is untouched.
+            let warning = TextDisplay.warning (text.Replace('\n', ' '))
+            let rendered = TerminalText.paragraphs text
+
+            if warning.CodePoints.IsEmpty then
+                rendered
+            else
+                let points =
+                    warning.CodePoints @ (if warning.Truncated then [ "…" ] else [])
+                    |> String.concat ", "
+
+                rendered
+                + " ["
+                + MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
+                + "]"
+
+    let fieldValue language field value =
+        match FieldPresentation.descriptor field with
+        | ScalarRule.PlainText { AllowsLineFeed = true } -> narrative language value
+        | _ -> displayed language value
+
     let nextLines language =
         function
         | None -> []

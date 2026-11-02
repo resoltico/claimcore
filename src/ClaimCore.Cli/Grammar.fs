@@ -185,6 +185,16 @@ module Grammar =
                     || item.Binding.Identity = "expectedRevision")
                 ->
                 None
+            | _ when
+                item.Binding.AllowsNull
+                && options.ContainsKey(
+                    "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName item.Name)
+                )
+                ->
+                if raw.IsSome then
+                    problems.Add(UsageError.DuplicateOption name)
+
+                Some JsonValue.Null
             | _ -> scalarValue newId item name raw problems
 
         for item in derived do
@@ -283,14 +293,25 @@ module Grammar =
             let named =
                 inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
 
-            let flags = named |> List.map (fun input -> flag input.Name)
-
-            let switches =
+            let clearFlags =
                 named
                 |> List.choose (fun input ->
-                    match input.Atom with
-                    | CatalogAtom.Switch _ -> Some(flag input.Name)
-                    | _ -> None)
+                    if input.Binding.AllowsNull then
+                        Some(
+                            "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+                        )
+                    else
+                        None)
+
+            let flags = (named |> List.map (fun input -> flag input.Name)) @ clearFlags
+
+            let switches =
+                (named
+                 |> List.choose (fun input ->
+                     match input.Atom with
+                     | CatalogAtom.Switch _ -> Some(flag input.Name)
+                     | _ -> None))
+                @ clearFlags
 
             let repeated =
                 named

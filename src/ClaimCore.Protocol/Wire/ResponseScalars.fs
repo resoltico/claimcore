@@ -25,6 +25,7 @@ module ResponseScalars =
 
     let operationId = uuid |> map (OperationId.create >> Option.get) OperationId.value
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+    let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
 
@@ -84,6 +85,8 @@ module ResponseScalars =
     let caseReference = parsed CaseReference.parse CaseReference.format reference
     let countryCode = parsed CountryCode.parse CountryCode.format country
     let partyName = parsed PartyName.parse PartyName.format nonempty
+    let handlingSummary = parsed HandlingSummary.parse HandlingSummary.format nonempty
+    let reminderAction = parsed ReminderAction.parse ReminderAction.format nonempty
 
 
 

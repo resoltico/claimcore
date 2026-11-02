@@ -25,6 +25,9 @@ module internal TextReply =
 
     let private presenters =
         [
+            read Api.reminders TextWorkReply.page
+            read Api.workOverview TextWorkReply.overview
+            read Api.caseActivity TextWorkReply.activity
             read Api.caseGet TextCaseReply.caseLines
             read Api.caseAssignees TextCaseReply.assigneePage
             read Api.caseList TextCaseReply.casePage

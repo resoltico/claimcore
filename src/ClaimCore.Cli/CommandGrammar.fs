@@ -37,12 +37,16 @@ module CommandGrammar =
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
         | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
+        | InteractionInput.Target InputTarget.ReminderAction -> "action"
+        | InteractionInput.Target InputTarget.ReminderDueDate -> "due"
         | InteractionInput.Detail -> "full"
         | input -> InteractionInput.key input
 
     let words (entry: CatalogOperation) =
         match entry.SelectedAct with
         | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
+        | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
+        | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
         | None when entry.Endpoint = ActorEndpoint.Query QueryEndpoint.Resolve ->
             [ "operation"; "settle" ]
@@ -59,7 +63,7 @@ module CommandGrammar =
                 match input.Name with
                 | InteractionInput.Scope -> CatalogArgument.Implicit
                 | InteractionInput.Target(InputTarget.Field BusinessField.CaseReference) when
-                    input.Binding.Path = [ "target"; "caseReference" ]
+                    input.Binding.Path = [ "target"; "caseReference" ] && input.Binding.Required
                     ->
                     CatalogArgument.Operand
                 | (InteractionInput.Target InputTarget.OperationId) when
@@ -91,6 +95,23 @@ module CommandGrammar =
             }
 
         inputs |> List.map grammar, constants
+
+    let plainTextInputs operation =
+        let scalar name =
+            match name with
+            | InteractionInput.Target(InputTarget.Field field) ->
+                Some(FieldPresentation.descriptor field)
+            | _ ->
+                Catalog.document.InputFields
+                |> List.tryFind (fun field -> field.Name = InteractionInput.key name)
+                |> Option.bind _.Scalar
+
+        derive operation
+        |> fst
+        |> List.choose (fun input ->
+            match scalar input.Name with
+            | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
+            | _ -> None)
 
     let synopsis (operation: CatalogOperation) =
         let placeholder =
@@ -132,4 +153,18 @@ module CommandGrammar =
                     ))
 
 
-        String.concat " " (words operation @ arguments)
+        let textSources =
+            plainTextInputs operation
+            |> List.map (fun (input, _) ->
+                let flag = "--" + kebab (inputName input.Name)
+                "[" + flag + "-file PATH | " + flag + "-stdin | " + flag + "-editor]")
+
+        let clears =
+            inputs
+            |> List.choose (fun input ->
+                if input.Binding.AllowsNull then
+                    Some("[--clear-" + kebab (inputName input.Name) + "]")
+                else
+                    None)
+
+        String.concat " " (words operation @ arguments @ textSources @ clears)

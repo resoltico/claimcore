@@ -23,6 +23,23 @@ module internal TextOperationReply =
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     Revision.format value.Revision
                 ]
+            | ReceiptSubject.Work value ->
+                term language WorkActKind.vocabulary value.Act,
+                TerminalText.data (CaseReference.format value.Reference),
+                [ label language "label.workRevision"; Revision.format value.Revision ]
+            | ReceiptSubject.Reminder value ->
+                let version item =
+                    ReminderId.format item.ReminderId + " " + Revision.format item.Revision
+
+                let versions =
+                    match value.Effects with
+                    | ReminderReceiptEffects.Single item -> [ version item ]
+                    | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
+                        [ version completed; version next ]
+
+                term language ReminderActKind.vocabulary value.Act,
+                TerminalText.data (CaseReference.format value.Reference),
+                versions
             | ReceiptSubject.Authority value ->
                 term language AuthorityKind.vocabulary value.Act,
                 ActorId.format value.TargetActorId,
@@ -56,6 +73,10 @@ module internal TextOperationReply =
             |> Option.map (function
                 | OperationInput.Case value ->
                     term language CaseActKind.vocabulary (CaseAct.kind value.Act)
+                | OperationInput.Work _ ->
+                    term language WorkActKind.vocabulary WorkActKind.UpdateWork
+                | OperationInput.Reminder value ->
+                    term language ReminderActKind.vocabulary (AuthoredReminderAct.kind value.Act)
                 | OperationInput.Authority value ->
                     term language AuthorityKind.vocabulary (AuthorityAct.kind value.Act))
             |> Option.defaultValue "—"
@@ -64,6 +85,9 @@ module internal TextOperationReply =
             match review with
             | OperationReview.Case value ->
                 TerminalText.data (CaseReference.format value.Proposed.Reference)
+            | OperationReview.Work value -> TerminalText.data (CaseReference.format value.Reference)
+            | OperationReview.Reminder value ->
+                TerminalText.data (CaseReference.format value.Reference)
             | OperationReview.Authority value ->
                 let principal =
                     match input with
@@ -120,6 +144,18 @@ module internal TextOperationReply =
 
         let changes =
             match review with
+            | OperationReview.Work value ->
+                TextWorkReply.work language value.Before
+                @ [ "→" ]
+                @ TextWorkReply.work language value.Proposed
+                @ [ label language "label.financialFactsPreserved" ]
+            | OperationReview.Reminder value ->
+                (value.Before
+                 |> Option.map (TextWorkReply.reminder language)
+                 |> Option.defaultValue [])
+                @ [ "→" ]
+                @ TextWorkReply.effects language value.Effects
+                @ [ label language "label.financialFactsPreserved" ]
             | OperationReview.Authority value ->
                 authorityStates language value.Before value.After @ accessStates language value
             | OperationReview.Case value ->
@@ -146,9 +182,9 @@ module internal TextOperationReply =
                         line
                             language
                             (FieldPresentation.labelId change.FieldName)
-                            (displayed language change.Before
+                            (fieldValue language change.FieldName change.Before
                              + " → "
-                             + displayed language change.After)))
+                             + fieldValue language change.FieldName change.After)))
 
         line
             language

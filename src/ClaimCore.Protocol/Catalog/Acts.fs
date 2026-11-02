@@ -7,12 +7,16 @@ open ClaimCore.Application.Contracts
 type ActSubject =
     | Case
     | Authority
+    | Work
+    | Reminder
 
 /// The complete act vocabulary combines the disjoint case and authority subjects.
 [<RequireQualifiedAccess>]
 type ActKind =
     | Case of CaseActKind
     | Authority of AuthorityKind
+    | Work of WorkActKind
+    | Reminder of ReminderActKind
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActSubject =
@@ -27,6 +31,8 @@ module ActKind =
         function
         | ActKind.Case _ -> ActSubject.Case
         | ActKind.Authority _ -> ActSubject.Authority
+        | ActKind.Work _ -> ActSubject.Work
+        | ActKind.Reminder _ -> ActSubject.Reminder
 
     let vocabulary =
         [
@@ -36,6 +42,12 @@ module ActKind =
             yield!
                 Vocabulary.entries AuthorityKind.vocabulary
                 |> List.map (fun (value, token) -> ActKind.Authority value, token)
+            yield!
+                Vocabulary.entries WorkActKind.vocabulary
+                |> List.map (fun (value, token) -> ActKind.Work value, token)
+            yield!
+                Vocabulary.entries ReminderActKind.vocabulary
+                |> List.map (fun (value, token) -> ActKind.Reminder value, "REMINDER_" + token)
         ]
         |> Vocabulary.ofEntries "act"
 

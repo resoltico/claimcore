@@ -94,7 +94,7 @@ module internal CaseListRows =
             }
             {
                 Key = "state.work.followUpDate"
-                Label = field BusinessField.FollowUpDate
+                Label = "label.nextFollowUp"
                 Value =
                     optional (fun facts -> facts.Work.FollowUp |> Option.map CalendarDate.format)
             }

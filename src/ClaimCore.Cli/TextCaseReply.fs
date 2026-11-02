@@ -19,8 +19,9 @@ module internal TextCaseReply =
                 line
                     language
                     (FieldPresentation.labelId row.Field)
-                    (displayed
+                    (fieldValue
                         language
+                        row.Field
                         (if row.Field = BusinessField.Status then
                              Some(term language CaseStatus.vocabulary fields.Status)
                          else
@@ -82,6 +83,27 @@ module internal TextCaseReply =
            else
                [])
         @ workAccount language value.Work
+        @ [
+            line language "label.workRevision" (Revision.format value.Work.Revision)
+            line
+                language
+                (FieldPresentation.labelId BusinessField.HandlingSummary)
+                (value.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
+            line
+                language
+                "label.nextFollowUp"
+                (value.Work.FollowUp |> Option.map CalendarDate.format |> displayed language)
+            line
+                language
+                "input.reminderAction.label"
+                (value.Work.NextAction |> Option.map ReminderAction.format |> displayed language)
+            line language "label.pendingReminders" (number value.Work.PendingReminders)
+            line language "label.overdueReminders" (number value.Work.OverdueReminders)
+        ]
+        @ (if value.Work.NeedsNextAction then
+               [ label language "label.noNextAction" ]
+           else
+               [])
         @ (CaseState.fields value.Snapshot.State
            |> Option.map (fieldLines language)
            |> Option.defaultValue [])
@@ -125,6 +147,12 @@ module internal TextCaseReply =
                          Revision.format value.Revision,
                          term language CaseActKind.vocabulary value.Act,
                          fields
+                     | ReceiptSubject.Work value ->
+                         Revision.format value.Revision,
+                         term language WorkActKind.vocabulary value.Act,
+                         []
+                     | ReceiptSubject.Reminder value ->
+                         "—", term language ReminderActKind.vocabulary value.Act, []
                      | ReceiptSubject.Authority value ->
                          "—", term language AuthorityKind.vocabulary value.Act, []
 
