@@ -202,6 +202,7 @@ type Fixture() =
     member _.WebEnvironment = webSettings
     member _.Http = http
     member _.Environment = serviceEnvironment
+    member _.TransformNextReply(path, rewrite) = proxy.TransformNextReply(path, rewrite)
 
     member _.ArmCommitReplyLoss() =
         commitProxy

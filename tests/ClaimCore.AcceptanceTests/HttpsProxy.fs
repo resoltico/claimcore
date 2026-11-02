@@ -55,11 +55,13 @@ let private relay
     (http: HttpClient)
     backend
     (control: RedirectControl.Control)
+    (takeTransform: string -> (byte array -> byte array) option)
     (context: HttpContext)
     =
     task {
         let path = context.Request.Path.Value |> nonNull
         let armed = control.Arm path
+        let transform = takeTransform path
 
         if path = "/__synthetic/redirect-destination" then
             control.Destination()
@@ -115,7 +117,17 @@ let private relay
                     context.Response.ContentLength <- Nullable 0L
             | None ->
                 context.Response.StatusCode <- int response.StatusCode
-                do! response.Content.CopyToAsync(context.Response.Body, context.RequestAborted)
+
+                match transform with
+                | None ->
+                    do! response.Content.CopyToAsync(context.Response.Body, context.RequestAborted)
+                | Some rewrite ->
+                    let! bytes = response.Content.ReadAsByteArrayAsync(context.RequestAborted)
+
+                    do!
+                        context.Response.Body
+                            .WriteAsync(ReadOnlyMemory(rewrite bytes), context.RequestAborted)
+                            .AsTask()
     }
 
 type Proxy
@@ -140,6 +152,15 @@ type Proxy
 
     let application = builder.Build()
     let control = RedirectControl.Control(directory)
+
+    let transforms =
+        System.Collections.Concurrent.ConcurrentDictionary<string, byte array -> byte array>()
+
+    let takeTransform (path: string) =
+        match transforms.TryRemove path with
+        | true, rewrite -> Some rewrite
+        | _ -> None
+
     let routing = obj ()
     let mutable selectedBackend = backend
 
@@ -172,7 +193,7 @@ type Proxy
             RequestDelegate(fun context ->
                 task {
                     try
-                        do! relay http (selected ()) control context
+                        do! relay http (selected ()) control takeTransform context
                     with error ->
                         // Retain code locations, never request headers, URI queries or exception input text.
                         lock failureGate (fun () ->
@@ -200,6 +221,12 @@ type Proxy
                         return raise error
                 })
         )
+
+    /// A single owned read response may carry retained-format safety controls. Real service
+    /// authorization and reads still occur; this is not evidence that admission accepted those values.
+    member _.TransformNextReply(path, rewrite) =
+        if not (transforms.TryAdd(path, rewrite)) then
+            invalidOp "An owned synthetic response transform is already armed for this route."
 
     member _.Start() = application.StartAsync()
     // Fixture routing changes only new requests; dispatched requests retain their chosen host.
