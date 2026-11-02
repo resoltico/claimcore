@@ -1,3 +1,4 @@
+import { receiptCorrelates } from "../protocol/replyCorrelation";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
 import { inputErrors } from "./inputErrors";
@@ -275,7 +276,7 @@ const record = (
     return state;
   }
   const source = operationSource(state.operation);
-  if (source === null) {
+  if (source === null || !receiptCorrelates(source.prepared.input, action.receipt)) {
     return state;
   }
   return append(

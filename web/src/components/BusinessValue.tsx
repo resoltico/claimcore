@@ -3,9 +3,16 @@ import type { FieldCatalogEntry } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { suspiciousCodePoints } from "../utils/text";
 
-export const CharacterWarning = ({ value }: { value: string | null }) => {
+export const CharacterWarning = ({
+  value,
+  allowLineFeed = false,
+}: {
+  value: string | null;
+  allowLineFeed?: boolean;
+}) => {
   const p = usePresentation();
-  const points = value === null ? [] : suspiciousCodePoints(value);
+  const points =
+    value === null ? [] : suspiciousCodePoints(allowLineFeed ? value.replaceAll("\n", "") : value);
   return points.length === 0 ? null : (
     <small className="character-warning">
       {p.text("label.characterWarning", { characters: points.join(", ") })}
@@ -41,7 +48,13 @@ export const BusinessValue = ({
       {context === undefined ? (
         <bdi
           dir={valueDirection(field)}
-          className={field.name === "caseReference" ? "identifier-value" : undefined}
+          className={
+            field.name === "caseReference"
+              ? "identifier-value"
+              : field.scalar.kind === "PLAIN_TEXT"
+                ? "plain-text-value"
+                : undefined
+          }
         >
           {display}
         </bdi>
@@ -53,14 +66,23 @@ export const BusinessValue = ({
           <bdi
             key="value"
             dir={valueDirection(field)}
-            className={field.name === "caseReference" ? "identifier-value" : undefined}
+            className={
+              field.name === "caseReference"
+                ? "identifier-value"
+                : field.scalar.kind === "PLAIN_TEXT"
+                  ? "plain-text-value"
+                  : undefined
+            }
           >
             {display}
           </bdi>,
           "value",
         )
       )}
-      <CharacterWarning value={value} />
+      <CharacterWarning
+        value={value}
+        allowLineFeed={field.scalar.kind === "PLAIN_TEXT" && field.scalar.allowsLineFeed}
+      />
     </span>
   );
 };

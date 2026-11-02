@@ -16,7 +16,10 @@ export const prefilledValue = (
   current: CurrentCase | null,
   path: ReadonlyArray<string> | null,
 ): string => {
-  const value = path === null || current === null ? undefined : atPath(current.state.fields, path);
+  const value =
+    path === null || current === null
+      ? undefined
+      : atPath(path[0] === "work" ? current : current.state.fields, path);
   return typeof value === "string" ? value : "";
 };
 const inputDefault = (input: CatalogInput) => {
@@ -46,12 +49,17 @@ const authoredValue = (input: CatalogInput, current: CurrentCase | null) => {
       return prefilledValue(current, input.prefill);
   }
 };
-const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
+const initialValue = (
+  input: CatalogInput,
+  current: CurrentCase | null,
+  id: string,
+  subject: string,
+) => {
   if (input.source === "OPERATION_IDENTITY") {
     return id;
   }
   if (input.source === "EXPECTED_REVISION") {
-    return String(current?.revision ?? 0);
+    return String((subject === "WORK" ? current?.work.revision : current?.revision) ?? 0);
   }
   return authoredValue(input, current);
 };
@@ -64,7 +72,7 @@ export const selectableFact = (entry: CatalogEntry, input: CatalogInput): boolea
   input.field !== null;
 
 export const initialOperationValues = (
-  subject: "CASE" | "AUTHORITY",
+  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER",
   kind: string,
   current: CurrentCase | null,
   id = crypto.randomUUID(),
@@ -73,7 +81,7 @@ export const initialOperationValues = (
   const values: Record<string, FormValue> = {};
   for (const input of definition.inputs) {
     if (!selectableFact(definition, input)) {
-      values[bindingPath(input)] = initialValue(input, current, id);
+      values[bindingPath(input)] = initialValue(input, current, id, subject);
     }
   }
   return values;

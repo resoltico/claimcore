@@ -6,7 +6,7 @@ import {
   type RecoveryRecord,
 } from "../../../src/protocol/recoveryJournal";
 const record: RecoveryRecord = {
-  format: 1,
+  format: 2,
   serviceOrigin: "https://service.example",
   installationId: "10000000-0000-4000-8000-000000000001",
   actorId: "10000000-0000-4000-8000-000000000002",

@@ -69,7 +69,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const operationId = randomUUID();
   const firstRecord: RecoveryRecord = {
     ...scope,
-    format: 1,
+    format: 2,
     operationId,
     attemptId: randomUUID(),
     subject: "CASE",
@@ -270,7 +270,7 @@ test("a real blocked open refuses preparation and retains the earlier record", a
   const scope = await scopeFor(page);
   const earlier: RecoveryRecord = {
     ...scope,
-    format: 1,
+    format: 2,
     operationId: randomUUID(),
     attemptId: randomUUID(),
     subject: "CASE",
@@ -307,7 +307,7 @@ test("a real blocked open refuses preparation and retains the earlier record", a
     let dispatched = false;
     const record: RecoveryRecord = {
       ...selectedScope,
-      format: 1,
+      format: 2,
       operationId: crypto.randomUUID(),
       attemptId: crypto.randomUUID(),
       subject: "CASE",
@@ -352,7 +352,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
   const scope = await scopeFor(page);
   const record: RecoveryRecord = {
     ...scope,
-    format: 1,
+    format: 2,
     operationId: randomUUID(),
     attemptId: randomUUID(),
     subject: "CASE",
@@ -483,7 +483,7 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
   const scope = await scopeFor(page);
   const record: RecoveryRecord = {
     ...scope,
-    format: 1,
+    format: 2,
     operationId: randomUUID(),
     attemptId: randomUUID(),
     subject: "CASE",

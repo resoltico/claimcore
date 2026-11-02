@@ -2,6 +2,7 @@ import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
 import { FieldError } from "react-aria-components/FieldError";
+import { TextArea } from "react-aria-components/TextArea";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
@@ -54,20 +55,43 @@ export const CatalogField = ({
       onChange={onChange}
     >
       <Label>{p.fieldLabel(field.name)}</Label>
-      <Input
-        name={inputName ?? field.name}
-        {...referenceAppearance(field)}
-        data-field-name={field.name}
-        type="text"
-        inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}
-        autoCapitalize="off"
-        spellCheck={false}
-        dir={field.scalar.kind === "TEXT" ? "auto" : "ltr"}
-        autoComplete="off"
-      />
+      {field.scalar.kind === "PLAIN_TEXT" && field.scalar.allowsLineFeed ? (
+        <TextArea
+          name={name}
+          data-field-name={field.name}
+          rows={5}
+          autoCapitalize="off"
+          spellCheck
+          dir="auto"
+          autoComplete="off"
+        />
+      ) : (
+        <Input
+          name={name}
+          {...referenceAppearance(field)}
+          data-field-name={field.name}
+          type="text"
+          inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}
+          autoCapitalize="off"
+          spellCheck={false}
+          dir={field.scalar.kind === "TEXT" || field.scalar.kind === "PLAIN_TEXT" ? "auto" : "ltr"}
+          autoComplete="off"
+        />
+      )}
       <Text slot="description" className="field-description">
         <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
+        {field.scalar.kind === "PLAIN_TEXT" ? (
+          <small
+            className="scalar-counter"
+            data-over-limit={[...value].length > field.scalar.maximumScalars || undefined}
+          >
+            {p.text("ui.scalarCount", {
+              count: p.integer([...value].length),
+              maximum: p.integer(field.scalar.maximumScalars),
+            })}
+          </small>
+        ) : null}
         {field.name === "incidentCountry" ? <CountryHint code={value} /> : null}
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}

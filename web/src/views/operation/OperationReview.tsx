@@ -1,3 +1,5 @@
+import { operationEntryForInput } from "../../protocol/operationCatalog";
+import { WorkReviewValues, ReminderReviewValues } from "../work/WorkReviewValues";
 import type { OperationInput } from "@contracts/client";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { IdentifierValue } from "../../components/IdentifierValue";
@@ -205,13 +207,23 @@ const ReviewIntent = ({ input, review }: { input: OperationInput; review: Review
       </dl>
     );
   }
-  const reference = review.kind === "CASE" ? review.after.caseReference : "";
+  const reference =
+    review.kind === "CASE"
+      ? review.after.caseReference
+      : review.kind === "WORK" || review.kind === "REMINDER"
+        ? review.caseReference
+        : "";
   return (
     <p className="review-intent">
       <bdi dir="ltr" className="identifier-value">
         {reference}
       </bdi>{" "}
-      · {p.fieldLabel("expectedRevision")}: <bdi dir="ltr">{p.integer(input.expectedRevision)}</bdi>
+      {input.kind === "REMINDER" ? null : (
+        <>
+          · {p.fieldLabel("expectedRevision")}:{" "}
+          <bdi dir="ltr">{p.integer(input.expectedRevision)}</bdi>
+        </>
+      )}
     </p>
   );
 };
@@ -310,9 +322,7 @@ export const OperationReview = ({
   }
   const { input } = model.prepared;
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
-  const act = productMetadata.catalog.entries.find(
-    (item) => item.subject === input.kind && item.kind === input.act.kind,
-  )!;
+  const act = operationEntryForInput(input);
   return (
     <AccessibleModal
       title={p.text("label.reviewTitle")}
@@ -325,17 +335,15 @@ export const OperationReview = ({
       onOpenChange={model.returnToEdit}
     >
       <>
-        <h3>
-          {input.kind === "CASE" ? p.actLabel(input.act.kind) : p.authorityLabel(input.act.kind)}
-        </h3>
-        <p>
-          {input.kind === "CASE"
-            ? p.actMeaning(input.act.kind)
-            : p.authorityMeaning(input.act.kind)}
-        </p>
+        <h3>{renderCatalogKey(p, act.labelId)}</h3>
+        <p>{act.meaningId === null ? null : renderCatalogKey(p, act.meaningId)}</p>
         <ReviewIntent input={input} review={model.review.subject} />
         {model.review.subject.kind === "CASE" ? (
           <ReviewValues review={model.review.subject} />
+        ) : model.review.subject.kind === "WORK" ? (
+          <WorkReviewValues review={model.review.subject} />
+        ) : model.review.subject.kind === "REMINDER" ? (
+          <ReminderReviewValues review={model.review.subject} />
         ) : (
           <AuthorityValues review={model.review.subject} />
         )}
