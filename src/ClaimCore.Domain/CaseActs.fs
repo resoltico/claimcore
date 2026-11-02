@@ -15,7 +15,6 @@ type CorrectionGroupAction =
 type CaseActKind =
     | Open
     | AmendRegistration
-    | UpdateWork
     | Correct
     | Decide
     | WithdrawDecision
@@ -48,7 +47,6 @@ module ActFamily =
 [<RequireQualifiedAccess>]
 type CaseEffect =
     | RecordFacts
-    | UpdateWork
     | ChangeStatus
     | ChangeLifecycle
     | ErasePayload
@@ -65,7 +63,6 @@ type ActPayload =
     | Bare of BareAct
     | Registration
     | RegistrationUpdate
-    | Work
     | Decision
     | Payment
     | Reason
@@ -105,7 +102,6 @@ module CaseActKind =
         | ActPayload.Bare(BareAct.Close | BareAct.Reopen) -> CaseEffect.ChangeStatus
         | ActPayload.Bare BareAct.Erase -> CaseEffect.ErasePayload
         | ActPayload.Reason -> CaseEffect.ChangeLifecycle
-        | ActPayload.Work -> CaseEffect.UpdateWork
         | ActPayload.Bare(BareAct.WithdrawDecision | BareAct.ClearPayment)
         | ActPayload.Registration
         | ActPayload.RegistrationUpdate
@@ -121,7 +117,6 @@ module CaseActKind =
         | ActPayload.Bare BareAct.WithdrawDecision -> [ CaseSection.Decision ]
         | ActPayload.Payment
         | ActPayload.Bare BareAct.ClearPayment -> [ CaseSection.Payment ]
-        | ActPayload.Work -> [ CaseSection.Work ]
         | ActPayload.Correction ->
             [ CaseSection.Registration; CaseSection.Decision; CaseSection.Payment ]
         | ActPayload.Bare BareAct.Erase ->
@@ -154,12 +149,6 @@ module CaseActKind =
                 ActPayload.Registration
                 RevisionInput.New
                 (ActCapabilities.Required [ Capability.Register ])
-        | CaseActKind.UpdateWork ->
-            description
-                ActFamily.Business
-                ActPayload.Work
-                RevisionInput.Expected
-                (ActCapabilities.Required [ Capability.ReadCase; Capability.ManageCaseWork ])
         | CaseActKind.AmendRegistration ->
             description
                 ActFamily.Business
@@ -253,12 +242,11 @@ type Correction<'registration, 'decision, 'payment> =
     }
 
 [<RequireQualifiedAccess>]
-type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'work, 'reason>
+type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
     =
     | Bare of BareAct
     | Open of 'registration
     | AmendRegistration of 'registrationUpdate
-    | UpdateWork of 'work
     | Correct of Correction<'registrationUpdate, 'decisionUpdate, 'payment>
     | Decide of 'decision
     | RecordPayment of 'payment
@@ -272,7 +260,6 @@ type AuthoredCaseAct =
         DecisionInput,
         DecisionUpdateInput,
         PaymentInput,
-        CaseWorkInput,
         string
      >
 
@@ -285,14 +272,13 @@ type ValidCaseAct =
         Decision,
         ValidDecisionUpdate,
         Payment,
-        ValidCaseWorkUpdate,
         Reason
      >
 
 type ValidCorrection = Correction<ValidRegistrationUpdate, ValidDecisionUpdate, Payment>
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
-type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'work, 'reason>
+type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
     =
     | Bare of
         CaseAct<
@@ -301,7 +287,6 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
             'decision,
             'decisionUpdate,
             'payment,
-            'work,
             'reason
          >
     | Registration of
@@ -313,8 +298,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -323,8 +307,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> 'registration option)
     | RegistrationUpdate of
@@ -336,8 +319,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -346,33 +328,9 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> 'registrationUpdate option)
-    | Work of
-        inject:
-            ('work
-                -> CaseAct<
-                    'registration,
-                    'registrationUpdate,
-                    'decision,
-                    'decisionUpdate,
-                    'payment,
-                    'work,
-                    'reason
-                    >) *
-        project:
-            (CaseAct<
-                'registration,
-                'registrationUpdate,
-                'decision,
-                'decisionUpdate,
-                'payment,
-                'work,
-                'reason
-              >
-                -> 'work option)
     | Decision of
         inject:
             ('decision
@@ -382,8 +340,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -392,8 +349,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> 'decision option)
     | Payment of
@@ -405,8 +361,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -415,8 +370,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> 'payment option)
     | Reason of
@@ -428,8 +382,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -438,8 +391,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> 'reason option)
     | Correction of
@@ -451,8 +403,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                    'work,
-                    'reason
+                            'reason
                     >) *
         project:
             (CaseAct<
@@ -461,8 +412,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                'work,
-                'reason
+                    'reason
               >
                 -> Correction<'registrationUpdate, 'decisionUpdate, 'payment> option)
 
@@ -474,7 +424,6 @@ module CaseAct =
             |> List.find (fun kind -> (CaseActKind.describe kind).Payload = ActPayload.Bare bare)
         | CaseAct.Open _ -> CaseActKind.Open
         | CaseAct.AmendRegistration _ -> CaseActKind.AmendRegistration
-        | CaseAct.UpdateWork _ -> CaseActKind.UpdateWork
         | CaseAct.Correct _ -> CaseActKind.Correct
         | CaseAct.Decide _ -> CaseActKind.Decide
         | CaseAct.RecordPayment _ -> CaseActKind.RecordPayment
@@ -513,27 +462,25 @@ module CaseAct =
                             Payment = p
                         })))
 
-    let traverse registration registrationUpdate decision decisionUpdate payment work reason =
+    let traverse registration registrationUpdate decision decisionUpdate payment reason =
         function
         | CaseAct.Bare bare -> Ok(CaseAct.Bare bare)
         | CaseAct.Open value -> registration value |> Result.map CaseAct.Open
         | CaseAct.AmendRegistration value ->
             registrationUpdate value |> Result.map CaseAct.AmendRegistration
-        | CaseAct.UpdateWork value -> work value |> Result.map CaseAct.UpdateWork
         | CaseAct.Decide value -> decision value |> Result.map CaseAct.Decide
         | CaseAct.RecordPayment value -> payment value |> Result.map CaseAct.RecordPayment
         | CaseAct.Void value -> reason value |> Result.map CaseAct.Void
         | CaseAct.Reinstate value -> reason value |> Result.map CaseAct.Reinstate
         | CaseAct.Correct value -> correction registrationUpdate decisionUpdate payment value
 
-    let map registration registrationUpdate decision decisionUpdate payment work reason act =
+    let map registration registrationUpdate decision decisionUpdate payment reason act =
         traverse
             (registration >> Ok)
             (registrationUpdate >> Ok)
             (decision >> Ok)
             (decisionUpdate >> Ok)
             (payment >> Ok)
-            (work >> Ok)
             (reason >> Ok)
             act
         |> Result.defaultWith (fun () -> invalidOp "A total act mapping cannot fail.")
@@ -546,11 +493,6 @@ module CaseAct =
     let private projectAmendRegistration =
         function
         | CaseAct.AmendRegistration value -> Some value
-        | _ -> None
-
-    let private projectWork =
-        function
-        | CaseAct.UpdateWork value -> Some value
         | _ -> None
 
     let private projectCorrect =
@@ -584,7 +526,7 @@ module CaseAct =
         | CaseActKind.Reinstate -> CaseActSlot.Reason(CaseAct.Reinstate, projectReinstate)
         | _ -> invalidOp "A reason description requires a reason act."
 
-    let slot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'work, 'reason>
+    let slot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
         kind
         : CaseActSlot<
             'registration,
@@ -592,7 +534,6 @@ module CaseAct =
             'decision,
             'decisionUpdate,
             'payment,
-            'work,
             'reason
            >
         =
@@ -601,18 +542,16 @@ module CaseAct =
         | ActPayload.Registration -> CaseActSlot.Registration(CaseAct.Open, projectOpen)
         | ActPayload.RegistrationUpdate ->
             CaseActSlot.RegistrationUpdate(CaseAct.AmendRegistration, projectAmendRegistration)
-        | ActPayload.Work -> CaseActSlot.Work(CaseAct.UpdateWork, projectWork)
         | ActPayload.Decision -> CaseActSlot.Decision(CaseAct.Decide, projectDecide)
         | ActPayload.Payment -> CaseActSlot.Payment(CaseAct.RecordPayment, projectRecordPayment)
         | ActPayload.Reason -> reasonSlot kind
         | ActPayload.Correction -> CaseActSlot.Correction(CaseAct.Correct, projectCorrect)
 
-    let probe kind : CaseAct<unit, unit, unit, unit, unit, unit, unit> =
+    let probe kind : CaseAct<unit, unit, unit, unit, unit, unit> =
         match slot kind with
         | CaseActSlot.Bare act -> act
         | CaseActSlot.Registration(inject, _)
         | CaseActSlot.RegistrationUpdate(inject, _)
-        | CaseActSlot.Work(inject, _)
         | CaseActSlot.Decision(inject, _)
         | CaseActSlot.Payment(inject, _)
         | CaseActSlot.Reason(inject, _) -> inject ()
@@ -635,7 +574,6 @@ module CaseAct =
             decision
             DecisionUpdate.authored
             payment
-            CaseWork.authored
             Reason.format
             act
 

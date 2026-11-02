@@ -12,6 +12,7 @@ type FieldValueKind =
     | Status
     | ActorId
     | PlannedDate
+    | HandlingSummary
 
 [<RequireQualifiedAccess>]
 type Admitted =
@@ -48,6 +49,7 @@ module FieldValue =
         | FieldValueKind.Amount -> Amount.parse value |> Result.map Admitted.Amount
         | FieldValueKind.Currency -> Currency.parse value |> Result.map Admitted.Currency
         | FieldValueKind.ActorId
+        | FieldValueKind.HandlingSummary
         | FieldValueKind.PlannedDate
         | FieldValueKind.Reference
         | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains only business values."

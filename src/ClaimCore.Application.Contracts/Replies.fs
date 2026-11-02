@@ -20,10 +20,27 @@ type AuthorityReview =
         After: AuthorityState
     }
 
+type WorkReview =
+    {
+        Before: CaseWorkSnapshot
+        Proposed: CaseWorkSnapshot
+        Context: RuntimeContext
+    }
+
+type ReminderReview =
+    {
+        CaseId: CaseId
+        Before: Reminder option
+        Effects: ReminderEffects
+        Context: RuntimeContext
+    }
+
 [<RequireQualifiedAccess>]
 type OperationReview =
     | Case of AdvisoryReview
     | Authority of AuthorityReview
+    | Work of WorkReview
+    | Reminder of ReminderReview
 
 [<RequireQualifiedAccess>]
 type Previewed =

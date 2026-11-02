@@ -13,6 +13,7 @@
     <Compile Include="CasePages.fs" />
     <Compile Include="CaseTotals.fs" />
     <Compile Include="AuthorityPages.fs" />
+    <Compile Include="WorkReads.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="Operations.fs" />
     <Compile Include="Resolution.fs" />

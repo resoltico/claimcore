@@ -47,7 +47,7 @@ module InputTarget =
                 yield InputTarget.Group group
                 yield! CaseFields.ofGroup group |> List.map InputTarget.Field
             yield InputTarget.Field BusinessField.ResponsibleActor
-            yield InputTarget.Field BusinessField.FollowUpDate
+            yield InputTarget.Field BusinessField.HandlingSummary
             yield InputTarget.Reason
         ]
 
