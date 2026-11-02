@@ -5,7 +5,6 @@ open System.IO
 open System.Diagnostics
 open System.Globalization
 open System.Text
-open Expecto
 open System.Net
 open System.Net.Sockets
 open System.Security.Cryptography
@@ -122,24 +121,6 @@ let port () =
         |> Option.defaultWith (fun () ->
             invalidOp "No acceptance service port outside the ephemeral ranges is available."))
 
-[<Tests>]
-let portTests =
-    testCase "owned service ports avoid dynamic allocation and concurrent fixture reuse" (fun () ->
-        let allocated = [| 1..32 |] |> Array.Parallel.map (fun _ -> port ())
-
-        Expect.equal
-            (Set.ofArray allocated |> Set.count)
-            allocated.Length
-            "Concurrent fixtures receive distinct ports"
-
-        for value in allocated do
-            Expect.isTrue
-                (value >= 10000 && value < 32768)
-                "Service ports exclude the container dynamic range"
-
-            use listener = new TcpListener(IPAddress.Loopback, value)
-            listener.ExclusiveAddressUse <- true
-            listener.Start())
 
 let certificate () =
     use key = RSA.Create(2048)

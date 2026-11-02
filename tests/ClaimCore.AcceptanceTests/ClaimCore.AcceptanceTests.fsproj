@@ -9,6 +9,7 @@
     <ProjectReference Include="../../eng/ClaimCore.ProtocolGenerator/ClaimCore.ProtocolGenerator.fsproj" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="FixtureFiles.fs" />
+    <Compile Include="FixturePortTests.fs" />
     <Compile Include="FixtureCleanup.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
     <Compile Include="ThirdPartyNoticeManifest.fs" />
