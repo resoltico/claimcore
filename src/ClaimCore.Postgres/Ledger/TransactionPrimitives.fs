@@ -481,14 +481,8 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
                  CancellationToken = token
              })
             =
-            Transactions.read source token (fun connection ->
-                task {
-                    let! rows =
-                        DatabaseSession.rows connection "SELECT clock_timestamp()" [||] token
-
-                    let observedAt = DatabaseSession.instant 0 rows.Head
-                    return! work (ReadTx(connection, installationId, observedAt, token) :> IReadTx)
-                })
+            Transactions.read source token (fun connection observedAt ->
+                work (ReadTx(connection, installationId, observedAt, token) :> IReadTx))
 
         member _.Write
             ({
