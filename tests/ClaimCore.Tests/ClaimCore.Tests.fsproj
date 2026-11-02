@@ -72,10 +72,13 @@
     <Compile Include="Domain/CorrectionMatrixTests.fs" />
     <Compile Include="Domain/DomainValidationTests.fs" />
     <Compile Include="Application/AvailabilityTests.fs" />
+    <Compile Include="Domain/ReminderDecisionTests.fs" />
     <Compile Include="Domain/NarrativeValueTests.fs" />
+    <Compile Include="Domain/NarrativeContractTests.fs" />
     <Compile Include="Domain/ScalarRuleTests.fs" />
     <Compile Include="Contract/RecordDeclarationTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />
+    <Compile Include="RecordFormat/WorkReminderRecordTests.fs" />
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
     <Compile Include="RecordFormat/RecordBoundaryTests.fs" />
