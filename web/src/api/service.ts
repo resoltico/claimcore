@@ -1,3 +1,4 @@
+import { ReadAdmission } from "./readAdmission";
 import { replyCorrelates } from "../protocol/replyCorrelation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { sendHttp } from "./transport";
@@ -18,6 +19,7 @@ export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
 const responseLimit = strictByteProfile.maximumResponseBytes;
+const readAdmission = new ReadAdmission();
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (
     response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() !==
@@ -47,7 +49,7 @@ const result = async <K extends EndpointId>(
   }
   return { kind: "deliveryFailure", notice: { kind: "invalidHttp", status: response.status } };
 };
-const send = async <K extends EndpointId>(
+const send = <K extends EndpointId>(
   id: K,
   credential: string | undefined,
   body: string | undefined,
@@ -56,18 +58,30 @@ const send = async <K extends EndpointId>(
   installationId?: string,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   if (signal.aborted) {
-    return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
+    return Promise.resolve({
+      kind: "deliveryFailure",
+      notice: localNotice("cancelled"),
+      dispatched: false,
+    });
   }
   try {
     if (body !== undefined) {
       admitBytes(new TextEncoder().encode(body));
     }
   } catch {
-    return { kind: "deliveryFailure", notice: localNotice("incomplete"), dispatched: false };
+    return Promise.resolve({
+      kind: "deliveryFailure",
+      notice: localNotice("incomplete"),
+      dispatched: false,
+    });
   }
   const endpoint = endpoints.find((candidate) => candidate.id === id)!;
   if (endpoint.requiresInstallation && installationId === undefined) {
-    return { kind: "deliveryFailure", notice: localNotice("invalidInput"), dispatched: false };
+    return Promise.resolve({
+      kind: "deliveryFailure",
+      notice: localNotice("invalidInput"),
+      dispatched: false,
+    });
   }
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -82,12 +96,18 @@ const send = async <K extends EndpointId>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  try {
-    const response = await sendHttp(endpoint, headers, body, signal);
-    return await result(id, response, signal, input);
-  } catch {
-    return { kind: "deliveryFailure", notice: localNotice("unreachable") };
-  }
+  const network = async (): Promise<ApiResult<ServiceResponse<K>>> => {
+    if (signal.aborted) {
+      return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
+    }
+    try {
+      const response = await sendHttp(endpoint, headers, body, signal);
+      return await result(id, response, signal, input);
+    } catch {
+      return { kind: "deliveryFailure", notice: localNotice("unreachable") };
+    }
+  };
+  return endpoint.effect === "READ" ? readAdmission.run(signal, network) : network();
 };
 const request = <K extends EndpointId>(
   id: K,
@@ -115,7 +135,7 @@ export const requestEndpoint = <K extends EndpointId>(
   signal?: AbortSignal,
 ) => request(id, credential, input, signal);
 export const service = {
-  session: () => request("session", undefined, undefined),
+  session: (signal?: AbortSignal) => request("session", undefined, undefined, signal),
   logout: (credential: string) => request("session.logout", credential, {}),
   context: (credential: string, signal?: AbortSignal) => request("context", credential, {}, signal),
   get: (caseReference: string, credential: string, signal?: AbortSignal) =>
@@ -172,9 +192,14 @@ export const service = {
   ) => request("operation.status", credential, { operationId }, signal, installationId),
   resolve: (operationId: string, credential: string, installationId: string | undefined) =>
     request("operation.resolve", credential, { operationId }, undefined, installationId),
-  preview: (prepared: PreparedRequest<"operation.execute">, credential: string) =>
-    withinResponseDeadline((owned) =>
-      send("operation.preview", credential, prepared.bytes, owned, prepared.input),
+  preview: (
+    prepared: PreparedRequest<"operation.execute">,
+    credential: string,
+    signal?: AbortSignal,
+  ) =>
+    withinResponseDeadline(
+      (owned) => send("operation.preview", credential, prepared.bytes, owned, prepared.input),
+      signal,
     ),
   execute: (
     prepared: PreparedRequest<"operation.execute">,

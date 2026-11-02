@@ -37,7 +37,12 @@ it("reload recovery resolves identities without resubmitting and clears only the
   const buttons = await screen.findAllByRole("button", { name: "Check operation status" });
   expect(buttons).toHaveLength(2);
   await userEvent.click(buttons[0]!);
-  expect(resolve).toHaveBeenCalledExactlyOnceWith(first.operationId, "token", first.installationId);
+  expect(resolve).toHaveBeenCalledExactlyOnceWith(
+    first.operationId,
+    "token",
+    first.installationId,
+    expect.any(AbortSignal),
+  );
   expect(execute).not.toHaveBeenCalled();
   await waitFor(async () => {
     expect(await testJournal.list(recoveryScope)).toEqual([second]);
