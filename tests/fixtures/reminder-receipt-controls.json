@@ -1,0 +1,241 @@
+{
+  "source": "Independently authored causal receipt controls; structural JSON/schema validity alone is insufficient.",
+  "cases": [
+    {
+      "name": "reminder-accepted-COMPLETE_AND_PLAN_NEXT",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE_AND_PLAN_NEXT",
+              "effects": {
+                "kind": "COMPLETED_AND_PLANNED",
+                "completed": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                },
+                "next": {
+                  "reminderId": "10000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Review response",
+                      "dueDate": "2026-11-11",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "compound-wrong-next-id",
+      "endpoint": "operation.execute",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE_AND_PLAN_NEXT",
+              "effects": {
+                "kind": "COMPLETED_AND_PLANNED",
+                "completed": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                },
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Review response",
+                      "dueDate": "2026-11-11",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "compound-wrong-next-state",
+      "endpoint": "operation.execute",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE_AND_PLAN_NEXT",
+              "effects": {
+                "kind": "COMPLETED_AND_PLANNED",
+                "completed": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                },
+                "next": {
+                  "reminderId": "10000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Review response",
+                      "dueDate": "2026-11-11",
+                      "state": "COMPLETED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "compound-wrong-parent",
+      "endpoint": "operation.execute",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE_AND_PLAN_NEXT",
+              "effects": {
+                "kind": "COMPLETED_AND_PLANNED",
+                "completed": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000099",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                },
+                "next": {
+                  "reminderId": "10000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Review response",
+                      "dueDate": "2026-11-11",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

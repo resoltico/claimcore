@@ -27,6 +27,8 @@ type InteractionInput =
 module InteractionInput =
     let vocabularyName = "input"
 
+    // Every semantic input has one fixed boundary key; this closed table contains no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let key =
         function
         | InteractionInput.Target target -> InputTarget.token target

@@ -18,6 +18,7 @@ type BindingAssignment =
         Value: BindingValue
         Branches: BindingCondition list
         Vocabulary: string option
+        RequiresParent: bool
     }
 
 [<RequireQualifiedAccess>]

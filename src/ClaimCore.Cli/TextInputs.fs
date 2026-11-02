@@ -9,6 +9,9 @@ open ClaimCore.Protocol
 
 /// Text is acquired before operation preparation. The resulting LF text is reviewed/frozen exactly.
 module internal TextInputs =
+    type private EditorCleanupFailure() =
+        inherit IOException("Owned private editor text cleanup failed.")
+
     let private utf8 = UTF8Encoding(false, true)
 
     let private bounded maximum (stream: Stream) =
@@ -43,7 +46,7 @@ module internal TextInputs =
 
         bounded maximum stream
 
-    let private editor maximum =
+    let private editor maximum language =
         if OperatingSystem.IsWindows() then
             raise (IOException "Private editor files require a supported native platform.")
 
@@ -64,6 +67,9 @@ module internal TextInputs =
 
         let cleanup () =
             try
+                if Directory.Exists directory && (DirectoryInfo directory).LinkTarget <> null then
+                    raise (IOException "The owned editor directory was replaced.")
+
                 if File.Exists path then
                     File.Delete path
 
@@ -71,9 +77,21 @@ module internal TextInputs =
                     Directory.Delete directory
             with
             | :? IOException
-            | :? UnauthorizedAccessException -> ()
+            | :? UnauthorizedAccessException -> raise (EditorCleanupFailure())
 
-        let onExit = EventHandler(fun _ _ -> cleanup ())
+        let onExit =
+            EventHandler(fun _ _ ->
+                try
+                    cleanup ()
+                with :? EditorCleanupFailure ->
+                    try
+                        Console.Error.WriteLine(
+                            MessageCatalogs.renderCli language CliMessage.EditorCleanupUnavailable
+                        )
+                    with
+                    | :? IOException
+                    | :? ObjectDisposedException -> ())
+
         AppDomain.CurrentDomain.ProcessExit.AddHandler onExit
 
         try
@@ -111,8 +129,10 @@ module internal TextInputs =
 
             file maximum path
         finally
-            cleanup ()
-            AppDomain.CurrentDomain.ProcessExit.RemoveHandler onExit
+            try
+                cleanup ()
+            finally
+                AppDomain.CurrentDomain.ProcessExit.RemoveHandler onExit
 
     let private source name (argument: string) =
         if argument = name then
@@ -122,7 +142,15 @@ module internal TextInputs =
         else
             None
 
+    let private sourceOperand suffix explicit (remaining: string list) =
+        match suffix, explicit, remaining with
+        | "-file", None, value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
+            Some value, tail
+        | _ -> explicit, remaining
+
     let expand interactive arguments =
+        let language = CliInvocations.usageLanguage arguments
+
         let operation =
             OperationCatalog.all
             |> List.tryFind (fun operation ->
@@ -152,16 +180,7 @@ module internal TextInputs =
                     match selected with
                     | None -> collect (argument :: completed) rest
                     | Some(flag, suffix, value, constraints) ->
-                        let operand, tail =
-                            if suffix = "-file" && value.IsNone then
-                                match rest with
-                                | value :: tail when
-                                    not (value.StartsWith("--", StringComparison.Ordinal))
-                                    ->
-                                    Some value, tail
-                                | _ -> None, rest
-                            else
-                                value, rest
+                        let operand, tail = sourceOperand suffix value rest
 
                         if suffix = "-file" && operand.IsNone then
                             Error [ UsageError.MissingValue(flag + suffix) ]
@@ -199,7 +218,7 @@ module internal TextInputs =
                                 let authored =
                                     match suffix with
                                     | "-file" -> file maximum operand.Value
-                                    | "-editor" -> editor maximum
+                                    | "-editor" -> editor maximum language
                                     | _ -> bounded maximum (Console.OpenStandardInput())
 
                                 let prepared = authored.Replace("\r\n", "\n")
@@ -212,6 +231,16 @@ module internal TextInputs =
 
                                 collect (prepared :: flag :: completed) tail
                             with
+                            | :? EditorCleanupFailure ->
+                                Error
+                                    [
+                                        UsageError.InvalidValue(
+                                            flag + suffix,
+                                            MessageCatalogs.renderCli
+                                                language
+                                                CliMessage.EditorCleanupUnavailable
+                                        )
+                                    ]
                             | :? IOException
                             | :? UnauthorizedAccessException
                             | :? ArgumentException

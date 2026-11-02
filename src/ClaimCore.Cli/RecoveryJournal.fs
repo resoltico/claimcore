@@ -5,6 +5,7 @@ open System.IO
 open System.Security.Cryptography
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.HostSecurity
 
@@ -93,6 +94,19 @@ module internal RecoveryJournal =
                value.Length > 0
                && value.Length <= 40
                && value |> Seq.forall (fun c -> c = '_' || c >= 'A' && c <= 'Z'))
+
+    /// Restart recovery knows family/action identities but never reconstructs an authored body.
+    let matchesReceipt (record: RecoveryIdentity) (receipt: OperationReceipt) =
+        OperationId.value receipt.OperationId = record.OperationId
+        && (match record.Subject, receipt.Subject with
+            | "CASE", ReceiptSubject.Case value -> CaseActKind.token value.Act = record.Act
+            | "WORK", ReceiptSubject.Work value -> WorkActKind.token value.Act = record.Act
+            | "REMINDER", ReceiptSubject.Reminder value ->
+                ReminderActKind.token value.Act = record.Act
+            | "AUTHORITY", ReceiptSubject.Authority value ->
+                AuthorityKind.token value.Act = record.Act
+            | "OPERATION", _ -> record.Act = "RESOLVE"
+            | _ -> false)
 
     let location read =
         let root =

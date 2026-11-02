@@ -112,68 +112,73 @@ module CatalogCodecs =
         : Fields<CaseStatusScalarRule, _>)
         |> field "allowedValues" _.AllowedValues (many caseStatus)
 
+    let private textRules =
+        [
+            variant
+                "PLAIN_TEXT"
+                ScalarRule.PlainText
+                (function
+                | ScalarRule.PlainText value -> Some value
+                | _ -> None)
+                plainText
+            variant
+                "TEXT"
+                ScalarRule.Text
+                (function
+                | ScalarRule.Text value -> Some value
+                | _ -> None)
+                textConstraints
+        ]
+
+    let private dateRules =
+        [
+            variant
+                "CALENDAR_DATE"
+                ScalarRule.CalendarDate
+                (function
+                | ScalarRule.CalendarDate value -> Some value
+                | _ -> None)
+                calendarDate
+            variant
+                "PLANNED_DATE"
+                ScalarRule.PlannedDate
+                (function
+                | ScalarRule.PlannedDate value -> Some value
+                | _ -> None)
+                calendarDate
+        ]
+
+    let private moneyRules =
+        [
+            variant
+                "AMOUNT"
+                ScalarRule.Amount
+                (function
+                | ScalarRule.Amount value -> Some value
+                | _ -> None)
+                amount
+            variant
+                "CURRENCY"
+                ScalarRule.Currency
+                (function
+                | ScalarRule.Currency value -> Some value
+                | _ -> None)
+                currency
+        ]
+
+    let private statusRules =
+        [
+            variant
+                "CASE_STATUS"
+                ScalarRule.CaseStatus
+                (function
+                | ScalarRule.CaseStatus value -> Some value
+                | _ -> None)
+                status
+        ]
+
     let private scalar =
-        tagged
-            "Presentation.ScalarRule"
-            [
-
-                variant
-                    "PLAIN_TEXT"
-                    ScalarRule.PlainText
-                    (function
-                    | ScalarRule.PlainText value -> Some value
-                    | _ -> None)
-                    plainText
-
-                variant
-                    "TEXT"
-                    ScalarRule.Text
-                    (function
-                    | ScalarRule.Text value -> Some value
-                    | _ -> None)
-                    textConstraints
-
-                variant
-                    "CALENDAR_DATE"
-                    ScalarRule.CalendarDate
-                    (function
-                    | ScalarRule.CalendarDate value -> Some value
-                    | _ -> None)
-                    calendarDate
-
-                variant
-                    "PLANNED_DATE"
-                    ScalarRule.PlannedDate
-                    (function
-                    | ScalarRule.PlannedDate value -> Some value
-                    | _ -> None)
-                    calendarDate
-
-                variant
-                    "AMOUNT"
-                    ScalarRule.Amount
-                    (function
-                    | ScalarRule.Amount value -> Some value
-                    | _ -> None)
-                    amount
-
-                variant
-                    "CURRENCY"
-                    ScalarRule.Currency
-                    (function
-                    | ScalarRule.Currency value -> Some value
-                    | _ -> None)
-                    currency
-
-                variant
-                    "CASE_STATUS"
-                    ScalarRule.CaseStatus
-                    (function
-                    | ScalarRule.CaseStatus value -> Some value
-                    | _ -> None)
-                    status
-
-            ]
+        tagged "Presentation.ScalarRule" (textRules @ dateRules @ moneyRules @ statusRules)
 
     let private businessField =
         (record (fun v0 v1 v2 v3 v4 v5 section pairs ->
@@ -277,18 +282,20 @@ module CatalogCodecs =
         |> build
 
     let private assignment =
-        (record (fun path value branches vocabulary ->
+        (record (fun path value branches vocabulary requiresParent ->
             {
                 BindingAssignment.Path = path
                 Value = value
                 Branches = branches
                 Vocabulary = vocabulary
+                RequiresParent = requiresParent
             })
         : Fields<BindingAssignment, _>)
         |> field "path" _.Path (many text)
         |> field "value" _.Value bindingValue
         |> field "branches" _.Branches (many condition)
         |> field "vocabulary" _.Vocabulary (nullable text)
+        |> field "requiresParent" _.RequiresParent boolean
         |> build
 
     let private enumerationKindFields =

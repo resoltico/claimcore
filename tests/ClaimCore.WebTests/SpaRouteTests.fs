@@ -14,6 +14,8 @@ let private deepLinks () =
 
         for path in
             [
+                "/work"
+                "/work/queue"
                 "/cases/CASE.001"
                 "/cases/A%2FB"
                 "/cases/~bmV3"
