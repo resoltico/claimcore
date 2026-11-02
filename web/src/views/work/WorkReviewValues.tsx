@@ -1,3 +1,4 @@
+import { ObservedCaseFacts } from "./ObservedCaseFacts";
 import type { OperationReview, Reminder } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { CharacterWarning } from "../../components/BusinessValue";
@@ -9,6 +10,7 @@ export const WorkReviewValues = ({ review }: { review: WorkReview }) => {
   const p = usePresentation();
   return (
     <div className="review-values">
+      <ObservedCaseFacts parent={review.parent} />
       {(
         [
           ["ui.before", review.before],
@@ -78,6 +80,7 @@ const ReminderSnapshot = ({ value, before = false }: { value: Reminder; before?:
 };
 export const ReminderReviewValues = ({ review }: { review: ReminderReview }) => (
   <div className="review-values">
+    <ObservedCaseFacts parent={review.parent} />
     {review.before === null ? null : <ReminderSnapshot value={review.before} before />}
     {review.effects.kind === "COMPLETED_AND_PLANNED" ? (
       <>
