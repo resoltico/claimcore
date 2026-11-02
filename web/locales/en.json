@@ -99,6 +99,7 @@
   "ui.languageLoadFailed": "The language could not be loaded. Your working language is unchanged.",
   "ui.leaveDraftDescription": "Discard this draft and leave the editor?",
   "ui.leaveUnchanged": "Leave unchanged",
+  "ui.liveWorkPages": "Each page is a current observation. Work and permissions can change while you browse; this is not a pinned export.",
   "ui.loading": "Loading…",
   "ui.loadingCases": "Loading cases…",
   "ui.loadingCurrentCase": "Loading current case…",

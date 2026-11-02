@@ -99,6 +99,7 @@
   "ui.languageLoadFailed": "Valodu neizdevās ielādēt. Pašreizējā valoda nav mainīta.",
   "ui.leaveDraftDescription": "Vai atmest šo melnrakstu un aizvērt redaktoru?",
   "ui.leaveUnchanged": "Atstāt nemainītu",
+  "ui.liveWorkPages": "Katra lapa ir pašreizējais novērojums. Pārlūkošanas laikā darbs un piekļuves tiesības var mainīties; tas nav fiksēts eksports.",
   "ui.loading": "Ielādē…",
   "ui.loadingCases": "Ielādē lietas…",
   "ui.loadingCurrentCase": "Ielādē pašreizējo lietu…",
