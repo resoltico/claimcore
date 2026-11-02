@@ -70,7 +70,6 @@ type ReminderRefusal =
 type ReminderRuleRefusal =
     | ParentNotActive
     | ParentNotOpen
-    | IdentityReserved
     | PendingRequired
     | TerminalRequired
     | NoChanges
@@ -132,6 +131,43 @@ module Reminder =
             Revision = Revision.successor reminder.Revision
         }
 
+    let private update reminder (plan: ReminderPlan) =
+        pending reminder
+        |> Result.bind (fun () -> if reminder.Action = plan.Action then Ok() else admit plan)
+        |> Result.bind (fun () ->
+            if reminder.Action = plan.Action && reminder.Due = plan.Due then
+                Error ReminderRefusal.NoChanges
+            else
+                { changed ReminderState.Pending reminder with
+                    Action = plan.Action
+                    Due = plan.Due
+                }
+                |> ReminderEffects.Changed
+                |> Ok)
+
+    let private reopen reminder due =
+        if reminder.State = ReminderState.Pending then
+            Error ReminderRefusal.TerminalRequired
+        else
+            { changed ReminderState.Pending reminder with
+                Due = due
+            }
+            |> ReminderEffects.Changed
+            |> Ok
+
+    let private completeAndPlan operation newIdReserved reminder plan =
+        pending reminder
+        |> Result.bind (fun () -> admit plan)
+        |> Result.bind (fun () ->
+            if newIdReserved || ReminderId.ofOperationId operation = reminder.Id then
+                Error ReminderRefusal.IdentityReserved
+            else
+                ReminderEffects.CompletedAndPlanned(
+                    changed ReminderState.Completed reminder,
+                    create operation reminder.CaseId plan
+                )
+                |> Ok)
+
     let private change operation newIdReserved isOpen reminder act =
         let openRequired =
             match act with
@@ -151,40 +187,10 @@ module Reminder =
                 pending reminder
                 |> Result.map (fun () ->
                     changed ReminderState.Cancelled reminder |> ReminderEffects.Changed)
-            | ReminderChange.Reopen due ->
-                if reminder.State = ReminderState.Pending then
-                    Error ReminderRefusal.TerminalRequired
-                else
-                    { changed ReminderState.Pending reminder with
-                        Due = due
-                    }
-                    |> ReminderEffects.Changed
-                    |> Ok
-            | ReminderChange.Update plan ->
-                pending reminder
-                |> Result.bind (fun () -> admit plan)
-                |> Result.bind (fun () ->
-                    if reminder.Action = plan.Action && reminder.Due = plan.Due then
-                        Error ReminderRefusal.NoChanges
-                    else
-                        { changed ReminderState.Pending reminder with
-                            Action = plan.Action
-                            Due = plan.Due
-                        }
-                        |> ReminderEffects.Changed
-                        |> Ok)
+            | ReminderChange.Reopen due -> reopen reminder due
+            | ReminderChange.Update plan -> update reminder plan
             | ReminderChange.CompleteAndPlanNext plan ->
-                pending reminder
-                |> Result.bind (fun () -> admit plan)
-                |> Result.bind (fun () ->
-                    if newIdReserved || ReminderId.ofOperationId operation = reminder.Id then
-                        Error ReminderRefusal.IdentityReserved
-                    else
-                        ReminderEffects.CompletedAndPlanned(
-                            changed ReminderState.Completed reminder,
-                            create operation reminder.CaseId plan
-                        )
-                        |> Ok)
+                completeAndPlan operation newIdReserved reminder plan
 
     /// Pure decision over the actual locked parent/entity state. Authorization, replay and identity
     /// reservation are independent transaction safeguards; this result does not perform any writes.
