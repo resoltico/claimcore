@@ -30,6 +30,9 @@ let internal tests factory =
                 "revocation after reminder preview is enforced in the action snapshot"
                 (withFixture factory ReminderConcurrencyContract.revocationAndCompound)
             testCaseAsync
+                "case pages pair independent work and apply parent limits before reminder fan-out"
+                (withFixture factory CaseWorkContract.pairedPage)
+            testCaseAsync
                 "case work assignment is scoped and rechecked without granting visibility"
                 (withFixture factory CaseWorkContract.assignmentAndDisclosure)
             testCaseAsync

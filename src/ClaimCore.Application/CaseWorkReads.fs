@@ -38,10 +38,13 @@ module internal CaseWorkReads =
                  |> Option.bind _.Work.Summary
                  |> Option.map (HandlingSummary.format >> CaseSearch.normalize))
 
-    let views (tx: IReadTx) basis (records: StoredCase list) =
+    let viewsFromSummaries
+        (tx: IReadTx)
+        basis
+        (records: StoredCase list)
+        (summaries: Map<CaseId, CaseWorkSummary>)
+        =
         task {
-            let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
-
             let assignments =
                 summaries
                 |> Map.toList
@@ -124,6 +127,12 @@ module internal CaseWorkReads =
                     result <- result |> Result.map (Map.add record.CaseId view)
 
             return result
+        }
+
+    let views (tx: IReadTx) basis (records: StoredCase list) =
+        task {
+            let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
+            return! viewsFromSummaries tx basis records summaries
         }
 
     let view tx basis record =

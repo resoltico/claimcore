@@ -1149,3 +1149,141 @@ let internal finiteDateRange fixture =
 
         Expect.isNone caseCursor "No duplicate case at maximum date"
     }
+
+let internal pairedPage fixture =
+    task {
+        let! owner = caseWorker fixture
+
+        for operation, reference in [ 1100, "PAGE-A"; 1101, "PAGE-B"; 1102, "PAGE-C" ] do
+            let! opened = execute owner operation reference 0L (CaseAct.Open registration)
+            accepted opened |> ignore
+
+        let! updated =
+            Service.execute
+                owner
+                (OperationInput.Work
+                    {
+                        OperationId = id 1103
+                        Target = CaseSelector.Reference "PAGE-A"
+                        ExpectedRevision = 0L
+                        Act =
+                            WorkAct.UpdateWork
+                                {
+                                    Summary = WorkValue.Set "Page-owned summary\nالعربية"
+                                    Responsible =
+                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                }
+                    })
+                token
+
+        accepted updated |> ignore
+
+        for operation in 1110..1119 do
+            let! created =
+                Service.execute
+                    owner
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id operation
+                            Target = CaseSelector.Reference "PAGE-A"
+                            Act =
+                                AuthoredReminderAct.Create
+                                    {
+                                        Action =
+                                            if operation = 1110 then
+                                                "First pending action"
+                                            else
+                                                "Later pending action"
+                                        Due =
+                                            if operation = 1110 then "0001-01-01" else "9999-12-31"
+                                    }
+                        })
+                    token
+
+            accepted created |> ignore
+
+        for order in [ CaseListOrder.Reference; CaseListOrder.Notified ] do
+            let request =
+                {
+                    CaseListRequest.Page = { AfterCursor = None; Limit = 2 }
+                    Filter =
+                        { CaseListFilter.empty with
+                            Order = order
+                        }
+                }
+
+            let! response = Service.list owner request token
+            let page = read response
+
+            Expect.equal
+                (page.Items |> List.map (_.Reference >> CaseReference.format))
+                [ "PAGE-A"; "PAGE-B" ]
+                "The parent limit applies before reminder fan-out"
+
+            Expect.isSome page.NextCursor "The third parent supplies a continuation"
+            let first = page.Items.Head
+            let fields = CaseState.fields first.State |> Option.get
+
+            Expect.equal
+                first.Revision
+                Revision.first
+                "A work page retains the independent fact revision"
+
+            Expect.equal
+                fields.Work.Revision
+                Revision.first
+                "The same row carries its independent work revision"
+
+            Expect.equal
+                (fields.Work.Summary |> Option.map HandlingSummary.format)
+                (Some "Page-owned summary\nالعربية")
+                "The selected work owner supplies exact text"
+
+            Expect.equal
+                (fields.Work.PendingReminders, fields.Work.OverdueReminders)
+                (10L, 1L)
+                "Reminder counts have reminder units"
+
+            Expect.equal
+                (fields.Work.NextAction |> Option.map ReminderAction.format)
+                (Some "First pending action")
+                "The minimum pending date supplies the next action"
+
+            Expect.equal
+                (fields.Work.FollowUp |> Option.map CalendarDate.format)
+                (Some "0001-01-01")
+                "The derived date is preserved at the Gregorian boundary"
+
+            Expect.equal
+                (fields.Work.Responsible
+                 |> Option.map (fun account -> account.Account.ActorId, account.Available))
+                (Some(CaseFixtures.actorId (id 1), true))
+                "Assignment labels retain the case-scoped availability check"
+
+            let empty = page.Items[1] |> _.State |> CaseState.fields |> Option.get |> _.Work
+
+            Expect.equal
+                (empty.Revision, empty.Summary, empty.PendingReminders)
+                (Revision.zero, None, 0L)
+                "The next parent keeps its genuine empty work root"
+
+            let! continued =
+                Service.list
+                    owner
+                    { request with
+                        Page =
+                            { request.Page with
+                                AfterCursor = page.NextCursor
+                            }
+                    }
+                    token
+
+            let continued = read continued
+
+            Expect.equal
+                (continued.Items |> List.map (_.Reference >> CaseReference.format))
+                [ "PAGE-C" ]
+                "Continuation visits the remaining parent exactly once"
+
+            Expect.isNone continued.NextCursor "All three parents have been visited"
+    }

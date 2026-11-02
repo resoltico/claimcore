@@ -112,6 +112,13 @@ type CaseWorkSummary =
         Overdue: int64
     }
 
+/// Financial and work projections are loaded together but retain their independent owners.
+type CasePageItem =
+    {
+        Case: StoredCase
+        WorkSummary: CaseWorkSummary option
+    }
+
 type WorkProjection =
     {
         Snapshot: CaseWorkSnapshot
@@ -325,7 +332,7 @@ type IReadTx =
     abstract FindEntry: OperationId -> Task<StoredEntry option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
-    abstract CasePage: CasePageQuery -> Task<Page<StoredCase, CaseListPosition>>
+    abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
     abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>

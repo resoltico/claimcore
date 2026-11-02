@@ -139,7 +139,7 @@ let internal caseVisibility fixture =
 
         Expect.equal
             (first.Items
-             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
+             |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
             [ "A"; "B" ]
             "Reference-key order"
 
@@ -154,7 +154,7 @@ let internal caseVisibility fixture =
 
         Expect.equal
             ((storedPage only).Items
-             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
+             |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
             [ "C" ]
             "Visibility precedes limit"
 
@@ -167,7 +167,7 @@ let internal caseVisibility fixture =
 
         Expect.equal
             ((storedPage next).Items
-             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
+             |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
             [ "C" ]
             "Continuation"
     }
@@ -192,7 +192,7 @@ let internal foldedOrdering fixture =
 
         Expect.equal
             (first.Items
-             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
+             |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
             [ "ref-A" ]
             "Authored spelling with ASCII-key order"
 
@@ -205,7 +205,7 @@ let internal foldedOrdering fixture =
 
         Expect.equal
             ((storedPage second).Items
-             |> List.map (fun record -> CaseReference.format record.Snapshot.Reference))
+             |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
             [ "Ref-b" ]
             "Continuation uses the same order"
     }

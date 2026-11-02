@@ -81,6 +81,23 @@ let private dateAfter (found: CalendarDate option) boundary referenceAfter =
     | None, None -> referenceAfter
     | Some found, Some boundary -> found > boundary || (found = boundary && referenceAfter)
 
+let private workSummary state today id =
+    state.Work
+    |> Map.tryFind id
+    |> Option.map (fun work ->
+        let pending = pendingReminders state id
+
+        {
+            CaseWorkSummary.Work = work
+            Next = List.tryHead pending
+            Pending = int64 pending.Length
+            Overdue =
+                pending
+                |> List.filter (fun reminder -> CalendarDate.value (Reminder.due reminder) < today)
+                |> List.length
+                |> int64
+        })
+
 type internal Reader
     (
         get: unit -> State,
@@ -221,22 +238,8 @@ type internal Reader
 
             let rows =
                 ids
-                |> List.map (fun id ->
-                    let work = state.Work[id]
-                    let pending = pendingReminders state id
-
-                    id,
-                    {
-                        CaseWorkSummary.Work = work
-                        Next = List.tryHead pending
-                        Pending = int64 pending.Length
-                        Overdue =
-                            pending
-                            |> List.filter (fun reminder ->
-                                CalendarDate.value (Reminder.due reminder) < today)
-                            |> List.length
-                            |> int64
-                    })
+                |> List.choose (fun id ->
+                    workSummary state today id |> Option.map (fun work -> id, work))
                 |> Map.ofList
 
             Task.FromResult rows
@@ -545,7 +548,7 @@ type internal Reader
                 |> Seq.map (readCase (get ()).Entries)
                 |> Seq.toList
 
-            Task.FromResult(
+            let selected =
                 page
                     query.Limit
                     (fun record ->
@@ -556,6 +559,22 @@ type internal Reader
                             record.Index.FollowUp
                             (CaseReference.format record.Snapshot.Reference))
                     rows
+
+            Task.FromResult(
+                {
+                    Items =
+                        selected.Items
+                        |> List.map (fun record ->
+                            {
+                                CasePageItem.Case = record
+                                WorkSummary =
+                                    workSummary
+                                        state
+                                        query.Selection.DateBasis.BusinessDate
+                                        record.CaseId
+                            })
+                    Next = selected.Next
+                }
             )
 
         member _.CaseSummary selection =
