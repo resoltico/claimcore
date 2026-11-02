@@ -464,6 +464,60 @@ let internal scopedAuthority fixture =
             serviceContext.Cases
             "Service global context does not enumerate case identities"
 
+        for operation, role in [ 442, Role.CaseHandler; 443, Role.PaymentRecorder ] do
+            let! granted =
+                grant
+                    admin
+                    (id operation)
+                    service
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedAuthority granted
+
+        let! installedService = inspectGlobal service
+        let installedService = storedPage installedService
+
+        Expect.equal
+            (List.sort installedService.Installation)
+            (List.sort [ Role.CaseHandler; Role.PaymentRecorder ])
+            "Global facts retain every installation grant without enumerating scoped grants"
+
+        Expect.isEmpty installedService.Cases "Installation joins do not load case grants"
+
+        Expect.isTrue
+            installedService.HasScopedCases
+            "Scoped presence remains independent of installation grants"
+
+        let! revoked =
+            grant
+                admin
+                (id 444)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                false
+
+        acceptedAuthority revoked
+        let! installationOnly = inspectGlobal service
+        let installationOnly = storedPage installationOnly
+
+        Expect.equal
+            (List.sort installationOnly.Installation)
+            (List.sort installedService.Installation)
+            "Removing the last scoped grant preserves both installation grants"
+
+        Expect.isFalse
+            installationOnly.HasScopedCases
+            "Installation visibility does not invent scoped presence"
+
+        Expect.isEmpty installationOnly.Cases "A global view never enumerates case grants"
+
         let pending =
             request
                 102
