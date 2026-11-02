@@ -91,15 +91,22 @@ module internal VerbRunner =
 
     let run io (processor: RemoteFrameProcessor) arguments token =
         task {
-            match InteractiveReview.prepare io.Review arguments with
+            let expanded = TextInputs.expand io.Review.IsInteractive arguments
+
+            match
+                expanded
+                |> Result.bind (fun arguments ->
+                    InteractiveReview.prepare io.Review arguments
+                    |> Result.map (fun draft -> arguments, draft))
+            with
             | Error issues ->
                 CliDiscovery.writeText
                     io.Errors
                     (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
 
                 return ExitCode.value ExitCode.Usage
-            | Ok None -> return! prepared io processor arguments token
-            | Ok(Some draft) ->
+            | Ok(arguments, None) -> return! prepared io processor arguments token
+            | Ok(_, Some draft) ->
                 let transport =
                     {
                         Exchange = fun frame token -> processor.Exchange(frame, token)

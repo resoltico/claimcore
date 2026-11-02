@@ -29,6 +29,10 @@ module Catalog =
                         Scalar =
                             if input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.ReminderAction then
+                                Some(ScalarRule.PlainText ReminderAction.constraints)
+                            elif input = InteractionInput.Target InputTarget.ReminderDueDate then
+                                Some(ScalarRule.PlannedDate CalendarDate.descriptor)
                             elif input = InteractionInput.Target InputTarget.Text then
                                 Some(
                                     ScalarRule.Text

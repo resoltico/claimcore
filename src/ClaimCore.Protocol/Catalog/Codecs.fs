@@ -54,6 +54,18 @@ module CatalogCodecs =
         |> field "format" _.Format (textFormat)
         |> field "maximumCharacters" _.MaximumCharacters (nullable count)
 
+    let private plainText =
+        (record (fun maximumScalars maximumBytes allowsLineFeed ->
+            {
+                PlainTextConstraints.MaximumScalars = maximumScalars
+                MaximumUtf8Bytes = maximumBytes
+                AllowsLineFeed = allowsLineFeed
+            })
+        : Fields<PlainTextConstraints, _>)
+        |> field "maximumScalars" _.MaximumScalars count
+        |> field "maximumUtf8Bytes" _.MaximumUtf8Bytes count
+        |> field "allowsLineFeed" _.AllowsLineFeed boolean
+
     let private calendarDate =
         (record (fun v0 v1 v2 ->
             {
@@ -104,6 +116,14 @@ module CatalogCodecs =
         tagged
             "Presentation.ScalarRule"
             [
+
+                variant
+                    "PLAIN_TEXT"
+                    ScalarRule.PlainText
+                    (function
+                    | ScalarRule.PlainText value -> Some value
+                    | _ -> None)
+                    plainText
 
                 variant
                     "TEXT"
@@ -323,6 +343,7 @@ module CatalogCodecs =
                 prefill
                 required
                 wireRequired
+                allowsNull
                 defaultValue
                 targets
                 source ->
@@ -339,6 +360,7 @@ module CatalogCodecs =
                     Prefill = prefill
                     Required = required
                     WireRequired = wireRequired
+                    AllowsNull = allowsNull
                     Default = defaultValue
                     DiagnosticTargets = targets
                     Source = source
@@ -358,6 +380,7 @@ module CatalogCodecs =
         |> field "prefill" _.Prefill (nullable (many text))
         |> field "required" _.Required boolean
         |> field "wireRequired" _.WireRequired boolean
+        |> field "allowsNull" _.AllowsNull boolean
         |> field "default" _.Default (nullable bindingValue)
         |> field "diagnosticTargets" _.DiagnosticTargets (many text)
         |> field "source" _.Source inputSource

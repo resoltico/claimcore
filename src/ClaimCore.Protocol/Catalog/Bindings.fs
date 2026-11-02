@@ -140,6 +140,9 @@ module Bindings =
                     (definition definitions name)
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
+            | Schema.OneOf([ Schema.String _; Schema.Null ], None)
+            | Schema.OneOf([ Schema.Null; Schema.String _ ], None) ->
+                [ input position BindingKind.Text schema ]
             | Schema.OneOf(cases, None) ->
                 input position (BindingKind.Choice(vocabulary position, enumTokens cases)) schema
                 |> List.singleton
@@ -311,6 +314,10 @@ module Bindings =
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
                     WireRequired = input.Required
+                    AllowsNull =
+                        match input.Schema with
+                        | Schema.OneOf(cases, None) -> List.contains Schema.Null cases
+                        | _ -> false
                     Default =
                         annotation.Default
                         |> Option.orElseWith (fun () -> annotation.Implicit |> Option.map fst)

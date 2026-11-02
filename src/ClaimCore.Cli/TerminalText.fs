@@ -35,3 +35,7 @@ module internal TerminalText =
                 output.Append character |> ignore
 
         output.ToString()
+
+    /// LF belongs to trusted paragraph layout; every retained data segment is independently escaped.
+    let paragraphs (value: string) =
+        value.Split('\n') |> Array.map data |> String.concat "\n"

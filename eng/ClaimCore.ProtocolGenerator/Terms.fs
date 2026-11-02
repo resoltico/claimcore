@@ -92,6 +92,10 @@ module Terms =
             sectionTerms
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
+            rendered WorkActKind.vocabulary
+            rendered ReminderActKind.vocabulary
+            rendered ReminderState.vocabulary
+            rendered ReminderDue.vocabulary
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary

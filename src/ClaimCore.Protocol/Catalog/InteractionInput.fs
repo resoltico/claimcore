@@ -17,6 +17,10 @@ type InteractionInput =
     | Order
     | Assignment
     | Due
+    | ReminderState
+    | ReminderDue
+    | IncludeInactive
+    | Mine
     | WorkChoice of BusinessField
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -26,6 +30,10 @@ module InteractionInput =
     let key =
         function
         | InteractionInput.Target target -> InputTarget.token target
+        | InteractionInput.ReminderState -> "reminderState"
+        | InteractionInput.ReminderDue -> "reminderDue"
+        | InteractionInput.IncludeInactive -> "includeInactive"
+        | InteractionInput.Mine -> "mine"
         | InteractionInput.Scope -> "scope"
         | InteractionInput.ActorId -> "actorId"
         | InteractionInput.CaseId -> "caseId"
@@ -47,6 +55,10 @@ module InteractionInput =
         | InteractionInput.Target(InputTarget.Group group) ->
             Vocabulary.messageKey RecordGroup.vocabulary group part
         | InteractionInput.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
+        | InteractionInput.ReminderState
+        | InteractionInput.ReminderDue
+        | InteractionInput.IncludeInactive
+        | InteractionInput.Mine
         | InteractionInput.WorkChoice _
         | InteractionInput.Scope
         | InteractionInput.ActorId
@@ -74,7 +86,4 @@ module InteractionInput =
              | InputTarget.Group _ -> None
              | _ -> Some(InteractionInput.Target target)))
         @ extras
-        @ [
-            InteractionInput.WorkChoice BusinessField.ResponsibleActor
-            InteractionInput.WorkChoice BusinessField.FollowUpDate
-        ]
+        @ [ InteractionInput.WorkChoice BusinessField.ResponsibleActor ]

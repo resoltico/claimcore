@@ -1,0 +1,120 @@
+namespace ClaimCore.Cli
+
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Protocol
+
+module internal TextWorkReply =
+    open TextReplyFormat
+
+    let work language (snapshot: CaseWorkSnapshot) =
+        [
+            line language "label.workRevision" (Revision.format snapshot.Revision)
+            line
+                language
+                (FieldPresentation.labelId BusinessField.ResponsibleActor)
+                (snapshot.Work.Responsible |> Option.map ActorId.format |> displayed language)
+            line
+                language
+                (FieldPresentation.labelId BusinessField.HandlingSummary)
+                (snapshot.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
+        ]
+
+    let reminder language value =
+        [
+            line language "input.reminderId.label" (ReminderId.format (Reminder.id value))
+            line language "label.reminderRevision" (Revision.format (Reminder.revision value))
+            line
+                language
+                "input.reminderState.label"
+                (term language ReminderState.vocabulary (Reminder.state value))
+            line
+                language
+                "input.reminderAction.label"
+                (Reminder.action value |> ReminderAction.format |> Some |> displayed language)
+            line language "input.reminderDueDate.label" (Reminder.due value |> CalendarDate.format)
+        ]
+
+    let effects language =
+        function
+        | ReminderEffects.Created value
+        | ReminderEffects.Changed value -> reminder language value
+        | ReminderEffects.CompletedAndPlanned(completed, next) ->
+            reminder language completed @ reminder language next
+
+    let private basis _language (value: WorkDateBasis) =
+        [
+            instant value.ObservedAt
+            + "  "
+            + CalendarDate.format (CalendarDate.ofDate value.BusinessDate)
+            + "  "
+            + TerminalText.data value.TimeZoneId
+        ]
+
+    let page language (page: ReminderPage) =
+        basis language page.Basis
+        @ (page.Items
+           |> List.collect (fun value ->
+               [ TerminalText.data (CaseReference.format value.Reference) ]
+               @ reminder language value.Reminder
+               @ [
+                   instant value.RecordedAt + "  " + ActorId.format value.RecordedBy
+                   value.Acts
+                   |> List.map (fun act -> term language ReminderActKind.vocabulary act)
+                   |> String.concat ", "
+               ]))
+        @ nextLines language page.NextCursor
+
+    let overview language (value: WorkOverview) =
+        basis language value.Basis
+        @ [
+            line language "input.mine.label" (boolean value.Mine)
+            line language "label.actionableCases" (number value.ActionableCases)
+            line language "label.missingPlanCases" (number value.MissingPlanCases)
+            line language "label.overdueCases" (number value.OverdueCases)
+            line language "label.overdueReminders" (number value.OverdueReminders)
+            line language "label.unassignedCases" (number value.UnassignedCases)
+            line language "label.unavailableAssigneeCases" (number value.UnavailableAssigneeCases)
+            line language "label.attentionCases" (number value.AttentionCases)
+        ]
+
+    let activity language (page: CaseActivityPage) =
+        (page.Items
+         |> List.collect (fun item ->
+             let act, revision =
+                 match item.Subject with
+                 | ActivitySubject.Case(revision, act) ->
+                     term language CaseActKind.vocabulary act, Revision.format revision
+                 | ActivitySubject.Work(revision, act) ->
+                     term language WorkActKind.vocabulary act, Revision.format revision
+                 | ActivitySubject.Reminder(act, id, revision, _) ->
+                     term language ReminderActKind.vocabulary act + " " + ReminderId.format id,
+                     Revision.format revision
+
+             [
+                 Sequence.format item.Position.Sequence
+                 + "  "
+                 + act
+                 + "  "
+                 + revision
+                 + "  "
+                 + instant item.RecordedAt
+                 + "  "
+                 + ActorId.format item.RecordedBy
+             ]
+             @ (match item.Detail |> Option.map _.Subject with
+                | Some(ReceiptSubject.Work {
+                                               Snapshot = WorkDisclosure.Disclosed snapshot
+                                           }) -> work language snapshot
+                | Some(ReceiptSubject.Reminder value) ->
+                    let one (version: ReminderVersion) =
+                        match version.Snapshot with
+                        | ReminderDisclosure.Disclosed value -> reminder language value
+                        | _ -> []
+
+                    match value.Effects with
+                    | ReminderReceiptEffects.Single value -> one value
+                    | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
+                        one completed @ one next
+                | _ -> [])))
+        @ nextLines language page.NextCursor

@@ -62,14 +62,46 @@ module internal ReadRowCodecs =
         |> named "AssignedAccount"
 
     let workView =
-        (record (fun responsible followUp due basis ->
-            {
-                CaseWorkView.Responsible = responsible
-                FollowUp = followUp
-                Due = due
-                Basis = basis
-            })
+        (record
+            (fun
+                revision
+                summary
+                nextAction
+                pending
+                overdue
+                needsNextAction
+                canUpdateSummary
+                canAssign
+                canCreateReminder
+                responsible
+                followUp
+                due
+                basis ->
+                {
+                    CaseWorkView.Revision = revision
+                    Summary = summary
+                    NextAction = nextAction
+                    PendingReminders = pending
+                    OverdueReminders = overdue
+                    NeedsNextAction = needsNextAction
+                    CanUpdateSummary = canUpdateSummary
+                    CanAssign = canAssign
+                    CanCreateReminder = canCreateReminder
+                    Responsible = responsible
+                    FollowUp = followUp
+                    Due = due
+                    Basis = basis
+                })
         : Fields<CaseWorkView, _>)
+        |> field "revision" _.Revision revision
+        |> field "summary" _.Summary (nullable handlingSummary)
+        |> field "nextAction" _.NextAction (nullable reminderAction)
+        |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
+        |> field "overdueReminders" _.OverdueReminders (integer 0L SafeInteger.Maximum)
+        |> field "needsNextAction" _.NeedsNextAction boolean
+        |> field "canUpdateSummary" _.CanUpdateSummary boolean
+        |> field "canAssign" _.CanAssign boolean
+        |> field "canCreateReminder" _.CanCreateReminder boolean
         |> field "responsible" _.Responsible (nullable assignedAccount)
         |> field "followUpDate" _.FollowUp (nullable calendarDate)
         |> field "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)

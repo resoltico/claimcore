@@ -37,7 +37,8 @@ module ResponseCodecs =
             | FieldValueKind.CalendarDate -> date
             | FieldValueKind.Country -> country
             | FieldValueKind.PartyName
-            | FieldValueKind.IncidentDescription -> nonempty
+            | FieldValueKind.IncidentDescription
+            | FieldValueKind.HandlingSummary -> nonempty
             | FieldValueKind.Amount -> amount
             | FieldValueKind.Currency -> currency
             | FieldValueKind.ActorId
@@ -78,44 +79,53 @@ module ResponseCodecs =
                 BusinessField.InsurerName, insurer
                 BusinessField.ClaimedAmount, amount
                 BusinessField.ClaimedCurrency, currency
-                yield! description |> Option.map (fun value -> BusinessField.IncidentDescription, value) |> Option.toList
-            ] |> Registration.create |> Result.defaultWith invalidOp)
+                yield!
+                    description
+                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+                    |> Option.toList
+            ]
+            |> Registration.create
+            |> Result.defaultWith invalidOp)
         : Fields<Registration, _>)
-        |> field "incidentDate" (Registration.incidentDate >> Admitted.Date) (scalar FieldValueKind.CalendarDate)
-        |> field "incidentNotificationDate" (Registration.incidentNotificationDate >> Admitted.Date) (scalar FieldValueKind.CalendarDate)
-        |> field "incidentCountry" (Registration.country >> Admitted.Country) (scalar FieldValueKind.Country)
-        |> field "claimantName" (Registration.claimant >> Admitted.Name) (scalar FieldValueKind.PartyName)
-        |> field "insurerName" (Registration.insurer >> Admitted.Name) (scalar FieldValueKind.PartyName)
-        |> field "claimedAmount" (Registration.claimed >> Money.amount >> Admitted.Amount) (scalar FieldValueKind.Amount)
-        |> field "claimedCurrency" (Registration.claimed >> Money.currencyValue >> Admitted.Currency) (scalar FieldValueKind.Currency)
-        |> field "incidentDescription" (Registration.description >> Option.map Admitted.Description) (nullable (scalar FieldValueKind.IncidentDescription))
+        |> field
+            "incidentDate"
+            (Registration.incidentDate >> Admitted.Date)
+            (scalar FieldValueKind.CalendarDate)
+        |> field
+            "incidentNotificationDate"
+            (Registration.incidentNotificationDate >> Admitted.Date)
+            (scalar FieldValueKind.CalendarDate)
+        |> field
+            "incidentCountry"
+            (Registration.country >> Admitted.Country)
+            (scalar FieldValueKind.Country)
+        |> field
+            "claimantName"
+            (Registration.claimant >> Admitted.Name)
+            (scalar FieldValueKind.PartyName)
+        |> field
+            "insurerName"
+            (Registration.insurer >> Admitted.Name)
+            (scalar FieldValueKind.PartyName)
+        |> field
+            "claimedAmount"
+            (Registration.claimed >> Money.amount >> Admitted.Amount)
+            (scalar FieldValueKind.Amount)
+        |> field
+            "claimedCurrency"
+            (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
+            (scalar FieldValueKind.Currency)
+        |> field
+            "incidentDescription"
+            (Registration.description >> Option.map Admitted.Description)
+            (nullable (scalar FieldValueKind.IncidentDescription))
         |> build
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
     let private payment = group RecordGroup.Payment Payment.create Payment.values
 
-    let private caseWork =
-        (record (fun actor followUp ->
-            {
-                CaseWork.Responsible = actor
-                FollowUp = followUp
-            })
-        : Fields<CaseWork, _>)
-        |> field "responsibleActor" _.Responsible (nullable actorId)
-        |> field
-            "followUpDate"
-            _.FollowUp
-            (nullable (
-                date
-                |> map
-                    (CalendarDate.parse >> Result.defaultWith (fun _ -> invalidOp "Admitted date"))
-                    CalendarDate.format
-            ))
-        |> build
-        |> named "CaseWork"
-
     let caseFields =
-        (record (fun reference status registration decision payment work suppliedProgress ->
+        (record (fun reference status registration decision payment suppliedProgress ->
             PaymentProgress.fromGroups decision payment
             |> Result.bind (fun progress ->
                 if CaseProgress.ofPayment progress <> suppliedProgress then
@@ -123,8 +133,7 @@ module ResponseCodecs =
                 else
                     Ok
                         {
-                            CaseFields.Work = work
-                            CaseReference = reference
+                            CaseFields.CaseReference = reference
                             Status = status
                             Registration = registration
                             Progress = progress
@@ -138,7 +147,6 @@ module ResponseCodecs =
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
         |> field "payment" _.Payment (nullable payment)
-        |> field "work" _.Work caseWork
         |> field
             "progress"
             (_.Progress >> CaseProgress.ofPayment)
