@@ -827,7 +827,7 @@
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
-              "act": "PROVISION_OWNER"
+              "act": "REGISTER"
             }
           }
         }
@@ -852,7 +852,7 @@
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
-              "act": "PROVISION_OWNER"
+              "act": "REGISTER"
             }
           }
         }
@@ -5799,6 +5799,31 @@
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "owner-provisioning-own-observation",
+      "endpoint": "operation.observe",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "AUTHORITY",
+              "targetActorId": "10000000-0000-4000-8000-000000000001",
+              "act": "PROVISION_OWNER"
+            }
           }
         }
       }

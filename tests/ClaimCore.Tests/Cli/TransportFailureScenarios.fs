@@ -35,7 +35,7 @@ let internal resultExits () =
     let mutable seen = Set.empty
 
     for endpoint in Api.all do
-        for body in samples (Api.id endpoint) do
+        for index, body in samples (Api.id endpoint) |> List.indexed do
             use document = JsonDocument.Parse(ReadOnlyMemory body)
 
             let tag =
@@ -52,7 +52,7 @@ let internal resultExits () =
             Expect.equal
                 reply.ExitCode
                 (Map.tryFind tag expected |> Option.defaultValue 0)
-                ("Outcome selects exit for " + (Api.id endpoint) + " " + tag)
+                ("Outcome selects exit for " + (Api.id endpoint) + " " + tag + " sample " + string index)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen
