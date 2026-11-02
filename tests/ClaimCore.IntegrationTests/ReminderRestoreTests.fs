@@ -382,7 +382,10 @@ let private oldHead database =
         let! _ = mode database MaintenanceChange.Enter
         do! dump database "/tmp/reminders-accepted-erasure.sql"
         do! restore database "/tmp/reminders-before-erasure.sql"
-        let! restoredMode = RegisterMaintenanceStore.read database.OwnerSource token
+
+        let! restoredMode =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                RegisterMaintenanceStore.read connection token)
 
         Expect.isTrue
             restoredMode.Active
