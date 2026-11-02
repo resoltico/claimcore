@@ -47,10 +47,8 @@ let private seeded database =
 
         accepted work |> ignore
 
-        let! reminder =
-            Service.execute actor
-
-            (OperationInput.Reminder
+        let reminderRequest =
+            OperationInput.Reminder
                 {
                     OperationId = id 101
                     Target = CaseSelector.Reference "synthetic-a"
@@ -60,8 +58,9 @@ let private seeded database =
                                 Action = "Request the report"
                                 Due = "2027-12-31"
                             }
-                })
-                token
+                }
+
+        let! reminder = Service.execute actor reminderRequest token
 
         accepted reminder |> ignore
 
