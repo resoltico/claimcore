@@ -62,13 +62,13 @@ module internal TransactionPages =
 
                 "(($13::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13 OR c.notified_on IS NULL OR (c.notified_on=$13 AND "
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13::date OR c.notified_on IS NULL OR (c.notified_on=$13::date AND "
                 + key
                 + " > $12 COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
-                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
                 "$14"
 

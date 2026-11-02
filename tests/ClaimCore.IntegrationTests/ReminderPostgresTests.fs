@@ -91,10 +91,20 @@ let private dates database =
 
         accepted cancelled |> ignore
 
+        let minimumRegistration =
+            Inputs.registrationWith
+                [
+                    BusinessField.IncidentDate, "0001-01-01"
+                    BusinessField.IncidentNotificationDate, "0001-01-01"
+                ]
+                registration
+
         let! opened =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 103 "synthetic-b" 0L (CaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request 103 "synthetic-b" 0L (CaseAct.Open minimumRegistration)
+                ))
                 token
 
         accepted opened |> ignore
@@ -152,6 +162,60 @@ let private dates database =
              |> List.map (fun value -> CaseReference.format value.Reference))
             [ "synthetic-b" ]
             "The case continuation passes the exact maximum date without infinity conversion"
+
+        let notified =
+            { CaseListFilter.empty with
+                Order = CaseListOrder.Notified
+            }
+
+        let! oldest =
+            Service.list
+                actor
+                {
+                    Page = { AfterCursor = None; Limit = 1 }
+                    Filter = notified
+                }
+                token
+
+        let oldest = read oldest
+
+        Expect.equal
+            (oldest.Items |> List.map (fun item -> CaseReference.format item.Reference))
+            [ "synthetic-b" ]
+            "A financial OPEN accepts the minimum Gregorian notification date and indexes it exactly"
+
+        let firstDate =
+            oldest.Items.Head.State
+            |> CaseState.fields
+            |> Option.map _.IncidentNotificationDate
+            |> Option.map CalendarDate.format
+
+        Expect.equal
+            firstDate
+            (Some "0001-01-01")
+            "The financial list exposes the exact finite minimum date"
+
+        Expect.isSome
+            oldest.NextCursor
+            "The minimum-date row has a later notification-date continuation"
+
+        let! later =
+            Service.list
+                actor
+                {
+                    Page =
+                        {
+                            AfterCursor = oldest.NextCursor
+                            Limit = 1
+                        }
+                    Filter = notified
+                }
+                token
+
+        Expect.equal
+            ((read later).Items |> List.map (fun item -> CaseReference.format item.Reference))
+            [ "synthetic-a" ]
+            "A notification cursor does not turn the finite minimum into provider negative infinity and repeat the first row"
 
         let! _ = verified database
         return ()
