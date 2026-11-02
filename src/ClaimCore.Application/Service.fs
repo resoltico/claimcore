@@ -232,6 +232,7 @@ module Service =
 
     let get services (input: CaseGetRequest) ct = Queries.get services input.Target ct
 
+    let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
     let workOverview = WorkQueries.overview
     let activity = WorkQueries.activity

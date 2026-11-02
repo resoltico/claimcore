@@ -13,6 +13,12 @@ type ReminderReadModel =
         Active: bool
     }
 
+type ReminderRead =
+    {
+        Basis: WorkDateBasis
+        Item: ReminderReadModel
+    }
+
 type ReminderPage =
     {
         Basis: WorkDateBasis

@@ -372,8 +372,7 @@ module internal RecordCodecs =
                     |> Option.map (fun value -> BusinessField.IncidentDescription, value)
                     |> Option.toList
             ]
-            |> Registration.create
-            |> Result.defaultWith invalidOp)
+            |> Registration.create)
         : Fields<Registration, _>)
         |> field
             "incidentDate"
@@ -409,7 +408,7 @@ module internal RecordCodecs =
             (nullable (
                 scalar (FieldValue.parse FieldValueKind.IncidentDescription) FieldValue.format
             ))
-        |> build
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Registration"
 
     let private acceptedDecision =
