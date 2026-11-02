@@ -40,6 +40,10 @@ export const WorkOperation = ({
   const credential = useCredential();
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    heading.current?.focus();
+  }, []);
   const accepted = useCallback(
     (receipt: OperationReceipt) => {
       if (recorded.current !== receipt.operationId) {
@@ -83,7 +87,7 @@ export const WorkOperation = ({
   const offered = subject === "WORK" && !workOffered ? [] : [kind];
   return (
     <section className="work-operation operation-editor" aria-labelledby="work-operation-title">
-      <h2 id="work-operation-title" tabIndex={-1}>
+      <h2 ref={heading} id="work-operation-title" tabIndex={-1}>
         {renderCatalogKey(p, definition.labelId)}
       </h2>
       {definition.meaningId === null ? null : <p>{renderCatalogKey(p, definition.meaningId)}</p>}
