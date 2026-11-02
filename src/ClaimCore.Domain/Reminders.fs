@@ -269,7 +269,7 @@ module ReminderAct =
         | ReminderAct.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
 
 module AuthoredReminderAct =
-    let kind = ReminderAct.kind
+    let kind (act: AuthoredReminderAct) = ReminderAct.kind act
 
 [<RequireQualifiedAccess>]
 type ReminderDue =
