@@ -407,4 +407,71 @@ let tests =
                             (ReminderChange.CompleteAndPlanNext next))
                         (Error ReminderRefusal.IdentityReserved)
                         "Creation ID cannot replace original entity")
+            testCase
+                "rescheduling preserves retained action meaning while new assertions use current admission"
+                (fun () ->
+                    let parent = parent ()
+                    let oldText = String.replicate 201 "x"
+                    let retainedAction = ReminderAction.parse oldText |> required
+
+                    let retained =
+                        Reminder.ofAccepted
+                            (ReminderId.ofOperationId (operation 2))
+                            parent.CaseId
+                            Revision.first
+                            retainedAction
+                            first.Due
+                            ReminderState.Pending
+                        |> required
+
+                    let rescheduled =
+                        change
+                            (operation 3)
+                            parent
+                            retained
+                            Revision.first
+                            (ReminderChange.Update
+                                {
+                                    Action = retainedAction
+                                    Due = next.Due
+                                })
+                        |> required
+                        |> changed
+
+                    Expect.equal
+                        (Reminder.action rescheduled)
+                        retainedAction
+                        "Omitted/unchanged accepted meaning is retained"
+
+                    Expect.equal (Reminder.due rescheduled) next.Due "Actual planned-date edit"
+
+                    let replacement: ReminderPlan =
+                        {
+                            Action = ReminderAction.parse (String.replicate 201 "y") |> required
+                            Due = next.Due
+                        }
+
+                    Expect.equal
+                        (change
+                            (operation 4)
+                            parent
+                            retained
+                            Revision.first
+                            (ReminderChange.Update replacement))
+                        (Error(ReminderRefusal.InvalidAction(Violation.TooLong 200)))
+                        "Different action is a new assertion"
+
+                    Expect.equal
+                        (change
+                            (operation 5)
+                            parent
+                            retained
+                            Revision.first
+                            (ReminderChange.CompleteAndPlanNext
+                                {
+                                    Action = retainedAction
+                                    Due = next.Due
+                                }))
+                        (Error(ReminderRefusal.InvalidAction(Violation.TooLong 200)))
+                        "New entity cannot grandfather its replacement assertion")
         ]

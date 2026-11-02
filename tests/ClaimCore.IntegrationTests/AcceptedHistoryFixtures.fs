@@ -24,7 +24,6 @@ let private snapshot operationId (reference: string) claimant : CaseSnapshot =
         State =
             CaseState.Active(
                 {
-                    Work = CaseWork.empty
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
@@ -115,7 +114,9 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
-            |> Result.bind (LedgerEntries.receipt fixture.Owner view.Actor (Some current))
+            |> Result.bind (
+                LedgerEntries.receipt fixture.Owner view.Actor (ReceiptCurrent.Case(Some current))
+            )
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
 
@@ -390,7 +391,7 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         do! appendTransitions actor
 
-        let query =
+        let query: HistoryRequest =
             {
                 Target = CaseSelector.Reference("HISTORICAL-1")
                 AfterCursor = None

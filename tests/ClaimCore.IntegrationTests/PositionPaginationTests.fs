@@ -110,7 +110,7 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
         let! actor = caseWorker fixture
         do! createHistory actor
 
-        let query =
+        let query: HistoryRequest =
             {
                 Target = CaseSelector.Reference("HISTORY-1")
                 AfterCursor = None
@@ -334,7 +334,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
 
         do! appendHistory actor
 
-        let query =
+        let query: HistoryRequest =
             {
                 Target = CaseSelector.Reference("LONG-HISTORY")
                 AfterCursor = None

@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloa
 salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 3 --snapshot 3 --authority 2 --ledger 3
+  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 2 --ledger 4
 
 Writes JSON to standard output.
 """
@@ -24,7 +24,7 @@ SHORT = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
 ACT_CODES = {
     "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
-    "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 13, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
+    "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 80, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
     "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
 }
 
@@ -150,7 +150,7 @@ def day_number(text):
     return datetime.date.fromisoformat(text).toordinal() - 1 if text else 0
 
 
-def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots):
+def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots, work_requests):
     installation = sources["installationId"]
     previous = bytes(32)
     vectors = []
@@ -162,6 +162,13 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             snapshot_bytes = canonical(selected_snapshot).encode("utf-8")
             subject = spec.get("subjectId", selected_request["operationId"])
             subject_byte, revision = 1, spec["caseRevision"]
+        elif spec["subject"] == "WORK":
+            selected_request = work_requests[spec["workRequestIndex"]]
+            selected_snapshot = work_snapshots[spec["workSnapshotIndex"]]
+            request_bytes = canonical(selected_request).encode("utf-8")
+            snapshot_bytes = canonical(selected_snapshot).encode("utf-8")
+            subject = spec["subjectId"]
+            subject_byte, revision = 4, spec["caseRevision"]
         elif spec["subject"] == "CONTROL":
             request_bytes = b'{"format":2,"kind":"NOT_ACCEPTED"}'
             snapshot_bytes = b""
@@ -235,7 +242,8 @@ def main():
     requests = [with_format(item["value"], arguments.request) for item in sources["caseRequests"]]
     snapshot = with_format(sources["snapshot"]["value"], arguments.snapshot)
     authority = with_format(sources["authorityRecord"]["value"], arguments.authority)
-    work_snapshots = [with_format(item["value"], arguments.snapshot) for item in sources["workSnapshots"]]
+    work_snapshots = [with_format(item["value"], 1) for item in sources["workSnapshots"]]
+    work_requests = [with_format(item["value"], 1) for item in sources["workRequests"]]
     document = {
         "purpose": "Independent Python oracle for ClaimCore durable formats; regenerate with "
                    "python3 -I generate_vectors.py",
@@ -245,6 +253,7 @@ def main():
                          for item, value in zip(sources["caseRequests"], requests)],
         "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
+        "workRequests": [vector(item["name"], value) for item, value in zip(sources["workRequests"], work_requests)],
         "workSnapshots": [vector(item["name"], value) for item, value in zip(sources["workSnapshots"], work_snapshots)],
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
         "ledgerPayloads": {
@@ -253,7 +262,7 @@ def main():
             "authorityRequest": canonical(authority),
         },
         "permanentLimits": permanent_limits(sources, arguments.request, arguments.snapshot, arguments.authority),
-        "ledgerEntries": ledger(sources, requests, snapshot, authority, arguments.ledger, work_snapshots),
+        "ledgerEntries": ledger(sources, requests, snapshot, authority, arguments.ledger, work_snapshots, work_requests),
     }
     print(json.dumps(document, ensure_ascii=False, indent=2))
 

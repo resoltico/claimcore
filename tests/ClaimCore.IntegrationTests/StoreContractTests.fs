@@ -27,6 +27,9 @@ let internal tests factory =
                 "case work lifecycle and erasure remove every assignment relationship"
                 (withFixture factory CaseWorkContract.lifecycleAndErasure)
             testCaseAsync
+                "Gregorian reminder endpoints and keysets preserve finite date extremes"
+                (withFixture factory CaseWorkContract.finiteDateRange)
+            testCaseAsync
                 "targeted partial updates preserve facts and require authorized payment reaffirmation"
                 (withFixture factory CaseWorkContract.partialUpdatesAndReaffirmation)
             testCaseAsync

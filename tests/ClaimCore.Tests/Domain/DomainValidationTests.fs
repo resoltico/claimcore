@@ -82,6 +82,10 @@ let private restorationTests =
                         ]
                         Inputs.registration
                     |> RequestCodecs.registration.Write
+                    |> function
+                        | JsonValue.Object fields ->
+                            JsonValue.Object(fields @ [ "incidentDescription", JsonValue.Null ])
+                        | _ -> failtest "Registration fixture must be an object"
 
                 let candidate mask =
                     JsonValue.Object
@@ -98,12 +102,6 @@ let private restorationTests =
                                         "payableAmount", text "750"
                                     if mask &&& 4 <> 0 then
                                         "payableCurrency", text "EUR"
-                                ]
-                            "work",
-                            JsonValue.Object
-                                [
-                                    "responsibleActor", JsonValue.Null
-                                    "followUpDate", JsonValue.Null
                                 ]
                             "payment", JsonValue.Null
                             "progress", text "DECIDED"

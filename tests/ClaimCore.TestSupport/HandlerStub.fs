@@ -170,7 +170,8 @@ type Stub() =
                             | OperationInput.Authority request ->
                                 this.ExecuteAuthority(request, token)
                             | OperationInput.Work _
-                            | OperationInput.Reminder _ -> Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
+                            | OperationInput.Reminder _ ->
+                                Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
 
                         return
                             {

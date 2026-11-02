@@ -50,8 +50,7 @@ let tests =
 
                     let fields =
                         {
-                            CaseFields.Work = CaseWork.empty
-                            CaseReference = Inputs.reference "CASE-1"
+                            CaseFields.CaseReference = Inputs.reference "CASE-1"
                             Status = CaseStatus.Opened
                             Registration = registration
                             Progress = PaymentProgress.Undecided

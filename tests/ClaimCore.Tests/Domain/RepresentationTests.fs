@@ -105,7 +105,6 @@ let progressWire =
             ] do
             let fields: CaseFields =
                 {
-                    Work = CaseWork.empty
                     CaseReference = ClaimCore.TestSupport.CaseFixtures.reference "WIRE-STATES"
                     Status = CaseStatus.Opened
                     Registration =

@@ -162,6 +162,22 @@ type internal PausedPageStore
                                     member _.FindCaseByReference reference =
                                         tx.FindCaseByReference reference
 
+                                    member _.AuthorityCases(principal, ids) =
+                                        tx.AuthorityCases(principal, ids)
+
+                                    member _.FindWork id = tx.FindWork id
+                                    member _.FindReminder id = tx.FindReminder id
+
+                                    member _.WorkSummaries(ids, today) =
+                                        tx.WorkSummaries(ids, today)
+
+                                    member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
+                                    member _.ReminderPage query = tx.ReminderPage query
+
+                                    member _.WorkOverview(selection, mine) =
+                                        tx.WorkOverview(selection, mine)
+
+                                    member _.ActivityPage query = tx.ActivityPage query
                                     member _.FindEntry id = tx.FindEntry id
                                     member _.NonAcceptance key = tx.NonAcceptance key
 

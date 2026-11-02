@@ -247,11 +247,28 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Maintenance() = tx.Maintenance()
                                         member _.Authority query = tx.Authority query
+
+                                        member _.AuthorityCases(principal, ids) =
+                                            tx.AuthorityCases(principal, ids)
+
                                         member _.FindCase id = tx.FindCase id
 
                                         member _.FindCaseByReference reference =
                                             tx.FindCaseByReference reference
 
+                                        member _.FindWork id = tx.FindWork id
+                                        member _.FindReminder id = tx.FindReminder id
+
+                                        member _.WorkSummaries(ids, today) =
+                                            tx.WorkSummaries(ids, today)
+
+                                        member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
+                                        member _.ReminderPage query = tx.ReminderPage query
+
+                                        member _.WorkOverview(selection, mine) =
+                                            tx.WorkOverview(selection, mine)
+
+                                        member _.ActivityPage query = tx.ActivityPage query
                                         member _.FindEntry id = tx.FindEntry id
                                         member _.NonAcceptance key = tx.NonAcceptance key
                                         member _.CasePage query = tx.CasePage query

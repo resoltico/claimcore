@@ -105,7 +105,6 @@ let requestEffectAgreement =
                 State =
                     CaseState.Active
                         {
-                            Work = CaseWork.empty
                             CaseReference = reference
                             Status = CaseStatus.Opened
                             Registration = Inputs.admittedRegistration Inputs.registration
@@ -187,6 +186,7 @@ let private history: CaseHistory =
         Snapshot = None
         Reference = Some(CaseFixtures.reference "SYNTHETIC")
         State = CaseState.Active()
+        Status = CaseStatus.Opened
         MissingPayloadAt = None
         PresentPayloadAt = None
         ErasedAt = None

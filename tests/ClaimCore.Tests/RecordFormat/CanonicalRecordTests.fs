@@ -32,8 +32,8 @@ let private requests () =
 
         Expect.equal
             vectors.Length
-            9
-            "All independent creation, partial, work and stewardship request vectors"
+            6
+            "All independent creation, partial and stewardship case-request vectors"
 
         for vector in vectors do
             let encoded = bytes vector
@@ -179,19 +179,19 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 3; 2; 3; 3 ]
+            [ 4; 2; 4; 4 ]
             "Each retained grammar has its adopted format number"
 
-        for format in [ "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
+        for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
             Expect.isError
                 (RequestRecord.decode
                     65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":3", "\"format\":" + format))))
+                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":4", "\"format\":" + format))))
                 "Unknown or noninteger format refuses"
 
         Expect.isError
             (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":3", "\"format\":1"))
+                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":4", "\"format\":1"))
             ))
             "No old snapshot reinterpretation"
 
@@ -302,24 +302,42 @@ let private workSnapshots () =
 
         for vector in vectors do
             let encoded = bytes vector
-            let snapshot = CaseRecord.decodeSnapshot encoded |> Fixtures.accepted
+            let snapshot = WorkRecord.decodeSnapshot encoded |> Fixtures.accepted
 
             Expect.equal
-                (CaseRecord.encodeSnapshot snapshot)
+                (WorkRecord.encodeSnapshot snapshot)
                 encoded
                 "Independent complete work bytes"
 
-            let fields = CaseState.fields snapshot.State |> Option.get
-
             Expect.equal
-                (fields.Work.Responsible |> Option.map ActorId.format)
+                (snapshot.Work.Responsible |> Option.map ActorId.format)
                 (Some "b0000000-0000-4000-8000-000000000002")
-                "Retained identity, without copied label or issuer"
+                "Retained identity without label or issuer"
 
             Expect.equal
-                (fields.Work.FollowUp |> Option.map CalendarDate.format)
-                (Some "2027-12-31")
-                "Planned future date survives permanent grammar")
+                (snapshot.Work.Summary |> Option.map HandlingSummary.format)
+                (Some "Awaiting supporting documents.\nReview on receipt.")
+                "Authored paragraphs survive permanent grammar"
+
+            Expect.equal (Revision.value snapshot.Revision) 1L "Independent work revision")
+
+let private workRequests () =
+    withVectors (fun root ->
+        let vectors = root.GetProperty("workRequests").EnumerateArray() |> Seq.toList
+
+        Expect.equal
+            vectors.Length
+            3
+            "Set clear and Arabic work requests are independently authored"
+
+        for vector in vectors do
+            let encoded = bytes vector
+            let request = WorkRecord.decodeRequest encoded |> Fixtures.accepted
+
+            Expect.equal
+                (WorkRecord.encodeRequest request)
+                encoded
+                "Independent typed work request bytes")
 
 [<Tests>]
 let tests =
@@ -332,6 +350,7 @@ let tests =
             testCase "case requests reproduce independent bytes and meaning" requests
             testCase "snapshots reproduce independent bytes and meaning" snapshot
             testCase "nonempty work snapshots reproduce independent bytes and meaning" workSnapshots
+            testCase "work requests reproduce independent bytes and meanings" workRequests
             testCase "authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]

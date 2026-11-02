@@ -24,7 +24,6 @@ let private snapshot (reference: string) : CaseSnapshot =
         State =
             CaseState.Active(
                 {
-                    Work = CaseWork.empty
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = CaseFixtures.registration Inputs.registration
@@ -48,6 +47,10 @@ let private history (snapshot: CaseSnapshot) : CaseHistory =
         Snapshot = Some snapshot
         Reference = Some snapshot.Reference
         State = CaseState.Active()
+        Status =
+            CaseState.fields snapshot.State
+            |> Option.map _.Status
+            |> Option.defaultValue CaseStatus.Opened
         MissingPayloadAt = None
         PresentPayloadAt = Some(Sequence.create 1L |> Option.get)
         ErasedAt = None
@@ -216,7 +219,6 @@ let private erasedState () =
 
 let private projectionFields: CaseFields =
     {
-        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference "synthetic-layout"
         Status = CaseStatus.Closed
         Registration =

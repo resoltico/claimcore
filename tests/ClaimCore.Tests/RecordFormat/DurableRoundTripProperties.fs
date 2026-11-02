@@ -245,7 +245,6 @@ let private snapshotProperty =
                         ] do
                         let fields: CaseFields =
                             {
-                                Work = CaseWork.empty
                                 CaseReference = reference
                                 Status = status
                                 Registration = Inputs.admittedRegistration registration
