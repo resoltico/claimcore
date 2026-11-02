@@ -1,0 +1,427 @@
+module ClaimCore.IntegrationTests.ReminderPostgresTests
+
+open System
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.Application
+open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
+open ClaimCore.Postgres
+open ClaimCore.TestSupport
+open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.IntegrationTests.VerificationSupport
+
+let private read =
+    function
+    | Outcome.Succeeded value -> value
+    | other -> failtestf "Expected successful current read: %A" other
+
+let private parsed =
+    function
+    | Ok value -> value
+    | Error issue -> failtestf "Expected representable retained value: %A" issue
+
+let private target = CaseSelector.Reference "synthetic-a"
+
+let private reminder operation act =
+    OperationInput.Reminder
+        {
+            OperationId = id operation
+            Target = target
+            Act = act
+        }
+
+let private queue actor cursor =
+    Service.reminders
+        actor
+        {
+            Target = Some target
+            State = None
+            Due = None
+            Assignment = None
+            Text = None
+            AfterCursor = cursor
+            Limit = 1
+            IncludeInactive = false
+        }
+        token
+
+let private dates database =
+    task {
+        let! actor = populated database
+
+        for operation, date in [ 100, "0001-01-01"; 101, "9999-12-31" ] do
+            let! created =
+                Service.execute
+                    actor
+                    (reminder
+                        operation
+                        (AuthoredReminderAct.Create
+                            {
+                                Action = "Review the boundary date"
+                                Due = date
+                            }))
+                    token
+
+            accepted created |> ignore
+
+        let! first = queue actor None
+        let first = read first
+
+        Expect.equal
+            (first.Items
+             |> List.map (fun row -> Reminder.due row.Reminder |> CalendarDate.format))
+            [ "0001-01-01" ]
+            "Minimum Gregorian date is stored as a date, not provider negative infinity"
+
+        Expect.isSome first.NextCursor "The queue has another pending reminder"
+        let! second = queue actor first.NextCursor
+        let second = read second
+
+        Expect.equal
+            (second.Items
+             |> List.map (fun row -> Reminder.due row.Reminder |> CalendarDate.format))
+            [ "9999-12-31" ]
+            "Maximum Gregorian date survives actual PostgreSQL and a continuation"
+
+        Expect.isNone second.NextCursor "The actual queue has exactly two items"
+
+        let! cancelled =
+            Service.execute actor (reminder 102 (AuthoredReminderAct.Cancel(id 100, 1L))) token
+
+        accepted cancelled |> ignore
+
+        let! opened =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request 103 "synthetic-b" 0L (CaseAct.Open registration)))
+                token
+
+        accepted opened |> ignore
+
+        let! planned =
+            Service.execute
+                actor
+                (OperationInput.Reminder
+                    {
+                        OperationId = id 104
+                        Target = CaseSelector.Reference "synthetic-b"
+                        Act =
+                            AuthoredReminderAct.Create
+                                {
+                                    Action = "Another future action"
+                                    Due = "9999-12-31"
+                                }
+                    })
+                token
+
+        accepted planned |> ignore
+
+        let filter =
+            { CaseListFilter.empty with
+                Order = CaseListOrder.FollowUp
+            }
+
+        let! page =
+            Service.list
+                actor
+                {
+                    Page = { AfterCursor = None; Limit = 1 }
+                    Filter = filter
+                }
+                token
+
+        let page = read page
+        Expect.isSome page.NextCursor "Equal maximum next dates need a reference tie continuation"
+
+        let! continued =
+            Service.list
+                actor
+                {
+                    Page =
+                        {
+                            AfterCursor = page.NextCursor
+                            Limit = 1
+                        }
+                    Filter = filter
+                }
+                token
+
+        Expect.equal
+            ((read continued).Items
+             |> List.map (fun value -> CaseReference.format value.Reference))
+            [ "synthetic-b" ]
+            "The case continuation passes the exact maximum date without infinity conversion"
+
+        let! _ = verified database
+        return ()
+    }
+
+let private atomicRollback database =
+    task {
+        let! actor = populated database
+
+        let! initial =
+            Service.execute
+                actor
+                (reminder
+                    200
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Original action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        accepted initial |> ignore
+        let! before = verified database
+
+        do!
+            sql
+                database
+                (sprintf
+                    "CREATE FUNCTION claimcore.inject_reminder_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.reminder_id='%O'::uuid THEN RAISE EXCEPTION 'intended synthetic second-effect failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER inject_reminder_failure BEFORE INSERT ON claimcore.reminders FOR EACH ROW EXECUTE FUNCTION claimcore.inject_reminder_failure()"
+                    (id 201))
+                [||]
+
+        let operation =
+            reminder
+                201
+                (AuthoredReminderAct.CompleteAndPlanNext(
+                    id 200,
+                    1L,
+                    {
+                        Action = "Replacement action"
+                        Due = "2027-01-02"
+                    }
+                ))
+
+        let! failed = Service.execute actor operation token
+
+        match failed.Outcome with
+        | ExecuteResult.Failed _ -> ()
+        | other -> failtestf "The actual second projection must fail: %A" other
+
+        let! after = verified database
+
+        Expect.equal
+            after
+            before
+            "Actual PostgreSQL rolls back both ledger/head and the earlier completed projection"
+
+        let! page = queue actor None
+        let remaining = (read page).Items |> List.exactlyOne |> _.Reminder
+
+        Expect.equal
+            (Reminder.id remaining, Reminder.revision remaining, Reminder.state remaining)
+            (ReminderId.ofOperationId (CaseFixtures.operationId (id 200)),
+             Revision.first,
+             ReminderState.Pending)
+            "The original is still pending at revision one"
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.ledger WHERE operation_id=$1 UNION ALL SELECT count(*) FROM claimcore.reminders WHERE reminder_id=$1"
+                [| box (id 201) |]
+                token
+
+        Expect.equal
+            (rows |> List.map (DatabaseSession.value<int64> 0))
+            [ 0L; 0L ]
+            "No partial accepted operation or reserved replacement was persisted"
+
+        do!
+            sql
+                database
+                "DROP TRIGGER inject_reminder_failure ON claimcore.reminders; DROP FUNCTION claimcore.inject_reminder_failure()"
+                [||]
+
+        let! acceptedPair = Service.execute actor operation token
+        let receipt = accepted acceptedPair
+
+        match receipt.Subject with
+        | ReceiptSubject.Reminder {
+                                      Effects = ReminderReceiptEffects.CompletedAndPlanned(completed,
+                                                                                           next)
+                                  } ->
+            Expect.equal
+                (completed.Revision, next.ReminderId, next.Revision)
+                (CaseFixtures.revision 2L,
+                 ReminderId.ofOperationId (CaseFixtures.operationId (id 201)),
+                 Revision.first)
+                "Positive control accepts one fixed correlated pair"
+        | other -> failtestf "Expected compound receipt: %A" other
+
+        let! replay = Service.execute actor operation token
+
+        match replay.Outcome with
+        | ExecuteResult.AlreadyAccepted replay ->
+            Expect.equal replay receipt "Accepted retry is exactly the original pair"
+        | other -> failtestf "Expected replay: %A" other
+
+        let! _ = verified database
+        return ()
+    }
+
+let private causalEffect database =
+    task {
+        let! actor = populated database
+
+        let! planned =
+            Service.execute
+                actor
+                (reminder
+                    300
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Original action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        accepted planned |> ignore
+
+        let! completed =
+            Service.execute actor (reminder 301 (AuthoredReminderAct.Complete(id 300, 1L))) token
+
+        let receipt = accepted completed
+        let! _ = verified database
+
+        do!
+            rewrite database receipt.Position.Sequence (fun original ->
+                let data =
+                    LedgerEntry.decodePayload
+                        LedgerPayload.MaximumBytes
+                        original.Entry.Payload.Value
+                    |> parsed
+
+                let value =
+                    ReminderRecord.decodeEffects data.Snapshot
+                    |> parsed
+                    |> function
+                        | ReminderEffects.Changed value -> value
+                        | _ -> failtest "A single completion is required"
+
+                let changed =
+                    Reminder.ofAccepted
+                        (Reminder.id value)
+                        (Reminder.caseId value)
+                        (Reminder.revision value)
+                        (Reminder.action value)
+                        (Inputs.date "2027-01-02")
+                        ReminderState.Completed
+                    |> parsed
+
+                payload
+                    data.Request
+                    (ReminderRecord.encodeEffects (ReminderEffects.Changed changed))
+                    original)
+
+        do! finding VerificationFinding.StateSequence database
+    }
+
+let private causalParent database =
+    task {
+        let! actor = populated database
+
+        let! other =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request 400 "synthetic-b" 0L (CaseAct.Open registration)))
+                token
+
+        let other = accepted other |> caseReceipt
+
+        let! planned =
+            Service.execute
+                actor
+                (reminder
+                    401
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Original action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        let receipt = accepted planned
+        let! _ = verified database
+
+        do!
+            rewrite database receipt.Position.Sequence (fun original ->
+                match original.Metadata.Subject with
+                | RecordedTarget.Reminder subject ->
+                    { original with
+                        Metadata =
+                            { original.Metadata with
+                                Subject =
+                                    RecordedTarget.Reminder { subject with CaseId = other.CaseId }
+                            }
+                    }
+                | _ -> failtest "A reminder fixture is required")
+
+        do! finding VerificationFinding.PayloadFormat database
+    }
+
+let private projectionRepair database =
+    task {
+        let! actor = populated database
+
+        let! planned =
+            Service.execute
+                actor
+                (reminder
+                    500
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Original action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        accepted planned |> ignore
+        let! checkpoint = verified database
+        do! sql database "UPDATE claimcore.reminders SET due=DATE '2027-01-02'" [||]
+        do! finding VerificationFinding.CaseWorkProjection database
+        do! enterMaintenance database
+        let! repaired = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        Expect.isOk repaired "Rebuild reconstructs the original date from verified causal history"
+        let! _ = verified database
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.cases SET work_search_text='unrelated search payload'"
+                [||]
+
+        do! finding VerificationFinding.CaseWorkProjection database
+        let! repairedSearch = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        Expect.isOk repairedSearch "Independent work search columns are also part of reconstruction"
+        let! _ = verified database
+        return ()
+    }
+
+[<Tests>]
+let tests =
+    testList
+        "PostgreSQL reminder identity and effects"
+        [
+            testCaseAsync
+                "Gregorian extremes survive current rows and both queue and case continuations"
+                (run dates)
+            testCaseAsync
+                "injected second-effect failure rolls back the entire compound operation"
+                (run atomicRollback)
+            testCaseAsync
+                "rehashed completion cannot silently change the retained due date"
+                (run causalEffect)
+            testCaseAsync
+                "rehashed reminder parent must match its retained command"
+                (run causalParent)
+            testCaseAsync
+                "verification and rebuild cover reminder dates and independent work search"
+                (run projectionRepair)
+        ]
