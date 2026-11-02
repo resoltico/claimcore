@@ -404,11 +404,161 @@ let private projectionRepair database =
         return ()
     }
 
+let private currentLookup database =
+    task {
+        let! actor = populated database
+
+        for operation, act in
+            [
+                600,
+                AuthoredReminderAct.Create
+                    {
+                        Action = "Earlier action"
+                        Due = "2027-01-01"
+                    }
+                601,
+                AuthoredReminderAct.Update(
+                    id 600,
+                    1L,
+                    {
+                        Action = "Current action"
+                        Due = "2027-02-01"
+                    }
+                )
+                602, AuthoredReminderAct.Cancel(id 600, 2L)
+            ] do
+            let! result = Service.execute actor (reminder operation act) token
+            accepted result |> ignore
+
+        let reader =
+            PrincipalKey.human "https://issuer.example/" "reminder-current-reader" |> parsed
+
+        let! registered =
+            Service.execute
+                actor
+                (OperationInput.Authority(authorityRequest (id 603) reader AuthorityAct.Register))
+                token
+
+        acceptedAuthority registered
+
+        let! granted =
+            grant
+                actor
+                (id 604)
+                reader
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "synthetic-a"
+                }
+                true
+
+        acceptedAuthority granted
+        let services = core database.Fixture reader
+
+        let! result =
+            Service.reminder services { Target = target; ReminderId = id 600 } token
+
+        let current = read result
+
+        Expect.equal
+            (Reminder.state current.Item.Reminder,
+             ReminderAction.format (Reminder.action current.Item.Reminder),
+             CalendarDate.format (Reminder.due current.Item.Reminder))
+            (ReminderState.Cancelled, "Current action", "2027-02-01")
+            "ReadCase discloses the current terminal record, not earlier text or dates"
+
+        Expect.isEmpty
+            current.Item.Acts
+            "Current read access does not create work-management authority"
+
+        Expect.equal
+            current.Basis.TimeZoneId
+            database.Fixture.Calendar.TimeZoneId
+            "Singular reads carry the actual installation basis"
+
+        let! history =
+            Service.activity
+                services
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = 10
+                    Detail = HistoryDetail.Full
+                }
+                token
+
+        Expect.equal
+            history
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "ReadCase does not disclose prior reminder versions"
+
+        let! other =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request 605 "synthetic-b" 0L (CaseAct.Open registration)))
+                token
+
+        accepted other |> ignore
+
+        let! planned =
+            Service.execute
+                actor
+                (OperationInput.Reminder
+                    {
+                        OperationId = id 606
+                        Target = CaseSelector.Reference "synthetic-b"
+                        Act =
+                            AuthoredReminderAct.Create
+                                {
+                                    Action = "Other case action"
+                                    Due = "2027-01-01"
+                                }
+                    })
+                token
+
+        accepted planned |> ignore
+
+        for requested in [ id 606; id 999 ] do
+            let! hidden =
+                Service.reminder
+                    services
+                    {
+                        Target = target
+                        ReminderId = requested
+                    }
+                    token
+
+            Expect.equal
+                hidden
+                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                "A foreign identity and an unknown identity have the same private result"
+
+        let! malformed =
+            Service.reminder
+                services
+                {
+                    Target = target
+                    ReminderId = Guid.Empty
+                }
+                token
+
+        match malformed with
+        | Outcome.Rejected(Refusal.InvalidInput issues) ->
+            Expect.equal
+                ((InputIssues.head issues).Target, (InputIssues.head issues).Violation)
+                (InputTarget.ReminderId, Violation.ReminderIdRequired)
+                "Malformed identity has a reminder-specific input diagnostic"
+        | other -> failtestf "Expected malformed reminder identity input: %A" other
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL reminder identity and effects"
         [
+            testCaseAsync
+                "scoped current lookup includes terminal records without historical disclosure"
+                (run currentLookup)
             testCaseAsync
                 "Gregorian extremes survive current rows and both queue and case continuations"
                 (run dates)
