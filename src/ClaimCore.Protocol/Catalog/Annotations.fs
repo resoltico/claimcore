@@ -101,6 +101,12 @@ module CatalogAnnotations =
                 RequestSchemas.OperationInput
                 (ActSubject.token ActSubject.Authority)
 
+        let workRequest =
+            Bindings.branchDefinition definitions RequestSchemas.OperationInput "WORK"
+
+        let reminderRequest =
+            Bindings.branchDefinition definitions RequestSchemas.OperationInput "REMINDER"
+
         let actBranch kind =
             Bindings.branchDefinition definitions RequestSchemas.CaseAct (CaseActKind.token kind)
 
@@ -118,6 +124,57 @@ module CatalogAnnotations =
                 caseReference
             yield (caseRequest, WireMembers.ExpectedRevision), revision
             yield (authorityRequest, WireMembers.OperationId), operationIdentity
+            yield (workRequest, WireMembers.OperationId), operationIdentity
+            yield (reminderRequest, WireMembers.OperationId), operationIdentity
+            yield
+                (workRequest, "expectedRevision"),
+                (fun _ ->
+                    { target InputTarget.ExpectedWorkRevision with
+                        Source = InputSource.ExpectedRevision
+                    })
+            yield
+                ("CaseWorkUpdate", "handlingSummary"),
+                (fun _ ->
+                    { field BusinessField.HandlingSummary with
+                        Prefill = Some [ "work"; "summary" ]
+                    })
+            for kind in ReminderActKind.all do
+                let owner =
+                    Bindings.branchDefinition definitions "ReminderAct" (ReminderActKind.token kind)
+
+                if kind <> ReminderActKind.Create then
+                    yield (owner, "reminderId"), constant (target InputTarget.ReminderId)
+
+                    yield
+                        (owner, "expectedRevision"),
+                        (fun _ ->
+                            { target InputTarget.ExpectedReminderRevision with
+                                Source = InputSource.ExpectedRevision
+                            })
+
+                if
+                    List.contains
+                        kind
+                        [
+                            ReminderActKind.Create
+                            ReminderActKind.Update
+                            ReminderActKind.CompleteAndPlanNext
+                        ]
+                then
+                    yield (owner, "action"), constant (target InputTarget.ReminderAction)
+
+                if
+                    List.contains
+                        kind
+                        [
+                            ReminderActKind.Create
+                            ReminderActKind.Update
+                            ReminderActKind.Reopen
+                            ReminderActKind.CompleteAndPlanNext
+                        ]
+                then
+                    yield (owner, "dueDate"), constant (target InputTarget.ReminderDueDate)
+
             yield
                 (RequestSchemas.PrincipalInput, WireMembers.Kind),
                 constant (target InputTarget.PrincipalKind)
@@ -163,14 +220,16 @@ module CatalogAnnotations =
                 ] do
                 yield (owner, "amount"), business group amount
                 yield (owner, "currency"), business group currency
-            for owner, value in
-                [
-                    "ResponsibleActorChange", BusinessField.ResponsibleActor
-                    "FollowUpChange", BusinessField.FollowUpDate
-                ] do
+            for owner, value in [ "ResponsibleActorChange", BusinessField.ResponsibleActor ] do
                 yield (owner, "kind"), constant (annotation (InteractionInput.WorkChoice value))
                 let set = Bindings.branchDefinition definitions owner "SET"
-                yield (set, "value"), constant (field value)
+
+                yield
+                    (set, "value"),
+                    (fun _ ->
+                        { field value with
+                            Prefill = Some [ "work"; "responsible"; "account"; "actorId" ]
+                        })
             for owner, group in
                 [
                     RequestSchemas.RegistrationGroup, RecordGroup.Registration
@@ -195,12 +254,27 @@ module CatalogAnnotations =
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
                 yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)
             yield (RequestSchemas.HistoryRequest, WireMembers.Detail), detail
+            yield ("CaseActivityRequest", WireMembers.Detail), detail
+            yield
+                ("ReminderListRequest", "state"),
+                constant (annotation InteractionInput.ReminderState)
+            yield ("ReminderListRequest", "due"), constant (annotation InteractionInput.ReminderDue)
+            yield
+                ("ReminderListRequest", "assignment"),
+                constant (annotation InteractionInput.Assignment)
+            yield ("ReminderListRequest", "text"), constant (target InputTarget.Text)
+            yield
+                ("ReminderListRequest", "includeInactive"),
+                constant (annotation InteractionInput.IncludeInactive)
+            yield ("WorkOverviewRequest", "mine"), constant (annotation InteractionInput.Mine)
             for owner in
                 [
                     RequestSchemas.PageRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest
+                    "CaseActivityRequest"
+                    "ReminderListRequest"
                     RequestSchemas.GrantsRequest
                     RequestSchemas.AuthorityHistoryRequest
                 ] do

@@ -59,6 +59,7 @@ type CatalogInput =
         Prefill: string list option
         Required: bool
         WireRequired: bool
+        AllowsNull: bool
         Default: BindingValue option
         DiagnosticTargets: string list
         Source: InputSource
@@ -66,6 +67,8 @@ type CatalogInput =
 
 [<RequireQualifiedAccess>]
 type CatalogSubject =
+    | Work
+    | Reminder
     | Case
     | Authority
     | Operation
@@ -94,8 +97,12 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory | QueryEndpoint.CaseActivity) ->
             CatalogSubject.Case
+        | CatalogOperation.Act(ActKind.Work _)
+        | CatalogOperation.Query QueryEndpoint.WorkOverview -> CatalogSubject.Work
+        | CatalogOperation.Act(ActKind.Reminder _)
+        | CatalogOperation.Query QueryEndpoint.ReminderList -> CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
@@ -105,6 +112,8 @@ type CatalogOperation =
 
 [<RequireQualifiedAccess>]
 type InteractionEffect =
+    | Work
+    | Reminder
     | Read
     | Case of CaseEffect
     | Authority
@@ -117,12 +126,16 @@ module InteractionEffect =
             "interactionEffect"
             ([
                 InteractionEffect.Read
+                InteractionEffect.Work
+                InteractionEffect.Reminder
                 InteractionEffect.Authority
                 InteractionEffect.FinalNonAcceptance
              ]
              @ (Vocabulary.all CaseEffect.vocabulary |> List.map InteractionEffect.Case))
             (function
              | InteractionEffect.Read -> "READ"
+             | InteractionEffect.Work -> "CHANGE_WORK"
+             | InteractionEffect.Reminder -> "CHANGE_REMINDER"
              | InteractionEffect.Authority -> "CHANGE_AUTHORITY"
              | InteractionEffect.FinalNonAcceptance -> "FINAL_NON_ACCEPTANCE"
              | InteractionEffect.Case effect -> CaseEffect.token effect)
@@ -137,6 +150,10 @@ module CatalogOperation =
             Some description.Family,
             description.AffectedSections,
             InteractionEffect.Case description.Effect
+        | Some(ActKind.Work _), _ ->
+            Some ActFamily.Business, [ CaseSection.Work ], InteractionEffect.Work
+        | Some(ActKind.Reminder _), _ ->
+            Some ActFamily.Business, [ CaseSection.Work ], InteractionEffect.Reminder
         | Some(ActKind.Authority _), _ -> None, [], InteractionEffect.Authority
         | None, ActorEndpoint.Query QueryEndpoint.Resolve ->
             None, [], InteractionEffect.FinalNonAcceptance

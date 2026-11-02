@@ -12,6 +12,8 @@ type ReadInput =
     | Page
     | Detail
     | Worklist
+    | Reminders
+    | Mine
 
 type ReadDeclaration =
     {
@@ -23,6 +25,18 @@ type ReadDeclaration =
 module ReadCatalog =
     let declarations =
         [
+            {
+                Endpoint = QueryEndpoint.CaseActivity
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderList
+                Inputs = [ ReadInput.Reminders; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.WorkOverview
+                Inputs = [ ReadInput.Mine ]
+            }
             {
                 Endpoint = QueryEndpoint.CaseAssignees
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]

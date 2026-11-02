@@ -19,6 +19,9 @@ module Refusals =
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
+        | Refusal.Reminder(ReminderRefusal.RevisionConflict _) -> RecommendedAction.ReadCurrent
+        | Refusal.Reminder(ReminderRefusal.InvalidAction _) -> RecommendedAction.CorrectInput
+        | Refusal.Reminder _
         | Refusal.Case _
         | Refusal.Authority _
         | Refusal.Access _ -> RecommendedAction.NoneRequired

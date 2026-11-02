@@ -54,6 +54,7 @@
     <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
     <Compile Include="AuthorityHistoryRows.fs" />
+    <Compile Include="TextWorkReply.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
     <Compile Include="TextOperationReply.fs" />
@@ -64,6 +65,7 @@
     <Compile Include="CaseListCommand.fs" />
     <Compile Include="AuthorityHistoryCommand.fs" />
     <Compile Include="InteractiveReview.fs" />
+    <Compile Include="TextInputs.fs" />
     <Compile Include="VerbRunner.fs" />
     <Compile Include="ShellTokenizer.fs" />
     <Compile Include="ShellTerminal.fs" />

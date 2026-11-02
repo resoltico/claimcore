@@ -135,11 +135,55 @@ module ReplyCodecs =
         |> field "before" _.Before authorityState
         |> field "after" _.After authorityState
 
+    let private workReviewFields =
+        (record (fun reference before proposed context ->
+            {
+                WorkReview.Reference = reference
+                Before = before
+                Proposed = proposed
+                Context = context
+            })
+        : Fields<WorkReview, _>)
+        |> field "caseReference" _.Reference ResponseScalars.caseReference
+        |> field "before" _.Before WorkCodecs.workSnapshot
+        |> field "proposed" _.Proposed WorkCodecs.workSnapshot
+        |> field "context" _.Context ResponseCodecs.runtimeContext
+
+    let private reminderReviewFields =
+        (record (fun parent reference before effects context ->
+            {
+                ReminderReview.CaseId = parent
+                Reference = reference
+                Before = before
+                Effects = effects
+                Context = context
+            })
+        : Fields<ReminderReview, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "caseReference" _.Reference ResponseScalars.caseReference
+        |> field "before" _.Before (nullable WorkCodecs.reminder)
+        |> field "effects" _.Effects WorkCodecs.effects
+        |> field "context" _.Context ResponseCodecs.runtimeContext
+
     let review =
         let subject =
             tagged
                 "ReviewSubject"
                 [
+                    variant
+                        "WORK"
+                        OperationReview.Work
+                        (function
+                        | OperationReview.Work value -> Some value
+                        | _ -> None)
+                        workReviewFields
+                    variant
+                        "REMINDER"
+                        OperationReview.Reminder
+                        (function
+                        | OperationReview.Reminder value -> Some value
+                        | _ -> None)
+                        reminderReviewFields
                     variant
                         "CASE"
                         OperationReview.Case

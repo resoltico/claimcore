@@ -13,6 +13,8 @@ module OperationCatalog =
         @ (AuthorityKind.all
            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
            |> List.map (ActKind.Authority >> CatalogOperation.Act))
+        @ (WorkActKind.all |> List.map (ActKind.Work >> CatalogOperation.Act))
+        @ (ReminderActKind.all |> List.map (ActKind.Reminder >> CatalogOperation.Act))
         @ (ReadCatalog.declarations
            |> List.map (fun declaration -> CatalogOperation.Query declaration.Endpoint))
 
@@ -53,6 +55,16 @@ module OperationCatalog =
                 [
                     RequestSchemas.OperationInput, ActSubject.token ActSubject.Authority
                     RequestSchemas.AuthorityAct, AuthorityKind.token kind
+                ]
+            | Some(ActKind.Work kind) ->
+                [
+                    RequestSchemas.OperationInput, ActSubject.token ActSubject.Work
+                    "WorkAct", WorkActKind.token kind
+                ]
+            | Some(ActKind.Reminder kind) ->
+                [
+                    RequestSchemas.OperationInput, ActSubject.token ActSubject.Reminder
+                    "ReminderAct", ReminderActKind.token kind
                 ]
             | None -> []
 

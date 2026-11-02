@@ -64,7 +64,7 @@ module internal RecoveryJournal =
         |> Codec.field
             "format"
             (fun _ -> ())
-            (Codec.integer 1L 1L |> Codec.map (fun _ -> ()) (fun () -> 1L))
+            (Codec.integer 2L 2L |> Codec.map (fun _ -> ()) (fun () -> 2L))
         |> Codec.build
 
 
@@ -78,6 +78,16 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
+        && (match record.Subject with
+            | "CASE" -> Vocabulary.tryParse CaseActKind.vocabulary record.Act |> Option.isSome
+            | "WORK" -> Vocabulary.tryParse WorkActKind.vocabulary record.Act |> Option.isSome
+            | "REMINDER" ->
+                Vocabulary.tryParse ReminderActKind.vocabulary record.Act |> Option.isSome
+            | "OPERATION" -> record.Act = "RESOLVE"
+            | "AUTHORITY" ->
+                Vocabulary.tryParse AuthorityKind.vocabulary record.Act
+                |> Option.exists ((<>) AuthorityKind.ProvisionOwner)
+            | _ -> false)
         && [ record.Subject; record.Act ]
            |> List.forall (fun value ->
                value.Length > 0
