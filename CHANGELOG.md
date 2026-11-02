@@ -16,7 +16,7 @@
 - Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
 - Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
 - Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
-- Recover view/language loads with explicit retry or reload; working text, direction, drafts and uncertain operations survive failures until a complete replacement loads.
+- Load views and complete language pairs on demand. Failures preserve working text, direction and authored values; explicit reload guards drafts and retains recovery identity.
 - Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
 - Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
 - CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
@@ -40,6 +40,7 @@
 - Contributor checks allow identical shapes and wording and remove mechanical size targets; actual ownership, dependency, byte, security and complete-test controls remain enforced.
 - CI retains bounded native, frontend and browser failure reports for 14 days; private fixture credentials and keys are excluded.
 - Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
+- Use the pinned Keycloak 26.8.1-2 vendor image rebuild for local deployment and identity qualification.
 - Work in a redesigned Cases, Recovery and Access workspace with grouped queue facts, task-specific editing, before/after review, case-work cards and accessible preferences.
 
 ## [0.14.0] - 2026-10-30
