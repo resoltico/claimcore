@@ -102,38 +102,39 @@ module internal TransactionPages =
                     [| box (query.Limit + 1) |]
                 ]
 
-        sql, parameters, sorting
+        sql, parameters
 
     let cases connection installation (query: CasePageQuery) token =
         task {
-            let cases, parameters, sorting = caseQuery query
-            // Materialize the authorized, ordered LIMIT+1 parent set before child fan-out.
-            let joins = WorkStorage.summaryJoins "$11"
-
-            let sql =
-                $"WITH selected_cases AS MATERIALIZED ({cases}) SELECT c.*,{WorkStorage.summaryColumns} FROM selected_cases c LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id {joins} ORDER BY {sorting}"
-
+            let sql, parameters = caseQuery query
             let! rows = DatabaseSession.namedRows connection sql parameters token
 
             let selected =
                 rows
-                |> List.map (fun row -> Projections.caseRow installation row, row)
-                |> page query.Limit (fun (record, _) ->
+                |> List.map (Projections.caseRow installation)
+                |> page query.Limit (fun record ->
                     CaseListPosition.create
                         query.Filter.Order
                         record.Index.ChangedAt
                         record.Index.NotifiedOn
                         record.Index.FollowUp
                         (CaseReference.format record.Snapshot.Reference))
+            // Load only visible parents' independently owned work; the lookahead remains financial-only.
+            let! work =
+                WorkStorage.summaries
+                    connection
+                    (selected.Items |> List.map _.CaseId)
+                    query.Selection.DateBasis.BusinessDate
+                    token
 
             return
                 {
                     Items =
                         selected.Items
-                        |> List.map (fun (record, row) ->
+                        |> List.map (fun record ->
                             {
                                 CasePageItem.Case = record
-                                WorkSummary = WorkStorage.summaryRow row
+                                WorkSummary = Map.tryFind record.CaseId work
                             })
                     Next = selected.Next
                 }
