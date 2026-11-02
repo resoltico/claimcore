@@ -39,6 +39,7 @@ module HistoricalCaseEffects =
                 Admitted.Name(defaultArg update.Insurer (Registration.insurer before))
                 BusinessField.ClaimedAmount, Admitted.Amount(Money.amount money)
                 BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue money)
+                yield! WorkValue.apply (Registration.description before) update.IncidentDescription |> Option.map (fun text -> BusinessField.IncidentDescription, Admitted.Description text) |> Option.toList
             ]
 
     let private decision (before: Decision) (update: ValidDecisionUpdate) =
@@ -67,18 +68,6 @@ module HistoricalCaseEffects =
         | PaymentChange.Replace value when before.IsSome -> Ok(Some value)
         | PaymentChange.Clear when before.IsSome -> Ok None
         | _ -> invalid
-
-    let private work (before: CaseWork) (update: ValidCaseWorkUpdate) =
-        let choose current =
-            function
-            | WorkValue.Keep -> current
-            | WorkValue.Clear -> None
-            | WorkValue.Set value -> Some value
-
-        {
-            CaseWork.Responsible = choose before.Responsible update.Responsible
-            FollowUp = choose before.FollowUp update.FollowUp
-        }
 
     let private correct (fields: CaseFields) (correction: ValidCorrection) =
         let facts =
@@ -115,13 +104,6 @@ module HistoricalCaseEffects =
         | CaseAct.AmendRegistration update, CaseStatus.Opened, PaymentProgress.Undecided ->
             registration fields.Registration update
             |> Result.map (fun facts -> { fields with Registration = facts })
-        | CaseAct.UpdateWork update, CaseStatus.Opened, _ ->
-            let next = work fields.Work update
-
-            if next = fields.Work then
-                invalid
-            else
-                Ok { fields with Work = next }
         | CaseAct.Correct correction, CaseStatus.Closed, _
         | CaseAct.Correct correction,
           CaseStatus.Opened,
@@ -176,7 +158,6 @@ module HistoricalCaseEffects =
                         State =
                             CaseState.Active
                                 {
-                                    Work = CaseWork.empty
                                     CaseReference = request.Reference
                                     Registration = facts
                                     Progress = PaymentProgress.Undecided
