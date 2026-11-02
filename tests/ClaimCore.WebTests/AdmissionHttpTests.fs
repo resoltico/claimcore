@@ -52,7 +52,9 @@ let private pressure () =
             PrincipalKey.human oidc.Issuer.AbsoluteUri "synthetic-human"
             |> Result.defaultWith (string >> failtest)
 
-        use memory = new MemoryStore.Store(installation, DateTimeOffset.UtcNow)
+        // The memory fixture models the ledger's whole-microsecond database timestamps.
+        let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+        use memory = new MemoryStore.Store(installation, observed)
 
         let calendar =
             { new IBusinessCalendar with
