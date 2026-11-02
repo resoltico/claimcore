@@ -14,6 +14,7 @@ type ReadInput =
     | Worklist
     | Reminders
     | Mine
+    | ReminderIdentity
 
 type ReadDeclaration =
     {
@@ -25,6 +26,10 @@ type ReadDeclaration =
 module ReadCatalog =
     let declarations =
         [
+            {
+                Endpoint = QueryEndpoint.ReminderGet
+                Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]
+            }
             {
                 Endpoint = QueryEndpoint.CaseActivity
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]

@@ -20,6 +20,7 @@ type internal InteractiveTransport =
 type internal DraftAct =
     | Case of AuthoredCaseAct
     | Work of AuthoredWorkAct
+    | Reminder of ReminderAct<int64 option>
 
 /// A structurally checked draft has no executable revision or automatically allocated operation id.
 [<NoEquality; NoComparison>]
@@ -69,7 +70,8 @@ module internal InteractiveReview =
             && match entry.SelectedAct with
                | Some(ActKind.Case kind) ->
                    (CaseActKind.describe kind).Revision = RevisionInput.Expected
-               | Some(ActKind.Work _) -> true
+               | Some(ActKind.Work _)
+               | Some(ActKind.Reminder _) -> true
                | _ -> false)
 
     let private keepGroups entry arguments =
@@ -100,6 +102,7 @@ module internal InteractiveReview =
             || not (requestedText arguments)
             || hasOption "--expected-revision" arguments
             || hasOption "--expected-work-revision" arguments
+            || hasOption "--expected-reminder-revision" arguments
             || hasOption "--dry-run" arguments
         then
             Ok None
@@ -109,6 +112,10 @@ module internal InteractiveReview =
             | Some entry ->
                 let intent =
                     match entry.SelectedAct with
+                    | Some(ActKind.Reminder _) ->
+                        Grammar.reminderIntent (keepGroups entry arguments)
+                        |> Result.map (fun ((reference, act, supplied), language, preview) ->
+                            (reference, DraftAct.Reminder act, supplied), language, preview)
                     | Some(ActKind.Work _) ->
                         Grammar.workIntent (keepGroups entry arguments)
                         |> Result.map (fun ((reference, act, supplied), language, preview) ->
@@ -176,11 +183,34 @@ module internal InteractiveReview =
 
                     let! accepted = transport.Exchange execute token
                     transport.Deliver execute accepted
+                    do! WorkRefresh.run transport.Exchange transport.Deliver accepted token
                     return accepted.ExitCode
                 else
                     return ExitCode.value ExitCode.Success
             | _ -> return response.ExitCode
         }
+
+    let private reminderIdentity =
+        function
+        | ReminderAct.Create _ -> None
+        | ReminderAct.Update(id, _, _)
+        | ReminderAct.Complete(id, _)
+        | ReminderAct.Cancel(id, _)
+        | ReminderAct.Reopen(id, _, _)
+        | ReminderAct.CompleteAndPlanNext(id, _, _) -> Some id
+
+    let private reminderAct revision =
+        function
+        | ReminderAct.Create plan -> ReminderAct.Create plan
+        | ReminderAct.Update(id, expected, plan) ->
+            ReminderAct.Update(id, defaultArg expected revision, plan)
+        | ReminderAct.Complete(id, expected) ->
+            ReminderAct.Complete(id, defaultArg expected revision)
+        | ReminderAct.Cancel(id, expected) -> ReminderAct.Cancel(id, defaultArg expected revision)
+        | ReminderAct.Reopen(id, expected, due) ->
+            ReminderAct.Reopen(id, defaultArg expected revision, due)
+        | ReminderAct.CompleteAndPlanNext(id, expected, plan) ->
+            ReminderAct.CompleteAndPlanNext(id, defaultArg expected revision, plan)
 
     let rec run newId console transport (draft: InteractiveDraft) token =
         task {
@@ -208,29 +238,65 @@ module internal InteractiveReview =
 
             match unpack Api.caseGet response with
             | Some(Outcome.Succeeded current) ->
-                let operation = draft.SuppliedId |> Option.defaultWith newId
                 let target = CaseSelector.Id current.Snapshot.CaseId
 
-                let input =
-                    match draft.Act with
-                    | DraftAct.Case act ->
+                match draft.Act with
+                | DraftAct.Reminder act ->
+                    let submit revision =
+                        let input =
+                            OperationInput.Reminder
+                                {
+                                    ReminderOperationRequest.OperationId =
+                                        draft.SuppliedId |> Option.defaultWith newId
+                                    Target = target
+                                    Act = reminderAct revision act
+                                }
+
+                        review console transport draft input installation token
+
+                    match reminderIdentity act with
+                    | None -> return! submit 0L
+                    | Some id ->
+                        let frame =
+                            invocation
+                                Api.reminder
+                                {
+                                    ReminderGetRequest.Target = target
+                                    ReminderId = id
+                                }
+
+                        let! response = transport.Exchange frame token
+
+                        match unpack Api.reminder response with
+                        | Some(Outcome.Succeeded value) ->
+                            return! submit (Reminder.revision value.Item.Reminder |> Revision.value)
+                        | _ ->
+                            transport.Deliver frame response
+                            return response.ExitCode
+                | DraftAct.Case act ->
+                    let input =
                         OperationInput.Case
                             {
-                                CaseOperationRequest.OperationId = operation
+                                CaseOperationRequest.OperationId =
+                                    draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
                                 ExpectedRevision = Revision.value current.Snapshot.Revision
                                 Act = act
                             }
-                    | DraftAct.Work act ->
+
+                    return! review console transport draft input installation token
+                | DraftAct.Work act ->
+                    let input =
                         OperationInput.Work
                             {
-                                WorkOperationRequest.OperationId = operation
+                                WorkOperationRequest.OperationId =
+                                    draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
                                 ExpectedRevision = Revision.value current.Work.Revision
                                 Act = act
                             }
 
-                return! review console transport draft input installation token
+                    return! review console transport draft input installation token
             | _ ->
                 transport.Deliver lookup response
                 return response.ExitCode

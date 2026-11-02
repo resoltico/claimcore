@@ -136,23 +136,26 @@ module ReplyCodecs =
         |> field "after" _.After authorityState
 
     let private workReviewFields =
-        (record (fun reference before proposed context ->
+        (record (fun parent reference before proposed context ->
             {
-                WorkReview.Reference = reference
+                WorkReview.Parent = parent
+                Reference = reference
                 Before = before
                 Proposed = proposed
                 Context = context
             })
         : Fields<WorkReview, _>)
+        |> field "parent" _.Parent ResponseCodecs.caseSnapshot
         |> field "caseReference" _.Reference ResponseScalars.caseReference
         |> field "before" _.Before WorkCodecs.workSnapshot
         |> field "proposed" _.Proposed WorkCodecs.workSnapshot
         |> field "context" _.Context ResponseCodecs.runtimeContext
 
     let private reminderReviewFields =
-        (record (fun parent reference before effects context ->
+        (record (fun id parent reference before effects context ->
             {
-                ReminderReview.CaseId = parent
+                ReminderReview.CaseId = id
+                Parent = parent
                 Reference = reference
                 Before = before
                 Effects = effects
@@ -160,6 +163,7 @@ module ReplyCodecs =
             })
         : Fields<ReminderReview, _>)
         |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "parent" _.Parent ResponseCodecs.caseSnapshot
         |> field "caseReference" _.Reference ResponseScalars.caseReference
         |> field "before" _.Before (nullable WorkCodecs.reminder)
         |> field "effects" _.Effects WorkCodecs.effects

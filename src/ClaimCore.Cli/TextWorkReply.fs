@@ -51,6 +51,17 @@ module internal TextWorkReply =
             + TerminalText.data value.TimeZoneId
         ]
 
+    let single language (value: ReminderRead) =
+        basis language value.Basis
+        @ [ TerminalText.data (CaseReference.format value.Item.Reference) ]
+        @ reminder language value.Item.Reminder
+        @ [
+            instant value.Item.RecordedAt + "  " + ActorId.format value.Item.RecordedBy
+            value.Item.Acts
+            |> List.map (fun act -> term language ReminderActKind.vocabulary act)
+            |> String.concat ", "
+        ]
+
     let page language (page: ReminderPage) =
         basis language page.Basis
         @ (page.Items

@@ -46,19 +46,10 @@ module internal TextInputs =
 
         bounded maximum stream
 
-    let private editor maximum language =
+    let editor maximum language (command: string) =
         if OperatingSystem.IsWindows() then
             raise (IOException "Private editor files require a supported native platform.")
 
-        let command =
-            [ "VISUAL"; "EDITOR" ]
-            |> List.tryPick (
-                Environment.GetEnvironmentVariable
-                >> Option.ofObj
-                >> Option.filter (String.IsNullOrWhiteSpace >> not)
-            )
-            |> Option.defaultWith (fun () ->
-                raise (IOException "Set VISUAL or EDITOR to an editor executable."))
 
         let directory =
             Path.Combine(Path.GetTempPath(), "claimcore-text-" + Guid.NewGuid().ToString("N"))
@@ -133,6 +124,16 @@ module internal TextInputs =
                 cleanup ()
             finally
                 AppDomain.CurrentDomain.ProcessExit.RemoveHandler onExit
+
+    let private configuredEditor () =
+        [ "VISUAL"; "EDITOR" ]
+        |> List.tryPick (
+            Environment.GetEnvironmentVariable
+            >> Option.ofObj
+            >> Option.filter (String.IsNullOrWhiteSpace >> not)
+        )
+        |> Option.defaultWith (fun () ->
+            raise (IOException "Set VISUAL or EDITOR to an editor executable."))
 
     let private source name (argument: string) =
         if argument = name then
@@ -218,7 +219,7 @@ module internal TextInputs =
                                 let authored =
                                     match suffix with
                                     | "-file" -> file maximum operand.Value
-                                    | "-editor" -> editor maximum language
+                                    | "-editor" -> editor maximum language (configuredEditor ())
                                     | _ -> bounded maximum (Console.OpenStandardInput())
 
                                 let prepared = authored.Replace("\r\n", "\n")

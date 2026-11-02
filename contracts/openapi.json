@@ -981,6 +981,96 @@
         }
       }
     },
+    "/api/reminder.get": {
+      "post": {
+        "operationId": "reminder.get",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderReadReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderGetRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/work.overview": {
       "post": {
         "operationId": "work.overview",
@@ -8576,6 +8666,22 @@
           "reminder"
         ]
       },
+      "ReminderGetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "target",
+          "reminderId"
+        ]
+      },
       "ReminderListReply": {
         "type": "object",
         "additionalProperties": false,
@@ -8739,6 +8845,22 @@
           "nextCursor"
         ]
       },
+      "ReminderRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "item": {
+            "$ref": "#/components/schemas/ReminderReadModel"
+          }
+        },
+        "required": [
+          "basis",
+          "item"
+        ]
+      },
       "ReminderReadModel": {
         "type": "object",
         "additionalProperties": false,
@@ -8788,6 +8910,87 @@
           "recordedBy",
           "acts",
           "active"
+        ]
+      },
+      "ReminderReadReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/ReminderReadReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "ReminderReadReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReminderReadReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/ReminderReadReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/ReminderReadReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/ReminderReadReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ReminderReadReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/ReminderReadReply.Outcome.FAILED"
+          }
+        }
+      },
+      "ReminderReadReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "ReminderReadReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "ReminderReadReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReminderRead"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
         ]
       },
       "ReminderReceiptEffects": {
@@ -9137,6 +9340,9 @@
           "caseId": {
             "$ref": "#/components/schemas/Uuid"
           },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
           "caseReference": {
             "type": "string",
             "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
@@ -9163,6 +9369,7 @@
         "required": [
           "kind",
           "caseId",
+          "parent",
           "caseReference",
           "before",
           "effects",
@@ -9175,6 +9382,9 @@
         "properties": {
           "kind": {
             "const": "WORK"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
           },
           "caseReference": {
             "type": "string",
@@ -9194,6 +9404,7 @@
         },
         "required": [
           "kind",
+          "parent",
           "caseReference",
           "before",
           "proposed",

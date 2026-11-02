@@ -103,7 +103,8 @@ type CatalogOperation =
         | CatalogOperation.Act(ActKind.Work _)
         | CatalogOperation.Query QueryEndpoint.WorkOverview -> CatalogSubject.Work
         | CatalogOperation.Act(ActKind.Reminder _)
-        | CatalogOperation.Query QueryEndpoint.ReminderList -> CatalogSubject.Reminder
+        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet) ->
+            CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
