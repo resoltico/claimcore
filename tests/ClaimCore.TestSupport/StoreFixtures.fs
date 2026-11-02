@@ -98,7 +98,12 @@ let internal inspectOperation fixture principal operation token =
                                 ObservedAt = tx.ObservedAt
                                 Actor = actor
                                 ExistingOperation = entry
-                                Case = current
+                                Case =
+                                    match current with
+                                    | ReceiptCurrent.Case value
+                                    | ReceiptCurrent.Work(value, _)
+                                    | ReceiptCurrent.Reminder(value, _) -> value
+                                    | ReceiptCurrent.Authority -> None
                             }
                     })
             CancellationToken = token
