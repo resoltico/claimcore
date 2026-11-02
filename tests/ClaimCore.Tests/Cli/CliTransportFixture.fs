@@ -176,10 +176,44 @@ let frameForReply endpoint bytes =
                     | _ -> Some "UPDATE"
                 | _ -> None))
 
+    // New families correlate the actual parent and independently revisioned entity. Choosing only
+    // a family/act can pair a positive response with an unrelated authored request corpus entry.
+    let familyContext value =
+        match family, subject with
+        | (Some "WORK" | Some "REMINDER"), Some subject ->
+            let sameOperation =
+                JsonValue.tryMember "operationId" value = JsonValue.tryMember "operationId" root
+
+            let sameParent =
+                match at [ "target"; "kind" ] value with
+                | Some(JsonValue.String "ID") ->
+                    at [ "target"; "caseId" ] value =
+                        (JsonValue.tryMember "caseId" subject
+                         |> Option.orElseWith (fun () -> at [ "before"; "caseId" ] subject))
+                | Some(JsonValue.String "REFERENCE") ->
+                    at [ "target"; "caseReference" ] value =
+                        JsonValue.tryMember "caseReference" subject
+                | _ -> false
+
+            let sameRevision =
+                if family = Some "WORK" then
+                    let expected = JsonValue.tryMember "expectedRevision" value
+
+                    match JsonValue.tryMember "revision" subject with
+                    | Some(JsonValue.Integer revision) ->
+                        expected = Some(JsonValue.Integer(revision - 1L))
+                    | _ -> expected = at [ "before"; "revision" ] subject
+                else
+                    true
+
+            sameOperation && sameParent && sameRevision
+        | _ -> true
+
     if List.contains endpoint [ "operation.execute"; "operation.preview" ] then
         examples "wire-request-examples.json" endpoint
         |> List.tryFind (fun value ->
             memberText "kind" value = family
+            && familyContext value
             && (act.IsNone || at [ "act"; "kind" ] value = (act |> Option.map JsonValue.String)))
         |> Option.map (fun input ->
             JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]

@@ -8,7 +8,7 @@
 - New strict identity-only recovery journals refuse old formats without deletion or conversion. In-memory reviewed requests retain exact retry bytes; restart recovery never reconstructs business text.
 - Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
-- Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
+- Discard old cursors: case lists use format 5; assignee, reminder and activity pages use 1; other pages use 2. All bind installation/scope; traversal and --all exports remain live.
 - Web case links use /cases/id/CASE-ID; exact reference links use /cases/reference/REFERENCE. Replace bookmarks using the former unqualified reference path.
 - Remove ASSIGNED_TO_ME filters and rename context hasAssignedCases to hasScopedCases. MINE now requires explicit responsibility; scoped read grants provide visibility only.
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
