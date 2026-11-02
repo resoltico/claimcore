@@ -430,7 +430,9 @@ module internal WorkQueries =
                                                     items
                                                     |> Result.map (fun items ->
                                                         {
-                                                            CaseActivityPage.Items = List.rev items
+                                                            CaseActivityPage.CaseId = parent.CaseId
+                                                            Reference = parent.Snapshot.Reference
+                                                            Items = List.rev items
                                                             NextCursor =
                                                                 page.Next
                                                                 |> Option.map (
