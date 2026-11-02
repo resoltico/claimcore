@@ -405,27 +405,51 @@ module Cursors =
             token
 
     let encodeReminders installation scope due id =
-        encode installation
-            [ "kind", JsonValue.String "REMINDERS"
-              "v", JsonValue.Integer 1L
-              "scope", JsonValue.String scope
-              "due", JsonValue.String(CalendarDate.format due)
-              "reminderId", JsonValue.String(ReminderId.format id) ]
+        encode
+            installation
+            [
+                "kind", JsonValue.String "REMINDERS"
+                "v", JsonValue.Integer 1L
+                "scope", JsonValue.String scope
+                "due", JsonValue.String(CalendarDate.format due)
+                "reminderId", JsonValue.String(ReminderId.format id)
+            ]
 
     let decodeReminders installation scope token =
-        decode installation MaximumTokenCharacters
+        decode
+            installation
+            MaximumTokenCharacters
             (function
-             | JsonValue.Object [ "due", JsonValue.String due; "kind", JsonValue.String "REMINDERS"; "reminderId", JsonValue.String id; "scope", JsonValue.String expected; "v", JsonValue.Integer 1L ] when expected = scope ->
-                 match CalendarDate.parse due, uuid ReminderId.create id with
-                 | Ok due, Some id -> Some(due,id)
-                 | _ -> None
-             | _ -> None) token
+            | JsonValue.Object [ "due", JsonValue.String due
+                                 "kind", JsonValue.String "REMINDERS"
+                                 "reminderId", JsonValue.String id
+                                 "scope", JsonValue.String expected
+                                 "v", JsonValue.Integer 1L ] when expected = scope ->
+                match CalendarDate.parse due, uuid ReminderId.create id with
+                | Ok due, Some id -> Some(due, id)
+                | _ -> None
+            | _ -> None)
+            token
 
     let encodeActivity installation scope sequence =
-        encode installation [ "kind", JsonValue.String "CASE_ACTIVITY"; "v", JsonValue.Integer 1L; "scope", JsonValue.String scope; "before", JsonValue.Integer(Sequence.value sequence) ]
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_ACTIVITY"
+                "v", JsonValue.Integer 1L
+                "scope", JsonValue.String scope
+                "before", JsonValue.Integer(Sequence.value sequence)
+            ]
 
     let decodeActivity installation scope token =
-        decode installation MaximumTokenCharacters
+        decode
+            installation
+            MaximumTokenCharacters
             (function
-             | JsonValue.Object [ "before", JsonValue.Integer before; "kind", JsonValue.String "CASE_ACTIVITY"; "scope", JsonValue.String expected; "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L -> Sequence.create before
-             | _ -> None) token
+            | JsonValue.Object [ "before", JsonValue.Integer before
+                                 "kind", JsonValue.String "CASE_ACTIVITY"
+                                 "scope", JsonValue.String expected
+                                 "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
+                Sequence.create before
+            | _ -> None)
+            token

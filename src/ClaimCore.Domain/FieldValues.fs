@@ -45,7 +45,8 @@ module FieldValue =
         | FieldValueKind.CalendarDate -> CalendarDate.parse value |> Result.map Admitted.Date
         | FieldValueKind.Country -> CountryCode.parse value |> Result.map Admitted.Country
         | FieldValueKind.PartyName -> PartyName.parse value |> Result.map Admitted.Name
-        | FieldValueKind.IncidentDescription -> IncidentDescription.parse value |> Result.map Admitted.Description
+        | FieldValueKind.IncidentDescription ->
+            IncidentDescription.parse value |> Result.map Admitted.Description
         | FieldValueKind.Amount -> Amount.parse value |> Result.map Admitted.Amount
         | FieldValueKind.Currency -> Currency.parse value |> Result.map Admitted.Currency
         | FieldValueKind.ActorId
@@ -66,7 +67,8 @@ module FieldValue =
     let admit today =
         function
         | Admitted.Date value -> CalendarDate.admit today value |> Result.map Admitted.Date
-        | Admitted.Description value -> IncidentDescription.admit value |> Result.map Admitted.Description
+        | Admitted.Description value ->
+            IncidentDescription.admit value |> Result.map Admitted.Description
         | Admitted.Name value -> PartyName.admit value |> Result.map Admitted.Name
         | Admitted.Country value -> CountryCode.admit value |> Result.map Admitted.Country
         | Admitted.Amount value -> Amount.admit value |> Result.map Admitted.Amount

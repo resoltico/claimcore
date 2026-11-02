@@ -217,6 +217,7 @@ module LedgerEntry =
                 | ReminderActKind.Cancel -> 84uy
                 | ReminderActKind.Reopen -> 85uy
                 | ReminderActKind.CompleteAndPlanNext -> 86uy
+
             {
                 Kind = 5uy
                 Act = code
@@ -229,7 +230,13 @@ module LedgerEntry =
                             (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
                             match subject.NextReminderId with
                             | None -> [| 0uy |]
-                            | Some id -> Array.concat [ [| 1uy |]; (ReminderId.value id).ToByteArray(bigEndian = true); i64 1L ]
+                            | Some id ->
+                                Array.concat
+                                    [
+                                        [| 1uy |]
+                                        (ReminderId.value id).ToByteArray(bigEndian = true)
+                                        i64 1L
+                                    ]
                         ]
             }
 

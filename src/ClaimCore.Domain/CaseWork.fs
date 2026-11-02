@@ -99,17 +99,17 @@ type CaseWorkSnapshot =
     }
 
 [<RequireQualifiedAccess>]
-type WorkActKind =
-    | UpdateWork
+type WorkActKind = | UpdateWork
 
 module WorkActKind =
-    let vocabulary = Vocabulary.ofUnion<WorkActKind> "workAct" TokenCasing.ScreamingSnake None
+    let vocabulary =
+        Vocabulary.ofUnion<WorkActKind> "workAct" TokenCasing.ScreamingSnake None
+
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
 [<RequireQualifiedAccess>]
-type WorkAct<'value> =
-    | UpdateWork of 'value
+type WorkAct<'value> = UpdateWork of 'value
 
 type AuthoredWorkAct = WorkAct<CaseWorkInput>
 type ValidWorkAct = WorkAct<ValidCaseWorkUpdate>

@@ -242,8 +242,7 @@ type Correction<'registration, 'decision, 'payment> =
     }
 
 [<RequireQualifiedAccess>]
-type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
-    =
+type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason> =
     | Bare of BareAct
     | Open of 'registration
     | AmendRegistration of 'registrationUpdate
@@ -266,14 +265,7 @@ type AuthoredCaseAct =
 type AuthoredCorrection = Correction<RegistrationUpdateInput, DecisionUpdateInput, PaymentInput>
 
 type ValidCaseAct =
-    CaseAct<
-        Registration,
-        ValidRegistrationUpdate,
-        Decision,
-        ValidDecisionUpdate,
-        Payment,
-        Reason
-     >
+    CaseAct<Registration, ValidRegistrationUpdate, Decision, ValidDecisionUpdate, Payment, Reason>
 
 type ValidCorrection = Correction<ValidRegistrationUpdate, ValidDecisionUpdate, Payment>
 
@@ -281,14 +273,7 @@ type ValidCorrection = Correction<ValidRegistrationUpdate, ValidDecisionUpdate, 
 type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
     =
     | Bare of
-        CaseAct<
-            'registration,
-            'registrationUpdate,
-            'decision,
-            'decisionUpdate,
-            'payment,
-            'reason
-         >
+        CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
     | Registration of
         inject:
             ('registration
@@ -298,7 +283,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -307,7 +292,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> 'registration option)
     | RegistrationUpdate of
@@ -319,7 +304,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -328,7 +313,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> 'registrationUpdate option)
     | Decision of
@@ -340,7 +325,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -349,7 +334,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> 'decision option)
     | Payment of
@@ -361,7 +346,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -370,7 +355,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> 'payment option)
     | Reason of
@@ -382,7 +367,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -391,7 +376,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> 'reason option)
     | Correction of
@@ -403,7 +388,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
-                            'reason
+                    'reason
                     >) *
         project:
             (CaseAct<
@@ -412,7 +397,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
-                    'reason
+                'reason
               >
                 -> Correction<'registrationUpdate, 'decisionUpdate, 'payment> option)
 

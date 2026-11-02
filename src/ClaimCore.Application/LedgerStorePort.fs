@@ -273,7 +273,11 @@ type CaseHistorySlice =
         Previous: StoredEntry option
     }
 
-type ReminderPosition = { Due: CalendarDate; ReminderId: ReminderId }
+type ReminderPosition =
+    {
+        Due: CalendarDate
+        ReminderId: ReminderId
+    }
 
 type ReminderPageQuery =
     {
