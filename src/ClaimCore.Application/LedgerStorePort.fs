@@ -25,6 +25,7 @@ type CaseIndex =
         Progress: CaseProgress option
         ChangedAt: DateTimeOffset
         SearchText: string option
+        WorkSearchText: string option
         NotifiedOn: CalendarDate option
         Claimed: Money option
         Payable: Money option
@@ -41,6 +42,7 @@ module CaseIndex =
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
             ChangedAt = changedAt
             SearchText = fields |> Option.map CaseSearch.text
+            WorkSearchText = None
             NotifiedOn =
                 fields
                 |> Option.map (fun fields ->

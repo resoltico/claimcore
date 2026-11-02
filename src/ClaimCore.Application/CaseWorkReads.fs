@@ -12,6 +12,32 @@ module internal CaseWorkReads =
             TimeZoneId = services.Calendar.TimeZoneId
         }
 
+    let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =
+        match summary with
+        | None ->
+            erased
+            && record.Index.Responsible.IsNone
+            && record.Index.FollowUp.IsNone
+            && record.Index.WorkSearchText.IsNone
+        | Some summary ->
+            let payload = summary.Work.Snapshot
+            let responsible = payload |> Option.bind _.Work.Responsible
+            let followUp = summary.Next |> Option.map Reminder.due
+
+            summary.Work.CaseId = record.CaseId
+            && (erased = payload.IsNone)
+            && (payload
+                |> Option.forall (fun value ->
+                    value.CaseId = record.CaseId && value.Revision = summary.Work.Revision))
+            && (summary.Next
+                |> Option.forall (fun value -> Reminder.caseId value = record.CaseId))
+            && record.Index.Responsible = responsible
+            && record.Index.FollowUp = followUp
+            && record.Index.WorkSearchText =
+                (payload
+                 |> Option.bind _.Work.Summary
+                 |> Option.map (HandlingSummary.format >> CaseSearch.normalize))
+
     let views (tx: IReadTx) basis (records: StoredCase list) =
         task {
             let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
@@ -33,6 +59,9 @@ module internal CaseWorkReads =
                 match Map.tryFind record.CaseId summaries with
                 | None when not erased -> result <- Error CoreFault.StoreIntegrityError
                 | summary ->
+                    if not (agrees record erased summary) then
+                        result <- Error CoreFault.StoreIntegrityError
+
                     let work =
                         summary
                         |> Option.bind _.Work.Snapshot
