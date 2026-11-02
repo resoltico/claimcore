@@ -63,14 +63,14 @@ module internal VerificationRows =
 
     let cases connection installationId histories token =
         task {
-            let! seen =
+            let! checkedCases =
                 fold
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases c ORDER BY case_id")
                     {
                         Read = DatabaseSession.namedRow
                         Append =
-                            fun seen row ->
+                            fun (seen, workIndexes) row ->
                                 result {
                                     let! status =
                                         capture
@@ -171,19 +171,27 @@ module internal VerificationRows =
                                         capture None VerificationFinding.CaseProjection (fun () ->
                                             Projections.caseRowWithIndex installationId index row)
 
-                                    return!
+                                    let! seen =
                                         ProjectionVerification.caseProjection
                                             installationId
                                             histories
                                             seen
                                             record
+
+                                    return
+                                        seen,
+                                        ProjectionVerification.caseWorkIndex record :: workIndexes
                                 }
-                        Initial = Set.empty
+                        Initial = Set.empty, []
                         Finding = VerificationFinding.CaseProjection
                     }
                     token
 
-            return seen |> Result.bind (ProjectionVerification.finishCases histories)
+            return
+                checkedCases
+                |> Result.bind (fun (seen, workIndexes) ->
+                    ProjectionVerification.finishCases histories seen
+                    |> Result.map (fun () -> List.rev workIndexes))
         }
 
     let authority connection expected token =

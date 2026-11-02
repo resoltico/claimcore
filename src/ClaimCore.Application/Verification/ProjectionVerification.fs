@@ -8,6 +8,23 @@ open ClaimCore.Application.VerificationChecks
 
 /// Projections are comparison targets only after the ledger has been folded.
 module ProjectionVerification =
+    /// Only these already-decoded case columns participate in independent work-index validation.
+    type CaseWorkIndex =
+        {
+            CaseId: CaseId
+            Responsible: ActorId option
+            FollowUp: CalendarDate option
+            SearchText: string option
+        }
+
+    let caseWorkIndex (record: StoredCase) =
+        {
+            CaseId = record.CaseId
+            Responsible = record.Index.Responsible
+            FollowUp = record.Index.FollowUp
+            SearchText = record.Index.WorkSearchText
+        }
+
     let actor (actors: Map<ActorId, ActorAuthority>) (row: Actor) =
         result {
             let id = row.ActorId
@@ -186,7 +203,7 @@ module ProjectionVerification =
     let workIndexes
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)
-        (records: StoredCase list)
+        (records: CaseWorkIndex list)
         =
         let dates =
             reminders
@@ -210,28 +227,29 @@ module ProjectionVerification =
             (fun state record ->
                 state
                 |> Result.bind (fun () ->
-                    let responsible =
+                    let current =
                         work
                         |> Map.tryFind record.CaseId
                         |> Option.bind _.Snapshot
-                        |> Option.bind _.Work.Responsible
+                        |> Option.map _.Work
+
+                    let responsible = current |> Option.bind _.Responsible
 
                     let search =
-                        work
-                        |> Map.tryFind record.CaseId
-                        |> Option.bind _.Snapshot
-                        |> Option.bind _.Work.Summary
+                        current
+                        |> Option.bind _.Summary
                         |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
 
                     require
                         None
                         VerificationFinding.CaseWorkProjection
-                        (record.Index.Responsible = responsible
-                         && record.Index.FollowUp = Map.tryFind record.CaseId dates
-                         && record.Index.WorkSearchText = search)))
+                        (record.Responsible = responsible
+                         && record.FollowUp = Map.tryFind record.CaseId dates
+                         && record.SearchText = search)))
             (Ok())
 
-    let workIndex work reminders record = workIndexes work reminders [ record ]
+    let workIndex work reminders record =
+        workIndexes work reminders [ caseWorkIndex record ]
 
     let workRows (expected: Map<CaseId, WorkHistory>) (actual: StoredWork list) =
         let matches (row: StoredWork) =
