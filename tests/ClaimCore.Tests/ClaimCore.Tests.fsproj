@@ -44,6 +44,7 @@
     <Compile Include="Contract/WireSeedCorpus.fs" />
     <Compile Include="Contract/WireScalarGenerators.fs" />
     <Compile Include="Contract/WireGroupGenerators.fs" />
+    <Compile Include="Contract/WireWorkGenerators.fs" />
     <Compile Include="Contract/WireValueGenerators.fs" />
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/ProjectionIndexChecks.fs" />
