@@ -207,7 +207,7 @@ let private erasedIdentity database =
             Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 101 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request 103 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
 
