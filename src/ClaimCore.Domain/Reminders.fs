@@ -145,7 +145,9 @@ module Reminder =
                 if reminder.State = ReminderState.Pending then
                     Error ReminderRefusal.TerminalRequired
                 else
-                    { changed ReminderState.Pending reminder with Due = due }
+                    { changed ReminderState.Pending reminder with
+                        Due = due
+                    }
                     |> ReminderEffects.Changed
                     |> Ok
             | ReminderChange.Update plan ->
@@ -199,7 +201,8 @@ module Reminder =
                         Error ReminderRefusal.IdentityReserved
                     else
                         admit plan
-                        |> Result.map (fun () -> create operation parentId plan |> ReminderEffects.Created)
+                        |> Result.map (fun () ->
+                            create operation parentId plan |> ReminderEffects.Created)
                 | ReminderCommand.Change(_, id, expected, act) ->
                     match current with
                     | None -> Error ReminderRefusal.NotFound
@@ -220,7 +223,9 @@ type ReminderActKind =
     | CompleteAndPlanNext
 
 module ReminderActKind =
-    let vocabulary = Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
@@ -236,7 +241,8 @@ type AuthoredReminderAct =
     | CompleteAndPlanNext of reminderId: Guid * expectedRevision: int64 * ReminderPlanInput
 
 module AuthoredReminderAct =
-    let kind = function
+    let kind =
+        function
         | AuthoredReminderAct.Create _ -> ReminderActKind.Create
         | AuthoredReminderAct.Update _ -> ReminderActKind.Update
         | AuthoredReminderAct.Complete _ -> ReminderActKind.Complete
@@ -251,21 +257,27 @@ type ReminderDue =
     | Upcoming
 
 module ReminderDue =
-    let vocabulary = Vocabulary.ofUnion<ReminderDue> "reminderDue" TokenCasing.ScreamingSnake None
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderDue> "reminderDue" TokenCasing.ScreamingSnake None
+
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
 module ReminderState =
-    let vocabulary = Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
+
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
 module ReminderCommand =
-    let parent = function
+    let parent =
+        function
         | ReminderCommand.Create(parent, _)
         | ReminderCommand.Change(parent, _, _, _) -> parent
 
-    let kind = function
+    let kind =
+        function
         | ReminderCommand.Create _ -> ReminderActKind.Create
         | ReminderCommand.Change(_, _, _, change) ->
             match change with
@@ -275,10 +287,12 @@ module ReminderCommand =
             | ReminderChange.Reopen _ -> ReminderActKind.Reopen
             | ReminderChange.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
 
-    let target operation = function
+    let target operation =
+        function
         | ReminderCommand.Create _ -> ReminderId.ofOperationId operation
         | ReminderCommand.Change(_, id, _, _) -> id
 
-    let resultingRevision = function
+    let resultingRevision =
+        function
         | ReminderCommand.Create _ -> Revision.first
         | ReminderCommand.Change(_, _, revision, _) -> Revision.successor revision

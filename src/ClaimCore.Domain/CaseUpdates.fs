@@ -15,7 +15,9 @@ type RegistrationUpdate<'date, 'country, 'name, 'money, 'description> =
     }
 
 type RegistrationUpdateInput = RegistrationUpdate<string, string, string, MoneyInput, string>
-type ValidRegistrationUpdate = RegistrationUpdate<CalendarDate, CountryCode, PartyName, Money, IncidentDescription>
+
+type ValidRegistrationUpdate =
+    RegistrationUpdate<CalendarDate, CountryCode, PartyName, Money, IncidentDescription>
 
 type DecisionUpdate<'date, 'money> =
     {
@@ -96,7 +98,8 @@ module RegistrationUpdate =
                 |> Option.map (fun v -> BusinessField.InsurerName, Admitted.Name v)
                 |> Option.toList
             match update.IncidentDescription with
-            | WorkValue.Set value -> yield BusinessField.IncidentDescription, Admitted.Description value
+            | WorkValue.Set value ->
+                yield BusinessField.IncidentDescription, Admitted.Description value
             | WorkValue.Keep
             | WorkValue.Clear -> ()
             match update.Claimed with
@@ -107,7 +110,13 @@ module RegistrationUpdate =
         ]
 
     let authored update : RegistrationUpdateInput =
-        map CalendarDate.format CountryCode.format PartyName.format MoneyInput.ofMoney IncidentDescription.format update
+        map
+            CalendarDate.format
+            CountryCode.format
+            PartyName.format
+            MoneyInput.ofMoney
+            IncidentDescription.format
+            update
 
     /// Merge validated structure directly. Untouched values keep their original accepted meaning.
     let apply (update: ValidRegistrationUpdate) current =
@@ -132,7 +141,11 @@ module RegistrationUpdate =
             Error(target, counterpart, date)
         else
             Registration.replace (values update) current
-            |> Result.map (Registration.withDescription (WorkValue.apply (Registration.description current) update.IncidentDescription))
+            |> Result.map (
+                Registration.withDescription (
+                    WorkValue.apply (Registration.description current) update.IncidentDescription
+                )
+            )
             |> Result.mapError (fun _ ->
                 invalidOp "A typed registration merge with valid chronology must succeed.")
 
@@ -143,7 +156,9 @@ module RegistrationUpdateInput =
         let country = UpdateParsing.optional CountryCode.parse input.Country
         let claimant = UpdateParsing.optional PartyName.parse input.Claimant
         let insurer = UpdateParsing.optional PartyName.parse input.Insurer
-        let description = WorkValue.traverse IncidentDescription.parse input.IncidentDescription
+
+        let description =
+            WorkValue.traverse IncidentDescription.parse input.IncidentDescription
 
         let money =
             UpdateParsing.optional

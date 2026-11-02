@@ -184,9 +184,15 @@ module Service =
                 | OperationInput.Case request -> previewCase services request ct
                 | OperationInput.Authority request -> previewAuthority services request ct
                 | OperationInput.Work request ->
-                    match WorkExecution.prepareWork request with Error refusal -> System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal) | Ok prepared -> WorkExecution.preview services prepared ct
+                    match WorkExecution.prepareWork request with
+                    | Error refusal ->
+                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Ok prepared -> WorkExecution.preview services prepared ct
                 | OperationInput.Reminder request ->
-                    match WorkExecution.prepareReminder request with Error refusal -> System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal) | Ok prepared -> WorkExecution.preview services prepared ct
+                    match WorkExecution.prepareReminder request with
+                    | Error refusal ->
+                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Ok prepared -> WorkExecution.preview services prepared ct
 
             return
                 {
@@ -203,9 +209,11 @@ module Service =
                     write ct (fun () -> admitCase request) (fun command ->
                         CaseExecution.run services command ct)
                 | OperationInput.Work request ->
-                    write ct (fun () -> WorkExecution.prepareWork request) (fun prepared -> WorkExecution.run services prepared ct)
+                    write ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
+                        WorkExecution.run services prepared ct)
                 | OperationInput.Reminder request ->
-                    write ct (fun () -> WorkExecution.prepareReminder request) (fun prepared -> WorkExecution.run services prepared ct)
+                    write ct (fun () -> WorkExecution.prepareReminder request) (fun prepared ->
+                        WorkExecution.run services prepared ct)
                 | OperationInput.Authority request ->
                     write ct (fun () -> admitAuthority request) (fun command ->
                         AuthorityExecution.run services command ct)

@@ -4,7 +4,7 @@ open ClaimCore.Domain
 
 /// Permanent request meaning for this record format. No current admission or capability policy.
 module HistoricalCaseEffects =
-    /// Fixed format-3 meaning: only an enabled human CASE_HANDLER can manage case work.
+    /// Permanent work-format-1 meaning: only an enabled human CASE_HANDLER can manage case work.
     let workEligible caseId (actor: ActorAuthority) =
         actor.Enabled
         && PrincipalKey.isHuman actor.Principal
@@ -39,7 +39,11 @@ module HistoricalCaseEffects =
                 Admitted.Name(defaultArg update.Insurer (Registration.insurer before))
                 BusinessField.ClaimedAmount, Admitted.Amount(Money.amount money)
                 BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue money)
-                yield! WorkValue.apply (Registration.description before) update.IncidentDescription |> Option.map (fun text -> BusinessField.IncidentDescription, Admitted.Description text) |> Option.toList
+                yield!
+                    WorkValue.apply (Registration.description before) update.IncidentDescription
+                    |> Option.map (fun text ->
+                        BusinessField.IncidentDescription, Admitted.Description text)
+                    |> Option.toList
             ]
 
     let private decision (before: Decision) (update: ValidDecisionUpdate) =

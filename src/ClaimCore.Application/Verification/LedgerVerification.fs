@@ -139,7 +139,9 @@ module LedgerVerification =
                 | _, Some _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
             let! cases, actors = histories installationId state entry payload
-            let! work, reminders = WorkFold.apply state.Cases state.Actors state.Work state.Reminders entry payload
+
+            let! work, reminders =
+                WorkFold.apply state.Cases state.Actors state.Work state.Reminders entry payload
 
             let seen =
                 expected

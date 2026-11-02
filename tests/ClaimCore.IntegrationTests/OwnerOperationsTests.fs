@@ -40,11 +40,13 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
         Expect.equal
             initial.Formats
             {
-                CaseRequest = 3
-                Snapshot = 3
+                CaseRequest = 4
+                Snapshot = 4
                 Authority = 2
                 Control = 2
-                LedgerEntry = 3
+                LedgerEntry = 4
+                Work = 1
+                Reminder = 1
             }
             "Independent supported format inventory"
 

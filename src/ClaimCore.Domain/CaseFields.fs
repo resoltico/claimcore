@@ -118,7 +118,14 @@ module BusinessField =
         | BusinessField.IncidentNotificationDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
         | BusinessField.IncidentDescription ->
-            { descriptor field FieldValueKind.IncidentDescription (Some RecordGroup.Registration) true None with AllowsAbsence = true }
+            { descriptor
+                  field
+                  FieldValueKind.IncidentDescription
+                  (Some RecordGroup.Registration)
+                  true
+                  None with
+                AllowsAbsence = true
+            }
         | BusinessField.IncidentCountry ->
             descriptor field FieldValueKind.Country (Some RecordGroup.Registration) false None
         | BusinessField.ClaimantName ->
@@ -242,7 +249,8 @@ module GroupValues =
             replacements
         |> Map.toList
 
-type RegistrationInput = private RegistrationInput of GroupValues<Authored> * description: string option
+type RegistrationInput =
+    private | RegistrationInput of GroupValues<Authored> * description: string option
 
 type Registration =
     private
@@ -259,15 +267,22 @@ type Registration =
 module RegistrationInput =
     let value field (RegistrationInput(values, description)) =
         if field = BusinessField.IncidentDescription then
-            description |> Option.defaultWith (fun () -> invalidArg (nameof field) "Description is absent.")
+            description
+            |> Option.defaultWith (fun () -> invalidArg (nameof field) "Description is absent.")
         else
             GroupValues.raw field values
 
     let create members =
-        let description, required = members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+        let description, required =
+            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+
         match description with
-        | [] -> GroupValues.createAuthored RecordGroup.Registration required |> Result.map (fun values -> RegistrationInput(values, None))
-        | [ _, value ] -> GroupValues.createAuthored RecordGroup.Registration required |> Result.map (fun values -> RegistrationInput(values, Some value))
+        | [] ->
+            GroupValues.createAuthored RecordGroup.Registration required
+            |> Result.map (fun values -> RegistrationInput(values, None))
+        | [ _, value ] ->
+            GroupValues.createAuthored RecordGroup.Registration required
+            |> Result.map (fun values -> RegistrationInput(values, Some value))
         | _ -> Error "Description must be supplied at most once."
 
     let description (RegistrationInput(_, description)) = description
@@ -275,14 +290,20 @@ module RegistrationInput =
     let values (RegistrationInput(values, description)) =
         (GroupValues.items values
          |> List.map (fun (field, value) -> field, Authored.format value))
-        @ (description |> Option.map (fun value -> BusinessField.IncidentDescription, value) |> Option.toList)
+        @ (description
+           |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+           |> Option.toList)
 
     let replace members value =
         GroupValues.merge members (values value) |> create
 
     let parsed (RegistrationInput(values, description)) =
         GroupValues.parse values
-        @ (description |> Option.map (fun value -> BusinessField.IncidentDescription, IncidentDescription.parse value |> Result.map Admitted.Description) |> Option.toList)
+        @ (description
+           |> Option.map (fun value ->
+               BusinessField.IncidentDescription,
+               IncidentDescription.parse value |> Result.map Admitted.Description)
+           |> Option.toList)
 
 module Registration =
     let incidentDate (record: Registration) = record.IncidentDate
@@ -293,16 +314,22 @@ module Registration =
     let claimed (record: Registration) = record.Claimed
     let description (record: Registration) = record.IncidentDescription
 
-    let withDescription description (record: Registration) = { record with IncidentDescription = description }
+    let withDescription description (record: Registration) =
+        { record with
+            IncidentDescription = description
+        }
 
     /// Adapts a field collection at the transport/presentation boundary.
     let create members =
-        let descriptions, required = members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+        let descriptions, required =
+            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+
         let description =
             match descriptions with
             | [] -> Ok None
             | [ _, Admitted.Description value ] -> Ok(Some value)
             | _ -> Error "Invalid description members."
+
         match List.sortBy fst required, description with
         | [ BusinessField.IncidentDate, Admitted.Date incident
             BusinessField.IncidentNotificationDate, Admitted.Date notification
@@ -310,7 +337,8 @@ module Registration =
             BusinessField.ClaimantName, Admitted.Name claimant
             BusinessField.InsurerName, Admitted.Name insurer
             BusinessField.ClaimedAmount, Admitted.Amount amount
-            BusinessField.ClaimedCurrency, Admitted.Currency currency ], Ok description ->
+            BusinessField.ClaimedCurrency, Admitted.Currency currency ],
+          Ok description ->
             if incident > notification then
                 Error "Incident must be on or before notification."
             else
@@ -335,7 +363,11 @@ module Registration =
             BusinessField.InsurerName, Admitted.Name record.Insurer
             BusinessField.ClaimedAmount, Admitted.Amount(Money.amount record.Claimed)
             BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue record.Claimed)
-            yield! record.IncidentDescription |> Option.map (fun value -> BusinessField.IncidentDescription, Admitted.Description value) |> Option.toList
+            yield!
+                record.IncidentDescription
+                |> Option.map (fun value ->
+                    BusinessField.IncidentDescription, Admitted.Description value)
+                |> Option.toList
         ]
 
     let replace members value =

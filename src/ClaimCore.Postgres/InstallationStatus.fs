@@ -14,6 +14,8 @@ type SupportedRecordFormats =
         Authority: int
         Control: int
         LedgerEntry: int
+        Work: int
+        Reminder: int
     }
 
 /// A read snapshot, not a history verification or an all-process drain assertion.
@@ -29,6 +31,8 @@ type InstallationStatus =
         Formats: SupportedRecordFormats
         Actors: int64
         Cases: int64
+        WorkRecords: int64
+        Reminders: int64
         Fences: int64
         Sessions: int64
         ExpiredSessions: int64
@@ -49,7 +53,7 @@ module internal InstallationStatus =
                         connection
                         ("SELECT sequence,entry_hash,(SELECT count(*) FROM claimcore.actors),(SELECT count(*) FROM claimcore.cases),(SELECT count(*) FROM claimcore.operation_fences),(SELECT count(*) FROM claimcore.sessions),(SELECT count(*) FROM claimcore.sessions WHERE "
                          + SessionRows.expiredPredicate
-                         + ") FROM claimcore.ledger_head")
+                         + "),(SELECT count(*) FROM claimcore.case_work),(SELECT count(*) FROM claimcore.reminders) FROM claimcore.ledger_head")
                         [| box instant |]
                         token
 
@@ -74,12 +78,16 @@ module internal InstallationStatus =
                                     Authority = RecordVersions.Authority
                                     Control = RecordVersions.Control
                                     LedgerEntry = RecordVersions.LedgerEntry
+                                    Work = RecordVersions.Work
+                                    Reminder = RecordVersions.Reminder
                                 }
                             Actors = DatabaseSession.value 2 row
                             Cases = DatabaseSession.value 3 row
                             Fences = DatabaseSession.value 4 row
                             Sessions = DatabaseSession.value 5 row
                             ExpiredSessions = DatabaseSession.value 6 row
+                            WorkRecords = DatabaseSession.value 7 row
+                            Reminders = DatabaseSession.value 8 row
                         }
                 | _ -> return raise (RecordCorruptException "Ledger head is absent.")
             })

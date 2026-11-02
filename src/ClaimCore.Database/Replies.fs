@@ -121,19 +121,23 @@ module Replies =
         |> field "changed" _.Changed boolean
 
     let private formats: Codec<SupportedRecordFormats> =
-        record (fun request snapshot authority control ledger ->
+        record (fun request snapshot authority control ledger work reminder ->
             {
                 SupportedRecordFormats.CaseRequest = request
                 Snapshot = snapshot
                 Authority = authority
                 Control = control
                 LedgerEntry = ledger
+                Work = work
+                Reminder = reminder
             })
         |> field "caseRequest" _.CaseRequest (integer 1L 32767L |> map int int64)
         |> field "snapshot" _.Snapshot (integer 1L 32767L |> map int int64)
         |> field "authority" _.Authority (integer 1L 32767L |> map int int64)
         |> field "control" _.Control (integer 1L 32767L |> map int int64)
         |> field "ledgerEntry" _.LedgerEntry (integer 1L 32767L |> map int int64)
+        |> field "work" _.Work (integer 1L 32767L |> map int int64)
+        |> field "reminder" _.Reminder (integer 1L 32767L |> map int int64)
         |> build
 
     let private countCodec = integer 0L SafeInteger.Maximum
@@ -153,7 +157,9 @@ module Replies =
                 cases
                 fences
                 sessions
-                expired ->
+                expired
+                work
+                reminders ->
                 {
                     InstallationStatus.InstallationId = installation
                     Baseline = baseline
@@ -168,6 +174,8 @@ module Replies =
                     Fences = fences
                     Sessions = sessions
                     ExpiredSessions = expired
+                    WorkRecords = work
+                    Reminders = reminders
                 })
         |> field "installationId" (fun (value: InstallationStatus) -> value.InstallationId) uuid
         |> field "baseline" _.Baseline (boundedText 1 64)
@@ -182,6 +190,8 @@ module Replies =
         |> field "fences" _.Fences countCodec
         |> field "sessions" _.Sessions countCodec
         |> field "expiredSessions" _.ExpiredSessions countCodec
+        |> field "workRecords" _.WorkRecords countCodec
+        |> field "reminders" _.Reminders countCodec
 
     let private pruneFields: Fields<SessionPruneReport, _> =
         record (fun instant limit expired deleted ->
@@ -422,6 +432,8 @@ module Replies =
             |> Outcome.Succeeded
             |> Reply.Operation
             |> encode
+        | ReceiptSubject.Work _
+        | ReceiptSubject.Reminder _
         | ReceiptSubject.Case _ -> failed CoreFault.InternalError
 
     let authority =
