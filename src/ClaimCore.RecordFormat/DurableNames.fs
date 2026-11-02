@@ -104,6 +104,7 @@ module DurableNames =
         | BusinessField.IncidentDate -> "incidentDate"
         | BusinessField.IncidentNotificationDate -> "incidentNotificationDate"
         | BusinessField.IncidentCountry -> "incidentCountry"
+        | BusinessField.IncidentDescription -> "incidentDescription"
         | BusinessField.ClaimantName -> "claimantName"
         | BusinessField.InsurerName -> "insurerName"
         | BusinessField.ClaimedAmount -> "claimedAmount"

@@ -59,6 +59,7 @@ let private registrationPatch: RegistrationUpdateInput =
         Claimant = None
         Insurer = None
         Claimed = None
+        IncidentDescription = WorkValue.Keep
     }
 
 let private amendmentRetainsDates =

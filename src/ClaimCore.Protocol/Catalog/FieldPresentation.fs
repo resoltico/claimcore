@@ -28,6 +28,7 @@ module FieldPresentation =
                     MaximumCharacters = Some 36
                 }
         | FieldValueKind.CalendarDate -> ScalarRule.CalendarDate CalendarDate.descriptor
+        | FieldValueKind.IncidentDescription -> ScalarRule.Text { Format = { MinimumCharacters = 1; Grammar = None; UnknownCode = None }; MaximumCharacters = Some IncidentDescription.MaximumScalars }
         | FieldValueKind.Country -> ScalarRule.Text CountryCode.descriptor
         | FieldValueKind.PartyName -> ScalarRule.Text PartyName.descriptor
         | FieldValueKind.Amount -> ScalarRule.Amount Money.descriptor.Amount

@@ -5,6 +5,7 @@ type FieldValueKind =
     | CalendarDate
     | Country
     | PartyName
+    | IncidentDescription
     | Amount
     | Currency
     | Reference
@@ -17,6 +18,7 @@ type Admitted =
     | Date of CalendarDate
     | Country of CountryCode
     | Name of PartyName
+    | Description of IncidentDescription
     | Amount of Amount
     | Currency of Currency
 
@@ -32,6 +34,7 @@ module FieldValue =
         function
         | Admitted.Date _ -> FieldValueKind.CalendarDate
         | Admitted.Country _ -> FieldValueKind.Country
+        | Admitted.Description _ -> FieldValueKind.IncidentDescription
         | Admitted.Name _ -> FieldValueKind.PartyName
         | Admitted.Amount _ -> FieldValueKind.Amount
         | Admitted.Currency _ -> FieldValueKind.Currency
@@ -41,6 +44,7 @@ module FieldValue =
         | FieldValueKind.CalendarDate -> CalendarDate.parse value |> Result.map Admitted.Date
         | FieldValueKind.Country -> CountryCode.parse value |> Result.map Admitted.Country
         | FieldValueKind.PartyName -> PartyName.parse value |> Result.map Admitted.Name
+        | FieldValueKind.IncidentDescription -> IncidentDescription.parse value |> Result.map Admitted.Description
         | FieldValueKind.Amount -> Amount.parse value |> Result.map Admitted.Amount
         | FieldValueKind.Currency -> Currency.parse value |> Result.map Admitted.Currency
         | FieldValueKind.ActorId
@@ -52,6 +56,7 @@ module FieldValue =
         function
         | Admitted.Date value -> CalendarDate.format value
         | Admitted.Country value -> CountryCode.format value
+        | Admitted.Description value -> IncidentDescription.format value
         | Admitted.Name value -> PartyName.format value
         | Admitted.Amount value -> Amount.format value
         | Admitted.Currency value -> Currency.format value
@@ -59,6 +64,7 @@ module FieldValue =
     let admit today =
         function
         | Admitted.Date value -> CalendarDate.admit today value |> Result.map Admitted.Date
+        | Admitted.Description value -> IncidentDescription.admit value |> Result.map Admitted.Description
         | Admitted.Name value -> PartyName.admit value |> Result.map Admitted.Name
         | Admitted.Country value -> CountryCode.admit value |> Result.map Admitted.Country
         | Admitted.Amount value -> Amount.admit value |> Result.map Admitted.Amount

@@ -3,7 +3,7 @@ namespace ClaimCore.Domain
 /// Complete money assertion: an update cannot carry an amount without its currency.
 type MoneyInput = { Amount: string; Currency: string }
 
-type RegistrationUpdate<'date, 'country, 'name, 'money> =
+type RegistrationUpdate<'date, 'country, 'name, 'money, 'description> =
     {
         IncidentDate: 'date option
         NotificationDate: 'date option
@@ -11,10 +11,11 @@ type RegistrationUpdate<'date, 'country, 'name, 'money> =
         Claimant: 'name option
         Insurer: 'name option
         Claimed: 'money option
+        IncidentDescription: WorkValue<'description>
     }
 
-type RegistrationUpdateInput = RegistrationUpdate<string, string, string, MoneyInput>
-type ValidRegistrationUpdate = RegistrationUpdate<CalendarDate, CountryCode, PartyName, Money>
+type RegistrationUpdateInput = RegistrationUpdate<string, string, string, MoneyInput, string>
+type ValidRegistrationUpdate = RegistrationUpdate<CalendarDate, CountryCode, PartyName, Money, IncidentDescription>
 
 type DecisionUpdate<'date, 'money> =
     {
@@ -61,7 +62,7 @@ module MoneyInput =
         }
 
 module RegistrationUpdate =
-    let map date country name money (input: RegistrationUpdate<_, _, _, _>) =
+    let map date country name money description (input: RegistrationUpdate<_, _, _, _, _>) =
         {
             IncidentDate = Option.map date input.IncidentDate
             NotificationDate = Option.map date input.NotificationDate
@@ -69,6 +70,7 @@ module RegistrationUpdate =
             Claimant = Option.map name input.Claimant
             Insurer = Option.map name input.Insurer
             Claimed = Option.map money input.Claimed
+            IncidentDescription = WorkValue.map description input.IncidentDescription
         }
 
     let values (update: ValidRegistrationUpdate) =
@@ -93,6 +95,10 @@ module RegistrationUpdate =
                 update.Insurer
                 |> Option.map (fun v -> BusinessField.InsurerName, Admitted.Name v)
                 |> Option.toList
+            match update.IncidentDescription with
+            | WorkValue.Set value -> yield BusinessField.IncidentDescription, Admitted.Description value
+            | WorkValue.Keep
+            | WorkValue.Clear -> ()
             match update.Claimed with
             | None -> ()
             | Some money ->
@@ -101,7 +107,7 @@ module RegistrationUpdate =
         ]
 
     let authored update : RegistrationUpdateInput =
-        map CalendarDate.format CountryCode.format PartyName.format MoneyInput.ofMoney update
+        map CalendarDate.format CountryCode.format PartyName.format MoneyInput.ofMoney IncidentDescription.format update
 
     /// Merge validated structure directly. Untouched values keep their original accepted meaning.
     let apply (update: ValidRegistrationUpdate) current =
@@ -126,6 +132,7 @@ module RegistrationUpdate =
             Error(target, counterpart, date)
         else
             Registration.replace (values update) current
+            |> Result.map (Registration.withDescription (WorkValue.apply (Registration.description current) update.IncidentDescription))
             |> Result.mapError (fun _ ->
                 invalidOp "A typed registration merge with valid chronology must succeed.")
 
@@ -136,6 +143,7 @@ module RegistrationUpdateInput =
         let country = UpdateParsing.optional CountryCode.parse input.Country
         let claimant = UpdateParsing.optional PartyName.parse input.Claimant
         let insurer = UpdateParsing.optional PartyName.parse input.Insurer
+        let description = WorkValue.traverse IncidentDescription.parse input.IncidentDescription
 
         let money =
             UpdateParsing.optional
@@ -148,6 +156,7 @@ module RegistrationUpdateInput =
             @ UpdateParsing.errors BusinessField.IncidentCountry country
             @ UpdateParsing.errors BusinessField.ClaimantName claimant
             @ UpdateParsing.errors BusinessField.InsurerName insurer
+            @ UpdateParsing.errors BusinessField.IncidentDescription description
             @ (match money with
                | Ok _ -> []
                | Error errors -> errors)
@@ -161,6 +170,7 @@ module RegistrationUpdateInput =
             && input.Claimant.IsNone
             && input.Insurer.IsNone
             && input.Claimed.IsNone
+            && input.IncidentDescription = WorkValue.Keep
         then
             Error [ BusinessField.IncidentDate, Violation.UpdateRequired ]
         else
@@ -172,6 +182,7 @@ module RegistrationUpdateInput =
                     Claimant = UpdateParsing.value claimant
                     Insurer = UpdateParsing.value insurer
                     Claimed = UpdateParsing.value money
+                    IncidentDescription = UpdateParsing.value description
                 }
 
 module DecisionUpdate =

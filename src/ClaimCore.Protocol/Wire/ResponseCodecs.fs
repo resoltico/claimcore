@@ -36,7 +36,8 @@ module ResponseCodecs =
             match kind with
             | FieldValueKind.CalendarDate -> date
             | FieldValueKind.Country -> country
-            | FieldValueKind.PartyName -> nonempty
+            | FieldValueKind.PartyName
+            | FieldValueKind.IncidentDescription -> nonempty
             | FieldValueKind.Amount -> amount
             | FieldValueKind.Currency -> currency
             | FieldValueKind.ActorId
@@ -57,6 +58,7 @@ module ResponseCodecs =
 
     let private group group create values =
         CaseFields.ofGroup group
+        |> List.filter ((<>) BusinessField.IncidentDescription)
         |> List.map (fun field ->
             field, BusinessField.key field, scalar (BusinessField.describe field).Kind)
         |> Codec.fieldMap
@@ -67,7 +69,27 @@ module ResponseCodecs =
             (values >> Map.ofList)
 
     let private registration =
-        group RecordGroup.Registration Registration.create Registration.values
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield! description |> Option.map (fun value -> BusinessField.IncidentDescription, value) |> Option.toList
+            ] |> Registration.create |> Result.defaultWith invalidOp)
+        : Fields<Registration, _>)
+        |> field "incidentDate" (Registration.incidentDate >> Admitted.Date) (scalar FieldValueKind.CalendarDate)
+        |> field "incidentNotificationDate" (Registration.incidentNotificationDate >> Admitted.Date) (scalar FieldValueKind.CalendarDate)
+        |> field "incidentCountry" (Registration.country >> Admitted.Country) (scalar FieldValueKind.Country)
+        |> field "claimantName" (Registration.claimant >> Admitted.Name) (scalar FieldValueKind.PartyName)
+        |> field "insurerName" (Registration.insurer >> Admitted.Name) (scalar FieldValueKind.PartyName)
+        |> field "claimedAmount" (Registration.claimed >> Money.amount >> Admitted.Amount) (scalar FieldValueKind.Amount)
+        |> field "claimedCurrency" (Registration.claimed >> Money.currencyValue >> Admitted.Currency) (scalar FieldValueKind.Currency)
+        |> field "incidentDescription" (Registration.description >> Option.map Admitted.Description) (nullable (scalar FieldValueKind.IncidentDescription))
+        |> build
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
     let private payment = group RecordGroup.Payment Payment.create Payment.values

@@ -680,6 +680,7 @@ let internal partialUpdatesAndReaffirmation fixture =
                 Claimant = Some "Only selected claimant"
                 Insurer = None
                 Claimed = None
+                IncidentDescription = WorkValue.Keep
             }
 
         let! edited = execute owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)

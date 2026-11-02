@@ -123,6 +123,18 @@ module internal ScalarText =
                 0xE0000, 0xE007F
             ]
 
+    let admitPlain maximum allowsLineFeed (value: string) =
+        if String.IsNullOrWhiteSpace value then
+            Error Violation.TextRequired
+        elif (value.EnumerateRunes() |> Seq.length) > maximum then
+            Error(Violation.TooLong maximum)
+        elif value |> Seq.exists (fun c -> Char.IsControl c && not (allowsLineFeed && c = '\n')) then
+            Error Violation.ControlCharacters
+        elif value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value) then
+            Error Violation.FormattingCharacter
+        else
+            Ok value
+
     let admit maximum (value: string) =
         if String.IsNullOrWhiteSpace value then
             Error Violation.TextRequired

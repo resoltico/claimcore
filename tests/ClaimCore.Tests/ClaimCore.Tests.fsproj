@@ -72,6 +72,7 @@
     <Compile Include="Domain/CorrectionMatrixTests.fs" />
     <Compile Include="Domain/DomainValidationTests.fs" />
     <Compile Include="Application/AvailabilityTests.fs" />
+    <Compile Include="Domain/NarrativeValueTests.fs" />
     <Compile Include="Domain/ScalarRuleTests.fs" />
     <Compile Include="Contract/RecordDeclarationTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />

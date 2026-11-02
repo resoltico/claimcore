@@ -53,6 +53,7 @@ let private patch: RegistrationUpdateInput =
         Claimant = None
         Insurer = None
         Claimed = None
+        IncidentDescription = WorkValue.Keep
     }
 
 let private correction decision payment : AuthoredCorrection =

@@ -46,8 +46,29 @@ module internal RecordCodecs =
             (values >> Map.ofList)
 
     let registration =
-        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
-        |> Codec.named "Registration"
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield! description |> Option.flatten |> Option.map (fun value -> BusinessField.IncidentDescription, value) |> Option.toList
+            ]
+            |> RegistrationInput.create |> Result.defaultWith invalidOp)
+        : Fields<RegistrationInput, _>)
+        |> field "incidentDate" (RegistrationInput.value BusinessField.IncidentDate) text
+        |> field "incidentNotificationDate" (RegistrationInput.value BusinessField.IncidentNotificationDate) text
+        |> field "incidentCountry" (RegistrationInput.value BusinessField.IncidentCountry) text
+        |> field "claimantName" (RegistrationInput.value BusinessField.ClaimantName) text
+        |> field "insurerName" (RegistrationInput.value BusinessField.InsurerName) text
+        |> field "claimedAmount" (RegistrationInput.value BusinessField.ClaimedAmount) text
+        |> field "claimedCurrency" (RegistrationInput.value BusinessField.ClaimedCurrency) text
+        |> optionalField "incidentDescription" (RegistrationInput.description >> Option.map Some) (nullable text)
+        |> build
+        |> named "Registration"
 
     let decision =
         inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
@@ -70,7 +91,7 @@ module internal RecordCodecs =
         |> build
 
     let registrationUpdate =
-        (record (fun incident notification country claimant insurer claimed ->
+        (record (fun incident notification country claimant insurer claimed description ->
             {
                 RegistrationUpdateInput.IncidentDate = incident
                 NotificationDate = notification
@@ -78,6 +99,7 @@ module internal RecordCodecs =
                 Claimant = claimant
                 Insurer = insurer
                 Claimed = claimed
+                IncidentDescription = match description with None -> WorkValue.Keep | Some None -> WorkValue.Clear | Some(Some value) -> WorkValue.Set value
             })
         : Fields<RegistrationUpdateInput, _>)
         |> optionalField "incidentDate" _.IncidentDate text
@@ -86,6 +108,7 @@ module internal RecordCodecs =
         |> optionalField "claimantName" _.Claimant text
         |> optionalField "insurerName" _.Insurer text
         |> optionalField "claimed" _.Claimed moneyInput
+        |> optionalField "incidentDescription" (fun value -> match value.IncidentDescription with WorkValue.Keep -> None | WorkValue.Clear -> Some None | WorkValue.Set text -> Some(Some text)) (nullable text)
         |> build
         |> named "RegistrationUpdate"
 
@@ -346,7 +369,27 @@ module internal RecordCodecs =
             (values >> Map.ofList)
 
     let private acceptedRegistration =
-        acceptedGroup RecordGroup.Registration Registration.create Registration.values
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield! description |> Option.map (fun value -> BusinessField.IncidentDescription, value) |> Option.toList
+            ] |> Registration.create |> Result.defaultWith invalidOp)
+        : Fields<Registration, _>)
+        |> field "incidentDate" (Registration.incidentDate >> Admitted.Date) (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
+        |> field "incidentNotificationDate" (Registration.incidentNotificationDate >> Admitted.Date) (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
+        |> field "incidentCountry" (Registration.country >> Admitted.Country) (scalar (FieldValue.parse FieldValueKind.Country) FieldValue.format)
+        |> field "claimantName" (Registration.claimant >> Admitted.Name) (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
+        |> field "insurerName" (Registration.insurer >> Admitted.Name) (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
+        |> field "claimedAmount" (Registration.claimed >> Money.amount >> Admitted.Amount) (scalar (FieldValue.parse FieldValueKind.Amount) FieldValue.format)
+        |> field "claimedCurrency" (Registration.claimed >> Money.currencyValue >> Admitted.Currency) (scalar (FieldValue.parse FieldValueKind.Currency) FieldValue.format)
+        |> field "incidentDescription" (Registration.description >> Option.map Admitted.Description) (nullable (scalar (FieldValue.parse FieldValueKind.IncidentDescription) FieldValue.format))
+        |> build
         |> named "Registration"
 
     let private acceptedDecision =

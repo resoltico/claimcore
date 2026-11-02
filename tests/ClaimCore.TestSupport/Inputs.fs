@@ -170,6 +170,7 @@ let registrationUpdate (input: RegistrationInput) : RegistrationUpdateInput =
         Country = Some(value BusinessField.IncidentCountry)
         Claimant = Some(value BusinessField.ClaimantName)
         Insurer = Some(value BusinessField.InsurerName)
+        IncidentDescription = RegistrationInput.description input |> Option.map WorkValue.Set |> Option.defaultValue WorkValue.Keep
         Claimed =
             Some
                 {
