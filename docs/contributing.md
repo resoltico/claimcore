@@ -322,7 +322,6 @@ projects use automatic nonempty discovery and explicit stage assignment. Focused
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
 PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 
-PostgreSQL and acceptance suites limit native test concurrency to two owned fixtures.
 Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
 engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
 mode explicitly reports incomplete qualification. Native report directories under

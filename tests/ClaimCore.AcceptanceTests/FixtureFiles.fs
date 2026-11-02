@@ -48,7 +48,13 @@ let certificate () =
     use key = RSA.Create(2048)
 
     let request =
-        CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+        // Distinguish the issuer from its localhost leaves for OpenSSL chain construction.
+        CertificateRequest(
+            "CN=ClaimCore synthetic service root",
+            key,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        )
 
     request.CertificateExtensions.Add(X509BasicConstraintsExtension(true, false, 0, true))
 
