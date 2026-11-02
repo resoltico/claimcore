@@ -290,29 +290,50 @@ let internal scalarRequests () =
     @ [
         actRequest
             10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.UpdateWork
+            "REACH-DESCRIPTION"
+            0L
+            (AuthoredCaseAct.Open(
+                Inputs.registrationWith [ BusinessField.IncidentDescription, "" ] registration
+            ))
+    ]
+
+let internal workScalarRequests () =
+    let work operation revision responsible summary =
+        OperationInput.Work
+            {
+                OperationId = id operation
+                Target = CaseSelector.Reference "REACH-WORK"
+                ExpectedRevision = revision
+                Act =
+                    WorkAct.UpdateWork
+                        {
+                            Responsible = responsible
+                            Summary = summary
+                        }
+            }
+
+    let reminder operation act =
+        OperationInput.Reminder
+            {
+                OperationId = id operation
+                Target = CaseSelector.Reference "REACH-WORK"
+                Act = act
+            }
+
+    [
+        work 500 0L (WorkValue.Set "invalid") WorkValue.Keep
+        work 501 0L WorkValue.Keep (WorkValue.Set "")
+        work 502 0L WorkValue.Keep WorkValue.Keep
+        work 503 -1L WorkValue.Keep (WorkValue.Set "A summary")
+        reminder 504 (AuthoredReminderAct.Complete(Guid.Empty, 1L))
+        reminder 505 (AuthoredReminderAct.Complete(id 700, -1L))
+        reminder 506 (AuthoredReminderAct.Create { Action = ""; Due = "invalid" })
+        reminder
+            507
+            (AuthoredReminderAct.Create
                 {
-                    Responsible = WorkValue.Set "invalid"
-                    FollowUp = WorkValue.Keep
+                    Action = String('a', 201)
+                    Due = "2027-01-01"
                 })
-        actRequest
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.UpdateWork
-                {
-                    Responsible = WorkValue.Keep
-                    FollowUp = WorkValue.Set "invalid"
-                })
-        actRequest
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.UpdateWork
-                {
-                    Responsible = WorkValue.Keep
-                    FollowUp = WorkValue.Keep
-                })
+        work 508 0L WorkValue.Keep (WorkValue.Set(String('a', 601)))
     ]

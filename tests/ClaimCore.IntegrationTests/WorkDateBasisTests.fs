@@ -46,7 +46,7 @@ let private qualify () =
     task {
         let mutable crossedUtcDay = false
         // This order covers the UTC date boundary even if the two fresh installations straddle midnight.
-        for zone in [ "Pacific/Kiritimati"; "Pacific/Pago_Pago" ] do
+        for zone in [ "Pacific/Kiritimati"; "Pacific/Pago_Pago"; "Europe/Riga" ] do
             let! database = PostgresFixture.createWithZone zone
 
             try
@@ -81,23 +81,21 @@ let private qualify () =
                 let! changed =
                     Service.execute
                         actor
-                        (Inputs.caseOperation (
-                            request
-                                51
-                                "ZONE-WORK"
-                                1L
-                                (AuthoredCaseAct.UpdateWork
-                                    {
-                                        Responsible = WorkValue.Keep
-                                        FollowUp =
-                                            WorkValue.Set(
+                        (OperationInput.Reminder
+                            {
+                                OperationId = id 51
+                                Target = CaseSelector.Id caseId
+                                Act =
+                                    AuthoredReminderAct.Create
+                                        {
+                                            Action = "Inspect business-date classification"
+                                            Due =
                                                 utc.ToString(
                                                     "yyyy-MM-dd",
                                                     CultureInfo.InvariantCulture
                                                 )
-                                            )
-                                    })
-                        ))
+                                        }
+                            })
                         token
 
                 accepted changed |> ignore
