@@ -306,6 +306,7 @@ type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
+    abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract FindWork: CaseId -> Task<StoredWork option>
