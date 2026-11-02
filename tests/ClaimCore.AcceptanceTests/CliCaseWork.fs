@@ -208,7 +208,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     Expect.equal
         next
-        (compound.GetProperty("operationId").GetString())
+        (compound.GetProperty("operationId").GetString() |> nonNull)
         "Replacement identity equals the accepted operation identity"
 
     reminder "cancel" (expected second 1) |> ignore
