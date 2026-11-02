@@ -316,6 +316,7 @@ module internal WorkExecution =
                                                 OperationReview.Work
                                                     {
                                                         Reference = parent.Snapshot.Reference
+                                                        Parent = parent.Snapshot
                                                         Before = before
                                                         Proposed = after
                                                         Context = runtime services view.ObservedAt
@@ -432,12 +433,12 @@ module internal WorkExecution =
                             RecordedBy = recordedBy
                         }
 
-                    let values =
+                    let primary, values =
                         match effects with
                         | ReminderEffects.Created value
-                        | ReminderEffects.Changed value -> [ value ]
+                        | ReminderEffects.Changed value -> value, [ value ]
                         | ReminderEffects.CompletedAndPlanned(completed, next) ->
-                            [ completed; next ]
+                            completed, [ completed; next ]
 
                     let accepted =
                         values
@@ -452,7 +453,7 @@ module internal WorkExecution =
                                         {
                                             CaseId = parent.CaseId
                                             ReminderId = id
-                                            Revision = ReminderCommand.resultingRevision command
+                                            Revision = Reminder.revision primary
                                             Act = ReminderCommand.kind command
                                             NextReminderId = nextId
                                             BusinessDate = services.Calendar.DateAt view.ObservedAt
@@ -471,6 +472,7 @@ module internal WorkExecution =
                                     OperationReview.Reminder
                                         {
                                             Reference = parent.Snapshot.Reference
+                                            Parent = parent.Snapshot
                                             CaseId = parent.CaseId
                                             Before = before
                                             Effects = effects
@@ -489,17 +491,20 @@ module internal WorkExecution =
             let! view =
                 ExecutionFacts.case services tx (Some(identity prepared)) (target prepared)
 
-            match authorized services view with
-            | Error refusal -> return view, Verdict.Refuse refusal
-            | Ok parent ->
-                let! proposal =
-                    match prepared with
-                    | Work(operation, _, expected, update) ->
-                        workProposal services tx view parent operation expected update
-                    | Reminder(operation, _, act) ->
-                        reminderProposal services tx view parent operation act
+            try
+                match authorized services view with
+                | Error refusal -> return view, Verdict.Refuse refusal
+                | Ok parent ->
+                    let! proposal =
+                        match prepared with
+                        | Work(operation, _, expected, update) ->
+                            workProposal services tx view parent operation expected update
+                        | Reminder(operation, _, act) ->
+                            reminderProposal services tx view parent operation act
 
-                return view, proposal
+                    return view, proposal
+            with :? OverflowException ->
+                return view, Verdict.Fail CoreFault.InternalError
         }
 
     let preview (services: ServiceContext) prepared token =

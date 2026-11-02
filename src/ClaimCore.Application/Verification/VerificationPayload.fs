@@ -117,7 +117,7 @@ module internal VerificationPayload =
             request.OperationId = entry.OperationId
             && ReminderCommand.parent request.Command = subject.CaseId
             && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
-            && ReminderCommand.resultingRevision request.Command = subject.Revision
+            && ReminderCommand.resultingRevision request.Command = Some subject.Revision
             && ReminderCommand.kind request.Command = subject.Act
             && HistoricalWorkEffects.boundedReminderRequest request effects
             ->

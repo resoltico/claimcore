@@ -111,7 +111,12 @@ module internal WorkFold =
             | EntryTarget.Work subject ->
                 let! parent = parent subject.CaseId
                 let! previous = Map.tryFind subject.CaseId work |> known
-                do! check (subject.Revision = Revision.successor previous.Revision)
+
+                do!
+                    check (
+                        Revision.value previous.Revision < Revision.Maximum
+                        && subject.Revision = Revision.successor previous.Revision
+                    )
 
                 let! snapshot =
                     match payload with
@@ -174,6 +179,13 @@ module internal WorkFold =
                         Map.tryFind subject.ReminderId reminders |> known |> Result.map Some
 
                 do! check (entry.CreationReference.IsNone)
+
+                do!
+                    check (
+                        previous
+                        |> Option.forall (fun value ->
+                            Revision.value value.Revision < Revision.Maximum)
+                    )
 
                 do!
                     check (

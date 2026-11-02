@@ -22,6 +22,7 @@ type AuthorityReview =
 
 type WorkReview =
     {
+        Parent: CaseSnapshot
         Reference: CaseReference
         Before: CaseWorkSnapshot
         Proposed: CaseWorkSnapshot
@@ -30,6 +31,7 @@ type WorkReview =
 
 type ReminderReview =
     {
+        Parent: CaseSnapshot
         Reference: CaseReference
         CaseId: CaseId
         Before: Reminder option
