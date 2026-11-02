@@ -162,12 +162,14 @@ const runNetwork = async (
     }
   >,
   installationId?: string,
+  signal?: AbortSignal,
 ): Promise<OperationAction> => {
   if (effect.kind === "CHECK_STATUS") {
     const result = await service.status(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
       installationId,
+      signal,
     );
     if (result.kind === "outcome") {
       if (
@@ -203,9 +205,22 @@ const runNetwork = async (
   return completion(
     effect,
     effect.kind === "PREVIEW"
-      ? await service.preview(effect.source.prepared, effect.identity.credential)
+      ? await service.preview(effect.source.prepared, effect.identity.credential, signal)
       : await service.execute(effect.source.prepared, effect.identity.credential, installationId),
   );
+};
+const ownedNetworkRead = async (
+  effect: Extract<OperationEffect, { kind: "PREVIEW" | "CHECK_STATUS" }>,
+  reads: Map<string, AbortController>,
+  installationId?: string,
+): Promise<OperationAction> => {
+  const controller = new AbortController();
+  reads.set(effect.identity.id, controller);
+  try {
+    return await runNetwork(effect, installationId, controller.signal);
+  } finally {
+    reads.delete(effect.identity.id);
+  }
 };
 const checkOwnedStatus = async (
   effect: Extract<OperationEffect, { kind: "CHECK_STATUS" }>,
@@ -213,6 +228,7 @@ const checkOwnedStatus = async (
   owned: RecoveryRecord | undefined,
   journal: RecoveryJournal,
   current: () => boolean,
+  reads: Map<string, AbortController>,
 ): Promise<OperationAction> => {
   const stillCurrent = () => current() && owned !== undefined && sameRecoveryScope(scope, owned);
   if (owned === undefined || !stillCurrent()) {
@@ -226,7 +242,7 @@ const checkOwnedStatus = async (
     };
   }
   // A passive read uses the existing attempt; it never publishes another journal write.
-  const action = await runNetwork(effect, owned.installationId);
+  const action = await ownedNetworkRead(effect, reads, owned.installationId);
   if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
     await journal.remove(owned).catch(() => undefined);
   }
@@ -340,7 +356,7 @@ const useEffects = (
           const journal = options.journal!;
           const scope = options.recoveryScope;
           if (effect.kind === "PREVIEW") {
-            return runNetwork(effect, options.recoveryScope?.installationId);
+            return ownedNetworkRead(effect, reads.current, options.recoveryScope?.installationId);
           }
           if (scope === undefined) {
             return {
@@ -360,6 +376,7 @@ const useEffects = (
               attempts.current.get(operationId),
               journal,
               current,
+              reads.current,
             );
           }
           let record = attempts.current.get(operationId);

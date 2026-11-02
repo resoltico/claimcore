@@ -1,3 +1,7 @@
+import {
+  ReadableStream as NodeReadableStream,
+  type ReadableStreamDefaultController as NodeController,
+} from "node:stream/web";
 import { afterEach, it, expect, vi } from "vitest";
 import { isMutationUncertain } from "../../../src/api/service";
 import type { ApiResult, EndpointOutcome } from "../../../src/api/service";
@@ -137,4 +141,44 @@ it.each([
   const result = await service.execute(request(authored), "csrf", installation);
   expect(result.kind).toBe("deliveryFailure");
   expect(isMutationUncertain(result)).toBe(true);
+});
+
+it("coordinates list summary and overview through complete response admission, not just headers", async () => {
+  const { requestEndpoint } = await import("../../../src/api/service");
+  const { wireReply } = await import("../../support/contract-corpus.fixtures");
+  const streams: NodeController<Uint8Array>[] = [];
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path) => {
+    if (typeof path !== "string") {
+      throw new Error("Expected a same-origin API path.");
+    }
+    if (path === "/api/work.overview") {
+      return Promise.resolve(reply(wireReply("work.overview")));
+    }
+    return Promise.resolve(
+      new Response(
+        new NodeReadableStream<Uint8Array>({
+          start(controller) {
+            streams.push(controller);
+          },
+        }) as unknown as BodyInit,
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+  });
+  vi.stubGlobal("fetch", fetch);
+  const list = requestEndpoint("case.list", "token", { limit: 50 });
+  const summary = requestEndpoint("case.summary", "token", {});
+  const overview = requestEndpoint("work.overview", "token", {});
+  await vi.waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  expect(streams).toHaveLength(2);
+  streams[0]!.enqueue(new TextEncoder().encode(JSON.stringify(wireReply("case.list"))));
+  streams[0]!.close();
+  expect((await list).kind).toBe("outcome");
+  expect((await overview).kind).toBe("outcome");
+  expect(fetch).toHaveBeenCalledTimes(3);
+  streams[1]!.enqueue(new TextEncoder().encode(JSON.stringify(wireReply("case.summary"))));
+  streams[1]!.close();
+  expect((await summary).kind).toBe("outcome");
 });

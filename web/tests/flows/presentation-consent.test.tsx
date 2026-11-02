@@ -49,16 +49,19 @@ it.each(["token", "target"] as const)(
   "masks stale review synchronously when %s changes and rejects the late result",
   async (changed) => {
     const read = pending<Awaited<ReturnType<typeof service.preview>>>();
-    vi.spyOn(service, "preview").mockReturnValue(read.promise);
+    const previewRead = vi.spyOn(service, "preview").mockReturnValue(read.promise);
     const view = hook();
     let completion: Promise<void>;
     act(() => {
       completion = view.result.current.preview();
     });
+    const signal = previewRead.mock.calls[0]?.[2];
+    expect(signal?.aborted).toBe(false);
     view.rerender({
       credential: changed === "token" ? "other-token" : "token",
       target: changed === "target" ? { ...current, caseReference: "OTHER" } : current,
     });
+    expect(signal?.aborted).toBe(true);
     expect(view.result.current.review).toBeNull();
     expect(view.result.current.receipt).toBeNull();
     await act(async () => {
