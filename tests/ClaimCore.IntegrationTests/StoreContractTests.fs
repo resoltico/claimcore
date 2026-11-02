@@ -18,6 +18,18 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "different and same reminder revisions retain financial preview isolation"
+                (withFixture factory ReminderConcurrencyContract.independentRevisions)
+            testCaseAsync
+                "close and compound races have complete valid effects"
+                (withFixture factory ReminderConcurrencyContract.closeAndCompound)
+            testCaseAsync
+                "erase and reminder races leave no readable child or payload"
+                (withFixture factory ReminderConcurrencyContract.erasureRaces)
+            testCaseAsync
+                "revocation after reminder preview is enforced in the action snapshot"
+                (withFixture factory ReminderConcurrencyContract.revocationAndCompound)
+            testCaseAsync
                 "case work assignment is scoped and rechecked without granting visibility"
                 (withFixture factory CaseWorkContract.assignmentAndDisclosure)
             testCaseAsync
