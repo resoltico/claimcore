@@ -38,6 +38,7 @@ type CaseWorkView =
         NeedsNextAction: bool
         CanUpdateSummary: bool
         CanAssign: bool
+        CanCreateReminder: bool
         Responsible: AssignedAccount option
         FollowUp: CalendarDate option
         Due: CaseDue
