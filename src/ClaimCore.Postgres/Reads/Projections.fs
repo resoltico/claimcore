@@ -245,24 +245,22 @@ module internal Projections =
         }
 
     let private globalActorQuery principal =
-        let scoped =
-            "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($5::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($6::text[])))"
+        let kind, issuer, subject = PrincipalKey.parts principal
 
-        let sql = actorQuery (actorColumns + "," + scoped)
+        let scoped =
+            "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($4::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($5::text[])))"
+
+        let sql =
+            $"SELECT {actorColumns},{scoped} FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
 
         let parameters =
-            Array.append
-                (actorParameters principal [])
-                [|
-                    box (
-                        Authority.readRoles principal |> List.map DurableNames.role |> List.toArray
-                    )
-                    box (
-                        Authority.invalidRoles principal
-                        |> List.map DurableNames.role
-                        |> List.toArray
-                    )
-                |]
+            [|
+                box (DurableNames.principalKind kind)
+                box issuer
+                box subject
+                box (Authority.readRoles principal |> List.map DurableNames.role |> List.toArray)
+                box (Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray)
+            |]
 
         sql, parameters
 
