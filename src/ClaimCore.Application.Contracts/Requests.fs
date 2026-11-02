@@ -108,3 +108,9 @@ type CaseActivityRequest =
         Limit: int
         Detail: HistoryDetail
     }
+
+type ReminderGetRequest =
+    {
+        Target: CaseSelector
+        ReminderId: Guid
+    }
