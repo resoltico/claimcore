@@ -326,6 +326,17 @@ let internal scopedWorker fixture =
 
 let internal scopedAuthority fixture =
     task {
+        let inspectGlobal principal =
+            fixture.Store.Read
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! facts = tx.GlobalReadFacts principal in return facts.Authority
+                            }
+                    CancellationToken = CancellationToken.None
+                }
+
         let! principal = scopedWorker fixture
 
         let! read =
@@ -370,7 +381,7 @@ let internal scopedAuthority fixture =
             PrincipalKey.human "https://issuer.example/" "unknown-global-reader"
             |> Result.defaultWith (string >> failtest)
 
-        let! missing = inspectAuthority fixture unknown CancellationToken.None
+        let! missing = inspectGlobal unknown
 
         Expect.equal
             (storedPage missing)
@@ -388,7 +399,7 @@ let internal scopedAuthority fixture =
                 CancellationToken.None
 
         acceptedAuthority registered
-        let! noGrants = inspectAuthority fixture roleless CancellationToken.None
+        let! noGrants = inspectGlobal roleless
         let noGrants = storedPage noGrants
         Expect.isSome noGrants.Actor "A zero-grant actor is retained by the left join"
 
@@ -406,7 +417,7 @@ let internal scopedAuthority fixture =
                     CancellationToken.None
 
             acceptedAuthority changed
-            let! observed = inspectAuthority fixture principal CancellationToken.None
+            let! observed = inspectGlobal principal
             let observed = storedPage observed
 
             Expect.equal
@@ -444,7 +455,7 @@ let internal scopedAuthority fixture =
                 true
 
         acceptedAuthority grantedService
-        let! serviceContext = inspectAuthority fixture service CancellationToken.None
+        let! serviceContext = inspectGlobal service
         let serviceContext = storedPage serviceContext
         Expect.isTrue serviceContext.HasScopedCases "A service's valid scoped read remains visible"
         Expect.isEmpty serviceContext.Installation "A scoped read is not an installation grant"

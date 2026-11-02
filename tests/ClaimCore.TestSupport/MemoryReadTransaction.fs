@@ -98,6 +98,56 @@ let private workSummary state today id =
                 |> int64
         })
 
+let private authorityView state principal caseId =
+    let actor =
+        state.Actors
+        |> Map.values
+        |> Seq.tryFind (fun actor -> actor.Principal = principal)
+
+    let view =
+        actor
+        |> Option.map (fun actor ->
+            {
+                ActorAuthority.Actor = actor
+                Grants =
+                    state.Grants
+                    |> Seq.choose (fun (id, role, scope) ->
+                        if id = actor.ActorId && (scope.IsNone || scope = caseId) then
+                            Some
+                                {
+                                    ActorGrant.Role = role
+                                    Scope =
+                                        scope
+                                        |> Option.map Scope.Case
+                                        |> Option.defaultValue Scope.Installation
+                                }
+                        else
+                            None)
+                    |> Seq.toList
+            })
+        |> AuthorityView.ofActor
+
+    let assigned =
+        actor
+        |> Option.exists (fun actor ->
+            state.Grants
+            |> Seq.exists (fun (id, role, scope) ->
+                id = actor.ActorId
+                && scope.IsSome
+                && List.contains role (Authority.readRoles principal)
+                && not (
+                    state.Grants
+                    |> Seq.exists (fun (badId, badRole, badScope) ->
+                        badId = id
+                        && badScope = scope
+                        && List.contains badRole (Authority.invalidRoles principal))
+                )))
+
+    { view with
+        HasScopedCases = caseId.IsNone && assigned
+    }
+
+
 type internal Reader
     (
         get: unit -> State,
@@ -113,61 +163,22 @@ type internal Reader
         member _.Maintenance() = Task.FromResult((get ()).Maintenance)
 
         member _.Authority
-            ({
-                 AuthorityQuery.Principal = principal
-                 CaseId = caseId
-             })
+            {
+                AuthorityQuery.Principal = principal
+                CaseId = caseId
+            }
             =
+            read ()
+            Task.FromResult(authorityView (get ()) principal caseId)
+
+        member _.GlobalReadFacts principal =
             read ()
             let state = get ()
 
-            let actor =
-                state.Actors
-                |> Map.values
-                |> Seq.tryFind (fun actor -> actor.Principal = principal)
-
-            let view =
-                actor
-                |> Option.map (fun actor ->
-                    {
-                        ActorAuthority.Actor = actor
-                        Grants =
-                            state.Grants
-                            |> Seq.choose (fun (id, role, scope) ->
-                                if id = actor.ActorId && (scope.IsNone || scope = caseId) then
-                                    Some
-                                        {
-                                            ActorGrant.Role = role
-                                            Scope =
-                                                scope
-                                                |> Option.map Scope.Case
-                                                |> Option.defaultValue Scope.Installation
-                                        }
-                                else
-                                    None)
-                            |> Seq.toList
-                    })
-                |> AuthorityView.ofActor
-
-            let assigned =
-                actor
-                |> Option.exists (fun actor ->
-                    state.Grants
-                    |> Seq.exists (fun (id, role, scope) ->
-                        id = actor.ActorId
-                        && scope.IsSome
-                        && List.contains role (Authority.readRoles principal)
-                        && not (
-                            state.Grants
-                            |> Seq.exists (fun (badId, badRole, badScope) ->
-                                badId = id
-                                && badScope = scope
-                                && List.contains badRole (Authority.invalidRoles principal))
-                        )))
-
             Task.FromResult
-                { view with
-                    HasScopedCases = caseId.IsNone && assigned
+                {
+                    GlobalReadFacts.Authority = authorityView state principal None
+                    Maintenance = state.Maintenance
                 }
 
         member _.AuthorityCases(principal, caseIds) =

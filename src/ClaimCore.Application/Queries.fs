@@ -216,16 +216,14 @@ module internal Queries =
                         ReadOperation.Work =
                             (fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Authority(
-                                            {
-                                                AuthorityQuery.Principal = principal
-                                                CaseId = None
-                                            }
-                                        )
+                                    let! facts = tx.GlobalReadFacts principal
 
-                                    let! maintenance = tx.Maintenance()
-                                    return contextResult services tx.ObservedAt maintenance actor
+                                    return
+                                        contextResult
+                                            services
+                                            tx.ObservedAt
+                                            facts.Maintenance
+                                            facts.Authority
                                 })
                         CancellationToken = token
                     }
@@ -331,13 +329,8 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! actor =
-                                            tx.Authority(
-                                                {
-                                                    AuthorityQuery.Principal = principal
-                                                    CaseId = None
-                                                }
-                                            )
+                                        let! facts = tx.GlobalReadFacts principal
+                                        let actor = facts.Authority
 
                                         match
                                             selectCases
@@ -350,7 +343,7 @@ module internal Queries =
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
                                             let! page = tx.CasePage selection
-                                            let! maintenance = tx.Maintenance()
+                                            let maintenance = facts.Maintenance
 
                                             if page.Items.Length > Paging.MaximumPageSize then
                                                 return Outcome.Failed CoreFault.StoreIntegrityError

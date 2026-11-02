@@ -138,6 +138,14 @@ type internal PausedPageStore
                                     member _.ObservedAt = tx.ObservedAt
                                     member _.Maintenance() = tx.Maintenance()
 
+                                    member _.GlobalReadFacts principal =
+                                        task {
+                                            let! facts = tx.GlobalReadFacts principal
+                                            pause ()
+                                            return facts
+                                        }
+
+
                                     member _.Authority
                                         ({
                                              AuthorityQuery.Principal = principal

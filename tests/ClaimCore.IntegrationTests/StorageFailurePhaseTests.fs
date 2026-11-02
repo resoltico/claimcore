@@ -236,12 +236,109 @@ let private readSetup (database: PostgresFixture.Database) =
             "The supplied observation is an actual server-clock sample within the read setup"
     }
 
+let private globalFactsIntegrity (database: PostgresFixture.Database) =
+    task {
+        let! owner = caseWorker database.Fixture
+
+        let unknown =
+            PrincipalKey.human "https://issuer.example/" "unknown-read-facts"
+            |> Result.defaultWith (string >> failtest)
+
+        let services = [ owner; core database.Fixture unknown ]
+
+        let check label =
+            task {
+                for actor in services do
+                    let! context = Service.context actor () token
+
+                    Expect.equal
+                        context
+                        (Outcome.Failed CoreFault.StoreIntegrityError)
+                        (label + ": context checks the operational owner even without an actor")
+
+                    let! page =
+                        Service.list
+                            actor
+                            (Inputs.caseListPage { AfterCursor = None; Limit = 1 })
+                            token
+
+                    Expect.equal
+                        page
+                        (Outcome.Failed CoreFault.StoreIntegrityError)
+                        (label + ": list checks the operational owner before missing-actor refusal")
+            }
+
+        let! initial = Service.context owner () token
+
+        match initial with
+        | Outcome.Succeeded context ->
+            Expect.isFalse context.Maintenance.Active "Positive ordinary mode"
+        | other -> failtestf "Expected context: %A" other
+
+        do! sql database "DELETE FROM claimcore.register_maintenance" [||]
+        do! check "Missing operational row"
+
+        do!
+            sql
+                database
+                "INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES(true,false,0)"
+                [||]
+
+        // This owned fixture deliberately crosses schema checks to exercise the independent read decoder.
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_check; UPDATE claimcore.register_maintenance SET active=true,generation=0"
+                [||]
+
+        do! check "Invalid operational state"
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.register_maintenance SET active=false; ALTER TABLE claimcore.register_maintenance ADD CONSTRAINT register_maintenance_check CHECK (NOT active OR generation > 0)"
+                [||]
+
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_singleton_check; INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES(false,false,0)"
+                [||]
+
+        do! check "Multiple operational owners"
+
+        do!
+            sql
+                database
+                "DELETE FROM claimcore.register_maintenance WHERE NOT singleton; ALTER TABLE claimcore.register_maintenance ADD CONSTRAINT register_maintenance_singleton_check CHECK (singleton)"
+                [||]
+
+        let! repaired = Service.context owner () token
+
+        match repaired with
+        | Outcome.Succeeded context ->
+            Expect.isFalse
+                context.Maintenance.Active
+                "Restored constraints and single valid owner remain readable"
+        | other -> failtestf "Expected repaired context: %A" other
+
+        let! absent = Service.context (core database.Fixture unknown) () token
+
+        Expect.equal
+            absent
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "A valid operational owner does not invent an unknown actor"
+    }
+
 [<Tests>]
 let tests =
     testSequenced
     <| testList
         "read setup and storage diagnostics"
         [
+            testCaseAsync
+                "global read facts retain operational integrity with known and absent actors"
+                (run globalFactsIntegrity)
             testCaseAsync
                 "transaction-local read settings and observation share one setup"
                 (run readSetup)
