@@ -82,9 +82,10 @@ module CaseSearch =
     let normalize (value: string) =
         value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
 
+    let private searchableFields = CaseFields.declarations |> List.filter _.Searchable
+
     let text fields =
-        CaseFields.declarations
-        |> List.filter _.Searchable
+        searchableFields
         |> List.choose (fun row -> CaseFields.value row.Field fields)
         |> List.map normalize
         |> String.concat "\u001f"
