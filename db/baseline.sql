@@ -16,7 +16,8 @@
 --
 -- Permanent scalar grammars and business-text byte bounds: src/ClaimCore.Domain/Values.fs.
 -- Durable payload grammar and byte bounds: src/ClaimCore.RecordFormat/LedgerPayload.fs.
--- Free business text is at most 1024 UTF-8 bytes; a framed ledger payload is at most 32768 bytes.
+-- Narrative syntax is at most 4096 UTF-8 bytes; reminder action syntax is at most 1024 bytes.
+-- Each framed request plus affected-entity snapshot payload is at most 32768 bytes.
 
 CREATE SCHEMA claimcore;
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
