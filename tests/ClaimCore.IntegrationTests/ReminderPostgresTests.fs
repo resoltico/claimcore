@@ -86,6 +86,92 @@ let private dates database =
 
         Expect.isNone second.NextCursor "The actual queue has exactly two items"
 
+        let! current = Service.get actor { Target = target } token
+        let today = (read current).Work.Basis.BusinessDate
+
+        let! dueToday =
+            Service.execute
+                actor
+                (reminder
+                    105
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Due on the observed business date"
+                            Due = CalendarDate.format (CalendarDate.ofDate today)
+                        }))
+                token
+
+        accepted dueToday |> ignore
+        let! beforeFilters = verified database
+
+        for filter in [ ReminderDue.Overdue; ReminderDue.Today; ReminderDue.Upcoming ] do
+            let! result =
+                Service.reminders
+                    actor
+                    {
+                        Target = Some target
+                        State = None
+                        Due = Some filter
+                        Assignment = None
+                        Text = None
+                        AfterCursor = None
+                        Limit = 50
+                        IncludeInactive = false
+                    }
+                    token
+
+            let result = read result
+            // Dates are independently authored; use this result's own observation if midnight passed.
+            let expected =
+                [ 100, System.DateOnly.MinValue; 105, today; 101, System.DateOnly.MaxValue ]
+                |> List.filter (fun (_, date) ->
+                    match filter with
+                    | ReminderDue.Overdue -> date < result.Basis.BusinessDate
+                    | ReminderDue.Today -> date = result.Basis.BusinessDate
+                    | ReminderDue.Upcoming -> date > result.Basis.BusinessDate)
+                |> List.map (fun (operation, _) ->
+                    ReminderId.ofOperationId (CaseFixtures.operationId (id operation)))
+
+            Expect.equal
+                (result.Items |> List.map (fun item -> Reminder.id item.Reminder))
+                expected
+                "Each actual PostgreSQL reminder-date filter selects individual pending actions using its reported server date"
+
+        let! nextDue = Service.get actor { Target = target } token
+
+        Expect.equal
+            (read nextDue).Work.Due
+            CaseDue.Overdue
+            "An overdue minimum keeps the case overdue even when the reminder queue selects an individual today action"
+
+        let! todayCases =
+            Service.list
+                actor
+                {
+                    Page = { AfterCursor = None; Limit = 50 }
+                    Filter =
+                        { CaseListFilter.empty with
+                            Due = Some CaseDue.Today
+                        }
+                }
+                token
+
+        Expect.isEmpty
+            (read todayCases).Items
+            "Case next-due filtering uses the minimum pending date, independently of the individual-reminder today filter"
+
+        let! afterFilters = verified database
+
+        Expect.equal
+            afterFilters
+            beforeFilters
+            "Read-time due classification never appends synthetic ledger events"
+
+        let! cancelledToday =
+            Service.execute actor (reminder 106 (AuthoredReminderAct.Cancel(id 105, 1L))) token
+
+        accepted cancelledToday |> ignore
+
         let! cancelled =
             Service.execute actor (reminder 102 (AuthoredReminderAct.Cancel(id 100, 1L))) token
 
