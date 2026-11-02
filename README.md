@@ -2,7 +2,7 @@
 
 ClaimCore is a claims case register for people and automation. It records incident facts, payment
 decisions and payment dates through a browser or CLI, backed by one authenticated HTTPS service and
-PostgreSQL database. It records assertions about a claim; it does not adjudicate coverage or transfer money.
+PostgreSQL database. Optional incident descriptions, Handling summaries and independently revisioned reminders support [case work](docs/case-work.md). It records assertions about a claim; it does not adjudicate coverage or transfer money.
 
 ## Try it
 

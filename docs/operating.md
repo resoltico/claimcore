@@ -220,8 +220,7 @@ elapsed verification time for that invocation, not a response-time guarantee.
 
 ## Erasure limits
 
-ERASE atomically clears every case ledger payload/nonce, its snapshot, projected status and progress,
-`search_text`, notification date, responsibility, follow-up, and claimed/payable amount and currency columns. It retains reference,
+ERASE atomically clears every related fact/work/reminder ledger payload/nonce, current snapshots, both narratives, reminder action/date/state and search projections, projected status/progress, notification date, responsibility, derived follow-up and financial amount/currency columns. It retains reference,
 revision, `changed_at` and ledger metadata. Authority history,
 issuer/subject, executor/target attribution and grants remain. The reference itself may identify a person.
 
@@ -232,7 +231,7 @@ address affected erasures before reopening access. Restored operational generati
 backup too: discard outstanding resume instructions and inspect the restored state while traffic and
 owner mutations remain isolated.
 
-The append-only guard permits case-payload clearing. A trusted schema owner can use that exception without
+The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.
 

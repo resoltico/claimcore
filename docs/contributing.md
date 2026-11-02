@@ -168,15 +168,13 @@ checksum-bound schema source; its SHA-256 installation identity derives from the
 Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
 identities without modifying them.
 
-The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
-last-change time, normalized search text, notification date, responsible actor, planned follow-up and exact claimed/payable amount/currency
-pairs. Live snapshots store
+The financial case projection contains identity/revision/lifecycle, a bounded nullable fact snapshot, status/progress, financial last-change time, normalized fact search, notification date and exact claimed/payable amounts/currencies. Case work and reminder entities have independent bounded records/revisions; current responsibility, summary search and minimum Pending due date have transactional read projections. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
 returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
 UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
-text, notification date, responsibility, follow-up and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
+text, notification date and every amount/currency column against the folded facts. Cross-entity verification independently checks work roots, revisions, compound effects, reminder identities, responsibility and derived follow-up against causal history. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts
@@ -419,9 +417,9 @@ follow-up/summary workloads at 1k, 10k and 100k cases. At the
 grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
 their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
 After those common measurements, one open case per thousand receives explicit responsibility and a past
-follow-up based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
+Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
 independently named cases, account identity, dates and counts before recording their separate latency
-samples. These feature workloads have their own fingerprints; a reference without a matching workload
+samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one case, independently checking queue continuations, bounded current views, unique financial totals and global attention. These feature workloads have their own fingerprints; a reference without a matching workload
 yields no ratio.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification

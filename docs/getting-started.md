@@ -167,3 +167,9 @@ can remove unrelated work.
 For startup or login problems, inspect this project's status and private diagnostics. Check ports,
 certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
 redacted reporting and [Operations](operating.md) for backups and erasure limits.
+
+
+After accepting OPEN, optionally record the Incident description and plan a reminder as a separate work
+step. A case starts with empty work at revision zero and needs a next action until it has a Pending
+reminder. Handling summary and reminder edits use their own revisions and preserve financial facts.
+See [case work](case-work.md#plan-case-work) for lifecycle, responsibility and atomic complete-and-plan-next.

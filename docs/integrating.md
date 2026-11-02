@@ -8,7 +8,7 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-Case request, snapshot and ledger entry records support format 3. Authority and control records use format 2. Installation initialization
+Case request, snapshot and ledger entry records support format 4. Independent work/reminder records use format 1; authority and control records remain format 2. Installation initialization
 requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
@@ -214,7 +214,7 @@ order is `REFERENCE`. For example:
 | `status` | Set of OPENED and CLOSED; erased cases have no status. |
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
 | `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
-| `order` | REFERENCE, RECENT for last change first, NOTIFIED for oldest notification, or FOLLOW_UP for dated work first. |
+| `order` | REFERENCE, RECENT for last business-fact change first, NOTIFIED for oldest notification, or FOLLOW_UP for dated work first. |
 | `assignment` | MINE selects factual responsibility for this actor; UNASSIGNED selects no responsible actor. Both apply within current visibility. |
 | `due` | OVERDUE, TODAY, UPCOMING, UNSCHEDULED or INACTIVE, evaluated at the returned database/business-date basis. |
 | `cursor` | Opaque continuation bound to the admitted filters and order. |
@@ -250,24 +250,57 @@ own read snapshot. Separate list and summary requests can observe different acce
 visibility, independently of responsibility. A case-scoped read grant does not make a case Mine;
 assignment does not grant access. `context.actorId` identifies the current requester.
 
-Case work is a separate erasable section with optional `responsibleActor` and `followUpDate`.
-`UPDATE_WORK` sets or clears either named value, preserving omissions, under the expected revision.
-Empty or unchanged work refuses without a revision. Only human CASE_HANDLER accounts with both current
-ReadCase and ManageCaseWork can update work. Service CASE_HANDLER rights remain valid and exclude
-ManageCaseWork. `case.assignees` is a bounded case-scoped read for eligible human ActorIds and subjects;
-it requires both capabilities and exposes no issuer or grant directory. Selection uses ActorId.
+Case work has an independent revision and optional `responsibleActor` and `handlingSummary` values.
+The `WORK` operation family carries `UPDATE_WORK` and its expected work revision; OPEN establishes an
+empty work root at revision zero. Omission preserves, explicit clear removes and supplied text sets a
+value. Empty or unchanged work refuses. Summary edits work on active open/closed cases; responsibility
+changes require active open state. Only current human ReadCase + ManageCaseWork rights permit writes.
+Service CASE_HANDLER financial/read rights remain valid and do not include ManageCaseWork.
 
-An assignee must be currently enabled and eligible when the write locks its action state. Later disable
-or revocation retains factual work and reports the account as unavailable; it creates no case revision.
-Current case readers see only that relation-scoped subject and availability. Closing and voiding retain
-work; erasure clears work payloads, indexes and the assignee foreign-key relationship.
+`case.assignees` remains a bounded case-scoped read of eligible human ActorIds/subjects, without issuer
+or grant-directory disclosure. Explicitly selected accounts are rechecked at execution. Later disable or
+revocation retains factual responsibility and reports the account unavailable; assignment grants no
+access. Every reminder inherits current responsibility. Case/work views distinguish work and financial
+revisions and last-change attribution.
 
-Follow-up accepts representable past and future Gregorian dates. Due state uses the database snapshot
-instant and installation business zone. Closed, voided and erased cases have inactive work. List and
-summary results carry the exact date basis. `assignment` accepts `MINE` or `UNASSIGNED`; `due` accepts
-`OVERDUE`, `TODAY`, `UPCOMING`, `UNSCHEDULED` or `INACTIVE`; `FOLLOW_UP` orders planned dates ascending,
-with absent dates last and case reference as tie-breaker. Filters follow current visibility. List and
-summary observations are separate; live pages may move across writes or business-date boundaries.
+The `REMINDER` family supports CREATE, UPDATE, COMPLETE, CANCEL, REOPEN and COMPLETE_AND_PLAN_NEXT.
+Each reminder has an immutable parent/ID, independent positive revision, action text, planned date and
+PENDING/COMPLETED/CANCELLED state. Creation uses its operation UUID as ReminderId. The compound operation
+completes exactly one current Pending reminder and creates exactly one replacement under that same
+operation UUID; its correlated receipt contains the fixed pair. Stale revision or invalid replacement
+changes neither. Terminal records must reopen explicitly with a supplied date before another edit.
+
+Create/update/reopen and compound planning require active open parents. Complete/cancel can tidy Pending
+reminders on active closed parents. Close/void preserves inactive reminders and their exact dates;
+reopening/reinstatement reactivates them. Erasure clears all related erasable payloads and projections
+while reserving identities. Work/reminder writes do not advance financial case revisions.
+
+Next follow-up is the minimum Pending due date, with stable ReminderId ties; no separate followUpDate
+write remains. Dates may be past/future and use the query's database instant and installation zone.
+Case filters classify that minimum as OVERDUE, TODAY, UPCOMING, UNSCHEDULED or INACTIVE. Reminder queue
+filters classify individual actions, so a case classified Overdue can still have a Today reminder.
+`FOLLOW_UP` orders case minima with absent dates last and stable reference ties. Live continuations bind
+filters/order/scope, each rechecking current visibility; they do not promise a pinned export.
+
+Bounded reminder pages default to actionable Pending work; terminal/inactive records require explicit
+selection. The work overview ignores case page/search filters and reports accessible or Mine actionable
+cases with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
+attentionCases counts their distinct union. Counts distinguish cases from reminders. Zero Pending on an
+active open case is monitored attention, not a hard validity refusal. Date passage writes no ledger event.
+Case financial aggregates count each selected case exactly once, regardless of reminder cardinality.
+
+Incident description and Handling summary are independently optional LF plain text up to 600 Unicode
+scalars, with separate 4096-byte permanent UTF-8 bounds. Reminder action is single-line, up to 200 scalars
+and 1024 permanent bytes. Empty/whitespace-only assertions, CR, unsafe controls and directional formatting
+refuse; ordinary Arabic/joiners remain supported. No trimming, Unicode normalization or markup evaluation
+changes stored content. On OPEN omitted/null description is absent; partial omission preserves and
+explicit null clears. Required registration null and half-money assertions remain invalid. File/editor
+CRLF conversion happens before review/freezing, never after prepared request confirmation.
+
+Typed case activity orders fact/work/reminder events by ledger sequence. Dedicated fact history still
+compares consecutive financial revisions; current terminal reminder access is distinct from prior-version
+ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
+effects. Native/IndexedDB journals remain identity-only and never reconstruct business text after restart.
 
 OPEN and DECIDE retain complete inputs. AMEND_REGISTRATION takes typed optional facts, with
 `claimed: {amount,currency}` as a complete money assertion. CORRECT uses registration KEEP/UPDATE,
