@@ -30,21 +30,40 @@ let private seeded database =
         let! work =
             Service.execute
                 actor
-                (Inputs.caseOperation (
-                    request
-                        100
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.UpdateWork
-                            {
-                                CaseWorkInput.Responsible =
-                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
-                                FollowUp = WorkValue.Set "2027-12-31"
-                            })
-                ))
+                (OperationInput.Work
+                    {
+                        OperationId = id 100
+                        Target = CaseSelector.Reference "synthetic-a"
+                        ExpectedRevision = 0L
+                        Act =
+                            WorkAct.UpdateWork
+                                {
+                                    Responsible =
+                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                    Summary = WorkValue.Set "Await the report"
+                                }
+                    })
                 token
 
         accepted work |> ignore
+
+        let! reminder =
+            Service.execute actor
+
+            (OperationInput.Reminder
+                {
+                    OperationId = id 101
+                    Target = CaseSelector.Reference "synthetic-a"
+                    Act =
+                        AuthoredReminderAct.Create
+                            {
+                                Action = "Request the report"
+                                Due = "2027-12-31"
+                            }
+                })
+                token
+
+        accepted reminder |> ignore
 
         let! resolved =
             ClaimCore.TestSupport.StoreFixtures.resolve actor { OperationId = id 99 } token
