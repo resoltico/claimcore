@@ -377,9 +377,11 @@ It refuses source changes during capture. Both source-stable inputs build in dis
 detached worktrees with locked restore. The comparison alternates
 reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
 read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and eight read profiles
-at 100k cases: search, filtered, notification order, summary, explicit-work follow-up/summary, global
-authority history and actor-filtered authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
+is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and read profiles
+at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
+authority history and actor-filtered authority history. The candidate also measures seven reminder-feature
+profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
+and global work overview. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
 are reported as not applicable.
 
