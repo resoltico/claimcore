@@ -1,3 +1,4 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { OperationErrors } from "./OperationErrors";
 import { useRef, useEffect } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
@@ -5,7 +6,7 @@ import { CatalogInputs } from "../../components/CatalogInputs";
 import { usePresentation } from "../../presentation/context";
 import type { CurrentCase } from "../../api/service";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { operationEntry } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 
 export type OperationFormProps = {
   model: OperationModel;
@@ -67,6 +68,7 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
           disabled={model.busy || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
+          onFieldsChange={model.editFields}
         />
       )}
     </>
@@ -100,9 +102,13 @@ export const OperationForm = (props: OperationFormProps) => {
     }
     form.current?.querySelector<HTMLElement>("[data-error-summary]")?.focus();
   }, [model.notice]);
-  const allowed = offered.includes(model.entry.kind);
+  const paused =
+    useRequesterContext()?.maintenance.active === true ||
+    current?.advice.maintenance.active === true;
+  const allowed = offered.includes(model.entry.kind) && !paused;
   return (
     <form
+      className="operation-form-card"
       ref={form}
       onSubmit={(event) => {
         event.preventDefault();

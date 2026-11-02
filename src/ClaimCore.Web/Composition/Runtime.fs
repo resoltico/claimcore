@@ -8,6 +8,7 @@ open System
 open System.Threading.Tasks
 open System.Threading
 open ClaimCore.Application
+open ClaimCore.Web
 
 /// A case-work host receives actor-bound operations and a bounded shutdown operation.
 type internal IRuntime =
@@ -30,7 +31,14 @@ module internal ActorAccess =
         }
 
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
-    let gate = RuntimeLeases(fun () -> storage.Dispose())
+    let capacity = AdmissionLease.limiter AdmissionPolicy.sessions 0
+
+    let gate =
+        RuntimeLeases(fun () ->
+            try
+                (capacity :> IDisposable).Dispose()
+            finally
+                storage.Dispose())
 
     let sessionAction action =
         task {
@@ -38,7 +46,12 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
             | None -> return invalidOp "Runtime leases are closed."
             | Some lease ->
                 use _lease = lease
-                return! action storage.Sessions
+                use admission = capacity.AttemptAcquire 1
+
+                if not admission.IsAcquired then
+                    return raise (AdmissionRejectedException())
+                else
+                    return! action storage.Sessions
         }
 
     let sessions =

@@ -63,3 +63,12 @@ Host failures carry `code` and `phase`; HTTP status comes from the response.
 For interrupted submission, follow the [delivery recovery guide](../docs/integrating.md#delivery-recovery).
 
 See the [glossary](../docs/glossary.md) for project terminology.
+
+## Recovering an uncertain operation
+
+Keep its exact prepared frame and identity-only attempt record. `claimcore operation status OPERATION_ID`
+is a read: it returns this actor's accepted metadata, known final nonacceptance, or unresolved status.
+It cannot block a late operation. `claimcore recovery list` and `recovery check ATTEMPT_ID` use the current
+actor/installation scope; add `--format json` for machine output. Only explicit `operation settle OPERATION_ID`
+or `recovery settle ATTEMPT_ID` requests a permanent nonacceptance control. Interactive settlement confirms
+the exact ID and irreversible effect. Restart recovery never recreates the business payload.

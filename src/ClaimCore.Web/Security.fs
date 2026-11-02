@@ -110,7 +110,9 @@ type internal OidcTicketStore
                         WebMetrics.sessionChanges changes
                         unreadable ()
                         return null
-            with _ ->
+            with
+            | :? AdmissionRejectedException as error -> return raise error
+            | _ ->
                 unavailable ()
                 return null
         }

@@ -1,2 +1,6 @@
 ../contracts/
 src/generated/chrome-messages.ts
+
+src/generated/core-catalogs.ts
+src/generated/chrome-catalogs.ts
+src/generated/chrome-boot.ts

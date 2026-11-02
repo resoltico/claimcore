@@ -137,8 +137,10 @@
             "incidentCountry": "LV",
             "claimantName": "x",
             "insurerName": "x",
-            "claimedAmount": "0",
-            "claimedCurrency": "EUR"
+            "claimed": {
+              "amount": "0",
+              "currency": "EUR"
+            }
           }
         },
         "target": {
@@ -392,8 +394,10 @@
             "incidentCountry": "LV",
             "claimantName": "x",
             "insurerName": "x",
-            "claimedAmount": "0",
-            "claimedCurrency": "EUR"
+            "claimed": {
+              "amount": "0",
+              "currency": "EUR"
+            }
           }
         },
         "target": {
@@ -760,23 +764,27 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "decision": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
-                "payableAmount": "0",
-                "payableCurrency": "EUR"
+                "payable": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "payment": {
@@ -806,15 +814,17 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "decision": {
@@ -844,23 +854,27 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "decision": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
-                "payableAmount": "0",
-                "payableCurrency": "EUR"
+                "payable": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "payment": {
@@ -890,15 +904,17 @@
           "kind": "CORRECT",
           "groups": {
             "registration": {
-              "kind": "REPLACE",
+              "kind": "UPDATE",
               "values": {
                 "incidentDate": "2026-01-01",
                 "incidentNotificationDate": "2026-01-01",
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
               }
             },
             "decision": {
@@ -1030,20 +1046,9 @@
       "valid": true,
       "value": {
         "limit": 2,
-        "lifecycle": [
-          "ACTIVE",
-          "VOIDED",
-          "ERASED"
-        ],
-        "status": [
-          "OPENED",
-          "CLOSED"
-        ],
-        "progress": [
-          "UNDECIDED",
-          "DECIDED",
-          "PAID"
-        ],
+        "lifecycle": ["ACTIVE", "VOIDED", "ERASED"],
+        "status": ["OPENED", "CLOSED"],
+        "progress": ["UNDECIDED", "DECIDED", "PAID"],
         "text": "Rīga",
         "order": "RECENT"
       }
@@ -1075,7 +1080,7 @@
       "value": {
         "limit": 1,
         "order": "NOTIFIED",
-        "assignment": "ASSIGNED_TO_ME"
+        "assignment": "MINE"
       }
     },
     {
@@ -1186,6 +1191,337 @@
           "caseId": "10000000-0000-4000-8000-000000000001",
           "caseReference": "OTHER"
         }
+      }
+    },
+    {
+      "id": "passive-operation-status",
+      "endpoint": "operation.status",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "partial-one-name",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": "One selected claimant"
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-complete-money",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimed": {
+              "amount": "12.30",
+              "currency": "EUR"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-half-money",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimed": {
+              "amount": "12.30"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-null-required-fact",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": null
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-unknown-member",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "displayName": "not a business field"
+          }
+        }
+      }
+    },
+    {
+      "id": "retired-whole-registration-shape",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-02",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "12",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "work-future-follow-up",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "followUpDate": {
+              "kind": "SET",
+              "value": "2027-12-31"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "work-clear-with-omission",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "responsibleActor": {
+              "kind": "CLEAR"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "work-null-is-not-clear",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "responsibleActor": null
+          }
+        }
+      }
+    },
+    {
+      "id": "work-unknown-choice",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "followUpDate": {
+              "kind": "DONE"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "correct-paid-reaffirm",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "KEEP"
+            },
+            "decision": {
+              "kind": "UPDATE",
+              "values": {
+                "payable": {
+                  "amount": "650",
+                  "currency": "EUR"
+                }
+              }
+            },
+            "payment": {
+              "kind": "REAFFIRM"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "retired-decision-replace-tag",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "KEEP"
+            },
+            "decision": {
+              "kind": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "1",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "kind": "KEEP"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case-assignees-scoped-page",
+      "endpoint": "case.assignees",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "limit": 1
+      }
+    },
+    {
+      "id": "case-work-due-order-filter",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 5,
+        "assignment": "MINE",
+        "due": "OVERDUE",
+        "order": "FOLLOW_UP"
       }
     }
   ]

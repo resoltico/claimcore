@@ -310,9 +310,13 @@ module Bindings =
                     Order = 0
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
-                    Default = annotation.Default
+                    WireRequired = input.Required
+                    Default =
+                        annotation.Default
+                        |> Option.orElseWith (fun () -> annotation.Implicit |> Option.map fst)
                     DiagnosticTargets =
                         match annotation.Name with
+                        | InteractionInput.WorkChoice field -> [ BusinessField.key field ]
                         | InteractionInput.Target value -> [ InputTarget.token value ]
                         | _ -> []
                     Source = annotation.Source

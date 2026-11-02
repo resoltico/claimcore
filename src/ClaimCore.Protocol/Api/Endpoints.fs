@@ -232,6 +232,13 @@ module Api =
             RequestCodecs.caseGetRequest
             (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
 
+    let caseAssignees =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees))
+            HttpMethod.Post
+            RequestCodecs.assigneeRequest
+            (ReplyCodecs.readReply "AssigneePageReply" ResponseCodecs.assigneePage)
+
     let caseList =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
@@ -306,6 +313,16 @@ module Api =
                     }
         }
 
+    let operationStatus =
+        { lookup
+              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status))
+              ResolutionCodecs.status
+              (fun reply -> OutcomePresentation.classifyStatus reply.Outcome) with
+            Input = RequestCodecs.statusRequest
+            Classify = fun reply -> OutcomePresentation.classifyStatus reply.Outcome
+            Correlation = fun input -> Some input.OperationId
+        }
+
     let operationResolve =
         { lookup
               (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
@@ -352,10 +369,14 @@ module Api =
         | HostEndpoint.Session -> EndpointDefinition.create session
         | HostEndpoint.Logout -> EndpointDefinition.create logout
 
+    // This total endpoint-definition table preserves every typed registry witness; splitting it would hide missing endpoint coverage.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private defineActor =
         function
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
+        | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
+            EndpointDefinition.create caseAssignees
         | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
         | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory
@@ -364,6 +385,7 @@ module Api =
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             EndpointDefinition.create operationExecute
         | (ActorEndpoint.Query QueryEndpoint.Resolve) -> EndpointDefinition.create operationResolve
+        | (ActorEndpoint.Query QueryEndpoint.Status) -> EndpointDefinition.create operationStatus
         | (ActorEndpoint.Query QueryEndpoint.Observe) -> EndpointDefinition.create operationObserve
         | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             EndpointDefinition.create authorityList
@@ -397,7 +419,11 @@ module Api =
     let effect (endpoint: Route) = endpoint.Effect
 
     let requiresInstallation (endpoint: Route) =
-        endpoint.Token = "operation.execute" || endpoint.Token = "operation.resolve"
+        match endpoint.Id with
+        | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve)
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) -> true
+        | _ -> false
 
     let executesLedger endpoint =
         effect endpoint = EndpointEffect.LedgerExecution
@@ -459,6 +485,7 @@ module ReplyCorrelation =
                     "operation.execute"
                     "operation.preview"
                     "operation.observe"
+                    "operation.status"
                     "operation.resolve"
                 ]
 

@@ -58,6 +58,7 @@ type CatalogInput =
         Order: int
         Prefill: string list option
         Required: bool
+        WireRequired: bool
         Default: BindingValue option
         DiagnosticTargets: string list
         Source: InputSource
@@ -93,20 +94,63 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
             CatalogSubject.Authority
-        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Resolve) ->
+        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Status | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation
         | CatalogOperation.Query QueryEndpoint.Context -> CatalogSubject.Context
+
+[<RequireQualifiedAccess>]
+type InteractionEffect =
+    | Read
+    | Case of CaseEffect
+    | Authority
+    | FinalNonAcceptance
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module InteractionEffect =
+    let vocabulary =
+        Vocabulary.define
+            "interactionEffect"
+            ([
+                InteractionEffect.Read
+                InteractionEffect.Authority
+                InteractionEffect.FinalNonAcceptance
+             ]
+             @ (Vocabulary.all CaseEffect.vocabulary |> List.map InteractionEffect.Case))
+            (function
+             | InteractionEffect.Read -> "READ"
+             | InteractionEffect.Authority -> "CHANGE_AUTHORITY"
+             | InteractionEffect.FinalNonAcceptance -> "FINAL_NON_ACCEPTANCE"
+             | InteractionEffect.Case effect -> CaseEffect.token effect)
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CatalogOperation =
+    let interaction (operation: CatalogOperation) =
+        match operation.SelectedAct, operation.Endpoint with
+        | Some(ActKind.Case kind), _ ->
+            let description = CaseActKind.describe kind
+
+            Some description.Family,
+            description.AffectedSections,
+            InteractionEffect.Case description.Effect
+        | Some(ActKind.Authority _), _ -> None, [], InteractionEffect.Authority
+        | None, ActorEndpoint.Query QueryEndpoint.Resolve ->
+            None, [], InteractionEffect.FinalNonAcceptance
+        | _ -> None, [], InteractionEffect.Read
+
 
 type CatalogEntry =
     {
         LabelId: string
         MeaningId: string
         ConfirmationId: string option
+        Family: ActFamily option
+        AffectedSections: CaseSection list
+        Effect: InteractionEffect
         Kind: CatalogOperation
         Inputs: CatalogInput list
         Constants: BindingAssignment list
@@ -120,6 +164,8 @@ type FieldPresentationDefinition =
     {
         Name: BusinessField
         Group: RecordGroup option
+        Section: CaseSection option
+        Pairs: BusinessField option
         LabelId: string
         MeaningId: string
         Scalar: ScalarRule
@@ -151,6 +197,14 @@ type RolePresentationDefinition =
     {
         Role: Role
         AdmittedPrincipalKinds: PrincipalKind list
+        AdmittedScopes: ScopeKind list
+    }
+
+type CapabilityPresentationDefinition =
+    {
+        Capability: Capability
+        AdmittedPrincipalKinds: PrincipalKind list
+        AdmittedScopes: ScopeKind list
     }
 
 type CatalogDocument =
@@ -161,6 +215,7 @@ type CatalogDocument =
         Limits: PresentationLimits
         Entries: CatalogEntry list
         Roles: RolePresentationDefinition list
+        Capabilities: CapabilityPresentationDefinition list
         ProductVersion: string
     }
 

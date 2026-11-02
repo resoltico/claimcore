@@ -40,7 +40,8 @@ let private current =
 
 let private caseReply =
     {
-        AssignedToYou = false
+        Mine = false
+        Work = Inputs.workView current.State
         Snapshot = current
         Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
     }
@@ -329,7 +330,7 @@ let tests =
                 | CaseAct.Correct correction ->
                     Expect.equal correction.Registration Amendment.Keep "Registration is retained"
                     Expect.equal correction.Decision Change.Keep "Decision is retained"
-                    Expect.equal correction.Payment Change.Keep "Payment is retained"
+                    Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
                 | _ -> failtest "Expected a correction review"
 
                 let rendered = String.concat "\n" h.Text

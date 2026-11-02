@@ -2,7 +2,7 @@ import type { OperationModel } from "../../hooks/operation/useOperation";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { operationEntry } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 const focusField = (path: string): void => {
   const target = document.getElementById(`field-${path}`) ?? document.getElementsByName(path)[0];
   if (target instanceof HTMLElement) {

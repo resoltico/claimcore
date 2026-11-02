@@ -11,20 +11,23 @@ type CaseListPosition =
     | Reference of string
     | Recent of changedAt: DateTimeOffset * reference: string
     | Notified of notifiedOn: CalendarDate option * reference: string
+    | FollowUp of followUp: CalendarDate option * reference: string
 
 module CaseListPosition =
     let reference =
         function
         | CaseListPosition.Reference reference
         | CaseListPosition.Recent(_, reference)
-        | CaseListPosition.Notified(_, reference) -> reference
+        | CaseListPosition.Notified(_, reference)
+        | CaseListPosition.FollowUp(_, reference) -> reference
 
-    let create order changedAt notifiedOn reference =
+    let create order changedAt notifiedOn followUp reference =
         match order with
         | CaseListOrder.Reference -> CaseListPosition.Reference(CaseReference.key reference)
         | CaseListOrder.Recent -> CaseListPosition.Recent(changedAt, CaseReference.key reference)
         | CaseListOrder.Notified ->
             CaseListPosition.Notified(notifiedOn, CaseReference.key reference)
+        | CaseListOrder.FollowUp -> CaseListPosition.FollowUp(followUp, CaseReference.key reference)
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
@@ -127,6 +130,10 @@ module Cursors =
                 |> Option.map (CaseSearchText.value >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
                 "order", JsonValue.String(DurableNames.caseOrder filter.Order)
+                "due",
+                filter.Due
+                |> Option.map (DurableNames.caseDue >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
                 "assignment",
                 filter.Assignment
                 |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
@@ -175,6 +182,15 @@ module Cursors =
                         |> Option.defaultValue JsonValue.Null
                         "reference", JsonValue.String(CaseReference.key reference)
                     ]
+            | CaseListOrder.FollowUp, CaseListPosition.FollowUp(date, reference) ->
+                JsonValue.Object
+                    [
+                        "followUpDate",
+                        date
+                        |> Option.map (CalendarDate.format >> JsonValue.String)
+                        |> Option.defaultValue JsonValue.Null
+                        "reference", JsonValue.String(CaseReference.key reference)
+                    ]
             | _ -> invalidArg (nameof position) "The position must match the selected order."
 
         encode
@@ -183,7 +199,7 @@ module Cursors =
                 DurableNames.After, after
                 "filters", caseFilters filter
                 DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 4L
+                DurableNames.V, JsonValue.Integer 5L
             ]
 
     let private casePosition order =
@@ -208,6 +224,16 @@ module Cursors =
                 |> Result.toOption
                 |> Option.map (fun date -> CaseListPosition.Notified(Some date, after))
             | _ -> None
+        | JsonValue.Object [ "followUpDate", date; "reference", JsonValue.String after ] when
+            order = CaseListOrder.FollowUp && reference after
+            ->
+            match date with
+            | JsonValue.Null -> Some(CaseListPosition.FollowUp(None, after))
+            | JsonValue.String raw ->
+                CalendarDate.parse raw
+                |> Result.toOption
+                |> Option.map (fun date -> CaseListPosition.FollowUp(Some date, after))
+            | _ -> None
         | _ -> None
 
     let decodeCases installation (filter: CaseListFilter<CaseSearchText>) token =
@@ -218,7 +244,7 @@ module Cursors =
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 4L ] when
+                                 DurableNames.V, JsonValue.Integer 5L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after
@@ -249,6 +275,31 @@ module Cursors =
                 && uuid CaseId.create target = Some requested
                 ->
                 Revision.create after
+            | _ -> None)
+            token
+
+    let encodeAssignees installation caseId (after: ActorId) =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "ASSIGNEES"
+                "v", JsonValue.Integer 1L
+                "caseId", JsonValue.String(CaseId.format caseId)
+                "after", JsonValue.String(ActorId.format after)
+            ]
+
+    let decodeAssignees installation caseId token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "caseId", JsonValue.String target
+                                 "kind", JsonValue.String "ASSIGNEES"
+                                 "v", JsonValue.Integer 1L ] when
+                uuid CaseId.create target = Some caseId
+                ->
+                uuid ActorId.create after
             | _ -> None)
             token
 

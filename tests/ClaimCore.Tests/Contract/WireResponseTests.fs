@@ -31,7 +31,8 @@ let private expectedExit =
     | "REJECTED"
     | "NOT_ACCEPTED" -> 2
     | "FAILED" -> 3
-    | "OUTCOME_UNKNOWN" -> 4
+    | "OUTCOME_UNKNOWN"
+    | "UNRESOLVED" -> 4
     | _ -> failtest "The authored reply requires a declared outcome kind."
 
 let private examples () =

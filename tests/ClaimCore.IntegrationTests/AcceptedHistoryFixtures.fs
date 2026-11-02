@@ -24,6 +24,7 @@ let private snapshot operationId (reference: string) claimant : CaseSnapshot =
         State =
             CaseState.Active(
                 {
+                    Work = CaseWork.empty
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration =
@@ -187,7 +188,11 @@ let private grandfathering (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
+                    request
+                        11
+                        "HISTORICAL-1"
+                        1L
+                        (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
                 ))
                 (token))
 
@@ -202,9 +207,11 @@ let private grandfathering (database: PostgresFixture.Database) =
                         "HISTORICAL-1"
                         2L
                         (AuthoredCaseAct.AmendRegistration(
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.ClaimantName, (name + "B") ]
-                                (values)
+                            Inputs.registrationUpdate (
+                                ClaimCore.TestSupport.Inputs.registrationWith
+                                    [ BusinessField.ClaimantName, (name + "B") ]
+                                    (values)
+                            )
                         ))
                 ))
                 (token))

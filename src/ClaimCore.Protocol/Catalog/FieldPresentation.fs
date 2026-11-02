@@ -13,6 +13,20 @@ module FieldPresentation =
 
     let descriptor field =
         match (BusinessField.describe field).Kind with
+        | FieldValueKind.PlannedDate -> ScalarRule.PlannedDate CalendarDate.descriptor
+        | FieldValueKind.ActorId ->
+            ScalarRule.Text
+                {
+                    Format =
+                        {
+                            MinimumCharacters = 36
+                            Grammar =
+                                Some
+                                    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                            UnknownCode = None
+                        }
+                    MaximumCharacters = Some 36
+                }
         | FieldValueKind.CalendarDate -> ScalarRule.CalendarDate CalendarDate.descriptor
         | FieldValueKind.Country -> ScalarRule.Text CountryCode.descriptor
         | FieldValueKind.PartyName -> ScalarRule.Text PartyName.descriptor

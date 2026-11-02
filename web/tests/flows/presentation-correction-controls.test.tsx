@@ -1,3 +1,4 @@
+import { selectFact } from "../support/field-entry";
 import { chooseOption, selectedOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -39,9 +40,10 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
   const decision = document.querySelector<HTMLSelectElement>("#correction-decision-mode")!;
   const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
-  await chooseOption(user, registration, "REPLACE");
+  await chooseOption(user, registration, "UPDATE");
   await chooseOption(user, decision, "CLEAR");
   await chooseOption(user, payment, "CLEAR");
+  selectFact("claimedAmount");
   const amount = document.querySelector<HTMLInputElement>(
     'input[data-field-name="claimedAmount"]',
   )!;
@@ -52,7 +54,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   )!;
   for (const next of ["ar", "lv", "en"]) {
     await chooseOption(user, languageSelector, next);
-    expect(selectedOption(registration)).toBe("REPLACE");
+    expect(selectedOption(registration)).toBe("UPDATE");
     expect(selectedOption(decision)).toBe("CLEAR");
     expect(selectedOption(payment)).toBe("CLEAR");
     expect(amount).toHaveValue("1.0000");
@@ -65,7 +67,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   expect(draftAt(0).act).toMatchObject({
     kind: "CORRECT",
     groups: {
-      registration: { kind: "REPLACE", values: { claimedAmount: "1.0000" } },
+      registration: { kind: "UPDATE", values: { claimed: { amount: "1.0000", currency: "EUR" } } },
       decision: { kind: "CLEAR" },
       payment: { kind: "CLEAR" },
     },
@@ -91,8 +93,9 @@ it("associates payment acknowledgement with the generated mode control", async (
   await chooseOption(
     user,
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,
-    "REPLACE",
+    "UPDATE",
   );
+  selectFact("paymentDecisionDate");
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   await waitFor(() => {
     expect(screen.getByRole("alert")).toHaveFocus();

@@ -1,17 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openCase, reviewDraft, startAct } from "./case-workflow";
-import { browserRequest, login, openAuthenticated, expectAccessible } from "./session-helpers";
+import {
+  browserRequest,
+  login,
+  openAuthenticated,
+  expectAccessible,
+  sessionToken,
+} from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
-import { actPath, casePath } from "../src/routing/routes";
+import { casePath, referencePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
 import { pauseJsonReply } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
-const settleAcceptedClose = async (page: Page, operationId: string) => {
+const recoverAcceptedClose = async (page: Page, operationId: string) => {
   const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
-  const check = page.getByRole("button", { name: "Check outcome", exact: true });
+  const check = page.getByRole("button", { name: "Check status", exact: true });
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
@@ -20,12 +26,12 @@ const settleAcceptedClose = async (page: Page, operationId: string) => {
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
-      response.url().endsWith("/api/operation.resolve"),
+      response.url().endsWith("/api/operation.status"),
     );
     await check.click();
     const response = await resolved;
     const reply: unknown = await response.json();
-    if (!isResponse("operation.resolve", reply) || reply.outcome.kind !== "ACCEPTED") {
+    if (!isResponse("operation.status", reply) || reply.outcome.kind !== "ACCEPTED") {
       throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
     }
     expect(response.status()).toBe(200);
@@ -68,13 +74,13 @@ test("native beforeunload blocks document navigation only while execution is in 
     ]);
     await dismissed.promise;
     expect(dialogs).toEqual(["beforeunload"]);
-    await expect(page).toHaveURL((url) => url.pathname === actPath(reference, "CLOSE"));
+    await expect(page).toHaveURL(
+      (url) => url.pathname.endsWith("/acts/CLOSE") && url.pathname.startsWith("/cases/id/"),
+    );
     execution.release();
-    await settleAcceptedClose(page, identity.operationId);
+    await recoverAcceptedClose(page, identity.operationId);
     await page.goto("/operations", { waitUntil: "commit" });
-    await expect(
-      page.getByRole("heading", { name: "Operation lookup", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
     execution.release();
@@ -89,7 +95,7 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
   await openAuthenticated(page);
   const reference = `LOGIN.${randomUUID()}/part?#`;
   await openCase(page, reference);
-  const destination = new URL(casePath(reference), page.url());
+  const destination = new URL(referencePath(reference), page.url());
   const anonymous = await browser.newContext({ ignoreHTTPSErrors: true });
   try {
     const signedOutPage = await anonymous.newPage();
@@ -126,19 +132,35 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
   }
 });
 
-test("case deep links reload and browser back and forward preserve the reference", async ({
+test("canonical case links reload and browser back and forward preserve the case identity", async ({
   page,
 }) => {
   await openAuthenticated(page);
   const reference = `ROUTE.${randomUUID()}/part?#`;
   await openCase(page, reference);
-  await expect(page).toHaveURL((url) => url.pathname === casePath(reference));
+  const response = await browserRequest(page, "/api/case.get", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
+  });
+  if (
+    response.status !== 200 ||
+    !isResponse("case.get", response.payload) ||
+    response.payload.outcome.kind !== "SUCCEEDED"
+  ) {
+    throw new Error("E2E_RELOAD_CASE_ID_UNAVAILABLE");
+  }
+  const destination = casePath(response.payload.outcome.data.caseId);
+  await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
   await expect(page).toHaveURL(/\/cases$/u);
   await page.goBack();
-  await expect(page).toHaveURL((url) => url.pathname === casePath(reference));
+  await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.goForward();
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 });

@@ -65,10 +65,10 @@ const send = async <K extends EndpointId>(
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("incomplete"), dispatched: false };
   }
-  if (["operation.execute", "operation.resolve"].includes(id) && installationId === undefined) {
+  const endpoint = endpoints.find((candidate) => candidate.id === id)!;
+  if (endpoint.requiresInstallation && installationId === undefined) {
     return { kind: "deliveryFailure", notice: localNotice("invalidInput"), dispatched: false };
   }
-  const endpoint = endpoints.find((candidate) => candidate.id === id)!;
   const headers: Record<string, string> = {
     Accept: "application/json",
     "ClaimCore-Contract": consumerContractIdentity,
@@ -164,6 +164,12 @@ export const service = {
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
+  status: (
+    operationId: string,
+    credential: string,
+    installationId: string | undefined,
+    signal?: AbortSignal,
+  ) => request("operation.status", credential, { operationId }, signal, installationId),
   resolve: (operationId: string, credential: string, installationId: string | undefined) =>
     request("operation.resolve", credential, { operationId }, undefined, installationId),
   preview: (prepared: PreparedRequest<"operation.execute">, credential: string) =>

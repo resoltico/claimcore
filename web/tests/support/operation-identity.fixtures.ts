@@ -1,6 +1,6 @@
 import type { OperationState, EffectIdentity } from "../../src/operation/operationState";
 import { operationReducer } from "../../src/operation/operationState";
-import { valuesFor, preparedFor } from "./operation-form.fixtures";
+import { valuesFor, preparedFor, current } from "./operation-form.fixtures";
 import { review } from "./service-foundation.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
 export const effect = (id = "preview"): EffectIdentity => ({
@@ -9,21 +9,31 @@ export const effect = (id = "preview"): EffectIdentity => ({
   credential: "token",
   target: "CASE:CASE-SERIALIZATION",
 });
-export const initial = (): OperationState => ({
-  entry: { subject: "CASE", kind: "CLOSE" },
-  target: "CASE:CASE-SERIALIZATION",
-  context: { generation: 0, epoch: 0, credential: "token", target: "CASE:CASE-SERIALIZATION" },
-  disclosureToken: "token",
-  disclosureRefused: false,
-  values: valuesFor(),
-  baseline: valuesFor(),
-  generation: 0,
-  operation: { kind: "EDITING", exposed: null },
-  effects: [],
-  notice: null,
-  fieldErrors: {},
-  pendingDiscard: null,
-});
+export const initial = (): OperationState => {
+  const context = {
+    generation: 0,
+    epoch: 0,
+    credential: "token",
+    target: "CASE:CASE-SERIALIZATION",
+  };
+  return {
+    entry: { subject: "CASE", kind: "CLOSE" },
+    target: "CASE:CASE-SERIALIZATION",
+    context,
+    disclosureContext: context,
+    caseObservation: current,
+    disclosureRead: null,
+    disclosureRefused: false,
+    values: valuesFor(),
+    baseline: valuesFor(),
+    generation: 0,
+    operation: { kind: "EDITING", exposed: null },
+    effects: [],
+    notice: null,
+    fieldErrors: {},
+    pendingDiscard: null,
+  };
+};
 export const begin = (state = initial()) =>
   operationReducer(state, {
     type: "PREVIEW",

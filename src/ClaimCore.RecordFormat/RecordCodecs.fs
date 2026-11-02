@@ -57,18 +57,94 @@ module internal RecordCodecs =
         inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
         |> Codec.named "Payment"
 
+
+    let private moneyInput =
+        (record (fun amount currency ->
+            {
+                MoneyInput.Amount = amount
+                Currency = currency
+            })
+        : Fields<MoneyInput, _>)
+        |> field "amount" _.Amount text
+        |> field "currency" _.Currency text
+        |> build
+
+    let registrationUpdate =
+        (record (fun incident notification country claimant insurer claimed ->
+            {
+                RegistrationUpdateInput.IncidentDate = incident
+                NotificationDate = notification
+                Country = country
+                Claimant = claimant
+                Insurer = insurer
+                Claimed = claimed
+            })
+        : Fields<RegistrationUpdateInput, _>)
+        |> optionalField "incidentDate" _.IncidentDate text
+        |> optionalField "incidentNotificationDate" _.NotificationDate text
+        |> optionalField "incidentCountry" _.Country text
+        |> optionalField "claimantName" _.Claimant text
+        |> optionalField "insurerName" _.Insurer text
+        |> optionalField "claimed" _.Claimed moneyInput
+        |> build
+        |> named "RegistrationUpdate"
+
+    let decisionUpdate =
+        (record (fun date payable ->
+            {
+                DecisionUpdateInput.Date = date
+                Payable = payable
+            })
+        : Fields<DecisionUpdateInput, _>)
+        |> optionalField "paymentDecisionDate" _.Date text
+        |> optionalField "payable" _.Payable moneyInput
+        |> build
+        |> named "DecisionUpdate"
+
+    let private workValue =
+        Codec.taggedOn
+            "kind"
+            "WorkValue"
+            [
+                unitVariant "CLEAR" WorkValue.Clear
+                variant
+                    "SET"
+                    WorkValue.Set
+                    (function
+                    | WorkValue.Set value -> Some value
+                    | _ -> None)
+                    (record id |> field "value" id text)
+            ]
+
+    let work =
+        let supplied =
+            function
+            | WorkValue.Keep -> None
+            | choice -> Some choice
+
+        (record (fun actor date ->
+            {
+                CaseWorkInput.Responsible = defaultArg actor WorkValue.Keep
+                FollowUp = defaultArg date WorkValue.Keep
+            })
+        : Fields<CaseWorkInput, _>)
+        |> optionalField "responsibleActor" (_.Responsible >> supplied) workValue
+        |> optionalField "followUpDate" (_.FollowUp >> supplied) workValue
+        |> build
+        |> named "CaseWorkUpdate"
+
     let registrationGroup =
         tagged
             "RegistrationGroup"
             [
                 unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Amendment.Keep
                 variant
-                    (DurableNames.correction CorrectionGroupAction.Replace)
-                    Amendment.Replace
+                    (DurableNames.correction CorrectionGroupAction.Update)
+                    Amendment.Update
                     (function
-                    | Amendment.Replace value -> Some value
+                    | Amendment.Update value -> Some value
                     | _ -> None)
-                    (record id |> field DurableNames.Values id registration)
+                    (record id |> field DurableNames.Values id registrationUpdate)
             ]
 
     let decisionGroup =
@@ -77,12 +153,12 @@ module internal RecordCodecs =
             [
                 unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
                 variant
-                    (DurableNames.correction CorrectionGroupAction.Replace)
-                    Change.Replace
+                    (DurableNames.correction CorrectionGroupAction.Update)
+                    Change.Update
                     (function
-                    | Change.Replace value -> Some value
+                    | Change.Update value -> Some value
                     | _ -> None)
-                    (record id |> field DurableNames.Values id decision)
+                    (record id |> field DurableNames.Values id decisionUpdate)
                 unitVariant (DurableNames.correction CorrectionGroupAction.Clear) Change.Clear
             ]
 
@@ -90,15 +166,18 @@ module internal RecordCodecs =
         tagged
             "PaymentGroup"
             [
-                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) Change.Keep
+                unitVariant (DurableNames.correction CorrectionGroupAction.Keep) PaymentChange.Keep
                 variant
                     (DurableNames.correction CorrectionGroupAction.Replace)
-                    Change.Replace
+                    PaymentChange.Replace
                     (function
-                    | Change.Replace value -> Some value
+                    | PaymentChange.Replace value -> Some value
                     | _ -> None)
                     (record id |> field DurableNames.Values id payment)
-                unitVariant (DurableNames.correction CorrectionGroupAction.Clear) Change.Clear
+                unitVariant "REAFFIRM" PaymentChange.Reaffirm
+                unitVariant
+                    (DurableNames.correction CorrectionGroupAction.Clear)
+                    PaymentChange.Clear
             ]
 
     let correction =
@@ -127,6 +206,9 @@ module internal RecordCodecs =
             | CaseActSlot.Bare act -> unitVariant tag act
             | CaseActSlot.Registration(inject, project) ->
                 memberCodec DurableNames.Values registration (inject, project)
+            | CaseActSlot.RegistrationUpdate(inject, project) ->
+                memberCodec "values" registrationUpdate (inject, project)
+            | CaseActSlot.Work(inject, project) -> memberCodec "values" work (inject, project)
             | CaseActSlot.Decision(inject, project) ->
                 memberCodec DurableNames.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
@@ -275,12 +357,36 @@ module internal RecordCodecs =
         acceptedGroup RecordGroup.Payment Payment.create Payment.values
         |> named "Payment"
 
+    let private acceptedWork =
+        let actor =
+            scalar
+                (fun raw ->
+                    match Guid.TryParseExact(raw, "D") with
+                    | true, value ->
+                        ActorId.create value |> Option.map Ok |> Option.defaultValue (Error())
+                    | _ -> Error())
+                ActorId.format
+
+        (record (fun responsible followUp ->
+            {
+                CaseWork.Responsible = responsible
+                FollowUp = followUp
+            })
+        : Fields<CaseWork, _>)
+        |> field "responsibleActor" _.Responsible (nullable actor)
+        |> field
+            "followUpDate"
+            _.FollowUp
+            (nullable (scalar CalendarDate.parse CalendarDate.format))
+        |> build
+
     let caseFields =
-        (record (fun reference status registration decision payment ->
+        (record (fun reference status registration decision payment work ->
             PaymentProgress.fromGroups decision payment
             |> Result.map (fun progress ->
                 {
-                    CaseFields.CaseReference = reference
+                    CaseFields.Work = work
+                    CaseReference = reference
                     Status = status
                     Registration = registration
                     Progress = progress
@@ -291,6 +397,7 @@ module internal RecordCodecs =
         |> field DurableNames.Registration _.Registration acceptedRegistration
         |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
         |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
+        |> field "work" _.Work acceptedWork
         |> buildResult (fun path () ->
             {
                 Path = path + ".payment"

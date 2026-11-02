@@ -21,6 +21,12 @@ type CatalogFieldProps = {
 const referenceAppearance = (field: FieldCatalogEntry) =>
   field.name === "caseReference" ? { className: "identifier-value" } : {};
 
+const isDate = (field: FieldCatalogEntry) =>
+  field.scalar.kind === "CALENDAR_DATE" || field.scalar.kind === "PLANNED_DATE";
+const isCode = (field: FieldCatalogEntry) =>
+  field.scalar.kind === "CURRENCY" ||
+  (field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined);
+
 export const CatalogField = ({
   field,
   value,
@@ -32,13 +38,10 @@ export const CatalogField = ({
   const p = usePresentation();
   const name = inputName ?? field.name;
   const typed = { field, value, inputName: name, disabled, error, onChange };
-  if (field.scalar.kind === "CALENDAR_DATE") {
+  if (isDate(field)) {
     return <CatalogDate {...typed} />;
   }
-  if (
-    field.scalar.kind === "CURRENCY" ||
-    (field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined)
-  ) {
+  if (isCode(field)) {
     return <CatalogCode {...typed} />;
   }
   return (

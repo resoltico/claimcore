@@ -3,13 +3,21 @@ import { expect, type Locator, type Page } from "@playwright/test";
 const background = (button: Locator) =>
   button.evaluate((element) => getComputedStyle(element).backgroundColor);
 
-const checkCaseActions = async (page: Page) => {
-  const region = page.locator(".case-actions, .case-action-bar");
-  if ((await region.count()) === 0) {
+const checkCaseActions = async (page: Page, expected?: string | null) => {
+  const region = page.locator(".case-heading, .case-actions, .case-action-bar");
+  if ((await region.locator("button").count()) === 0 && expected === undefined) {
     return;
   }
   const primary = region.locator("button.primary");
+  if (expected === null) {
+    await expect(primary).toHaveCount(0);
+    return;
+  }
   await expect(primary).toHaveCount(1);
+  await expect(primary).not.toHaveClass(/case-action-danger/u);
+  if (expected !== undefined) {
+    await expect(primary).toHaveAttribute("data-act", expected);
+  }
   const fill = await background(primary);
   const secondary = region.locator("button:not(.primary):not(.case-action-danger)");
   for (const button of await secondary.all()) {
@@ -41,8 +49,8 @@ const checkSavedViewSelection = async (page: Page) => {
   }
 };
 
-export const checkActionHierarchy = async (page: Page) => {
-  await checkCaseActions(page);
+export const checkActionHierarchy = async (page: Page, expected?: string | null) => {
+  await checkCaseActions(page, expected);
   await checkSavedViewSelection(page);
   const primary = page.locator("main button.primary, main button[type=submit]").first();
   if ((await primary.count()) === 0) {

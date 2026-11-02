@@ -39,14 +39,19 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Lifecycles", (Inventory.tokens "caseLifecycles").Length
                 "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
+                "CaseWorklistCounts.Assignment", 2
+                "CaseWorklistCounts.Due", 5
                 "AuthorityState.Grants", 1
+                "AuthorityState.Access", 11
+                "CapabilityAccess.DirectRoles", 7
+                "CapabilityAccess.InstallationRoles", 7
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
                 "CorrectionChoices.Registration", 2
-                "ActorContext.Capability", 10
+                "ActorContext.Capability", 11
                 "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
-                "CorrectionChoices.Payment", 3
+                "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "AdvisoryReview.Changes", Inventory.fieldCount
@@ -183,6 +188,16 @@ let private positionValue response context kind =
     else
         None
 
+let private maintenanceValue =
+    gen {
+        let! active = Gen.bool
+
+        let! generation =
+            Gen.int64 (Range.constant (if active then 1L else 0L) 9007199254740991L)
+
+        return RegisterMaintenance.create active generation |> Result.defaultWith invalidOp
+    }
+
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
     match positionValue response context kind with
     | Some generator -> generator
@@ -211,6 +226,8 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         Gen.constant (box ())
     elif isList kind then
         freshList response source context kind
+    elif kind = typeof<RegisterMaintenance> then
+        maintenanceValue |> Gen.map box
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
 
@@ -247,7 +264,13 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                 else
                     Gen.constant None
 
-            return CaseAdvice.create acts correction history |> Result.defaultWith invalidOp |> box
+            let! maintenance = maintenanceValue
+
+            return
+                CaseAdvice.create acts correction history
+                |> Result.defaultWith invalidOp
+                |> CaseAdvice.duringMaintenance maintenance
+                |> box
         }
     elif kind = typeof<InputIssues> then
         gen {

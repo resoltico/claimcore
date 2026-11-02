@@ -8,6 +8,7 @@
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="ServiceContext.fs" />
     <Compile Include="LedgerEntries.fs" />
+    <Compile Include="NonAcceptance.fs" />
     <Compile Include="CaseChanges.fs" />
     <Compile Include="ExecutionFacts.fs" />
     <Compile Include="LedgerEnvelope.fs" />
@@ -15,10 +16,12 @@
     <Compile Include="AuthorityExecution.fs" />
     <Compile Include="AuthorityReviews.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="CaseWorkReads.fs" />
     <Compile Include="QueryResults.fs" />
     <Compile Include="AuthorityQueries.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
+    <Compile Include="RecoveryStatus.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />

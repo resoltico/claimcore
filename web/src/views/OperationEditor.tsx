@@ -1,6 +1,7 @@
+import { useCompact } from "../hooks/useCompact";
 import { CaseFieldsView } from "../components/CaseFieldsView";
-import { normalizeAmountValues } from "../presentation/amountEntry";
-import { useCallback, useEffect, useRef } from "react";
+import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useCredential } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
@@ -16,9 +17,18 @@ const useCaseOperation = (props: OperationEditorProps) => {
     kind: props.initialAct,
     current: props.current,
     credential,
-    normalizeValues: (values, entry) => normalizeAmountValues(values, entry, p.displayLocale),
+    normalizeValues: normalizeAmountValues,
+    captureValue: (path, value, entry) => captureAmountEntry(path, value, entry, p.displayLocale),
     onLockChange: props.onMutationLockChange,
   });
+  const invalidate = useEffectEvent(() => {
+    model.invalidateDisclosure();
+  });
+  useLayoutEffect(() => {
+    if (props.disclosureAvailable === false) {
+      invalidate();
+    }
+  }, [props.disclosureAvailable]);
   const navigation = useOperationNavigation(model, props.onClose);
   const recorded = useRef<string | null>(null);
   const commit = useCallback(
@@ -42,9 +52,12 @@ const CurrentFacts = ({
   model,
   current,
   definition,
+  disclosureAvailable = true,
 }: OperationEditorProps & { model: ReturnType<typeof useOperation> }) => {
   const p = usePresentation();
+  const compact = useCompact();
   if (
+    !disclosureAvailable ||
     current === null ||
     !model.disclosureCurrent ||
     model.disclosureRefused ||
@@ -55,19 +68,22 @@ const CurrentFacts = ({
   }
   return (
     <aside className="editor-current">
-      <CaseFieldsView
-        values={current.state.fields}
-        revision={current.revision}
-        fields={definition.catalog.fields}
-        context={p.text("ui.currentCase")}
-      />
+      <details open={!compact}>
+        <summary>{p.text("ui.currentCase")}</summary>
+        <CaseFieldsView
+          values={current.state.fields}
+          revision={current.revision}
+          fields={definition.catalog.fields}
+          context={p.text("ui.currentCase")}
+        />
+      </details>
     </aside>
   );
 };
 export const OperationEditor = (props: OperationEditorProps) => {
   const p = usePresentation();
   const { model, navigation, commit } = useCaseOperation(props);
-  if (model.receipt?.subject.kind === "CASE") {
+  if (props.disclosureAvailable !== false && model.receipt?.subject.kind === "CASE") {
     return (
       <AcceptedOperation
         definition={props.definition}
@@ -77,7 +93,8 @@ export const OperationEditor = (props: OperationEditorProps) => {
       />
     );
   }
-  const offered = props.current?.advice.acts ?? [props.initialAct];
+  const current = model.currentCase;
+  const offered = current?.advice.acts ?? (props.current === null ? [props.initialAct] : []);
   return (
     <section aria-labelledby="operation-title" className="operation-editor">
       <h1 id="operation-title">{p.actLabel(model.entry.kind)}</h1>
@@ -87,12 +104,13 @@ export const OperationEditor = (props: OperationEditorProps) => {
           <OperationDiscard model={model} onClose={navigation.close} />
           <OperationPanel
             model={model}
-            current={props.current}
+            current={current}
             offered={offered}
+            disclosureAvailable={props.disclosureAvailable !== false}
             onClose={navigation.close}
           />
         </div>
-        <CurrentFacts {...props} model={model} />
+        <CurrentFacts {...props} current={current} model={model} />
       </div>
     </section>
   );

@@ -80,7 +80,7 @@ it("invalidates the pending current read synchronously on a second history refus
   const user = userEvent.setup();
   render(
     <CaseDetail
-      caseReference={fields.caseReference}
+      target={{ kind: "REFERENCE", caseReference: fields.caseReference }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}

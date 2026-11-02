@@ -30,6 +30,7 @@ module internal RouteSupport =
             hostFailure context HostFailureReason.MediaTypeRejected
         | GateFailure.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
         | GateFailure.SessionRejected -> hostFailure context HostFailureReason.SessionRejected
+        | GateFailure.AdmissionRejected -> hostFailure context HostFailureReason.RateLimited
         | GateFailure.AntiforgeryRejected ->
             hostFailure context HostFailureReason.AntiforgeryRejected
 
@@ -77,6 +78,8 @@ module internal RouteSupport =
                         | true, (:? bool as completed) when completed ->
                             HostFailureReason.CompletedResponseFailed
                         | true, _ -> HostFailureReason.DispatchUnconfirmed
+                        | _ when (error :? AdmissionRejectedException) ->
+                            HostFailureReason.RateLimited
                         | _ -> HostFailureReason.BeforeDispatchFailed
 
                     try

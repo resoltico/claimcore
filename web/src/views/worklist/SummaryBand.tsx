@@ -34,6 +34,33 @@ const SummaryTotals = ({ summary }: { summary: CaseWorklistSummary }) => {
     </dl>
   );
 };
+const WorkCounts = ({ summary }: { summary: CaseWorklistSummary }) => {
+  const p = usePresentation();
+  return (
+    <>
+      <dl className="work-counts">
+        {summary.counts.assignment.map((value) => (
+          <div key={value.value}>
+            <dt>{p.term("assignment", value.value)}</dt>
+            <dd>{p.integer(value.count)}</dd>
+          </div>
+        ))}
+        {summary.counts.due.map((value) => (
+          <div key={value.value}>
+            <dt>{p.term("due", value.value)}</dt>
+            <dd>{p.integer(value.count)}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="observation-basis">
+        {p.text("ui.summaryDateBasis", {
+          date: p.date(summary.basis.businessDate),
+          zone: summary.basis.timeZone,
+        })}
+      </p>
+    </>
+  );
+};
 export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const p = usePresentation();
   const compact = useCompact();
@@ -41,7 +68,7 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.data : null;
   if (query.loading) {
     return (
-      <p className="summary-band" role="status">
+      <p className="summary-band" role="status" aria-busy="true">
         {p.text("ui.loading")}
       </p>
     );
@@ -57,7 +84,12 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
     return null;
   }
   const title = p.text("ui.summaryCounts", { count: p.integer(summary.counts.total) });
-  const totals = <SummaryTotals summary={summary} />;
+  const totals = (
+    <>
+      <SummaryTotals summary={summary} />
+      <WorkCounts summary={summary} />
+    </>
+  );
   return compact ? (
     <details className="summary-band">
       <summary aria-label={`${title} · ${p.text("ui.summaryDetails")}`}>{title}</summary>

@@ -110,8 +110,19 @@ let private authorityReview =
     OperationReview.Authority
         {
             Target = None
-            Before = { Enabled = false; Grants = [] }
-            After = { Enabled = true; Grants = [] }
+            AccessScope = GrantScope.Installation
+            Before =
+                {
+                    Enabled = false
+                    Grants = []
+                    Access = []
+                }
+            After =
+                {
+                    Enabled = true
+                    Grants = []
+                    Access = []
+                }
         }
 
 let private mutationReplies () =

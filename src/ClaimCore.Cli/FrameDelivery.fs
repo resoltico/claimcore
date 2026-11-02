@@ -34,8 +34,10 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                             currentLanguage
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
-                                CliIdentity.programName
-                                + " operation resolve "
+                                CommandGrammar.commandText (
+                                    CatalogOperation.Query QueryEndpoint.Status
+                                )
+                                + " "
                                 + (Frames.operationId frame
                                    |> Option.map string
                                    |> Option.defaultValue "OPERATION_ID")

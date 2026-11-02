@@ -109,6 +109,19 @@ module PrincipalKey =
 
 
 [<RequireQualifiedAccess>]
+type ScopeKind =
+    | Installation
+    | Case
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ScopeKind =
+    let vocabulary =
+        Vocabulary.ofUnion<ScopeKind> "scope" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
 type Scope =
     | Installation
     | Case of CaseId
@@ -138,7 +151,7 @@ type AuthorityView =
         Actor: Actor option
         Installation: Role list
         Cases: Map<CaseId, Role list>
-        HasAssignedCases: bool
+        HasScopedCases: bool
     }
 
 module AuthorityView =
@@ -147,7 +160,7 @@ module AuthorityView =
             Actor = None
             Installation = []
             Cases = Map.empty
-            HasAssignedCases = false
+            HasScopedCases = false
         }
 
     let ofActor (actor: ActorAuthority option) =
@@ -176,10 +189,10 @@ module AuthorityView =
                 Actor = Some actor.Actor
                 Installation = installation
                 Cases = cases
-                HasAssignedCases = false
+                HasScopedCases = false
             }
 
 [<RequireQualifiedAccess>]
 type CaseVisibility =
     | Every
-    | Assigned
+    | Scoped

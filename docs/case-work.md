@@ -8,7 +8,8 @@ it does not adjudicate coverage or transfer money. Start with the Cases worklist
 
 Choose a saved view, search, or combine lifecycle, status and progress filters. Open and undecided means
 ACTIVE + OPENED + UNDECIDED; Decided and unpaid means ACTIVE + DECIDED. Recently changed orders by the last
-accepted change. Closed and Voided select their respective status or lifecycle; All clears the filters.
+accepted change. Closed and Voided select their respective status or lifecycle; All accessible clears
+the filters. My cases, Unassigned, Due today and Overdue select explicit case-work facts.
 
 Search finds substrings in the reference, claimant and insurer. It applies Unicode compatibility
 normalization and invariant lowercase to both stored text and queries. Percent, underscore and backslash
@@ -24,25 +25,57 @@ The browser keeps selected filters, search and order in the URL. Follow its case
 references, including values that need URL escaping. The CLI supports the same filters through
 `case list`; [Integrating](integrating.md#worklist-queries-and-summary-rows) covers query and export details.
 
-Assignment comes from case-scoped access grants:
-`claimcore case list --assignment ASSIGNED_TO_ME` selects cases where you hold a valid case-scoped
-case-reading grant. Installation access alone does not make a case assigned. `--order notified`
-orders oldest notification dates first, with erased cases last. Notification date is the current
-registration assertion of this handler's first notification; correcting that fact changes its order.
+Responsibility is an explicit case fact, separate from access grants. My cases selects cases whose
+responsible account is yours; Unassigned selects cases without a responsible account. Neither selection
+changes who may read or update a case. All accessible cases is the initial view. The CLI uses
+`claimcore case list --assignment MINE` or `--assignment UNASSIGNED`.
+
+Follow-up is an optional planned date, including future dates. Overdue, Today, Upcoming and Unscheduled
+apply only to active, open cases; closed, voided and erased cases are Inactive. Follow-up ordering puts
+dated work first and absent dates last, with stable reference ties. Page and summary
+responses each report their own database observation, installation business date and zone; use that basis
+rather than the browser clock. `--order notified` still orders by the current notification assertion.
 
 `claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
 claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
-contribute when selected; erased cases contribute only to lifecycle counts. Totals are exact, with
-no rounding or currency conversion.
+contribute when selected. Erased cases contribute to total, lifecycle and inactive-due counts, with no
+status, progress, assignment or money. Totals are exact, with no rounding or currency conversion.
 
-The browser starts with My cases when you hold a case-scoped grant and no worklist is selected in the
-URL. Choose Oldest first to order by notification; row age counts whole days to the installation's
-business date. Open a case by activating its row. Matching totals use the same filters and expand from
-one line on a narrow screen. Field groups each have an Explain fields toggle and exact-copy icons.
+The browser keeps responsibility and due filters in the URL. Summary counts include those dimensions
+inside the selected filter. Totals and the loaded page may come from different observations and display
+their own date basis. Row age uses the page's business date.
+
+## Web case navigation
+
+The Cases queue and accepted operations open `/cases/id/CASE-ID`. These canonical links retain case
+identity independently of how its reference looks. Exact reference lookup uses
+`/cases/reference/REFERENCE` with an encoded reference segment, including UUID-shaped references.
+The two selectors remain distinct through reads, history and editing; a UUID-shaped reference is never
+inferred to be a CaseId. Task links append `/acts/ACT` to the selected route; actions use the admitted
+case identity.
+
+The case workspace groups current facts, case work, decision/payment and history. Its primary action is
+chosen from the actual offered tasks; closed and voided cases do not automatically recommend reopening.
+Technical details keep copyable CaseId and revision available. Targeted edits and review preserve raw
+entry context, exact canonical values and the authored expected revision.
+
+## Plan case work
+
+UPDATE_WORK changes responsibility, follow-up, or both atomically while a case is active and open.
+Each field is independently set or cleared; omission leaves it unchanged. At least one field must change.
+A human CASE_HANDLER with case access can manage work. Service handlers can register, decide and close
+within their grants, but cannot manage responsibility or follow-up.
+
+The case-scoped candidate picker discloses only eligible human accounts' subject and ActorId, in bounded
+pages. A selected account must still be enabled and hold both case-read and case-work rights when the
+write executes. Responsibility grants no access. If an accepted assignee later loses eligibility, the
+case retains its assignment and marks the account unavailable. Duplicate subjects remain distinguishable
+by ActorId. Closing or voiding retains work; reopening or reinstating restores its active due meaning.
+Erasure removes work with the other business payloads.
 
 ## Open a case
 
-Choose OPEN when it is offered, then supply the reference and every registration value: incident date,
+Choose **Open a case** when it is offered, then supply the reference and every registration value: incident date,
 this handler's first notification date, incident country, claimant, responsible insurer, claimed amount
 and currency. Review the proposed facts and confirm to record revision one. Acceptance returns to the case
 page with a notice naming the act and revision. Status begins OPENED;
@@ -54,7 +87,7 @@ snapshots retain the creation spelling. The stable CaseId is the accepted OPEN o
 reference and CaseId remain reserved after erasure. A claimant may be a person or organization; insurer
 records the handler's assertion. There are no policy, coverage, reserve, banking, address, notes or attachment fields.
 
-AMEND_REGISTRATION replaces registration only while the case is open and undecided. Before ordinary
+AMEND_REGISTRATION updates selected registration facts only while the case is open and undecided. Before ordinary
 registration editing of a decided case, clear any recorded payment and withdraw the decision, or use the applicable
 correction workflow below.
 
@@ -81,13 +114,14 @@ CORRECT changes existing groups atomically while preserving reference and status
 existing decision; a closed case allows correction independently of payment progress. Review the current
 and proposed values before confirming.
 
-Registration supports KEEP or complete REPLACE. Decision and payment support KEEP, complete REPLACE or
-CLEAR where current advice permits it. KEEP reads accepted state under the ledger lock. Groups the actor
-cannot change remain KEEP. Interactive CLI correction also defaults omitted groups to KEEP and shows the
-group actions in its review.
+Registration supports KEEP or UPDATE. Decision supports KEEP, UPDATE or CLEAR; payment supports KEEP,
+complete REPLACE, REAFFIRM or CLEAR where current advice permits it. UPDATE asserts only selected facts.
+A money assertion always includes both amount and currency; the pair cannot be updated halfway.
+Omitted facts retain their accepted values under the ledger lock. Groups the actor cannot change remain
+KEEP. Interactive CLI correction defaults omitted groups to KEEP and shows the selected actions in review.
 
 A correction cannot be all-KEEP, create a no-op revision, or add a missing decision/payment. Clearing a paid
-decision also requires clearing payment. Replacing a paid decision requires explicit payment replacement,
+decision also requires clearing payment. Updating a paid decision requires explicit authorized payment replacement,
 reaffirmation or clearing, even when its payable amount is unchanged. Acceptance creates one complete
 revision; refusal leaves the accepted state intact. See the
 [correction policy](../src/ClaimCore.Domain/CaseCorrection.fs) and
@@ -112,12 +146,26 @@ registration rights; a case-scoped handling grant does not suffice. Advice and p
 authority: execution rechecks rights, state and expected revision against the locked current case.
 
 Browser forms use the catalog's field kinds and help. Date controls provide localized segments and a
-calendar; country/currency suggestions still permit free entry. Unambiguous locale amounts normalize
-before preview. Input refusals focus a summary listing every issue; follow its links to the affected
+calendar; country/currency suggestions still permit free entry. Authored amounts retain their entry display locale, so later preference changes do not reinterpret
+their meaning before preview. Canonical prefilled values retain their canonical meaning. Input refusals focus a summary listing every issue; follow its links to the affected
 controls. Amount/date entry is reviewed in canonical wire
 form before confirmation. Language, display locale and theme are separate presentation choices;
 suspicious-Unicode warnings do not rewrite authored values. Navigation is locked while a mutation is in
 flight. Follow [delivery recovery](integrating.md#delivery-recovery) if submission or reload is interrupted.
+
+## Recover an uncertain result
+
+Open Recovery to inspect this actor's attempts in the current installation. **Check operation status** is
+read-only: accepted, final nonacceptance and unresolved are different results. Unresolved does not mean
+rejected. **Send again**, when offered in the active editor, uses the exact in-memory reviewed request.
+
+**Settle operation permanently** is a separate confirmed write. It records nonacceptance only if the
+operation has not been accepted, permanently blocking that actor/operation pair. Do not use it merely to
+refresh status. A valid registered actor can use Recovery without case or Access roles.
+
+Reloading or closing a tab retains committed identity-only recovery records, not the business request.
+The interface asks before discarding an undiscarded draft or in-memory retry. Follow
+[delivery recovery](integrating.md#delivery-recovery) for result meanings, storage failures and CLI steps.
 
 ## Business record
 
@@ -125,6 +173,7 @@ The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) owns eac
 searchable status. Catalog label and meaning identities select the core labels and explanations.
 Technical IDs, revisions, timestamps and advice remain separate from business facts. The view places
 complete groups under `registration`, `decision` and `payment`; null means the whole group is unrecorded.
+The `work` section holds independently optional responsibility and follow-up facts.
 
 ## Scalars
 
@@ -132,10 +181,10 @@ complete groups under `registration`, `decision` and `payment`; null means the w
 are in [MoneyValues](../src/ClaimCore.Domain/MoneyValues.fs). The
 [validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns failures to input targets. Retained
 reads and verification enforce permanent format/state invariants without applying today's admission to
-old assertions. Unchanged retained names and dates may be reaffirmed.
+retained assertions. Accepted names and dates may be reaffirmed without asserting a different value.
 
 Dates are real YYYY-MM-DD values in years 0001–9999. Recorded dates follow incident ≤ notification ≤
-decision ≤ payment. Newly asserted event dates cannot exceed the business date derived from the database
+decision ≤ payment. Planned follow-up dates may be in the future. Newly asserted event dates cannot exceed the business date derived from the database
 instant and installation zone. Clearing then recording a date is a new assertion; reaffirming an unchanged
 date remains possible after a clock change.
 

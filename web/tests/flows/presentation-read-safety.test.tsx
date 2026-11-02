@@ -132,7 +132,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   );
   const view = render(
     <CaseDetail
-      caseReference={value}
+      target={{ kind: "REFERENCE", caseReference: value }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}

@@ -1,3 +1,4 @@
+import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -95,8 +96,12 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
     );
     if (act === "CORRECT") {
       const mode = document.querySelector<HTMLElement>("#correction-registration-mode")!;
-      await chooseOption(user, mode, "REPLACE");
+      await chooseOption(user, mode, "UPDATE");
     }
+    selectFact("claimantName");
+    const claimant = screen.getByRole("textbox", { name: "Claimant name" });
+    await user.clear(claimant);
+    await user.type(claimant, "Edited claimant");
     await user.click(
       screen.getByRole("button", {
         name: "Review changes",

@@ -171,9 +171,11 @@ let internal lockedView fixture =
 
                                 let! fenced =
                                     ExecutionFacts.fenced
+                                        (core fixture fixture.Owner)
                                         tx
                                         view.Actor
                                         (CaseFixtures.operationId original.OperationId)
+                                        view.ExistingOperation
 
                                 calls <- calls + 1
 
@@ -204,7 +206,12 @@ let internal lockedView fixture =
                                         (CaseFixtures.command original)
                                         {
                                             Head = tx.Head
-                                            Fenced = fenced
+                                            Fenced =
+                                                fenced
+                                                |> Result.defaultWith (fun fault ->
+                                                    failtestf
+                                                        "Unexpected fence integrity failure: %A"
+                                                        fault)
                                             Nonce = tx.Nonce
                                         }
                                         view

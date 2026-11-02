@@ -24,16 +24,21 @@ const renderState = async (state: SessionState) => {
 
 it("renders loading and refreshable session failures", async () => {
   const loading = await renderState({ kind: "loading", epoch: 0 });
-  expect(screen.getByText("Loading local session…")).toBeVisible();
+  expect(await screen.findByText("Loading local session…")).toBeVisible();
   loading.unmount();
   await renderState({ kind: "failure", message: localNotice("unreachable"), epoch: 1 });
-  expect(screen.getByRole("alert")).toHaveTextContent("The local service could not be reached.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "The local service could not be reached.",
+  );
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
 });
 
 it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   const anonymous = await renderState({ kind: "anonymous", token: null, message: null, epoch: 2 });
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+  expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login",
+  );
   anonymous.unmount();
   const rejected = await renderState({
     kind: "anonymous",
@@ -41,8 +46,11 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
     message: localNotice("invalidSession"),
     epoch: 3,
   });
-  expect(screen.getByRole("alert")).toHaveTextContent("Invalid session response.");
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Invalid session response.");
+  expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login",
+  );
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });
   expect(await screen.findByRole("heading", { name: "Cases" })).toBeVisible();

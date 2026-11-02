@@ -54,6 +54,7 @@ let private fields status decided paid : CaseFields =
             None
 
     {
+        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference "Demo-1"
         Status = status
         Registration =
@@ -195,9 +196,11 @@ let private grandfathering =
 
             let reaffirm =
                 (AuthoredCaseAct.AmendRegistration(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [ BusinessField.ClaimantName, (oldName) ]
-                        (registration)
+                    Inputs.registrationUpdate (
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, (oldName) ]
+                            (registration)
+                    )
                 ))
 
             Expect.isOk
@@ -206,9 +209,11 @@ let private grandfathering =
 
             let changed =
                 (AuthoredCaseAct.AmendRegistration(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [ BusinessField.ClaimantName, (oldName + "x") ]
-                        (registration)
+                    Inputs.registrationUpdate (
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, (oldName + "x") ]
+                            (registration)
+                    )
                 ))
 
             Expect.isError

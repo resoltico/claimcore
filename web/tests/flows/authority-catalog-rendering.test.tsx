@@ -61,12 +61,15 @@ const authorityPreview = (parsed: AuthorityInput) =>
           subject: {
             kind: "AUTHORITY",
             target: null,
+            accessScope: { kind: "INSTALLATION" },
             before: {
               enabled: false,
+              access: [],
               grants: [],
             },
             after: {
               enabled: true,
+              access: [],
               grants: [],
             },
           },
@@ -219,5 +222,26 @@ it("requires an explicit role and disables service-incompatible roles from catal
   expect(group.querySelector("input:checked")).toBeNull();
   expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
   expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
+  expect(calls).toHaveLength(0);
+});
+
+it("disallows new case-scoped Owner grants and preserves revocation choices", async () => {
+  const calls: Dispatch<AuthorityInput>[] = [];
+  vi.stubGlobal("fetch", authorityTransport(calls));
+  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  await authorAuthority("GRANT");
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("radio", { name: "Owner" }));
+  expect(screen.getByRole("radio", { name: "Owner" })).toBeChecked();
+  await user.click(screen.getByRole("radio", { name: "One case" }));
+  expect(screen.getByRole("radio", { name: "Owner" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: "Owner" })).not.toBeChecked();
+  expect(screen.getByRole("radio", { name: "Owner" })).toHaveAccessibleDescription(
+    /No capability applies at this scope/u,
+  );
+  expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
+  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "REVOKE");
+  await user.click(screen.getByRole("button", { name: "Discard and change action" }));
+  expect(screen.getByRole("radio", { name: "Owner" })).not.toBeDisabled();
   expect(calls).toHaveLength(0);
 });

@@ -42,6 +42,9 @@ let private discovery binary connection principal =
                     "rebuild"
                     "invalidate-restored-sessions"
                     "head"
+                    "status"
+                    "maintenance"
+                    "prune-sessions"
                     "help"
                     "version"
                 ]
@@ -140,6 +143,29 @@ let private checkpoints binary connection principal =
             let! repeated = invoke binary connection principal [ "head" ] 0
             Expect.equal (repeated.GetRawText()) (head.GetRawText()) "Read-only head repeats"
 
+        let! status = invoke binary connection principal [ "status" ] 0
+        Expect.equal (kind status) "STATUS" "Owner status has its own read-only result"
+
+        Expect.equal
+            (status.GetProperty("position").GetRawText())
+            (position.GetRawText())
+            "Status reports the observed head without verification claims"
+
+        let! required =
+            invoke binary connection principal [ "rebuild"; "--expect"; expected ] 2
+
+        Expect.equal
+            (kind required)
+            "MAINTENANCE_REQUIRED"
+            "Rebuild cannot implicitly pause the register"
+
+        let! maintenance = invoke binary connection principal [ "maintenance"; "enter" ] 0
+
+        Expect.equal
+            (kind maintenance)
+            "MAINTENANCE"
+            "Owner maintenance is explicit before reconstruction"
+
         let! rebuilt =
             invoke binary connection principal [ "rebuild"; "--expect"; expected ] 0
 
@@ -152,6 +178,30 @@ let private checkpoints binary connection principal =
             (rebuilt.GetProperty("position").GetRawText())
             (position.GetRawText())
             "Owner rebuild preserves the head"
+
+        let! conflict =
+            invoke binary connection principal [ "maintenance"; "resume"; "--generation"; "2" ] 2
+
+        Expect.equal
+            (kind conflict)
+            "MAINTENANCE_CONFLICT"
+            "A wrong owner generation is a structured refusal"
+
+        let! pruned =
+            invoke binary connection principal [ "prune-sessions"; "--limit"; "1" ] 0
+
+        Expect.equal
+            (kind pruned)
+            "SESSIONS_PRUNED"
+            "Explicit bounded pruning crosses the real owner process boundary"
+
+        let! resumed =
+            invoke binary connection principal [ "maintenance"; "resume"; "--generation"; "1" ] 0
+
+        Expect.equal
+            (kind resumed)
+            "MAINTENANCE"
+            "Explicit generation-bound resume returns the observed state"
 
         let! sessions =
             invoke binary connection principal [ "invalidate-restored-sessions" ] 0
@@ -377,6 +427,10 @@ let private inputAndDeliveryGuards () =
             [ "rebuild"; "--expect"; "1:" + String.replicate 64 "A" ]
             [ "invalidate-restored-sessions"; "extra" ]
             [ "head"; "extra" ]
+            [ "status"; "extra" ]
+            [ "maintenance"; "resume"; "--generation"; "0" ]
+            [ "maintenance"; "resume"; "--generation"; "01" ]
+            [ "prune-sessions"; "--limit"; "1001" ]
             [ "verify"; "--expect"; "9007199254740992:" + String.replicate 64 "0" ]
         ] do
         Expect.isError (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"

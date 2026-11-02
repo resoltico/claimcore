@@ -10,6 +10,7 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Authentication.OpenIdConnect
@@ -20,6 +21,20 @@ open ClaimCore.HostSecurity
 module AuthMiddleware =
     [<Literal>]
     let BearerScheme = "ClaimCore.Bearer"
+
+    let private callbackPath = PathString "/signin-oidc"
+    let private signedOutCallbackPath = PathString "/signout-callback-oidc"
+    let private remoteSignOutPath = PathString "/signout-oidc"
+
+    let internal interactiveRequest (path: PathString) =
+        [
+            callbackPath
+            signedOutCallbackPath
+            remoteSignOutPath
+            PathString "/auth/login"
+        ]
+        |> List.exists (fun candidate ->
+            String.Equals(candidate.Value, path.Value, StringComparison.OrdinalIgnoreCase))
 
     let private acceptedAlgorithms =
         [| SecurityAlgorithms.RsaSha256; SecurityAlgorithms.RsaSsaPssSha256 |]
@@ -77,6 +92,9 @@ module AuthMiddleware =
         (configuration: OidcConfiguration)
         (options: OpenIdConnectOptions)
         =
+        options.CallbackPath <- callbackPath
+        options.SignedOutCallbackPath <- signedOutCallbackPath
+        options.RemoteSignOutPath <- remoteSignOutPath
         options.Authority <- configuration.Issuer.AbsoluteUri
         options.RequireHttpsMetadata <- true
         options.ClientId <- configuration.ClientId

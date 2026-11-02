@@ -3,16 +3,13 @@ import { businessFieldCount, inventory } from "../support/inventory";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
 import { fields, definition } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 describe("core act metadata", () => {
-  it("prefills registration from catalog and builds scoped input from the root schema", () => {
+  it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
     expect(definition.catalog.fields).toHaveLength(businessFieldCount);
     expect(
       definition.catalog.entries.filter(
@@ -38,7 +35,7 @@ describe("core act metadata", () => {
       current,
       "10000000-0000-4000-8000-000000000001",
     );
-    expect(values["act.values.claimantName"]).toBe(fields.registration.claimantName);
+    expect(values["act.values.claimantName"]).toBeUndefined();
     const close = initialOperationValues(
       "CASE",
       "CLOSE",

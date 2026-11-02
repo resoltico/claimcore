@@ -63,3 +63,10 @@ type CaseListRequest =
         Page: PageRequest
         Filter: CaseListFilter<string>
     }
+
+type AssigneeRequest =
+    {
+        Target: CaseSelector
+        AfterCursor: string option
+        Limit: int
+    }

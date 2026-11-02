@@ -2,9 +2,9 @@ import { expect } from "vitest";
 import type { OperationInput } from "@contracts/client";
 
 type Group = "registration" | "decision" | "payment";
-type Literal = { act: { groups: Record<Group, { values?: Record<string, string> }> } };
+type Literal = { act: { groups: Record<Group, { values?: Record<string, unknown> }> } };
 
-// Keep every literal oracle value. Separately require complete payload identity with the authored
+// Keep every literal oracle value. Separately require complete authored patch identity with the authored
 // input, so unmentioned fields cannot disappear or acquire extra values during serialization.
 export const expectCorrection = (
   actual: OperationInput,
@@ -19,7 +19,7 @@ export const expectCorrection = (
   for (const group of ["registration", "decision", "payment"] as const) {
     const actualGroup = actual.act.groups[group];
     const literalValues = literal.act.groups[group].values;
-    if (actualGroup.kind === "REPLACE" && literalValues !== undefined) {
+    if ("values" in actualGroup && literalValues !== undefined) {
       expect(actualGroup.values).toEqual(authored[group]);
       const keys = new Set(Object.keys(literalValues));
       projected[group] = {

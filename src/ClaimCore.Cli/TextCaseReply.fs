@@ -33,6 +33,32 @@ module internal TextCaseReply =
                 + ":")
                :: rows (Some group)))
 
+    let assigneePage language (page: AssigneePage) =
+        (page.Items
+         |> List.map (fun account ->
+             ActorId.format account.ActorId
+             + "  "
+             + displayed language (Some account.Subject)))
+        @ nextLines language page.NextCursor
+
+    let private workAccount language (work: CaseWorkView) =
+        work.Responsible
+        |> Option.map (fun assigned ->
+            line
+                language
+                (FieldPresentation.labelId BusinessField.ResponsibleActor)
+                (displayed language (Some assigned.Account.Subject)
+                 + " ["
+                 + ActorId.format assigned.Account.ActorId
+                 + "] — "
+                 + label
+                     language
+                     (if assigned.Available then
+                          "label.assigneeAvailable"
+                      else
+                          "label.assigneeUnavailable")))
+        |> Option.toList
+
     let offerAct language act =
         term language CaseActKind.vocabulary act
 
@@ -41,7 +67,7 @@ module internal TextCaseReply =
             line
                 language
                 (FieldPresentation.labelId BusinessField.CaseReference)
-                (CaseReference.format value.Snapshot.Reference)
+                (TerminalText.data (CaseReference.format value.Snapshot.Reference))
             line
                 language
                 (CliMessages.key CliMessage.RevisionLabel)
@@ -51,6 +77,11 @@ module internal TextCaseReply =
                 (CliMessages.key CliMessage.StateLabel)
                 (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
         ]
+        @ (if value.Advice.Maintenance.Active then
+               [ label language "diagnostic.REGISTER_MAINTENANCE" ]
+           else
+               [])
+        @ workAccount language value.Work
         @ (CaseState.fields value.Snapshot.State
            |> Option.map (fieldLines language)
            |> Option.defaultValue [])

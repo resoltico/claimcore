@@ -245,6 +245,7 @@ let private changingHistory (fixture: Fixture) change =
                                 operation.Work
                                     { new IReadTx with
                                         member _.ObservedAt = tx.ObservedAt
+                                        member _.Maintenance() = tx.Maintenance()
                                         member _.Authority query = tx.Authority query
                                         member _.FindCase id = tx.FindCase id
 
@@ -252,12 +253,14 @@ let private changingHistory (fixture: Fixture) change =
                                             tx.FindCaseByReference reference
 
                                         member _.FindEntry id = tx.FindEntry id
+                                        member _.NonAcceptance key = tx.NonAcceptance key
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query
                                         member _.HistoryPage query = tx.HistoryPage query
                                         member _.ActorPage query = tx.ActorPage query
                                         member _.GrantPage query = tx.GrantPage query
                                         member _.FindActor id = tx.FindActor id
+                                        member _.AssigneePage query = tx.AssigneePage query
                                         member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
                                         member _.ActorCount() = tx.ActorCount()
 

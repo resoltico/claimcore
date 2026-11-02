@@ -1,3 +1,4 @@
+import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { current } from "../support/operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
@@ -22,14 +23,18 @@ it("reload recovery resolves identities without resubmitting and clears only the
   const second = recoveryRecord("10000000-0000-4000-8000-000000000003");
   await testJournal.put(first);
   await testJournal.put(second);
-  const resolve = vi.spyOn(service, "resolve").mockResolvedValue({
+  const resolve = vi.spyOn(service, "status").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: { operationId: first.operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
   });
   const execute = vi.spyOn(service, "execute");
-  render(<UnresolvedNotice />);
-  const buttons = await screen.findAllByRole("button", { name: "Check unresolved operation" });
+  render(
+    <RecoveryProvider>
+      <UnresolvedNotice />
+    </RecoveryProvider>,
+  );
+  const buttons = await screen.findAllByRole("button", { name: "Check operation status" });
   expect(buttons).toHaveLength(2);
   await userEvent.click(buttons[0]!);
   expect(resolve).toHaveBeenCalledExactlyOnceWith(first.operationId, "token", first.installationId);
@@ -151,11 +156,13 @@ it("recovery listing excludes another actor and installation", async () => {
     installationId: "10000000-0000-4000-8000-000000000098",
   });
   await testJournal.put(recoveryRecord());
-  const resolve = vi.spyOn(service, "resolve");
-  render(<UnresolvedNotice />);
-  expect(await screen.findAllByRole("button", { name: "Check unresolved operation" })).toHaveLength(
-    1,
+  const resolve = vi.spyOn(service, "status");
+  render(
+    <RecoveryProvider>
+      <UnresolvedNotice />
+    </RecoveryProvider>,
   );
+  expect(await screen.findAllByRole("button", { name: "Check operation status" })).toHaveLength(1);
   expect(resolve).not.toHaveBeenCalled();
 });
 

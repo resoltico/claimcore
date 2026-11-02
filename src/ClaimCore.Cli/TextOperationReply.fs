@@ -18,7 +18,7 @@ module internal TextOperationReply =
             match receipt.Subject with
             | ReceiptSubject.Case value ->
                 term language CaseActKind.vocabulary value.Act,
-                CaseReference.format value.Reference,
+                TerminalText.data (CaseReference.format value.Reference),
                 [
                     label language (CliMessages.key CliMessage.RevisionLabel)
                     Revision.format value.Revision
@@ -62,7 +62,8 @@ module internal TextOperationReply =
 
         let target =
             match review with
-            | OperationReview.Case value -> CaseReference.format value.Proposed.Reference
+            | OperationReview.Case value ->
+                TerminalText.data (CaseReference.format value.Proposed.Reference)
             | OperationReview.Authority value ->
                 let principal =
                     match input with
@@ -72,7 +73,13 @@ module internal TextOperationReply =
 
                 match principal with
                 | Some(kind, issuer, subject) ->
-                    String.concat " " [ principalKind language kind; issuer; subject ]
+                    String.concat
+                        " "
+                        [
+                            principalKind language kind
+                            TerminalText.data issuer
+                            displayed language (Some subject)
+                        ]
                 | None -> "— — —"
 
         act + " " + target
@@ -80,7 +87,7 @@ module internal TextOperationReply =
     let private changeAction =
         function
         | Change.Keep -> CorrectionGroupAction.Keep
-        | Change.Replace _ -> CorrectionGroupAction.Replace
+        | Change.Update _ -> CorrectionGroupAction.Update
         | Change.Clear -> CorrectionGroupAction.Clear
 
     let private correctionActions language input =
@@ -89,12 +96,17 @@ module internal TextOperationReply =
             let registration =
                 match correction.Registration with
                 | Amendment.Keep -> CorrectionGroupAction.Keep
-                | Amendment.Replace _ -> CorrectionGroupAction.Replace
+                | Amendment.Update _ -> CorrectionGroupAction.Update
 
             [
                 RecordGroup.Registration, registration
                 RecordGroup.Decision, changeAction correction.Decision
-                RecordGroup.Payment, changeAction correction.Payment
+                RecordGroup.Payment,
+                (match correction.Payment with
+                 | PaymentChange.Keep -> CorrectionGroupAction.Keep
+                 | PaymentChange.Clear -> CorrectionGroupAction.Clear
+                 | PaymentChange.Reaffirm -> CorrectionGroupAction.Reaffirm
+                 | PaymentChange.Replace _ -> CorrectionGroupAction.Replace)
             ]
             |> List.map (fun (group, action) ->
                 line
@@ -108,7 +120,8 @@ module internal TextOperationReply =
 
         let changes =
             match review with
-            | OperationReview.Authority value -> authorityStates language value.Before value.After
+            | OperationReview.Authority value ->
+                authorityStates language value.Before value.After @ accessStates language value
             | OperationReview.Case value ->
                 let lifecycle =
                     let before =
@@ -169,4 +182,14 @@ module internal TextOperationReply =
             (function
             | Resolved.Accepted receipt -> receiptLines language "ACCEPTED" receipt
             | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
+            reply
+
+    let statusLines language (reply: Outcome<OperationStatus>) =
+        readLines
+            language
+            (function
+            | OperationStatus.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | OperationStatus.NotAccepted -> [ label language "notice.notAccepted" ]
+            | OperationStatus.Unresolved ->
+                [ MessageCatalogs.renderCli language CliMessage.StatusUnresolved ])
             reply

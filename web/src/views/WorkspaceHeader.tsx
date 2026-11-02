@@ -24,7 +24,7 @@ const Navigation = ({
   const labels = {
     cases: "ui.cases",
     operations: "ui.operations",
-    authority: "subject.AUTHORITY.label",
+    authority: "ui.access",
   } as const;
   return (
     <nav aria-label={p.text("ui.primary")}>
@@ -205,6 +205,9 @@ export const WorkspaceHeader = ({
             navigate("/cases");
           }}
         >
+          <span className="product-mark" aria-hidden="true">
+            C
+          </span>{" "}
           ClaimCore
         </a>
         <HeaderNavigation

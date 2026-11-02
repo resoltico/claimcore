@@ -24,6 +24,7 @@ let private snapshot (reference: string) : CaseSnapshot =
         State =
             CaseState.Active(
                 {
+                    Work = CaseWork.empty
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = CaseFixtures.registration Inputs.registration
@@ -215,6 +216,7 @@ let private erasedState () =
 
 let private projectionFields: CaseFields =
     {
+        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference "synthetic-layout"
         Status = CaseStatus.Closed
         Registration =
@@ -274,6 +276,8 @@ let private projectionBindings () =
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
                 "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
                 "notified_on", box "2026-08-03 AD"
+                "responsible_actor", box DBNull.Value
+                "follow_up", box DBNull.Value
                 "claimed_amount", box "1234.5678"
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
@@ -298,6 +302,8 @@ let private projectionBindings () =
             "progress", box "UNKNOWN"
             "changed_at", box "invalid"
             "search_text", box 44
+            "responsible_actor", box Guid.Empty
+            "follow_up", box "invalid"
         ] do
         Expect.throwsT<RecordCorruptException>
             (fun () ->
@@ -452,9 +458,11 @@ let private roundTrips database =
                 11,
                 1L,
                 AuthoredCaseAct.AmendRegistration(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [ BusinessField.ClaimantName, ("Changed synthetic") ]
-                        (Inputs.registration)
+                    Inputs.registrationUpdate (
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, ("Changed synthetic") ]
+                            (Inputs.registration)
+                    )
                 ),
                 "ACTIVE"
                 12, 2L, AuthoredCaseAct.Void "Synthetic correction", "VOIDED"

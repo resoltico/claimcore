@@ -35,6 +35,27 @@ let main arguments =
         else
             None
 
+    let chromeRuntimePath =
+        chromePath
+        |> Option.map (fun path ->
+            Path.Combine(Path.GetDirectoryName path |> nonNull, "chrome-catalogs.ts"))
+
+    let chromeBootPath =
+        chromePath
+        |> Option.map (fun path ->
+            Path.Combine(Path.GetDirectoryName path |> nonNull, "chrome-boot.ts"))
+
+    let coreRuntimePath =
+        chromePath
+        |> Option.map (fun path ->
+            Path.Combine(Path.GetDirectoryName path |> nonNull, "core-catalogs.ts"))
+
+    let runtimeCore = MessageGeneration.catalogSource ()
+    let runtimeChrome = MessageGeneration.chromeCatalogSource ()
+
+    let bootChrome =
+        MessageGeneration.chromeBootstrapSource (CatalogValidation.validate ())
+
     if checking then
         let referenceMatches =
             documentationPath
@@ -45,7 +66,22 @@ let main arguments =
             chromePath
             |> Option.forall (fun path -> File.Exists path && File.ReadAllBytes path = chrome)
 
-        if ArtifactPublication.check output artifacts && referenceMatches && chromeMatches then
+        let auxiliaryMatches =
+            [
+                chromeRuntimePath, runtimeChrome
+                chromeBootPath, bootChrome
+                coreRuntimePath, runtimeCore
+            ]
+            |> List.forall (fun (path, bytes) ->
+                path
+                |> Option.forall (fun path -> File.Exists path && File.ReadAllBytes path = bytes))
+
+        if
+            ArtifactPublication.check output artifacts
+            && referenceMatches
+            && chromeMatches
+            && auxiliaryMatches
+        then
             0
         else
             eprintfn
@@ -59,6 +95,14 @@ let main arguments =
         |> Option.iter (fun path ->
             Directory.CreateDirectory(Path.GetDirectoryName path |> nonNull) |> ignore
             File.WriteAllBytes(path, chrome))
+
+        for path, bytes in
+            [
+                chromeRuntimePath, runtimeChrome
+                chromeBootPath, bootChrome
+                coreRuntimePath, runtimeCore
+            ] do
+            path |> Option.iter (fun path -> File.WriteAllBytes(path, bytes))
 
         documentationPath
         |> Option.iter (fun path ->

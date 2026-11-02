@@ -7,9 +7,10 @@ import { strictByteProfile } from "@contracts/client";
 it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
   const values = {
     ...valuesFor("CORRECT"),
-    "act.groups.registration.kind": "REPLACE",
+    "act.groups.registration.kind": "UPDATE",
     "act.groups.registration.values.claimantName": "Before",
-    "act.groups.registration.values.claimedAmount": "1.0000",
+    "act.groups.registration.values.claimed.amount": "1.0000",
+    "act.groups.registration.values.claimed.currency": "EUR",
   };
   const request = requestFor(values, "CORRECT");
   const prepared = prepareRequest("operation.execute", request);
@@ -17,13 +18,13 @@ it("detaches replacement values and preserves decimal spelling after authoring c
   if (
     request.kind !== "CASE" ||
     request.act.kind !== "CORRECT" ||
-    request.act.groups.registration.kind !== "REPLACE"
+    request.act.groups.registration.kind !== "UPDATE"
   ) {
     throw new Error("Missing correction fixture.");
   }
   Object.assign(request.act.groups.registration.values, { claimantName: "Changed" });
   expect(prepared.bytes).toContain('"claimantName":"Before"');
-  expect(prepared.bytes).toContain('"claimedAmount":"1.0000"');
+  expect(prepared.bytes).toContain('"amount":"1.0000"');
   expect(prepared.input).not.toBe(request);
 });
 

@@ -38,12 +38,12 @@ it("marks exactly one current progress step", () => {
   expect(view.container.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
   expect(view.container.querySelector('[aria-current="step"]')).toHaveTextContent("Undecided");
 });
-it("separates stewardship and dispatches only server-advised acts with the first primary", async () => {
+it("separates core-classified stewardship and does not invent a primary for incompatible offers", async () => {
   const user = userEvent.setup();
   const onAct = vi.fn();
   const view = render(<CaseActions current={current} onAct={onAct} />);
   expect(view.container.querySelector(".case-stewardship")).toHaveTextContent("Void");
-  expect(view.container.querySelector("button.primary")).toHaveTextContent("Close");
+  expect(view.container.querySelector("button.primary")).toBeNull();
   await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");
   expect(screen.queryByRole("button", { name: /Reinstate/u })).toBeNull();
@@ -63,12 +63,12 @@ it("keeps compact grouped facts visible with one explanation toggle per group", 
   expect(toggle).toHaveAttribute("aria-pressed", "true");
   expect(view.container.querySelectorAll(".case-fact-card button.explain-fields")).toHaveLength(3);
 });
-it("keeps the first compact action available and reveals the remaining advised acts", async () => {
+it("keeps every compact advised action reachable even without a primary", async () => {
   compact.value = true;
   const user = userEvent.setup();
   const onAct = vi.fn();
   const view = render(<CaseActions current={current} onAct={onAct} />);
-  expect(view.container.querySelector(".case-primary-action")).toHaveTextContent("Close");
+  expect(view.container.querySelector(".case-primary-action")?.textContent).toBe("");
   await user.click(view.container.querySelector(".case-more-actions > summary")!);
   await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");

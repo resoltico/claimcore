@@ -323,7 +323,7 @@ it.each([
         <Dashboard />
       </TestSession>,
     );
-    await user.click(await screen.findByRole("link", { name: "Authority" }));
+    await user.click(await screen.findByRole("link", { name: "Access" }));
     await loseManagement(user, reviewed, returned, context, listing);
     await waitFor(() => {
       expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 3);

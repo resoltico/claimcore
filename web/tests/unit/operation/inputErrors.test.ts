@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { inputErrors } from "../../../src/operation/inputErrors";
-import { initialOperationValues, operationEntry } from "../../../src/operation/operationForm";
+import { initialOperationValues } from "../../../src/operation/operationForm";
+import { operationEntry } from "../../../src/protocol/operationCatalog";
 import type { Notice } from "../../../src/protocol/notices";
 
 it("maps every issue through catalog diagnostics in their original order", () => {

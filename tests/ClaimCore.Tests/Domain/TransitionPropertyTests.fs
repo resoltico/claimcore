@@ -33,6 +33,7 @@ let private initial: CaseSnapshot =
         State =
             CaseState.Active(
                 {
+                    Work = CaseWork.empty
                     CaseReference = CaseFixtures.reference "UNIT-001"
                     Status = CaseStatus.Opened
                     Registration =
@@ -86,7 +87,7 @@ let private acceptingPath =
         (AuthoredCaseAct.Bare BareAct.Reopen)
         (AuthoredCaseAct.Bare BareAct.ClearPayment)
         (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
-        AuthoredCaseAct.AmendRegistration registration
+        AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Reopen)

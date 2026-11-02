@@ -29,7 +29,7 @@ it("makes the whole row one native keyboard link with full reference and no copy
   await user.tab();
   expect(link).toHaveFocus();
   await user.keyboard("{Enter}");
-  expect(select).toHaveBeenCalledWith(reference);
+  expect(select).toHaveBeenCalledWith({ kind: "ID", caseId: value.caseId });
   select.mockClear();
   fireEvent.click(link, { ctrlKey: true });
   expect(select).not.toHaveBeenCalled();

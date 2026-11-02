@@ -3,7 +3,7 @@ import type { EndpointId, RequestByEndpoint } from "@contracts/client";
 import { requestEndpoint, resultNotice } from "../api/service";
 import { canonicalInput, typedResult } from "./endpointCache";
 import { useEndpointCache } from "./EndpointProvider";
-import { useCredential } from "../session/SessionContext";
+import { useCredential, useSessionContext } from "../session/SessionContext";
 export const useEndpoint = <K extends EndpointId>(
   endpoint: K,
   input: RequestByEndpoint[K],
@@ -14,8 +14,10 @@ export const useEndpoint = <K extends EndpointId>(
     throw new Error("An endpoint provider is required.");
   }
   const credential = useCredential();
+  const { state: session } = useSessionContext();
+  const active = enabled && session.kind === "authenticated";
   const serialized = canonicalInput(input);
-  const key = `${credential}\u001f${endpoint}:${serialized}`;
+  const key = `${session.epoch}:${credential}\u001f${endpoint}:${serialized}`;
   const subscribe = useCallback(
     (listener: () => void) => cache.subscribe(key, listener),
     [cache, key],
@@ -27,10 +29,10 @@ export const useEndpoint = <K extends EndpointId>(
     [endpoint, credential, input],
   );
   useEffect(() => {
-    if (enabled && state.loading) {
+    if (active && state.loading) {
       void cache.fetch(key, request);
     }
-  }, [cache, key, request, state.loading, enabled]);
+  }, [cache, key, request, state.loading, active]);
   const result = useMemo(() => typedResult(endpoint, state.result), [endpoint, state.result]);
   const previous = useMemo(
     () =>
@@ -46,7 +48,7 @@ export const useEndpoint = <K extends EndpointId>(
     result,
     value: result?.kind === "outcome" ? result.value : null,
     previous: previous?.kind === "outcome" ? previous.value : null,
-    loading: enabled && state.loading,
+    loading: active && state.loading,
     message:
       result === null || (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED")
         ? null

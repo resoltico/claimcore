@@ -1,7 +1,49 @@
+import { productMetadata } from "../../src/protocol/productMetadata";
+import { catalogs } from "../../src/generated/core-catalogs";
 import { fireEvent, screen } from "@testing-library/react";
+/** Fact selection is explicit in the editor, including when a test authors it by field label. */
+export const selectFact = (target: string): void => {
+  const field = productMetadata.catalog.fields.find(
+    (candidate) =>
+      candidate.name === target ||
+      Object.values(catalogs).some((catalog) =>
+        Object.entries(catalog).some(
+          ([key, value]) => key === candidate.labelId && value === target,
+        ),
+      ),
+  );
+  if (field !== undefined) {
+    const choice = document.querySelector<HTMLInputElement>(
+      `input[data-selects-fields~="${field.name}"]`,
+    );
+    if (choice !== null && !choice.checked) {
+      fireEvent.click(choice);
+    }
+  }
+};
 const fieldControl = (target: HTMLElement | string): HTMLElement => {
   if (typeof target !== "string") {
     return target;
+  }
+  selectFact(target);
+  const [named] = document.getElementsByName(target);
+  if (named instanceof HTMLElement) {
+    return named;
+  }
+  const field = productMetadata.catalog.fields.find(
+    (candidate) =>
+      candidate.name === target ||
+      Object.values(catalogs).some((catalog) =>
+        Object.entries(catalog).some(
+          ([key, value]) => key === candidate.labelId && value === target,
+        ),
+      ),
+  );
+  if (field !== undefined) {
+    const control = document.querySelector<HTMLElement>(`[data-field-name="${field.name}"]`);
+    if (control !== null) {
+      return control;
+    }
   }
   return (
     screen.queryByRole("group", { name: target }) ??

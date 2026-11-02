@@ -83,7 +83,7 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
   }, [invalid, loading]);
   return (
     <section aria-labelledby="operation-lookup-title">
-      <h1 id="operation-lookup-title">{p.text("ui.operationLookup")}</h1>
+      <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>
       <Form
         className="lookup"
         onSubmit={(event) => {

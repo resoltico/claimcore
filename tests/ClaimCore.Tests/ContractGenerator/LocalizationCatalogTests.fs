@@ -39,7 +39,7 @@ let private producerMutations () =
     let producers =
         [
             "cli.usage.invalidInteger", "value"
-            "cli.delivery.unresolved", "resolveCommand"
+            "cli.delivery.unresolved", "statusCommand"
             "cli.help.call", "maximumRequestBytes"
             "cli.help.configuration", "maximumTrustRootBytes"
             "cli.help.layout", "body"

@@ -20,6 +20,63 @@ module internal ReadRowCodecs =
                     }))
             format
 
+    let dateBasis =
+        (record (fun observed date zone ->
+            {
+                WorkDateBasis.ObservedAt = observed
+                BusinessDate = date
+                TimeZoneId = zone
+            })
+        : Fields<WorkDateBasis, _>)
+        |> field "observedAt" _.ObservedAt instant
+        |> field
+            "businessDate"
+            _.BusinessDate
+            (calendarDate |> map CalendarDate.value CalendarDate.ofDate)
+        |> field "timeZone" _.TimeZoneId nonempty
+        |> build
+        |> named "WorkDateBasis"
+
+    let accountSubject =
+        (record (fun actor subject ->
+            {
+                AccountSubject.ActorId = actor
+                Subject = subject
+            })
+        : Fields<AccountSubject, _>)
+        |> field "actorId" _.ActorId actorId
+        |> field "subject" _.Subject nonempty
+        |> build
+        |> named "AccountSubject"
+
+    let private assignedAccount =
+        (record (fun account available ->
+            {
+                AssignedAccount.Account = account
+                Available = available
+            })
+        : Fields<AssignedAccount, _>)
+        |> field "account" _.Account accountSubject
+        |> field "available" _.Available boolean
+        |> build
+        |> named "AssignedAccount"
+
+    let workView =
+        (record (fun responsible followUp due basis ->
+            {
+                CaseWorkView.Responsible = responsible
+                FollowUp = followUp
+                Due = due
+                Basis = basis
+            })
+        : Fields<CaseWorkView, _>)
+        |> field "responsible" _.Responsible (nullable assignedAccount)
+        |> field "followUpDate" _.FollowUp (nullable calendarDate)
+        |> field "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
+        |> field "basis" _.Basis dateBasis
+        |> build
+        |> named "CaseWorkView"
+
     let private money =
         (record Money.create: Fields<Money, _>)
         |> field "amount" Money.amount (parsed Amount.parse Amount.format amount)
@@ -38,12 +95,13 @@ module internal ReadRowCodecs =
         |> field "payable" snd (nullable money)
 
     let private facts =
-        (record (fun status parties amounts progress notified ->
+        (record (fun status parties amounts progress notified work ->
             let claimant, insurer = parties
             let claimed, payable = amounts
 
             {
-                CaseSummaryFacts.Status = status
+                CaseSummaryFacts.Work = work
+                Status = status
                 ClaimantName = claimant
                 InsurerName = insurer
                 Claimed = claimed
@@ -60,6 +118,7 @@ module internal ReadRowCodecs =
             "incidentNotificationDate"
             _.IncidentNotificationDate
             (parsed CalendarDate.parse CalendarDate.format date)
+        |> field "work" _.Work workView
 
     let caseSummary =
         (record (fun id reference revision changedAt state ->

@@ -7,7 +7,7 @@ import { service } from "../../src/api/service";
 it("keeps a primary heading and a case return when a reloaded act is no longer offered", async () => {
   const closed = {
     ...current,
-    advice: { acts: ["REOPEN"] as const, history: [] },
+    advice: { ...current.advice, acts: ["REOPEN"] as const, history: [] },
     state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" as const } },
   };
   mockEndpoint("case.get").mockResolvedValue({
@@ -19,7 +19,11 @@ it("keeps a primary heading and a case return when a reloaded act is no longer o
   const execute = vi.spyOn(service, "execute");
   render(
     <RoutedContent
-      route={{ screen: "caseAct", reference: current.caseReference, act: "CLOSE" }}
+      route={{
+        screen: "caseAct",
+        target: { kind: "REFERENCE", caseReference: current.caseReference },
+        act: "CLOSE",
+      }}
       setLocked={vi.fn()}
       committed={vi.fn()}
       refresh={0}

@@ -6,9 +6,11 @@ import { chromium } from "@playwright/test";
 const [root, origin, owned, phase, name] = process.argv.slice(2);
 const modes = new Set(["login", "verify", "logout", "stale"]);
 const statePath = path.join(owned, "published-session-state.json");
-const require = (condition, message) => {
+let failedCheck = "UNEXPECTED";
+const require = (condition, code) => {
   if (!condition) {
-    throw new Error(message);
+    failedCheck = code;
+    throw new Error("Published session check failed");
   }
 };
 const saved = () => JSON.parse(readFileSync(statePath, "utf8"));
@@ -25,7 +27,7 @@ const session = async (context, fingerprint, cookie) => {
     headers: headers(fingerprint, undefined, cookie),
   });
   const reply = await response.json();
-  require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "Session unavailable");
+  require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "SESSION_UNAVAILABLE");
   return reply.outcome.data;
 };
 const contextRequest = (context, fingerprint, csrf, cookie) =>
@@ -36,15 +38,14 @@ const contextRequest = (context, fingerprint, csrf, cookie) =>
 const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
-  require(response.status() === 200 &&
-    reply.outcome.kind === "SUCCEEDED", "Protected context refused");
-  require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "Owner context missing");
+  require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "CONTEXT_REFUSED");
+  require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "OWNER_MISSING");
 };
 const login = async (context, fingerprint) => {
   const credentials = JSON.parse(readFileSync(path.join(owned, "credentials.json"), "utf8"));
   const [owner] = credentials.users;
   require(typeof owner.username === "string" &&
-    typeof owner.password === "string", "Credentials missing");
+    typeof owner.password === "string", "CREDENTIALS_MISSING");
   const page = await context.newPage();
   // Redirect chains can bypass a homepage route. Block the separate application script request
   // so React cannot race this API-session probe's own cookie/antiforgery capture.
@@ -64,9 +65,9 @@ const login = async (context, fingerprint) => {
   await page.locator('input[name="password"]').fill(owner.password);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await page.waitForURL((url) => url.origin === origin && url.pathname === "/");
-  require(blockedScripts > 0, "Application bootstrap was not isolated");
+  require(blockedScripts > 0, "BOOTSTRAP_NOT_ISOLATED");
   const current = await session(context, fingerprint);
-  require(current.authenticated && typeof current.antiforgeryToken === "string", "Login refused");
+  require(current.authenticated && typeof current.antiforgeryToken === "string", "LOGIN_REFUSED");
   await protectedContext(context, fingerprint, current.antiforgeryToken);
   const cookies = await context.cookies();
   const cookie = cookies
@@ -81,7 +82,7 @@ const login = async (context, fingerprint) => {
 const probe = async (context, fingerprint, state) => {
   const current = await session(context, fingerprint, state.cookie);
   if (phase === "stale") {
-    require(!current.authenticated, "Deleted session authenticated");
+    require(!current.authenticated, "DELETED_SESSION_AUTHENTICATED");
     const refused = await contextRequest(
       context,
       fingerprint,
@@ -90,10 +91,10 @@ const probe = async (context, fingerprint, state) => {
     );
     const reply = await refused.json();
     require(refused.status() === 401 &&
-      reply.hostFailure?.code === "SESSION_REJECTED", "Stale cookie admitted");
+      reply.hostFailure?.code === "SESSION_REJECTED", "STALE_COOKIE_ADMITTED");
     return { authenticated: false, protectedStatus: 401 };
   }
-  require(current.authenticated, "Retained session missing");
+  require(current.authenticated, "RETAINED_SESSION_MISSING");
   await protectedContext(context, fingerprint, state.csrf);
   if (phase === "logout") {
     const response = await context.request.post(`${origin}/api/session.logout`, {
@@ -101,12 +102,12 @@ const probe = async (context, fingerprint, state) => {
       data: {},
     });
     const reply = await response.json();
-    require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "Logout refused");
+    require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "LOGOUT_REFUSED");
   }
   return { authenticated: true, protectedStatus: 200 };
 };
 const run = async () => {
-  require(modes.has(phase) && /^[a-z-]+$/u.test(name), "Invalid phase");
+  require(modes.has(phase) && /^[a-z-]+$/u.test(name), "INVALID_PHASE");
   const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
   const state = phase === "login" ? undefined : saved();
   const browser = await chromium.launch({ headless: true });
@@ -130,7 +131,7 @@ try {
   await run();
 } catch (error) {
   process.stderr.write(
-    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name ?? "ERROR"}\n`,
+    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name === "TimeoutError" ? "TIMEOUT" : failedCheck}\n`,
   );
   process.exitCode = 1;
 }

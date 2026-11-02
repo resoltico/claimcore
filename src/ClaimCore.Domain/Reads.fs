@@ -17,15 +17,40 @@ type CaseListOrder =
     | Reference
     | Recent
     | Notified
+    | FollowUp
 
 [<RequireQualifiedAccess>]
-type CaseAssignment = | AssignedToMe
+type CaseAssignment =
+    | Mine
+    | Unassigned
 
 module CaseAssignment =
     let vocabulary =
         Vocabulary.ofUnion<CaseAssignment> "assignment" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
+type CaseDue =
+    | Overdue
+    | Today
+    | Upcoming
+    | Unscheduled
+    | Inactive
+
+module CaseDue =
+    let vocabulary = Vocabulary.ofUnion<CaseDue> "due" TokenCasing.ScreamingSnake None
+    let token = Vocabulary.token vocabulary
+
+    let at (today: DateOnly) lifecycle status (work: CaseWork) =
+        if lifecycle <> Lifecycle.Active || status <> Some CaseStatus.Opened then
+            CaseDue.Inactive
+        else
+            match work.FollowUp with
+            | None -> CaseDue.Unscheduled
+            | Some date when CalendarDate.value date < today -> CaseDue.Overdue
+            | Some date when CalendarDate.value date = today -> CaseDue.Today
+            | Some _ -> CaseDue.Upcoming
 
 [<RequireQualifiedAccess>]
 type CaseProgress =
@@ -86,6 +111,7 @@ type CaseListFilter<'text> =
         Text: 'text option
         Order: CaseListOrder
         Assignment: CaseAssignment option
+        Due: CaseDue option
     }
 
 module CaseListFilter =
@@ -97,6 +123,7 @@ module CaseListFilter =
             Text = text
             Order = order
             Assignment = None
+            Due = None
         }
 
     let empty<'text> : CaseListFilter<'text> =
@@ -119,6 +146,7 @@ module CaseListFilter =
             |> fun filter ->
                 { filter with
                     Assignment = input.Assignment
+                    Due = input.Due
                 })
 
     let matches (filter: CaseListFilter<CaseSearchText>) lifecycle status progress text =

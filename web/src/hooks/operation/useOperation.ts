@@ -8,9 +8,11 @@ import {
   type RecoveryRecord,
   type RecoveryJournal,
 } from "../../protocol/recoveryJournal";
-import { useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { useContext, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   service,
+  requestEndpoint,
+  isCurrentCase,
   resultNotice,
   type CurrentCase,
   type ApiResult,
@@ -22,11 +24,8 @@ import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
 import { buildRequest } from "../../protocol/client";
 import type { FormValues, FormValue } from "../../protocol/forms";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
+import { operationEntry } from "../../protocol/operationCatalog";
 import {
   operationReducer,
   operationView,
@@ -45,6 +44,11 @@ type Options = {
   recoveryScope?: RecoveryScope;
   journal?: RecoveryJournal;
   normalizeValues?: (values: FormValues, entry: ReturnType<typeof operationEntry>) => FormValues;
+  captureValue?: (
+    path: string,
+    value: FormValue,
+    entry: ReturnType<typeof operationEntry>,
+  ) => FormValue;
   onLockChange: (locked: boolean) => void;
   onRecorded?: (receipt: OperationReceipt) => void;
   onDisclosureRefused?: (notice: Notice) => void;
@@ -53,16 +57,19 @@ const targetKey = (options: Options): string =>
   `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
 const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
   const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
+  const context = {
+    generation: 0,
+    epoch: options.contextEpoch ?? 0,
+    credential: options.credential,
+    target: targetKey(options),
+  };
   return {
     target: targetKey(options),
     entry: { subject: options.subject, kind },
-    context: {
-      generation: 0,
-      epoch: options.contextEpoch ?? 0,
-      credential: options.credential,
-      target: targetKey(options),
-    },
-    disclosureToken: options.credential,
+    context,
+    disclosureContext: context,
+    caseObservation: options.current,
+    disclosureRead: null,
     disclosureRefused: false,
     values,
     baseline: values,
@@ -131,13 +138,13 @@ const runNetwork = async (
   effect: Extract<
     OperationEffect,
     {
-      kind: "PREVIEW" | "EXECUTE" | "RESOLVE";
+      kind: "PREVIEW" | "EXECUTE" | "CHECK_STATUS";
     }
   >,
   installationId?: string,
 ): Promise<OperationAction> => {
-  if (effect.kind === "RESOLVE") {
-    const result = await service.resolve(
+  if (effect.kind === "CHECK_STATUS") {
+    const result = await service.status(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
       installationId,
@@ -149,6 +156,9 @@ const runNetwork = async (
           identity: effect.identity,
           receipt: result.value.outcome.data,
         };
+      }
+      if (result.value.outcome.kind === "UNRESOLVED") {
+        return { type: "STATUS_UNRESOLVED", identity: effect.identity };
       }
       if (result.value.outcome.kind === "NOT_ACCEPTED") {
         return {
@@ -174,6 +184,70 @@ const runNetwork = async (
       : await service.execute(effect.source.prepared, effect.identity.credential, installationId),
   );
 };
+const checkOwnedStatus = async (
+  effect: Extract<OperationEffect, { kind: "CHECK_STATUS" }>,
+  scope: RecoveryScope,
+  owned: RecoveryRecord | undefined,
+  journal: RecoveryJournal,
+  current: () => boolean,
+): Promise<OperationAction> => {
+  const stillCurrent = () => current() && owned !== undefined && sameRecoveryScope(scope, owned);
+  if (owned === undefined || !stillCurrent()) {
+    return {
+      type: "REFUSE",
+      identity: effect.identity,
+      notice: { kind: "local", reason: "recoveryUnavailable" },
+      target: null,
+      uncertain: true,
+      disclosure: false,
+    };
+  }
+  // A passive read uses the existing attempt; it never publishes another journal write.
+  const action = await runNetwork(effect, owned.installationId);
+  if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
+    await journal.remove(owned).catch(() => undefined);
+  }
+  return action;
+};
+const readCaseDisclosure = async (
+  effect: Extract<OperationEffect, { kind: "READ_CURRENT" }>,
+  reads: Map<string, AbortController>,
+): Promise<OperationAction> => {
+  const controller = new AbortController();
+  reads.set(effect.identity.id, controller);
+  try {
+    const result = await requestEndpoint(
+      "case.get",
+      effect.identity.credential,
+      { target: { kind: "ID", caseId: effect.caseId } },
+      controller.signal,
+    );
+    if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
+      const value = result.value.outcome.data;
+      if (
+        isCurrentCase(value) &&
+        value.caseId === effect.caseId &&
+        value.caseReference.toUpperCase() === effect.reference.toUpperCase()
+      ) {
+        return { type: "DISCLOSED", identity: effect.identity, value };
+      }
+      return {
+        type: "DISCLOSURE_READ_FAILED",
+        identity: effect.identity,
+        notice: { kind: "local", reason: "incomplete" },
+        refused: false,
+      };
+    }
+    return {
+      type: "DISCLOSURE_READ_FAILED",
+      identity: effect.identity,
+      notice: resultNotice(result),
+      refused: isDisclosureRefused(result),
+    };
+  } finally {
+    reads.delete(effect.identity.id);
+  }
+};
 const useEffects = (
   state: OperationState,
   dispatch: React.Dispatch<OperationAction>,
@@ -182,14 +256,28 @@ const useEffects = (
   const started = useRef(new Set<string>());
   const alive = useRef(true);
   const latest = useRef({ options, generation: state.context.generation });
+  const reads = useRef(new Map<string, AbortController>());
   useLayoutEffect(() => {
+    if (
+      latest.current.generation !== state.context.generation ||
+      latest.current.options.credential !== options.credential ||
+      targetKey(latest.current.options) !== targetKey(options)
+    ) {
+      for (const controller of reads.current.values()) {
+        controller.abort();
+      }
+    }
     latest.current = { options, generation: state.context.generation };
   }, [options, state.context.generation]);
   const attempts = useRef(new Map<string, RecoveryRecord>());
   useEffect(() => {
     alive.current = true;
+    const ownedReads = reads.current;
     return () => {
       alive.current = false;
+      for (const controller of ownedReads.values()) {
+        controller.abort();
+      }
     };
   }, []);
   useEffect(() => {
@@ -223,6 +311,9 @@ const useEffects = (
           effect.identity.credential === latest.current.options.credential &&
           effect.identity.target === targetKey(latest.current.options);
         const run = async (): Promise<OperationAction> => {
+          if (effect.kind === "READ_CURRENT") {
+            return readCaseDisclosure(effect, reads.current);
+          }
           const journal = options.journal!;
           const scope = options.recoveryScope;
           if (effect.kind === "PREVIEW") {
@@ -239,6 +330,15 @@ const useEffects = (
             };
           }
           const { operationId } = effect.source.prepared.input;
+          if (effect.kind === "CHECK_STATUS") {
+            return checkOwnedStatus(
+              effect,
+              scope,
+              attempts.current.get(operationId),
+              journal,
+              current,
+            );
+          }
           let record = attempts.current.get(operationId);
           if (record === undefined) {
             record = {
@@ -342,12 +442,17 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
     view.phase === "ACCEPTED" ||
     state.target !== targetKey(options);
   return {
+    editFields: (values: FormValues, omitted: ReadonlyArray<string> = []) => {
+      if (!blocked) {
+        dispatch({ type: "EDIT_FIELDS", values, omitted, id: crypto.randomUUID() });
+      }
+    },
     edit: (path: string, value: FormValue) => {
       if (!blocked) {
         dispatch({
           type: "EDIT",
           path,
-          value,
+          value: options.captureValue?.(path, value, operationEntry(state.entry)) ?? value,
           id: crypto.randomUUID(),
         });
       }
@@ -367,11 +472,34 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
+    revalidateDisclosure: () => {
+      if (
+        !blocked &&
+        state.disclosureRead === null &&
+        options.subject === "CASE" &&
+        options.current !== null
+      ) {
+        dispatch({
+          type: "READ_CURRENT",
+          identity: identity(options, state.context.generation),
+          caseId: options.current.caseId,
+          reference: options.current.caseReference,
+        });
+      }
+    },
     discard: (acknowledgedUncertainty = false, kind = options.kind, prefill?: FormValues) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
           type: "RESET",
-          state: fresh(options, kind, prefill),
+          state: fresh(
+            state.caseObservation !== null &&
+              state.disclosureContext === state.context &&
+              state.target === targetKey(options)
+              ? { ...options, current: state.caseObservation }
+              : options,
+            kind,
+            prefill,
+          ),
           abandon: acknowledgedUncertainty,
         });
       }
@@ -398,9 +526,9 @@ const actions = (state: OperationState, dispatch: Dispatch, options: Options) =>
       refused: true,
     });
   },
-  resolve: () => {
+  checkStatus: () => {
     dispatch({
-      type: "RESOLVE",
+      type: "CHECK_STATUS",
       identity: identity(options, state.context.generation),
     });
   },
@@ -412,6 +540,20 @@ const actions = (state: OperationState, dispatch: Dispatch, options: Options) =>
     return Promise.resolve();
   },
 });
+const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: number): boolean =>
+  state.disclosureContext === state.context &&
+  state.context.credential === options.credential &&
+  state.context.epoch === epoch &&
+  state.target === targetKey(options) &&
+  !state.disclosureRefused;
+/** The first verified requester owns this coordinator; refresh never adopts a different owner. */
+const useVerifiedOperationOwner = (scope: RecoveryScope | undefined): boolean => {
+  const [owner, setOwner] = useState<RecoveryScope | null>(null);
+  if (owner === null && scope !== undefined) {
+    setOwner(scope);
+  }
+  return owner !== null && scope !== undefined && sameRecoveryScope(owner, scope);
+};
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
@@ -433,6 +575,7 @@ export const useOperation = (supplied: Options) => {
     journal: supplied.journal ?? journal,
     ...(recoveryScope === undefined ? {} : { recoveryScope }),
   };
+  const ownerVerified = useVerifiedOperationOwner(options.recoveryScope);
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
@@ -446,15 +589,16 @@ export const useOperation = (supplied: Options) => {
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);
-  const disclosureCurrent =
-    state.disclosureToken === options.credential &&
-    state.target === target &&
-    !state.disclosureRefused;
+  const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   return {
     ...view,
+    ownerVerified,
     ...actions(state, dispatch, options),
     dirty: dirtyValues(state.values, state.baseline),
     disclosureCurrent,
+    currentCase: disclosureCurrent ? state.caseObservation : null,
+    revalidating: state.disclosureRead !== null,
+    canRevalidateCase: options.subject === "CASE" && options.current !== null,
     review: disclosureCurrent ? view.review : null,
     receipt: disclosureCurrent ? view.receipt : null,
     contextChanged: state.target !== target,

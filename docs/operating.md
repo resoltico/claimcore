@@ -34,9 +34,13 @@ Runtime credentials have no schema-owner authority. Offline help/version do not 
 | `initialize ZONE` | Initialize the exact SQL baseline and immutable business zone. |
 | `provision-owner` | Bootstrap an empty authority installation with one human owner. |
 | `head` | Read the installation's current sequence/hash position. |
+| `status` | Observe identity, baseline/formats, zone, head, maintenance and bounded resource counts in one read snapshot. |
+| `maintenance enter` | Serialize with prior register writes and enter or report the active maintenance generation. |
+| `maintenance resume --generation N` | Resume only the specified active generation. |
+| `prune-sessions [--limit N]` | Delete a locked/rechecked batch of expired sessions (default 128, maximum 1000). |
 | `verify` | Reconstruct retained ledger state and compare projections and head. |
 | `verify --expect SEQUENCE:ENTRY_HASH` | Also check an independently retained checkpoint. |
-| `rebuild --expect SEQUENCE:ENTRY_HASH` | Reconstruct derived projections under writer exclusion; return prior divergence evidence. |
+| `rebuild --expect SEQUENCE:ENTRY_HASH` | Require explicit maintenance and a trusted checkpoint; replace projections under writer exclusion and return prior divergence. |
 | `invalidate-restored-sessions` | Delete restored sessions before reopening actor traffic. |
 
 Command errors return `USAGE_ERROR` with the applicable syntax. Read `REJECTED` diagnostics and `FAILED`
@@ -48,6 +52,34 @@ incompatible schemas are refused unchanged. Initialization does not migrate or a
 only the matching baseline and durable formats are supported. Supported PostgreSQL versions and image pins
 are owned by
 [postgresql-baseline.json](../db/postgresql-baseline.json).
+
+## Register-write maintenance
+
+Maintenance uses database-owner credentials, independently of application OWNER grants. Inspect
+`claimcore-database status`, then use `maintenance enter`. Entry takes the ledger head, so earlier accepted
+register transactions commit or roll back before entry commits. It pauses new case/authority writes,
+initial owner provisioning and new final-resolution controls. Existing acceptance and final-control
+observations remain readable. Case/authority reads, passive status and authentication/session operations
+continue under their existing rules. Read advice is a snapshot; execution checks actual mode under the head.
+
+Repeated entry reports the same active generation. `maintenance resume --generation N` requires that
+active generation; `MAINTENANCE_CONFLICT` returns the observed state if it is stale or no longer active.
+A later interval advances the generation. Lost acknowledgement returns uncertainty: inspect fresh status
+before another command. Do not automatically reverse state or resume after failed work.
+
+This is register-write maintenance, not database read-only mode, a history verification or an all-host drain.
+Status reports the actual observed head and counts, not proof that every process is idle. Stop new traffic
+and drain each host separately when an operating procedure needs resource quiescence. Readiness continues
+to mean reachable supported schema, including during maintenance.
+
+Rebuild requires explicit active maintenance in addition to its trusted checkpoint and head exclusion.
+It neither auto-enters nor auto-resumes maintenance, resets sessions, rewrites business history nor changes
+the operational generation. Inspect the result and verify before explicitly resuming.
+
+Expired-session pruning is independent of register maintenance. It skips locked rows, rechecks deadlines
+under row locks and leaves live tickets, history, fences and key material intact. `expiredAtObservation`
+is the statement snapshot's count; `deleted` is the bounded action result. Concurrent renewal/logout or
+other pruning can make them differ. These are observations, not a pinned session inventory.
 
 ## Access review and sessions
 
@@ -89,6 +121,31 @@ tickets and protected backups, and back up the database and key ring together. U
 invalidated with `OIDC_SESSION_UNREADABLE`; storage failure closes authentication with
 `OIDC_SESSION_UNAVAILABLE`. Diagnostics exclude payloads, credentials and provider text.
 
+## Certificate, key and host replacement
+
+Prepare the replacement TLS certificate and private key in a private file with the configured hostname,
+server authentication purpose, supported algorithm and validity period. Distribute its issuing trust chain
+to affected clients before switching to a new issuer. Replace the configured PFX as a complete file, stop
+new traffic to the affected host, and restart that host. A running host keeps its admitted certificate;
+changing the file does not perform a hot reload. Verify the actual peer certificate, hostname and readiness
+before returning traffic. Reusing a trusted issuer does not waive hostname or private-file checks.
+
+Keep all Web instances on the same protected key-ring directory and application identity. ASP.NET Core
+Data Protection owns key creation and default-key rollover; ClaimCore has no key deletion or manual
+rotation command. When arranging rollover through that platform, distribute the new key before processes
+need it, retain old keys for live cookies, database tickets, antiforgery values and retained backups, and
+restart or otherwise qualify key propagation for every host. A certificate change does not require key
+loss or session invalidation. Confirm an old live session and a newly issued session against each host,
+then confirm that logout remains effective on its peers. Expired-session pruning never removes keys.
+
+For work that needs quiescence, remove each host from new traffic and request its normal graceful shutdown.
+The host gives admitted runtime users a bounded drain interval; cancellation or a timeout cannot make an
+unfinished provider operation release its lease early. Inspect process exit and outstanding database work
+separately. Do not treat readiness, register maintenance, a shutdown deadline or session counts as proof
+that every process and provider has stopped. Preserve uncertain operation identities and inspect their
+status after restart. Keep traffic isolated after a failed owner procedure until its actual state is known;
+maintenance never resumes itself.
+
 ## Backups and restore
 
 Retain sequence/hash checkpoints independently of the database and protect backups as sensitive data.
@@ -100,8 +157,9 @@ checkpoint before reopening actor access. A data-only restore into an initialize
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
 newer acceptance or recovery control existed elsewhere.
 
-If authoritative verification succeeds but projections diverge, run `claimcore-database rebuild --expect
-SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
+Inspect restored status while traffic and owner mutations remain isolated. Enter register-write maintenance
+explicitly before any reconstruction. If authoritative verification succeeds but projections diverge, run
+`claimcore-database rebuild --expect SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
 head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
 replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
 for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
@@ -128,6 +186,11 @@ Storage failures also publish bounded values through `DiagnosticListener` named 
 correlation UUID, phase, classification and at most eight adapter method identifiers. Messages, exception
 data, SQL/provider details, credentials, principals, references and payloads are excluded. Collector
 failures cannot replace a confirmed transaction result or prevent remaining provider cleanup.
+
+The host's framework logger emits only Error/Critical exceptions, using exception type and method names
+without source locations. It ignores framework message/state formatting. Request failures use the same
+safe exception representation; routine request records remain separate. These diagnostics contain no
+exception messages, request bodies, headers or connection values.
 
 Counters restart with the process; they are operational observations, not a ledger inventory.
 
@@ -158,14 +221,16 @@ elapsed verification time for that invocation, not a response-time guarantee.
 ## Erasure limits
 
 ERASE atomically clears every case ledger payload/nonce, its snapshot, projected status and progress,
-`search_text`, notification date, and claimed/payable amount and currency columns. It retains reference,
+`search_text`, notification date, responsibility, follow-up, and claimed/payable amount and currency columns. It retains reference,
 revision, `changed_at` and ledger metadata. Authority history,
 issuer/subject, executor/target attribution and grants remain. The reference itself may identify a person.
 
 Erasure does not reach dead row versions, WAL, replicas, exports, logs, browser history/shared URLs or
 backups. Operators decide retention,
 copy custody and physical disposal. VOID preserves history. A pre-erasure restore can resurrect content;
-address affected erasures before reopening access.
+address affected erasures before reopening access. Restored operational generations come from that
+backup too: discard outstanding resume instructions and inspect the restored state while traffic and
+owner mutations remain isolated.
 
 The append-only guard permits case-payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
@@ -175,6 +240,10 @@ Final nonacceptance is an actor/operation-scoped retained ledger control. It adv
 checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
 resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
 Verification reconstructs the complete fence projection from controls, including their recorded instants.
+Use actor-scoped `operation.status` for passive checks; it takes no write-head lock and never creates a
+control. Point reads and write guards validate a retained control node and its projection agreement;
+integrity faults require investigation and authoritative verification, not blind repeat settlement.
+The CLI names the permanent write `operation settle`; its human confirmation is separate from status reads.
 
 ## Trust model
 
@@ -221,6 +290,50 @@ The interactive shell keeps access and refresh material and arrow-key history in
 It writes neither a token cache nor a history file. Fifteen idle minutes at a command or confirmation
 prompt discard credentials; exit, EOF and SIGTERM also discard them. A refresh failure discards the old
 grant before interactive sign-in. Discard drops the session's references to managed token strings.
+
+## Request admission
+
+Admission is per Web process, with no multi-host quota or response-time guarantee. The
+[admission policy](../src/ClaimCore.Web/Admission.fs) owns the bounded resource budgets. A process admits
+at most 24 requests before authentication, two cookie validations, two bearer validations, two interactive
+authentication stages and four session-provider calls.
+Actor work has separate pools of four ordinary reads, four register writes and two passive recovery reads.
+One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
+caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not
+remain in a partition cache.
+
+`CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
+`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
+The bounded queue leaves ingress slots for authentication and read/recovery work. Final settlement still
+uses the write budget and ledger head; it cannot jump erasure or maintenance.
+
+The private runtime connection string must enable pooling and supply enough connections for all workload
+budgets and both readiness probes: 16 at the defaults. `POOL_CAPACITY_INSUFFICIENT` identifies this setup
+problem without printing connection values. Lowering only the provider pool is not an admission policy.
+Other processes and owner tools require their own capacity planning.
+
+Permits and runtime leases last through the awaited provider operation and cleanup. A canceled client or
+expired drain bound does not make a still-running transaction release capacity early. Predispatch overload
+returns a bounded transport refusal; it does not imply a permanent operation rejection. Retry reads as
+appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
+Context reads that establish journal ownership remain fresh; permission and action-state checks always
+execute on the server.
+
+## Published interface assets
+
+The web build emits `public-assets.json` beside `index.html`, identifying the actual hashed JavaScript,
+CSS and other public build assets by SHA-256. Publish the complete build directory together. Startup
+refuses an absent, inconsistent or incomplete inventory. Each running process serves the verified bytes
+it captured at startup; replacing files under a running process does not update that process's interface.
+Restart processes to install a replacement build. Keep prior hashed assets available at the hosting
+boundary while old tabs may request their deferred views or language catalogs.
+
+Only verified build assets without a cookie-setting response receive public immutable caching.
+HTML, session/authentication responses, APIs, refusals, errors and fallback routes remain `no-store`.
+No business response or recovery identity is placed in an asset cache or service worker. A failed view
+load offers explicit retry or an interface reload; an unsuccessful language activation retains the
+previous working language and direction. Reload only after protecting an unresolved operation's
+identity through Recovery; a reload cannot reconstruct a discarded in-memory request body.
 
 ## Serialized writes and verification growth
 

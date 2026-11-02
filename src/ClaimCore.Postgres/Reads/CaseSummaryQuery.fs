@@ -43,7 +43,17 @@ module internal CaseSummaryQuery =
                     raise (RecordCorruptException "Invalid aggregate progress.")))
 
         {
-            CaseCountGroup.Lifecycle = lifecycle
+            CaseCountGroup.Responsibility =
+                DatabaseSession.optional<string> 8 row
+                |> Option.map (fun value ->
+                    Vocabulary.tryParse CaseAssignment.vocabulary value
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Invalid responsibility aggregate.")))
+            Due =
+                Vocabulary.tryParse CaseDue.vocabulary (DatabaseSession.value<string> 9 row)
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid due aggregate."))
+            Lifecycle = lifecycle
             Status = status
             Progress = progress
             Count = DatabaseSession.value<int64> 3 row
@@ -62,14 +72,14 @@ module internal CaseSummaryQuery =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency")
+                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}) FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10")
                     (CaseSelectionSql.parameters selection)
                     token
 
             return
                 rows
                 |> List.map group
-                |> CaseWorklistSummary.fromGroups
+                |> CaseWorklistSummary.fromGroups selection.DateBasis
                 |> Result.defaultWith (fun _ ->
                     raise (RecordCorruptException "Invalid case totals or counts."))
         }

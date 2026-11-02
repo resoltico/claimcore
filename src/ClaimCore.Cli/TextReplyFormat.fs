@@ -33,6 +33,7 @@ module internal TextReplyFormat =
         | None -> "—"
         | Some text ->
             let warning = TextDisplay.warning text
+            let text = TerminalText.data text
 
             if warning.CodePoints.IsEmpty then
                 text

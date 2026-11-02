@@ -461,6 +461,10 @@ let internal findingCases =
         indexFinding
             VerificationFinding.CaseSearchProjection
             "UPDATE claimcore.cases SET search_text='tampered'"
+        VerificationFinding.CaseWorkProjection,
+        indexFinding
+            VerificationFinding.CaseWorkProjection
+            "UPDATE claimcore.cases SET follow_up=DATE '2027-12-31'"
         VerificationFinding.CaseNotifiedOnProjection,
         indexFinding
             VerificationFinding.CaseNotifiedOnProjection

@@ -44,7 +44,12 @@ module CommandGrammar =
         match entry.SelectedAct with
         | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
+        | None when entry.Endpoint = ActorEndpoint.Query QueryEndpoint.Resolve ->
+            [ "operation"; "settle" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
+
+    let commandText operation =
+        CliIdentity.programName + " " + String.concat " " (words operation)
 
     let derive (operation: CatalogOperation) =
         let inputs, constants = OperationCatalog.derive operation

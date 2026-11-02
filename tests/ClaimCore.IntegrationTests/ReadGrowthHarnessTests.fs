@@ -15,7 +15,15 @@ let tests =
 
             Expect.equal
                 (report.workloads |> Array.map _.name |> Set.ofArray)
-                (set [ "search"; "filtered"; "notified"; "summary" ])
+                (set
+                    [
+                        "search"
+                        "filtered"
+                        "notified"
+                        "summary"
+                        "case-work-follow-up"
+                        "case-work-summary"
+                    ])
                 "Every declared case read workload executes"
 
             for workload in report.workloads do

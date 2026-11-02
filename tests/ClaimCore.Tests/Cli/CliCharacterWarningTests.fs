@@ -2,6 +2,7 @@ module ClaimCore.Tests.CliCharacterWarningTests
 
 open ClaimCore.Domain
 open ClaimCore.Protocol
+open ClaimCore.Application.Contracts
 
 open System.IO
 open System.Text
@@ -252,11 +253,122 @@ let private humanBudgetAndOrdinaryControl () =
                     (text.Split('\n') |> Array.contains (label + ": " + value))
                     "Ordinary text has no warning suffix")
 
+let private retainedTerminalControls () =
+    let value = "retained\u001B[31m\r\n\t\b\u009B\u202Ename"
+
+    let verify _ (text: string) =
+        for control in [ '\u001B'; '\r'; '\t'; '\b'; '\u009B'; '\u202E' ] do
+            Expect.isFalse
+                (text.Contains control)
+                "Frozen business data cannot emit terminal instructions"
+
+        Expect.isTrue
+            (text.Contains "retained\\u{001B}[31m\\u{000D}\\u{000A}")
+            "Embedded breaks are visibly data"
+
+    rendered
+        "case.get-response-0"
+        (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
+        verify
+
+    rendered
+        "history-full-DISCLOSED"
+        (fun root -> (historyFields root)["claimantName"] <- JsonValue.Create value)
+        verify
+
+    rendered
+        "review-all-fields"
+        (fun root ->
+            let changes =
+                (memberPath [ "outcome"; "data"; "review"; "subject"; "changes" ] root).AsArray()
+
+            let change =
+                changes
+                |> Seq.map nonNull
+                |> Seq.find (fun row ->
+                    (row["field"] |> nonNull).GetValue<string>() = "claimantName")
+
+            change["before"] <- JsonValue.Create value
+            change["after"] <- JsonValue.Create "safe")
+        verify
+
+let private terminalEscapeProfile () =
+    let cases =
+        [
+            "\u001B[31m", "\\u{001B}[31m"
+            "\u001B]0;title\u0007", "\\u{001B}]0;title\\u{0007}"
+            "\r\n\t\b\u0000\u007F\u0085\u009B",
+            "\\u{000D}\\u{000A}\\u{0009}\\u{0008}\\u{0000}\\u{007F}\\u{0085}\\u{009B}"
+            "\u061C\u200E\u200F\u202A\u202B\u202C\u202D\u202E",
+            "\\u{061C}\\u{200E}\\u{200F}\\u{202A}\\u{202B}\\u{202C}\\u{202D}\\u{202E}"
+            "\u2066\u2067\u2068\u2069\u2028\u2029",
+            "\\u{2066}\\u{2067}\\u{2068}\\u{2069}\\u{2028}\\u{2029}"
+            "literal\\u{001B}", "literal\\\\u{001B}"
+            "العربية\u200C\u200D👩‍💻", "العربية\u200C\u200D👩‍💻"
+        ]
+
+    for authored, expected in cases do
+        Expect.equal (TerminalText.data authored) expected "Independent terminal encoding profile"
+
+    Expect.equal
+        (TerminalText.data (String.replicate 10000 "x"))
+        (String.replicate 10000 "x")
+        "Long data is not silently truncated"
+
+let private terminalDataBoundaries () =
+    let dangerous =
+        "subject"
+        + string (char 27)
+        + "[31m"
+        + "\r\n\t\b"
+        + string (char 0x85)
+        + "\u202Ename"
+
+    let principal =
+        PrincipalKey.human "https://issuer.example/" dangerous
+        |> Result.defaultWith (fun _ ->
+            failtest "Terminal rendering must not tighten identity admission")
+
+    let actor: Actor =
+        {
+            ActorId =
+                ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000003")
+                |> Option.get
+            Principal = principal
+            Enabled = true
+        }
+
+    for language in LocalizationPolicy.languages do
+        for text in
+            [
+                TextAuthorityReply.actorRow language actor
+                TextReplyFormat.displayed language (Some dangerous)
+                UsageText.render language [] [ UsageError.ExtraOperand dangerous ]
+            ] do
+            Expect.isFalse (text.Contains(char 27)) "Human data must never emit ESC"
+            Expect.isFalse (text.Contains('\r')) "Data cannot overwrite a line"
+            Expect.isFalse (text.Contains('\b')) "Data cannot erase text"
+            Expect.isFalse (text.Contains('\u202E')) "Data cannot reverse its visible identity"
+
+    Expect.equal
+        (PrincipalKey.parts principal |> fun (_, _, subject) -> subject)
+        dangerous
+        "Stored identity remains exact"
+
 [<Tests>]
 let tests =
     testList
         "CLI character warning text"
         [
+            testCase
+                "retained current history and review business text escapes terminal controls"
+                retainedTerminalControls
+            testCase
+                "terminal encoding escapes controls but preserves Arabic and joining"
+                terminalEscapeProfile
+            testCase
+                "terminal data boundaries escape admitted identity and usage controls"
+                terminalDataBoundaries
             testCase
                 "invisible supplementary and joining scalars have explicit identities"
                 scalarWarnings

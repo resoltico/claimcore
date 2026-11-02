@@ -32,6 +32,7 @@ module PaymentProgress =
 /// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
+        Work: CaseWork
         CaseReference: CaseReference
         Status: CaseStatus
         Registration: Registration
@@ -123,6 +124,8 @@ module CaseFields =
         match field with
         | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
         | BusinessField.Status -> Some(CaseStatus.token fields.Status)
+        | BusinessField.ResponsibleActor -> fields.Work.Responsible |> Option.map ActorId.format
+        | BusinessField.FollowUpDate -> fields.Work.FollowUp |> Option.map CalendarDate.format
         | _ ->
             groupValues
                 fields.Registration

@@ -14,6 +14,8 @@ type CurrencyTotal =
 
 type CaseCountGroup =
     {
+        Responsibility: CaseAssignment option
+        Due: CaseDue
         Lifecycle: Lifecycle
         Status: CaseStatus option
         Progress: CaseProgress option
@@ -24,6 +26,8 @@ type CaseCountGroup =
 
 type CaseWorklistCounts =
     {
+        Assignment: ValueCount<CaseAssignment> list
+        Due: ValueCount<CaseDue> list
         Total: int64
         Lifecycles: ValueCount<Lifecycle> list
         Statuses: ValueCount<CaseStatus> list
@@ -32,6 +36,7 @@ type CaseWorklistCounts =
 
 type CaseWorklistSummary =
     {
+        Basis: WorkDateBasis
         Counts: CaseWorklistCounts
         Claimed: CurrencyTotal list
         Payable: CurrencyTotal list
@@ -70,7 +75,14 @@ module CaseWorklistSummary =
         |> Result.map List.rev
 
     let private valid (group: CaseCountGroup) =
+        let actionable =
+            group.Lifecycle = Lifecycle.Active && group.Status = Some CaseStatus.Opened
+
+        let dueActive = group.Due <> CaseDue.Inactive
+
         group.Count >= 0L
+        && actionable = dueActive
+        && (group.Lifecycle <> Lifecycle.Erased || group.Responsibility.IsNone)
         && (match group.Lifecycle with
             | Lifecycle.Erased ->
                 group.Status.IsNone
@@ -84,7 +96,7 @@ module CaseWorklistSummary =
                 && group.Claimed.IsSome
                 && ((group.Progress = Some CaseProgress.Undecided) = group.Payable.IsNone))
 
-    let fromGroups (groups: CaseCountGroup list) =
+    let fromGroups basis (groups: CaseCountGroup list) =
         let total = groups |> List.sumBy (fun group -> BigInteger group.Count)
 
         if total > BigInteger Sequence.Maximum || not (groups |> List.forall valid) then
@@ -95,8 +107,19 @@ module CaseWorklistSummary =
                 totals _.Payable groups
                 |> Result.map (fun payable ->
                     {
+                        Basis = basis
                         Counts =
                             {
+                                Assignment =
+                                    counts
+                                        (Vocabulary.all CaseAssignment.vocabulary)
+                                        _.Responsibility
+                                        groups
+                                Due =
+                                    counts
+                                        (Vocabulary.all CaseDue.vocabulary)
+                                        (fun group -> Some group.Due)
+                                        groups
                                 Total = int64 total
                                 Lifecycles =
                                     counts

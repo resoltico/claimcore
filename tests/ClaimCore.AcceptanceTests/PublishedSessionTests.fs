@@ -4,7 +4,14 @@ open System
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
+open System.Text
+open System.Text.RegularExpressions
+open System.Security.Cryptography
+open Microsoft.AspNetCore.Authentication
 open Expecto
+open Microsoft.AspNetCore.DataProtection
+open Microsoft.AspNetCore.DataProtection.KeyManagement
+open Microsoft.Extensions.DependencyInjection
 open Npgsql
 
 let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
@@ -27,6 +34,18 @@ let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
 
     FixtureFiles.write fixture.Directory (name + ".stderr") result.StandardError
     |> ignore
+
+    if result.ExitCode <> 0 then
+        let marker = Encoding.UTF8.GetString(result.StandardError).Trim()
+
+        let safe =
+            Regex.IsMatch(
+                marker,
+                @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|UNEXPECTED)\z",
+                RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+            )
+
+        Console.WriteLine("Published session failure: " + (if safe then marker else "UNCLASSIFIED"))
 
     Expect.equal result.ExitCode 0 ("Published browser session phase " + name)
 
@@ -72,7 +91,7 @@ let private lifetimes (fixture: PublishedFixture.Fixture) =
             let! found = reader.ReadAsync()
 
             if found then
-                rows.Add(reader.GetDateTime 0, reader.GetDateTime 1, reader.GetDouble 2)
+                rows.Add((reader.GetDateTime 0, reader.GetDateTime 1, reader.GetDouble 2))
             else
                 reading <- false
 
@@ -129,6 +148,136 @@ let private concurrentHosts (fixture: PublishedFixture.Fixture) before (primary,
         browserPhase fixture "stale" "peer-stale"
     }
 
+let private ticketPayloads (fixture: PublishedFixture.Fixture) =
+    task {
+        use source =
+            NpgsqlDataSource.Create(
+                File.ReadAllText(Path.Combine(fixture.Directory, "owner.connection"))
+            )
+
+        use! connection = source.OpenConnectionAsync()
+
+        use command =
+            new NpgsqlCommand("SELECT protected_ticket FROM claimcore.sessions", connection)
+
+        use! reader = command.ExecuteReaderAsync()
+        let rows = ResizeArray<byte array>()
+        let mutable reading = true
+
+        while reading do
+            let! found = reader.ReadAsync()
+
+            if found then
+                rows.Add(reader.GetFieldValue<byte array> 0)
+            else
+                reading <- false
+
+        return List.ofSeq rows
+    }
+
+let private newKeyProtectsTicket (fixture: PublishedFixture.Fixture) keyId oldPayload =
+    task {
+        let! payloads = ticketPayloads fixture
+        Expect.equal payloads.Length 2 "Both independently protected live session rows are present"
+        let newer = payloads |> List.filter ((<>) oldPayload)
+        Expect.equal newer.Length 1 "Only the new ticket differs from the preserved original row"
+        let directory = Path.Combine(fixture.Directory, "new-key-only")
+
+        Directory.CreateDirectory(
+            directory,
+            UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+        )
+        |> ignore
+
+        try
+            let name = "key-" + string keyId + ".xml"
+
+            let original =
+                Path.Combine(fixture.WebEnvironment["CLAIMCORE_WEB_KEY_RING_DIRECTORY"], name)
+
+            FixtureFiles.write directory name (File.ReadAllBytes original) |> ignore
+
+            let provider =
+                DataProtectionProvider.Create(
+                    DirectoryInfo directory,
+                    fun builder -> builder.SetApplicationName("ClaimCore.Web") |> ignore
+                )
+            // These persisted purpose names are deliberately asserted independently of the writer.
+            let protector = provider.CreateProtector("ClaimCore.Web.DatabaseSessionTicket.1")
+            let clear = protector.Unprotect newer.Head
+
+            try
+                Expect.isNotNull
+                    (TicketSerializer.Default.Deserialize clear)
+                    "The new ticket decrypts with only the replacement key"
+            finally
+                CryptographicOperations.ZeroMemory clear
+
+            Expect.throwsT<CryptographicException>
+                (fun () -> protector.Unprotect oldPayload |> ignore)
+                "The old live ticket independently requires a retained old key"
+        finally
+            Directory.Delete(directory, true)
+    }
+
+let private rollover (fixture: PublishedFixture.Fixture) before =
+    task {
+        let! originalPayloads = ticketPayloads fixture
+        Expect.equal originalPayloads.Length 1 "One original protected ticket precedes rollover"
+
+        let directory =
+            DirectoryInfo fixture.WebEnvironment["CLAIMCORE_WEB_KEY_RING_DIRECTORY"]
+
+        let existing = Directory.GetFiles(directory.FullName, "key-*.xml") |> Set.ofArray
+        Expect.isNonEmpty existing "The live original session has a persisted protection key"
+        let services = ServiceCollection()
+        services.AddDataProtection().PersistKeysToFileSystem(directory) |> ignore
+        use provider = services.BuildServiceProvider()
+        let manager = provider.GetRequiredService<IKeyManager>()
+
+        let replacement =
+            manager.CreateNewKey(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays 90.)
+
+        Expect.isTrue
+            (File.Exists(
+                Path.Combine(directory.FullName, "key-" + string replacement.KeyId + ".xml")
+            ))
+            "An explicit new key is persisted"
+
+        Expect.isTrue
+            (existing |> Set.forall File.Exists)
+            "Rollover retains every previous decryption key"
+
+        let! _ = fixture.ReplaceWebCertificate()
+        browserPhase fixture "verify" "after-key-and-certificate-rollover"
+        let! retained = lifetimes fixture
+
+        Expect.equal
+            retained
+            before
+            "Rollover retains the original session's expiry and idle policy"
+
+        let statePath = Path.Combine(fixture.Directory, "published-session-state.json")
+        let oldState = File.ReadAllBytes statePath
+        browserPhase fixture "login" "new-key-login"
+        let! two = lifetimes fixture
+        Expect.equal two.Length 2 "A fresh real OIDC login coexists with the old live session"
+        browserPhase fixture "verify" "new-key-verify"
+        do! newKeyProtectsTicket fixture replacement.KeyId originalPayloads.Head
+        browserPhase fixture "logout" "new-key-logout"
+
+        FixtureFiles.write fixture.Directory "published-session-state.json" oldState
+        |> ignore
+
+        browserPhase fixture "verify" "old-key-still-live"
+        let! remaining = lifetimes fixture
+
+        Expect.equal
+            remaining
+            before
+            "Logging out the new ticket does not remove the old live ticket"
+    }
+
 let private qualify () =
     task {
         use fixture = new PublishedFixture.Fixture()
@@ -136,6 +285,7 @@ let private qualify () =
         browserPhase fixture "login" "primary-login"
         let! before = lifetimes fixture
         Expect.equal before.Length 1 "Real OIDC login creates exactly one server-side ticket"
+        do! rollover fixture before
         do! fixture.WithAdditionalWeb(concurrentHosts fixture before)
         peerServed fixture "context"
         peerServed fixture "session.logout"
@@ -145,5 +295,5 @@ let private qualify () =
 [<Tests>]
 let tests =
     testCaseAsync
-        "concurrent published Web instances share OIDC tickets and logout survives stale cookies"
+        "published certificate and key rollover retain live tickets across hosts and logout survives stale cookies"
         (async { do! qualify () |> Async.AwaitTask })

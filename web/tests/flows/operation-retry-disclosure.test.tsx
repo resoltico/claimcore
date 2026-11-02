@@ -1,3 +1,4 @@
+import { selectFact } from "../support/field-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -99,6 +100,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
       initialAct: "AMEND_REGISTRATION",
     }),
   );
+  selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
   });

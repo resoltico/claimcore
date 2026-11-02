@@ -239,10 +239,13 @@ const AuthorityTitle = ({ selected, available }: { selected: boolean; available:
   const p = usePresentation();
   return selected && available ? (
     <p id="authority-title" className="eyebrow">
-      {p.text("subject.AUTHORITY.label")}
+      {p.text("ui.access")}
     </p>
   ) : (
-    <h1 id="authority-title">{p.text(selected ? "ui.actorGrants" : "subject.AUTHORITY.label")}</h1>
+    <>
+      <h1 id="authority-title">{p.text(selected ? "ui.actorGrants" : "ui.access")}</h1>
+      {selected ? null : <p className="page-description">{p.text("ui.accessDescription")}</p>}
+    </>
   );
 };
 const AuthorityUnavailable = ({
@@ -410,7 +413,7 @@ export const AuthorityPanel = (props: AuthorityPanelProps) => {
   const base = actorId === "" ? "/authority" : `/authority/${encodeURIComponent(actorId)}`;
   return (
     <>
-      <nav className="authority-tabs" aria-label={p.text("subject.AUTHORITY.label")}>
+      <nav className="authority-tabs" aria-label={p.text("ui.access")}>
         <a
           href={base}
           aria-current={history ? undefined : "page"}

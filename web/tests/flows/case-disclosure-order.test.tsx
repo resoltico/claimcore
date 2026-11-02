@@ -21,7 +21,7 @@ const deferred = () => {
 const detail = (token = "token", reloadSignal = 0) => (
   <TestSession credential={token}>
     <CaseDetail
-      caseReference={fields.caseReference}
+      target={{ kind: "REFERENCE", caseReference: fields.caseReference }}
       reloadSignal={reloadSignal}
       definition={definition.catalog}
       onBack={vi.fn()}

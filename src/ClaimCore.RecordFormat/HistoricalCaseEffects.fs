@@ -4,31 +4,98 @@ open ClaimCore.Domain
 
 /// Permanent request meaning for this record format. No current admission or capability policy.
 module HistoricalCaseEffects =
+    /// Fixed format-3 meaning: only an enabled human CASE_HANDLER can manage case work.
+    let workEligible caseId (actor: ActorAuthority) =
+        actor.Enabled
+        && PrincipalKey.isHuman actor.Principal
+        && (actor.Grants
+            |> List.exists (fun grant ->
+                grant.Role = Role.CaseHandler
+                && (grant.Scope = Scope.Installation || grant.Scope = Scope.Case caseId)))
+
     let private invalid = Error "Invalid historical case transition."
 
     let private changed (fields: CaseFields) progress = Ok { fields with Progress = progress }
 
-    let private choice (before: 'value option) =
+    // Permanent field effects are explicit; current merge/admission policy is not invoked.
+    let private registration (before: Registration) (update: ValidRegistrationUpdate) =
+        let money = defaultArg update.Claimed (Registration.claimed before)
+
+        Registration.create
+            [
+                BusinessField.IncidentDate,
+                Admitted.Date(defaultArg update.IncidentDate (Registration.incidentDate before))
+                BusinessField.IncidentNotificationDate,
+                Admitted.Date(
+                    defaultArg
+                        update.NotificationDate
+                        (Registration.incidentNotificationDate before)
+                )
+                BusinessField.IncidentCountry,
+                Admitted.Country(defaultArg update.Country (Registration.country before))
+                BusinessField.ClaimantName,
+                Admitted.Name(defaultArg update.Claimant (Registration.claimant before))
+                BusinessField.InsurerName,
+                Admitted.Name(defaultArg update.Insurer (Registration.insurer before))
+                BusinessField.ClaimedAmount, Admitted.Amount(Money.amount money)
+                BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue money)
+            ]
+
+    let private decision (before: Decision) (update: ValidDecisionUpdate) =
+        let money = defaultArg update.Payable (Decision.payable before)
+
+        Decision.create
+            [
+                BusinessField.PaymentDecisionDate,
+                Admitted.Date(defaultArg update.Date (Decision.date before))
+                BusinessField.PayableAmount, Admitted.Amount(Money.amount money)
+                BusinessField.PayableCurrency, Admitted.Currency(Money.currencyValue money)
+            ]
+        |> Result.map Some
+
+    let private decisionChoice (before: Decision option) =
         function
         | Change.Keep -> Ok before
-        | Change.Replace value when before.IsSome -> Ok(Some value)
+        | Change.Update update when before.IsSome -> decision before.Value update
         | Change.Clear when before.IsSome -> Ok None
         | _ -> invalid
+
+    let private paymentChoice (before: Payment option) =
+        function
+        | PaymentChange.Keep -> Ok before
+        | PaymentChange.Reaffirm when before.IsSome -> Ok before
+        | PaymentChange.Replace value when before.IsSome -> Ok(Some value)
+        | PaymentChange.Clear when before.IsSome -> Ok None
+        | _ -> invalid
+
+    let private work (before: CaseWork) (update: ValidCaseWorkUpdate) =
+        let choose current =
+            function
+            | WorkValue.Keep -> current
+            | WorkValue.Clear -> None
+            | WorkValue.Set value -> Some value
+
+        {
+            CaseWork.Responsible = choose before.Responsible update.Responsible
+            FollowUp = choose before.FollowUp update.FollowUp
+        }
 
     let private correct (fields: CaseFields) (correction: ValidCorrection) =
         let facts =
             match correction.Registration with
-            | Amendment.Keep -> fields.Registration
-            | Amendment.Replace value -> value
+            | Amendment.Keep -> Ok fields.Registration
+            | Amendment.Update update -> registration fields.Registration update
 
         match
-            choice fields.Decision correction.Decision, choice fields.Payment correction.Payment
+            facts,
+            decisionChoice fields.Decision correction.Decision,
+            paymentChoice fields.Payment correction.Payment
         with
-        | Ok decision, Ok payment ->
+        | Ok facts, Ok decision, Ok payment ->
             let acknowledged =
                 match fields.Progress, correction.Decision, correction.Payment with
-                | PaymentProgress.Paid _, Change.Clear, value -> value = Change.Clear
-                | PaymentProgress.Paid _, Change.Replace _, Change.Keep -> false
+                | PaymentProgress.Paid _, Change.Clear, value -> value = PaymentChange.Clear
+                | PaymentProgress.Paid _, Change.Update _, PaymentChange.Keep -> false
                 | _ -> true
 
             match PaymentProgress.fromGroups decision payment with
@@ -45,8 +112,16 @@ module HistoricalCaseEffects =
 
     let private business (fields: CaseFields) act =
         match act, fields.Status, fields.Progress with
-        | CaseAct.AmendRegistration facts, CaseStatus.Opened, PaymentProgress.Undecided ->
-            Ok { fields with Registration = facts }
+        | CaseAct.AmendRegistration update, CaseStatus.Opened, PaymentProgress.Undecided ->
+            registration fields.Registration update
+            |> Result.map (fun facts -> { fields with Registration = facts })
+        | CaseAct.UpdateWork update, CaseStatus.Opened, _ ->
+            let next = work fields.Work update
+
+            if next = fields.Work then
+                invalid
+            else
+                Ok { fields with Work = next }
         | CaseAct.Correct correction, CaseStatus.Closed, _
         | CaseAct.Correct correction,
           CaseStatus.Opened,
@@ -101,6 +176,7 @@ module HistoricalCaseEffects =
                         State =
                             CaseState.Active
                                 {
+                                    Work = CaseWork.empty
                                     CaseReference = request.Reference
                                     Registration = facts
                                     Progress = PaymentProgress.Undecided

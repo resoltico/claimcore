@@ -27,16 +27,14 @@ const summary = {
 afterEach(() => vi.unstubAllGlobals());
 it("renders independent maximum totals without rounding or single-amount bounds", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("case.summary", "SUCCEEDED", summary)));
-  render(
-    <SummaryBand filter={{ assignment: "ASSIGNED_TO_ME", order: "NOTIFIED", text: "needle" }} />,
-  );
+  render(<SummaryBand filter={{ assignment: "MINE", order: "NOTIFIED", text: "needle" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
   expect(screen.getByText("1.200 KWD")).toBeVisible();
   expect(screen.getByText("Matching cases: 2")).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
     expect.objectContaining({
-      body: JSON.stringify({ assignment: "ASSIGNED_TO_ME", order: "NOTIFIED", text: "needle" }),
+      body: JSON.stringify({ assignment: "MINE", order: "NOTIFIED", text: "needle" }),
     }),
   );
 });

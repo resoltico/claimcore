@@ -9,13 +9,15 @@ no database access. [Browser and host](../docs/operating.md#identity-and-hosting
 - [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) is the validated service facade.
 - [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
 - [operation/operationForm.ts](src/operation/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed catalog bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE and AUTHORITY.
-- [views](src/views/) render context-authorized navigation, cases/history, operation review/observation and authority work. Domain/Application own validation, available acts and outcome meaning.
-- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Protocol/Messages/Localization/) and browser-owned [chrome catalogs](locales/) in English, Latvian and Arabic. Language and display formats never rewrite business values. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. The [integration guide](../docs/integrating.md#delivery-recovery) owns interrupted-delivery behavior.
+- [views](src/views/) render context-authorized navigation, cases/history, operation review/recovery and Access administration. Domain/Application own validation, available acts and outcome meaning.
+- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Protocol/Messages/Localization/) and browser-owned [chrome catalogs](locales/) in English, Latvian and Arabic. Complete core/chrome language pairs load on demand and activate with direction. Raw amount entries keep
+  their entry locale; display preferences do not reinterpret them. View loading retains active operation
+  ownership and exposes explicit retry/reload on failure. Latvian and Arabic text needs native review. Language/display preferences persist in browser storage. The [integration guide](../docs/integrating.md#delivery-recovery) owns interrupted-delivery behavior.
 
 [Recovery records](src/protocol/recoveryJournal.ts) identify service origin, installation, actor and local
 attempt. [Asynchronous ownership](src/views/operation/UnresolvedNotice.tsx) also tracks credential and
 session epoch without persisting them. Identity-equivalent context refreshes preserve a pending check;
-actual transitions invalidate old callbacks. The [IndexedDB adapter](src/recovery/indexedJournal.ts)
+actor, installation or credential/epoch transitions invalidate obsolete callbacks. The [IndexedDB adapter](src/recovery/indexedJournal.ts)
 commits per-attempt identity records before mutation handoff and removes only the matching record.
 
 [Operation state](src/operation/operationState.ts) uses the models in

@@ -79,7 +79,11 @@ module Configuration =
                     Limits.MaximumRequestBytes
                     Limits.MaximumRequestBytes
             CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
-            CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
+            CoreQueueLimit =
+                boundedInt
+                    WebSetting.CoreQueue
+                    AdmissionPolicy.maximumQueuedWriters
+                    AdmissionPolicy.maximumQueuedWriters
             LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5
         }
 
@@ -186,6 +190,18 @@ module Configuration =
                 WebStartupProblem.ConnectionFileEmpty
 
         let configuredLimits = requestLimits ()
+
+        let sufficientPool =
+            try
+                ClaimCore.Postgres.Runtime.supportsCapacity
+                    (AdmissionPolicy.minimumPoolCapacity configuredLimits.CorePermitLimit)
+                    configuredConnection
+            with :? ArgumentException ->
+                false
+
+        if not sufficientPool then
+            WebStartupDiagnostics.refuse WebStartupProblem.PoolCapacityInsufficient
+
         let configuredOidc = oidc ()
 
         try

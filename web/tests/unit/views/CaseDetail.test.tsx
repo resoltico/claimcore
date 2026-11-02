@@ -24,7 +24,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
     );
   render(
     <CaseDetail
-      caseReference="ERASED-1"
+      target={{ kind: "REFERENCE", caseReference: "ERASED-1" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}

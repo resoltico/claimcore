@@ -14,20 +14,6 @@ type ActKind =
     | Case of CaseActKind
     | Authority of AuthorityKind
 
-[<RequireQualifiedAccess>]
-type ScopeKind =
-    | Installation
-    | Case
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ScopeKind =
-    let vocabulary =
-        Vocabulary.ofUnion<ScopeKind> "scope" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-
-/// Caller-authored scope; accepted grants resolve case references to case IDs.
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActSubject =
     let vocabulary =
@@ -56,3 +42,14 @@ module ActKind =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
+
+/// A wire choice has no KEEP token: optional presence is the transport's preservation form.
+[<RequireQualifiedAccess>]
+type WorkChoice =
+    | Set
+    | Clear
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module WorkChoice =
+    let vocabulary =
+        Vocabulary.ofUnion<WorkChoice> "workChange" TokenCasing.ScreamingSnake None

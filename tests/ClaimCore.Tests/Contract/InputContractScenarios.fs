@@ -116,7 +116,8 @@ let internal retainedText () =
             Api.caseGet.Output
             (Outcome.Succeeded
                 {
-                    AssignedToYou = false
+                    Mine = false
+                    Work = Inputs.workView snapshot.State
                     Snapshot = snapshot
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
@@ -131,12 +132,16 @@ let internal retainedText () =
                 ]
                 (registration))
 
-        let reaffirm = request 1L (AuthoredCaseAct.AmendRegistration values)
+        let reaffirm =
+            request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
 
         let input =
             { caseRequest values with
                 ExpectedRevision = 1L
-                Act = ClaimCore.Domain.AuthoredCaseAct.AmendRegistration values
+                Act =
+                    ClaimCore.Domain.AuthoredCaseAct.AmendRegistration(
+                        Inputs.registrationUpdate values
+                    )
             }
 
         Codec.decode
@@ -154,9 +159,11 @@ let internal retainedText () =
             { reaffirm with
                 Act =
                     (AuthoredCaseAct.AmendRegistration(
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, (name + "B") ]
-                            (values)
+                        Inputs.registrationUpdate (
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimantName, (name + "B") ]
+                                (values)
+                        )
                     ))
             }
 
@@ -277,6 +284,8 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Status
             | InteractionInput.Progress
             | InteractionInput.Order
+            | InteractionInput.Due
+            | InteractionInput.WorkChoice _
             | InteractionInput.Assignment -> "input."
 
         Expect.equal

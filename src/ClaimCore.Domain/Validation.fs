@@ -14,13 +14,14 @@ module internal Validation =
         else
             invalid field Violation.ChronologicalOrder
 
-    let private group result =
+    let group result =
         result
         |> Result.mapError (fun issues ->
             issues
             |> List.map (fun (field, violation) ->
                 {
                     Target = InputTarget.Field field
+                    RelatedDate = None
                     Violation = violation
                 })
             |> InputIssues.ofList
@@ -30,3 +31,33 @@ module internal Validation =
     let registration input = Registration.parse input |> group
     let decision input = Decision.parse input |> group
     let payment input = Payment.parse input |> group
+
+    let registrationUpdate input =
+        RegistrationUpdateInput.parse input |> group
+
+    let decisionUpdate input =
+        DecisionUpdateInput.parse input |> group
+
+    let work input = CaseWorkInput.parse input |> group
+
+    let chronology target counterpart date =
+        Error(
+            Refusal.InvalidInput(
+                InputIssues.ofList
+                    [
+                        {
+                            Target = InputTarget.Field target
+                            Violation = Violation.ChronologicalOrder
+                            RelatedDate = Some { Field = counterpart; Value = date }
+                        }
+                    ]
+                |> Option.get
+            )
+        )
+
+    let registrationMerge result =
+        result
+        |> Result.mapError (fun (target, counterpart, date) ->
+            match chronology target counterpart date with
+            | Error refusal -> refusal
+            | Ok() -> invalidOp "A chronology failure must refuse.")

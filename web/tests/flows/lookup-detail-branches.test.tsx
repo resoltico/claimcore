@@ -23,7 +23,7 @@ it("does not request history or acts for a missing case", async () => {
   fetch.mockResolvedValueOnce(response("case.get", "REJECTED", unavailable));
   render(
     <CaseDetail
-      caseReference="MISSING"
+      target={{ kind: "REFERENCE", caseReference: "MISSING" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -73,7 +73,7 @@ it("keeps a failed history page request-local without erasing current case data"
   );
   render(
     <CaseDetail
-      caseReference="CASE-1"
+      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -112,7 +112,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
-      caseReference="CASE-1"
+      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -233,7 +233,7 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   expect(find).toBeDisabled();
   await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
   await user.click(find);
-  expect(selected).toHaveBeenCalledWith(" REF ");
+  expect(selected).toHaveBeenCalledWith({ kind: "REFERENCE", caseReference: " REF " });
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 });
 

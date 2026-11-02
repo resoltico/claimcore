@@ -1,8 +1,8 @@
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CatalogInputs } from "../../../src/components/CatalogInputs";
-import { operationEntry } from "../../../src/operation/operationForm";
-import { catalogs } from "@contracts/messages";
+import { operationEntry } from "../../../src/protocol/operationCatalog";
+import { catalogs } from "../../../src/generated/core-catalogs";
 
 it("uses the binding vocabulary to label an option at an unfamiliar catalog path", () => {
   const original = operationEntry({ subject: "AUTHORITY", kind: "GRANT" });
@@ -24,6 +24,7 @@ it("uses the binding vocabulary to label an option at an unfamiliar catalog path
       disabled={false}
       fieldErrors={{}}
       onChange={vi.fn()}
+      onFieldsChange={vi.fn()}
     />,
   );
   expect(screen.getByRole("radio", { name: catalogs.en["role.CASE_READER.label"] })).toBeChecked();

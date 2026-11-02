@@ -1,3 +1,4 @@
+import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -36,7 +37,9 @@ const view = (
   >
     <JournalContext value={journal}>
       <RequesterContext value={context}>
-        <UnresolvedNotice />
+        <RecoveryProvider>
+          <UnresolvedNotice />
+        </RecoveryProvider>
       </RequesterContext>
     </JournalContext>
   </SessionContext>
@@ -47,7 +50,7 @@ const answer = (operationId: string) =>
     status: 200,
     value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
   }) as const;
-const buttons = () => screen.findAllByRole("button", { name: "Check unresolved operation" });
+const buttons = () => screen.findAllByRole("button", { name: "Check operation status" });
 
 it.each([false, true])(
   "a same-identity refresh %s does not strand a pending resolution",
@@ -56,8 +59,8 @@ it.each([false, true])(
     const other = recoveryRecord("10000000-0000-4000-8000-000000000003");
     await testJournal.put(record);
     await testJournal.put(other);
-    const gate = pending<Awaited<ReturnType<typeof service.resolve>>>();
-    const resolve = vi.spyOn(service, "resolve").mockReturnValue(gate.promise);
+    const gate = pending<Awaited<ReturnType<typeof service.status>>>();
+    const resolve = vi.spyOn(service, "status").mockReturnValue(gate.promise);
     const rendered = render(view(requester));
     await userEvent.click((await buttons())[0]!);
     expect((await buttons())[0]).toBeDisabled();
@@ -86,7 +89,7 @@ it("keeps ownership and busy state through a same-identity refresh during journa
     await testJournal.remove(selected);
   });
   const journal = { ...testJournal, remove };
-  vi.spyOn(service, "resolve").mockResolvedValue(answer(record.operationId));
+  vi.spyOn(service, "status").mockResolvedValue(answer(record.operationId));
   const rendered = render(view(requester, "token", 0, journal));
   await userEvent.click((await buttons())[0]!);
   await waitFor(() => {
@@ -99,7 +102,7 @@ it("keeps ownership and busy state through a same-identity refresh during journa
     await gate.promise;
   });
   await waitFor(() => {
-    expect(screen.queryByRole("button", { name: "Check unresolved operation" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Check operation status" })).toBeNull();
   });
   expect(await testJournal.list(recoveryScope)).toEqual([]);
 });
@@ -109,10 +112,10 @@ it.each(["actor", "installation", "null", "credential", "epoch"] as const)(
   async (change) => {
     const record = recoveryRecord();
     await testJournal.put(record);
-    const old = pending<Awaited<ReturnType<typeof service.resolve>>>();
-    const fresh = pending<Awaited<ReturnType<typeof service.resolve>>>();
+    const old = pending<Awaited<ReturnType<typeof service.status>>>();
+    const fresh = pending<Awaited<ReturnType<typeof service.status>>>();
     const resolve = vi
-      .spyOn(service, "resolve")
+      .spyOn(service, "status")
       .mockReturnValueOnce(old.promise)
       .mockReturnValueOnce(fresh.promise);
     const remove = vi.fn(testJournal.remove);
@@ -168,7 +171,7 @@ it("a delayed removal for the old actor cannot clear or unlock the new actor's a
   await testJournal.put(first);
   await testJournal.put(second);
   const removed = pending<void>();
-  const resolved = pending<Awaited<ReturnType<typeof service.resolve>>>();
+  const resolved = pending<Awaited<ReturnType<typeof service.status>>>();
   const remove = vi.fn(async (record: typeof first) => {
     if (record.actorId === first.actorId) {
       await removed.promise;
@@ -176,7 +179,7 @@ it("a delayed removal for the old actor cannot clear or unlock the new actor's a
     await testJournal.remove(record);
   });
   const journal = { ...testJournal, remove };
-  vi.spyOn(service, "resolve")
+  vi.spyOn(service, "status")
     .mockResolvedValueOnce(answer(first.operationId))
     .mockReturnValueOnce(resolved.promise);
   const rendered = render(view(requester, "token", 0, journal));
@@ -197,7 +200,7 @@ it("a delayed removal for the old actor cannot clear or unlock the new actor's a
     await resolved.promise;
   });
   await waitFor(() => {
-    expect(screen.queryByRole("button", { name: "Check unresolved operation" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Check operation status" })).toBeNull();
   });
   expect(await testJournal.list({ ...recoveryScope, actorId: second.actorId })).toEqual([]);
 });
@@ -207,7 +210,7 @@ it.each(["uncertain", "transport-throw", "remove-failure"] as const)(
   async (failure) => {
     const record = recoveryRecord();
     await testJournal.put(record);
-    const resolve = vi.spyOn(service, "resolve");
+    const resolve = vi.spyOn(service, "status");
     if (failure === "transport-throw") {
       resolve.mockRejectedValue(new Error("Synthetic unavailable transport"));
     } else if (failure === "uncertain") {
@@ -224,10 +227,134 @@ it.each(["uncertain", "transport-throw", "remove-failure"] as const)(
     render(view(requester, "token", 0, { ...testJournal, remove }));
     await userEvent.click((await buttons())[0]!);
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Check unresolved operation" })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Check operation status" })).not.toBeDisabled();
     });
     expect(await testJournal.list(recoveryScope)).toEqual([record]);
     expect(remove).toHaveBeenCalledTimes(failure === "remove-failure" ? 1 : 0);
     expect(resolve).toHaveBeenCalledTimes(1);
   },
 );
+
+it("passive unresolved status retains identity and settlement requires a separate explicit confirmation", async () => {
+  const record = recoveryRecord();
+  await testJournal.put(record);
+  const status = vi.spyOn(service, "status").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { operationId: record.operationId, outcome: { kind: "UNRESOLVED", data: null } },
+  });
+  const settle = vi.spyOn(service, "resolve").mockResolvedValue(answer(record.operationId));
+  render(view(requester));
+  await buttons();
+  expect(status).not.toHaveBeenCalled();
+  expect(settle).not.toHaveBeenCalled();
+  await userEvent.click((await buttons())[0]!);
+  await screen.findByText(
+    "The outcome is still unresolved. This status check has not blocked the operation.",
+  );
+  expect(await testJournal.list(recoveryScope)).toEqual([record]);
+  expect(settle).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  expect(
+    await screen.findByRole("dialog", { name: "Settle operation permanently" }),
+  ).toHaveTextContent("permanently block its operation ID");
+  expect(settle).not.toHaveBeenCalled();
+  await waitFor(() => {
+    expect(screen.getByRole("dialog", { name: "Settle operation permanently" })).toHaveFocus();
+  });
+  await userEvent.keyboard("{Enter}");
+  expect(settle).not.toHaveBeenCalled();
+  await userEvent.tab();
+  expect(screen.getByRole("button", { name: "Keep checking status" })).toHaveFocus();
+  await userEvent.click(screen.getByRole("button", { name: "Keep checking status" }));
+  expect(settle).not.toHaveBeenCalled();
+  expect(await testJournal.list(recoveryScope)).toEqual([record]);
+  await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  await userEvent.click(screen.getByRole("button", { name: "Confirm permanent settlement" }));
+  await waitFor(() => {
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      record.operationId,
+      "token",
+      record.installationId,
+    );
+  });
+  await waitFor(async () => {
+    expect(await testJournal.list(recoveryScope)).toEqual([]);
+  });
+});
+
+it("an old actor's pending read cannot block or unlock a newer actor's confirmed settlement", async () => {
+  const first = recoveryRecord();
+  const second = {
+    ...recoveryRecord("10000000-0000-4000-8000-000000000003"),
+    actorId: "10000000-0000-4000-8000-000000000099",
+  };
+  await testJournal.put(first);
+  await testJournal.put(second);
+  const old = pending<Awaited<ReturnType<typeof service.status>>>();
+  const final = pending<Awaited<ReturnType<typeof service.resolve>>>();
+  vi.spyOn(service, "status").mockReturnValue(old.promise);
+  const settle = vi.spyOn(service, "resolve").mockReturnValue(final.promise);
+  const rendered = render(view(requester));
+  await userEvent.click((await buttons())[0]!);
+  rendered.rerender(view({ ...requester, actorId: second.actorId }));
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Settle operation permanently" })).not.toBeDisabled();
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  await userEvent.click(screen.getByRole("button", { name: "Confirm permanent settlement" }));
+  await waitFor(() => {
+    expect(settle).toHaveBeenCalledExactlyOnceWith(
+      second.operationId,
+      "token",
+      second.installationId,
+    );
+  });
+  await act(async () => {
+    old.finish(answer(first.operationId));
+    await old.promise;
+  });
+  expect((await buttons())[0]).toBeDisabled();
+  expect(await testJournal.list(recoveryScope)).toEqual([first]);
+  await act(async () => {
+    final.finish(answer(second.operationId));
+    await final.promise;
+  });
+  await waitFor(async () => {
+    expect(await testJournal.list(second)).toEqual([]);
+  });
+  expect(await testJournal.list(recoveryScope)).toEqual([first]);
+});
+
+it("an actor switchback cannot revive an earlier unconfirmed settlement intent", async () => {
+  const record = recoveryRecord();
+  await testJournal.put(record);
+  const settle = vi.spyOn(service, "resolve");
+  const rendered = render(view(requester));
+  await buttons();
+  await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  await screen.findByRole("dialog", { name: "Settle operation permanently" });
+  rendered.rerender(view({ ...requester, actorId: "10000000-0000-4000-8000-000000000099" }));
+  rendered.rerender(view({ ...requester }));
+  await buttons();
+  expect(screen.queryByRole("dialog", { name: "Settle operation permanently" })).toBeNull();
+  expect(settle).not.toHaveBeenCalled();
+  expect(await testJournal.list(recoveryScope)).toEqual([record]);
+});
+
+it("keeps a known final result visible when local identity cleanup fails", async () => {
+  const record = recoveryRecord();
+  await testJournal.put(record);
+  const remove = vi.fn().mockRejectedValue(new Error("denied"));
+  vi.spyOn(service, "status").mockResolvedValue(answer(record.operationId));
+  render(view(requester, "token", 0, { ...testJournal, remove }));
+  await userEvent.click((await buttons())[0]!);
+  await screen.findByText(
+    "This operation ID was not accepted and is permanently blocked for this account.",
+  );
+  await screen.findByText(
+    "The outcome is known, but this local attempt could not be cleared. Its identity has been kept; you can check status again.",
+  );
+  expect(await testJournal.list(recoveryScope)).toEqual([record]);
+  expect(screen.queryByText("The operation outcome is unknown.")).toBeNull();
+});

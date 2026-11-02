@@ -40,7 +40,24 @@ const emptyInput = (value: unknown): boolean =>
   value === "" ||
   (Array.isArray(value) && value.length === 0);
 const implicitChoice = (input: CatalogInput, value: unknown): boolean =>
-  input.kind.kind === "CHOICE" && value === input.default;
+  !input.wireRequired && input.kind.kind === "CHOICE" && value === input.default;
+
+// Selected partial facts keep empty authored text for core diagnostics.
+const selectedFact = (entry: CatalogEntry, input: CatalogInput, values: FormValues): boolean =>
+  entry.subject === "CASE" &&
+  entry.endpoint === "operation.execute" &&
+  input.source === "AUTHORED" &&
+  input.kind.kind === "TEXT" &&
+  input.field !== null &&
+  Object.hasOwn(values, bindingPath(input));
+const omittedInput = (
+  entry: CatalogEntry,
+  input: CatalogInput,
+  values: FormValues,
+  value: unknown,
+): boolean =>
+  !input.required &&
+  ((emptyInput(value) && !selectedFact(entry, input, values)) || implicitChoice(input, value));
 
 export const assembleCatalogInput = (
   entry: CatalogEntry,
@@ -52,8 +69,7 @@ export const assembleCatalogInput = (
   }
   for (const input of entry.inputs.filter((item) => applies(item, values))) {
     const value = values[bindingPath(input)] ?? input.default;
-    // Optional finite choices use their implicit wire default; integer page bounds remain explicit.
-    if (!input.required && (emptyInput(value) || implicitChoice(input, value))) {
+    if (omittedInput(entry, input, values, value)) {
       continue;
     }
     assign(root, input.path, input.kind.kind === "INTEGER" ? Number(value) : (value ?? ""));

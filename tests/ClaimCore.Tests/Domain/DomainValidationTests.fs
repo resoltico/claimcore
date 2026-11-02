@@ -99,6 +99,12 @@ let private restorationTests =
                                     if mask &&& 4 <> 0 then
                                         "payableCurrency", text "EUR"
                                 ]
+                            "work",
+                            JsonValue.Object
+                                [
+                                    "responsibleActor", JsonValue.Null
+                                    "followUpDate", JsonValue.Null
+                                ]
                             "payment", JsonValue.Null
                             "progress", text "DECIDED"
                         ]

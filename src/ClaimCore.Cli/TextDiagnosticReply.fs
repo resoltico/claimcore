@@ -32,7 +32,15 @@ module internal TextDiagnosticReply =
 
                     label language (diagnosticTargetIdentity issue.Target)
                     + ": "
-                    + render code parameters)
+                    + render code parameters
+                    + (match issue.RelatedDate with
+                       | None -> ""
+                       | Some related ->
+                           " ("
+                           + label language (FieldPresentation.labelId related.Field)
+                           + ": "
+                           + CalendarDate.format related.Value
+                           + ")"))
             | refusal ->
                 let code, parameters = DiagnosticCodecs.describe refusal
                 let message = render code parameters

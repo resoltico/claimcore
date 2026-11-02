@@ -7,7 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page, type Response } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -72,11 +72,39 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
-  await page.goto("/", { waitUntil: "commit" });
-  // Readiness uses the heading of the actor's advertised workspace.
-  await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
-    timeout: 10_000,
-  });
+  const errors: string[] = [];
+  const scriptError = (error: Error) => {
+    errors.push(error.message.slice(0, 512));
+  };
+  const assetError = (response: Response) => {
+    const path = new URL(response.url()).pathname;
+    if (path.startsWith("/assets/") && response.status() >= 400) {
+      errors.push(
+        `${path}: ${response.status()}, ${response.headers()["content-type"]}, ${response.headers()["cache-control"]}`,
+      );
+      void response
+        .text()
+        .then((body) => {
+          errors.push(`Asset error body: ${body.slice(0, 512)}`);
+        })
+        .catch(() => {
+          errors.push("Asset error body unavailable");
+        });
+    }
+  };
+  page.on("pageerror", scriptError);
+  page.on("response", assetError);
+  try {
+    await page.goto("/", { waitUntil: "commit" });
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
+      timeout: 10_000,
+    });
+  } catch (error) {
+    throw new Error(`E2E_APPLICATION_LOAD ${errors.slice(0, 16).join("; ")}`, { cause: error });
+  } finally {
+    page.off("pageerror", scriptError);
+    page.off("response", assetError);
+  }
 };
 
 export const openAuthenticated = async (

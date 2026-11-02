@@ -16,13 +16,20 @@ module internal RequestValidation =
     let private amend parse =
         function
         | Amendment.Keep -> Ok Amendment.Keep
-        | Amendment.Replace value -> parse value |> Result.map Amendment.Replace
+        | Amendment.Update value -> parse value |> Result.map Amendment.Update
 
     let private change parse =
         function
         | Change.Keep -> Ok Change.Keep
         | Change.Clear -> Ok Change.Clear
-        | Change.Replace value -> parse value |> Result.map Change.Replace
+        | Change.Update value -> parse value |> Result.map Change.Update
+
+    let private payment parse =
+        function
+        | PaymentChange.Keep -> Ok PaymentChange.Keep
+        | PaymentChange.Clear -> Ok PaymentChange.Clear
+        | PaymentChange.Reaffirm -> Ok PaymentChange.Reaffirm
+        | PaymentChange.Replace value -> parse value |> Result.map PaymentChange.Replace
 
     let private act (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
         match input with
@@ -37,14 +44,17 @@ module internal RequestValidation =
                         })
                 (Admission.map2
                     (fun registration decision -> registration, decision)
-                    (amend Validation.registration value.Registration)
-                    (change Validation.decision value.Decision))
-                (change Validation.payment value.Payment)
+                    (amend Validation.registrationUpdate value.Registration)
+                    (change Validation.decisionUpdate value.Decision))
+                (payment Validation.payment value.Payment)
         | input ->
             CaseAct.traverse
                 Validation.registration
+                Validation.registrationUpdate
                 Validation.decision
+                Validation.decisionUpdate
                 Validation.payment
+                Validation.work
                 reason
                 input
 

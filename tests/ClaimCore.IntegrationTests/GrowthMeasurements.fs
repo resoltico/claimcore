@@ -258,6 +258,10 @@ let internal history workload (actor: ServiceContext) =
 
 let private rebuildMeasured (database: PostgresFixture.Database) checkpoint =
     task {
+        let! mode =
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
+
+        Expect.isOk mode "Rebuild measurement requires explicit maintenance outside the timed scan"
         let baseline = GC.GetTotalMemory true
         use runner = Process.GetCurrentProcess()
         let mutable peakManaged = baseline

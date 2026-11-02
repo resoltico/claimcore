@@ -2,8 +2,9 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { CatalogInputs } from "../../src/components/CatalogInputs";
-import { initialOperationValues, operationEntry } from "../../src/operation/operationForm";
-import { catalogs } from "@contracts/messages";
+import { initialOperationValues } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
+import { catalogs } from "../../src/generated/core-catalogs";
 import { preferenceKey } from "../../src/presentation/preferences";
 import type { Notice } from "../../src/protocol/notices";
 
@@ -29,6 +30,7 @@ it.each(["en", "lv", "ar"] as const)(
       current: null,
       disabled: false,
       onChange: vi.fn(),
+      onFieldsChange: vi.fn(),
     };
     const view = render(<CatalogInputs {...props} fieldErrors={{}} />);
     for (const field of ["issuer", "subject"] as const) {
@@ -66,6 +68,7 @@ it.each(["en", "lv", "ar"] as const)(
         disabled={false}
         fieldErrors={{}}
         onChange={vi.fn()}
+        onFieldsChange={vi.fn()}
       />,
     );
     for (const name of ["registration", "decision", "payment"] as const) {

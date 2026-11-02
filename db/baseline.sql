@@ -49,12 +49,21 @@ CREATE TABLE claimcore.installation (
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 
+-- Operational mode is owner-controlled and survives process restarts. It is not a ledger projection.
+CREATE TABLE claimcore.register_maintenance (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    active boolean NOT NULL,
+    generation bigint NOT NULL CHECK (generation BETWEEN 0 AND 9007199254740991),
+    CHECK (NOT active OR generation > 0)
+);
+INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (true,false,0);
+
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 2). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 3). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -63,7 +72,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 2),
+    entry_format smallint NOT NULL CHECK (entry_format = 3),
     subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
@@ -281,6 +290,8 @@ CREATE TABLE claimcore.cases (
     claimed_amount numeric(22,4) CHECK (claimed_amount >= 0),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4) CHECK (payable_amount >= 0),
+    responsible_actor uuid,
+    follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     payable_currency text CHECK (payable_currency ~ '^[A-Z]{3}$'),
 
     -- Printable ASCII without space: PRECIS IdentifierClass's ASCII subset (RFC 8264 4.2).
@@ -293,7 +304,7 @@ CREATE TABLE claimcore.cases (
         AND ((state = 'ERASED') = (notified_on IS NULL))
         AND ((state = 'ERASED') = (claimed_amount IS NULL))
         AND ((state = 'ERASED') = (claimed_currency IS NULL))
-        AND (state <> 'ERASED' OR payable_amount IS NULL)
+        AND (state <> 'ERASED' OR (payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL))
     ),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
@@ -315,6 +326,12 @@ CREATE TABLE claimcore.actors (
     enabled boolean NOT NULL,
     UNIQUE (issuer, principal_kind, subject)
 );
+
+ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
+    FOREIGN KEY (responsible_actor) REFERENCES claimcore.actors (actor_id);
+CREATE INDEX cases_responsible ON claimcore.cases (responsible_actor, upper(case_reference COLLATE "C")) WHERE responsible_actor IS NOT NULL;
+CREATE INDEX cases_follow_up ON claimcore.cases (follow_up ASC NULLS LAST, upper(case_reference COLLATE "C"));
+CREATE INDEX cases_due ON claimcore.cases (follow_up, upper(case_reference COLLATE "C")) WHERE state='ACTIVE' AND status='OPENED' AND follow_up IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
@@ -365,7 +382,7 @@ REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
-GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head
+GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.actors TO claimcore_runtime;

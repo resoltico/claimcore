@@ -11,6 +11,8 @@ type Violation =
     | ReferenceFormat
     | CountryFormat
     | PrincipalFormat
+    | ActorIdRequired
+    | UpdateRequired
     | CalendarDateRequired
     | ChronologicalOrder
     | FutureDate

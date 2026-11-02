@@ -1,15 +1,19 @@
+import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useLayoutEffect, useRef } from "react";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase } from "../../api/service";
 import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
-const stewardship = new Set<ActKind>(["VOID", "REINSTATE", "ERASE"]);
+import { operationEntry } from "../../protocol/operationCatalog";
+import { casePrimaryAction } from "../../operation/caseActionPriority";
+const stewardship = (act: ActKind) =>
+  operationEntry({ subject: "CASE", kind: act }).family === "STEWARDSHIP";
 type Action = { act: ActKind; primary: ActKind | undefined; onAct: (act: ActKind) => void };
 const ActButton = ({ act, primary, onAct }: Action) => {
   const p = usePresentation();
   let className = act === primary ? "primary" : "";
-  if (act === "ERASE") {
+  if (operationEntry({ subject: "CASE", kind: act }).effect === "ERASE_PAYLOAD") {
     className = `${className} case-action-danger`.trim();
   }
   return (
@@ -18,6 +22,7 @@ const ActButton = ({ act, primary, onAct }: Action) => {
         onAct(act);
       }}
       className={className}
+      data-act={act}
       aria-label={p.text("ui.actDescription", {
         label: p.actLabel(act),
         meaning: p.actMeaning(act),
@@ -34,11 +39,11 @@ const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
     items.map((act) => <ActButton key={act} act={act} primary={primary} onAct={onAct} />);
   return (
     <>
-      <div className="actions">{buttons(acts.filter((act) => !stewardship.has(act)))}</div>
-      {acts.some((act) => stewardship.has(act)) ? (
+      <div className="actions">{buttons(acts.filter((act) => !stewardship(act)))}</div>
+      {acts.some((act) => stewardship(act)) ? (
         <section className="case-stewardship">
-          <h3>{p.text("ui.caseStewardship")}</h3>
-          <div className="actions">{buttons(acts.filter((act) => stewardship.has(act)))}</div>
+          <h3>{p.term("actFamily", "STEWARDSHIP")}</h3>
+          <div className="actions">{buttons(acts.filter((act) => stewardship(act)))}</div>
         </section>
       ) : null}
     </>
@@ -76,17 +81,36 @@ const CompactActions = ({ acts, primary, onAct }: GroupProps) => {
       <div className="case-primary-action">
         {primary === undefined ? null : <ActButton act={primary} primary={primary} onAct={onAct} />}
       </div>
-      {acts.length < 2 ? null : (
+      {acts.filter((act) => act !== primary).length === 0 ? null : (
         <details className="case-more-actions">
           <summary>
             {p.text("ui.moreCaseActions")} <span aria-hidden="true">⌄</span>
           </summary>
           <div className="case-more-popup">
-            <ActionGroups acts={acts.slice(1)} primary={primary} onAct={onAct} />
+            <ActionGroups
+              acts={acts.filter((act) => act !== primary)}
+              primary={primary}
+              onAct={onAct}
+            />
           </div>
         </details>
       )}
     </aside>
+  );
+};
+export const CasePrimaryAction = ({
+  current,
+  onAct,
+}: {
+  current: CurrentCase;
+  onAct: Action["onAct"];
+}) => {
+  const compact = useCompact();
+  const requester = useRequesterContext();
+  const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
+  const primary = casePrimaryAction(current);
+  return compact || paused || primary === undefined ? null : (
+    <ActButton act={primary} primary={primary} onAct={onAct} />
   );
 };
 export const CaseActions = ({
@@ -98,18 +122,23 @@ export const CaseActions = ({
 }) => {
   const p = usePresentation();
   const compact = useCompact();
-  const acts = current.advice.acts.filter(isCaseAct);
-  const [primary] = acts;
+  const requester = useRequesterContext();
+  const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
+  const acts = paused ? [] : current.advice.acts.filter(isCaseAct);
+  const primary = paused ? undefined : casePrimaryAction(current);
   if (acts.length === 0) {
     return null;
   }
   if (compact) {
     return <CompactActions acts={acts} primary={primary} onAct={onAct} />;
   }
+  if (acts.every((act) => act === primary)) {
+    return null;
+  }
   return (
     <aside className="case-actions" aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("label.availableActs")}</h2>
-      <ActionGroups acts={acts} primary={primary} onAct={onAct} />
+      <h2 id="acts-title">{p.text("ui.continueCase")}</h2>
+      <ActionGroups acts={acts.filter((act) => act !== primary)} primary={primary} onAct={onAct} />
     </aside>
   );
 };

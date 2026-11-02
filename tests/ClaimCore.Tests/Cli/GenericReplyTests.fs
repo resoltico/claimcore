@@ -19,10 +19,17 @@ let private authorityReview () =
                         OperationReview.Authority
                             {
                                 Target = None
-                                Before = { Enabled = false; Grants = [] }
+                                AccessScope = GrantScope.Installation
+                                Before =
+                                    {
+                                        Enabled = false
+                                        Grants = []
+                                        Access = []
+                                    }
                                 After =
                                     {
                                         Enabled = true
+                                        Access = []
                                         Grants =
                                             [
                                                 {

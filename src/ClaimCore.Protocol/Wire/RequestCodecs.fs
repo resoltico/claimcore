@@ -40,6 +40,88 @@ module RequestCodecs =
         inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
         |> Codec.named "Payment"
 
+
+    let private moneyInput =
+        (record (fun amount currency ->
+            {
+                MoneyInput.Amount = amount
+                Currency = currency
+            })
+        : Fields<MoneyInput, _>)
+        |> field "amount" _.Amount text
+        |> field "currency" _.Currency text
+        |> build
+
+    let registrationUpdate =
+        (record (fun incident notification country claimant insurer claimed ->
+            {
+                RegistrationUpdateInput.IncidentDate = incident
+                NotificationDate = notification
+                Country = country
+                Claimant = claimant
+                Insurer = insurer
+                Claimed = claimed
+            })
+        : Fields<RegistrationUpdateInput, _>)
+        |> optionalField "incidentDate" _.IncidentDate text
+        |> optionalField "incidentNotificationDate" _.NotificationDate text
+        |> optionalField "incidentCountry" _.Country text
+        |> optionalField "claimantName" _.Claimant text
+        |> optionalField "insurerName" _.Insurer text
+        |> optionalField "claimed" _.Claimed moneyInput
+        |> build
+        |> named "RegistrationUpdate"
+
+    let decisionUpdate =
+        (record (fun date payable ->
+            {
+                DecisionUpdateInput.Date = date
+                Payable = payable
+            })
+        : Fields<DecisionUpdateInput, _>)
+        |> optionalField "paymentDecisionDate" _.Date text
+        |> optionalField "payable" _.Payable moneyInput
+        |> build
+        |> named "DecisionUpdate"
+
+    let private workValue name =
+        Codec.taggedOn
+            "kind"
+            name
+            [
+                unitVariant
+                    (Vocabulary.token WorkChoice.vocabulary WorkChoice.Clear)
+                    WorkValue.Clear
+                variant
+                    (Vocabulary.token WorkChoice.vocabulary WorkChoice.Set)
+                    WorkValue.Set
+                    (function
+                    | WorkValue.Set value -> Some value
+                    | _ -> None)
+                    (record id |> field "value" id text)
+            ]
+        |> Codec.vocabulary (Vocabulary.name WorkChoice.vocabulary)
+
+    let work =
+        let supplied =
+            function
+            | WorkValue.Keep -> None
+            | choice -> Some choice
+
+        (record (fun actor date ->
+            {
+                CaseWorkInput.Responsible = defaultArg actor WorkValue.Keep
+                FollowUp = defaultArg date WorkValue.Keep
+            })
+        : Fields<CaseWorkInput, _>)
+        |> optionalField
+            "responsibleActor"
+            (_.Responsible >> supplied)
+            (workValue "ResponsibleActorChange")
+        |> optionalField "followUpDate" (_.FollowUp >> supplied) (workValue "FollowUpChange")
+        |> build
+        |> named "CaseWorkUpdate"
+
     let registrationGroup =
         tagged
             CorrectionGroupAction.vocabulary
@@ -47,12 +129,12 @@ module RequestCodecs =
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Amendment.Keep
                 variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    Amendment.Replace
+                    (CorrectionGroupAction.token CorrectionGroupAction.Update)
+                    Amendment.Update
                     (function
-                    | Amendment.Replace value -> Some value
+                    | Amendment.Update value -> Some value
                     | _ -> None)
-                    (record id |> field WireMembers.Values id registration)
+                    (record id |> field WireMembers.Values id registrationUpdate)
             ]
 
     let decisionGroup =
@@ -62,12 +144,12 @@ module RequestCodecs =
             [
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
                 variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    Change.Replace
+                    (CorrectionGroupAction.token CorrectionGroupAction.Update)
+                    Change.Update
                     (function
-                    | Change.Replace value -> Some value
+                    | Change.Update value -> Some value
                     | _ -> None)
-                    (record id |> field WireMembers.Values id decision)
+                    (record id |> field WireMembers.Values id decisionUpdate)
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
@@ -76,15 +158,20 @@ module RequestCodecs =
             CorrectionGroupAction.vocabulary
             RequestSchemas.PaymentGroup
             [
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Keep) Change.Keep
+                unitVariant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
+                    PaymentChange.Keep
                 variant
                     (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    Change.Replace
+                    PaymentChange.Replace
                     (function
-                    | Change.Replace value -> Some value
+                    | PaymentChange.Replace value -> Some value
                     | _ -> None)
                     (record id |> field WireMembers.Values id payment)
-                unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
+                unitVariant "REAFFIRM" PaymentChange.Reaffirm
+                unitVariant
+                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
+                    PaymentChange.Clear
             ]
 
     let correction =
@@ -113,6 +200,9 @@ module RequestCodecs =
             | CaseActSlot.Bare act -> unitVariant tag act
             | CaseActSlot.Registration(inject, project) ->
                 memberCodec WireMembers.Values registration (inject, project)
+            | CaseActSlot.RegistrationUpdate(inject, project) ->
+                memberCodec "values" registrationUpdate (inject, project)
+            | CaseActSlot.Work(inject, project) -> memberCodec "values" work (inject, project)
             | CaseActSlot.Decision(inject, project) ->
                 memberCodec WireMembers.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
@@ -346,6 +436,18 @@ module RequestCodecs =
         |> caseOperand _.Target
         |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
 
+    let assigneeRequest =
+        (read (fun target cursor limit ->
+            {
+                AssigneeRequest.Target = target
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<AssigneeRequest, _>)
+        |> caseOperand _.Target
+        |> page _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.AssigneeRequest QueryEndpoint.CaseAssignees
+
     let private pageFields =
         (read (fun cursor limit ->
             {
@@ -391,13 +493,18 @@ module RequestCodecs =
             (VocabularyCodec.create CaseListOrder.vocabulary)
 
     let private filterFields =
-        (record (fun filter assignment -> { filter with Assignment = assignment })
+        (record (fun (filter: CaseListFilter<string>) assignment due ->
+            { filter with
+                Assignment = assignment
+                Due = due
+            })
         : Fields<CaseListFilter<string>, _>)
         |> flatten id baseFilterFields
         |> optionalField
             "assignment"
             _.Assignment
             (VocabularyCodec.create CaseAssignment.vocabulary)
+        |> optionalField "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
 
     let caseListRequest =
         let paging =
@@ -463,6 +570,15 @@ module RequestCodecs =
         : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
         |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
+
+    let statusRequest =
+        (read (fun operation ->
+            {
+                OperationLookup.OperationId = operation
+            })
+        : ReadFields<OperationLookup, _>)
+        |> operationOperand _.OperationId
+        |> finishRead RequestSchemas.StatusRequest QueryEndpoint.Status
 
     let grantsRequest =
         (read (fun actor cursor limit ->

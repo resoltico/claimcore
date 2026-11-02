@@ -1,21 +1,17 @@
 import { describe, expect, it } from "vitest";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
+import { operationEntry } from "../../../src/protocol/operationCatalog";
 import { current, firstId } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
-import { registration, decision, payment } from "../../support/inputs";
+import { payment } from "../../support/inputs";
 import { expectCorrection } from "../../support/correction-serialization-checks";
 
 const authored = {
-  registration: registration({ claimantName: "Synthetic replacement", claimedAmount: "1.0000" }),
-  decision: decision({
-    paymentDecisionDate: "2026-09-03",
-    payableAmount: "2.0000",
-    payableCurrency: "EUR",
-  }),
+  registration: {
+    claimantName: "Synthetic replacement",
+    claimed: { amount: "1.0000", currency: "EUR" },
+  },
+  decision: { paymentDecisionDate: "2026-09-03", payable: { amount: "2.0000", currency: "EUR" } },
   payment: payment({ paymentDate: "2026-09-04" }),
 };
 const correction = (
@@ -36,11 +32,12 @@ const correction = (
     ),
     "act.groups.registration.kind": registrationChoice,
     "act.groups.registration.values.claimantName": authored.registration.claimantName,
-    "act.groups.registration.values.claimedAmount": authored.registration.claimedAmount,
+    "act.groups.registration.values.claimed.amount": authored.registration.claimed.amount,
+    "act.groups.registration.values.claimed.currency": authored.registration.claimed.currency,
     "act.groups.decision.kind": decisionChoice,
     "act.groups.decision.values.paymentDecisionDate": authored.decision.paymentDecisionDate,
-    "act.groups.decision.values.payableAmount": authored.decision.payableAmount,
-    "act.groups.decision.values.payableCurrency": authored.decision.payableCurrency,
+    "act.groups.decision.values.payable.amount": authored.decision.payable.amount,
+    "act.groups.decision.values.payable.currency": authored.decision.payable.currency,
     "act.groups.payment.kind": paymentChoice,
     "act.groups.payment.values.paymentDate": authored.payment.paymentDate,
   };
@@ -63,12 +60,12 @@ for (const status of ["OPENED", "CLOSED"] as const) {
 
 it("correction checks detect changed payloads and retain independent literal expectations", () => {
   const literal = correctionSerializations.find(
-    ([r, d, p]) => r === "REPLACE" && d === "KEEP" && p === "KEEP",
+    ([r, d, p]) => r === "UPDATE" && d === "KEEP" && p === "KEEP",
   );
   if (literal === undefined) {
     throw new Error("Independent replacement oracle is missing.");
   }
-  const actual = correction("OPENED", "REPLACE", "KEEP", "KEEP");
+  const actual = correction("OPENED", "UPDATE", "KEEP", "KEEP");
   if (actual.kind !== "CASE" || actual.act.kind !== "CORRECT") {
     throw new Error("Expected correction.");
   }
@@ -77,7 +74,7 @@ it("correction checks detect changed payloads and retain independent literal exp
     ...actual,
     act: {
       ...actual.act,
-      groups: { ...actual.act.groups, registration: { kind: "REPLACE" as const, values: wrong } },
+      groups: { ...actual.act.groups, registration: { kind: "UPDATE" as const, values: wrong } },
     },
   };
   expect(() => {
@@ -93,7 +90,7 @@ it("correction checks detect changed payloads and retain independent literal exp
   const omissionLiteral = JSON.stringify(omitted);
   expectCorrection(actual, omissionLiteral, authored);
   const missing = { ...actual, act: structuredClone(actual.act) };
-  if (missing.act.groups.registration.kind !== "REPLACE") {
+  if (missing.act.groups.registration.kind !== "UPDATE") {
     throw new Error("Expected replacement.");
   }
   Reflect.deleteProperty(missing.act.groups.registration.values, "claimantName");

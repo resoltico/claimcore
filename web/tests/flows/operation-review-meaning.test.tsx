@@ -1,7 +1,7 @@
-import { principal, registration } from "../support/inputs";
+import { principal } from "../support/inputs";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
-import { within } from "@testing-library/react";
+import { fireEvent, within } from "@testing-library/react";
 import { render, screen } from "../support/presentation-test-support";
 import { OperationReview } from "../../src/views/operation/OperationReview";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
@@ -28,8 +28,8 @@ const correction: OperationInput = {
     kind: "CORRECT",
     groups: {
       registration: {
-        kind: "REPLACE",
-        values: registration({ claimantName: "KEEP", claimedAmount: "12.3400" }),
+        kind: "UPDATE",
+        values: { claimantName: "KEEP", claimed: { amount: "12.3400", currency: "EUR" } },
       },
       decision: {
         kind: "KEEP",
@@ -40,7 +40,7 @@ const correction: OperationInput = {
     },
   },
 };
-it("case review omits only its root namespace and preserves exact prepared bytes", () => {
+it("case review leads with its business target and retains the full exact request in details", () => {
   const operation = model(correction, review);
   const prepared = operation.prepared!;
   const before = prepared.bytes;
@@ -52,13 +52,16 @@ it("case review omits only its root namespace and preserves exact prepared bytes
     }),
   ).toBeNull();
   expect(dialog).not.toHaveTextContent("One case");
+  const intent = dialog.querySelector<HTMLElement>(".review-intent")!;
   expect(
-    within(dialog).getByText("CASE-1", {
+    within(intent).getByText("CASE-1", {
       exact: true,
     }),
   ).toBeVisible();
+  const request = dialog.querySelector<HTMLElement>(".review-request")!;
+  fireEvent.click(request.querySelector("summary")!);
   expect(
-    within(dialog).getByText("12.3400", {
+    within(request).getByText("12.3400", {
       exact: true,
     }),
   ).toBeVisible();
@@ -98,12 +101,15 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
     subject: {
       kind: "AUTHORITY",
       target: null,
+      accessScope: resolvedScope,
       before: {
         enabled: true,
+        access: [],
         grants: [],
       },
       after: {
         enabled: true,
+        access: [],
         grants: [
           {
             role: "CASE_READER",
@@ -129,9 +135,9 @@ it.each(["INSTALLATION", "CASE"] as const)(
       within(dialog).getAllByText(kind === "CASE" ? "One case" : "Installation", {
         exact: true,
       }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
-      within(dialog)
+      within(dialog.querySelector<HTMLElement>(".review-intent")!)
         .getByText("KEEP", {
           exact: true,
         })
@@ -152,7 +158,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
         within(dialog).getAllByText("SYNTHETIC-GRANT", {
           exact: true,
         }),
-      ).toHaveLength(2);
+      ).toHaveLength(3);
     }
   },
 );
@@ -190,23 +196,14 @@ it.each(localized)(
     );
     render(<OperationReview model={model(correction, review)} />);
     const dialog = screen.getByRole("dialog");
+    const intent = dialog.querySelector<HTMLElement>(".review-groups")!;
     for (const label of groups) {
-      const heading = within(dialog).getByText(label, {
-        selector: "dt",
-        exact: true,
-      });
-      expect(
-        within(heading.parentElement!).getByText(action, {
-          selector: "dt",
-          exact: true,
-        }),
-      ).toBeVisible();
+      expect(within(intent).getByText(label, { selector: "dt", exact: true })).toBeVisible();
     }
-    expect(
-      within(dialog).getByText(keep, {
-        exact: true,
-      }),
-    ).toBeVisible();
+    expect(within(intent).getByText(keep, { exact: true })).toBeVisible();
+    expect(within(intent).queryByText(action, { selector: "dt", exact: true })).toBeNull();
+    const request = dialog.querySelector<HTMLElement>(".review-request")!;
+    fireEvent.click(request.querySelector("summary")!);
     const authored = within(dialog).getAllByText("KEEP", {
       exact: true,
     });

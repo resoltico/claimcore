@@ -150,7 +150,7 @@ let internal caseVisibility fixture =
 
         let! principal = assignedReader actor
 
-        let! only = casePage fixture principal CaseVisibility.Assigned None 1
+        let! only = casePage fixture principal CaseVisibility.Scoped None 1
 
         Expect.equal
             ((storedPage only).Items

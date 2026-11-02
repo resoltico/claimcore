@@ -19,6 +19,8 @@ class Terminal:
         self.master, slave = pty.openpty()
         self.output = bytearray()
         self.offset = 0
+        self.started = time.monotonic()
+        self.signals = []
 
         def session():
             os.setsid()
@@ -71,18 +73,48 @@ class Terminal:
         self.expect(f"Exit code: {code}".encode())
         self.expect(b"claimcore> ")
 
+    def signal(self, received):
+        self.signals.append({"signal": received, "atSeconds": time.monotonic() - self.started})
+        os.kill(self.child.pid, received)
+
+    def _wait_exit(self, timeout):
+        deadline = time.monotonic() + timeout
+        while self.child.poll() is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(self.child.args, timeout)
+            # Keep terminal/redirected output drained while waiting for real process completion.
+            self.read(min(0.05, remaining))
+        return self.child.returncode
+
     def finish(self, expected):
         try:
-            code = self.child.wait(timeout=8)
+            code = self._wait_exit(8)
             if code != expected:
                 raise RuntimeError("Unexpected shell process exit")
+        except subprocess.TimeoutExpired:
+            try:
+                group = os.getpgid(self.child.pid)
+            except OSError:
+                group = None
+            print(json.dumps({"terminalExitTimeout": True, "signals": self.signals,
+                              "childRunning": self.child.poll() is None, "group": group,
+                              "outputTail": self.output[-512:].decode("utf-8", errors="replace")}), file=sys.stderr)
+            raise
         finally:
             self.close()
 
     def close(self):
         if self.child.poll() is None:
-            os.killpg(self.child.pid, signal.SIGKILL)
-            self.child.wait(timeout=3)
+            try:
+                os.killpg(self.child.pid, signal.SIGKILL)
+            except PermissionError as error:
+                # The probe starts no subprocess commands; kill only its known owned child if group signaling is refused.
+                print(json.dumps({"terminalGroupCleanupRefused": error.errno}), file=sys.stderr)
+                self.child.kill()
+            except ProcessLookupError:
+                pass
+            self._wait_exit(3)
         if self.master is not None:
             os.close(self.master)
             self.master = None
@@ -115,11 +147,14 @@ def run(cli, home):
         terminal.command(b"\x1b[A", 0)
         terminal.command(b"help 'unterminated", 64)
         terminal.command(b"help 'overview; touch marker'", 64)
+        terminal.command("help 'synthetic\u202Etopic'".encode("utf-8"), 64)
+        if "\u202E".encode("utf-8") in terminal.output or b"\\u{202E}" not in terminal.output:
+            raise RuntimeError("Human terminal echo did not visibly escape directional data")
         terminal.send(b"help unfinished")
         terminal.expect(b"help unfinished")
-        os.kill(terminal.child.pid, signal.SIGINT)
+        terminal.signal(signal.SIGINT)
         terminal.expect(b"claimcore> ")
-        os.kill(terminal.child.pid, signal.SIGINT)
+        terminal.signal(signal.SIGINT)
         terminal.finish(130)
     finally:
         terminal.close()
@@ -129,7 +164,7 @@ def run(cli, home):
         try:
             terminal.expect(b"claimcore> ")
             if ending is None:
-                os.kill(terminal.child.pid, signal.SIGTERM)
+                terminal.signal(signal.SIGTERM)
             else:
                 terminal.send(ending)
             terminal.finish(expected)
@@ -159,7 +194,7 @@ def run(cli, home):
         raise RuntimeError("Shell wrote files under HOME")
     print(json.dumps({"history": True, "literalMetacharacters": True, "quoting": True,
                       "interrupt": True, "exit": True, "eof": True, "sigterm": True,
-                      "automationRefused": True, "redirectedReviewRefused": True, "homeUnchanged": True}))
+                      "terminalDataEscaped": True, "automationRefused": True, "redirectedReviewRefused": True, "homeUnchanged": True}))
 
 
 if __name__ == "__main__":

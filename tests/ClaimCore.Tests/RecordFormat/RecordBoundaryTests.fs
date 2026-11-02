@@ -86,12 +86,14 @@ let private textFormats () =
         request
             1L
             (AuthoredCaseAct.AmendRegistration(
-                ClaimCore.TestSupport.Inputs.registrationWith
-                    [
-                        BusinessField.ClaimantName,
-                        (PartyName.format (Registration.claimant (oldFields.Registration)))
-                    ]
-                    (registration)
+                Inputs.registrationUpdate (
+                    ClaimCore.TestSupport.Inputs.registrationWith
+                        [
+                            BusinessField.ClaimantName,
+                            (PartyName.format (Registration.claimant (oldFields.Registration)))
+                        ]
+                        (registration)
+                )
             ))
 
     Expect.equal
@@ -244,7 +246,7 @@ let private permanentLimits () =
 
 let private independentNames () =
     let request =
-        request 1L (AuthoredCaseAct.AmendRegistration registration)
+        request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
         |> CaseFixtures.command
 
     let before = RequestRecord.encode request

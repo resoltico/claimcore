@@ -65,11 +65,15 @@ const authorCase = (kind: ActKind) => {
     case "OPEN":
       fillRegistrationInputs();
       break;
+    case "UPDATE_WORK":
+      input("act.values.followUpDate.kind", "SET");
+      input("followUpDate", "2027-12-31");
+      break;
     case "AMEND_REGISTRATION":
       input("claimantName", "Synthetic replacement");
       break;
     case "CORRECT":
-      input("act.groups.registration.kind", "REPLACE");
+      input("act.groups.registration.kind", "UPDATE");
       input("claimantName", "Synthetic correction");
       break;
     case "DECIDE":
@@ -206,7 +210,7 @@ const assertAuthoredCase = (request: CaseInput) => {
     case "CORRECT":
       expect(request.act.groups).toMatchObject({
         registration: {
-          kind: "REPLACE",
+          kind: "UPDATE",
           values: {
             claimantName: "Synthetic correction",
           },
@@ -267,7 +271,8 @@ it.each(acts)(
     }
     await user.click(
       screen.getByRole("checkbox", {
-        name: "I confirm these changes.",
+        name:
+          act.kind === "UPDATE_WORK" ? "I confirm these work changes." : "I confirm these changes.",
       }),
     );
     await user.click(getButton("Record changes"));

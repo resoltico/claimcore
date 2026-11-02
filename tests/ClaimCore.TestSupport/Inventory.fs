@@ -35,6 +35,7 @@ let fieldCount =
     source.GetProperty("groups").EnumerateObject()
     |> Seq.sumBy (fun group -> group.Value.GetArrayLength())
     |> (+) (rows "specialFields" |> List.length)
+    |> (+) (rows "workFields" |> List.length)
 
 let cliFrameCount = source.GetProperty("cliFrameCount").GetInt32()
 

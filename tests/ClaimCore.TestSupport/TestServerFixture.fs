@@ -11,6 +11,7 @@ open System.Net.Http.Headers
 open System.Security.Claims
 open System.Text
 open System.Text.Json
+open System.Security.Cryptography
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -42,7 +43,7 @@ let limits =
     {
         MaximumJsonBytes = 65536
         CorePermitLimit = 4
-        CoreQueueLimit = 16
+        CoreQueueLimit = 8
         LoginPermitLimit = 5
     }
 
@@ -113,7 +114,7 @@ let private services (builder: WebApplicationBuilder) sessions =
     builder.Services.AddAuthorization() |> ignore
     RateLimits.configure limits builder.Services
 
-let private pipeline (application: WebApplication) sink readiness =
+let private pipeline assets (application: WebApplication) sink readiness =
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(fun context next ->
             context.Connection.RemoteIpAddress <- IPAddress.Loopback
@@ -133,13 +134,15 @@ let private pipeline (application: WebApplication) sink readiness =
     )
     |> ignore
 
+    HostRoutes.publicAssets assets application
+
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
-    application.UseAuthentication() |> ignore
+    RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
@@ -147,7 +150,15 @@ let private login (context: HttpContext) : Task =
     task {
         let identity =
             ClaimsIdentity(
-                [ System.Security.Claims.Claim("sub", "synthetic-human") ],
+                [
+                    System.Security.Claims.Claim(
+                        "sub",
+                        (if context.Request.Query.ContainsKey "subject" then
+                             context.Request.Query["subject"].ToString()
+                         else
+                             "synthetic-human")
+                    )
+                ],
                 CookieAuthenticationDefaults.AuthenticationScheme
             )
 
@@ -165,7 +176,8 @@ type Host
         ready: bool,
         ?forActor: PrincipalKey -> ServiceContext,
         ?installationId: Guid,
-        ?sessions: ClaimCore.Postgres.ISessionStore
+        ?sessions: ClaimCore.Postgres.ISessionStore,
+        ?buildAssets: (string * byte array) list
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName
     let sink = new StringWriter()
@@ -182,12 +194,29 @@ type Host
             "<!doctype html><title>Synthetic ClaimCore</title>"
         )
 
+        let inventory =
+            defaultArg buildAssets []
+            |> List.map (fun (path, bytes) ->
+                let file = Path.Combine(assets, path)
+                Directory.CreateDirectory(Path.GetDirectoryName file |> nonNull) |> ignore
+                File.WriteAllBytes(file, bytes)
+
+                {|
+                    path = "/" + path
+                    sha256 = Convert.ToHexStringLower(SHA256.HashData bytes)
+                |})
+
+        File.WriteAllBytes(
+            Path.Combine(assets, "public-assets.json"),
+            JsonSerializer.SerializeToUtf8Bytes {| schema = 1; assets = inventory |}
+        )
+
         services builder sessions
 
     let application = builder.Build()
 
     do
-        pipeline application sink (fun () -> Task.FromResult ready)
+        pipeline assets application sink (fun () -> Task.FromResult ready)
         application.MapPost("/__test/login", RequestDelegate login) |> ignore
 
         HostRoutes.map
@@ -219,6 +248,9 @@ type Host
     let client = application.GetTestClient()
     let mutable cookies = Map.empty<string, string>
     do client.BaseAddress <- origin
+    member _.Client = client
+    member _.AssetsDirectory = assets
+    member _.Services = application.Services
     member _.HandlerStub = facade
     member _.Log = sink.ToString()
 

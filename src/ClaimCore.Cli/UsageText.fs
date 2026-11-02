@@ -71,7 +71,8 @@ module UsageText =
                         language
                         (CliMessage.Suggestion(CliIdentity.programName + " " + suggestion)))
 
-        String.concat "\n" ((errors |> List.map (line language)) @ hints) + "\n"
+        String.concat "\n" ((errors |> List.map (line language >> TerminalText.data)) @ hints)
+        + "\n"
 
     let renderHost language arguments issue =
         let commandText = List.tryHead arguments |> Option.defaultValue "help"
@@ -96,4 +97,5 @@ module UsageText =
             |> List.map (fun syntax ->
                 message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
 
-        String.concat "\n" (message language problem :: hints) + "\n"
+        String.concat "\n" (TerminalText.data (message language problem) :: hints)
+        + "\n"

@@ -6,6 +6,7 @@ open ClaimCore.Protocol
 
 open System
 open System.Net
+open System.IO
 open System.Net.Http
 open System.Security.Cryptography.X509Certificates
 open System.Threading.Tasks
@@ -145,7 +146,61 @@ type Proxy
     let selected () =
         lock routing (fun () -> selectedBackend)
 
-    do application.Run(RequestDelegate(fun context -> relay http (selected ()) control context))
+    let failures = FixtureFiles.text directory "proxy-failures.log" ""
+    let failureGate = obj ()
+
+    let rec category (error: exn) =
+        let detail =
+            match error with
+            | :? System.Net.Sockets.SocketException as socket -> string socket.SocketErrorCode
+            | :? HttpRequestException as request -> string request.HttpRequestError
+            | _ -> ""
+
+        let current = error.GetType().Name + ":" + detail
+
+        match error.InnerException with
+        | null -> current
+        | inner ->
+            current
+            + " -> "
+            + category inner
+            + "\n"
+            + defaultArg (Option.ofObj inner.StackTrace) ""
+
+    do
+        application.Run(
+            RequestDelegate(fun context ->
+                task {
+                    try
+                        do! relay http (selected ()) control context
+                    with error ->
+                        // Retain code locations, never request headers, URI queries or exception input text.
+                        lock failureGate (fun () ->
+                            File.AppendAllText(
+                                failures,
+                                DateTimeOffset.UtcNow.ToString("O")
+                                + " "
+                                + (if
+                                       context.Request.Path.StartsWithSegments(
+                                           PathString "/assets"
+                                       )
+                                   then
+                                       defaultArg
+                                           (Option.ofObj context.Request.Path.Value)
+                                           "asset"
+                                   else
+                                       "dynamic")
+                                + "\n"
+                                + category error
+                                + "\n"
+                                + (defaultArg (Option.ofObj error.StackTrace) "")
+                                + "\n"
+                            ))
+
+                        return raise error
+                })
+        )
+
     member _.Start() = application.StartAsync()
     // Fixture routing changes only new requests; dispatched requests retain their chosen host.
     member _.RouteTo(backend: string) =

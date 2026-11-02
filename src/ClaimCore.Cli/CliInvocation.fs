@@ -16,6 +16,23 @@ type CliSchema =
     | Response of string
 
 [<RequireQualifiedAccess>]
+type RecoveryAttemptAction =
+    | Check
+    | Settle
+
+[<RequireQualifiedAccess>]
+type RecoveryAction =
+    | List
+    | Attempt of RecoveryAttemptAction * System.Guid
+
+type RecoveryInvocation =
+    {
+        Action: RecoveryAction
+        Text: bool
+        Language: string
+    }
+
+[<RequireQualifiedAccess>]
 type CliInvocation =
     | Help of topic: CliTopic * language: string
     | Version of json: bool
@@ -24,7 +41,7 @@ type CliInvocation =
     | Call
     | Session
     | Shell
-    | Recovery of System.Guid option
+    | Recovery of RecoveryInvocation
     | Configure of Map<CliSetting, string> option
     | Verb of string list
 
@@ -117,15 +134,33 @@ module CliInvocations =
         else
             Error(UsageError.NotApplicable("arguments", "command"))
 
-    let private admitRecovery =
-        function
-        | [ "list" ] -> Ok(CliInvocation.Recovery None)
-        | [ "resolve"; raw ] ->
-            match System.Guid.TryParseExact(raw, "D") with
-            | true, attempt when attempt <> System.Guid.Empty ->
-                Ok(CliInvocation.Recovery(Some attempt))
-            | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
-        | _ -> Error(UsageError.MissingOperand "list | resolve ATTEMPT_ID")
+    let private admitRecovery arguments =
+        options arguments
+        |> Result.bind (fun (operands, format, language) ->
+            let admitted action =
+                Ok(
+                    CliInvocation.Recovery
+                        {
+                            Action = action
+                            Text = format <> Some "json"
+                            Language = defaultArg language "en"
+                        }
+                )
+
+            match operands with
+            | [ "list" ] -> admitted RecoveryAction.List
+            | [ ("check" | "settle") as command; raw ] ->
+                match System.Guid.TryParseExact(raw, "D") with
+                | true, attempt when attempt <> System.Guid.Empty ->
+                    let action =
+                        if command = "check" then
+                            RecoveryAttemptAction.Check
+                        else
+                            RecoveryAttemptAction.Settle
+
+                    admitted (RecoveryAction.Attempt(action, attempt))
+                | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
+            | _ -> Error(UsageError.MissingOperand "list | check ATTEMPT_ID | settle ATTEMPT_ID"))
 
     let private admitCommand command tail =
         match tail with

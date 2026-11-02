@@ -1,9 +1,16 @@
 namespace ClaimCore.Domain
 
+type RelatedDate =
+    {
+        Field: BusinessField
+        Value: CalendarDate
+    }
+
 type InputIssue =
     {
         Target: InputTarget
         Violation: Violation
+        RelatedDate: RelatedDate option
     }
 
 type InputIssues = private InputIssues of InputIssue * InputIssue list
@@ -13,6 +20,7 @@ module InputIssues =
         InputIssues(
             {
                 Target = target
+                RelatedDate = None
                 Violation = violation
             },
             []
@@ -30,6 +38,8 @@ module InputIssues =
 
 [<RequireQualifiedAccess>]
 type CaseRefusal =
+    | WorkNoChanges
+    | AssigneeUnavailable
     | CaseAlreadyExists
     | CaseErased
     | CaseVoided
@@ -53,6 +63,7 @@ type AuthorityRefusal =
     | ActorAlreadyRegistered
     | ActorUnknown
     | HumanPrincipalRequired
+    | RoleScopeNotApplicable
 
 [<RequireQualifiedAccess>]
 type AccessRefusal =
@@ -69,6 +80,7 @@ type Refusal =
     | OperationResolved
     | IdempotencyConflict
     | InvalidCursor
+    | RegisterMaintenance
 
 module Refusal =
     let invalidInput (target, violation) =

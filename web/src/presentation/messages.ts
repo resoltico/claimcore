@@ -1,21 +1,12 @@
-import { catalogs as coreCatalogs, messageShapes as coreShapes } from "@contracts/messages";
-import {
-  catalogs as chromeCatalogs,
-  messageShapes as chromeShapes,
-} from "../generated/chrome-messages";
-import { presentationPseudolanguage, presentationDefaults } from "@contracts/client";
+import { messageShapes as coreShapes } from "@contracts/messages";
+import { messageShapes as chromeShapes } from "../generated/chrome-messages";
+import { catalogFor } from "./languageCatalog";
+import { presentationPseudolanguage } from "@contracts/client";
 import { languageDirection } from "./preferences";
 import { templateParts, pseudolocalizeLiteral, type TemplatePart } from "./templates";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-const chrome: Readonly<Record<string, Readonly<Record<string, string>>>> = chromeCatalogs;
-const catalogs: Readonly<Record<string, Readonly<Record<string, string>>>> = Object.fromEntries(
-  Object.entries(coreCatalogs).map(([language, core]) => [
-    language,
-    { ...core, ...chrome[language] },
-  ]),
-);
 export const messageShapes = { ...coreShapes, ...chromeShapes };
 const shapes: Readonly<Record<string, Readonly<Record<string, string>>>> = messageShapes;
 const cache = new Map<string, ReadonlyArray<TemplatePart>>();
@@ -26,9 +17,7 @@ const message = (key: MessageKey, preferences: Preferences): ReadonlyArray<Templ
     return cached;
   }
   const pseudo = preferences.language === presentationPseudolanguage;
-  const parts = templateParts(
-    catalogs[pseudo ? presentationDefaults.language : preferences.language]![key]!,
-  );
+  const parts = templateParts(catalogFor(preferences.language)[key]!);
   const result: ReadonlyArray<TemplatePart> = pseudo
     ? [
         { kind: "literal", value: "⟦" },

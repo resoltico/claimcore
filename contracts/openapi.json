@@ -351,6 +351,96 @@
         }
       }
     },
+    "/api/case.assignees": {
+      "post": {
+        "operationId": "case.assignees",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssigneePageReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssigneeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/case.get": {
       "post": {
         "operationId": "case.get",
@@ -795,6 +885,104 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ObserveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operation.status": {
+      "post": {
+        "operationId": "operation.status",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Installation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequest"
               }
             }
           }
@@ -1852,6 +2040,24 @@
       }
     },
     "schemas": {
+      "AccountSubject": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          }
+        },
+        "required": [
+          "actorId",
+          "subject"
+        ]
+      },
       "ActorContext": {
         "type": "object",
         "additionalProperties": false,
@@ -1883,6 +2089,7 @@
                 "READ_CASE",
                 "READ_HISTORY",
                 "READ_HISTORY_FULL",
+                "MANAGE_CASE_WORK",
                 "REGISTER",
                 "DECIDE",
                 "RECORD_PAYMENT",
@@ -1918,8 +2125,11 @@
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
           },
-          "hasAssignedCases": {
+          "hasScopedCases": {
             "type": "boolean"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/RegisterMaintenance"
           }
         },
         "required": [
@@ -1931,7 +2141,8 @@
           "views",
           "offers",
           "actorId",
-          "hasAssignedCases"
+          "hasScopedCases",
+          "maintenance"
         ]
       },
       "ActorSummary": {
@@ -2063,6 +2274,177 @@
         "required": [
           "kind",
           "data"
+        ]
+      },
+      "AssignedAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AccountSubject"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account",
+          "available"
+        ]
+      },
+      "AssigneePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSubject"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "AssigneePageReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/AssigneePageReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "AssigneePageReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AssigneePageReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/AssigneePageReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/AssigneePageReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/AssigneePageReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AssigneePageReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AssigneePageReply.Outcome.FAILED"
+          }
+        }
+      },
+      "AssigneePageReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AssigneePageReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AssigneePageReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssigneePage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AssigneeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "target",
+          "limit"
+        ]
+      },
+      "AssignmentCount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "enum": [
+              "MINE",
+              "UNASSIGNED"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "value",
+          "count"
         ]
       },
       "AuthorityAct": {
@@ -2536,11 +2918,82 @@
             },
             "minItems": 0,
             "maxItems": 1
+          },
+          "access": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityAccess"
+            },
+            "minItems": 0,
+            "maxItems": 11
           }
         },
         "required": [
           "enabled",
-          "grants"
+          "grants",
+          "access"
+        ]
+      },
+      "CapabilityAccess": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "capability": {
+            "enum": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "MANAGE_CASE_WORK",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY"
+            ]
+          },
+          "directRoles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OWNER",
+                "CASE_READER",
+                "CASE_REGISTRAR",
+                "CASE_HANDLER",
+                "PAYMENT_RECORDER",
+                "DATA_STEWARD",
+                "AUDITOR"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 7
+          },
+          "installationRoles": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OWNER",
+                "CASE_READER",
+                "CASE_REGISTRAR",
+                "CASE_HANDLER",
+                "PAYMENT_RECORDER",
+                "DATA_STEWARD",
+                "AUDITOR"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 7
+          },
+          "effective": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "capability",
+          "directRoles",
+          "installationRoles",
+          "effective"
         ]
       },
       "CaseAct": {
@@ -2550,6 +3003,9 @@
           },
           {
             "$ref": "#/components/schemas/CaseAct.AMEND_REGISTRATION"
+          },
+          {
+            "$ref": "#/components/schemas/CaseAct.UPDATE_WORK"
           },
           {
             "$ref": "#/components/schemas/CaseAct.CORRECT"
@@ -2587,6 +3043,7 @@
           "mapping": {
             "OPEN": "#/components/schemas/CaseAct.OPEN",
             "AMEND_REGISTRATION": "#/components/schemas/CaseAct.AMEND_REGISTRATION",
+            "UPDATE_WORK": "#/components/schemas/CaseAct.UPDATE_WORK",
             "CORRECT": "#/components/schemas/CaseAct.CORRECT",
             "DECIDE": "#/components/schemas/CaseAct.DECIDE",
             "WITHDRAW_DECISION": "#/components/schemas/CaseAct.WITHDRAW_DECISION",
@@ -2608,7 +3065,7 @@
             "const": "AMEND_REGISTRATION"
           },
           "values": {
-            "$ref": "#/components/schemas/Registration"
+            "$ref": "#/components/schemas/RegistrationUpdate"
           }
         },
         "required": [
@@ -2744,6 +3201,22 @@
           "kind"
         ]
       },
+      "CaseAct.UPDATE_WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "UPDATE_WORK"
+          },
+          "values": {
+            "$ref": "#/components/schemas/CaseWorkUpdate"
+          }
+        },
+        "required": [
+          "kind",
+          "values"
+        ]
+      },
       "CaseAct.VOID": {
         "type": "object",
         "additionalProperties": false,
@@ -2782,6 +3255,7 @@
               "enum": [
                 "OPEN",
                 "AMEND_REGISTRATION",
+                "UPDATE_WORK",
                 "CORRECT",
                 "DECIDE",
                 "WITHDRAW_DECISION",
@@ -2795,7 +3269,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 12
+            "maxItems": 13
           },
           "correction": {
             "$ref": "#/components/schemas/CorrectionAdvice"
@@ -2810,11 +3284,15 @@
             },
             "minItems": 0,
             "maxItems": 2
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/RegisterMaintenance"
           }
         },
         "required": [
           "acts",
-          "history"
+          "history",
+          "maintenance"
         ]
       },
       "CaseFields": {
@@ -2950,6 +3428,9 @@
               }
             ]
           },
+          "work": {
+            "$ref": "#/components/schemas/CaseWork"
+          },
           "progress": {
             "enum": [
               "UNDECIDED",
@@ -2964,6 +3445,7 @@
           "registration",
           "decision",
           "payment",
+          "work",
           "progress"
         ]
       },
@@ -3035,11 +3517,24 @@
             "enum": [
               "REFERENCE",
               "RECENT",
-              "NOTIFIED"
+              "NOTIFIED",
+              "FOLLOW_UP"
             ]
           },
           "assignment": {
-            "const": "ASSIGNED_TO_ME"
+            "enum": [
+              "MINE",
+              "UNASSIGNED"
+            ]
+          },
+          "due": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
           }
         },
         "required": [
@@ -3278,6 +3773,7 @@
             "enum": [
               "OPEN",
               "AMEND_REGISTRATION",
+              "UPDATE_WORK",
               "CORRECT",
               "DECIDE",
               "WITHDRAW_DECISION",
@@ -3610,11 +4106,24 @@
             "enum": [
               "REFERENCE",
               "RECENT",
-              "NOTIFIED"
+              "NOTIFIED",
+              "FOLLOW_UP"
             ]
           },
           "assignment": {
-            "const": "ASSIGNED_TO_ME"
+            "enum": [
+              "MINE",
+              "UNASSIGNED"
+            ]
+          },
+          "due": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
           }
         },
         "required": []
@@ -3689,6 +4198,9 @@
             "format": "date",
             "minLength": 10,
             "maxLength": 10
+          },
+          "work": {
+            "$ref": "#/components/schemas/CaseWorkView"
           }
         },
         "required": [
@@ -3699,7 +4211,8 @@
           "claimed",
           "payable",
           "progress",
-          "incidentNotificationDate"
+          "incidentNotificationDate",
+          "work"
         ]
       },
       "CaseSummaryState.ERASED": {
@@ -3763,6 +4276,9 @@
             "format": "date",
             "minLength": 10,
             "maxLength": 10
+          },
+          "work": {
+            "$ref": "#/components/schemas/CaseWorkView"
           }
         },
         "required": [
@@ -3773,7 +4289,8 @@
           "claimed",
           "payable",
           "progress",
-          "incidentNotificationDate"
+          "incidentNotificationDate",
+          "work"
         ]
       },
       "CaseView": {
@@ -3800,8 +4317,11 @@
           "advice": {
             "$ref": "#/components/schemas/CaseAdvice"
           },
-          "assignedToYou": {
+          "mine": {
             "type": "boolean"
+          },
+          "work": {
+            "$ref": "#/components/schemas/CaseWorkView"
           }
         },
         "required": [
@@ -3810,7 +4330,103 @@
           "revision",
           "state",
           "advice",
-          "assignedToYou"
+          "mine",
+          "work"
+        ]
+      },
+      "CaseWork": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "responsibleActor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "followUpDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "responsibleActor",
+          "followUpDate"
+        ]
+      },
+      "CaseWorkUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "responsibleActor": {
+            "$ref": "#/components/schemas/ResponsibleActorChange"
+          },
+          "followUpDate": {
+            "$ref": "#/components/schemas/FollowUpChange"
+          }
+        },
+        "required": []
+      },
+      "CaseWorkView": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssignedAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "followUpDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          }
+        },
+        "required": [
+          "responsible",
+          "followUpDate",
+          "due",
+          "basis"
         ]
       },
       "CaseWorklistCounts": {
@@ -3845,13 +4461,31 @@
             },
             "minItems": 0,
             "maxItems": 3
+          },
+          "assignment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssignmentCount"
+            },
+            "minItems": 0,
+            "maxItems": 2
+          },
+          "due": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DueCount"
+            },
+            "minItems": 0,
+            "maxItems": 5
           }
         },
         "required": [
           "total",
           "lifecycle",
           "status",
-          "progress"
+          "progress",
+          "assignment",
+          "due"
         ]
       },
       "CaseWorklistSummary": {
@@ -3876,12 +4510,16 @@
             },
             "minItems": 0,
             "maxItems": 17576
+          },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
           }
         },
         "required": [
           "counts",
           "claimed",
-          "payable"
+          "payable",
+          "basis"
         ]
       },
       "CasesPage": {
@@ -3915,12 +4553,16 @@
             },
             "minItems": 0,
             "maxItems": 6
+          },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
           }
         },
         "required": [
           "items",
           "nextCursor",
-          "offers"
+          "offers",
+          "basis"
         ]
       },
       "ChangeSummary": {
@@ -3942,6 +4584,7 @@
             "enum": [
               "OPEN",
               "AMEND_REGISTRATION",
+              "UPDATE_WORK",
               "CORRECT",
               "DECIDE",
               "WITHDRAW_DECISION",
@@ -4084,7 +4727,7 @@
             "items": {
               "enum": [
                 "KEEP",
-                "REPLACE"
+                "UPDATE"
               ]
             },
             "minItems": 0,
@@ -4095,7 +4738,7 @@
             "items": {
               "enum": [
                 "KEEP",
-                "REPLACE",
+                "UPDATE",
                 "CLEAR"
               ]
             },
@@ -4108,11 +4751,12 @@
               "enum": [
                 "KEEP",
                 "REPLACE",
-                "CLEAR"
+                "CLEAR",
+                "REAFFIRM"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           }
         },
         "required": [
@@ -4171,7 +4815,7 @@
             "$ref": "#/components/schemas/DecisionGroup.KEEP"
           },
           {
-            "$ref": "#/components/schemas/DecisionGroup.REPLACE"
+            "$ref": "#/components/schemas/DecisionGroup.UPDATE"
           },
           {
             "$ref": "#/components/schemas/DecisionGroup.CLEAR"
@@ -4181,7 +4825,7 @@
           "propertyName": "kind",
           "mapping": {
             "KEEP": "#/components/schemas/DecisionGroup.KEEP",
-            "REPLACE": "#/components/schemas/DecisionGroup.REPLACE",
+            "UPDATE": "#/components/schemas/DecisionGroup.UPDATE",
             "CLEAR": "#/components/schemas/DecisionGroup.CLEAR"
           }
         }
@@ -4210,21 +4854,47 @@
           "kind"
         ]
       },
-      "DecisionGroup.REPLACE": {
+      "DecisionGroup.UPDATE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "REPLACE"
+            "const": "UPDATE"
           },
           "values": {
-            "$ref": "#/components/schemas/Decision"
+            "$ref": "#/components/schemas/DecisionUpdate"
           }
         },
         "required": [
           "kind",
           "values"
         ]
+      },
+      "DecisionUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "paymentDecisionDate": {
+            "type": "string"
+          },
+          "payable": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ]
+          }
+        },
+        "required": []
       },
       "Diagnostic": {
         "oneOf": [
@@ -4235,13 +4905,16 @@
             "$ref": "#/components/schemas/Diagnostic.REVISION_CONFLICT"
           },
           {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS"
+            "$ref": "#/components/schemas/Diagnostic.WORK_NO_CHANGES"
           },
           {
             "$ref": "#/components/schemas/Diagnostic.OPERATION_RESOLVED"
           },
           {
             "$ref": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT"
+          },
+          {
+            "$ref": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE"
           },
           {
             "$ref": "#/components/schemas/Diagnostic.INVALID_CURSOR"
@@ -4252,72 +4925,37 @@
           "mapping": {
             "INVALID_INPUT": "#/components/schemas/Diagnostic.INVALID_INPUT",
             "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
-            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CASE_ERASED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CASE_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ALREADY_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "NOT_VOIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CASE_CLOSED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ALREADY_CLOSED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ALREADY_OPENED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ACT_NOT_PERMITTED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "LAST_OWNER": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
+            "WORK_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CASE_ERASED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CASE_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ALREADY_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "NOT_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CASE_CLOSED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ALREADY_CLOSED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ALREADY_OPENED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ACT_NOT_PERMITTED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "LAST_OWNER": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "OPERATION_RESOLVED": "#/components/schemas/Diagnostic.OPERATION_RESOLVED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
+            "REGISTER_MAINTENANCE": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE",
             "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
           }
         }
-      },
-      "Diagnostic.CASE_ALREADY_EXISTS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "CASE_ALREADY_EXISTS",
-              "CASE_ERASED",
-              "CASE_VOIDED",
-              "ALREADY_VOIDED",
-              "NOT_VOIDED",
-              "CASE_CLOSED",
-              "ALREADY_CLOSED",
-              "ALREADY_OPENED",
-              "AMENDMENT_REQUIRES_UNDECIDED",
-              "CORRECTION_NO_CHANGES",
-              "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "DECISION_REQUIRED",
-              "PAYMENT_ALREADY_RECORDED",
-              "PAYMENT_NOT_RECORDED",
-              "DECISION_ALREADY_PAID",
-              "ZERO_DECISION_CANNOT_BE_PAID",
-              "RESOURCE_UNAVAILABLE",
-              "ACT_NOT_PERMITTED",
-              "LAST_OWNER",
-              "ACTOR_ALREADY_REGISTERED",
-              "ACTOR_UNKNOWN",
-              "HUMAN_PRINCIPAL_REQUIRED"
-            ]
-          },
-          "action": {
-            "const": "NONE_REQUIRED"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
       },
       "Diagnostic.IDEMPOTENCY_CONFLICT": {
         "type": "object",
@@ -4400,6 +5038,22 @@
           "target"
         ]
       },
+      "Diagnostic.REGISTER_MAINTENANCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REGISTER_MAINTENANCE"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
       "Diagnostic.REVISION_CONFLICT": {
         "type": "object",
         "additionalProperties": false,
@@ -4420,6 +5074,72 @@
           "code",
           "action",
           "actualRevision"
+        ]
+      },
+      "Diagnostic.WORK_NO_CHANGES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "WORK_NO_CHANGES",
+              "ASSIGNEE_UNAVAILABLE",
+              "CASE_ALREADY_EXISTS",
+              "CASE_ERASED",
+              "CASE_VOIDED",
+              "ALREADY_VOIDED",
+              "NOT_VOIDED",
+              "CASE_CLOSED",
+              "ALREADY_CLOSED",
+              "ALREADY_OPENED",
+              "AMENDMENT_REQUIRES_UNDECIDED",
+              "CORRECTION_NO_CHANGES",
+              "CORRECTION_REQUIRES_EXISTING_VALUE",
+              "DECISION_REQUIRED",
+              "PAYMENT_ALREADY_RECORDED",
+              "PAYMENT_NOT_RECORDED",
+              "DECISION_ALREADY_PAID",
+              "ZERO_DECISION_CANNOT_BE_PAID",
+              "RESOURCE_UNAVAILABLE",
+              "ACT_NOT_PERMITTED",
+              "LAST_OWNER",
+              "ACTOR_ALREADY_REGISTERED",
+              "ACTOR_UNKNOWN",
+              "HUMAN_PRINCIPAL_REQUIRED",
+              "ROLE_SCOPE_NOT_APPLICABLE"
+            ]
+          },
+          "action": {
+            "const": "NONE_REQUIRED"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DueCount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "value",
+          "count"
         ]
       },
       "Empty": {
@@ -4628,7 +5348,9 @@
               "payableAmount",
               "payableCurrency",
               "paymentDate",
-              "status"
+              "status",
+              "responsibleActor",
+              "followUpDate"
             ]
           },
           "before": {
@@ -4660,6 +5382,51 @@
           "field",
           "before",
           "after"
+        ]
+      },
+      "FollowUpChange": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FollowUpChange.CLEAR"
+          },
+          {
+            "$ref": "#/components/schemas/FollowUpChange.SET"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CLEAR": "#/components/schemas/FollowUpChange.CLEAR",
+            "SET": "#/components/schemas/FollowUpChange.SET"
+          }
+        }
+      },
+      "FollowUpChange.CLEAR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CLEAR"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "FollowUpChange.SET": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SET"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
         ]
       },
       "GrantScope": {
@@ -4872,7 +5639,7 @@
               "$ref": "#/components/schemas/FieldChange"
             },
             "minItems": 0,
-            "maxItems": 13
+            "maxItems": 15
           }
         },
         "required": [
@@ -5375,6 +6142,8 @@
             "REFERENCE_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "UPDATE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CALENDAR_DATE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CHRONOLOGICAL_ORDER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "FUTURE_DATE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -5398,6 +6167,9 @@
           },
           "field": {
             "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
           },
           "maximumIntegerDigits": {
             "type": "integer",
@@ -5427,6 +6199,9 @@
           "field": {
             "$ref": "#/components/schemas/InputTarget"
           },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
+          },
           "maximumPageSize": {
             "type": "integer",
             "minimum": 1,
@@ -5453,6 +6228,8 @@
               "REFERENCE_FORMAT",
               "COUNTRY_FORMAT",
               "PRINCIPAL_FORMAT",
+              "ACTOR_ID_REQUIRED",
+              "UPDATE_REQUIRED",
               "CALENDAR_DATE_REQUIRED",
               "CHRONOLOGICAL_ORDER",
               "FUTURE_DATE",
@@ -5465,6 +6242,9 @@
           },
           "field": {
             "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
           }
         },
         "required": [
@@ -5481,6 +6261,9 @@
           },
           "field": {
             "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
           },
           "maximumCharacters": {
             "type": "integer",
@@ -5508,6 +6291,8 @@
           "payableAmount",
           "payableCurrency",
           "paymentDate",
+          "responsibleActor",
+          "followUpDate",
           "payment",
           "operationId",
           "expectedRevision",
@@ -6007,6 +6792,9 @@
             "$ref": "#/components/schemas/PaymentGroup.REPLACE"
           },
           {
+            "$ref": "#/components/schemas/PaymentGroup.REAFFIRM"
+          },
+          {
             "$ref": "#/components/schemas/PaymentGroup.CLEAR"
           }
         ],
@@ -6015,6 +6803,7 @@
           "mapping": {
             "KEEP": "#/components/schemas/PaymentGroup.KEEP",
             "REPLACE": "#/components/schemas/PaymentGroup.REPLACE",
+            "REAFFIRM": "#/components/schemas/PaymentGroup.REAFFIRM",
             "CLEAR": "#/components/schemas/PaymentGroup.CLEAR"
           }
         }
@@ -6037,6 +6826,18 @@
         "properties": {
           "kind": {
             "const": "KEEP"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "PaymentGroup.REAFFIRM": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REAFFIRM"
           }
         },
         "required": [
@@ -6375,6 +7176,7 @@
             "enum": [
               "OPEN",
               "AMEND_REGISTRATION",
+              "UPDATE_WORK",
               "CORRECT",
               "DECIDE",
               "WITHDRAW_DECISION",
@@ -6398,6 +7200,24 @@
           "revision",
           "act",
           "snapshot"
+        ]
+      },
+      "RegisterMaintenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "active",
+          "generation"
         ]
       },
       "Registration": {
@@ -6442,14 +7262,14 @@
             "$ref": "#/components/schemas/RegistrationGroup.KEEP"
           },
           {
-            "$ref": "#/components/schemas/RegistrationGroup.REPLACE"
+            "$ref": "#/components/schemas/RegistrationGroup.UPDATE"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "KEEP": "#/components/schemas/RegistrationGroup.KEEP",
-            "REPLACE": "#/components/schemas/RegistrationGroup.REPLACE"
+            "UPDATE": "#/components/schemas/RegistrationGroup.UPDATE"
           }
         }
       },
@@ -6465,20 +7285,94 @@
           "kind"
         ]
       },
-      "RegistrationGroup.REPLACE": {
+      "RegistrationGroup.UPDATE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "REPLACE"
+            "const": "UPDATE"
           },
           "values": {
-            "$ref": "#/components/schemas/Registration"
+            "$ref": "#/components/schemas/RegistrationUpdate"
           }
         },
         "required": [
           "kind",
           "values"
+        ]
+      },
+      "RegistrationUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "incidentDate": {
+            "type": "string"
+          },
+          "incidentNotificationDate": {
+            "type": "string"
+          },
+          "incidentCountry": {
+            "type": "string"
+          },
+          "claimantName": {
+            "type": "string"
+          },
+          "insurerName": {
+            "type": "string"
+          },
+          "claimed": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ]
+          }
+        },
+        "required": []
+      },
+      "RelatedDate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "enum": [
+              "incidentDate",
+              "incidentNotificationDate",
+              "incidentCountry",
+              "claimantName",
+              "insurerName",
+              "claimedAmount",
+              "claimedCurrency",
+              "caseReference",
+              "paymentDecisionDate",
+              "payableAmount",
+              "payableCurrency",
+              "paymentDate",
+              "status",
+              "responsibleActor",
+              "followUpDate"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "field",
+          "value"
         ]
       },
       "ResolveReply": {
@@ -6598,6 +7492,51 @@
           "data"
         ]
       },
+      "ResponsibleActorChange": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsibleActorChange.CLEAR"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsibleActorChange.SET"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CLEAR": "#/components/schemas/ResponsibleActorChange.CLEAR",
+            "SET": "#/components/schemas/ResponsibleActorChange.SET"
+          }
+        }
+      },
+      "ResponsibleActorChange.CLEAR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CLEAR"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "ResponsibleActorChange.SET": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SET"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ]
+      },
       "ReviewSubject": {
         "oneOf": [
           {
@@ -6632,6 +7571,9 @@
               }
             ]
           },
+          "accessScope": {
+            "$ref": "#/components/schemas/GrantScope"
+          },
           "before": {
             "$ref": "#/components/schemas/AuthorityState"
           },
@@ -6642,6 +7584,7 @@
         "required": [
           "kind",
           "target",
+          "accessScope",
           "before",
           "after"
         ]
@@ -6672,7 +7615,7 @@
               "$ref": "#/components/schemas/FieldChange"
             },
             "minItems": 0,
-            "maxItems": 13
+            "maxItems": 15
           },
           "context": {
             "$ref": "#/components/schemas/RuntimeContext"
@@ -6954,6 +7897,143 @@
           "count"
         ]
       },
+      "StatusReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/StatusResult"
+          }
+        },
+        "required": [
+          "operationId",
+          "outcome"
+        ]
+      },
+      "StatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "operationId"
+        ]
+      },
+      "StatusResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StatusResult.ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResult.NOT_ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResult.UNRESOLVED"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResult.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResult.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACCEPTED": "#/components/schemas/StatusResult.ACCEPTED",
+            "NOT_ACCEPTED": "#/components/schemas/StatusResult.NOT_ACCEPTED",
+            "UNRESOLVED": "#/components/schemas/StatusResult.UNRESOLVED",
+            "REJECTED": "#/components/schemas/StatusResult.REJECTED",
+            "FAILED": "#/components/schemas/StatusResult.FAILED"
+          }
+        }
+      },
+      "StatusResult.ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACCEPTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OperationReceipt"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "StatusResult.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "StatusResult.NOT_ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOT_ACCEPTED"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "StatusResult.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "StatusResult.UNRESOLVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "UNRESOLVED"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
       "SummaryMoney": {
         "type": "object",
         "additionalProperties": false,
@@ -6982,6 +8062,36 @@
         "format": "uuid",
         "minLength": 36,
         "maxLength": 36
+      },
+      "WorkDateBasis": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "businessDate": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          }
+        },
+        "required": [
+          "observedAt",
+          "businessDate",
+          "timeZone"
+        ]
       }
     }
   }

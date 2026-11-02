@@ -71,6 +71,20 @@ type Web(binary, environment, directory, ?logPrefix: string) =
 
     member _.HasExited = child.HasExited
 
+    member _.RequestStop() =
+        let signal =
+            start "kill" [ "-TERM"; string child.Id ] (Dictionary<string, string>())
+
+        let result = run 5000 signal None
+        Expect.equal result.ExitCode 0 "Signal only the owned published Web process"
+
+    member _.WaitForExit(bound: TimeSpan) =
+        task {
+            use deadline = new CancellationTokenSource(bound)
+            do! child.WaitForExitAsync(deadline.Token)
+            return child.ExitCode
+        }
+
     interface IDisposable with
         member _.Dispose() =
             try

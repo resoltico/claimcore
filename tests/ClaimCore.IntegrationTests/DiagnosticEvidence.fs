@@ -14,6 +14,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
@@ -51,14 +52,26 @@ let internal scalarEvidence () =
 let internal stateScenarios () =
     [
         [], (AuthoredCaseAct.Open registration)
+        [],
+        AuthoredCaseAct.UpdateWork
+            {
+                Responsible = WorkValue.Clear
+                FollowUp = WorkValue.Clear
+            }
+        [],
+        AuthoredCaseAct.UpdateWork
+            {
+                Responsible = WorkValue.Set "80000000-0000-4000-8000-000000000999"
+                FollowUp = WorkValue.Keep
+            }
         [], (AuthoredCaseAct.Bare BareAct.Reopen)
         [ closed ], (AuthoredCaseAct.Bare BareAct.Close)
         [ closed ], decided
-        [ decided ], (AuthoredCaseAct.AmendRegistration registration)
+        [ decided ], (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
         [ decided ],
         correction
             { keep with
-                Registration = Amendment.Replace registration
+                Registration = Amendment.Update(Inputs.registrationUpdate registration)
             }
         [], correction { keep with Decision = Change.Clear }
         [], payment
@@ -81,7 +94,7 @@ let internal stateScenarios () =
         [ decided; payment ],
         correction
             { keep with
-                Decision = Change.Replace decision
+                Decision = Change.Update(Inputs.decisionUpdate decision)
             }
     ]
 
@@ -193,7 +206,25 @@ let internal authorityEvidence actor =
                 }
                 true
 
-        return [ refused registered; refused unknown; refused last; refused human ]
+        let! scope =
+            grant
+                actor
+                (id 39)
+                owner
+                {
+                    Role = Role.Owner
+                    Scope = GrantTarget.CaseId(CaseFixtures.caseId (id 10))
+                }
+                true
+
+        return
+            [
+                refused registered
+                refused unknown
+                refused last
+                refused human
+                refused scope
+            ]
     }
 
 let internal identityEvidence actor =
@@ -266,7 +297,7 @@ let internal principalEvidence (actor: ServiceContext) =
 
 let internal boundaryEvidence () =
     task {
-        let! _, fixture = fixture ()
+        let! database, fixture = fixture ()
 
         use _owned =
             { new System.IDisposable with
@@ -293,5 +324,18 @@ let internal boundaryEvidence () =
         let! fenced =
             execute actor (request 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
-        return identity @ [ refused denied; refused fenced ] @ queries @ authority @ principals
+        let! maintenance =
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter ct
+
+        Expect.isOk maintenance "The owner explicitly pauses actual register writes"
+
+        let! paused =
+            execute actor (request 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+
+        return
+            identity
+            @ [ refused denied; refused fenced; refused paused ]
+            @ queries
+            @ authority
+            @ principals
     }

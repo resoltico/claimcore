@@ -38,6 +38,15 @@ module Execution =
             | InvalidateRestoredSessions ->
                 let! count = administration.InvalidateRestoredSessions(CancellationToken.None)
                 return Replies.sessionsInvalidated count
+            | Status ->
+                let! status = administration.Status(CancellationToken.None)
+                return Replies.status status
+            | Maintenance change ->
+                let! result = administration.Maintenance(change, CancellationToken.None)
+                return Replies.maintenance result
+            | PruneSessions limit ->
+                let! result = administration.PruneExpiredSessions(limit, CancellationToken.None)
+                return Replies.sessionsPruned result
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 
@@ -57,7 +66,9 @@ module Execution =
                         new Administration(Inputs.connection (), BuildIdentity.current.Version)
 
                     return! perform administration command
-                with error ->
+                with
+                | :? MaintenanceRequiredException -> return Replies.maintenanceRequired ()
+                | error ->
                     return
                         match AdministrationFailures.classify error with
                         | AdministrationFailure.Refused ->

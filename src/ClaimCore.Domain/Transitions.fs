@@ -4,10 +4,11 @@ open ClaimCore.Domain.ResultFlow
 
 /// Eligibility carries the accepted sub-state required to perform the selected change.
 [<RequireQualifiedAccess; NoComparison>]
-type internal Applicable<'r, 'd, 'p, 's> =
+type internal Applicable<'r, 'd, 'du, 'p, 'w, 's> =
     private
     | Amending of Claim * 'r
-    | Correcting of Claim * Correction<'r, 'd, 'p>
+    | Correcting of Claim * Correction<'r, 'du, 'p>
+    | Working of Claim * 'w
     | Deciding of Claim * 'd
     | Withdrawing of Claim
     | Paying of Claim * Decision * 'p
@@ -78,6 +79,8 @@ module internal Transitions =
         function
         | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
         | CaseAct.AmendRegistration facts -> whenOpened (amend facts) claim
+        | CaseAct.UpdateWork update ->
+            whenOpened (fun claim -> Ok(Applicable.Working(claim, update))) claim
         | CaseAct.Correct correction -> correct correction claim
         | CaseAct.Decide decision -> whenOpened (decide decision) claim
         | CaseAct.Bare BareAct.WithdrawDecision -> whenOpened withdraw claim
@@ -128,8 +131,18 @@ module internal Transitions =
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
     let private change evidence =
         match evidence with
-        | Applicable.Amending(claim, facts) ->
-            businessChange claim (Ok { claim with Facts = facts })
+        | Applicable.Working(claim, update) ->
+            let work = CaseWork.apply update claim.Work
+
+            if work = claim.Work then
+                businessChange claim (Error(Refusal.Case CaseRefusal.WorkNoChanges))
+            else
+                businessChange claim (Ok { claim with Work = work })
+        | Applicable.Amending(claim, update) ->
+            RegistrationUpdate.apply update claim.Facts
+            |> Validation.registrationMerge
+            |> Result.map (fun facts -> { claim with Facts = facts })
+            |> businessChange claim
         | Applicable.Correcting(claim, correction) ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
@@ -218,13 +231,16 @@ module internal Transitions =
         let admission =
             match evidence with
             | Applicable.Correcting(before, correction) ->
-                CaseCorrections.proposedGroups before.Facts before.Progress correction
-                |> Result.mapError Refusal.Case
-                |> Result.bind (StateValidation.admitGroups today (Some before))
+                CaseCorrections.admission today before correction
             | Applicable.Voiding _
             | Applicable.Reinstating _
             | Applicable.Erasing -> Ok()
-            | Applicable.Amending _
+            | Applicable.Amending(current, update) ->
+                StateValidation.assertionsAgainst
+                    today
+                    (Some current)
+                    (RegistrationUpdate.values update)
+            | Applicable.Working _ -> Ok()
             | Applicable.Deciding _
             | Applicable.Withdrawing _
             | Applicable.Paying _

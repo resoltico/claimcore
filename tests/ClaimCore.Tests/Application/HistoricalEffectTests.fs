@@ -54,6 +54,7 @@ let private p0, p1 =
 
 let private fields registration progress status : CaseFields =
     {
+        Work = CaseWork.empty
         CaseReference = reference
         Registration = Inputs.admittedRegistration registration
         Progress = progress
@@ -84,7 +85,7 @@ let private cases =
         "OPEN", None, AuthoredCaseAct.Open registration0, snapshot 1L (CaseState.Active opened)
         "AMEND_REGISTRATION",
         Some(snapshot 1L (CaseState.Active opened)),
-        AuthoredCaseAct.AmendRegistration registration1,
+        AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration1),
         snapshot
             2L
             (CaseState.Active(fields registration1 PaymentProgress.Undecided CaseStatus.Opened))
@@ -124,13 +125,30 @@ let private cases =
         Some(snapshot 4L (CaseState.Active paid)),
         AuthoredCaseAct.Correct
             {
-                Registration = Amendment.Replace registration1
-                Decision = Change.Replace decision1
-                Payment = Change.Replace payment1
+                Registration = Amendment.Update(Inputs.registrationUpdate registration1)
+                Decision = Change.Update(Inputs.decisionUpdate decision1)
+                Payment = PaymentChange.Replace payment1
             },
         snapshot
             5L
             (CaseState.Active(fields registration1 (PaymentProgress.Paid(d1, p1)) CaseStatus.Opened))
+        "UPDATE_WORK",
+        Some(snapshot 1L (CaseState.Active opened)),
+        AuthoredCaseAct.UpdateWork
+            {
+                Responsible = WorkValue.Keep
+                FollowUp = WorkValue.Set "2027-12-31"
+            },
+        snapshot
+            2L
+            (CaseState.Active
+                { opened with
+                    Work =
+                        {
+                            Responsible = None
+                            FollowUp = Some(CaseFixtures.date "2027-12-31")
+                        }
+                })
         "ERASE",
         Some(snapshot 6L (CaseState.Voided closed)),
         AuthoredCaseAct.Bare BareAct.Erase,
@@ -174,6 +192,13 @@ let private tamper token (expected: CaseSnapshot) =
         | "CORRECT" ->
             { value with
                 Status = CaseStatus.Closed
+            }
+        | "UPDATE_WORK" ->
+            { value with
+                Work =
+                    { value.Work with
+                        FollowUp = Some(CaseFixtures.date "2028-01-01")
+                    }
             }
         | "DECIDE" ->
             { value with
@@ -293,79 +318,105 @@ let tests =
 [<Tests>]
 let correctionMatrix =
     let keep = Amendment.Keep
-    let replace = Amendment.Replace registration1
+    let replace = Amendment.Update(Inputs.registrationUpdate registration1)
+
+    let update = Change.Update(Inputs.decisionUpdate decision1)
+    let payment = PaymentChange.Replace payment1
 
     let rows =
         [
-            "KEEP/KEEP/KEEP", keep, Change.Keep, Change.Keep, None
+            "KEEP/KEEP/KEEP", keep, Change.Keep, PaymentChange.Keep, None
             "KEEP/KEEP/REPLACE",
             keep,
             Change.Keep,
-            Change.Replace payment1,
+            payment,
             Some(registration0, PaymentProgress.Paid(d0, p1))
+            "KEEP/KEEP/REAFFIRM", keep, Change.Keep, PaymentChange.Reaffirm, None
             "KEEP/KEEP/CLEAR",
             keep,
             Change.Keep,
-            Change.Clear,
+            PaymentChange.Clear,
             Some(registration0, PaymentProgress.Decided d0)
-            "KEEP/REPLACE/KEEP", keep, Change.Replace decision1, Change.Keep, None
-            "KEEP/REPLACE/REPLACE",
+            "KEEP/UPDATE/KEEP", keep, update, PaymentChange.Keep, None
+            "KEEP/UPDATE/REPLACE",
             keep,
-            Change.Replace decision1,
-            Change.Replace payment1,
+            update,
+            payment,
             Some(registration0, PaymentProgress.Paid(d1, p1))
-            "KEEP/REPLACE/CLEAR",
+            "KEEP/UPDATE/REAFFIRM",
             keep,
-            Change.Replace decision1,
-            Change.Clear,
+            update,
+            PaymentChange.Reaffirm,
+            Some(registration0, PaymentProgress.Paid(d1, p0))
+            "KEEP/UPDATE/CLEAR",
+            keep,
+            update,
+            PaymentChange.Clear,
             Some(registration0, PaymentProgress.Decided d1)
-            "KEEP/CLEAR/KEEP", keep, Change.Clear, Change.Keep, None
-            "KEEP/CLEAR/REPLACE", keep, Change.Clear, Change.Replace payment1, None
+            "KEEP/CLEAR/KEEP", keep, Change.Clear, PaymentChange.Keep, None
+            "KEEP/CLEAR/REPLACE", keep, Change.Clear, payment, None
+            "KEEP/CLEAR/REAFFIRM", keep, Change.Clear, PaymentChange.Reaffirm, None
             "KEEP/CLEAR/CLEAR",
             keep,
             Change.Clear,
-            Change.Clear,
+            PaymentChange.Clear,
             Some(registration0, PaymentProgress.Undecided)
-            "REPLACE/KEEP/KEEP",
+            "UPDATE/KEEP/KEEP",
             replace,
             Change.Keep,
-            Change.Keep,
+            PaymentChange.Keep,
             Some(registration1, PaymentProgress.Paid(d0, p0))
-            "REPLACE/KEEP/REPLACE",
+            "UPDATE/KEEP/REPLACE",
             replace,
             Change.Keep,
-            Change.Replace payment1,
+            payment,
             Some(registration1, PaymentProgress.Paid(d0, p1))
-            "REPLACE/KEEP/CLEAR",
+            "UPDATE/KEEP/REAFFIRM",
             replace,
             Change.Keep,
-            Change.Clear,
+            PaymentChange.Reaffirm,
+            Some(registration1, PaymentProgress.Paid(d0, p0))
+            "UPDATE/KEEP/CLEAR",
+            replace,
+            Change.Keep,
+            PaymentChange.Clear,
             Some(registration1, PaymentProgress.Decided d0)
-            "REPLACE/REPLACE/KEEP", replace, Change.Replace decision1, Change.Keep, None
-            "REPLACE/REPLACE/REPLACE",
+            "UPDATE/UPDATE/KEEP", replace, update, PaymentChange.Keep, None
+            "UPDATE/UPDATE/REPLACE",
             replace,
-            Change.Replace decision1,
-            Change.Replace payment1,
+            update,
+            payment,
             Some(registration1, PaymentProgress.Paid(d1, p1))
-            "REPLACE/REPLACE/CLEAR",
+            "UPDATE/UPDATE/REAFFIRM",
             replace,
-            Change.Replace decision1,
-            Change.Clear,
+            update,
+            PaymentChange.Reaffirm,
+            Some(registration1, PaymentProgress.Paid(d1, p0))
+            "UPDATE/UPDATE/CLEAR",
+            replace,
+            update,
+            PaymentChange.Clear,
             Some(registration1, PaymentProgress.Decided d1)
-            "REPLACE/CLEAR/KEEP", replace, Change.Clear, Change.Keep, None
-            "REPLACE/CLEAR/REPLACE", replace, Change.Clear, Change.Replace payment1, None
-            "REPLACE/CLEAR/CLEAR",
+            "UPDATE/CLEAR/KEEP", replace, Change.Clear, PaymentChange.Keep, None
+            "UPDATE/CLEAR/REPLACE", replace, Change.Clear, payment, None
+            "UPDATE/CLEAR/REAFFIRM", replace, Change.Clear, PaymentChange.Reaffirm, None
+            "UPDATE/CLEAR/CLEAR",
             replace,
             Change.Clear,
-            Change.Clear,
+            PaymentChange.Clear,
             Some(registration1, PaymentProgress.Undecided)
         ]
 
     testList
         "independent permanent correction matrix"
         [
-            testCase "every keep replace clear choice has one literal expectation" (fun () ->
-                Expect.equal rows.Length 18 "Two registration and three downstream choices")
+            testCase
+                "every update and explicit payment choice has one literal expectation"
+                (fun () ->
+                    Expect.equal
+                        rows.Length
+                        24
+                        "Two registration, three decision and four payment choices")
             for name, registration, decision, payment, expected in rows do
                 testCase name (fun () ->
                     let before = snapshot 4L (CaseState.Active paid)

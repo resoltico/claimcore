@@ -112,7 +112,7 @@ let private replacement () =
                 "--expected-revision"
                 "1"
                 "--registration"
-                "REPLACE"
+                "UPDATE"
                 "--decision"
                 "KEEP"
                 "--payment"
@@ -131,16 +131,16 @@ let private replacement () =
     match request with
     | OperationInput.Case {
                               Act = AuthoredCaseAct.Correct {
-                                                                Registration = Amendment.Replace value
+                                                                Registration = Amendment.Update value
                                                             }
                           } ->
         Expect.equal
-            (RegistrationInput.value BusinessField.ClaimedAmount (value))
+            (value.Claimed |> Option.get |> _.Amount)
             "1.0000"
             "Authored amount spelling is preserved"
 
         Expect.equal
-            (RegistrationInput.value BusinessField.ClaimantName (value))
+            (value.Claimant |> Option.get)
             "Synthetic claimant"
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"
@@ -159,13 +159,13 @@ let tests =
                     "Only declared verbs are admitted")
             testCase "operational writes report their actual unsupported preview command" (fun () ->
                 let arguments =
-                    [ "operation"; "resolve"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
+                    [ "operation"; "settle"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
 
                 match Grammar.prepare (fun () -> "unused") arguments with
                 | Error errors ->
                     Expect.equal
                         errors
-                        [ UsageError.NotApplicable("--preview", "operation resolve") ]
+                        [ UsageError.NotApplicable("--preview", "operation settle") ]
                         "Resolve is an operational write, so read-command wording is accurate"
                 | Ok _ -> failtest "Resolve cannot be previewed")
         ]

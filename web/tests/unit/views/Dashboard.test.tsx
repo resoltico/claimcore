@@ -46,10 +46,7 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
   fillRegistrationInputs({ caseReference: "LOCK-001", incidentDate: "2026-09-09" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
-    expect(screen.getByRole("link", { name: "Operations" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(screen.getByRole("link", { name: "Recovery" })).toHaveAttribute("aria-disabled", "true");
   });
   expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Back to cases" })).toBeDisabled();
@@ -79,7 +76,7 @@ it("replaces an unavailable initial case route with the first advertised workspa
     value: wireReply("authority.list"),
   });
   render(<Dashboard />);
-  expect(await screen.findByRole("heading", { name: "Authority", level: 1 })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Access", level: 1 })).toBeVisible();
   expect(window.location.pathname).toBe("/authority");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();

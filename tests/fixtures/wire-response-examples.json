@@ -109,9 +109,13 @@
               "AUTHORITY",
               "OPERATIONS"
             ],
-            "hasAssignedCases": false,
+            "hasScopedCases": false,
             "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001"
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
           }
         }
       },
@@ -182,15 +186,33 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID"
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
               }
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             },
-            "assignedToYou": false,
-            "caseId": "20000000-0000-4000-8000-000000000001"
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
           }
         }
       },
@@ -239,7 +261,12 @@
           "data": {
             "items": [],
             "nextCursor": "x",
-            "offers": []
+            "offers": [],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            }
           }
         }
       },
@@ -380,7 +407,11 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "work": {
+                        "responsibleActor": null,
+                        "followUpDate": null
+                      }
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -410,7 +441,11 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "work": {
+                        "responsibleActor": null,
+                        "followUpDate": null
+                      }
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -472,7 +507,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -563,7 +602,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -618,7 +661,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -720,7 +767,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -986,11 +1037,16 @@
                 "target": null,
                 "before": {
                   "enabled": false,
-                  "grants": []
+                  "grants": [],
+                  "access": []
                 },
                 "after": {
                   "enabled": true,
-                  "grants": []
+                  "grants": [],
+                  "access": []
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
                 }
               }
             }
@@ -1051,9 +1107,13 @@
               "AUTHORITY",
               "OPERATIONS"
             ],
-            "hasAssignedCases": false,
+            "hasScopedCases": false,
             "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001"
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
           }
         }
       }
@@ -1093,22 +1153,37 @@
               "correction": {
                 "registration": [
                   "KEEP",
-                  "REPLACE"
+                  "UPDATE"
                 ],
                 "decision": [
                   "KEEP",
-                  "REPLACE",
+                  "UPDATE",
                   "CLEAR"
                 ],
                 "payment": [
                   "KEEP",
                   "REPLACE",
+                  "REAFFIRM",
                   "CLEAR"
                 ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
               }
             },
-            "assignedToYou": false,
-            "caseId": "20000000-0000-4000-8000-000000000001"
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "INACTIVE",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
           }
         }
       }
@@ -1148,22 +1223,37 @@
               "correction": {
                 "registration": [
                   "KEEP",
-                  "REPLACE"
+                  "UPDATE"
                 ],
                 "decision": [
                   "KEEP",
-                  "REPLACE",
+                  "UPDATE",
                   "CLEAR"
                 ],
                 "payment": [
                   "KEEP",
                   "REPLACE",
+                  "REAFFIRM",
                   "CLEAR"
                 ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
               }
             },
-            "assignedToYou": false,
-            "caseId": "20000000-0000-4000-8000-000000000001"
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "INACTIVE",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
           }
         }
       }
@@ -1191,7 +1281,17 @@
                   },
                   "payable": null,
                   "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01"
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": null,
+                    "followUpDate": null,
+                    "due": "UNSCHEDULED",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    }
+                  }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "caseId": "20000000-0000-4000-8000-000000000001"
@@ -1210,7 +1310,17 @@
                   },
                   "payable": null,
                   "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01"
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": null,
+                    "followUpDate": null,
+                    "due": "INACTIVE",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    }
+                  }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "caseId": "20000000-0000-4000-8000-000000000001"
@@ -1250,7 +1360,12 @@
                 "kind": "AUTHORITY_ACT",
                 "act": "DISABLE"
               }
-            ]
+            ],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            }
           }
         }
       }
@@ -1398,7 +1513,11 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "work": {
+                        "responsibleActor": null,
+                        "followUpDate": null
+                      }
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1428,7 +1547,11 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "work": {
+                        "responsibleActor": null,
+                        "followUpDate": null
+                      }
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1556,7 +1679,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -1615,7 +1742,11 @@
                           "payment": {
                             "paymentDate": "2026-01-01"
                           },
-                          "progress": "PAID"
+                          "progress": "PAID",
+                          "work": {
+                            "responsibleActor": null,
+                            "followUpDate": null
+                          }
                         }
                       }
                     },
@@ -2909,7 +3040,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -2996,12 +3131,20 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID"
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
               }
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             }
           }
         }
@@ -3040,12 +3183,20 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID"
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
               }
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             }
           }
         }
@@ -3083,15 +3234,33 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID"
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
               }
             },
             "advice": {
               "acts": [],
-              "history": []
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
             },
-            "assignedToYou": false,
-            "caseId": "20000000-0000-4000-8000-000000000001"
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "INACTIVE",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
           }
         }
       },
@@ -3141,7 +3310,11 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
                   }
                 }
               },
@@ -3221,7 +3394,17 @@
                     "currency": "EUR"
                   },
                   "progress": "DECIDED",
-                  "incidentNotificationDate": "2026-01-01"
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": null,
+                    "followUpDate": null,
+                    "due": "UNSCHEDULED",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    }
+                  }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001"
               },
@@ -3243,13 +3426,28 @@
                     "currency": "EUR"
                   },
                   "progress": "PAID",
-                  "incidentNotificationDate": "2026-01-01"
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": null,
+                    "followUpDate": null,
+                    "due": "INACTIVE",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    }
+                  }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001"
               }
             ],
             "nextCursor": null,
-            "offers": []
+            "offers": [],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            }
           }
         }
       },
@@ -3441,6 +3639,38 @@
                   "value": "PAID",
                   "count": 0
                 }
+              ],
+              "assignment": [
+                {
+                  "value": "MINE",
+                  "count": 0
+                },
+                {
+                  "value": "UNASSIGNED",
+                  "count": 2
+                }
+              ],
+              "due": [
+                {
+                  "value": "OVERDUE",
+                  "count": 0
+                },
+                {
+                  "value": "TODAY",
+                  "count": 0
+                },
+                {
+                  "value": "UPCOMING",
+                  "count": 0
+                },
+                {
+                  "value": "UNSCHEDULED",
+                  "count": 1
+                },
+                {
+                  "value": "INACTIVE",
+                  "count": 1
+                }
               ]
             },
             "claimed": [
@@ -3454,7 +3684,12 @@
                 "currency": "EUR",
                 "amount": "999999999999999999.9999"
               }
-            ]
+            ],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            }
           }
         }
       }
@@ -3541,7 +3776,11 @@
                           "payment": {
                             "paymentDate": "2026-01-01"
                           },
-                          "progress": "PAID"
+                          "progress": "PAID",
+                          "work": {
+                            "responsibleActor": null,
+                            "followUpDate": null
+                          }
                         }
                       }
                     },
@@ -3569,6 +3808,638 @@
           }
         }
       }
+    },
+    {
+      "name": "meaningless-role-scope-refusal",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ROLE_SCOPE_NOT_APPLICABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-scoped-dormant-overlap-review",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000002",
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "dormant-target"
+                  },
+                  "enabled": false
+                },
+                "accessScope": {
+                  "kind": "CASE",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "OVERLAPPING"
+                },
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [
+                    {
+                      "capability": "READ_CASE",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "READ_HISTORY",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "REGISTER",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    }
+                  ]
+                },
+                "after": {
+                  "enabled": false,
+                  "grants": [
+                    {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "CASE",
+                        "caseId": "20000000-0000-4000-8000-000000000001",
+                        "caseReference": "OVERLAPPING"
+                      }
+                    }
+                  ],
+                  "access": [
+                    {
+                      "capability": "READ_CASE",
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "READ_HISTORY",
+                      "directRoles": [
+                        "CASE_READER"
+                      ],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    },
+                    {
+                      "capability": "REGISTER",
+                      "directRoles": [],
+                      "installationRoles": [
+                        "CASE_REGISTRAR"
+                      ],
+                      "effective": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "passive-status-not_accepted",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "NOT_ACCEPTED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "passive-status-unresolved",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "UNRESOLVED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "passive-status-own-accepted",
+      "endpoint": "operation.status",
+      "value": {
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 1,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "CASE",
+              "caseReference": "x",
+              "revision": 1,
+              "act": "OPEN",
+              "snapshot": {
+                "kind": "DISCLOSED",
+                "view": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "x",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "payment": {
+                      "paymentDate": "2026-01-01"
+                    },
+                    "progress": "PAID",
+                    "work": {
+                      "responsibleActor": null,
+                      "followUpDate": null
+                    }
+                  }
+                }
+              },
+              "caseId": "10000000-0000-4000-8000-000000000001"
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      },
+      "valid": true
+    },
+    {
+      "name": "passive-status-rejected",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "passive-status-failed",
+      "endpoint": "operation.status",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_INTEGRITY_ERROR",
+            "action": "STOP_AND_INVESTIGATE"
+          }
+        }
+      }
+    },
+    {
+      "name": "case-assignees-minimal-identity",
+      "endpoint": "case.assignees",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "subject": "حساب متاح"
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "case-assignees-denied",
+      "endpoint": "case.assignees",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "case-assignees-failed",
+      "endpoint": "case.assignees",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      }
+    },
+    {
+      "name": "casework-refusal-WORK_NO_CHANGES",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "WORK_NO_CHANGES",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "casework-refusal-ASSIGNEE_UNAVAILABLE",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ASSIGNEE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "casework-input-ACTOR_ID_REQUIRED",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "code": "ACTOR_ID_REQUIRED",
+                "field": "responsibleActor"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "casework-input-UPDATE_REQUIRED",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "code": "UPDATE_REQUIRED",
+                "field": "followUpDate"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "partial-chronology-related-retained-date",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "code": "CHRONOLOGICAL_ORDER",
+                "field": "paymentDecisionDate",
+                "relatedDate": {
+                  "field": "paymentDate",
+                  "value": "2026-01-01"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "payment-advice-cannot-update-partially",
+      "endpoint": "case.get",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ERASED"
+            },
+            "advice": {
+              "acts": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE"
+              ],
+              "history": [
+                "SUMMARY",
+                "FULL"
+              ],
+              "correction": {
+                "registration": [
+                  "KEEP",
+                  "UPDATE"
+                ],
+                "decision": [
+                  "KEEP",
+                  "UPDATE",
+                  "CLEAR"
+                ],
+                "payment": [
+                  "KEEP",
+                  "UPDATE"
+                ]
+              },
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "INACTIVE",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "offered-case-work-kind",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": null,
+                "payment": null,
+                "progress": "UNDECIDED",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
+              }
+            },
+            "advice": {
+              "acts": [
+                "UPDATE_WORK"
+              ],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "human-case-handler-work-capability",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "productVersion": "x",
+            "businessDate": "2026-01-01",
+            "timeZone": "x",
+            "offers": [],
+            "capabilities": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "REGISTER",
+              "DECIDE",
+              "CLOSE",
+              "MANAGE_CASE_WORK"
+            ],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ],
+            "hasScopedCases": false,
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "assignee-subject-cannot-be-empty",
+      "endpoint": "case.assignees",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "subject": ""
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "register-maintenance-refusal",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REGISTER_MAINTENANCE",
+            "action": "READ_CURRENT"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case-maintenance-advice",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR"
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID",
+                "work": {
+                  "responsibleActor": null,
+                  "followUpDate": null
+                }
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": true,
+                "generation": 3
+              }
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

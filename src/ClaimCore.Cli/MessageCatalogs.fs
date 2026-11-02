@@ -62,7 +62,14 @@ module internal MessageCatalogs =
     let private secret = string CliConfigurationLimits.MaximumSecretBytes
     let private trust = string CliConfigurationLimits.MaximumTrustRootBytes
     let private retry = CliIdentity.programName + " call"
-    let private resolve = CliIdentity.programName + " operation resolve OPERATION_ID"
+
+    let private status =
+        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Status)
+        + " OPERATION_ID"
+
+    let private settlement =
+        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Resolve)
+        + " OPERATION_ID"
 
     let private overview language =
         let families =
@@ -93,12 +100,15 @@ module internal MessageCatalogs =
     let private helpBody language =
         function
         | HelpTopic.Call ->
-            renderCli language (CliMessage.HelpCall(invocation, request, response, retry, resolve))
+            renderCli
+                language
+                (CliMessage.HelpCall(invocation, request, response, retry, status, settlement))
         | HelpTopic.Session ->
             renderCli language (CliMessage.HelpSession(invocation, request, response))
         | HelpTopic.Configuration ->
             renderCli language (CliMessage.HelpConfiguration(secret, trust))
-        | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(retry, resolve))
+        | HelpTopic.Delivery ->
+            renderCli language (CliMessage.HelpDelivery(retry, status, settlement))
         | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp

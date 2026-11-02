@@ -29,6 +29,7 @@ let internal resultExits () =
                 "NOT_ACCEPTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
+                "UNRESOLVED", 4
             ]
 
     let mutable seen = Set.empty

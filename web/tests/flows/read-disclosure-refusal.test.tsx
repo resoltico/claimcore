@@ -1,4 +1,4 @@
-import { caseSummaryInput } from "../support/inputs";
+import { workBasis, caseSummaryInput } from "../support/inputs";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, CaseSummary, ServiceResponse } from "../../src/api/service";
@@ -26,6 +26,7 @@ const initial: ApiResult<ListResponse> = {
     outcome: {
       kind: "SUCCEEDED",
       data: {
+        basis: workBasis,
         offers: [],
         items: [
           caseSummaryInput({

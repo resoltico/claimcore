@@ -149,6 +149,7 @@ let private configuredBuilder
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
     builder.Logging.ClearProviders() |> ignore
+    builder.Logging.AddProvider(new FrameworkExceptionLog(Console.Error)) |> ignore
     configureKestrel configuration builder
 
     configureAntiforgery
@@ -189,6 +190,8 @@ let private configureRoutes
     )
     |> ignore
 
+    HostRoutes.publicAssets assets application
+
     let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness.Check))
@@ -200,7 +203,7 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
-    application.UseAuthentication() |> ignore
+    RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 

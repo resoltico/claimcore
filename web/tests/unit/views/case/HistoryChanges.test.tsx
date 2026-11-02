@@ -103,7 +103,11 @@ it("shows page-boundary differences immediately and follows only the issued live
     );
   vi.stubGlobal("fetch", fetch);
   const view = render(
-    <CaseHistory caseReference="CASE-1" fields={definition.catalog.fields} modes={["FULL"]} />,
+    <CaseHistory
+      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+      fields={definition.catalog.fields}
+      modes={["FULL"]}
+    />,
   );
   const user = userEvent.setup();
   await user.click(await screen.findByText(/revision 2/u));

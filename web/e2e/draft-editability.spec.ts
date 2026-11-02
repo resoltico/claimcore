@@ -18,6 +18,11 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to case", exact: true }).click();
   await startAct(page, "Amend registration");
+  const selectedFacts = page.locator(".operation-editor form input[data-selects-fields]");
+  await selectedFacts.first().waitFor({ state: "visible" });
+  for (const selected of await selectedFacts.all()) {
+    await selected.check();
+  }
   const fields = page.locator(".operation-editor form [data-field-name]");
   await expect(fields).toHaveCount(7);
   for (const name of Object.keys(registration())) {

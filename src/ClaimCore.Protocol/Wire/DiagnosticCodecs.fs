@@ -100,23 +100,43 @@ module DiagnosticCodecs =
 
         List.max (caseWidths @ authorityWidths)
 
+    let private relatedDate =
+        (record (fun field value ->
+            {
+                RelatedDate.Field = field
+                Value = value
+            })
+        : Fields<RelatedDate, _>)
+        |> field "field" _.Field (VocabularyCodec.create BusinessField.vocabulary)
+        |> field
+            "value"
+            _.Value
+            (ResponseScalars.date
+             |> map
+                 (CalendarDate.parse >> Result.defaultWith (fun _ -> invalidOp "Admitted date"))
+                 CalendarDate.format)
+        |> build
+        |> named "RelatedDate"
+
     let private issueVariants =
         let fields =
-            record id
+            record (fun target related -> target, related)
             |> field
                 "field"
-                id
+                fst
                 (VocabularyCodec.create InputTarget.vocabulary |> named "InputTarget")
+            |> optionalField "relatedDate" snd relatedDate
 
         violationVariants
         |> List.map (
             extendVariant
-                (fun target violation ->
+                (fun (target, related) violation ->
                     {
                         Target = target
                         Violation = violation
+                        RelatedDate = related
                     })
-                (fun issue -> Some(issue.Target, issue.Violation))
+                (fun issue -> Some((issue.Target, issue.RelatedDate), issue.Violation))
                 fields
         )
 

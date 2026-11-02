@@ -62,7 +62,8 @@ let private idleConfirmation () =
                             Api.caseGet
                             (Outcome.Succeeded
                                 {
-                                    AssignedToYou = false
+                                    Mine = false
+                                    Work = Inputs.workView CliReplyFixtures.snapshot.State
                                     Snapshot = CliReplyFixtures.snapshot
                                     Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
                                 })

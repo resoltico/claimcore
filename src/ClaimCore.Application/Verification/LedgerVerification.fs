@@ -33,12 +33,36 @@ module LedgerVerification =
                 entry
                 request
             |> Result.map (fun actors -> state.Cases, actors)
-        | EntryTarget.Case(_, _, act, _), _ ->
+        | EntryTarget.Case(caseId, _, act, _), _ ->
             result {
                 let! cases = CaseFold.apply state.Cases entry payload
 
+                let eligible id =
+                    state.Actors
+                    |> Map.tryFind id
+                    |> Option.exists (HistoricalCaseEffects.workEligible caseId)
+
+                do!
+                    require
+                        (Some entry.Sequence)
+                        VerificationFinding.AuthorityFold
+                        (act <> CaseActKind.UpdateWork || eligible entry.ActorId)
+
+                do!
+                    match act, payload with
+                    | CaseActKind.UpdateWork, VerifiedPayload.Case(request, _) ->
+                        match request.Act with
+                        | CaseAct.UpdateWork { Responsible = WorkValue.Set id } ->
+                            require
+                                (Some entry.Sequence)
+                                VerificationFinding.AuthorityFold
+                                (eligible id)
+                        | _ -> Ok()
+                    | _ -> Ok()
+
                 let human =
                     match act with
+                    | CaseActKind.UpdateWork
                     | CaseActKind.Void
                     | CaseActKind.Reinstate
                     | CaseActKind.Erase -> true

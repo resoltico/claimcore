@@ -13,7 +13,12 @@ open CliCalls
 
 let private listing (fixture: PublishedFixture.Fixture) =
     let result =
-        ProcessRunner.dotnet 60000 fixture.Cli [ "recovery"; "list" ] fixture.Environment None
+        ProcessRunner.dotnet
+            60000
+            fixture.Cli
+            [ "recovery"; "list"; "--format"; "json" ]
+            fixture.Environment
+            None
 
     Expect.equal result.ExitCode 0 "Restarted recovery listing succeeds"
     use json = JsonDocument.Parse result.StandardOutput
@@ -143,7 +148,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             ProcessRunner.dotnet
                 60000
                 fixture.Cli
-                [ "recovery"; "resolve"; attempt ]
+                [ "recovery"; "check"; attempt; "--format"; "json" ]
                 fixture.Environment
                 None
 

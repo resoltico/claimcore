@@ -11,6 +11,10 @@
     <Compile Include="CaseDisclosureContract.fs" />
     <Compile Include="ScopedAuthorityContract.fs" />
     <Compile Include="AuthorityReviewContract.fs" />
+    <Compile Include="OperationRecoveryContract.fs" />
+    <Compile Include="CaseWorkContract.fs" />
+    <Compile Include="WorkDateBasisTests.fs" />
+    <Compile Include="HttpAdmissionPressureTests.fs" />
     <Compile Include="AuthorityHistoryContract.fs" />
     <Compile Include="WorklistTriageContract.fs" />
     <Compile Include="CaseSelectorContract.fs" />
@@ -64,12 +68,14 @@
     <Compile Include="AcceptedHistoryFixtures.fs" />
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseScenarios.fs" />
+    <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />
     <Compile Include="CommitProxy.fs" />
+    <Compile Include="MaintenanceFailureTests.fs" />
     <Compile Include="ProjectionRebuildFailureTests.fs" />
     <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="CommitTests.fs" />

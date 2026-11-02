@@ -51,50 +51,57 @@ let private openingAccumulatesAssertions =
                     "Independent newly asserted values retain field order"
             | other -> failtestf "Expected accumulated assertions, got %A" other)
 
+let private registrationPatch: RegistrationUpdateInput =
+    {
+        IncidentDate = None
+        NotificationDate = None
+        Country = None
+        Claimant = None
+        Insurer = None
+        Claimed = None
+    }
+
 let private amendmentRetainsDates =
-    testCase "amendment retains accepted dates after clock rollback" (fun () ->
-        let before = opened ()
-
-        let changed =
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.ClaimantName, ("Synthetic amended party") ]
-                (registration))
-
+    testCase "partial amendment retains omitted accepted dates after clock rollback" (fun () ->
         let after =
-            applyAt (DateOnly(2026, 7, 31)) (AuthoredCaseAct.AmendRegistration changed) before
+            opened ()
+            |> applyAt
+                (DateOnly(2026, 7, 31))
+                (CaseAct.AmendRegistration
+                    { registrationPatch with
+                        Claimant = Some "Synthetic amended party"
+                    })
             |> accepted
             |> Case.snapshot
 
-        Expect.equal after.Revision (CaseFixtures.revision 2L) "One revision"
+        Expect.equal (Revision.value after.Revision) 2L "One revision"
 
-        Expect.isTrue
-            (CalendarDate.format (
-                Registration.incidentNotificationDate ((viewFields after).Registration)
-            )
-                =
-                (RegistrationInput.value BusinessField.IncidentNotificationDate (registration)))
-            "Accepted historical date retained")
+        Expect.equal
+            (Registration.incidentNotificationDate (viewFields after).Registration
+             |> CalendarDate.format)
+            "2026-08-03"
+            "Omitted date retained")
 
 let private newIncidentIsBounded =
-    testCase "an unchanged notification cannot hide a new future incident" (fun () ->
-        let changed =
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.IncidentDate, ("2026-08-02") ]
-                (registration))
-
+    testCase "an omitted notification cannot hide a newly asserted future incident" (fun () ->
         opened ()
-        |> applyAt (DateOnly(2026, 7, 31)) (AuthoredCaseAct.AmendRegistration changed)
+        |> applyAt
+            (DateOnly(2026, 7, 31))
+            (CaseAct.AmendRegistration
+                { registrationPatch with
+                    IncidentDate = Some "2026-08-02"
+                })
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private newNotificationIsBounded =
-    testCase "newly replaced notification dates are checked independently" (fun () ->
-        let changed =
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.IncidentNotificationDate, ("2026-08-04") ]
-                (registration))
-
+    testCase "newly asserted notification is checked independently" (fun () ->
         opened ()
-        |> applyAt (DateOnly(2026, 8, 3)) (AuthoredCaseAct.AmendRegistration changed)
+        |> applyAt
+            (DateOnly(2026, 8, 3))
+            (CaseAct.AmendRegistration
+                { registrationPatch with
+                    NotificationDate = Some "2026-08-04"
+                })
         |> future (InputTarget.Field BusinessField.IncidentNotificationDate))
 
 let private decisionRetainsDate =
@@ -170,17 +177,22 @@ let private closedCorrectionRetainsDates =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Replace(
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.ClaimantName, ("Synthetic corrected party") ]
-                                (registration)
-                        )
-                    Decision = Change.Replace decision
-                    Payment =
-                        Change.Replace(
-                            ClaimCore.TestSupport.Inputs.paymentFrom
-                                [ BusinessField.PaymentDate, ("2026-08-20") ]
-                        )
+                        Amendment.Update
+                            { registrationPatch with
+                                Claimant = Some "Synthetic corrected party"
+                            }
+                    Decision =
+                        Change.Update
+                            {
+                                Date = None
+                                Payable =
+                                    Some
+                                        {
+                                            MoneyInput.Amount = "650"
+                                            Currency = "EUR"
+                                        }
+                            }
+                    Payment = PaymentChange.Reaffirm
                 }
 
         let after =
@@ -203,13 +215,12 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Replace(
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.IncidentDate, ("2026-08-02") ]
-                                (registration)
-                        )
+                        Amendment.Update
+                            { registrationPatch with
+                                IncidentDate = Some "2026-08-02"
+                            }
                     Decision = Change.Keep
-                    Payment = Change.Keep
+                    Payment = PaymentChange.Keep
                 }
 
         paid ()
@@ -224,17 +235,14 @@ let private incompleteCorrectionAccumulatesAssertions =
                 AuthoredCaseAct.Correct
                     {
                         Registration =
-                            Amendment.Replace(
-                                ClaimCore.TestSupport.Inputs.registrationWith
-                                    [
-                                        BusinessField.IncidentDate, ("2026-08-02")
-                                        BusinessField.ClaimantName, (" New claimant ")
-                                    ]
-                                    (registration)
-                            )
+                            Amendment.Update
+                                { registrationPatch with
+                                    IncidentDate = Some "2026-08-02"
+                                    Claimant = Some " New claimant "
+                                }
                         Decision = Change.Clear
                         Payment =
-                            Change.Replace(
+                            PaymentChange.Replace(
                                 ClaimCore.TestSupport.Inputs.paymentFrom
                                     [ BusinessField.PaymentDate, ("2026-08-21") ]
                             )
@@ -261,12 +269,18 @@ let private spellingDoesNotRevise =
             AuthoredCaseAct.Correct
                 {
                     Registration = Amendment.Keep
-                    Decision = Change.Replace decision
-                    Payment =
-                        Change.Replace(
-                            ClaimCore.TestSupport.Inputs.paymentFrom
-                                [ BusinessField.PaymentDate, ("2026-08-20") ]
-                        )
+                    Decision =
+                        Change.Update
+                            {
+                                Date = None
+                                Payable =
+                                    Some
+                                        {
+                                            MoneyInput.Amount = "750.0000"
+                                            Currency = "EUR"
+                                        }
+                            }
+                    Payment = PaymentChange.Reaffirm
                 }
 
         let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act

@@ -40,6 +40,15 @@ type AuthorityFacts =
         Requester: AuthorityView
     }
 
+/// Potential sources remain visible for disabled actors; Effective reflects current actor validity.
+type CapabilityAccess =
+    {
+        Capability: Capability
+        DirectRoles: Role list
+        InstallationRoles: Role list
+        Effective: bool
+    }
+
 module Authority =
     /// Only these acts need installation-wide protection facts; callers load them in the action snapshot.
     let factsNeeded (act: ValidAuthorityAct) =
@@ -70,6 +79,7 @@ module Authority =
                 Capability.Register
                 Capability.Decide
                 Capability.Close
+                Capability.ManageCaseWork
             ]
         | Role.PaymentRecorder ->
             [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
@@ -87,10 +97,32 @@ module Authority =
     let rolesFor capability =
         roles |> List.filter (fun role -> List.contains capability (policy role))
 
-    /// Principal restrictions follow the capabilities a role grants.
+    /// Scope meaning belongs to capability policy, independently of principal-kind admission.
+    let capabilityScopes =
+        function
+        | Capability.ManageAuthority
+        | Capability.ReadAuthority -> [ ScopeKind.Installation ]
+        | Capability.ReadCase
+        | Capability.ReadHistory
+        | Capability.ReadHistoryFull
+        | Capability.Register
+        | Capability.Decide
+        | Capability.RecordPayment
+        | Capability.Close
+        | Capability.ManageCaseWork
+        | Capability.Steward -> ScopeKind.all
+
+    let roleScopes role =
+        ScopeKind.all
+        |> List.filter (fun scope ->
+            policy role
+            |> List.exists (fun capability -> List.contains scope (capabilityScopes capability)))
+
+    /// Capability restrictions apply when exercising a right, not to every capability of its role.
     let humanOnlyCapability =
         function
         | Capability.Steward
+        | Capability.ManageCaseWork
         | Capability.ManageAuthority -> true
         | Capability.ReadCase
         | Capability.ReadHistory
@@ -101,8 +133,15 @@ module Authority =
         | Capability.Close
         | Capability.ReadAuthority -> false
 
-    let humanOnlyRole role =
-        policy role |> List.exists humanOnlyCapability
+    let humanOnlyRole =
+        function
+        | Role.Owner
+        | Role.DataSteward -> true
+        | Role.CaseReader
+        | Role.CaseRegistrar
+        | Role.CaseHandler
+        | Role.PaymentRecorder
+        | Role.Auditor -> false
 
     let invalidRoles principal =
         if PrincipalKey.isHuman principal then
@@ -128,10 +167,7 @@ module Authority =
         let scoped =
             match resource with
             | Scope.Installation -> Some view.Installation
-            | Scope.Case id when
-                capability <> Capability.ManageAuthority
-                && capability <> Capability.ReadAuthority
-                ->
+            | Scope.Case id when List.contains ScopeKind.Case (capabilityScopes capability) ->
                 Some(view.Installation @ (view.Cases |> Map.tryFind id |> Option.defaultValue []))
             | _ -> None
 
@@ -140,12 +176,39 @@ module Authority =
         && (scoped
             |> Option.exists (List.exists (fun role -> List.contains capability (policy role))))
 
-    let assignedTo principal (view: AuthorityView) id =
-        validActor principal view
-        && (view.Cases
-            |> Map.tryFind id
-            |> Option.defaultValue []
-            |> List.exists (fun role -> List.contains role (readRoles principal)))
+    /// Explain only the supplied resource snapshot; this does not predict business-act eligibility.
+    let explain principal (view: AuthorityView) resource =
+        let kind, direct, inherited =
+            match resource with
+            | Scope.Installation -> ScopeKind.Installation, view.Installation, []
+            | Scope.Case id ->
+                ScopeKind.Case,
+                (view.Cases |> Map.tryFind id |> Option.defaultValue []),
+                view.Installation
+
+        Capability.all
+        |> List.choose (fun capability ->
+            let sources roles =
+                roles
+                |> List.filter (fun role -> List.contains capability (policy role))
+                |> List.distinct
+
+            let directRoles = sources direct
+            let installationRoles = sources inherited
+
+            if
+                not (List.contains kind (capabilityScopes capability))
+                || (directRoles.IsEmpty && installationRoles.IsEmpty)
+            then
+                None
+            else
+                Some
+                    {
+                        Capability = capability
+                        DirectRoles = directRoles
+                        InstallationRoles = installationRoles
+                        Effective = can principal view capability resource
+                    })
 
     let correctionCapability =
         function
@@ -176,14 +239,19 @@ module Authority =
                 | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
                 match correction.Payment with
-                | Change.Keep -> ()
+                | PaymentChange.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Payment
             ]
         | act -> capabilities (CaseAct.kind act)
 
     let canAdvertise principal actor resource kind =
-        capabilities kind
-        |> List.exists (fun capability -> can principal actor capability resource)
+        match (CaseActKind.describe kind).Capabilities with
+        | ActCapabilities.Required values ->
+            values
+            |> List.forall (fun capability -> can principal actor capability resource)
+        | ActCapabilities.CorrectionGroups ->
+            correctionCapabilities
+            |> List.exists (fun capability -> can principal actor capability resource)
 
     let canAct principal actor resource act =
         canAdvertise principal actor resource (CaseAct.kind act)
@@ -195,8 +263,8 @@ module Authority =
             None
         elif can principal view Capability.ReadCase Scope.Installation then
             Some CaseVisibility.Every
-        elif view.HasAssignedCases then
-            Some CaseVisibility.Assigned
+        elif view.HasScopedCases then
+            Some CaseVisibility.Scoped
         else
             None
 
@@ -274,19 +342,30 @@ module Authority =
         | GrantTarget.CaseId requested, Some id when requested = id -> Ok(Scope.Case id)
         | _ -> Error AccessRefusal.ResourceUnavailable
 
-    let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =
+    let private grantAdmission role scope (actor: ActorAuthority) =
+        let kind =
+            match scope with
+            | Scope.Installation -> ScopeKind.Installation
+            | Scope.Case _ -> ScopeKind.Case
+
         if humanOnlyRole role && not (PrincipalKey.isHuman actor.Principal) then
             Error AuthorityRefusal.HumanPrincipalRequired
+        elif not (List.contains kind (roleScopes role)) then
+            Error AuthorityRefusal.RoleScopeNotApplicable
+        else
+            Ok()
+
+    let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =
+        if active then
+            grantAdmission role scope actor
+            |> Result.map (fun () -> AuthorityChange.Granted(role, scope))
         elif
-            not active
-            && role = Role.Owner
+            role = Role.Owner
             && scope = Scope.Installation
             && owner actor
             && required "enabled human owners" facts.EnabledHumanOwners <= 1
         then
             Error AuthorityRefusal.LastOwner
-        elif active then
-            Ok(AuthorityChange.Granted(role, scope))
         else
             Ok(AuthorityChange.Revoked(role, scope))
 

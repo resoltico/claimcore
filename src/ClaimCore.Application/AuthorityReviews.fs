@@ -23,6 +23,7 @@ module internal AuthorityReviews =
             {
                 Enabled = view.Target.Actor |> Option.exists _.Enabled
                 Grants = []
+                Access = []
             }
 
         let before, after =
@@ -32,6 +33,7 @@ module internal AuthorityReviews =
                 before,
                 {
                     Enabled = true
+                    Access = []
                     Grants =
                         [
                             {
@@ -49,8 +51,77 @@ module internal AuthorityReviews =
                 let _, current = grant role caseId view
                 { before with Grants = current }, before
 
+        let resource, scope =
+            match projection with
+            | AuthorityProjection.AddGrant(_, _, Some id)
+            | AuthorityProjection.RemoveGrant(_, _, Some id) ->
+                let record = view.TargetCase |> Option.get
+                Scope.Case id, GrantScope.Case(id, record.Snapshot.Reference)
+            | _ -> Scope.Installation, GrantScope.Installation
+
+        let proposed =
+            match projection with
+            | AuthorityProjection.Register(id, principal)
+            | AuthorityProjection.ProvisionOwner(id, principal) ->
+                AuthorityView.ofActor (
+                    Some
+                        {
+                            Actor =
+                                {
+                                    ActorId = id
+                                    Principal = principal
+                                    Enabled = true
+                                }
+                            Grants =
+                                match projection with
+                                | AuthorityProjection.ProvisionOwner _ ->
+                                    [
+                                        {
+                                            Role = Role.Owner
+                                            Scope = Scope.Installation
+                                        }
+                                    ]
+                                | _ -> []
+                        }
+                )
+            | AuthorityProjection.SetEnabled(_, enabled) ->
+                { view.Target with
+                    Actor =
+                        view.Target.Actor
+                        |> Option.map (fun actor -> { actor with Enabled = enabled })
+                }
+            | AuthorityProjection.AddGrant(_, role, caseId)
+            | AuthorityProjection.RemoveGrant(_, role, caseId) ->
+                let update roles =
+                    match projection with
+                    | AuthorityProjection.AddGrant _ ->
+                        if List.contains role roles then roles else roles @ [ role ]
+                    | _ -> roles |> List.filter ((<>) role)
+
+                match caseId with
+                | None ->
+                    { view.Target with
+                        Installation = update view.Target.Installation
+                    }
+                | Some id ->
+                    let roles =
+                        view.Target.Cases |> Map.tryFind id |> Option.defaultValue [] |> update
+
+                    { view.Target with
+                        Cases = Map.add id roles view.Target.Cases
+                    }
+
+        let access (target: AuthorityView) =
+            target.Actor
+            |> Option.map (fun actor -> Authority.explain actor.Principal target resource)
+            |> Option.defaultValue []
+
         {
             Target = view.Target.Actor
-            Before = before
-            After = after
+            AccessScope = scope
+            Before =
+                { before with
+                    Access = access view.Target
+                }
+            After = { after with Access = access proposed }
         }

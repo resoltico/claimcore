@@ -6,19 +6,21 @@ open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Domain
 
 
 type internal State =
     {
+        Maintenance: RegisterMaintenance
         Head: LedgerPosition
         Entries: Map<OperationId, StoredEntry>
-        Controls: Map<Sequence, StoredEntry>
+        Controls: Map<Sequence, RetainedControl>
         Cases: Map<CaseId, StoredCase>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
-        Fences: Set<ActorId * OperationId>
+        Fences: Map<ActorId * OperationId, DateTimeOffset>
     }
 
 let internal compareId format left right =

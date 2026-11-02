@@ -182,7 +182,7 @@ let private ordering () =
                 EnabledOwners = 1
                 Actors = 5
                 Current = None
-                Expected = Some(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
+                Expected = None
             }
             {
                 Name = "missing case precedes human-only role"

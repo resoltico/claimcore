@@ -159,6 +159,9 @@ The PostgreSQL adapter creates a write transaction capability after taking the h
 repeatable-read snapshot; writes read decision state under the lock and commit only on Proceed. Receipt
 construction uses that same state, without a later read changing disclosure. Runtime leases remain held
 through actual provider cleanup.
+`IReadTx.NonAcceptance` supplies the retained control node, typed previous hash and fence instant from
+one snapshot. Application validates node identity/hash and projection agreement before status or write guards
+use it. Passive recovery uses `IStore.Read`; a derived fence alone cannot establish a permanent promise.
 
 Permanent decoding does not reapply current admission. [baseline.sql](../db/baseline.sql) is the
 checksum-bound schema source; its SHA-256 installation identity derives from the exact embedded bytes.
@@ -166,14 +169,14 @@ Baseline edits require a rebuild and a fresh installation. The runtime refuses u
 identities without modifying them.
 
 The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
-last-change time, normalized search text, notification date and exact claimed/payable amount/currency
+last-change time, normalized search text, notification date, responsible actor, planned follow-up and exact claimed/payable amount/currency
 pairs. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
 returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
 UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
-text, notification date and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
+text, notification date, responsibility, follow-up and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts
@@ -186,9 +189,17 @@ dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --n
 ```
 
 The [generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns its exact inventory under
-[contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome messages](../web/src/generated/chrome-messages.ts).
+[contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome metadata](../web/src/generated/chrome-messages.ts), its bootstrap text and the
+explicit test catalog loaders in [web/src/generated](../web/src/generated/).
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
-producer. Custom output directories contain only contract artifacts.
+producer. Custom output directories contain only contract artifacts. Core message metadata is locale-neutral;
+production presentation loads and admits one complete core/chrome language pair before activation.
+The generated eager catalog loaders are for tests and do not belong in the production import graph.
+Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
+Failed JavaScript modulepreloads can poison the WebKit resource cache across document reloads
+([WebKit 270357](https://bugs.webkit.org/show_bug.cgi?id=270357)). The published failure/recovery journeys
+exercise missing chunks, actual document replacement and offline draft preservation; do not replace them
+with shape or build-only checks.
 
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
@@ -220,8 +231,8 @@ the implementation. Keep those source cases independent of production codecs and
 [transport boundary rules](../web/browser-transport-lint.config.ts). Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
-manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
-declarations support the byte boundary without enabling DOM or Node types. Pure DTOs live under protocol.
+manifest. Its explicit JSON inputs are the generated contract artifacts; full language catalogs load through
+presentation. Portable encoding/clone declarations support the byte boundary without DOM or Node types. Pure DTOs live under protocol.
 React, DOM, Node and outside source imports must fail that project. Browser and test projects still check
 actual platform declarations. The app-only build references the strict protocol project, whose declarations
 are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
@@ -368,9 +379,9 @@ It refuses source changes during capture. Both source-stable inputs build in dis
 detached worktrees with locked restore. The comparison alternates
 reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
 read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and six read profiles
-at 100k cases: search, filtered, notification order, summary, global authority history and actor-filtered
-authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
+is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and eight read profiles
+at 100k cases: search, filtered, notification order, summary, explicit-work follow-up/summary, global
+authority history and actor-filtered authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
 are reported as not applicable.
 
@@ -402,11 +413,16 @@ stays at the recorded commit. The comparison removes its worktrees, build output
 containers on success or failure, while preserving reports and failure output.
 
 The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
-three cardinality comparisons and search/filtered, notification-order and summary workloads at 1k,
-10k and 100k cases. At the
+three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
+follow-up/summary workloads at 1k, 10k and 100k cases. At the
 100k case population, global and actor-filtered authority-history reads also run after 100k additional
 grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
 their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
+After those common measurements, one open case per thousand receives explicit responsibility and a past
+follow-up based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
+independently named cases, account identity, dates and counts before recording their separate latency
+samples. These feature workloads have their own fingerprints; a reference without a matching workload
+yields no ratio.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements

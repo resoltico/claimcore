@@ -218,11 +218,195 @@ let private reviewAndFences () =
         ]
         "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
 
+let private meaninglessScope () =
+    let caseId = CaseFixtures.caseId (id 77)
+
+    let target: ActorAuthority =
+        {
+            Actor =
+                {
+                    ActorId = CaseFixtures.actorId (id 2)
+                    Principal = other
+                    Enabled = true
+                }
+            Grants = []
+        }
+
+    let facts: AuthorityFacts =
+        {
+            TargetActor = Some target
+            TargetCaseId = Some caseId
+            EnabledHumanOwners = Some 2
+            ActorCount = Some 2
+            Requester = worker
+        }
+
+    let command role scope =
+        admitted 106 other (AuthorityAct.Grant { Role = role; Scope = scope })
+
+    Expect.isError
+        (Authority.decide facts (command Role.Owner (GrantTarget.CaseId caseId)))
+        "A case OWNER grant has no potential capability"
+
+    for role, scope in
+        [
+            Role.Owner, GrantTarget.Installation
+            Role.CaseReader, GrantTarget.CaseId caseId
+            Role.CaseHandler, GrantTarget.CaseId caseId
+        ] do
+        Expect.isOk
+            (Authority.decide facts (command role scope))
+            "Meaningful scopes remain admissible"
+
+    let disabled =
+        { facts with
+            TargetActor =
+                Some
+                    { target with
+                        Actor = { target.Actor with Enabled = false }
+                    }
+        }
+
+    Expect.isOk
+        (Authority.decide disabled (command Role.CaseReader (GrantTarget.CaseId caseId)))
+        "Disabled targets may receive dormant rights"
+
+    let overlapping =
+        { facts with
+            TargetActor =
+                Some
+                    { target with
+                        Grants =
+                            [
+                                {
+                                    Role = Role.CaseHandler
+                                    Scope = Scope.Case caseId
+                                }
+                            ]
+                    }
+        }
+
+    Expect.isOk
+        (Authority.decide overlapping (command Role.CaseReader (GrantTarget.CaseId caseId)))
+        "Overlapping roles remain meaningful"
+
+let private accessExplanation () =
+    let caseId = CaseFixtures.caseId (id 77)
+
+    let target =
+        actor
+            other
+            (CaseFixtures.actorId (id 2))
+            [ Role.CaseRegistrar ]
+            [ caseId, [ Role.CaseReader ] ]
+
+    let explained = Authority.explain other target (Scope.Case caseId)
+
+    let expected =
+        [
+            {
+                Capability = Capability.ReadCase
+                DirectRoles = [ Role.CaseReader ]
+                InstallationRoles = [ Role.CaseRegistrar ]
+                Effective = true
+            }
+            {
+                Capability = Capability.ReadHistory
+                DirectRoles = [ Role.CaseReader ]
+                InstallationRoles = [ Role.CaseRegistrar ]
+                Effective = true
+            }
+            {
+                Capability = Capability.Register
+                DirectRoles = []
+                InstallationRoles = [ Role.CaseRegistrar ]
+                Effective = true
+            }
+        ]
+
+    Expect.equal explained expected "Scoped and inherited overlapping sources are explicit"
+
+    let disabled =
+        { target with
+            Actor = target.Actor |> Option.map (fun actor -> { actor with Enabled = false })
+        }
+
+    Expect.equal
+        (Authority.explain other disabled (Scope.Case caseId))
+        (expected |> List.map (fun value -> { value with Effective = false }))
+        "Disabled actors retain dormant sources without effective rights"
+
+    let noScoped = { target with Cases = Map.empty }
+
+    Expect.equal
+        (Authority.explain other noScoped (Scope.Case caseId))
+        (expected |> List.map (fun value -> { value with DirectRoles = [] }))
+        "Removing one overlapping grant does not claim inherited access disappeared"
+
+    let facts: AuthorityFacts =
+        {
+            TargetActor =
+                Some
+                    {
+                        Actor =
+                            {
+                                ActorId = CaseFixtures.actorId (id 3)
+                                Principal = service
+                                Enabled = true
+                            }
+                        Grants =
+                            [
+                                {
+                                    Role = Role.Owner
+                                    Scope = Scope.Case caseId
+                                }
+                            ]
+                    }
+            TargetCaseId = Some caseId
+            EnabledHumanOwners = Some 2
+            ActorCount = Some 3
+            Requester = worker
+        }
+
+    let revoke =
+        admitted
+            107
+            service
+            (AuthorityAct.Revoke
+                {
+                    Role = Role.Owner
+                    Scope = GrantTarget.CaseId caseId
+                })
+
+    Expect.equal
+        (Authority.decide facts revoke)
+        (Ok(AuthorityChange.Revoked(Role.Owner, Scope.Case caseId)))
+        "Recognized inadmissible grants remain removable"
+
+    let owner =
+        Catalog.document.Roles |> List.find (fun value -> value.Role = Role.Owner)
+
+    Expect.equal
+        owner.AdmittedScopes
+        [ ScopeKind.Installation ]
+        "Published owner scopes are meaningful"
+
+    Expect.equal
+        owner.AdmittedPrincipalKinds
+        [ PrincipalKind.Human ]
+        "Published owner admission remains human-only"
+
 [<Tests>]
 let tests =
     testList
         "pure authority decisions"
         [
+            testCase
+                "access review explains scoped overlapping and dormant rights and permits obsolete grant cleanup"
+                accessExplanation
+            testCase
+                "meaningless case OWNER refuses while meaningful dormant and overlapping grants remain valid"
+                meaninglessScope
             testCase "last-owner protection is a pure locked-view decision" lastOwner
             testCase "human-only grants and bootstrap refuse service principals" humanOnly
             testCase

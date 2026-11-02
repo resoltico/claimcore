@@ -12,7 +12,15 @@ let private values = Gen.int32 (Range.constant -1_000_000 1_000_000)
 let private caseActs value =
     Inputs.caseActs Inputs.registration Inputs.decision Inputs.payment "reason"
     |> List.map (fun (act, _) ->
-        CaseAct.map (fun _ -> value) (fun _ -> value) (fun _ -> value) (fun _ -> value) act)
+        CaseAct.map
+            (fun _ -> value)
+            (fun _ -> value)
+            (fun _ -> value)
+            (fun _ -> value)
+            (fun _ -> value)
+            (fun _ -> value)
+            (fun _ -> value)
+            act)
 
 let private caseRoundTrip expected kind (inject, project) candidates =
     project (inject expected) = Some expected
@@ -27,9 +35,9 @@ let private caseProperty =
 
         let correction =
             {
-                Registration = Amendment.Replace value
-                Decision = Change.Replace(value + 1)
-                Payment = Change.Clear
+                Registration = Amendment.Update value
+                Decision = Change.Update(value + 1)
+                Payment = PaymentChange.Clear
             }
 
         let candidates = caseActs value
@@ -37,9 +45,11 @@ let private caseProperty =
         return
             CaseActKind.all
             |> List.forall (fun kind ->
-                match (CaseAct.slot kind: CaseActSlot<int, int, int, int>) with
+                match (CaseAct.slot kind: CaseActSlot<int, int, int, int, int, int, int>) with
                 | CaseActSlot.Bare act -> CaseAct.kind act = kind && List.contains act candidates
                 | CaseActSlot.Registration(inject, project)
+                | CaseActSlot.RegistrationUpdate(inject, project)
+                | CaseActSlot.Work(inject, project)
                 | CaseActSlot.Decision(inject, project)
                 | CaseActSlot.Payment(inject, project)
                 | CaseActSlot.Reason(inject, project) ->
@@ -88,6 +98,8 @@ let private descriptions () =
             match description.Payload with
             | ActPayload.Bare _ -> "BARE"
             | ActPayload.Registration -> "REGISTRATION"
+            | ActPayload.RegistrationUpdate -> "REGISTRATION_UPDATE"
+            | ActPayload.Work -> "WORK"
             | ActPayload.Decision -> "DECISION"
             | ActPayload.Payment -> "PAYMENT"
             | ActPayload.Reason -> "REASON"

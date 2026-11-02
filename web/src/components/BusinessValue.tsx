@@ -16,7 +16,8 @@ export const CharacterWarning = ({ value }: { value: string | null }) => {
 const valueDirection = (field: FieldCatalogEntry): "ltr" | "auto" =>
   field.name === "caseReference" ||
   field.scalar.kind === "AMOUNT" ||
-  field.scalar.kind === "CALENDAR_DATE"
+  field.scalar.kind === "CALENDAR_DATE" ||
+  field.scalar.kind === "PLANNED_DATE"
     ? "ltr"
     : "auto";
 export const BusinessValue = ({

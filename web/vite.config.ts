@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
+import publicAssets from "./scripts/public-assets.plugin.mjs";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
 import type { InlineConfig } from "vitest/node";
@@ -8,7 +9,7 @@ import RequiredTestReporter from "./scripts/required-test-reporter.mjs";
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
 export default {
-  plugins: [react()],
+  plugins: [react(), publicAssets()],
   resolve: {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
@@ -19,12 +20,32 @@ export default {
     ],
   },
   build: {
+    // Failed JS modulepreloads can poison WebKit's cache across reloads (https://bugs.webkit.org/show_bug.cgi?id=270357).
+    // Native imports fetch dynamic JS; retain async CSS and initial HTML preloads.
+    modulePreload: {
+      resolveDependencies: (_filename, dependencies, { hostType }) =>
+        hostType === "js" ? dependencies.filter((path) => path.endsWith(".css")) : dependencies,
+    },
     chunkSizeWarningLimit: 600,
     rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
-            { name: "presentation-catalogs", test: /\/ClaimCore.Protocol\/Localization\//u },
+            // Keep modules with different entry owners out of each other's initial payload.
+            { name: "workspace", test: /\/web\/src\//u, entriesAware: true },
+
+            {
+              name: "language-en",
+              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/en\.json/u,
+            },
+            {
+              name: "language-lv",
+              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/lv\.json/u,
+            },
+            {
+              name: "language-ar",
+              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/ar\.json/u,
+            },
           ],
         },
       },

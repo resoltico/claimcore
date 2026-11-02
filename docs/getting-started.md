@@ -85,22 +85,22 @@ claimcore_firefox="$(cd web && node --input-type=module -e 'import { firefox } f
 
 ## Sign in and grant case rights
 
-Open `https://localhost:7443/authority` in that Firefox profile and sign in as `owner`. Read its generated
+Open Access at `https://localhost:7443/authority` in that Firefox profile and sign in as `owner`. Read its generated
 password locally from `owner-login.password` in the configuration directory. Keep credentials out of
 commands, logs and public reports. The identity provider is
 `https://identity.localhost:7444/realms/claimcore` for these example ports.
 
 Select the fresh installation's sole human owner, then add an installation-scope CASE_HANDLER grant.
 Review the target, role and scope and confirm. OWNER administers authority but grants no case work by
-itself. CASE_HANDLER permits opening, registration, decisions and closing; grant PAYMENT_RECORDER
+itself. CASE_HANDLER permits opening, registration, decisions, closing and case-work planning; grant PAYMENT_RECORDER
 separately when that person also records or clears payment facts.
 
-Reload the browser page to obtain current rights, then open Cases. Authority and case grants remain separate
+Reload the browser page to obtain current rights, then open Cases. ClaimCore grants remain separate
 from membership in the identity provider.
 
 ## Record a case and find its row
 
-Choose OPEN and enter synthetic values. Use dates no later than the current business date, for example:
+Choose **Open a case** and enter synthetic values. Use dates no later than the current business date, for example:
 
 | Input | Value |
 | --- | --- |
@@ -115,7 +115,8 @@ Choose OPEN and enter synthetic values. Use dates no later than the current busi
 
 Review the canonical proposal and confirm. Expect a success notice naming revision 1 and a case page
 showing the registration facts. Return to Cases and search for `START-0001`; its row shows the claimant,
-claimed amount, Undecided progress and last-change time. The Open and undecided view includes it.
+claimed amount, Undecided progress, Unassigned work and last-change time. The Open and undecided view
+includes it. My cases includes it only after responsibility is explicitly assigned to your account.
 
 You now have one accepted case and a worklist that can find it. [Case work](case-work.md) explains decisions,
 payments, correction and stewardship; [Integrating](integrating.md#delivery-recovery) explains recovery

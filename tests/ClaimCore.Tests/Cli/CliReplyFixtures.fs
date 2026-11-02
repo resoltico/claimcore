@@ -25,6 +25,7 @@ let authorityRequest =
 let snapshot =
     let fields: CaseFields =
         {
+            Work = CaseWork.empty
             CaseReference = CaseFixtures.reference "x"
             Status = CaseStatus.Opened
             Registration =

@@ -11,7 +11,7 @@ export const useSessionContext = () => {
 export const useCredential = (): string => {
   const { state } = useSessionContext();
   if (state.kind !== "authenticated") {
-    throw new Error("An authenticated session is required.");
+    return "";
   }
   return state.token;
 };

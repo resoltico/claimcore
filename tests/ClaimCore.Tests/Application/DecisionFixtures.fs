@@ -7,6 +7,7 @@ open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -54,7 +55,7 @@ let actor principal actorId roles cases : AuthorityView =
                 }
         Installation = roles
         Cases = Map.ofList cases
-        HasAssignedCases = not cases.IsEmpty
+        HasScopedCases = not cases.IsEmpty
     }
 
 let worker =
@@ -90,6 +91,8 @@ let locked authority current existing : LockedFacts<CaseFacts> =
         IsFenced = false
         Read =
             {
+                Assignee = None
+                Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = authority
                 ExistingOperation = existing
@@ -172,6 +175,7 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
         IsFenced = false
         Read =
             {
+                Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = caller
                 ExistingOperation = existing

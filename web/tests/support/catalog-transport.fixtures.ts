@@ -12,13 +12,7 @@ export const runtime = {
   timeZone: "Etc/UTC",
 };
 export const input = (name: string, value: string) => {
-  const control =
-    document.querySelector<HTMLElement>(`[data-field-name="${name.split(".").at(-1)}"]`) ??
-    document.querySelector<HTMLElement>(`input[name="${name}"]`);
-  if (control === null) {
-    throw new Error(`Missing catalogue input: ${name}`);
-  }
-  changeField(control, value);
+  changeField(name, value);
 };
 export const response = <K extends EndpointId>(
   endpoint: K,

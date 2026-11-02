@@ -46,7 +46,8 @@ let internal contextCodec () =
                 ActorId =
                     ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
                     |> Option.get
-                HasAssignedCases = false
+                HasScopedCases = false
+                Maintenance = RegisterMaintenance.initial
                 Capability = []
                 View = []
                 Offers = []
@@ -68,7 +69,8 @@ let internal queryCodecs () =
             Api.caseGet.Output
             (Outcome.Succeeded
                 {
-                    AssignedToYou = false
+                    Mine = false
+                    Work = Inputs.workView view.State
                     Snapshot = view
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
@@ -79,6 +81,7 @@ let internal queryCodecs () =
         Api.caseList.Output
         (Outcome.Succeeded
             {
+                Basis = Inputs.workBasis
                 Items = []
                 NextCursor = None
                 Offers = []

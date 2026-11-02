@@ -92,7 +92,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
       <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
         {p.text("ui.retryExact")}
       </button>
-      <button className="primary" type="button" disabled={model.busy} onClick={model.resolve}>
+      <button className="primary" type="button" disabled={model.busy} onClick={model.checkStatus}>
         {p.text("ui.checkOutcome")}
       </button>
     </section>
@@ -154,6 +154,28 @@ const UnavailableDisclosure = ({
   available?: boolean;
 }) => {
   const p = usePresentation();
+  let reload = null;
+  if (available && !model.contextChanged) {
+    if (model.canRevalidateCase) {
+      reload = (
+        <button type="button" disabled={model.revalidating} onClick={model.revalidateDisclosure}>
+          {p.text("ui.reloadCurrentCase")}
+        </button>
+      );
+    } else if (!model.disclosureRefused) {
+      reload = (
+        <button
+          type="button"
+          disabled={model.busy}
+          onClick={() => {
+            void model.preview();
+          }}
+        >
+          {p.text("label.reviewTitle")}
+        </button>
+      );
+    }
+  }
   return (
     <section role="alert">
       <NoticeView
@@ -166,11 +188,7 @@ const UnavailableDisclosure = ({
               }
         }
       />
-      {available && !model.disclosureRefused && !model.contextChanged ? (
-        <button type="button" disabled={model.busy} onClick={() => void model.preview()}>
-          {p.text("label.reviewTitle")}
-        </button>
-      ) : null}
+      {reload}
     </section>
   );
 };
@@ -201,7 +219,7 @@ const EditableOperation = (props: Props) => {
             })}
         onAct={requestChange}
       />
-      <OperationReview model={model} />
+      <OperationReview model={model} paused={props.current?.advice.maintenance.active === true} />
     </>
   );
 };
@@ -209,6 +227,9 @@ const EditableOperation = (props: Props) => {
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true } = props;
   const p = usePresentation();
+  if (!model.ownerVerified) {
+    return <UnavailableDisclosure model={model} available={false} />;
+  }
   if (model.phase === "ACCEPTED") {
     return (
       <button

@@ -39,20 +39,10 @@ type internal Writer(inputs: WriteInputs) =
     let set = inputs.Set
     let head = inputs.Head
     let nonce = inputs.Nonce
-    let read = inputs.Read
 
     interface IWriteTx with
         member _.Head = head
         member _.Nonce = nonce
-
-        member _.IsFenced
-            ({
-                 FenceKey.ActorId = actor
-                 OperationId = operation
-             })
-            =
-            read ()
-            Task.FromResult(Set.contains (actor, operation) (get ()).Fences)
 
         member _.Append draft =
             let state = get ()
@@ -80,7 +70,11 @@ type internal Writer(inputs: WriteInputs) =
                         if control then
                             Map.add
                                 draft.Sequence
-                                (LedgerEntries.stored draft |> copyEntry)
+                                {
+                                    RetainedControl.Entry = LedgerEntries.stored draft |> copyEntry
+                                    PreviousHash =
+                                        EntryHash.ofBytes draft.PreviousHash |> Option.get
+                                }
                                 state.Controls
                         else
                             state.Controls
@@ -120,6 +114,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = Array.empty
                             Index =
                                 {
+                                    Responsible = None
+                                    FollowUp = None
                                     Status = None
                                     Progress = None
                                     SearchText = None
@@ -218,7 +214,13 @@ type internal Writer(inputs: WriteInputs) =
             =
             set
                 { get () with
-                    Fences = Set.add (actor, operation) (get ()).Fences
+                    Fences =
+                        let existing = (get ()).Fences
+
+                        if Map.containsKey (actor, operation) existing then
+                            existing
+                        else
+                            Map.add (actor, operation) inputs.Observed existing
                 }
 
             Task.FromResult(())

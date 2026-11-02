@@ -80,10 +80,7 @@ it.each([
         initialAct: act,
         current: {
           ...current,
-          advice: {
-            history: current.advice.history,
-            acts: [act],
-          },
+          advice: { ...current.advice, history: current.advice.history, acts: [act] },
         },
       }),
     );

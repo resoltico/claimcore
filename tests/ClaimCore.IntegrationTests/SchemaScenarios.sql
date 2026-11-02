@@ -31,45 +31,45 @@ $$;
 \set case1 '''10000000-0000-4000-8000-000000000002'''
 
 -- Ledger linkage, shape and identity --------------------------------------------------------
-INSERT INTO claimcore.ledger VALUES (1, :h0, :h1, 2, 'AUTHORITY', 'PROVISION_OWNER', :owner,
+INSERT INTO claimcore.ledger VALUES (1, :h0, :h1, 3, 'AUTHORITY', 'PROVISION_OWNER', :owner,
     :owner, clock_timestamp(), :owner, NULL, NULL, :h3, :body, :n32, NULL);
 SELECT pg_temp.expect('gap refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'OPEN',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'OPEN',
       '10000000-0000-4000-8000-000000000003', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, 'Demo-0001')$s$, :h1, :hx, :owner, :case1, :h3, :body, :n32), 'CC001');
 SELECT pg_temp.expect('wrong previous hash refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (2, %L, %L, 2, 'CASE', 'OPEN',
+    format($s$INSERT INTO claimcore.ledger VALUES (2, %L, %L, 3, 'CASE', 'OPEN',
       '10000000-0000-4000-8000-000000000002', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, 'Demo-0001')$s$, :hx, :hx, :owner, :case1, :h3, :body, :n32), 'CC001');
-INSERT INTO claimcore.ledger VALUES (2, :h1, :h2, 2, 'CASE', 'OPEN',
+INSERT INTO claimcore.ledger VALUES (2, :h1, :h2, 3, 'CASE', 'OPEN',
     '10000000-0000-4000-8000-000000000002', :owner, clock_timestamp(), :case1, 1, current_date,
     :h3, :body, :n32, 'Demo-0001');
 SELECT pg_temp.expect('duplicate operation refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000002', %L, clock_timestamp(), %L, 2, current_date,
       %L, %L, %L, NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23505');
 SELECT pg_temp.expect('duplicate case revision refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000009', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23505');
 SELECT pg_temp.expect('case row without business date refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 2, NULL,
       %L, %L, %L, NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('authority row without payload refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'AUTHORITY', 'GRANT',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'AUTHORITY', 'GRANT',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, NULL, NULL, NULL)$s$, :h2, :hx, :owner, :owner, :h3), '23514');
 SELECT pg_temp.expect('malformed authority act token refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'AUTHORITY', 'invalid',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'AUTHORITY', 'invalid',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, %L, %L, NULL)$s$, :h2, :hx, :owner, :owner, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('payload without nonce refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 2, current_date,
       %L, %L, NULL, NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body), '23514');
 SELECT pg_temp.expect('revision beyond 2^53-1 refused',
-    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 2, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger VALUES (3, %L, %L, 3, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 9007199254740992,
       current_date, %L, %L, %L, NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('earlier entry format refused',
@@ -90,7 +90,7 @@ SELECT pg_temp.expect('runtime cannot run DDL',
 -- Erasure -------------------------------------------------------------------------------------
 SELECT pg_temp.expect('erasure before an accepted ERASE refused',
     format('SELECT claimcore.erase_case_payload(%L)', :case1), 'CC002');
-INSERT INTO claimcore.ledger VALUES (3, :h2, :h3, 2, 'CASE', 'ERASE',
+INSERT INTO claimcore.ledger VALUES (3, :h2, :h3, 3, 'CASE', 'ERASE',
     '10000000-0000-4000-8000-000000000005', :owner, clock_timestamp(), :case1, 2, current_date,
     :h3, :body, :n32, NULL);
 SELECT claimcore.erase_case_payload(:case1) = 2 AS erased_two_case_payloads \gset
@@ -110,19 +110,26 @@ SELECT count(*) = 1 AS authority_payload_kept FROM claimcore.ledger
 \endif
 
 -- Snapshot projection invariants ---------------------------------------------------------------
-INSERT INTO claimcore.cases VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL);
+INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES (:case1, 'Demo-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL);
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23505');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000002', 'DEMO-0001', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23505');
 SELECT pg_temp.expect('reference with a space refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
-    $s$INSERT INTO claimcore.cases VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
+    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000003', 'LIETA-Ā1', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23514');
 SELECT pg_temp.expect('live notification required',
     $s$UPDATE claimcore.cases SET notified_on=NULL$s$, '23514');
 SELECT pg_temp.expect('infinite notification refused',
     $s$UPDATE claimcore.cases SET notified_on='infinity'$s$, '23514');
 SELECT pg_temp.expect('BCE notification refused',
     $s$UPDATE claimcore.cases SET notified_on=DATE '0001-01-01 BC'$s$, '23514');
+SELECT pg_temp.expect('unknown responsible actor refused',
+    $s$UPDATE claimcore.cases SET responsible_actor='c0000000-0000-4000-8000-000000000099'$s$, '23503');
+SELECT pg_temp.expect('infinite follow-up refused',
+    $s$UPDATE claimcore.cases SET follow_up='infinity'$s$, '23514');
+UPDATE claimcore.cases SET follow_up=DATE '2027-12-31';
+SELECT pg_temp.expect('erasure must clear follow-up',
+    $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL$s$, '23514');
 SELECT pg_temp.expect('negative claimed amount refused',
     $s$UPDATE claimcore.cases SET claimed_amount=-1$s$, '23514');
 SELECT pg_temp.expect('lowercase claimed currency refused',
@@ -141,7 +148,7 @@ SELECT pg_temp.expect('oversized snapshot refused',
     $s$UPDATE claimcore.cases SET snapshot=decode(repeat('00',32769),'hex')$s$, '23514');
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
-UPDATE claimcore.cases SET revision=3,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,changed_at=TIMESTAMPTZ '2026-09-02T00:00:00Z' WHERE case_id=:case1;
+UPDATE claimcore.cases SET follow_up=NULL,responsible_actor=NULL,revision=3,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,changed_at=TIMESTAMPTZ '2026-09-02T00:00:00Z' WHERE case_id=:case1;
 SELECT snapshot IS NULL AND notified_on IS NULL AND claimed_amount IS NULL AND claimed_currency IS NULL AND payable_amount IS NULL AND payable_currency IS NULL AND case_reference='Demo-0001' AND revision=3 AND state='ERASED' AS erased_projection FROM claimcore.cases WHERE case_id=:case1 \gset
 \if :erased_projection
 \echo PASS erased projection keeps only reference, revision and state

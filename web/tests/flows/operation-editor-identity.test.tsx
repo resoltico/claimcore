@@ -1,3 +1,4 @@
+import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -91,6 +92,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   );
   await user.click(getButton("Record changes"));
   await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
+  selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
   });
@@ -178,7 +180,8 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   if (registration === null) {
     throw new Error("Expected a registration correction selector.");
   }
-  await chooseOption(user, registration, "REPLACE");
+  await chooseOption(user, registration, "UPDATE");
+  selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
   });
@@ -195,7 +198,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
       kind: "CORRECT",
       groups: {
         registration: {
-          kind: "REPLACE",
+          kind: "UPDATE",
           values: {
             claimantName: "Corrected claimant",
           },

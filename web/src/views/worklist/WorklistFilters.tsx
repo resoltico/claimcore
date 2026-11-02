@@ -81,6 +81,45 @@ const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[
     </details>
   );
 };
+const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)[number] }) => {
+  const p = usePresentation();
+  if (
+    input.kind.kind !== "CHOICE" ||
+    (input.identity !== "assignment" && input.identity !== "due")
+  ) {
+    return null;
+  }
+  const selected = input.identity === "assignment" ? query.assignment : query.due;
+  return (
+    <label>
+      {renderCatalogKey(p, input.labelId)}
+      <select
+        value={selected ?? ""}
+        onChange={(event) => {
+          const { value } = event.target;
+          if (input.identity === "assignment") {
+            const { view: _view, assignment: _assignment, ...rest } = query;
+            onChange(isTerm("assignment", value) ? { ...rest, assignment: value } : rest);
+          } else {
+            const { view: _view, due: _due, ...rest } = query;
+            onChange(isTerm("due", value) ? { ...rest, due: value } : rest);
+          }
+        }}
+      >
+        <option value="">{p.text("ui.anyFilter")}</option>
+        {input.kind.options.map((option) => (
+          <option key={option} value={option}>
+            {input.kind.kind === "CHOICE" &&
+            isVocabulary(input.kind.vocabulary) &&
+            isTerm(input.kind.vocabulary, option)
+              ? p.term(input.kind.vocabulary, option)
+              : option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+};
 const OrderControl = ({ query, onChange }: Props) => {
   const p = usePresentation();
   const options = inputs.flatMap((input) =>
@@ -113,7 +152,10 @@ const OrderControl = ({ query, onChange }: Props) => {
 const FilterControls = (props: Props) => (
   <div className="worklist-filters">
     {inputs.map((input) => (
-      <FilterSet key={input.identity} input={input} {...props} />
+      <span key={input.identity}>
+        <FilterSet input={input} {...props} />
+        <WorkChoice input={input} {...props} />
+      </span>
     ))}
     <OrderControl {...props} />
   </div>
@@ -129,6 +171,8 @@ export const WorklistFilters = (props: Props) => {
     <>
       <button
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => {
           setOpen(true);
         }}

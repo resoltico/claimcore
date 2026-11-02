@@ -58,6 +58,7 @@ module private FrameInvocation =
         (token: AccessToken)
         frame
         beforeSend
+        consent
         cancelled
         =
         task {
@@ -84,6 +85,24 @@ module private FrameInvocation =
                     | Error reason ->
                         return
                             CliReply.local reason |> CliReply.forAttempt frame DeliveryState.NotSent
+                    | Ok _ when
+                        consent
+                        |> Option.exists (fun confirm ->
+                            not (confirm access.Configuration.Mode context))
+                        ->
+                        return
+                            CliReply.local ClientFailure.Cancelled
+                            |> CliReply.forAttempt frame DeliveryState.NotSent
+                    | Ok bound when Api.effect (Frames.endpoint bound) = EndpointEffect.Read ->
+                        return!
+                            RemoteServiceCall.send
+                                access.Client
+                                { target with
+                                    InstallationId = Some context.InstallationId
+                                }
+                                bound
+                                (fun () -> beforeSend bound)
+                                cancelled
                     | Ok bound ->
                         return! handoff access token target context bound beforeSend cancelled
         }
@@ -162,7 +181,13 @@ module private FrameInvocation =
                     return reply
         }
 
-    let invoke (holder: RemoteSessionHolder) frame beforeSend (cancelled: CancellationToken) =
+    let invoke
+        (holder: RemoteSessionHolder)
+        frame
+        beforeSend
+        consent
+        (cancelled: CancellationToken)
+        =
         task {
             if cancelled.IsCancellationRequested then
                 return CliReply.local ClientFailure.Cancelled
@@ -184,7 +209,7 @@ module private FrameInvocation =
                                 )
                             )
                     | Error _ -> return CliReply.local ClientFailure.Authentication
-                    | Ok token -> return! prepared access token frame beforeSend cancelled
+                    | Ok token -> return! prepared access token frame beforeSend consent cancelled
         }
 
 [<NoEquality; NoComparison>]
@@ -198,7 +223,12 @@ type internal RemoteStreams =
 [<NoEquality; NoComparison>]
 type private RemoteTransport =
     {
-        Invoke: Invocation -> (Invocation -> unit) -> CancellationToken -> Task<CliReply>
+        Invoke:
+            Invocation
+                -> (Invocation -> unit)
+                -> (RemoteClientMode -> ActorContext -> bool) option
+                -> CancellationToken
+                -> Task<CliReply>
         Discard: CancellationToken -> Task<unit>
         Owned: IDisposable
     }
@@ -222,7 +252,7 @@ type RemoteFrameProcessor
 
     let invoke = transport.Invoke
 
-    let exchange frame stopped =
+    let exchange frame consent stopped =
         delivery.Prepare frame
 
         task {
@@ -232,6 +262,7 @@ type RemoteFrameProcessor
                     (fun prepared ->
                         delivery.Prepare prepared
                         delivery.BeforeDispatch prepared)
+                    consent
                     stopped
 
             return CliReply.forAttempt frame reply.Frame.Delivery reply
@@ -245,7 +276,7 @@ type RemoteFrameProcessor
             match Frames.admit bytes with
             | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
             | Ok frame ->
-                Some(exchange frame stopped |> fun value -> value.GetAwaiter().GetResult())
+                Some(exchange frame None stopped |> fun value -> value.GetAwaiter().GetResult())
 
     new
         (
@@ -288,7 +319,14 @@ type RemoteFrameProcessor
             (fun reply -> reply.Bytes),
             {
                 Invoke =
-                    fun frame beforeSend token -> invoke frame (fun () -> beforeSend frame) token
+                    fun frame beforeSend consent token ->
+                        match consent with
+                        | None -> invoke frame (fun () -> beforeSend frame) token
+                        | Some _ ->
+                            Task.FromResult(
+                                CliReply.local ClientFailure.Configuration
+                                |> CliReply.forAttempt frame DeliveryState.NotSent
+                            )
                 Discard = discard
                 Owned =
                     { new IDisposable with
@@ -303,7 +341,19 @@ type RemoteFrameProcessor
     /// Multi-step CLI flows share authentication and the same frozen-delivery state.
     member internal _.Exchange(frame, stopped) =
         delivery.BeginFrame()
-        exchange frame stopped
+        exchange frame None stopped
+
+    /// Consent observes the authenticated actor/installation captured for this exact attempt.
+    member internal _.ExchangeSettlement(frame, consent, stopped) =
+        delivery.BeginFrame()
+
+        if (Frames.endpoint frame).Id <> Api.operationResolve.Id then
+            Task.FromResult(
+                CliReply.local ClientFailure.InvalidFrame
+                |> CliReply.forAttempt frame DeliveryState.NotSent
+            )
+        else
+            exchange frame (Some consent) stopped
 
     member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
     member internal _.Failure(error) = delivery.Failure error

@@ -459,7 +459,7 @@ it("focuses the authority route heading without restoring an actor after disclos
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await waitFor(() => {
     expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
-    expect(screen.getByRole("heading", { name: "Authority", level: 1 })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Access", level: 1 })).toHaveFocus();
   });
   expect(
     focus.mock.contexts.some((target) => target instanceof HTMLElement && target.id === origin.id),

@@ -105,6 +105,7 @@ let requestEffectAgreement =
                 State =
                     CaseState.Active
                         {
+                            Work = CaseWork.empty
                             CaseReference = reference
                             Status = CaseStatus.Opened
                             Registration = Inputs.admittedRegistration Inputs.registration

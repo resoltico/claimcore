@@ -1,5 +1,6 @@
 module ClaimCore.Tests.TransitionOracle
 
+open Expecto
 open ClaimCore.TestSupport
 open ClaimCore.Protocol
 
@@ -12,6 +13,7 @@ let private activeEligible (fields: CaseFields) =
 
     function
     | (AuthoredCaseAct.Bare BareAct.Close) -> true
+    | AuthoredCaseAct.UpdateWork _ -> true
     | AuthoredCaseAct.AmendRegistration _ -> not decided
     | AuthoredCaseAct.Decide _ -> not paid
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) -> decided && not paid
@@ -52,9 +54,9 @@ let samples =
         | AuthoredCaseAct.Correct _ ->
             AuthoredCaseAct.Correct
                 {
-                    Registration = Amendment.Replace registration
+                    Registration = Amendment.Update(Inputs.registrationUpdate registration)
                     Decision = Change.Keep
-                    Payment = Change.Keep
+                    Payment = PaymentChange.Keep
                 },
             token
         | _ -> act, token)
@@ -74,43 +76,61 @@ let offered state =
     samples
     |> List.choose (fun (act, token) -> if allows (Some state) act then Some token else None)
 
-let private registration (value: RegistrationInput) (fields: CaseFields) =
+// The fixed synthetic witnesses assert all registration fields. This literal boundary adapter
+// is independent of the product partial merge and does not model arbitrary omitted fields.
+let private registration (value: RegistrationUpdateInput) (fields: CaseFields) =
+    let money = Option.get value.Claimed
+
+    let complete =
+        RegistrationInput.create
+            [
+                BusinessField.IncidentDate, Option.get value.IncidentDate
+                BusinessField.IncidentNotificationDate, Option.get value.NotificationDate
+                BusinessField.IncidentCountry, Option.get value.Country
+                BusinessField.ClaimantName, Option.get value.Claimant
+                BusinessField.InsurerName, Option.get value.Insurer
+                BusinessField.ClaimedAmount, money.Amount
+                BusinessField.ClaimedCurrency, money.Currency
+            ]
+        |> Result.defaultWith failtest
+
     { fields with
-        Registration =
-            CaseFixtures.registration (
-                ClaimCore.TestSupport.Inputs.registrationWith
-                    [ BusinessField.ClaimedAmount, ("1000") ]
-                    (value)
-            )
+        Registration = CaseFixtures.registration complete
     }
 
 let private correctedRegistration fields =
     function
-    | Amendment.Replace value -> registration value fields
+    | Amendment.Update value -> registration value fields
     | Amendment.Keep -> fields
 
-let private changed fields act =
+let private decidedProgress value =
+    let amount =
+        if DecisionInput.value BusinessField.PayableAmount value = "0" then
+            "0"
+        else
+            "750"
+
+    Inputs.decisionWith [ BusinessField.PayableAmount, amount ] value
+    |> CaseFixtures.decision
+    |> PaymentProgress.Decided
+
+// This exhaustive fixed-witness effect table contains no nested decisions or admission policy.
+// fsharplint:disable-next-line CyclomaticComplexity
+let private changed (fields: CaseFields) act =
     match act with
+    | AuthoredCaseAct.UpdateWork _ ->
+        { fields with
+            Work =
+                {
+                    Responsible = None
+                    FollowUp = Some(CaseFixtures.date "2026-09-01")
+                }
+        }
     | AuthoredCaseAct.AmendRegistration value -> registration value fields
     | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
     | AuthoredCaseAct.Decide value ->
         { fields with
-            Progress =
-                PaymentProgress.Decided(
-                    CaseFixtures.decision (
-                        ClaimCore.TestSupport.Inputs.decisionWith
-                            [
-                                BusinessField.PayableAmount,
-                                (if
-                                     (DecisionInput.value BusinessField.PayableAmount (value)) = "0"
-                                 then
-                                     "0"
-                                 else
-                                     "750")
-                            ]
-                            (value)
-                    )
-                )
+            Progress = decidedProgress value
         }
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) ->
         { fields with
@@ -146,6 +166,7 @@ let private business (before: CaseSnapshot) fields stale act =
 
         let noOpCorrection =
             match act with
+            | AuthoredCaseAct.UpdateWork _
             | AuthoredCaseAct.Correct _ -> nextFields = fields
             | _ -> false
 

@@ -83,7 +83,7 @@ for (const retainCurrent of [false, true]) {
       const user = userEvent.setup();
       render(
         <CaseDetail
-          caseReference={fields.caseReference}
+          target={{ kind: "REFERENCE", caseReference: fields.caseReference }}
           reloadSignal={0}
           definition={definition.catalog}
           onBack={vi.fn()}

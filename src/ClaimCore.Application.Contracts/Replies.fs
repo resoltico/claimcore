@@ -9,11 +9,13 @@ type AuthorityState =
     {
         Enabled: bool
         Grants: ScopedGrant list
+        Access: CapabilityAccess list
     }
 
 type AuthorityReview =
     {
         Target: Actor option
+        AccessScope: GrantScope
         Before: AuthorityState
         After: AuthorityState
     }

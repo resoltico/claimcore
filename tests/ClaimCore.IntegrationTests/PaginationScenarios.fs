@@ -88,7 +88,11 @@ let internal createHistory (actor: ServiceContext) =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n "HISTORY-1" revision (AuthoredCaseAct.AmendRegistration values)
+                        request
+                            n
+                            "HISTORY-1"
+                            revision
+                            (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
                     ))
                     (CancellationToken.None))
 

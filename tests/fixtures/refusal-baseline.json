@@ -454,6 +454,44 @@
           "code": "TOO_LONG"
         }
       ]
+    },
+    {
+      "code": "WORK_NO_CHANGES",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "ASSIGNEE_UNAVAILABLE",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "responsibleActor",
+          "code": "ACTOR_ID_REQUIRED"
+        },
+        {
+          "field": "followUpDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        },
+        {
+          "field": "followUpDate",
+          "code": "UPDATE_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "ROLE_SCOPE_NOT_APPLICABLE",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "REGISTER_MAINTENANCE",
+      "action": "ReadCurrent",
+      "target": null
     }
   ]
 }

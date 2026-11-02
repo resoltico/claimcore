@@ -1,6 +1,7 @@
 module ClaimCore.AcceptanceTests.BrowserProgress
 
 open System.Text
+open ClaimCore.Protocol
 open System.Text.RegularExpressions
 open System.IO
 
@@ -92,15 +93,34 @@ let stackLocations codeFiles bytes =
     |> Seq.truncate 5
     |> Seq.toList
 
+let private submitFailures =
+    HostFailureReason.all
+    |> List.map (fun reason ->
+        let phase =
+            HostFailureReason.phase reason
+            |> Option.map ExecutionPhase.phase
+            |> Option.defaultValue "NONE"
+
+        $"{HostFailureReason.status reason}_{HostFailureReason.code reason}_{phase}"
+        |> Regex.Escape)
+    |> String.concat "|"
+    |> fun known -> known + "|[1-5][0-9]{2}_UNCLASSIFIED_NONE"
+
 /// Categories are a closed vocabulary; no error message or stack function is returned.
 let failureCategories bytes =
     Regex.Matches(
         plain bytes,
-        @"(?m)^[ \t]+(?:(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<layout>Error: E2E_LAYOUT_(?:LOGIN|CASES|NARROW|ZOOM)_OVERFLOW(?:_REPORT_UNAVAILABLE)?[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<error>Error:))",
+        @"(?m)^[ \t]+(?:(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<layout>Error: E2E_LAYOUT_(?:LOGIN|CASES|NARROW|ZOOM)_OVERFLOW(?:_REPORT_UNAVAILABLE)?[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<submit>Error: E2E_SUBMIT_HTTP_(?<submitCode>"
+        + submitFailures
+        + @")[ \t]*\r?$)|(?<globalTimeout>Timed out waiting [1-9][0-9]{0,8}ms for the entire test run\.?[ \t]*\r?$)|(?<error>Error:))",
         RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
     )
     |> Seq.map (fun row ->
-        if row.Groups["accessibility"].Success then
+        if row.Groups["submit"].Success then
+            "HTTP_" + row.Groups["submitCode"].Value
+        elif row.Groups["globalTimeout"].Success then
+            "GLOBAL_TIMEOUT"
+        elif row.Groups["accessibility"].Success then
             "ACCESSIBILITY"
         elif row.Groups["layout"].Success then
             "LAYOUT"

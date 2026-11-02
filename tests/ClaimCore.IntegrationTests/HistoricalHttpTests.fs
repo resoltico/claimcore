@@ -108,7 +108,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 (registration))
 
         let reaffirm =
-            request 11 "HISTORICAL-1" 1L (AuthoredCaseAct.AmendRegistration values)
+            request
+                11
+                "HISTORICAL-1"
+                1L
+                (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
 
         let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
 
@@ -125,9 +129,11 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 "HISTORICAL-1"
                 2L
                 (AuthoredCaseAct.AmendRegistration(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [ BusinessField.ClaimantName, (name + "B") ]
-                        (values)
+                    Inputs.registrationUpdate (
+                        ClaimCore.TestSupport.Inputs.registrationWith
+                            [ BusinessField.ClaimantName, (name + "B") ]
+                            (values)
+                    )
                 ))
 
         let! status, response = host.Call("operation.execute", httpRequest changed, csrf)

@@ -4,6 +4,8 @@ open ClaimCore.Domain
 
 /// Permanent format names are permanent literals, independent of wire vocabulary and transport.
 module DurableNames =
+    // The permanent act-name table is exhaustive and contains no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let caseAct =
         function
         | CaseActKind.Open -> "OPEN"
@@ -18,6 +20,7 @@ module DurableNames =
         | CaseActKind.Void -> "VOID"
         | CaseActKind.Reinstate -> "REINSTATE"
         | CaseActKind.Erase -> "ERASE"
+        | CaseActKind.UpdateWork -> "UPDATE_WORK"
 
     let authorityAct =
         function
@@ -39,10 +42,20 @@ module DurableNames =
         | CaseListOrder.Reference -> "REFERENCE"
         | CaseListOrder.Recent -> "RECENT"
         | CaseListOrder.Notified -> "NOTIFIED"
+        | CaseListOrder.FollowUp -> "FOLLOW_UP"
+
+    let caseDue =
+        function
+        | CaseDue.Overdue -> "OVERDUE"
+        | CaseDue.Today -> "TODAY"
+        | CaseDue.Upcoming -> "UPCOMING"
+        | CaseDue.Unscheduled -> "UNSCHEDULED"
+        | CaseDue.Inactive -> "INACTIVE"
 
     let caseAssignment =
         function
-        | CaseAssignment.AssignedToMe -> "ASSIGNED_TO_ME"
+        | CaseAssignment.Mine -> "MINE"
+        | CaseAssignment.Unassigned -> "UNASSIGNED"
 
     let status =
         function
@@ -59,7 +72,9 @@ module DurableNames =
         function
         | CorrectionGroupAction.Keep -> "KEEP"
         | CorrectionGroupAction.Replace -> "REPLACE"
+        | CorrectionGroupAction.Update -> "UPDATE"
         | CorrectionGroupAction.Clear -> "CLEAR"
+        | CorrectionGroupAction.Reaffirm -> "REAFFIRM"
 
     let principalKind =
         function
@@ -99,6 +114,8 @@ module DurableNames =
         | BusinessField.PaymentDate -> "paymentDate"
         | BusinessField.CaseReference -> "caseReference"
         | BusinessField.Status -> "status"
+        | BusinessField.ResponsibleActor -> "responsibleActor"
+        | BusinessField.FollowUpDate -> "followUpDate"
 
     // A total table preserves the permanent spelling of every closed input target.
     // fsharplint:disable-next-line CyclomaticComplexity
@@ -131,6 +148,7 @@ module DurableNames =
             CaseActKind.Void
             CaseActKind.Reinstate
             CaseActKind.Erase
+            CaseActKind.UpdateWork
         ]
 
     let authorityKinds =

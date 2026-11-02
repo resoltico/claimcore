@@ -121,6 +121,9 @@ module RequestSchemas =
     let ResolveRequest = "ResolveRequest"
 
     [<Literal>]
+    let StatusRequest = "StatusRequest"
+
+    [<Literal>]
     let GrantsRequest = "GrantsRequest"
 
     [<Literal>]
@@ -128,3 +131,6 @@ module RequestSchemas =
 
     [<Literal>]
     let Empty = "Empty"
+
+    [<Literal>]
+    let AssigneeRequest = "AssigneeRequest"

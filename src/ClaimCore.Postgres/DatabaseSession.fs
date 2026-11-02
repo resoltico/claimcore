@@ -9,9 +9,12 @@ open System.Threading
 open System.Threading.Tasks
 open Npgsql
 
-/// Administration commit confirmation was lost. Repeating the same command is safe.
+/// Administration commit confirmation was lost; inspect current state before another command.
 type AdministrationOutcomeUnknownException() =
-    inherit Exception("Administration commit confirmation was lost; repeat the same command.")
+    inherit
+        Exception(
+            "Administration commit confirmation was lost; inspect current state before another command."
+        )
 
 /// Raised only where persisted rows fail their format contract.
 type internal RecordCorruptException(reason: string) =

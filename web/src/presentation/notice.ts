@@ -1,7 +1,7 @@
 import type { Notice } from "../protocol/notices";
 import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
-import { exactInteger } from "./format";
-import { renderKey, translate } from "./messages";
+import { calendarDate, exactInteger } from "./format";
+import { renderCatalogKey, renderKey, translate } from "./messages";
 import type { MessageKey } from "./types";
 import type { Preferences } from "./preferences";
 
@@ -21,6 +21,7 @@ const contextFields = new Set([
   "phase",
   "field",
   "issues",
+  "relatedDate",
 ]);
 const diagnosticText = (
   preferences: Preferences,
@@ -59,14 +60,23 @@ const diagnosticText = (
       typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
     ]),
   );
-  return renderKey(preferences, messageKey, parameters);
+  const message = renderKey(preferences, messageKey, parameters);
+  if ("relatedDate" in diagnostic && diagnostic.relatedDate !== undefined) {
+    const related = diagnostic.relatedDate;
+    return `${message} (${renderCatalogKey(preferences, `field.${related.field}.label`)}: ${calendarDate(related.value, preferences.displayLocale)})`;
+  }
+  return message;
 };
 const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): MessageKey => {
   switch (reason) {
+    case "recoveryCleanupUnavailable":
+      return "ui.recoveryCleanupUnavailable";
     case "recoveryListingUnavailable":
       return "ui.recoveryListingUnavailable";
     case "recoveryUnavailable":
       return "ui.recoveryUnavailable";
+    case "unresolved":
+      return "ui.operationUnresolved";
     case "incomplete":
       return "ui.incompleteResponse";
     default:

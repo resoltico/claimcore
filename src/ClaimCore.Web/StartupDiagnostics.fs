@@ -75,6 +75,7 @@ type WebStartupProblem =
     | OriginInvalid
     | ConnectionFileRefused
     | ConnectionFileEmpty
+    | PoolCapacityInsufficient
     | SessionLifetimeInvalid
     | OidcConfigurationInvalid
     | CertificateAccessRefused
@@ -97,6 +98,8 @@ module WebStartupDiagnostics =
                 "SETTING_REQUIRED", Some(WebSettings.token setting)
             | WebStartupProblem.InvalidSetting setting ->
                 "SETTING_INVALID", Some(WebSettings.token setting)
+            | WebStartupProblem.PoolCapacityInsufficient ->
+                "POOL_CAPACITY_INSUFFICIENT", Some(WebSettings.token WebSetting.ConnectionFile)
             | WebStartupProblem.RuntimeOpen fault ->
                 "RUNTIME_" + (string fault).ToUpperInvariant(), None
             | value -> (string value).ToUpperInvariant(), None

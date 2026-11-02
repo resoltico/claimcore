@@ -32,7 +32,7 @@ let internal keep: AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = Change.Keep
-        Payment = Change.Keep
+        Payment = PaymentChange.Keep
     }
 
 let internal correction value = (AuthoredCaseAct.Correct value)
@@ -287,3 +287,32 @@ let internal scalarRequests () =
     @ registrationRequests ()
     @ controlRequests ()
     @ progressRequests ()
+    @ [
+        actRequest
+            10
+            "REACH-1"
+            1L
+            (AuthoredCaseAct.UpdateWork
+                {
+                    Responsible = WorkValue.Set "invalid"
+                    FollowUp = WorkValue.Keep
+                })
+        actRequest
+            10
+            "REACH-1"
+            1L
+            (AuthoredCaseAct.UpdateWork
+                {
+                    Responsible = WorkValue.Keep
+                    FollowUp = WorkValue.Set "invalid"
+                })
+        actRequest
+            10
+            "REACH-1"
+            1L
+            (AuthoredCaseAct.UpdateWork
+                {
+                    Responsible = WorkValue.Keep
+                    FollowUp = WorkValue.Keep
+                })
+    ]

@@ -134,7 +134,8 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.HumanRequired
-                    (not (role = Role.Owner || role = Role.DataSteward)
+                    (not active
+                     || not (role = Role.Owner || role = Role.DataSteward)
                      || PrincipalKey.isHuman actor.Principal)
 
             let! scope =

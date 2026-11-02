@@ -44,6 +44,7 @@ let private selectedSpecifications =
             "authority-uncertainty.spec.ts"
             "authority-grants.spec.ts"
             "act-lifecycle.spec.ts"
+            "loading-boundaries.spec.ts"
             "localization-correction.spec.ts"
             "localization-editor.spec.ts"
             "localization-pseudolocale.spec.ts"
@@ -53,8 +54,10 @@ let private selectedSpecifications =
             "resolution.spec.ts"
             "reply-correlation.spec.ts"
             "work-surface-foundations.spec.ts"
+            "workspace-recovery.spec.ts"
             "stewardship-authority.spec.ts"
             "stewardship-localization.spec.ts"
+            "uncertain-execution.spec.ts"
             "unicode-parity.spec.ts"
         ]
     else
@@ -92,6 +95,24 @@ let private report root output engine =
         | value -> value
 
     Directory.CreateDirectory directory |> ignore
+    let measurement = Path.Combine(output, "loading-measurements.json")
+
+    if File.Exists measurement then
+        File.Copy(measurement, Path.Combine(directory, "loading-" + engine + ".json"), true)
+
+    let featureMeasurement = Path.Combine(output, "loading-new-work.json")
+
+    if not smoke then
+        Expect.isTrue
+            (File.Exists featureMeasurement)
+            "Complete scope retains the new work-editor measurement"
+
+    if File.Exists featureMeasurement then
+        File.Copy(
+            featureMeasurement,
+            Path.Combine(directory, "loading-work-" + engine + ".json"),
+            true
+        )
 
     JsonSerializer.SerializeToUtf8Bytes
         {|
@@ -289,7 +310,8 @@ let private printFailureSummary root engine bytes =
 
 let private runBrowser root engine output start =
     try
-        PublishedProcesses.run 900_000 start None
+        // Leave one minute to report and clean up after Playwright's 20-minute suite bound.
+        PublishedProcesses.run (21 * 60_000) start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore

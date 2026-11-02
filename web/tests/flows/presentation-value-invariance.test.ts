@@ -1,10 +1,7 @@
 import { expect, it } from "vitest";
 import { createPresenter } from "../../src/presentation/presenter";
-import {
-  initialOperationValues,
-  assembleOperation,
-  operationEntry,
-} from "../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
+import { operationEntry } from "../../src/protocol/operationCatalog";
 import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { definition, operationId } from "../support/service-ui.fixtures";

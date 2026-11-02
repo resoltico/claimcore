@@ -1,3 +1,4 @@
+import type { CaseSelector } from "@contracts/client";
 import { ActorIdentity, OperationIdentity } from "../components/ActorIdentity";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { IdentifierMessage } from "../presentation/IdentifierMessage";
@@ -195,7 +196,7 @@ type CaseHistoryProps = {
   modes?: ReadonlyArray<HistoryMode>;
   onDisclosureRefused?: () => void;
 
-  caseReference: string;
+  target: CaseSelector;
   fields: CatalogDocument["fields"];
 };
 const HistoryPageActions = ({
@@ -222,7 +223,7 @@ const HistoryPageActions = ({
   );
 };
 export const CaseHistory = ({
-  caseReference,
+  target,
   fields,
   modes = summaryModes,
   onDisclosureRefused,
@@ -232,12 +233,12 @@ export const CaseHistory = ({
   const requestedDetail = modes.includes(detail) ? detail : (modes[0] ?? "SUMMARY");
   const input = useCallback(
     (cursor: string | null) => ({
-      target: { kind: "REFERENCE" as const, caseReference },
+      target,
       ...(cursor === null ? {} : { cursor }),
       limit: 50,
       detail: requestedDetail,
     }),
-    [caseReference, requestedDetail],
+    [target, requestedDetail],
   );
   const { items, cursor, message, loading, load, page } = useEndpointPage<
     "case.history",

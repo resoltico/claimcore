@@ -241,6 +241,24 @@ let private categoryControls () =
         [ "TEST_TIMEOUT" ]
         "Runner deadline category"
 
+    Expect.equal
+        (categories "    Error: E2E_SUBMIT_HTTP_500_INTERNAL_STARTED_UNCONFIRMED")
+        [ "HTTP_500_INTERNAL_STARTED_UNCONFIRMED" ]
+        "Validated transport code and phase survive without response contents"
+
+    for invalid in
+        [
+            "    Error: E2E_SUBMIT_HTTP_500_INTERNAL_STARTED_UNCONFIRMED private-token"
+            "    Error: E2E_SUBMIT_HTTP_401_INTERNAL_STARTED_UNCONFIRMED"
+            "    Error: E2E_SUBMIT_HTTP_500_PRIVATE_TOKEN_NONE"
+        ] do
+        Expect.equal (categories invalid) [ "ERROR" ] "Unknown or private suffixes stay generic"
+
+    Expect.equal
+        (categories "    Timed out waiting 840000ms for the entire test run")
+        [ "GLOBAL_TIMEOUT" ]
+        "The whole-campaign timeout is distinct from individual test deadlines"
+
 let private durationControls () =
     let row =
         "  ✘  1 [chromium] › e2e/localization-editor.spec.ts:58:1 › private-title (30.0s)"

@@ -215,13 +215,15 @@ let internal revokedAdvice fixture =
         let correction: AuthoredCorrection =
             {
                 Registration =
-                    Amendment.Replace(
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimedAmount, ("1001.0000") ]
-                            (registration)
+                    Amendment.Update(
+                        Inputs.registrationUpdate (
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimedAmount, ("1001.0000") ]
+                                (registration)
+                        )
                     )
                 Decision = Change.Keep
-                Payment = Change.Keep
+                Payment = PaymentChange.Keep
             }
 
         let pending = request 35 reference 2L (AuthoredCaseAct.Correct correction)
@@ -360,10 +362,14 @@ let internal scopedAuthority fixture =
         let! context = inspectAuthority fixture (principal) (CancellationToken.None)
         let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
         Expect.isEmpty context.Cases "Context never enumerates assigned grants"
-        Expect.isTrue context.HasAssignedCases "EXISTS reports assigned visibility"
+        Expect.isTrue context.HasScopedCases "EXISTS reports assigned visibility"
 
         let pending =
-            request 102 "SCOPE-1" 1L (AuthoredCaseAct.AmendRegistration registration)
+            request
+                102
+                "SCOPE-1"
+                1L
+                (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
 
         let! conflict =
             (Service.execute

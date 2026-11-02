@@ -1,4 +1,4 @@
-import { productMetadata } from "../protocol/productMetadata";
+import { operationEntry } from "../protocol/operationCatalog";
 import { buildRequest } from "../protocol/client";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
@@ -9,20 +9,13 @@ import {
   bindingPath,
   type CatalogInput,
   type CatalogEntry,
-  type CatalogEntryIdentity,
 } from "../protocol/catalogAssembly";
 export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
 
-export const operationEntry = (identity: CatalogEntryIdentity): CatalogEntry => {
-  const definition = productMetadata.catalog.entries.find(
-    (item) => item.subject === identity.subject && item.kind === identity.kind,
-  );
-  if (definition === undefined) {
-    throw new Error("Unknown operation catalog entry.");
-  }
-  return definition;
-};
-const fieldValue = (current: CurrentCase | null, path: ReadonlyArray<string> | null): string => {
+export const prefilledValue = (
+  current: CurrentCase | null,
+  path: ReadonlyArray<string> | null,
+): string => {
   const value = path === null || current === null ? undefined : atPath(current.state.fields, path);
   return typeof value === "string" ? value : "";
 };
@@ -35,13 +28,7 @@ const inputDefault = (input: CatalogInput) => {
   }
   return typeof input.default === "number" ? String(input.default) : input.default;
 };
-const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
-  if (input.source === "OPERATION_IDENTITY") {
-    return id;
-  }
-  if (input.source === "EXPECTED_REVISION") {
-    return String(current?.revision ?? 0);
-  }
+const authoredValue = (input: CatalogInput, current: CurrentCase | null) => {
   const preset = inputDefault(input);
   if (preset !== null) {
     return preset;
@@ -52,12 +39,30 @@ const initialValue = (input: CatalogInput, current: CurrentCase | null, id: stri
     case "CHOICES":
       return [];
     case "CHOICE":
-    case "GROUP":
       return input.kind.options[0] ?? "";
+    case "GROUP":
+      return input.required ? (input.kind.options[0] ?? "") : "";
     default:
-      return fieldValue(current, input.prefill);
+      return prefilledValue(current, input.prefill);
   }
 };
+const initialValue = (input: CatalogInput, current: CurrentCase | null, id: string) => {
+  if (input.source === "OPERATION_IDENTITY") {
+    return id;
+  }
+  if (input.source === "EXPECTED_REVISION") {
+    return String(current?.revision ?? 0);
+  }
+  return authoredValue(input, current);
+};
+export const selectableFact = (entry: CatalogEntry, input: CatalogInput): boolean =>
+  entry.subject === "CASE" &&
+  entry.endpoint === "operation.execute" &&
+  input.source === "AUTHORED" &&
+  input.kind.kind === "TEXT" &&
+  !input.required &&
+  input.field !== null;
+
 export const initialOperationValues = (
   subject: "CASE" | "AUTHORITY",
   kind: string,
@@ -67,7 +72,9 @@ export const initialOperationValues = (
   const definition = operationEntry({ subject, kind });
   const values: Record<string, FormValue> = {};
   for (const input of definition.inputs) {
-    values[bindingPath(input)] = initialValue(input, current, id);
+    if (!selectableFact(definition, input)) {
+      values[bindingPath(input)] = initialValue(input, current, id);
+    }
   }
   return values;
 };
@@ -79,11 +86,11 @@ export const refusalPath = (
   if (target === null) {
     return null;
   }
-  return (
-    entry.inputs
-      .find((input) => input.diagnosticTargets.includes(target) && applies(input, values))
-      ?.path.join(".") ?? null
+  const candidates = entry.inputs.filter(
+    (input) => input.diagnosticTargets.includes(target) && applies(input, values),
   );
+  const selected = candidates.find((candidate) => candidate.field === target) ?? candidates[0];
+  return selected?.path.join(".") ?? null;
 };
 export const assembleOperation = (entry: CatalogEntry, values: FormValues) =>
   buildRequest("operation.execute", assembleCatalogInput(entry, values));

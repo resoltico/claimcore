@@ -11,6 +11,7 @@ let private identity = Guid.Parse "90000000-0000-4000-8000-000000000001"
 
 let private fields: CaseFields =
     {
+        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference "CORE-HISTORY"
         Status = CaseStatus.Opened
         Registration = Inputs.admittedRegistration Inputs.registration

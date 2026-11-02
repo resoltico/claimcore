@@ -1,6 +1,7 @@
+import type { CaseSelector } from "@contracts/client";
 import { useEndpoint } from "./useEndpoint";
-export const useCaseDisclosure = (caseReference: string) => {
-  const query = useEndpoint("case.get", { target: { kind: "REFERENCE", caseReference } });
+export const useCaseDisclosure = (target: CaseSelector) => {
+  const query = useEndpoint("case.get", { target });
   const value = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.data : null;
   const previous =
     query.previous?.outcome.kind === "SUCCEEDED" ? query.previous.outcome.data : null;

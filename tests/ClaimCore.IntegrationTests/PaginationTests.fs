@@ -136,6 +136,7 @@ type internal PausedPageStore
                             work
                                 { new IReadTx with
                                     member _.ObservedAt = tx.ObservedAt
+                                    member _.Maintenance() = tx.Maintenance()
 
                                     member _.Authority
                                         ({
@@ -162,10 +163,12 @@ type internal PausedPageStore
                                         tx.FindCaseByReference reference
 
                                     member _.FindEntry id = tx.FindEntry id
+                                    member _.NonAcceptance key = tx.NonAcceptance key
 
                                     member _.CasePage
                                         ({
-                                             CasePageQuery.Visibility = visibility
+                                             CasePageQuery.DateBasis = basis
+                                             Visibility = visibility
                                              ActorId = actor
                                              ReadRoles = roles
                                              ForbiddenRoles = invalid
@@ -176,7 +179,8 @@ type internal PausedPageStore
                                         =
                                         tx.CasePage(
                                             {
-                                                CasePageQuery.Visibility = visibility
+                                                CasePageQuery.DateBasis = basis
+                                                Visibility = visibility
                                                 ActorId = actor
                                                 ReadRoles = roles
                                                 ForbiddenRoles = invalid
@@ -235,6 +239,7 @@ type internal PausedPageStore
                                         )
 
                                     member _.FindActor id = tx.FindActor id
+                                    member _.AssigneePage query = tx.AssigneePage query
                                     member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
                                     member _.ActorCount() = tx.ActorCount()
                                 })

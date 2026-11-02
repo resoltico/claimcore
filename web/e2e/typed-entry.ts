@@ -29,6 +29,14 @@ export const fillControl = async (control: Locator, value: string): Promise<void
   }
 };
 export const fillNamedField = async (page: Page, name: string, value: string): Promise<void> => {
+  const selection = page.getByRole("checkbox", { name: `Change ${name}`, exact: true });
+  await selection
+    .or(page.getByLabel(name, { exact: true }))
+    .first()
+    .waitFor({ state: "visible" });
+  if ((await selection.count()) === 1 && !(await selection.isChecked())) {
+    await selection.check();
+  }
   await page.getByLabel(name, { exact: true }).first().waitFor({ state: "visible" });
   const group = page.getByRole("group", { name, exact: true, includeHidden: true });
   const combo = page.getByRole("combobox", { name, exact: true, includeHidden: true });

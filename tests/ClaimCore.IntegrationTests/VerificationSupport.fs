@@ -34,6 +34,14 @@ let sql (database: PostgresFixture.Database) statement parameters =
         return ()
     }
 
+let enterMaintenance (database: PostgresFixture.Database) =
+    task {
+        let! mode =
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
+
+        Expect.isOk mode "The owner explicitly enters register-write maintenance"
+    }
+
 let position =
     function
     | VerificationResult.Verified position -> position

@@ -61,16 +61,37 @@ module Terms =
                     InteractionInput.key input, InteractionInput.messageKey input "label")
         }
 
+    let private sectionTerms =
+        {
+            Name = Vocabulary.name CaseSection.vocabulary
+            Labels =
+                [
+                    "registration",
+                    Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Registration "label"
+                    "decision",
+                    Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Decision "label"
+                    "payment",
+                    Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Payment "label"
+                    "work", "section.work.label"
+                ]
+        }
+
     let all =
         [
             rendered CaseStatus.vocabulary
             rendered Lifecycle.vocabulary
+            rendered Capability.vocabulary
             rendered Role.vocabulary
             rendered PrincipalKind.vocabulary
             rendered CorrectionGroupAction.vocabulary
             rendered ScopeKind.vocabulary
             rendered ActKind.vocabulary
+            rendered ActFamily.vocabulary
+            rendered InteractionEffect.vocabulary
             rendered HistoryDetail.vocabulary
+            sectionTerms
+            rendered CaseDue.vocabulary
+            rendered WorkChoice.vocabulary
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary

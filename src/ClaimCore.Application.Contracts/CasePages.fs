@@ -6,6 +6,7 @@ open System
 
 type CaseSummaryFacts =
     {
+        Work: CaseWorkView
         Status: CaseStatus
         ClaimantName: PartyName
         InsurerName: PartyName
@@ -26,7 +27,14 @@ type CaseSummary =
 
 type CaseSummaryPage =
     {
+        Basis: WorkDateBasis
         Items: CaseSummary list
         Offers: InstallationOffer list
+        NextCursor: string option
+    }
+
+type AssigneePage =
+    {
+        Items: AccountSubject list
         NextCursor: string option
     }
