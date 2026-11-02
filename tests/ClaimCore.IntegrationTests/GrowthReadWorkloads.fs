@@ -366,7 +366,7 @@ let private workProfiles (actor: ServiceContext) cases =
         let! listing =
             measure
                 cases
-                ("case-work-follow-up",
+                ("reminder-derived-follow-up",
                  "FOLLOW_UP",
                  min 50 (cases / 1000),
                  GrowthWorkloadPlan.workReadFingerprint cases filter false)
@@ -376,7 +376,7 @@ let private workProfiles (actor: ServiceContext) cases =
         let! totals =
             measure
                 cases
-                ("case-work-summary",
+                ("reminder-derived-work-summary",
                  "GROUPED",
                  cases / 1000,
                  GrowthWorkloadPlan.workReadFingerprint cases filter true)

@@ -419,8 +419,7 @@ their workload inputs and fingerprints. The authority workloads have their own d
 After those common measurements, one open case per thousand receives explicit responsibility and a past
 Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
 independently named cases, account identity, dates and counts before recording their separate latency
-samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one case, independently checking queue continuations, bounded current views, unique financial totals and global attention. These feature workloads have their own fingerprints; a reference without a matching workload
-yields no ratio.
+samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one case, independently checking queue continuations, bounded current views, unique financial totals and global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the independent Work/Reminder seed and are distinct from older authored-follow-up profiles. Feature profiles without matching keys yield no ratio; common read/write/cardinality comparisons retain their budgets.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
