@@ -82,7 +82,7 @@ export const WorkOperation = ({
   // Reminder offers originate in the selected current reminder row; preview and commit recheck them.
   const offered = subject === "WORK" && !workOffered ? [] : [kind];
   return (
-    <section className="work-operation" aria-labelledby="work-operation-title">
+    <section className="work-operation operation-editor" aria-labelledby="work-operation-title">
       <h2 id="work-operation-title" tabIndex={-1}>
         {renderCatalogKey(p, definition.labelId)}
       </h2>

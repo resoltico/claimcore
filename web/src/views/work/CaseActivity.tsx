@@ -3,6 +3,7 @@ import type {
   CaseSelector,
   CaseActivityPage,
   CaseActivity as Activity,
+  ActivitySubject,
   ResponseByEndpoint,
 } from "@contracts/client";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
@@ -12,9 +13,15 @@ import { NoticeView } from "../../presentation/Message";
 import { productMetadata } from "../../protocol/productMetadata";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { IdentifierValue } from "../../components/IdentifierValue";
+const revisionLabel = (subject: ActivitySubject) => {
+  if (subject.kind === "WORK") {
+    return "ui.workRevision";
+  }
+  return subject.kind === "REMINDER" ? "ui.reminderRevision" : "ui.revision";
+};
 const select = (reply: ResponseByEndpoint["case.activity"]): CaseActivityPage | null =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
-export const CaseActivity = ({
+const CaseActivity = ({
   target,
   modes,
   onDisclosureRefused,
@@ -24,7 +31,8 @@ export const CaseActivity = ({
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
-  const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
+  const [selectedDetail, setSelectedDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
+  const detail = modes.includes(selectedDetail) ? selectedDetail : (modes[0] ?? "SUMMARY");
   const input = useCallback(
     (cursor: string | null) => ({
       target,
@@ -51,7 +59,7 @@ export const CaseActivity = ({
             onChange={(event) => {
               const { value } = event.target;
               if (value === "SUMMARY" || value === "FULL") {
-                setDetail(value);
+                setSelectedDetail(value);
               }
             }}
           >
@@ -92,10 +100,29 @@ export const CaseActivity = ({
                   {p.text("ui.recordedBy")}: <IdentifierValue value={event.recordedBy} />
                 </p>
                 <IdentifierValue value={event.operationId} />
-                <p>{p.text(event.subject.kind === "WORK" ? "ui.workRevision" : event.subject.kind === "REMINDER" ? "ui.reminderRevision" : "ui.revision", {revision:p.integer(event.subject.revision)})}</p>
-                {event.subject.kind === "REMINDER" ? <><IdentifierValue value={event.subject.reminderId} />{event.subject.next === null ? null : <p><IdentifierValue value={event.subject.next.reminderId} /> · {p.text("ui.reminderRevision",{revision:p.integer(event.subject.next.revision)})}</p>}</> : null}
+                <p>
+                  {p.text(revisionLabel(event.subject), {
+                    revision: p.integer(event.subject.revision),
+                  })}
+                </p>
+                {event.subject.kind === "REMINDER" ? (
+                  <>
+                    <IdentifierValue value={event.subject.reminderId} />
+                    {event.subject.next === null ? null : (
+                      <p>
+                        <IdentifierValue value={event.subject.next.reminderId} /> ·{" "}
+                        {p.text("ui.reminderRevision", {
+                          revision: p.integer(event.subject.next.revision),
+                        })}
+                      </p>
+                    )}
+                  </>
+                ) : null}
               </details>
-              {event.detail === null || entry === undefined ? null : (
+              {detail !== "FULL" ||
+              !modes.includes("FULL") ||
+              event.detail === null ||
+              entry === undefined ? null : (
                 <ProtocolSummary value={event.detail} entry={entry} />
               )}
             </li>
@@ -118,6 +145,9 @@ export const CaseActivity = ({
 export const CaseActivityDisclosure = (props: Parameters<typeof CaseActivity>[0]) => {
   const p = usePresentation();
   const [open, setOpen] = useState(false);
+  if (props.modes.length === 0) {
+    return null;
+  }
   return (
     <details
       className="case-activity-disclosure"

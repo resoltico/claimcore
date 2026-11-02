@@ -60,7 +60,7 @@ it("refreshes the server observation on focus and keeps Mine explicit in the req
   await screen.findByText("Distinct cases needing attention");
   fireEvent.focus(window);
   await waitFor(() => {
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
   for (const [, options] of fetch.mock.calls) {
     expect(options).toMatchObject({ body: '{"mine":true}' });

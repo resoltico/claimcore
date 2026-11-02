@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { render, screen } from "../../support/presentation-test-support";
+import { render, screen, fireEvent } from "../../support/presentation-test-support";
 import { CatalogField } from "../../../src/components/CatalogField";
 import { definition } from "../../support/service-ui.fixtures";
 import { preferenceKey } from "../../../src/presentation/preferences";
@@ -56,7 +56,19 @@ it("uses distinct one-line action controls with their generated 200-scalar rule"
     />,
   );
   const control = screen.getByRole("textbox");
-  expect(control.tagName).toBe("INPUT");
+  expect(control.tagName).toBe("TEXTAREA");
+  expect(control).toHaveAttribute("rows", "1");
   expect(control).not.toHaveAttribute("maxlength");
   expect(screen.getByText("200 of 200 Unicode scalars")).toBeVisible();
+});
+
+it("does not silently strip LF from an authored single-line action", () => {
+  const field = definition.catalog.inputFields.find((item) => item.name === "reminderAction")!;
+  if (field.scalar === null) {
+    throw new Error("Missing action scalar owner");
+  }
+  const changed = vi.fn();
+  render(<CatalogField field={{ ...field, scalar: field.scalar }} value="" onChange={changed} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "first\nsecond" } });
+  expect(changed).toHaveBeenCalledWith("first\nsecond");
 });

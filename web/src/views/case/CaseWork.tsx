@@ -42,7 +42,7 @@ export const CaseWork = ({
       <div className="section-heading">
         <h2 id="case-work-title">{p.term("section", "work")}</h2>
         {onUpdate === undefined ? null : (
-          <button type="button" onClick={onUpdate}>
+          <button id="case-work-update" type="button" onClick={onUpdate}>
             {renderCatalogKey(p, operationEntry({ subject: "WORK", kind: "UPDATE_WORK" }).labelId)}
           </button>
         )}
@@ -105,7 +105,7 @@ export const CaseWork = ({
         </div>
       </dl>
       {onPlan === undefined ? null : (
-        <button type="button" onClick={onPlan}>
+        <button id="case-reminder-add" type="button" onClick={onPlan}>
           {p.text("ui.newReminder")}
         </button>
       )}
