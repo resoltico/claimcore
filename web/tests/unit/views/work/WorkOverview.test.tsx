@@ -18,7 +18,7 @@ const observation = {
   overdueReminders: 3,
   unassignedCases: 3,
   unavailableAssigneeCases: 1,
-  attentionCases: 3,
+  attentionCases: 4,
 };
 afterEach(() => vi.unstubAllGlobals());
 it("shows named case/reminder dimensions and the server's distinct attention union", async () => {
@@ -26,7 +26,7 @@ it("shows named case/reminder dimensions and the server's distinct attention uni
   vi.stubGlobal("fetch", fetch);
   render(<WorkOverview />);
   const label = await screen.findByText("Distinct cases needing attention");
-  expect(label.parentElement).toHaveTextContent("3");
+  expect(label.parentElement).toHaveTextContent("4");
   expect(screen.getByText("Overdue reminders").parentElement).toHaveTextContent("3");
   expect(screen.getByText("Cases without a next action").parentElement).toHaveTextContent("2");
   expect(fetch).toHaveBeenCalledWith("/api/work.overview", expect.objectContaining({ body: "{}" }));
@@ -76,4 +76,22 @@ it("does not disclose aggregate existence when the current requester has no case
   );
   expect(screen.queryByText("Work overview")).toBeNull();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("keeps accessible attention and basis visible in compact mode while detailed dimensions expand", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(response("work.overview", "SUCCEEDED", observation)),
+  );
+  const view = render(<WorkOverview compact />);
+  await screen.findByRole("heading", { name: "Accessible work" });
+  await screen.findAllByText("Distinct cases needing attention");
+  expect(view.container.querySelector(".compact-work-overview")).not.toBeNull();
+  expect(view.container.querySelector(".work-attention-count")).toHaveTextContent("4");
+  expect(view.container.querySelectorAll(".observation-basis")[0]).toHaveTextContent("02/11/2026");
+  expect(view.container.querySelectorAll(".observation-basis")[0]).toHaveTextContent("Etc/UTC");
+  expect(screen.getByRole("button", { name: "Refresh work" })).toBeVisible();
+  expect(screen.getByText("Active open cases")).not.toBeVisible();
+  await userEvent.click(screen.getByText("Show summary totals", { selector: "summary" }));
+  expect(screen.getByText("Active open cases")).toBeVisible();
 });
