@@ -4,6 +4,8 @@ open System
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
+open System.Text
+open System.Text.RegularExpressions
 open System.Security.Cryptography
 open Microsoft.AspNetCore.Authentication
 open Expecto
@@ -32,6 +34,18 @@ let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
 
     FixtureFiles.write fixture.Directory (name + ".stderr") result.StandardError
     |> ignore
+
+    if result.ExitCode <> 0 then
+        let marker = Encoding.UTF8.GetString(result.StandardError).Trim()
+
+        let safe =
+            Regex.IsMatch(
+                marker,
+                @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|UNEXPECTED)\z",
+                RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+            )
+
+        Console.WriteLine("Published session failure: " + (if safe then marker else "UNCLASSIFIED"))
 
     Expect.equal result.ExitCode 0 ("Published browser session phase " + name)
 
