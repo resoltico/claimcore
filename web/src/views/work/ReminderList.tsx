@@ -41,7 +41,12 @@ export const ReminderList = ({
     }),
     [filter, target],
   );
-  const result = useEndpointPage("reminder.list", input, select, onDisclosureRefused);
+  const result = useEndpointPage<"reminder.list", ReminderReadModel, ReminderPage>(
+    "reminder.list",
+    input,
+    select,
+    onDisclosureRefused,
+  );
   return (
     <section className="reminder-list" aria-busy={result.loading}>
       <p>{p.text("ui.reminderQueueHint")}</p>
@@ -60,9 +65,11 @@ export const ReminderList = ({
             {target === undefined ? (
               <a
                 href={casePath(row.reminder.caseId)}
-                onClick={(event) =>
-                  followLink(event, () => navigate(casePath(row.reminder.caseId)))
-                }
+                onClick={(event) => {
+                  followLink(event, () => {
+                    navigate(casePath(row.reminder.caseId));
+                  });
+                }}
               >
                 <bdi dir="ltr">{row.caseReference}</bdi>
               </a>
@@ -79,10 +86,16 @@ export const ReminderList = ({
             <div className="actions">
               {onAct === undefined
                 ? null
-                : ["COMPLETE_AND_PLAN_NEXT", "COMPLETE", "UPDATE", "CANCEL", "REOPEN"]
+                : (["COMPLETE_AND_PLAN_NEXT", "COMPLETE", "UPDATE", "CANCEL", "REOPEN"] as const)
                     .filter((kind) => row.acts.includes(kind))
                     .map((kind) => (
-                      <button key={kind} type="button" onClick={() => onAct(row, kind)}>
+                      <button
+                        key={kind}
+                        type="button"
+                        onClick={() => {
+                          onAct(row, kind);
+                        }}
+                      >
                         {renderCatalogKey(
                           p,
                           operationEntry({ subject: "REMINDER", kind: `REMINDER_${kind}` }).labelId,

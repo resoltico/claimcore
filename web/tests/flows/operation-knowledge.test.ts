@@ -1,3 +1,4 @@
+import { current } from "../support/operation-form.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -8,7 +9,9 @@ afterEach(() => vi.restoreAllMocks());
 it.each([false, true])(
   "prior uncertainty survives later refusal including content conflict=%s",
   async (conflict) => {
-    vi.spyOn(service, "preview").mockResolvedValue(preview());
+    vi.spyOn(service, "preview").mockImplementation((prepared) =>
+      Promise.resolve(preview(prepared)),
+    );
     const execute = vi
       .spyOn(service, "execute")
       .mockResolvedValueOnce({
@@ -40,13 +43,33 @@ it("exact preview replay accepts without executing and an observation never reso
   if (accepted.outcome.kind !== "ACCEPTED") {
     throw new Error("Missing acceptance fixture.");
   }
-  vi.spyOn(service, "preview").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: {
-      operationId: accepted.operationId,
-      outcome: { kind: "ALREADY_ACCEPTED", data: accepted.outcome.data },
-    },
+  const acceptedReceipt = accepted.outcome.data;
+  vi.spyOn(service, "preview").mockImplementation((prepared) => {
+    if (prepared.input.kind !== "CASE" || prepared.input.act.kind !== "CLOSE") {
+      throw new Error("Expected the authored close attempt.");
+    }
+    return Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: {
+        operationId: prepared.input.operationId,
+        outcome: {
+          kind: "ALREADY_ACCEPTED",
+          data: {
+            ...acceptedReceipt,
+            operationId: prepared.input.operationId,
+            subject: {
+              kind: "CASE",
+              caseId: current.caseId,
+              caseReference: current.caseReference,
+              revision: 5,
+              act: "CLOSE",
+              snapshot: { kind: "WITHHELD" },
+            },
+          },
+        },
+      },
+    });
   });
   const execute = vi.spyOn(service, "execute");
   const view = hook();
@@ -82,7 +105,7 @@ it("preview conflict cannot execute or create uncertainty", async () => {
   expect(execute).not.toHaveBeenCalled();
 });
 it("operation observation cannot change a pending editor", async () => {
-  vi.spyOn(service, "preview").mockResolvedValue(preview());
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
   vi.spyOn(service, "execute").mockResolvedValue({
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },

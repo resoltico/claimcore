@@ -65,10 +65,6 @@ const authorCase = (kind: ActKind) => {
     case "OPEN":
       fillRegistrationInputs();
       break;
-    case "UPDATE_WORK":
-      input("act.values.followUpDate.kind", "SET");
-      input("followUpDate", "2027-12-31");
-      break;
     case "AMEND_REGISTRATION":
       input("claimantName", "Synthetic replacement");
       break;
@@ -271,8 +267,7 @@ it.each(acts)(
     }
     await user.click(
       screen.getByRole("checkbox", {
-        name:
-          act.kind === "UPDATE_WORK" ? "I confirm these work changes." : "I confirm these changes.",
+        name: "I confirm these changes.",
       }),
     );
     await user.click(getButton("Record changes"));

@@ -27,3 +27,36 @@ it("warns for an unassigned code without blocking it and explains ZZ", () => {
   view.rerender(<CatalogField field={country} value="ZZ" onChange={vi.fn()} />);
   expect(screen.getByText("ZZ: Unknown or international")).toBeVisible();
 });
+
+it("uses LF textarea and scalar guidance without UTF16 maxlength or truncation", () => {
+  const field = definition.catalog.fields.find((item) => item.name === "incidentDescription")!;
+  const value = "😀".repeat(600);
+  const onChange = vi.fn();
+  const view = render(<CatalogField field={field} value={value} onChange={onChange} />);
+  const control = screen.getByRole("textbox");
+  expect(control.tagName).toBe("TEXTAREA");
+  expect(control).toHaveValue(value);
+  expect(control).not.toHaveAttribute("maxlength");
+  expect(screen.getByText("600 of 600 Unicode scalars")).toBeVisible();
+  view.rerender(<CatalogField field={field} value={`${value}a`} onChange={onChange} />);
+  expect(control).toHaveValue(`${value}a`);
+  expect(screen.getByText("601 of 600 Unicode scalars")).toHaveAttribute("data-over-limit", "true");
+  expect(onChange).not.toHaveBeenCalled();
+});
+it("uses distinct one-line action controls with their generated 200-scalar rule", () => {
+  const field = definition.catalog.inputFields.find((item) => item.name === "reminderAction")!;
+  if (field.scalar === null) {
+    throw new Error("Missing action scalar owner");
+  }
+  render(
+    <CatalogField
+      field={{ ...field, scalar: field.scalar }}
+      value={"😀".repeat(200)}
+      onChange={vi.fn()}
+    />,
+  );
+  const control = screen.getByRole("textbox");
+  expect(control.tagName).toBe("INPUT");
+  expect(control).not.toHaveAttribute("maxlength");
+  expect(screen.getByText("200 of 200 Unicode scalars")).toBeVisible();
+});

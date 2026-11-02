@@ -168,7 +168,7 @@
   "ui.recoveryCleanupUnavailable": "The outcome is known, but this local attempt could not be cleared. Its identity has been kept; you can check status again.",
   "ui.recoveryDescription": "Check this account’s local attempts without changing the register. An unresolved status is not final nonacceptance; the check itself never blocks the operation. Final settlement is a separate permanent action.",
   "ui.recoveryEmpty": "No unresolved local attempts for this account and installation.",
-  "ui.recoveryListingUnavailable": "Recovery identities cannot be read or updated. Restore site storage access and retry.",
+  "ui.recoveryListingUnavailable": "Recovery identities cannot be read or updated. Existing records are preserved. Restore storage access, or resolve older records with the matching client before retrying.",
   "ui.recoveryUnavailable": "Not sent: recovery storage is unavailable. Enable site storage or free space, then retry. Your request has not been sent.",
   "ui.reference": "{label}: {reference}",
   "ui.refreshAccounts": "Refresh eligible accounts",

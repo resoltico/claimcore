@@ -19,8 +19,18 @@ export const workBasis: WorkDateBasis = {
   timeZone: "Etc/UTC",
 };
 export const initialMaintenance = { active: false, generation: 0 } as const;
-const emptyCaseWork = { responsibleActor: null, followUpDate: null } as const;
 const unscheduledWork: CaseWorkView = {
+  changedAt: null,
+  recordedBy: null,
+  revision: 0,
+  summary: null,
+  nextAction: null,
+  pendingReminders: 0,
+  overdueReminders: 0,
+  needsNextAction: true,
+  canUpdateSummary: false,
+  canAssign: false,
+  canCreateReminder: false,
   responsible: null,
   followUpDate: null,
   due: "UNSCHEDULED",
@@ -28,7 +38,7 @@ const unscheduledWork: CaseWorkView = {
 };
 type LiveStateSeed = {
   kind: "ACTIVE" | "VOIDED";
-  fields: Omit<CaseFields, "work"> & Partial<Pick<CaseFields, "work">>;
+  fields: CaseFields;
 };
 type AdviceSeed = Omit<CaseView["advice"], "maintenance"> &
   Partial<Pick<CaseView["advice"], "maintenance">>;
@@ -43,19 +53,17 @@ export function caseViewInput(
 ): Omit<CaseView, "state"> & { state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> };
 export function caseViewInput(value: CaseViewSeed): CaseView;
 export function caseViewInput(value: CaseViewSeed): CaseView {
-  const state =
-    value.state.kind === "ERASED"
-      ? value.state
-      : {
-          ...value.state,
-          fields: { ...value.state.fields, work: value.state.fields.work ?? emptyCaseWork },
-        };
+  const { state } = value;
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
     ...value,
     advice: { ...value.advice, maintenance: value.advice.maintenance ?? initialMaintenance },
     state,
-    work: value.work ?? { ...unscheduledWork, due: active ? "UNSCHEDULED" : "INACTIVE" },
+    work: value.work ?? {
+      ...unscheduledWork,
+      due: active ? "UNSCHEDULED" : "INACTIVE",
+      needsNextAction: active,
+    },
     mine: value.mine ?? false,
     caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
   };
@@ -82,10 +90,13 @@ const samples: Record<string, string> = {
   CURRENCY: "EUR",
 };
 
-export const registration = (changes: Partial<Registration> = {}): Registration => ({
+export const registration = (
+  changes: Partial<Registration> = {},
+): Registration & CaseFields["registration"] => ({
   ...(Object.fromEntries(
     inventory.groups.registration.map(({ key, kind }) => [key, samples[kind]]),
   ) as Registration),
+  incidentDescription: null,
   incidentNotificationDate: "2026-09-02",
   insurerName: "Synthetic insurer",
   ...changes,
@@ -167,13 +178,6 @@ const isAdviceOrContext = (value: Record<string, unknown>): boolean =>
 const completeRead = (completed: Record<string, unknown>): unknown => {
   if (isAdviceOrContext(completed)) {
     return { maintenance: initialMaintenance, ...completed };
-  }
-  if (
-    Object.hasOwn(completed, "registration") &&
-    Object.hasOwn(completed, "status") &&
-    Object.hasOwn(completed, "caseReference")
-  ) {
-    return { work: emptyCaseWork, ...completed };
   }
   if (
     Object.hasOwn(completed, "items") &&

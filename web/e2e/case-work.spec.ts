@@ -1,3 +1,4 @@
+import { recordWorkReview, workRequest } from "./work-workflow";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
@@ -41,7 +42,10 @@ test("records future planned work and scoped responsibility, then finds My cases
     () => window.performance.getEntriesByType("resource").length,
   );
   const started = performance.now();
-  await startAct(page, "Update case work");
+  await page
+    .locator(".case-work")
+    .getByRole("button", { name: "Update case work", exact: true })
+    .click();
   const renderMilliseconds = performance.now() - started;
   await page.waitForLoadState("networkidle");
   const resources = await page.evaluate(
@@ -85,12 +89,29 @@ test("records future planned work and scoped responsibility, then finds My cases
   await chooseChoice(page, "act.values.responsibleActor.kind", "SET");
   const roster = page.locator(".assignee-input");
   await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
-  await chooseChoice(page, "act.values.followUpDate.kind", "SET");
-  await fillBusinessField(page, "followUpDate", planned);
+  await page.locator('input[data-selects-fields~="handlingSummary"]').check();
+  await fillBusinessField(
+    page,
+    "handlingSummary",
+    "Waiting for the requested documents.\nContact the claimant next week.",
+  );
   await reviewDraft(page);
-  await recordReviewed(page, "I confirm these work changes.");
-  const accepted = await currentCase(page, reference);
-  expect(accepted.fields.work).toEqual({ responsibleActor: actorId, followUpDate: planned });
+  await recordWorkReview(page, "WORK");
+  await page.getByRole("button", { name: "Add reminder", exact: true }).click();
+  await fillBusinessField(page, "reminderAction", "Request the remaining documents");
+  await fillBusinessField(page, "reminderDueDate", planned);
+  await reviewDraft(page);
+  await recordWorkReview(page, "REMINDER");
+  const accepted = await workRequest(page, "case.get", {
+    target: { kind: "REFERENCE", caseReference: reference },
+  });
+  if (accepted.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected current case");
+  }
+  expect(accepted.outcome.data.revision).toBe(1);
+  expect(accepted.outcome.data.work.revision).toBe(1);
+  expect(accepted.outcome.data.work.responsible?.account.actorId).toBe(actorId);
+  expect(accepted.outcome.data.work.followUpDate).toBe(planned);
   await expect(page.locator(".case-work")).toContainText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");

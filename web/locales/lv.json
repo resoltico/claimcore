@@ -168,7 +168,7 @@
   "ui.recoveryCleanupUnavailable": "Rezultāts ir zināms, bet šo lokālo mēģinājumu neizdevās notīrīt. Tā identitāte ir saglabāta; varat vēlreiz pārbaudīt statusu.",
   "ui.recoveryDescription": "Pārbaudiet šī konta lokālos mēģinājumus, nemainot reģistru. Neatrisināts statuss nenozīmē galīgu nepieņemšanu; pati pārbaude darbību nekad nebloķē. Galīga atrisināšana ir atsevišķa, neatgriezeniska darbība.",
   "ui.recoveryEmpty": "Šim kontam un instalācijai nav neatrisinātu lokālo mēģinājumu.",
-  "ui.recoveryListingUnavailable": "Atkopšanas identitātes nevar nolasīt vai atjaunināt. Atjaunojiet piekļuvi vietnes krātuvei un mēģiniet vēlreiz.",
+  "ui.recoveryListingUnavailable": "Atkopšanas identitātes nevar nolasīt vai atjaunināt. Esošie ieraksti ir saglabāti. Atjaunojiet piekļuvi krātuvei vai pirms atkārtota mēģinājuma atrisiniet vecākos ierakstus ar atbilstošo klientu.",
   "ui.recoveryUnavailable": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Atļaujiet vietnes krātuvi vai atbrīvojiet vietu un mēģiniet vēlreiz. Pieprasījums nav nosūtīts.",
   "ui.reference": "{label}: {reference}",
   "ui.refreshAccounts": "Atjaunot atbilstošos kontus",

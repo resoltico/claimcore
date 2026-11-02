@@ -22,6 +22,9 @@ const startPseudo = async (page: Page) => {
     ...registration({ claimantName: "A\u0308 العربية\u200D", claimedAmount: "1.0000" }),
   };
   for (const [name, value] of Object.entries(values)) {
+    if (value === null) {
+      continue;
+    }
     await fillBusinessField(page, name, value);
   }
   const pending = await pauseJsonReply(page, "operation.preview");
@@ -50,6 +53,9 @@ test("authors and prepares in seeded pseudolocale then switches out with draft, 
   await expect(dialog).toContainText(identity.operationId);
 
   for (const [name, value] of Object.entries(values)) {
+    if (value === null) {
+      continue;
+    }
     const field = page.locator(`[data-field-name="${name}"]`);
     const segments = field.getByRole("spinbutton");
     await expect(

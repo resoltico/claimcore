@@ -185,6 +185,10 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     }, dimension.zoom);
   }
   await ready(page, route);
+  if (route.id === "editor-work") {
+    await page.locator(".case-work .section-heading button").click();
+    await expect(page.locator("#work-operation-title")).toBeVisible();
+  }
   if (route.summaryExpanded === true) {
     await expect(page.locator(".summary-band")).toBeVisible();
     await expect(page.locator(".summary-band[role=status]")).toHaveCount(0);

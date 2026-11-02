@@ -1,5 +1,10 @@
 import { useCallback, useState } from "react";
-import type { CaseSelector, CaseActivityPage, ResponseByEndpoint } from "@contracts/client";
+import type {
+  CaseSelector,
+  CaseActivityPage,
+  CaseActivity as Activity,
+  ResponseByEndpoint,
+} from "@contracts/client";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
@@ -29,16 +34,26 @@ export const CaseActivity = ({
     }),
     [target, detail],
   );
-  const result = useEndpointPage("case.activity", input, select, onDisclosureRefused);
+  const result = useEndpointPage<"case.activity", Activity, CaseActivityPage>(
+    "case.activity",
+    input,
+    select,
+    onDisclosureRefused,
+  );
   return (
     <section aria-labelledby="case-activity-title" aria-busy={result.loading}>
       <h2 id="case-activity-title">{p.text("ui.caseActivity")}</h2>
       {modes.includes("FULL") ? (
         <label>
-          {p.text("ui.historyDetail")}
+          {p.text("ui.caseActivity")}
           <select
             value={detail}
-            onChange={(event) => setDetail(event.target.value as "SUMMARY" | "FULL")}
+            onChange={(event) => {
+              const { value } = event.target;
+              if (value === "SUMMARY" || value === "FULL") {
+                setDetail(value);
+              }
+            }}
           >
             {modes.map((mode) => (
               <option key={mode} value={mode}>
@@ -95,5 +110,22 @@ export const CaseActivity = ({
         </button>
       )}
     </section>
+  );
+};
+
+export const CaseActivityDisclosure = (props: Parameters<typeof CaseActivity>[0]) => {
+  const p = usePresentation();
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      className="case-activity-disclosure"
+      open={open}
+      onToggle={(event) => {
+        setOpen(event.currentTarget.open);
+      }}
+    >
+      <summary>{p.text("ui.caseActivity")}</summary>
+      {open ? <CaseActivity {...props} /> : null}
+    </details>
   );
 };

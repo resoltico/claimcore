@@ -8,6 +8,7 @@ import {
   type RequestByEndpoint,
   type ResponseByEndpoint,
   type CaseAct,
+  type CaseWorkUpdate,
 } from "@contracts/client";
 import { isResponse } from "../src/protocol/client";
 import { referencePath, actPath } from "../src/routing/routes";
@@ -52,6 +53,21 @@ const caseAct = (page: Page, reference: string, revision: number, act: CaseAct) 
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
     act,
+  });
+const workAct = (page: Page, reference: string, revision: number, values: CaseWorkUpdate) =>
+  execute(page, {
+    kind: "WORK",
+    operationId: randomUUID(),
+    target: { kind: "REFERENCE", caseReference: reference },
+    expectedRevision: revision,
+    act: { kind: "UPDATE_WORK", values },
+  });
+const planReminder = (page: Page, reference: string, date: string) =>
+  execute(page, {
+    kind: "REMINDER",
+    operationId: randomUUID(),
+    target: { kind: "REFERENCE", caseReference: reference },
+    act: { kind: "CREATE", action: "Review synthetic case", dueDate: date },
   });
 const states = ["undecided", "decided", "paid", "closed", "voided", "erased"] as const;
 type CaseState = (typeof states)[number];
@@ -132,8 +148,8 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
     expectedInput: { target: { kind: "REFERENCE", caseReference: references[state] } },
   })),
   { id: "editor-open", path: "/cases/new", ready: "#operation-title" },
-  ...(["DECIDE", "CORRECT", "VOID", "UPDATE_WORK"] as const).map((act) => ({
-    id: `editor-${act === "UPDATE_WORK" ? "work" : act.toLowerCase()}`,
+  ...(["DECIDE", "CORRECT", "VOID"] as const).map((act) => ({
+    id: `editor-${act.toLowerCase()}`,
     path: actPath(
       {
         kind: "REFERENCE",
@@ -144,6 +160,12 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
     ready: "#operation-title",
     endpoint: "case.get" as const,
   })),
+  {
+    id: "editor-work",
+    path: referencePath(references.undecided),
+    ready: "#case-detail-title",
+    endpoint: "case.get",
+  },
 ];
 const routes = (data: {
   references: Record<CaseState, string>;
@@ -362,13 +384,8 @@ const setOwnerCaseWork = async (
   date: string,
   restore: () => Promise<void>,
 ) => {
-  await caseAct(page, reference, 1, {
-    kind: "UPDATE_WORK",
-    values: {
-      responsibleActor: { kind: "SET", value: actorId },
-      followUpDate: { kind: "SET", value: date },
-    },
-  });
+  await workAct(page, reference, 0, { responsibleActor: { kind: "SET", value: actorId } });
+  await planReminder(page, reference, date);
   const assigned = await request(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },
   });
@@ -379,10 +396,7 @@ const setOwnerCaseWork = async (
   expect(assigned.outcome.data.work.responsible?.account.actorId).toBe(actorId);
   return async () => {
     try {
-      await caseAct(page, reference, 2, {
-        kind: "UPDATE_WORK",
-        values: { responsibleActor: { kind: "CLEAR" }, followUpDate: { kind: "CLEAR" } },
-      });
+      await workAct(page, reference, 1, { responsibleActor: { kind: "CLEAR" } });
     } finally {
       await restore();
     }
@@ -412,13 +426,8 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   });
   const yesterday = new Date(`${date}T12:00:00Z`);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  await caseAct(page, reference, 2, {
-    kind: "UPDATE_WORK",
-    values: {
-      responsibleActor: { kind: "SET", value: actorId },
-      followUpDate: { kind: "SET", value: yesterday.toISOString().slice(0, 10) },
-    },
-  });
+  await workAct(page, reference, 0, { responsibleActor: { kind: "SET", value: actorId } });
+  await planReminder(page, reference, yesterday.toISOString().slice(0, 10));
   await applyAuthority(page, {
     kind: "AUTHORITY",
     operationId: randomUUID(),
@@ -431,7 +440,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Unavailable work must remain readable to its actual reader");
   }
-  expect(current.outcome.data.revision).toBe(3);
+  expect(current.outcome.data.revision).toBe(2);
   expect(current.outcome.data.work.responsible).toMatchObject({
     account: { actorId },
     available: false,

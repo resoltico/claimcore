@@ -6,7 +6,9 @@ import { current } from "../support/operation-form.fixtures";
 afterEach(() => vi.restoreAllMocks());
 it("consent belongs to a completed review and is cleared by a fresh preview or input edit", async () => {
   const read = pending<Awaited<ReturnType<typeof service.preview>>>();
-  vi.spyOn(service, "preview").mockResolvedValueOnce(preview()).mockReturnValueOnce(read.promise);
+  vi.spyOn(service, "preview")
+    .mockImplementationOnce((prepared) => Promise.resolve(preview(prepared)))
+    .mockReturnValueOnce(read.promise);
   const execute = vi.spyOn(service, "execute");
   const view = hook();
   act(() => {
@@ -32,7 +34,7 @@ it("consent belongs to a completed review and is cleared by a fresh preview or i
   });
   expect(execute).not.toHaveBeenCalled();
   await act(async () => {
-    read.finish(preview());
+    read.finish(preview(view.result.current.prepared ?? undefined));
     await completion!;
   });
   expect(view.result.current.confirmed).toBe(false);
@@ -60,7 +62,7 @@ it.each(["token", "target"] as const)(
     expect(view.result.current.review).toBeNull();
     expect(view.result.current.receipt).toBeNull();
     await act(async () => {
-      read.finish(preview());
+      read.finish(preview(view.result.current.prepared ?? undefined));
       await completion!;
     });
     expect(view.result.current.review).toBeNull();

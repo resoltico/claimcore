@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
 import type { OperationReceipt } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
@@ -13,6 +13,7 @@ import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
   current: CurrentCase;
+  disclosureAvailable: boolean;
   subject: "WORK" | "REMINDER";
   kind: string;
   targetIdentity?: string;
@@ -20,10 +21,12 @@ type Props = {
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
   onLockChange: (locked: boolean) => void;
+  onDisclosureRefused: () => void;
 };
 /** Reuses the same frozen review, journal-before-send, retry and scoped disclosure coordinator. */
 export const WorkOperation = ({
   current,
+  disclosureAvailable,
   subject,
   kind,
   targetIdentity,
@@ -31,6 +34,7 @@ export const WorkOperation = ({
   onClose,
   onRecorded,
   onLockChange,
+  onDisclosureRefused,
 }: Props) => {
   const p = usePresentation();
   const credential = useCredential();
@@ -54,7 +58,16 @@ export const WorkOperation = ({
     prefill: { "target.kind": "ID", "target.caseId": current.caseId, ...prefill },
     ...(targetIdentity === undefined ? {} : { targetIdentity }),
     onLockChange,
+    onDisclosureRefused,
   });
+  const invalidate = useEffectEvent(() => {
+    model.invalidateDisclosure();
+  });
+  useLayoutEffect(() => {
+    if (!disclosureAvailable) {
+      invalidate();
+    }
+  }, [disclosureAvailable]);
   const navigation = useOperationNavigation(model, onClose);
   useEffect(() => {
     if (model.ownerVerified && model.receipt !== null && model.receipt.subject.kind === subject) {
@@ -81,6 +94,7 @@ export const WorkOperation = ({
         offered={offered}
         onClose={navigation.close}
         fixedTarget
+        disclosureAvailable={disclosureAvailable}
       />
     </section>
   );
