@@ -283,9 +283,22 @@ module internal Queries =
                         record.Snapshot.State
             })
 
-    let private summaries (services: ServiceContext) (tx: IReadTx) basis records =
+    let private summaries
+        (services: ServiceContext)
+        (tx: IReadTx)
+        basis
+        (items: CasePageItem list)
+        =
         task {
-            let! work = CaseWorkReads.views tx basis records
+            let records = items |> List.map _.Case
+
+            let supplied =
+                items
+                |> List.choose (fun item ->
+                    item.WorkSummary |> Option.map (fun work -> item.Case.CaseId, work))
+                |> Map.ofList
+
+            let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
 
             return
                 work

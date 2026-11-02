@@ -17,8 +17,8 @@ module internal WorkStorage =
         DatabaseSession.namedValue<Guid> name row
         |> DatabaseSession.admitted CaseId.create
 
-    let private revision row =
-        DatabaseSession.namedValue<int64> "revision" row
+    let private revision name row =
+        DatabaseSession.namedValue<int64> name row
         |> DatabaseSession.admitted Revision.create
 
     let private actor name row =
@@ -41,14 +41,14 @@ module internal WorkStorage =
         + DatabaseSession.instantExpression "r.changed_at"
         + " AS changed_at,r.recorded_by"
 
-    let workRow row : StoredWork =
-        let id = caseId "case_id" row
-        let revision = revision row
-        let bytes = DatabaseSession.namedOptional<byte array> "snapshot" row
+    let private readWork name row : StoredWork =
+        let id = caseId (name "case_id") row
+        let revision = revision (name "revision") row
+        let bytes = DatabaseSession.namedOptional<byte array> (name "snapshot") row
         let value = bytes |> Option.map (WorkRecord.decodeSnapshot >> parsed)
-        let responsible = actorOption "responsible_actor" row
-        let summary = DatabaseSession.namedOptional<string> "handling_summary" row
-        let search = DatabaseSession.namedOptional<string> "search_text" row
+        let responsible = actorOption (name "responsible_actor") row
+        let summary = DatabaseSession.namedOptional<string> (name "handling_summary") row
+        let search = DatabaseSession.namedOptional<string> (name "search_text") row
         let expected = value |> Option.map _.Work
 
         if
@@ -71,28 +71,29 @@ module internal WorkStorage =
             Snapshot = value
             SnapshotBytes = defaultArg bytes Array.empty
             ChangedAt =
-                DatabaseSession.namedOptional<string> "changed_at" row
-                |> Option.map (fun _ -> DatabaseSession.namedRecordedInstant "changed_at" row)
-            RecordedBy = actorOption "recorded_by" row
+                DatabaseSession.namedOptional<string> (name "changed_at") row
+                |> Option.map (fun _ ->
+                    DatabaseSession.namedRecordedInstant (name "changed_at") row)
+            RecordedBy = actorOption (name "recorded_by") row
         }
 
-    let reminderRow row : StoredReminder =
+    let private readReminder name row : StoredReminder =
         let id =
-            DatabaseSession.namedValue<Guid> "reminder_id" row
+            DatabaseSession.namedValue<Guid> (name "reminder_id") row
             |> DatabaseSession.admitted ReminderId.create
 
-        let parent = caseId "case_id" row
-        let revision = revision row
-        let bytes = DatabaseSession.namedOptional<byte array> "snapshot" row
+        let parent = caseId (name "case_id") row
+        let revision = revision (name "revision") row
+        let bytes = DatabaseSession.namedOptional<byte array> (name "snapshot") row
         let value = bytes |> Option.map (ReminderRecord.decodeSnapshot >> parsed)
-        let state = DatabaseSession.namedOptional<string> "state" row
-        let action = DatabaseSession.namedOptional<string> "action" row
+        let state = DatabaseSession.namedOptional<string> (name "state") row
+        let action = DatabaseSession.namedOptional<string> (name "action") row
 
         let due =
-            DatabaseSession.namedOptionalCalendarDate "due" row
+            DatabaseSession.namedOptionalCalendarDate (name "due") row
             |> Option.map CalendarDate.ofDate
 
-        let search = DatabaseSession.namedOptional<string> "search_text" row
+        let search = DatabaseSession.namedOptional<string> (name "search_text") row
 
         if
             value
@@ -117,9 +118,13 @@ module internal WorkStorage =
             Revision = revision
             Snapshot = value
             SnapshotBytes = defaultArg bytes Array.empty
-            RecordedAt = DatabaseSession.namedRecordedInstant "changed_at" row
-            RecordedBy = actor "recorded_by" row
+            RecordedAt = DatabaseSession.namedRecordedInstant (name "changed_at") row
+            RecordedBy = actor (name "recorded_by") row
         }
+
+    let workRow row = readWork id row
+
+    let reminderRow row = readReminder id row
 
     let findWork connection id token =
         task {
@@ -151,25 +156,54 @@ module internal WorkStorage =
             | _ -> return raise (RecordCorruptException "Duplicate reminder identity.")
         }
 
+    let private workName name = "work_record_" + name
+    let private nextName name = "next_" + name
+
+    let summaryColumns =
+        "w.case_id AS work_record_case_id,w.revision AS work_record_revision,w.snapshot AS work_record_snapshot,w.responsible_actor AS work_record_responsible_actor,w.handling_summary AS work_record_handling_summary,w.search_text AS work_record_search_text,"
+        + DatabaseSession.instantExpression "w.changed_at"
+        + " AS work_record_changed_at,w.recorded_by AS work_record_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
+        + "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
+        + DatabaseSession.dateExpression "r.due"
+        + " AS next_due,r.search_text AS next_search_text,"
+        + DatabaseSession.instantExpression "r.changed_at"
+        + " AS next_changed_at,r.recorded_by AS next_recorded_by"
+
+    /// Callers select the bounded parent set before joining current reminder aggregates.
+    let summaryJoins dateParameter =
+        $"CROSS JOIN LATERAL(SELECT count(*) AS pending,count(*) FILTER(WHERE due<{dateParameter}::date) AS overdue FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING') n LEFT JOIN LATERAL(SELECT * FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING' ORDER BY due,reminder_id LIMIT 1) r ON true"
+
+    let summaryRow row =
+        match DatabaseSession.namedOptional<Guid> (workName "case_id") row with
+        | None -> None
+        | Some _ ->
+            let work = readWork workName row
+
+            let next =
+                match DatabaseSession.namedOptional<Guid> (nextName "reminder_id") row with
+                | None -> None
+                | Some _ ->
+                    match (readReminder nextName row).Snapshot with
+                    | Some value -> Some value
+                    | None -> raise (RecordCorruptException "Current next reminder has no payload.")
+
+            Some
+                {
+                    CaseWorkSummary.Work = work
+                    Next = next
+                    Pending = DatabaseSession.namedValue<int64> (workName "pending") row
+                    Overdue = DatabaseSession.namedValue<int64> (workName "overdue") row
+                }
+
     let summaries connection ids today token =
         task {
             if List.isEmpty ids then
                 return Map.empty
             else
-                let work =
-                    "w.case_id,w.revision,w.snapshot,w.responsible_actor,w.handling_summary,w.search_text,"
-                    + DatabaseSession.instantExpression "w.changed_at"
-                    + " AS changed_at,w.recorded_by"
-
-                let next =
-                    "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
-                    + DatabaseSession.dateExpression "r.due"
-                    + " AS next_due,r.search_text AS next_search_text,"
-                    + DatabaseSession.instantExpression "r.changed_at"
-                    + " AS next_changed_at,r.recorded_by AS next_recorded_by"
+                let joins = summaryJoins "$2"
 
                 let sql =
-                    $"SELECT {work},n.pending,n.overdue,{next} FROM claimcore.case_work w CROSS JOIN LATERAL(SELECT count(*) AS pending,count(*) FILTER(WHERE due<$2::date) AS overdue FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING') n LEFT JOIN LATERAL(SELECT * FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING' ORDER BY due,reminder_id LIMIT 1) r ON true WHERE w.case_id=ANY($1::uuid[])"
+                    $"SELECT {summaryColumns} FROM claimcore.case_work w {joins} WHERE w.case_id=ANY($1::uuid[])"
 
                 let! rows =
                     DatabaseSession.namedRows
@@ -181,40 +215,12 @@ module internal WorkStorage =
                 return
                     rows
                     |> List.map (fun row ->
-                        let work = workRow row
+                        let summary =
+                            summaryRow row
+                            |> Option.defaultWith (fun () ->
+                                raise (RecordCorruptException "Work summary identity is absent."))
 
-                        let next =
-                            if
-                                DatabaseSession.namedOptional<Guid> "next_reminder_id" row
-                                |> Option.isNone
-                            then
-                                None
-                            else
-                                let fields =
-                                    row
-                                    |> Map.toList
-                                    |> List.choose (fun (key, value) ->
-                                        if key.StartsWith("next_", StringComparison.Ordinal) then
-                                            Some(key.Substring(5), value)
-                                        else
-                                            None)
-                                    |> Map.ofList
-
-                                match (reminderRow fields).Snapshot with
-                                | Some next -> Some next
-                                | None ->
-                                    raise (
-                                        RecordCorruptException
-                                            "Current next reminder has no payload."
-                                    )
-
-                        work.CaseId,
-                        {
-                            CaseWorkSummary.Work = work
-                            Next = next
-                            Pending = DatabaseSession.namedValue<int64> "pending" row
-                            Overdue = DatabaseSession.namedValue<int64> "overdue" row
-                        })
+                        summary.Work.CaseId, summary)
                     |> Map.ofList
         }
 

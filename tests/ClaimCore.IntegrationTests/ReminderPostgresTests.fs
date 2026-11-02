@@ -626,6 +626,117 @@ let private projectionRepair database =
         return ()
     }
 
+let private casePageOwners database =
+    task {
+        let! actor = populated database
+
+        let! updated =
+            Service.execute
+                actor
+                (OperationInput.Work
+                    {
+                        OperationId = id 550
+                        Target = target
+                        ExpectedRevision = 0L
+                        Act =
+                            WorkAct.UpdateWork
+                                {
+                                    Summary = WorkValue.Set "Page work summary"
+                                    Responsible = WorkValue.Keep
+                                }
+                    })
+                token
+
+        accepted updated |> ignore
+
+        let! planned =
+            Service.execute
+                actor
+                (reminder
+                    551
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Current page action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        accepted planned |> ignore
+
+        let request =
+            {
+                CaseListRequest.Page = { AfterCursor = None; Limit = 1 }
+                Filter = CaseListFilter.empty
+            }
+
+        let check label =
+            task {
+                let! result = Service.list actor request token
+                Expect.equal result (Outcome.Failed CoreFault.StoreIntegrityError) label
+            }
+
+        let! positive = Service.list actor request token
+
+        let fields =
+            (read positive).Items
+            |> List.exactlyOne
+            |> _.State
+            |> CaseState.fields
+            |> Option.get
+
+        Expect.equal
+            (fields.Work.Summary |> Option.map HandlingSummary.format)
+            (Some "Page work summary")
+            "The work owner is paired with its case"
+
+        Expect.equal
+            (fields.Work.PendingReminders,
+             fields.Work.NextAction |> Option.map ReminderAction.format)
+            (1L, Some "Current page action")
+            "The page reads the independent reminder owner"
+
+        let! checkpoint = verified database
+        do! sql database "UPDATE claimcore.case_work SET search_text='wrong work owner'" [||]
+        do! check "The joined work columns are checked against their own snapshot"
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.case_work SET search_text='page work summary'; UPDATE claimcore.cases SET work_search_text='wrong case index'"
+                [||]
+
+        do!
+            check
+                "The joined work search cannot collide with the financial row's derived search column"
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.cases SET work_search_text='page work summary'; DELETE FROM claimcore.case_work"
+                [||]
+
+        do! check "A missing work root refuses instead of dropping the selected parent"
+        do! enterMaintenance database
+        let! repaired = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        Expect.isOk repaired "Verified reconstruction restores the missing work owner"
+        let! after = Service.list actor request token
+
+        let restored =
+            (read after).Items
+            |> List.exactlyOne
+            |> _.State
+            |> CaseState.fields
+            |> Option.get
+
+        Expect.equal
+            (restored.Work.Summary |> Option.map HandlingSummary.format)
+            (Some "Page work summary")
+            "The same replacement page path reads the repaired root"
+
+        let! _ = verified database
+        return ()
+    }
+
 let private currentLookup database =
     task {
         let! actor = populated database
@@ -778,6 +889,9 @@ let tests =
     testList
         "PostgreSQL reminder identity and effects"
         [
+            testCaseAsync
+                "case page joins preserve independent owner and missing-root integrity failures"
+                (run casePageOwners)
             testCaseAsync
                 "scoped current lookup includes terminal records without historical disclosure"
                 (run currentLookup)
