@@ -7,13 +7,19 @@ module RecordVersions =
     let Control = 2
 
     [<Literal>]
-    let CaseRequest = 3
+    let CaseRequest = 4
 
     [<Literal>]
-    let Snapshot = 3
+    let Snapshot = 4
 
     [<Literal>]
     let Authority = 2
 
     [<Literal>]
-    let LedgerEntry = 3
+    let LedgerEntry = 4
+
+    [<Literal>]
+    let Work = 1
+
+    [<Literal>]
+    let Reminder = 1

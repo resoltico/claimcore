@@ -124,38 +124,6 @@ module internal RecordCodecs =
         |> build
         |> named "DecisionUpdate"
 
-    let private workValue =
-        Codec.taggedOn
-            "kind"
-            "WorkValue"
-            [
-                unitVariant "CLEAR" WorkValue.Clear
-                variant
-                    "SET"
-                    WorkValue.Set
-                    (function
-                    | WorkValue.Set value -> Some value
-                    | _ -> None)
-                    (record id |> field "value" id text)
-            ]
-
-    let work =
-        let supplied =
-            function
-            | WorkValue.Keep -> None
-            | choice -> Some choice
-
-        (record (fun actor date ->
-            {
-                CaseWorkInput.Responsible = defaultArg actor WorkValue.Keep
-                FollowUp = defaultArg date WorkValue.Keep
-            })
-        : Fields<CaseWorkInput, _>)
-        |> optionalField "responsibleActor" (_.Responsible >> supplied) workValue
-        |> optionalField "followUpDate" (_.FollowUp >> supplied) workValue
-        |> build
-        |> named "CaseWorkUpdate"
-
     let registrationGroup =
         tagged
             "RegistrationGroup"
@@ -231,7 +199,6 @@ module internal RecordCodecs =
                 memberCodec DurableNames.Values registration (inject, project)
             | CaseActSlot.RegistrationUpdate(inject, project) ->
                 memberCodec "values" registrationUpdate (inject, project)
-            | CaseActSlot.Work(inject, project) -> memberCodec "values" work (inject, project)
             | CaseActSlot.Decision(inject, project) ->
                 memberCodec DurableNames.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
@@ -400,36 +367,12 @@ module internal RecordCodecs =
         acceptedGroup RecordGroup.Payment Payment.create Payment.values
         |> named "Payment"
 
-    let private acceptedWork =
-        let actor =
-            scalar
-                (fun raw ->
-                    match Guid.TryParseExact(raw, "D") with
-                    | true, value ->
-                        ActorId.create value |> Option.map Ok |> Option.defaultValue (Error())
-                    | _ -> Error())
-                ActorId.format
-
-        (record (fun responsible followUp ->
-            {
-                CaseWork.Responsible = responsible
-                FollowUp = followUp
-            })
-        : Fields<CaseWork, _>)
-        |> field "responsibleActor" _.Responsible (nullable actor)
-        |> field
-            "followUpDate"
-            _.FollowUp
-            (nullable (scalar CalendarDate.parse CalendarDate.format))
-        |> build
-
     let caseFields =
-        (record (fun reference status registration decision payment work ->
+        (record (fun reference status registration decision payment ->
             PaymentProgress.fromGroups decision payment
             |> Result.map (fun progress ->
                 {
-                    CaseFields.Work = work
-                    CaseReference = reference
+                    CaseFields.CaseReference = reference
                     Status = status
                     Registration = registration
                     Progress = progress
@@ -440,7 +383,6 @@ module internal RecordCodecs =
         |> field DurableNames.Registration _.Registration acceptedRegistration
         |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
         |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
-        |> field "work" _.Work acceptedWork
         |> buildResult (fun path () ->
             {
                 Path = path + ".payment"
