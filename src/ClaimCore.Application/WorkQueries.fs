@@ -89,6 +89,93 @@ module internal WorkQueries =
                 [ ReminderActKind.Reopen ]
             | _ -> []
 
+    let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
+        task {
+            match
+                CaseExecution.validateSelector request.Target, ReminderId.create request.ReminderId
+            with
+            | Error refusal, _ -> return Outcome.Rejected refusal
+            | _, None ->
+                return
+                    Outcome.Rejected(
+                        Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired)
+                    )
+            | Ok(), Some id ->
+                let! result =
+                    services.Store.Read(
+                        {
+                            Work =
+                                fun tx ->
+                                    task {
+                                        let! view =
+                                            ExecutionFacts.case services tx None request.Target
+
+                                        match view.Case with
+                                        | Some parent when
+                                            Authority.can
+                                                services.Principal
+                                                view.Actor
+                                                Capability.ReadCase
+                                                (Scope.Case parent.CaseId)
+                                            ->
+                                            let! value = tx.FindReminder id
+
+                                            match value with
+                                            | Some value when value.ReminderId <> id ->
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
+                                            | Some value when
+                                                value.CaseId = parent.CaseId
+                                                && value.Snapshot.IsSome
+                                                && CaseState.lifecycle parent.Snapshot.State
+                                                   <> Lifecycle.Erased
+                                                ->
+                                                let reminder = value.Snapshot.Value
+
+                                                let lifecycle =
+                                                    CaseState.lifecycle parent.Snapshot.State
+
+                                                let status =
+                                                    CaseState.fields parent.Snapshot.State
+                                                    |> Option.map _.Status
+
+                                                return
+                                                    Outcome.Succeeded
+                                                        {
+                                                            ReminderRead.Basis =
+                                                                CaseWorkReads.basis
+                                                                    services
+                                                                    tx.ObservedAt
+                                                            Item =
+                                                                {
+                                                                    Reminder = reminder
+                                                                    Reference =
+                                                                        parent.Snapshot.Reference
+                                                                    RecordedAt = value.RecordedAt
+                                                                    RecordedBy = value.RecordedBy
+                                                                    Acts =
+                                                                        reminderActs
+                                                                            services.Principal
+                                                                            view.Actor
+                                                                            view.Maintenance.Active
+                                                                            lifecycle
+                                                                            status
+                                                                            reminder
+                                                                    Active =
+                                                                        lifecycle = Lifecycle.Active
+                                                                        && status =
+                                                                            Some CaseStatus.Opened
+                                                                }
+                                                        }
+                                            | _ -> return QueryResults.unavailable
+                                        | _ -> return QueryResults.unavailable
+                                    }
+                            CancellationToken = token
+                        }
+                    )
+
+                return QueryResults.readResult result
+        }
+
     let reminders (services: ServiceContext) (request: ReminderListRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then

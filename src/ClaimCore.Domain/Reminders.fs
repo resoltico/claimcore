@@ -248,23 +248,28 @@ module ReminderActKind =
 type ReminderPlanInput = { Action: string; Due: string }
 
 [<RequireQualifiedAccess>]
-type AuthoredReminderAct =
+type ReminderAct<'revision> =
     | Create of ReminderPlanInput
-    | Update of reminderId: Guid * expectedRevision: int64 * ReminderPlanInput
-    | Complete of reminderId: Guid * expectedRevision: int64
-    | Cancel of reminderId: Guid * expectedRevision: int64
-    | Reopen of reminderId: Guid * expectedRevision: int64 * due: string
-    | CompleteAndPlanNext of reminderId: Guid * expectedRevision: int64 * ReminderPlanInput
+    | Update of reminderId: Guid * expectedRevision: 'revision * ReminderPlanInput
+    | Complete of reminderId: Guid * expectedRevision: 'revision
+    | Cancel of reminderId: Guid * expectedRevision: 'revision
+    | Reopen of reminderId: Guid * expectedRevision: 'revision * due: string
+    | CompleteAndPlanNext of reminderId: Guid * expectedRevision: 'revision * ReminderPlanInput
 
-module AuthoredReminderAct =
+type AuthoredReminderAct = ReminderAct<int64>
+
+module ReminderAct =
     let kind =
         function
-        | AuthoredReminderAct.Create _ -> ReminderActKind.Create
-        | AuthoredReminderAct.Update _ -> ReminderActKind.Update
-        | AuthoredReminderAct.Complete _ -> ReminderActKind.Complete
-        | AuthoredReminderAct.Cancel _ -> ReminderActKind.Cancel
-        | AuthoredReminderAct.Reopen _ -> ReminderActKind.Reopen
-        | AuthoredReminderAct.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
+        | ReminderAct.Create _ -> ReminderActKind.Create
+        | ReminderAct.Update _ -> ReminderActKind.Update
+        | ReminderAct.Complete _ -> ReminderActKind.Complete
+        | ReminderAct.Cancel _ -> ReminderActKind.Cancel
+        | ReminderAct.Reopen _ -> ReminderActKind.Reopen
+        | ReminderAct.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
+
+module AuthoredReminderAct =
+    let kind = ReminderAct.kind
 
 [<RequireQualifiedAccess>]
 type ReminderDue =
