@@ -38,8 +38,7 @@ const contextRequest = (context, fingerprint, csrf, cookie) =>
 const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
-  require(response.status() === 200 &&
-    reply.outcome.kind === "SUCCEEDED", "CONTEXT_REFUSED");
+  require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "CONTEXT_REFUSED");
   require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "OWNER_MISSING");
 };
 const login = async (context, fingerprint) => {
