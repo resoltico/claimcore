@@ -10,7 +10,7 @@ import {
   reviewFrom,
   confirmReview,
   noHorizontalOverflow,
-  trackRequests,
+  trackForegroundRequests,
 } from "./localization-support";
 
 const startPseudo = async (page: Page) => {
@@ -43,7 +43,7 @@ test("authors and prepares in seeded pseudolocale then switches out with draft, 
   const { values, identity } = await startPseudo(page);
   const dialog = page.getByRole("dialog");
   const original = await dialog.elementHandle();
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   await page.setViewportSize({ width: 320, height: 720 });
   await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);

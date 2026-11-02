@@ -3,7 +3,7 @@ import { openApplication, openAuthenticated } from "./session-helpers";
 import {
   expectPreferences,
   selectLanguage,
-  trackRequests,
+  trackForegroundRequests,
   ui,
   seedPresentation,
   openLabel,
@@ -82,7 +82,7 @@ for (const authenticated of [false, true]) {
         }) => {
           await seedPresentation(page, source, displayLocale);
           await openPairPage(page, source, authenticated);
-          const requests = trackRequests(page);
+          const requests = trackForegroundRequests(page);
           await selectLanguage(page, target);
           await visibleLanguage(page, target, authenticated);
           await expectPreferences(page, { displayLocale });

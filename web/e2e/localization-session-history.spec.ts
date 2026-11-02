@@ -6,7 +6,7 @@ import { login, logout, openAuthenticated } from "./session-helpers";
 import {
   selectLanguage,
   selectFormat,
-  trackRequests,
+  trackForegroundRequests,
   ui,
   expectPreferences,
 } from "./localization-support";
@@ -28,7 +28,7 @@ test("updates visible detail and expanded history immediately with independent f
   await expect(history).toHaveAttribute("open", "");
   await selectFormat(page, "ar-EG");
   const original = await history.elementHandle();
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
     await expect(

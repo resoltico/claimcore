@@ -8,7 +8,7 @@ import {
   pauseJsonReply,
   businessFormatRefusalText,
   expectBusinessFormatRefusal,
-  trackRequests,
+  trackForegroundRequests,
 } from "./localization-support";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
@@ -19,7 +19,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   await startOpen(page, `INVALID-${randomUUID()}`);
   const amount = page.getByLabel("Amount claimed", { exact: true });
   await amount.fill("00.10");
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   await expectBusinessFormatRefusal(page, "claimedAmount", "DECIMAL_FORMAT", () =>
     page.getByRole("button", { name: "Review changes" }).click(),
   );
