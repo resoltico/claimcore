@@ -51,6 +51,8 @@ type CaseActivity =
 
 type CaseActivityPage =
     {
+        CaseId: CaseId
+        Reference: CaseReference
         Items: CaseActivity list
         NextCursor: string option
     }
