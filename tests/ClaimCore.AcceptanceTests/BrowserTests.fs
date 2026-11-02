@@ -310,7 +310,8 @@ let private printFailureSummary root engine bytes =
 
 let private runBrowser root engine output start =
     try
-        PublishedProcesses.run 900_000 start None
+        // Leave one minute to report and clean up after Playwright's 20-minute suite bound.
+        PublishedProcesses.run (21 * 60_000) start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore

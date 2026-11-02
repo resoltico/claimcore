@@ -44,7 +44,8 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: true,
   maxFailures: 1,
-  globalTimeout: 840_000,
+  // Bound the complete matrix and workflow inventory, independently of per-test deadlines.
+  globalTimeout: 20 * 60_000,
   workers: 1,
   outputDir: privateOutput,
   reporter: [["list"], ["json", { outputFile: resolve(privateOutput, "playwright.json") }]],
