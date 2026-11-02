@@ -65,6 +65,8 @@ module internal ReadRowCodecs =
         (record
             (fun
                 revision
+                changedAt
+                recordedBy
                 summary
                 nextAction
                 pending
@@ -79,6 +81,8 @@ module internal ReadRowCodecs =
                 basis ->
                 {
                     CaseWorkView.Revision = revision
+                    ChangedAt = changedAt
+                    RecordedBy = recordedBy
                     Summary = summary
                     NextAction = nextAction
                     PendingReminders = pending
@@ -94,6 +98,8 @@ module internal ReadRowCodecs =
                 })
         : Fields<CaseWorkView, _>)
         |> field "revision" _.Revision revision
+        |> field "changedAt" _.ChangedAt (nullable instant)
+        |> field "recordedBy" _.RecordedBy (nullable actorId)
         |> field "summary" _.Summary (nullable handlingSummary)
         |> field "nextAction" _.NextAction (nullable reminderAction)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)

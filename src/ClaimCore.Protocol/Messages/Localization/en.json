@@ -345,6 +345,8 @@
   "label.revisionLabel": "Revision",
   "label.unassignedCases": "Unassigned cases",
   "label.unavailableAssigneeCases": "Cases with unavailable assignee",
+  "label.workChangedAt": "Work changed at",
+  "label.workRecordedBy": "Work recorded by",
   "label.workRevision": "Work revision",
   "lifecycle.ACTIVE.label": "Active",
   "lifecycle.ERASED.label": "Erased",

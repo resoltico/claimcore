@@ -276,6 +276,10 @@ let internal authorityFieldPresentation () =
         let prefix =
             match identity with
             | InteractionInput.Target _ -> "field."
+            | InteractionInput.ReminderState
+            | InteractionInput.ReminderDue
+            | InteractionInput.IncludeInactive
+            | InteractionInput.Mine
             | InteractionInput.Scope
             | InteractionInput.ActorId
             | InteractionInput.CaseId
