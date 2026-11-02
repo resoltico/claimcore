@@ -37,6 +37,8 @@ module internal CaseWorkReads =
                     let view =
                         {
                             CaseWorkView.Revision = summary |> Option.map _.Work.Revision |> Option.defaultValue Revision.zero
+                            ChangedAt = if erased then None else summary |> Option.bind _.Work.ChangedAt
+                            RecordedBy = if erased then None else summary |> Option.bind _.Work.RecordedBy
                             Summary = if erased then None else work.Summary
                             NextAction = if erased then None else next |> Option.map Reminder.action
                             PendingReminders = if erased then 0L else pending
