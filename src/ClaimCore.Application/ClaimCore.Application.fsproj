@@ -23,6 +23,7 @@
     <Compile Include="Resolution.fs" />
     <Compile Include="RecoveryStatus.fs" />
     <Compile Include="WorkExecution.fs" />
+    <Compile Include="WorkQueries.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />
