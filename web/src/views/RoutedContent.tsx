@@ -14,6 +14,7 @@ import { actPath, casePath, referencePath, type Route } from "../routing/routes"
 import { navigate } from "../routing/navigation";
 import type { AuthorityPanel as AuthorityPanelType } from "./AuthorityPanel";
 import type { CaseDetail as CaseDetailType } from "./CaseDetail";
+import { WorkQueue } from "./work/WorkQueue";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
@@ -200,6 +201,8 @@ export const RoutedContent = ({
 }) => {
   const { selectCase, openCase, backToCases } = useCaseNavigation();
   switch (route.screen) {
+    case "work":
+      return <WorkQueue />;
     case "cases":
       return <CaseList onSelect={selectCase} onOpen={openCase} />;
     case "case":
@@ -210,6 +213,7 @@ export const RoutedContent = ({
           definition={productMetadata.catalog}
           onBack={backToCases}
           onAct={selectAct}
+          onMutationLockChange={setLocked}
         />
       );
     case "newCase":

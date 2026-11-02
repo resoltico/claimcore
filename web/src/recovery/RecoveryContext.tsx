@@ -52,6 +52,17 @@ const recoverAttempt = async (
   if (!finalResolution(result) || result.kind !== "outcome") {
     return { notice: resultNotice(result), removed: false, cleanupFailed: false };
   }
+  if (
+    result.value.outcome.kind === "ACCEPTED" &&
+    (result.value.outcome.data.subject.kind !== record.subject ||
+      result.value.outcome.data.subject.act !== record.act)
+  ) {
+    return {
+      notice: { kind: "local", reason: "incomplete" },
+      removed: false,
+      cleanupFailed: false,
+    };
+  }
   const notice: Notice =
     result.value.outcome.kind === "ACCEPTED"
       ? { kind: "accepted", operationId: record.operationId }
