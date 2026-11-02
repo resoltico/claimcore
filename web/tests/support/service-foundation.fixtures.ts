@@ -1,7 +1,6 @@
 import { registration } from "./inputs";
 import type { OperationReview, CaseFields } from "../../src/api/service";
 export const caseFields: CaseFields = {
-  work: { responsibleActor: null, followUpDate: null },
   caseReference: "CASE-1",
   status: "OPENED",
   progress: "UNDECIDED",

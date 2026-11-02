@@ -1,14 +1,14 @@
 import type { CaseSelector, CaseView } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
-import { useCredential } from "../session/SessionContext";
+import { useState } from "react";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
-import { CaseActivity } from "./work/CaseActivity";
+import { CaseActivityDisclosure } from "./work/CaseActivity";
 import { CaseReminders } from "./work/CaseReminders";
 import { CaseFacts } from "./case/CaseFacts";
 import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
@@ -27,7 +27,7 @@ type CaseDetailProps = {
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
-  onMutationLockChange: (locked: boolean) => void;
+  onMutationLockChange?: (locked: boolean) => void;
   onAct: (current: CurrentCase, act: ActKind) => void;
 };
 
@@ -51,36 +51,49 @@ const CurrentPresentation = ({
   onAct,
   onChanged,
   onMutationLockChange,
+  disclosureAvailable,
 }: {
   current: CurrentCase;
   definition: CatalogDocument;
   onAct: (current: CurrentCase, act: ActKind) => void;
   onChanged: () => void;
+  disclosureAvailable: boolean;
   onMutationLockChange: (locked: boolean) => void;
 }) => {
   const globalPaused = useRequesterContext()?.maintenance.active === true;
   return (
     <>
-      <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
-      <p className="case-claimant">
-        <bdi>{current.state.fields.registration.claimantName}</bdi>
-        <CharacterWarning value={current.state.fields.registration.claimantName} />
-      </p>
-      <CaseProgress current={current} definition={definition} />
-      <CaseReminders current={current} onChanged={onChanged} onLockChange={onMutationLockChange} />
-      <div className="case-workspace">
-        <CaseFacts
-          values={current.state.fields}
-          revision={current.revision}
-          fields={definition.fields}
-        />
-        <CaseActions
-          current={current}
-          onAct={(act) => {
-            onAct(current, act);
-          }}
-        />
-      </div>
+      {disclosureAvailable ? (
+        <>
+          <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
+          <p className="case-claimant">
+            <bdi>{current.state.fields.registration.claimantName}</bdi>
+            <CharacterWarning value={current.state.fields.registration.claimantName} />
+          </p>
+          <CaseProgress current={current} definition={definition} />
+        </>
+      ) : null}
+      <CaseReminders
+        current={current}
+        onChanged={onChanged}
+        onLockChange={onMutationLockChange}
+        disclosureAvailable={disclosureAvailable}
+      />
+      {disclosureAvailable ? (
+        <div className="case-workspace">
+          <CaseFacts
+            values={current.state.fields}
+            revision={current.revision}
+            fields={definition.fields}
+          />
+          <CaseActions
+            current={current}
+            onAct={(act) => {
+              onAct(current, act);
+            }}
+          />
+        </div>
+      ) : null}
     </>
   );
 };
@@ -164,17 +177,26 @@ const CaseHeader = ({
   );
 };
 
+const ignoreMutationLock = (_locked: boolean): void => undefined;
+const useRetainedCase = (lookup: CurrentCase | null) => {
+  const [retained, setRetained] = useState<CurrentCase | null>(null);
+  if (lookup !== null && lookup !== retained) {
+    setRetained(lookup);
+  }
+  return lookup ?? retained;
+};
 const CaseDisclosure = ({
   target,
   definition,
   onBack,
   onAct,
-  onMutationLockChange,
+  onMutationLockChange = ignoreMutationLock,
 }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(target);
   const state = current.value;
   const lookup = state !== null && isCurrentCase(state) ? state : null;
+  const mounted = useRetainedCase(lookup);
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
@@ -190,9 +212,10 @@ const CaseDisclosure = ({
           {p.text("ui.tryAgain")}
         </Button>
       )}
-      {lookup === null ? null : (
+      {mounted === null ? null : (
         <CurrentPresentation
-          current={lookup}
+          current={mounted}
+          disclosureAvailable={lookup !== null}
           definition={definition}
           onAct={onAct}
           onChanged={current.revalidate}
@@ -206,7 +229,7 @@ const CaseDisclosure = ({
         </p>
       ) : null}
       {current.historyModes.length ? (
-        <CaseActivity
+        <CaseActivityDisclosure
           target={target}
           modes={current.historyModes}
           onDisclosureRefused={current.revalidate}
@@ -224,12 +247,6 @@ const CaseDisclosure = ({
   );
 };
 
-export const CaseDetail = (props: CaseDetailProps) => {
-  const credential = useCredential();
-  return (
-    <CaseDisclosure
-      key={JSON.stringify([props.target, credential, props.reloadSignal])}
-      {...props}
-    />
-  );
-};
+export const CaseDetail = (props: CaseDetailProps) => (
+  <CaseDisclosure key={JSON.stringify([props.target, props.reloadSignal])} {...props} />
+);

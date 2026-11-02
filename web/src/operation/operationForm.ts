@@ -64,7 +64,7 @@ const initialValue = (
   return authoredValue(input, current);
 };
 export const selectableFact = (entry: CatalogEntry, input: CatalogInput): boolean =>
-  entry.subject === "CASE" &&
+  entry.subject !== "AUTHORITY" &&
   entry.endpoint === "operation.execute" &&
   input.source === "AUTHORED" &&
   input.kind.kind === "TEXT" &&
@@ -111,5 +111,17 @@ export const visibleOperationInputs = (
     (input) =>
       input.source === "AUTHORED" &&
       !(input.field === "caseReference" && current !== null) &&
-      applies(input, values),
+      applies(input, values) &&
+      !(
+        entry.subject === "WORK" &&
+        current !== null &&
+        !current.work.canAssign &&
+        input.path.includes("responsibleActor")
+      ) &&
+      !(
+        entry.subject === "WORK" &&
+        current !== null &&
+        !current.work.canUpdateSummary &&
+        input.field === "handlingSummary"
+      ),
   );

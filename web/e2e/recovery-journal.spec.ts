@@ -12,6 +12,14 @@ import { isResponse } from "../src/protocol/client";
 
 /** Serve the actual adapter source in this isolated test page, without a product debug endpoint. */
 const adapter = async (page: Page) => {
+  const catalog = await readFile(new URL("../../contracts/catalog.json", import.meta.url), "utf8");
+  // The source adapter imports actual generated metadata; storage and validation code stay intact.
+  await page.route("**/__claimcore_qa__/protocol/productMetadata", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `export const productMetadata = {catalog:${catalog}};`,
+    }),
+  );
   for (const [path, file] of [
     ["**/__claimcore_qa__/recovery/indexedJournal.js", "../src/recovery/indexedJournal.ts"],
     ["**/__claimcore_qa__/protocol/recoveryJournal", "../src/protocol/recoveryJournal.ts"],
@@ -547,4 +555,102 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
   } finally {
     release.resolve();
   }
+});
+
+test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  await adapter(page);
+  const scope = await scopeFor(page);
+  const work: RecoveryRecord = {
+    ...scope,
+    format: 2,
+    attemptId: randomUUID(),
+    operationId: randomUUID(),
+    subject: "WORK",
+    act: "UPDATE_WORK",
+  };
+  const reminder: RecoveryRecord = {
+    ...scope,
+    format: 2,
+    attemptId: randomUUID(),
+    operationId: randomUUID(),
+    subject: "REMINDER",
+    act: "COMPLETE_AND_PLAN_NEXT",
+  };
+  await page.evaluate(
+    async ({ work: selectedWork, reminder: selectedReminder }) => {
+      const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const module = (await import(path)) as typeof IndexedJournalModule;
+      const journal = module.createIndexedJournal(indexedDB, "claimcore.qa.work-identities");
+      await journal.put(selectedWork);
+      await journal.put(selectedReminder);
+    },
+    { work, reminder },
+  );
+  const stored = await page.evaluate(async (selectedScope) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    return module
+      .createIndexedJournal(indexedDB, "claimcore.qa.work-identities")
+      .list(selectedScope);
+  }, scope);
+  expect(stored).toHaveLength(2);
+  for (const record of stored) {
+    expect(Object.keys(record).sort()).toEqual(keys);
+  }
+  const result = await page.evaluate(
+    async ({ record, scope: selectedScope }) => {
+      const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const module = (await import(path)) as typeof IndexedJournalModule;
+      const old = { ...record, format: 1 };
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("claimcore.qa.old-identity", 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore("attempts");
+        };
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error(request.error?.message ?? "IndexedDB request failed"));
+        };
+      });
+      const key = [old.serviceOrigin, old.installationId, old.actorId, old.attemptId];
+      await new Promise<void>((resolve, reject) => {
+        const tx = database.transaction("attempts", "readwrite");
+        tx.objectStore("attempts").add(old, key);
+        tx.oncomplete = () => {
+          resolve();
+        };
+        tx.onabort = () => {
+          reject(new Error(tx.error?.message ?? "IndexedDB transaction aborted"));
+        };
+      });
+      let refused = false;
+      try {
+        await module
+          .createIndexedJournal(indexedDB, "claimcore.qa.old-identity")
+          .list(selectedScope);
+      } catch {
+        refused = true;
+      }
+      const retained = await new Promise<unknown>((resolve, reject) => {
+        const tx = database.transaction("attempts", "readonly");
+        const request = tx.objectStore("attempts").get(key);
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error(request.error?.message ?? "IndexedDB request failed"));
+        };
+      });
+      database.close();
+      return { refused, retained };
+    },
+    { record: work, scope },
+  );
+  expect(result.refused).toBe(true);
+  expect(result.retained).toEqual({ ...work, format: 1 });
 });

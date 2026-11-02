@@ -365,12 +365,12 @@ const SelectedFact = ({
             type="checkbox"
             disabled={props.disabled}
             checked={props.values[bindingPath(input)] === null}
-            onChange={(event) =>
+            onChange={(event) => {
               props.onChange(
                 bindingPath(input),
                 event.target.checked ? null : prefilledValue(props.current, input.prefill),
-              )
-            }
+              );
+            }}
           />
           {p.text("ui.clearValue")}
         </label>

@@ -31,7 +31,6 @@ const setupDecision = {
 
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
-    work: { responsibleActor: null, followUpDate: null },
     caseReference: reference,
     status: "OPENED",
     progress: "UNDECIDED",

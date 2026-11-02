@@ -44,7 +44,7 @@ const implicitChoice = (input: CatalogInput, value: unknown): boolean =>
 
 // Selected partial facts keep empty authored text for core diagnostics.
 const selectedFact = (entry: CatalogEntry, input: CatalogInput, values: FormValues): boolean =>
-  entry.subject !== null &&
+  entry.subject !== "AUTHORITY" &&
   entry.endpoint === "operation.execute" &&
   input.source === "AUTHORED" &&
   input.kind.kind === "TEXT" &&
@@ -67,7 +67,9 @@ export const assembleCatalogInput = (
   values: FormValues,
 ): Record<string, unknown> => {
   const root: Record<string, unknown> = {};
-  for (const constant of entry.constants.filter((item) => applies(item, values))) {
+  for (const constant of entry.constants.filter(
+    (item) => !item.requiresParent && applies(item, values),
+  )) {
     assign(root, constant.path, constant.value);
   }
   for (const input of entry.inputs.filter((item) => applies(item, values))) {
@@ -82,6 +84,13 @@ export const assembleCatalogInput = (
       input.path,
       input.kind.kind === "INTEGER" && value !== null ? Number(value) : value,
     );
+  }
+  for (const constant of entry.constants.filter(
+    (item) => item.requiresParent && applies(item, values),
+  )) {
+    if (isObject(atPath(root, constant.path.slice(0, -1)))) {
+      assign(root, constant.path, constant.value);
+    }
   }
   return root;
 };

@@ -27,6 +27,12 @@ const valueDirection = (field: FieldCatalogEntry): "ltr" | "auto" =>
   field.scalar.kind === "PLANNED_DATE"
     ? "ltr"
     : "auto";
+const valueClass = (field: FieldCatalogEntry) => {
+  if (field.name === "caseReference") {
+    return "identifier-value";
+  }
+  return field.scalar.kind === "PLAIN_TEXT" ? "plain-text-value" : undefined;
+};
 export const BusinessValue = ({
   value,
   field,
@@ -46,16 +52,7 @@ export const BusinessValue = ({
   return (
     <span>
       {context === undefined ? (
-        <bdi
-          dir={valueDirection(field)}
-          className={
-            field.name === "caseReference"
-              ? "identifier-value"
-              : field.scalar.kind === "PLAIN_TEXT"
-                ? "plain-text-value"
-                : undefined
-          }
-        >
+        <bdi dir={valueDirection(field)} className={valueClass(field)}>
           {display}
         </bdi>
       ) : (
@@ -63,17 +60,7 @@ export const BusinessValue = ({
           p,
           context,
           { value: display },
-          <bdi
-            key="value"
-            dir={valueDirection(field)}
-            className={
-              field.name === "caseReference"
-                ? "identifier-value"
-                : field.scalar.kind === "PLAIN_TEXT"
-                  ? "plain-text-value"
-                  : undefined
-            }
-          >
+          <bdi key="value" dir={valueDirection(field)} className={valueClass(field)}>
             {display}
           </bdi>,
           "value",
