@@ -366,6 +366,59 @@ let private causalParent database =
         do! finding VerificationFinding.PayloadFormat database
     }
 
+let private causalRevision database =
+    task {
+        let! actor = populated database
+
+        let! planned =
+            Service.execute
+                actor
+                (reminder
+                    700
+                    (AuthoredReminderAct.Create
+                        {
+                            Action = "Original action"
+                            Due = "2027-01-01"
+                        }))
+                token
+
+        accepted planned |> ignore
+
+        let! completed =
+            Service.execute actor (reminder 701 (AuthoredReminderAct.Complete(id 700, 1L))) token
+
+        let receipt = accepted completed
+        let! _ = verified database
+
+        do!
+            rewrite database receipt.Position.Sequence (fun original ->
+                let data =
+                    LedgerEntry.decodePayload
+                        LedgerPayload.MaximumBytes
+                        original.Entry.Payload.Value
+                    |> parsed
+
+                let request = ReminderRecord.decodeRequest data.Request |> parsed
+
+                let changed =
+                    match request.Command with
+                    | ReminderCommand.Change(parent, id, _, ReminderChange.Complete) ->
+                        { request with
+                            Command =
+                                ReminderCommand.Change(
+                                    parent,
+                                    id,
+                                    Revision.create 9007199254740991L |> Option.get,
+                                    ReminderChange.Complete
+                                )
+                        }
+                    | _ -> failtest "A completion request fixture is required"
+
+                payload (ReminderRecord.encodeRequest changed) data.Snapshot original)
+
+        do! finding VerificationFinding.PayloadFormat database
+    }
+
 let private projectionRepair database =
     task {
         let! actor = populated database
@@ -571,6 +624,9 @@ let tests =
             testCaseAsync
                 "rehashed reminder parent must match its retained command"
                 (run causalParent)
+            testCaseAsync
+                "maximum retained expected revision returns a finding without overflow"
+                (run causalRevision)
             testCaseAsync
                 "verification and rebuild cover reminder dates and independent work search"
                 (run projectionRepair)
