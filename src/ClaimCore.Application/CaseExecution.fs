@@ -75,7 +75,15 @@ module internal CaseExecution =
         |> Result.bind (fun value ->
             let indexed = CaseIndex.create record.Index.ChangedAt record.Snapshot
 
-            if { indexed with Responsible = record.Index.Responsible; FollowUp = record.Index.FollowUp } = record.Index && record.Snapshot.CaseId = record.CaseId then
+            if
+                { indexed with
+                    Responsible = record.Index.Responsible
+                    FollowUp = record.Index.FollowUp
+                }
+                    =
+                    record.Index
+                && record.Snapshot.CaseId = record.CaseId
+            then
                 Ok value
             else
                 Error CoreFault.StoreIntegrityError)
@@ -160,13 +168,16 @@ module internal CaseExecution =
                 )
             Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             Current =
-                ReceiptCurrent.Case(Some
-                    {
-                        CaseId = id
-                        Snapshot = snapshot
-                        Index = index
-                        SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-                    })
+                ReceiptCurrent.Case(
+                    Some
+                        {
+                            CaseId = id
+                            Snapshot = snapshot
+                            Index = index
+                            SnapshotBytes =
+                                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+                        }
+                )
             Projection = projection
         }
 

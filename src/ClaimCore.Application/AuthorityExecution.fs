@@ -178,7 +178,11 @@ module internal AuthorityExecution =
                 | Ok validated ->
                     match LedgerEntries.identityBytes validated with
                     | Some accepted when accepted = bytes ->
-                        LedgerEntries.receipt principal view.Actor ReceiptCurrent.Authority validated
+                        LedgerEntries.receipt
+                            principal
+                            view.Actor
+                            ReceiptCurrent.Authority
+                            validated
                         |> Result.map Verdict.Replay
                         |> Result.defaultWith Verdict.Fail
                     | _ -> Verdict.Refuse Refusal.IdempotencyConflict

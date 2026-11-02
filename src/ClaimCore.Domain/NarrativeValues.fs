@@ -25,7 +25,8 @@ module IncidentDescription =
         |> Result.map IncidentDescription
 
     let admit (IncidentDescription value) =
-        ScalarText.admitPlain MaximumScalars true value |> Result.map IncidentDescription
+        ScalarText.admitPlain MaximumScalars true value
+        |> Result.map IncidentDescription
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type HandlingSummary = private HandlingSummary of string

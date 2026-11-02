@@ -27,210 +27,535 @@ module internal WorkExecution =
         }
 
     let private input target parse raw =
-        parse raw |> Result.mapError (fun violation -> Refusal.invalidInput (target, violation))
+        parse raw
+        |> Result.mapError (fun violation -> Refusal.invalidInput (target, violation))
 
     let private operation raw =
-        OperationId.create raw |> Option.map Ok |> Option.defaultValue (Error(Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired)))
+        OperationId.create raw
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired))
+        )
 
     let private revision target raw =
-        Revision.create raw |> Option.map Ok |> Option.defaultValue (Error(Refusal.invalidInput (target, Violation.ExpectedRevisionRange)))
+        Revision.create raw
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(Refusal.invalidInput (target, Violation.ExpectedRevisionRange))
+        )
 
     let private reminderId raw =
-        ReminderId.create raw |> Option.map Ok |> Option.defaultValue (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+        ReminderId.create raw
+        |> Option.map Ok
+        |> Option.defaultValue (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
 
     let private plan (raw: ReminderPlanInput) =
         Admission.map2
-            (fun action due -> { ReminderPlan.Action = action; Due = due })
+            (fun action due ->
+                {
+                    ReminderPlan.Action = action
+                    Due = due
+                })
             (input InputTarget.ReminderAction ReminderAction.parse raw.Action)
             (input InputTarget.ReminderDueDate CalendarDate.parse raw.Due)
 
-    let private reminderAct = function
+    let private reminderAct =
+        function
         | AuthoredReminderAct.Create value -> plan value |> Result.map Create
         | act ->
             let id, expected, change =
                 match act with
-                | AuthoredReminderAct.Update(id, expected, value) -> id, expected, plan value |> Result.map ReminderChange.Update
-                | AuthoredReminderAct.Complete(id, expected) -> id, expected, Ok ReminderChange.Complete
+                | AuthoredReminderAct.Update(id, expected, value) ->
+                    id, expected, plan value |> Result.map ReminderChange.Update
+                | AuthoredReminderAct.Complete(id, expected) ->
+                    id, expected, Ok ReminderChange.Complete
                 | AuthoredReminderAct.Cancel(id, expected) -> id, expected, Ok ReminderChange.Cancel
-                | AuthoredReminderAct.Reopen(id, expected, date) -> id, expected, input InputTarget.ReminderDueDate CalendarDate.parse date |> Result.map ReminderChange.Reopen
-                | AuthoredReminderAct.CompleteAndPlanNext(id, expected, value) -> id, expected, plan value |> Result.map ReminderChange.CompleteAndPlanNext
+                | AuthoredReminderAct.Reopen(id, expected, date) ->
+                    id,
+                    expected,
+                    input InputTarget.ReminderDueDate CalendarDate.parse date
+                    |> Result.map ReminderChange.Reopen
+                | AuthoredReminderAct.CompleteAndPlanNext(id, expected, value) ->
+                    id, expected, plan value |> Result.map ReminderChange.CompleteAndPlanNext
                 | AuthoredReminderAct.Create _ -> invalidOp "Creation is handled separately."
-            Admission.map2 (fun (id, expected) change -> Change(id, expected, change))
-                (Admission.map2 (fun id expected -> id, expected) (reminderId id) (revision InputTarget.ExpectedReminderRevision expected)) change
+
+            Admission.map2
+                (fun (id, expected) change -> Change(id, expected, change))
+                (Admission.map2
+                    (fun id expected -> id, expected)
+                    (reminderId id)
+                    (revision InputTarget.ExpectedReminderRevision expected))
+                change
 
     let prepareWork (request: WorkOperationRequest) =
         let (WorkAct.UpdateWork raw) = request.Act
+
         let update =
             CaseWorkInput.parse raw
             |> Result.mapError (fun issues ->
-                issues |> List.map (fun (field, violation) -> { Target = InputTarget.Field field; RelatedDate = None; Violation = violation })
-                |> InputIssues.ofList |> Option.get |> Refusal.InvalidInput)
+                issues
+                |> List.map (fun (field, violation) ->
+                    {
+                        Target = InputTarget.Field field
+                        RelatedDate = None
+                        Violation = violation
+                    })
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput)
+
         Admission.map2
             (fun (operation, expected) update -> Work(operation, request.Target, expected, update))
-            (Admission.map2 (fun operation expected -> operation, expected) (operation request.OperationId) (revision InputTarget.ExpectedWorkRevision request.ExpectedRevision))
+            (Admission.map2
+                (fun operation expected -> operation, expected)
+                (operation request.OperationId)
+                (revision InputTarget.ExpectedWorkRevision request.ExpectedRevision))
             update
-        |> Result.bind (fun result -> CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        |> Result.bind (fun result ->
+            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
 
     let prepareReminder (request: ReminderOperationRequest) =
-        Admission.map2 (fun operation act -> Reminder(operation, request.Target, act)) (operation request.OperationId) (reminderAct request.Act)
-        |> Result.bind (fun result -> CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        Admission.map2
+            (fun operation act -> Reminder(operation, request.Target, act))
+            (operation request.OperationId)
+            (reminderAct request.Act)
+        |> Result.bind (fun result ->
+            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
 
-    let private target = function Work(_, target, _, _) | Reminder(_, target, _) -> target
-    let private identity = function Work(operation, _, _, _) | Reminder(operation, _, _) -> operation
+    let private target =
+        function
+        | Work(_, target, _, _)
+        | Reminder(_, target, _) -> target
+
+    let private identity =
+        function
+        | Work(operation, _, _, _)
+        | Reminder(operation, _, _) -> operation
 
     let private runtime (services: ServiceContext) instant =
-        { ProductVersion = services.ProductVersion; EffectiveBusinessDate = services.Calendar.DateAt instant; TimeZoneId = services.Calendar.TimeZoneId }
+        {
+            ProductVersion = services.ProductVersion
+            EffectiveBusinessDate = services.Calendar.DateAt instant
+            TimeZoneId = services.Calendar.TimeZoneId
+        }
 
     let private authorized (services: ServiceContext) (view: CaseFacts) =
         match view.Case with
-        | Some parent when Authority.can services.Principal view.Actor Capability.ReadCase (Scope.Case parent.CaseId) ->
-            if Authority.can services.Principal view.Actor Capability.ManageCaseWork (Scope.Case parent.CaseId) then Ok parent
-            else Error(Refusal.Access AccessRefusal.ActNotPermitted)
+        | Some parent when
+            Authority.can
+                services.Principal
+                view.Actor
+                Capability.ReadCase
+                (Scope.Case parent.CaseId)
+            ->
+            if
+                Authority.can
+                    services.Principal
+                    view.Actor
+                    Capability.ManageCaseWork
+                    (Scope.Case parent.CaseId)
+            then
+                Ok parent
+            else
+                Error(Refusal.Access AccessRefusal.ActNotPermitted)
         | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
-    let private eligibleAssignee (tx: IReadTx) caseId = function
+    let private eligibleAssignee (tx: IReadTx) caseId =
+        function
         | None -> System.Threading.Tasks.Task.FromResult true
         | Some id ->
             task {
                 let! actor = tx.FindActor id
+
                 match actor with
                 | Some actor when PrincipalKey.isHuman actor.Principal ->
-                    let! authority = tx.Authority { Principal = actor.Principal; CaseId = Some caseId }
-                    return Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
-                           && Authority.can actor.Principal authority Capability.ManageCaseWork (Scope.Case caseId)
+                    let! authority =
+                        tx.Authority
+                            {
+                                Principal = actor.Principal
+                                CaseId = Some caseId
+                            }
+
+                    return
+                        Authority.can
+                            actor.Principal
+                            authority
+                            Capability.ReadCase
+                            (Scope.Case caseId)
+                        && Authority.can
+                            actor.Principal
+                            authority
+                            Capability.ManageCaseWork
+                            (Scope.Case caseId)
                 | _ -> return false
             }
 
-    let private workProposal (services: ServiceContext) (tx: IReadTx) (view: CaseFacts) (parent: StoredCase) operation expected update =
+    let private workProposal
+        (services: ServiceContext)
+        (tx: IReadTx)
+        (view: CaseFacts)
+        (parent: StoredCase)
+        operation
+        expected
+        update
+        =
         task {
             let! current = tx.FindWork parent.CaseId
-            let request = { WorkRequestRecord.OperationId = operation; CaseId = parent.CaseId; ExpectedRevision = expected; Update = update }
+
+            let request =
+                {
+                    WorkRequestRecord.OperationId = operation
+                    CaseId = parent.CaseId
+                    ExpectedRevision = expected
+                    Update = update
+                }
+
             let bytes = WorkRecord.encodeRequest request
             let state = ReceiptCurrent.Work(Some parent, current)
-            let replay = OperationIdentity.decide services view.Actor { OperationId = operation; Bytes = bytes; Existing = view.ExistingOperation } (LedgerEntries.receipt services.Principal view.Actor state)
+
+            let replay =
+                OperationIdentity.decide
+                    services
+                    view.Actor
+                    {
+                        OperationId = operation
+                        Bytes = bytes
+                        Existing = view.ExistingOperation
+                    }
+                    (LedgerEntries.receipt services.Principal view.Actor state)
+
             match replay with
             | Verdict.Proceed() ->
                 match current, parent.Snapshot.State with
                 | _, CaseState.Erased -> return Verdict.Refuse(Refusal.Case CaseRefusal.CaseErased)
-                | _, CaseState.Voided _ -> return Verdict.Refuse(Refusal.Case CaseRefusal.CaseVoided)
+                | _, CaseState.Voided _ ->
+                    return Verdict.Refuse(Refusal.Case CaseRefusal.CaseVoided)
                 | Some current, CaseState.Active fields when current.Snapshot.IsSome ->
                     let before = current.Snapshot.Value
-                    if view.Maintenance.Active then return Verdict.Refuse Refusal.RegisterMaintenance
-                    elif before.Revision <> expected then return Verdict.Refuse(Refusal.RevisionConflict before.Revision)
+
+                    if view.Maintenance.Active then
+                        return Verdict.Refuse Refusal.RegisterMaintenance
+                    elif before.Revision <> expected then
+                        return Verdict.Refuse(Refusal.RevisionConflict before.Revision)
                     else
                         let next = CaseWork.apply update before.Work
                         let responsibilityChanged = next.Responsible <> before.Work.Responsible
-                        let! eligible = eligibleAssignee tx parent.CaseId (if responsibilityChanged then next.Responsible else None)
+
+                        let! eligible =
+                            eligibleAssignee
+                                tx
+                                parent.CaseId
+                                (match update.Responsible with
+                                 | WorkValue.Set id -> Some id
+                                 | _ -> None)
+
                         let summary =
                             match update.Summary with
-                            | WorkValue.Set value when Some value <> before.Work.Summary -> HandlingSummary.admit value |> Result.map ignore |> Result.mapError (fun violation -> Refusal.invalidInput (InputTarget.Field BusinessField.HandlingSummary, violation))
+                            | WorkValue.Set value when Some value <> before.Work.Summary ->
+                                HandlingSummary.admit value
+                                |> Result.map ignore
+                                |> Result.mapError (fun violation ->
+                                    Refusal.invalidInput (
+                                        InputTarget.Field BusinessField.HandlingSummary,
+                                        violation
+                                    ))
                             | _ -> Ok()
-                        if responsibilityChanged && fields.Status <> CaseStatus.Opened then return Verdict.Refuse(Refusal.Case CaseRefusal.CaseClosed)
-                        elif not eligible then return Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
-                        elif next = before.Work then return Verdict.Refuse(Refusal.Case CaseRefusal.WorkNoChanges)
+
+                        if responsibilityChanged && fields.Status <> CaseStatus.Opened then
+                            return Verdict.Refuse(Refusal.Case CaseRefusal.CaseClosed)
+                        elif not eligible then
+                            return Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
+                        elif next = before.Work then
+                            return Verdict.Refuse(Refusal.Case CaseRefusal.WorkNoChanges)
                         else
                             match summary with
                             | Error refusal -> return Verdict.Refuse refusal
                             | Ok() ->
-                                let after = { before with Revision = Revision.successor before.Revision; Work = next }
-                                let recordedBy = LedgerEnvelope.actorId view.Actor
-                                let stored = { current with Revision = after.Revision; Snapshot = Some after; SnapshotBytes = WorkRecord.encodeSnapshot after; ChangedAt = Some view.ObservedAt; RecordedBy = Some recordedBy }
-                                return Verdict.Proceed
-                                    {
-                                        Subject = EntryTarget.Work { CaseId = parent.CaseId; Revision = after.Revision; Act = WorkActKind.UpdateWork; BusinessDate = services.Calendar.DateAt view.ObservedAt }
-                                        RequestBytes = bytes
-                                        SnapshotBytes = stored.SnapshotBytes
-                                        Current = ReceiptCurrent.Work(Some parent, Some stored)
-                                        Projection = WorkChangeProjection.Work { Snapshot = after; ChangedAt = view.ObservedAt; RecordedBy = recordedBy }
-                                        Review = OperationReview.Work { Reference = parent.Snapshot.Reference; Before = before; Proposed = after; Context = runtime services view.ObservedAt }
+                                let after =
+                                    { before with
+                                        Revision = Revision.successor before.Revision
+                                        Work = next
                                     }
+
+                                let recordedBy = LedgerEnvelope.actorId view.Actor
+
+                                let stored =
+                                    { current with
+                                        Revision = after.Revision
+                                        Snapshot = Some after
+                                        SnapshotBytes = WorkRecord.encodeSnapshot after
+                                        ChangedAt = Some view.ObservedAt
+                                        RecordedBy = Some recordedBy
+                                    }
+
+                                return
+                                    Verdict.Proceed
+                                        {
+                                            Subject =
+                                                EntryTarget.Work
+                                                    {
+                                                        CaseId = parent.CaseId
+                                                        Revision = after.Revision
+                                                        Act = WorkActKind.UpdateWork
+                                                        BusinessDate =
+                                                            services.Calendar.DateAt view.ObservedAt
+                                                    }
+                                            RequestBytes = bytes
+                                            SnapshotBytes = stored.SnapshotBytes
+                                            Current = ReceiptCurrent.Work(Some parent, Some stored)
+                                            Projection =
+                                                WorkChangeProjection.Work
+                                                    {
+                                                        Snapshot = after
+                                                        ChangedAt = view.ObservedAt
+                                                        RecordedBy = recordedBy
+                                                    }
+                                            Review =
+                                                OperationReview.Work
+                                                    {
+                                                        Reference = parent.Snapshot.Reference
+                                                        Before = before
+                                                        Proposed = after
+                                                        Context = runtime services view.ObservedAt
+                                                    }
+                                        }
                 | _ -> return Verdict.Fail CoreFault.StoreIntegrityError
-            | other -> return Verdict.map (fun () -> invalidOp "Only a new operation has proposed effects.") other
+            | other ->
+                return
+                    Verdict.map
+                        (fun () -> invalidOp "Only a new operation has proposed effects.")
+                        other
         }
 
-    let private reminderRefusal = function
+    let private reminderRefusal =
+        function
         | ReminderRefusal.RevisionConflict actual -> Refusal.RevisionConflict actual
-        | ReminderRefusal.InvalidAction violation -> Refusal.invalidInput (InputTarget.ReminderAction, violation)
-        | ReminderRefusal.NotFound | ReminderRefusal.ParentMismatch -> Refusal.Access AccessRefusal.ResourceUnavailable
+        | ReminderRefusal.InvalidAction violation ->
+            Refusal.invalidInput (InputTarget.ReminderAction, violation)
+        | ReminderRefusal.NotFound
+        | ReminderRefusal.ParentMismatch -> Refusal.Access AccessRefusal.ResourceUnavailable
         | refusal -> Refusal.Reminder refusal
 
-    let private reminderProposal (services: ServiceContext) (tx: IReadTx) (view: CaseFacts) (parent: StoredCase) operation act =
+    let private reminderProposal
+        (services: ServiceContext)
+        (tx: IReadTx)
+        (view: CaseFacts)
+        (parent: StoredCase)
+        operation
+        act
+        =
         task {
-            let command = match act with Create plan -> ReminderCommand.Create(parent.CaseId, plan) | Change(id, revision, change) -> ReminderCommand.Change(parent.CaseId, id, revision, change)
-            let request = { ReminderRequestRecord.OperationId = operation; Command = command }
+            let command =
+                match act with
+                | Create plan -> ReminderCommand.Create(parent.CaseId, plan)
+                | Change(id, revision, change) ->
+                    ReminderCommand.Change(parent.CaseId, id, revision, change)
+
+            let request =
+                {
+                    ReminderRequestRecord.OperationId = operation
+                    Command = command
+                }
+
             let bytes = ReminderRecord.encodeRequest request
             let id = ReminderCommand.target operation command
             let! target = tx.FindReminder id
-            let nextId = if ReminderCommand.kind command = ReminderActKind.CompleteAndPlanNext then Some(ReminderId.ofOperationId operation) else None
-            let! next = match nextId with Some id -> tx.FindReminder id | None -> System.Threading.Tasks.Task.FromResult None
-            let current = [ target; next ] |> List.choose (fun value -> value) |> List.map (fun value -> value.ReminderId, value) |> Map.ofList
+
+            let nextId =
+                if ReminderCommand.kind command = ReminderActKind.CompleteAndPlanNext then
+                    Some(ReminderId.ofOperationId operation)
+                else
+                    None
+
+            let! next =
+                match nextId with
+                | Some id -> tx.FindReminder id
+                | None -> System.Threading.Tasks.Task.FromResult None
+
+            let current =
+                [ target; next ]
+                |> List.choose (fun value -> value)
+                |> List.map (fun value -> value.ReminderId, value)
+                |> Map.ofList
+
             let state = ReceiptCurrent.Reminder(Some parent, current)
-            let replay = OperationIdentity.decide services view.Actor { OperationId = operation; Bytes = bytes; Existing = view.ExistingOperation } (LedgerEntries.receipt services.Principal view.Actor state)
+
+            let replay =
+                OperationIdentity.decide
+                    services
+                    view.Actor
+                    {
+                        OperationId = operation
+                        Bytes = bytes
+                        Existing = view.ExistingOperation
+                    }
+                    (LedgerEntries.receipt services.Principal view.Actor state)
+
             match replay with
-            | Verdict.Proceed() when view.Maintenance.Active -> return Verdict.Refuse Refusal.RegisterMaintenance
+            | Verdict.Proceed() when view.Maintenance.Active ->
+                return Verdict.Refuse Refusal.RegisterMaintenance
             | Verdict.Proceed() ->
                 let before = target |> Option.bind _.Snapshot
-                let reserved = if ReminderCommand.kind command = ReminderActKind.Create then target.IsSome else next.IsSome
+
+                let reserved =
+                    if ReminderCommand.kind command = ReminderActKind.Create then
+                        target.IsSome
+                    else
+                        next.IsSome
+
                 match Reminder.decide operation parent.Snapshot before reserved command with
                 | Error refusal -> return Verdict.Refuse(reminderRefusal refusal)
                 | Ok effects ->
                     let recordedBy = LedgerEnvelope.actorId view.Actor
-                    let stored value : StoredReminder = { ReminderId = Reminder.id value; CaseId = Reminder.caseId value; Revision = Reminder.revision value; Snapshot = Some value; SnapshotBytes = ReminderRecord.encodeSnapshot value; RecordedAt = view.ObservedAt; RecordedBy = recordedBy }
-                    let values = match effects with ReminderEffects.Created value | ReminderEffects.Changed value -> [ value ] | ReminderEffects.CompletedAndPlanned(completed, next) -> [ completed; next ]
-                    let accepted = values |> List.map (fun value -> Reminder.id value, stored value) |> Map.ofList
-                    return Verdict.Proceed
+
+                    let stored value : StoredReminder =
                         {
-                            Subject = EntryTarget.Reminder { CaseId = parent.CaseId; ReminderId = id; Revision = ReminderCommand.resultingRevision command; Act = ReminderCommand.kind command; NextReminderId = nextId; BusinessDate = services.Calendar.DateAt view.ObservedAt }
-                            RequestBytes = bytes
-                            SnapshotBytes = ReminderRecord.encodeEffects effects
-                            Current = ReceiptCurrent.Reminder(Some parent, accepted)
-                            Projection = WorkChangeProjection.Reminder { Effects = effects; ChangedAt = view.ObservedAt; RecordedBy = recordedBy }
-                            Review = OperationReview.Reminder { Reference = parent.Snapshot.Reference; CaseId = parent.CaseId; Before = before; Effects = effects; Context = runtime services view.ObservedAt }
+                            ReminderId = Reminder.id value
+                            CaseId = Reminder.caseId value
+                            Revision = Reminder.revision value
+                            Snapshot = Some value
+                            SnapshotBytes = ReminderRecord.encodeSnapshot value
+                            RecordedAt = view.ObservedAt
+                            RecordedBy = recordedBy
                         }
-            | other -> return Verdict.map (fun () -> invalidOp "Only a new operation has proposed effects.") other
+
+                    let values =
+                        match effects with
+                        | ReminderEffects.Created value
+                        | ReminderEffects.Changed value -> [ value ]
+                        | ReminderEffects.CompletedAndPlanned(completed, next) ->
+                            [ completed; next ]
+
+                    let accepted =
+                        values
+                        |> List.map (fun value -> Reminder.id value, stored value)
+                        |> Map.ofList
+
+                    return
+                        Verdict.Proceed
+                            {
+                                Subject =
+                                    EntryTarget.Reminder
+                                        {
+                                            CaseId = parent.CaseId
+                                            ReminderId = id
+                                            Revision = ReminderCommand.resultingRevision command
+                                            Act = ReminderCommand.kind command
+                                            NextReminderId = nextId
+                                            BusinessDate = services.Calendar.DateAt view.ObservedAt
+                                        }
+                                RequestBytes = bytes
+                                SnapshotBytes = ReminderRecord.encodeEffects effects
+                                Current = ReceiptCurrent.Reminder(Some parent, accepted)
+                                Projection =
+                                    WorkChangeProjection.Reminder
+                                        {
+                                            Effects = effects
+                                            ChangedAt = view.ObservedAt
+                                            RecordedBy = recordedBy
+                                        }
+                                Review =
+                                    OperationReview.Reminder
+                                        {
+                                            Reference = parent.Snapshot.Reference
+                                            CaseId = parent.CaseId
+                                            Before = before
+                                            Effects = effects
+                                            Context = runtime services view.ObservedAt
+                                        }
+                            }
+            | other ->
+                return
+                    Verdict.map
+                        (fun () -> invalidOp "Only a new operation has proposed effects.")
+                        other
         }
 
     let private propose (services: ServiceContext) (tx: IReadTx) prepared =
         task {
-            let! view = ExecutionFacts.case services tx (Some(identity prepared)) (target prepared)
+            let! view =
+                ExecutionFacts.case services tx (Some(identity prepared)) (target prepared)
+
             match authorized services view with
             | Error refusal -> return view, Verdict.Refuse refusal
             | Ok parent ->
-                let! proposal = match prepared with Work(operation, _, expected, update) -> workProposal services tx view parent operation expected update | Reminder(operation, _, act) -> reminderProposal services tx view parent operation act
+                let! proposal =
+                    match prepared with
+                    | Work(operation, _, expected, update) ->
+                        workProposal services tx view parent operation expected update
+                    | Reminder(operation, _, act) ->
+                        reminderProposal services tx view parent operation act
+
                 return view, proposal
         }
 
     let preview (services: ServiceContext) prepared token =
         task {
-            let! result = services.Store.Read(
-                {
-                    Work = fun tx ->
-                        task {
-                            let! _, proposal = propose services tx prepared
-                            return proposal |> Verdict.outcome (fun value -> Previewed.Reviewed value.Review) Previewed.AlreadyAccepted
-                        }
-                    CancellationToken = token
-                })
+            let! result =
+                services.Store.Read(
+                    {
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! _, proposal = propose services tx prepared
+
+                                    return
+                                        proposal
+                                        |> Verdict.outcome
+                                            (fun value -> Previewed.Reviewed value.Review)
+                                            Previewed.AlreadyAccepted
+                                }
+                        CancellationToken = token
+                    }
+                )
+
             return QueryResults.readResult result
         }
 
     let run (services: ServiceContext) prepared token =
         services.Store.Write
             {
-                Work = fun tx ->
-                    task {
-                        let! view, proposed = propose services tx prepared
-                        let! fenced = ExecutionFacts.fenced services tx view.Actor (identity prepared) view.ExistingOperation
-                        let accepted =
-                            match fenced with
-                            | Error fault -> Verdict.Fail fault
-                            | Ok fenced ->
-                                proposed |> Verdict.bind (fun proposal ->
-                                    LedgerEnvelope.guard fenced |> Verdict.bind (fun () ->
-                                        LedgerEnvelope.accept services view.Actor { Head = tx.Head; Nonce = tx.Nonce; Fenced = fenced }
-                                            { OperationId = identity prepared; ObservedAt = view.ObservedAt; ActorId = LedgerEnvelope.actorId view.Actor; Subject = proposal.Subject; Snapshot = proposal.SnapshotBytes; Current = proposal.Current; Projection = proposal.Projection }
-                                            proposal.RequestBytes))
-                        return! ExecutionFacts.persist tx tx.ProjectWorkChange accepted
-                    }
+                Work =
+                    fun tx ->
+                        task {
+                            let! view, proposed = propose services tx prepared
+
+                            let! fenced =
+                                ExecutionFacts.fenced
+                                    services
+                                    tx
+                                    view.Actor
+                                    (identity prepared)
+                                    view.ExistingOperation
+
+                            let accepted =
+                                match fenced with
+                                | Error fault -> Verdict.Fail fault
+                                | Ok fenced ->
+                                    proposed
+                                    |> Verdict.bind (fun proposal ->
+                                        LedgerEnvelope.guard fenced
+                                        |> Verdict.bind (fun () ->
+                                            LedgerEnvelope.accept
+                                                services
+                                                view.Actor
+                                                {
+                                                    Head = tx.Head
+                                                    Nonce = tx.Nonce
+                                                    Fenced = fenced
+                                                }
+                                                {
+                                                    OperationId = identity prepared
+                                                    ObservedAt = view.ObservedAt
+                                                    ActorId = LedgerEnvelope.actorId view.Actor
+                                                    Subject = proposal.Subject
+                                                    Snapshot = proposal.SnapshotBytes
+                                                    Current = proposal.Current
+                                                    Projection = proposal.Projection
+                                                }
+                                                proposal.RequestBytes))
+
+                            return! ExecutionFacts.persist tx tx.ProjectWorkChange accepted
+                        }
                 CancellationToken = token
             }

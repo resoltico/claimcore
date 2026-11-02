@@ -81,13 +81,13 @@ module internal TransactionPages =
 
                 "(($13::date IS NULL AND c.follow_up IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13 OR c.follow_up IS NULL OR (c.follow_up=$13 AND "
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13::date OR c.follow_up IS NULL OR (c.follow_up=$13::date AND "
                 + key
                 + " > $12 COLLATE \"C\"))))",
                 "c.follow_up ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
-                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
                 "$14"
 
@@ -241,22 +241,51 @@ type private ReadTx
                             token
             }
 
+        member _.AuthorityCases(principal, ids) =
+            Projections.actor connection principal (List.distinct ids) token
+
         member _.FindCase id =
             Projections.caseById connection installation id token
 
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
 
-        member _.FindWork id = WorkStorage.findWork connection id token
-        member _.FindReminder id = WorkStorage.findReminder connection id token
-        member _.WorkSummaries(ids, today) = WorkStorage.summaries connection ids today token
-        member _.AssignedAccounts pairs = WorkStorage.accounts connection pairs token
+        member _.FindWork id =
+            WorkStorage.findWork connection id token
+
+        member _.FindReminder id =
+            WorkStorage.findReminder connection id token
+
+        member _.WorkSummaries(ids, today) =
+            WorkStorage.summaries connection ids today token
+
+        member _.AssignedAccounts pairs =
+            WorkStorage.accounts connection pairs token
+
         member _.ReminderPage query = WorkStorage.page connection query token
-        member _.WorkOverview(selection, mine) = WorkStorage.overview connection selection mine token
+
+        member _.WorkOverview(selection, mine) =
+            WorkStorage.overview connection selection mine token
+
         member _.ActivityPage query =
             task {
-                let! rows = DatabaseSession.rows connection ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3") [| box(CaseId.value query.CaseId); DatabaseSession.parameter(query.BeforeSequence |> Option.map Sequence.value); box(query.Limit+1) |] token
-                return rows |> List.map(StoredEntries.decode installation >> _.Entry) |> TransactionPages.page query.Limit _.Sequence
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
+                        [|
+                            box (CaseId.value query.CaseId)
+                            DatabaseSession.parameter (
+                                query.BeforeSequence |> Option.map Sequence.value
+                            )
+                            box (query.Limit + 1)
+                        |]
+                        token
+
+                return
+                    rows
+                    |> List.map (StoredEntries.decode installation >> _.Entry)
+                    |> TransactionPages.page query.Limit _.Sequence
             }
 
         member _.FindEntry id =

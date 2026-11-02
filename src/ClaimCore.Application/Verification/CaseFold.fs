@@ -131,7 +131,15 @@ module internal CaseFold =
                     Map.add
                         id
                         {
-                            Status = match act with CaseActKind.Open | CaseActKind.Reopen -> CaseStatus.Opened | CaseActKind.Close -> CaseStatus.Closed | _ -> previous |> Option.map _.Status |> Option.defaultValue CaseStatus.Opened
+                            Status =
+                                match act with
+                                | CaseActKind.Open
+                                | CaseActKind.Reopen -> CaseStatus.Opened
+                                | CaseActKind.Close -> CaseStatus.Closed
+                                | _ ->
+                                    previous
+                                    |> Option.map _.Status
+                                    |> Option.defaultValue CaseStatus.Opened
                             Revision = revision
                             ChangedAt = entry.RecordedAt
                             Snapshot = snapshot

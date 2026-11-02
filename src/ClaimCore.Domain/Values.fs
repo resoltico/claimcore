@@ -138,7 +138,10 @@ module internal ScalarText =
             Error Violation.TextRequired
         elif (value.EnumerateRunes() |> Seq.length) > maximum then
             Error(Violation.TooLong maximum)
-        elif value |> Seq.exists (fun c -> Char.IsControl c && not (allowsLineFeed && c = '\n')) then
+        elif
+            value
+            |> Seq.exists (fun c -> Char.IsControl c && not (allowsLineFeed && c = '\n'))
+        then
             Error Violation.ControlCharacters
         elif value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value) then
             Error Violation.FormattingCharacter

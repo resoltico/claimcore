@@ -66,15 +66,25 @@ module internal Advice =
             {
                 Work =
                     let active = CaseState.lifecycle record.Snapshot.State = Lifecycle.Active
-                    let opened = CaseState.fields record.Snapshot.State |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened)
-                    let permitted = can principal actor Capability.ReadCase resource && can principal actor Capability.ManageCaseWork resource
-                    { work with CanUpdateSummary = active && permitted; CanAssign = active && opened && permitted; CanCreateReminder = active && opened && permitted }
+
+                    let opened =
+                        CaseState.fields record.Snapshot.State
+                        |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened)
+
+                    let permitted =
+                        can principal actor Capability.ReadCase resource
+                        && can principal actor Capability.ManageCaseWork resource
+
+                    { work with
+                        CanUpdateSummary = active && permitted
+                        CanAssign = active && opened && permitted
+                        CanCreateReminder = active && opened && permitted
+                    }
                 Snapshot = record.Snapshot
                 Advice = advice
                 Mine =
                     match actor.Actor, work.Responsible with
-                    | Some requester, Some assigned ->
-                        assigned.Account.ActorId = requester.ActorId
+                    | Some requester, Some assigned -> assigned.Account.ActorId = requester.ActorId
                     | _ -> false
             })
 
