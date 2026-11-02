@@ -16,7 +16,7 @@ module internal CaseSelectionSql =
         "CASE WHEN c.state<>'ACTIVE' OR c.status IS DISTINCT FROM 'OPENED' THEN 'INACTIVE' WHEN c.follow_up IS NULL THEN 'UNSCHEDULED' WHEN c.follow_up<$11::date THEN 'OVERDUE' WHEN c.follow_up=$11::date THEN 'TODAY' ELSE 'UPCOMING' END"
 
     let predicate =
-        $"($1 OR {scopedRead}) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$2 AND bad.case_id=c.case_id AND bad.role=ANY($4::text[])) AND (cardinality($5::text[])=0 OR c.state=ANY($5::text[])) AND (cardinality($6::text[])=0 OR c.status=ANY($6::text[])) AND (cardinality($7::text[])=0 OR c.progress=ANY($7::text[])) AND ($8::text IS NULL OR c.search_text LIKE '%%' || $8 || '%%' ESCAPE chr(92)) AND ($9::text IS NULL OR ({responsibility})=$9) AND ($10::text IS NULL OR ({due})=$10)"
+        $"($1 OR {scopedRead}) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$2 AND bad.case_id=c.case_id AND bad.role=ANY($4::text[])) AND (cardinality($5::text[])=0 OR c.state=ANY($5::text[])) AND (cardinality($6::text[])=0 OR c.status=ANY($6::text[])) AND (cardinality($7::text[])=0 OR c.progress=ANY($7::text[])) AND ($8::text IS NULL OR (c.search_text LIKE '%%' || $8 || '%%' ESCAPE chr(92) OR c.work_search_text LIKE '%%' || $8 || '%%' ESCAPE chr(92))) AND ($9::text IS NULL OR ({responsibility})=$9) AND ($10::text IS NULL OR ({due})=$10)"
 
     let parameters (selection: CaseSelection) =
         let filter = selection.Filter
