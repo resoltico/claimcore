@@ -71,6 +71,7 @@
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
+    <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
