@@ -8,6 +8,7 @@ open ClaimCore.Application.VerificationChecks
 
 type CaseHistory =
     {
+        Status: CaseStatus
         Revision: Revision
         ChangedAt: DateTimeOffset
         Snapshot: CaseSnapshot option
@@ -51,6 +52,8 @@ module internal CaseFold =
 
     let apply histories (entry: StoredEntry) payload =
         match entry.Subject with
+        | EntryTarget.Work _
+        | EntryTarget.Reminder _
         | EntryTarget.Authority _
         | EntryTarget.NonAcceptance _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
@@ -128,6 +131,7 @@ module internal CaseFold =
                     Map.add
                         id
                         {
+                            Status = match act with CaseActKind.Open | CaseActKind.Reopen -> CaseStatus.Opened | CaseActKind.Close -> CaseStatus.Closed | _ -> previous |> Option.map _.Status |> Option.defaultValue CaseStatus.Opened
                             Revision = revision
                             ChangedAt = entry.RecordedAt
                             Snapshot = snapshot
