@@ -82,6 +82,7 @@
     <Compile Include="MaintenanceFailureTests.fs" />
     <Compile Include="ProjectionRebuildFailureTests.fs" />
     <Compile Include="StorageFailurePhaseTests.fs" />
+    <Compile Include="PreparedReadTests.fs" />
     <Compile Include="CommitTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />

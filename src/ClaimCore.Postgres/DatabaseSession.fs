@@ -63,36 +63,50 @@ module internal DatabaseSession =
     /// Initialize once for each result set, then capture independent rows as the reader advances.
     let namedRow (reader: System.Data.Common.DbDataReader) = NamedRow.Reader reader
 
-    let rows connection sql parameters (token: CancellationToken) =
+    let private readRows
+        prepare
+        makeReader
+        (connection: NpgsqlConnection)
+        sql
+        parameters
+        (token: CancellationToken)
+        =
         task {
-            use statement = statement connection sql parameters
-            use! reader = statement.ExecuteReaderAsync(token)
-            let rows = ResizeArray<obj array>()
+            use command = statement connection sql parameters
+            // These callers opt in only for fixed SQL. Plans are reused by Npgsql's physical pool;
+            // every execution still binds current values and runs in the current transaction.
+            // Multiplexed connections already supported by the store keep their unprepared path.
+            if
+                prepare
+                && not (NpgsqlConnectionStringBuilder(connection.ConnectionString).Multiplexing)
+            then
+                do! command.PrepareAsync(token)
+
+            use! reader = command.ExecuteReaderAsync(token)
+            let read = makeReader reader
+            let rows = ResizeArray<_>()
             let mutable reading = true
 
             while reading do
                 let! found = reader.ReadAsync(token)
-
-                if found then rows.Add(row reader) else reading <- false
-
-            return List.ofSeq rows
-        }
-
-    let namedRows connection sql parameters (token: CancellationToken) =
-        task {
-            use statement = statement connection sql parameters
-            use! reader = statement.ExecuteReaderAsync(token)
-            let read = namedRow reader
-            let rows = ResizeArray<NamedRow>()
-            let mutable reading = true
-
-            while reading do
-                let! found = reader.ReadAsync(token)
-
                 if found then rows.Add(read ()) else reading <- false
 
             return List.ofSeq rows
         }
+
+    let private positionalReader reader = fun () -> row reader
+
+    let rows connection sql parameters token =
+        readRows false positionalReader connection sql parameters token
+
+    let namedRows connection sql parameters token =
+        readRows false namedRow connection sql parameters token
+
+    let preparedRows connection sql parameters token =
+        readRows true positionalReader connection sql parameters token
+
+    let preparedNamedRows connection sql parameters token =
+        readRows true namedRow connection sql parameters token
 
     let namedValue<'T> name (row: NamedRow) =
         match row.TryValue name with

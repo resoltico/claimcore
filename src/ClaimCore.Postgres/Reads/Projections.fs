@@ -293,7 +293,7 @@ module internal Projections =
             let sql =
                 $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
 
-            let! rows = DatabaseSession.rows connection sql parameters token
+            let! rows = DatabaseSession.preparedRows connection sql parameters token
 
             let mode =
                 match rows with

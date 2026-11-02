@@ -206,7 +206,7 @@ module internal WorkStorage =
                     $"SELECT {summaryColumns} FROM claimcore.case_work w {joins} WHERE w.case_id=ANY($1::uuid[])"
 
                 let! rows =
-                    DatabaseSession.namedRows
+                    DatabaseSession.preparedNamedRows
                         connection
                         sql
                         [| box (ids |> List.map CaseId.value |> List.toArray); box today |]
