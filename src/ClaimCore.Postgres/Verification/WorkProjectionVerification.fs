@@ -40,6 +40,7 @@ module internal WorkProjectionVerification =
                     do! ProjectionVerification.workRows state.Work work
                     do! ProjectionVerification.reminderRows state.Reminders reminders
 
-                    return! ProjectionVerification.workIndexes state.Work state.Reminders workIndexes
+                    return!
+                        ProjectionVerification.workIndexes state.Work state.Reminders workIndexes
                 }
         }

@@ -132,7 +132,11 @@ let private workIndexPrecedence (database: PostgresFixture.Database) =
                 fence
 
         let! restored = verified database
-        Expect.equal restored checkpoint "Repairing only projections restores the original verified head"
+
+        Expect.equal
+            restored
+            checkpoint
+            "Repairing only projections restores the original verified head"
     }
 
 [<Tests>]
