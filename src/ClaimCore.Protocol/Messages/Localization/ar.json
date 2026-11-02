@@ -345,6 +345,8 @@
   "label.revisionLabel": "المراجعة",
   "label.unassignedCases": "القضايا غير المسندة",
   "label.unavailableAssigneeCases": "القضايا ذات المسؤول غير المتاح",
+  "label.workChangedAt": "وقت تغيير العمل",
+  "label.workRecordedBy": "مسجل العمل",
   "label.workRevision": "مراجعة العمل",
   "lifecycle.ACTIVE.label": "نشط",
   "lifecycle.ERASED.label": "تم المحو",

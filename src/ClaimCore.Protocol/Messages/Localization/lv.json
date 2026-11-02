@@ -345,6 +345,8 @@
   "label.revisionLabel": "Redakcija",
   "label.unassignedCases": "Lietas bez atbildīgā",
   "label.unavailableAssigneeCases": "Lietas ar nepieejamu atbildīgo",
+  "label.workChangedAt": "Darba izmaiņu laiks",
+  "label.workRecordedBy": "Darba ieraksta autors",
   "label.workRevision": "Darba revīzija",
   "lifecycle.ACTIVE.label": "Aktīva",
   "lifecycle.ERASED.label": "Dzēsta",

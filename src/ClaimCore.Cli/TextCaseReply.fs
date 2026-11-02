@@ -87,6 +87,14 @@ module internal TextCaseReply =
             line language "label.workRevision" (Revision.format value.Work.Revision)
             line
                 language
+                "label.workChangedAt"
+                (value.Work.ChangedAt |> Option.map instant |> displayed language)
+            line
+                language
+                "label.workRecordedBy"
+                (value.Work.RecordedBy |> Option.map ActorId.format |> displayed language)
+            line
+                language
                 (FieldPresentation.labelId BusinessField.HandlingSummary)
                 (value.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
             line

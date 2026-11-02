@@ -64,6 +64,7 @@
     <Compile Include="ReadPageIO.fs" />
     <Compile Include="CaseListCommand.fs" />
     <Compile Include="AuthorityHistoryCommand.fs" />
+    <Compile Include="WorkListCommand.fs" />
     <Compile Include="InteractiveReview.fs" />
     <Compile Include="TextInputs.fs" />
     <Compile Include="VerbRunner.fs" />

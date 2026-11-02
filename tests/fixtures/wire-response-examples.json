@@ -176,7 +176,8 @@
                   "claimantName": "x",
                   "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR"
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
                 },
                 "decision": {
                   "paymentDecisionDate": "2026-01-01",
@@ -186,11 +187,7 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID",
-                "work": {
-                  "responsibleActor": null,
-                  "followUpDate": null
-                }
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -211,7 +208,18 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -397,7 +405,8 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",
@@ -407,11 +416,7 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID",
-                      "work": {
-                        "responsibleActor": null,
-                        "followUpDate": null
-                      }
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -431,7 +436,8 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",
@@ -441,11 +447,7 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID",
-                      "work": {
-                        "responsibleActor": null,
-                        "followUpDate": null
-                      }
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -497,7 +499,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -507,11 +510,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -592,7 +591,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -602,11 +602,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -651,7 +647,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -661,11 +658,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -757,7 +750,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -767,11 +761,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -1182,7 +1172,18 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": false,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -1252,7 +1253,18 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": false,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -1290,7 +1302,18 @@
                       "observedAt": "2026-01-01T12:00:00.000000Z",
                       "businessDate": "2026-01-01",
                       "timeZone": "Etc/UTC"
-                    }
+                    },
+                    "revision": 0,
+                    "changedAt": null,
+                    "recordedBy": null,
+                    "summary": null,
+                    "nextAction": null,
+                    "pendingReminders": 0,
+                    "overdueReminders": 0,
+                    "needsNextAction": true,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -1319,7 +1342,18 @@
                       "observedAt": "2026-01-01T12:00:00.000000Z",
                       "businessDate": "2026-01-01",
                       "timeZone": "Etc/UTC"
-                    }
+                    },
+                    "revision": 0,
+                    "changedAt": null,
+                    "recordedBy": null,
+                    "summary": null,
+                    "nextAction": null,
+                    "pendingReminders": 0,
+                    "overdueReminders": 0,
+                    "needsNextAction": false,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -1503,7 +1537,8 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",
@@ -1513,11 +1548,7 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID",
-                      "work": {
-                        "responsibleActor": null,
-                        "followUpDate": null
-                      }
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1537,7 +1568,8 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",
@@ -1547,11 +1579,7 @@
                       "payment": {
                         "paymentDate": "2026-01-01"
                       },
-                      "progress": "PAID",
-                      "work": {
-                        "responsibleActor": null,
-                        "followUpDate": null
-                      }
+                      "progress": "PAID"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1669,7 +1697,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -1679,11 +1708,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -1732,7 +1757,8 @@
                             "claimantName": "x",
                             "insurerName": "x",
                             "claimedAmount": "0",
-                            "claimedCurrency": "EUR"
+                            "claimedCurrency": "EUR",
+                            "incidentDescription": null
                           },
                           "decision": {
                             "paymentDecisionDate": "2026-01-01",
@@ -1742,11 +1768,7 @@
                           "payment": {
                             "paymentDate": "2026-01-01"
                           },
-                          "progress": "PAID",
-                          "work": {
-                            "responsibleActor": null,
-                            "followUpDate": null
-                          }
+                          "progress": "PAID"
                         }
                       }
                     },
@@ -3030,7 +3052,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -3040,11 +3063,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -3224,7 +3243,8 @@
                   "claimantName": "x",
                   "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR"
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
                 },
                 "decision": {
                   "paymentDecisionDate": "2026-01-01",
@@ -3234,11 +3254,7 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID",
-                "work": {
-                  "responsibleActor": null,
-                  "followUpDate": null
-                }
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -3259,7 +3275,18 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": false,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -3300,7 +3327,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -3310,11 +3338,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -3403,7 +3427,18 @@
                       "observedAt": "2026-01-01T12:00:00.000000Z",
                       "businessDate": "2026-01-01",
                       "timeZone": "Etc/UTC"
-                    }
+                    },
+                    "revision": 0,
+                    "changedAt": null,
+                    "recordedBy": null,
+                    "summary": null,
+                    "nextAction": null,
+                    "pendingReminders": 0,
+                    "overdueReminders": 0,
+                    "needsNextAction": true,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
                   }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001"
@@ -3435,7 +3470,18 @@
                       "observedAt": "2026-01-01T12:00:00.000000Z",
                       "businessDate": "2026-01-01",
                       "timeZone": "Etc/UTC"
-                    }
+                    },
+                    "revision": 0,
+                    "changedAt": null,
+                    "recordedBy": null,
+                    "summary": null,
+                    "nextAction": null,
+                    "pendingReminders": 0,
+                    "overdueReminders": 0,
+                    "needsNextAction": false,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
                   }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001"
@@ -3766,7 +3812,8 @@
                             "claimantName": "x",
                             "insurerName": "x",
                             "claimedAmount": "0",
-                            "claimedCurrency": "EUR"
+                            "claimedCurrency": "EUR",
+                            "incidentDescription": null
                           },
                           "decision": {
                             "paymentDecisionDate": "2026-01-01",
@@ -3776,11 +3823,7 @@
                           "payment": {
                             "paymentDate": "2026-01-01"
                           },
-                          "progress": "PAID",
-                          "work": {
-                            "responsibleActor": null,
-                            "followUpDate": null
-                          }
+                          "progress": "PAID"
                         }
                       }
                     },
@@ -3985,7 +4028,8 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR"
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": null
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -3995,11 +4039,7 @@
                     "payment": {
                       "paymentDate": "2026-01-01"
                     },
-                    "progress": "PAID",
-                    "work": {
-                      "responsibleActor": null,
-                      "followUpDate": null
-                    }
+                    "progress": "PAID"
                   }
                 }
               },
@@ -4149,7 +4189,7 @@
             "issues": [
               {
                 "code": "UPDATE_REQUIRED",
-                "field": "followUpDate"
+                "field": "handlingSummary"
               }
             ]
           }
@@ -4249,7 +4289,7 @@
       }
     },
     {
-      "name": "offered-case-work-kind",
+      "name": "case-work-advice-has-independent-work-revision",
       "endpoint": "case.get",
       "value": {
         "outcome": {
@@ -4269,21 +4309,16 @@
                   "claimantName": "x",
                   "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR"
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
                 },
                 "decision": null,
                 "payment": null,
-                "progress": "UNDECIDED",
-                "work": {
-                  "responsibleActor": null,
-                  "followUpDate": null
-                }
+                "progress": "UNDECIDED"
               }
             },
             "advice": {
-              "acts": [
-                "UPDATE_WORK"
-              ],
+              "acts": [],
               "history": [],
               "maintenance": {
                 "active": false,
@@ -4300,7 +4335,18 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": true,
+              "canAssign": true,
+              "canCreateReminder": true
             }
           }
         }
@@ -4399,7 +4445,8 @@
                   "claimantName": "x",
                   "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR"
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
                 },
                 "decision": {
                   "paymentDecisionDate": "2026-01-01",
@@ -4409,11 +4456,7 @@
                 "payment": {
                   "paymentDate": "2026-01-01"
                 },
-                "progress": "PAID",
-                "work": {
-                  "responsibleActor": null,
-                  "followUpDate": null
-                }
+                "progress": "PAID"
               }
             },
             "advice": {
@@ -4434,12 +4477,1039 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
       },
       "valid": true
+    },
+    {
+      "name": "work-receipt-DISCLOSED",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "WORK",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "revision": 1,
+              "act": "UPDATE_WORK",
+              "snapshot": {
+                "kind": "DISCLOSED",
+                "view": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "work": {
+                    "responsibleActor": "40000000-0000-4000-8000-000000000001",
+                    "handlingSummary": "First paragraph\nSecond paragraph"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "work-receipt-WITHHELD",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "WORK",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "revision": 1,
+              "act": "UPDATE_WORK",
+              "snapshot": {
+                "kind": "WITHHELD"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "work-receipt-ERASED",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "WORK",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "revision": 1,
+              "act": "UPDATE_WORK",
+              "snapshot": {
+                "kind": "ERASED"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "work-review",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "WORK",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 0,
+                  "work": {
+                    "responsibleActor": null,
+                    "handlingSummary": null
+                  }
+                },
+                "proposed": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "work": {
+                    "responsibleActor": "40000000-0000-4000-8000-000000000001",
+                    "handlingSummary": "First paragraph\nSecond paragraph"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "effectiveBusinessDate": "2026-11-02",
+                  "timeZone": "Europe/Riga"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-CREATE",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "CREATE",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "10000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-UPDATE",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "UPDATE",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-COMPLETE",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-CANCEL",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "CANCEL",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "CANCELLED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-REOPEN",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "REOPEN",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-accepted-COMPLETE_AND_PLAN_NEXT",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE_AND_PLAN_NEXT",
+              "effects": {
+                "kind": "COMPLETED_AND_PLANNED",
+                "completed": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "30000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 4,
+                      "action": "Contact insurer",
+                      "dueDate": "2026-11-10",
+                      "state": "COMPLETED"
+                    }
+                  }
+                },
+                "next": {
+                  "reminderId": "10000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "snapshot": {
+                    "kind": "DISCLOSED",
+                    "view": {
+                      "reminderId": "10000000-0000-4000-8000-000000000001",
+                      "caseId": "20000000-0000-4000-8000-000000000001",
+                      "revision": 1,
+                      "action": "Review response",
+                      "dueDate": "2026-11-11",
+                      "state": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-disclosure-WITHHELD",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "WITHHELD"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-disclosure-ERASED",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 5,
+              "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "recordedAt": "2026-11-02T04:00:00.000000Z",
+            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "subject": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "act": "COMPLETE",
+              "effects": {
+                "kind": "SINGLE",
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "snapshot": {
+                    "kind": "ERASED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-review-CREATED",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "REMINDER",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": null,
+                "effects": {
+                  "kind": "CREATED",
+                  "reminder": {
+                    "reminderId": "10000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 1,
+                    "action": "Contact insurer",
+                    "dueDate": "2026-11-10",
+                    "state": "PENDING"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "effectiveBusinessDate": "2026-11-02",
+                  "timeZone": "Europe/Riga"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-review-CHANGED",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "REMINDER",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 3,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "PENDING"
+                },
+                "effects": {
+                  "kind": "CHANGED",
+                  "reminder": {
+                    "reminderId": "30000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 4,
+                    "action": "Contact insurer",
+                    "dueDate": "2026-11-10",
+                    "state": "COMPLETED"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "effectiveBusinessDate": "2026-11-02",
+                  "timeZone": "Europe/Riga"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-review-COMPLETED_AND_PLANNED",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "REMINDER",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 3,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "PENDING"
+                },
+                "effects": {
+                  "kind": "COMPLETED_AND_PLANNED",
+                  "completed": {
+                    "reminderId": "30000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 4,
+                    "action": "Contact insurer",
+                    "dueDate": "2026-11-10",
+                    "state": "COMPLETED"
+                  },
+                  "next": {
+                    "reminderId": "10000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 1,
+                    "action": "Review response",
+                    "dueDate": "2026-11-11",
+                    "state": "PENDING"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "effectiveBusinessDate": "2026-11-02",
+                  "timeZone": "Europe/Riga"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminders-page",
+      "endpoint": "reminder.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "items": [
+              {
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 3,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "PENDING"
+                },
+                "caseReference": "NARRATIVE-REMINDERS",
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "acts": [
+                  "UPDATE",
+                  "COMPLETE",
+                  "CANCEL",
+                  "COMPLETE_AND_PLAN_NEXT"
+                ],
+                "active": true
+              },
+              {
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "COMPLETED"
+                },
+                "caseReference": "NARRATIVE-REMINDERS",
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "acts": [
+                  "REOPEN"
+                ],
+                "active": false
+              },
+              {
+                "reminder": {
+                  "reminderId": "30000000-0000-4000-8000-000000000009",
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 2,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "CANCELLED"
+                },
+                "caseReference": "NARRATIVE-REMINDERS",
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "acts": [
+                  "REOPEN"
+                ],
+                "active": true
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "work-overview-False",
+      "endpoint": "work.overview",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "mine": false,
+            "actionableCases": 1,
+            "missingPlanCases": 1,
+            "overdueCases": 0,
+            "overdueReminders": 0,
+            "unassignedCases": 1,
+            "unavailableAssigneeCases": 0,
+            "attentionCases": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "work-overview-True",
+      "endpoint": "work.overview",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "mine": true,
+            "actionableCases": 1,
+            "missingPlanCases": 1,
+            "overdueCases": 0,
+            "overdueReminders": 0,
+            "unassignedCases": 1,
+            "unavailableAssigneeCases": 0,
+            "attentionCases": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "case-activity-all-subjects",
+      "endpoint": "case.activity",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "operationId": "10000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 5,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "subject": {
+                  "kind": "CASE",
+                  "revision": 2,
+                  "act": "CLOSE"
+                },
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "detail": null
+              },
+              {
+                "operationId": "10000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 5,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "subject": {
+                  "kind": "WORK",
+                  "revision": 1,
+                  "act": "UPDATE_WORK"
+                },
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "detail": null
+              },
+              {
+                "operationId": "10000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 5,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "subject": {
+                  "kind": "REMINDER",
+                  "act": "COMPLETE",
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "next": null
+                },
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "detail": null
+              },
+              {
+                "operationId": "10000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 5,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "subject": {
+                  "kind": "REMINDER",
+                  "act": "COMPLETE_AND_PLAN_NEXT",
+                  "reminderId": "30000000-0000-4000-8000-000000000001",
+                  "revision": 4,
+                  "next": {
+                    "reminderId": "10000000-0000-4000-8000-000000000001",
+                    "revision": 1
+                  }
+                },
+                "recordedAt": "2026-11-02T04:00:00.000000Z",
+                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "detail": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-PARENT_MISMATCH",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_PARENT_MISMATCH",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-PARENT_NOT_ACTIVE",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_PARENT_NOT_ACTIVE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-PARENT_NOT_OPEN",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_PARENT_NOT_OPEN",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-NOT_FOUND",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_NOT_FOUND",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-IDENTITY_RESERVED",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_IDENTITY_RESERVED",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-PENDING_REQUIRED",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_PENDING_REQUIRED",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-TERMINAL_REQUIRED",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_TERMINAL_REQUIRED",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-NO_CHANGES",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_NO_CHANGES",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-revision",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_REVISION_CONFLICT",
+            "action": "READ_CURRENT",
+            "actualRevision": 4
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-rule-invalid-action",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_INVALID_ACTION",
+            "action": "CORRECT_INPUT",
+            "violation": {
+              "code": "CONTROL_CHARACTERS"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "work-reminder-targeted-issues",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "incidentDescription",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "handlingSummary",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "reminderId",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "reminderAction",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "reminderDueDate",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "expectedWorkRevision",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "expectedReminderRevision",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      }
     }
   ]
 }
