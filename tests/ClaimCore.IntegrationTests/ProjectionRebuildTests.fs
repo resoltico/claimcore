@@ -255,6 +255,8 @@ let private erasedIdentity database =
             "A real full restore preserves accepted writes, erasure and controls"
 
         do! sql database "DELETE FROM claimcore.grants WHERE case_id IS NOT NULL" [||]
+        do! sql database "DELETE FROM claimcore.reminders" [||]
+        do! sql database "DELETE FROM claimcore.case_work" [||]
         do! sql database "DELETE FROM claimcore.cases" [||]
         let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
         Expect.isOk result "Retained OPEN identity reconstructs erased cases"
