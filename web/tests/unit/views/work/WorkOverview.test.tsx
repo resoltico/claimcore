@@ -1,4 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { act } from "@testing-library/react";
+import { useEndpoint } from "../../../../src/hooks/useEndpoint";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, fireEvent } from "../../../support/presentation-test-support";
 import { context, response, unavailable } from "../../../support/service-ui.fixtures";
@@ -21,7 +23,10 @@ const observation = {
   // Missing-plan and overdue cases are disjoint; assignment flags overlap within those four.
   attentionCases: 4,
 };
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 it("shows named case/reminder dimensions and the server's distinct attention union", async () => {
   const fetch = vi.fn().mockResolvedValue(response("work.overview", "SUCCEEDED", observation));
   vi.stubGlobal("fetch", fetch);
@@ -95,4 +100,101 @@ it("keeps accessible attention and basis visible in compact mode while detailed 
   expect(screen.getByText("Active open cases")).not.toBeVisible();
   await userEvent.click(screen.getByText("Show summary totals", { selector: "summary" }));
   expect(screen.getByText("Active open cases")).toBeVisible();
+});
+
+it("refreshes a long-lived screen from the server day and invalidates date-dependent reads", async () => {
+  vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+  // The client clock deliberately disagrees with both observations; it only schedules a read.
+  vi.setSystemTime(new Date("2031-06-15T12:00:00Z"));
+  const before = {
+    ...observation,
+    basis: {
+      observedAt: "2026-11-02T21:59:45.000000Z",
+      businessDate: "2026-11-02",
+      timeZone: "Europe/Riga",
+    },
+  };
+  const after = {
+    ...observation,
+    basis: {
+      observedAt: "2026-11-02T22:00:45.000000Z",
+      businessDate: "2026-11-03",
+      timeZone: "Europe/Riga",
+    },
+  };
+  let advanced = false;
+  let overviewReads = 0;
+  let summaryReads = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) => {
+      const current = advanced ? after : before;
+      if (url === "/api/work.overview") {
+        overviewReads += 1;
+        return Promise.resolve(response("work.overview", "SUCCEEDED", current));
+      }
+      if (url === "/api/case.summary") {
+        summaryReads += 1;
+        return Promise.resolve(
+          response("case.summary", "SUCCEEDED", {
+            basis: current.basis,
+            counts: {
+              total: 1,
+              lifecycle: [],
+              status: [],
+              progress: [],
+              assignment: [],
+              due: [{ value: advanced ? "OVERDUE" : "TODAY", count: 1 }],
+            },
+            claimed: [],
+            payable: [],
+          }),
+        );
+      }
+      throw new Error(`Unexpected request ${url}`);
+    }),
+  );
+  const DependentSummary = () => {
+    const result = useEndpoint("case.summary", {});
+    const value = result.value?.outcome;
+    return (
+      <output data-testid="dependent-summary">
+        {value?.kind === "SUCCEEDED"
+          ? `${value.data.basis.businessDate}: ${value.data.counts.due[0]?.value}`
+          : "Loading"}
+      </output>
+    );
+  };
+  const view = render(
+    <>
+      <WorkOverview />
+      <DependentSummary />
+    </>,
+  );
+  await waitFor(() => {
+    expect(screen.getByTestId("dependent-summary")).toHaveTextContent("2026-11-02: TODAY");
+  });
+  expect(view.container.querySelectorAll(".observation-basis")[0]).toHaveTextContent("02/11/2026");
+  expect(overviewReads).toBe(1);
+  expect(summaryReads).toBe(1);
+  advanced = true;
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(59_999);
+  });
+  expect(overviewReads).toBe(1);
+  expect(summaryReads).toBe(1);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  await waitFor(() => {
+    expect(screen.getByTestId("dependent-summary")).toHaveTextContent("2026-11-03: OVERDUE");
+  });
+  expect(view.container.querySelectorAll(".observation-basis")[0]).toHaveTextContent("03/11/2026");
+  expect(view.container.querySelectorAll(".observation-basis")[0]).toHaveTextContent("Europe/Riga");
+  expect(overviewReads).toBe(3); // Interval observation, then the shared day-change invalidation.
+  expect(summaryReads).toBe(2);
+  view.unmount();
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(overviewReads).toBe(3);
+  expect(summaryReads).toBe(2);
 });
