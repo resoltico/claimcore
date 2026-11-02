@@ -146,7 +146,11 @@ module Grammar =
 
         let fixedValues () =
             for item in constants do
-                if applies item.Branches then
+                if
+                    applies item.Branches
+                    && (not item.RequiresParent
+                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
+                then
                     assign item.Path (constant item.Value)
 
         fixedValues ()

@@ -4624,8 +4624,8 @@
                 },
                 "context": {
                   "productVersion": "synthetic",
-                  "effectiveBusinessDate": "2026-11-02",
-                  "timeZone": "Europe/Riga"
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02"
                 }
               }
             }
@@ -5012,8 +5012,8 @@
                 },
                 "context": {
                   "productVersion": "synthetic",
-                  "effectiveBusinessDate": "2026-11-02",
-                  "timeZone": "Europe/Riga"
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02"
                 }
               }
             }
@@ -5056,8 +5056,8 @@
                 },
                 "context": {
                   "productVersion": "synthetic",
-                  "effectiveBusinessDate": "2026-11-02",
-                  "timeZone": "Europe/Riga"
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02"
                 }
               }
             }
@@ -5108,8 +5108,8 @@
                 },
                 "context": {
                   "productVersion": "synthetic",
-                  "effectiveBusinessDate": "2026-11-02",
-                  "timeZone": "Europe/Riga"
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02"
                 }
               }
             }
@@ -5318,21 +5318,9 @@
                 "detail": null
               }
             ],
-            "nextCursor": null
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder-rule-PARENT_MISMATCH",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REMINDER_PARENT_MISMATCH",
-            "action": "NONE_REQUIRED"
+            "nextCursor": null,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "caseReference": "NARRATIVE-REMINDERS"
           }
         }
       }
@@ -5360,34 +5348,6 @@
           "kind": "REJECTED",
           "data": {
             "code": "REMINDER_PARENT_NOT_OPEN",
-            "action": "NONE_REQUIRED"
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder-rule-NOT_FOUND",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REMINDER_NOT_FOUND",
-            "action": "NONE_REQUIRED"
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder-rule-IDENTITY_RESERVED",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REMINDER_IDENTITY_RESERVED",
             "action": "NONE_REQUIRED"
           }
         }
@@ -5436,38 +5396,6 @@
       }
     },
     {
-      "name": "reminder-rule-revision",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REMINDER_REVISION_CONFLICT",
-            "action": "READ_CURRENT",
-            "actualRevision": 4
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder-rule-invalid-action",
-      "endpoint": "context",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "REMINDER_INVALID_ACTION",
-            "action": "CORRECT_INPUT",
-            "violation": {
-              "code": "CONTROL_CHARACTERS"
-            }
-          }
-        }
-      }
-    },
-    {
       "name": "work-reminder-targeted-issues",
       "endpoint": "context",
       "valid": true,
@@ -5505,6 +5433,26 @@
               {
                 "field": "expectedReminderRevision",
                 "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-empty-id-input-issue",
+      "endpoint": "context",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "reminderId",
+                "code": "REMINDER_ID_REQUIRED"
               }
             ]
           }

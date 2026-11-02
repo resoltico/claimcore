@@ -131,12 +131,16 @@ module WorkReadCodecs =
         |> named "CaseActivity"
 
     let activityPage =
-        (record (fun items next ->
+        (record (fun parent reference items next ->
             {
-                CaseActivityPage.Items = items
+                CaseActivityPage.CaseId = parent
+                Reference = reference
+                Items = items
                 NextCursor = next
             })
         : Fields<CaseActivityPage, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
         |> field "items" _.Items (list Paging.MaximumPageSize activity)
         |> field
             "nextCursor"

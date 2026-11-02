@@ -597,7 +597,8 @@ module ReplyCorrelation =
 
         let readTarget =
             match token, kind, data with
-            | ("case.get" | "case.history"), Some "SUCCEEDED", Some value -> caseTarget input value
+            | ("case.get" | "case.history" | "case.activity"), Some "SUCCEEDED", Some value ->
+                caseTarget input value
             | "authority.grants", Some "SUCCEEDED", Some value ->
                 memberValue "actor" value
                 |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)

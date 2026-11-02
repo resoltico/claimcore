@@ -80,6 +80,7 @@ type CliMessage =
     | [<MessageKey("label.reviewTitle")>] ReviewTitle
     | [<MessageKey("label.revisionLabel")>] RevisionLabel
 
+    | [<MessageKey("cli.text.editorCleanupUnavailable")>] EditorCleanupUnavailable
     | [<MessageKey("cli.text.recoveryCleanupUnavailable")>] RecoveryCleanupUnavailable
     | [<MessageKey("cli.text.settlementScope")>] SettlementScope of
         actorId: string *
