@@ -68,22 +68,21 @@ module CaseWorkInput =
 
     let parse (input: CaseWorkInput) =
         let responsible = WorkValue.traverse actor input.Responsible
-        // Planned dates share permanent calendar syntax, without event-date admission's maximum.
-        let followUp = WorkValue.traverse HandlingSummary.parse input.Summary
+        let summary = WorkValue.traverse HandlingSummary.parse input.Summary
 
-        match responsible, followUp with
+        match responsible, summary with
         | Ok WorkValue.Keep, Ok WorkValue.Keep ->
             Error [ BusinessField.HandlingSummary, Violation.UpdateRequired ]
-        | Ok responsible, Ok followUp ->
+        | Ok responsible, Ok summary ->
             Ok
                 {
                     ValidCaseWorkUpdate.Responsible = responsible
-                    Summary = followUp
+                    Summary = summary
                 }
         | _ ->
             [
                 BusinessField.ResponsibleActor, responsible |> Result.map ignore
-                BusinessField.HandlingSummary, followUp |> Result.map ignore
+                BusinessField.HandlingSummary, summary |> Result.map ignore
             ]
             |> List.choose (fun (field, result) ->
                 match result with

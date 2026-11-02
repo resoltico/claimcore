@@ -19,6 +19,11 @@ module InputTarget =
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
+        | InputTarget.ReminderId -> "reminderId"
+        | InputTarget.ReminderAction -> "reminderAction"
+        | InputTarget.ReminderDueDate -> "reminderDueDate"
+        | InputTarget.ExpectedWorkRevision -> "expectedWorkRevision"
+        | InputTarget.ExpectedReminderRevision -> "expectedReminderRevision"
         | InputTarget.Text -> "text"
 
     let private values =

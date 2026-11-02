@@ -51,6 +51,11 @@ type InputTarget =
     | Limit
     | Cursor
     | Text
+    | ReminderId
+    | ReminderAction
+    | ReminderDueDate
+    | ExpectedWorkRevision
+    | ExpectedReminderRevision
 
 [<NoEquality; NoComparison>]
 type FieldDescriptor =
