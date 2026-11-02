@@ -1,3 +1,4 @@
+import { productMetadata } from "./productMetadata";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 export type RecoveryScope = {
@@ -6,10 +7,10 @@ export type RecoveryScope = {
   readonly actorId: string;
 };
 export type RecoveryRecord = RecoveryScope & {
-  readonly format: 1;
+  readonly format: 2;
   readonly attemptId: string;
   readonly operationId: string;
-  readonly subject: "CASE" | "AUTHORITY";
+  readonly subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER";
   readonly act: string;
 };
 export type RecoveryJournal = {
@@ -29,13 +30,20 @@ const isScope = (value: Record<string, unknown>): boolean =>
 const isAttempt = (value: Record<string, unknown>): boolean =>
   uuid(value["attemptId"]) &&
   uuid(value["operationId"]) &&
-  (value["subject"] === "CASE" || value["subject"] === "AUTHORITY") &&
+  ["CASE", "AUTHORITY", "WORK", "REMINDER"].includes(String(value["subject"])) &&
   typeof value["act"] === "string" &&
-  /^[A-Z][A-Z_]{0,39}$/u.test(value["act"]);
+  /^[A-Z][A-Z_]{0,39}$/u.test(value["act"]) &&
+  productMetadata.catalog.entries.some(
+    (entry) =>
+      entry.subject === value["subject"] &&
+      entry.constants.some(
+        (constant) => constant.path.join(".") === "act.kind" && constant.value === value["act"],
+      ),
+  );
 export const isRecoveryRecord = (value: unknown): value is RecoveryRecord =>
   isObject(value) &&
   Object.keys(value).length === 8 &&
-  value["format"] === 1 &&
+  value["format"] === 2 &&
   isScope(value) &&
   isAttempt(value);
 export const sameRecoveryScope = (left: RecoveryScope, right: RecoveryScope): boolean =>

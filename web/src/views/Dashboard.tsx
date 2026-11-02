@@ -3,6 +3,7 @@ import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
 import { RequesterContext } from "../hooks/useRequesterContext";
+import { WorkOverview } from "./work/WorkOverview";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -150,6 +151,7 @@ const AcceptedToast = ({
         act: p.actLabel(receipt.subject.act),
         revision: p.integer(receipt.subject.revision),
       })}
+      {receipt.subject.act === "OPEN" ? <p>{p.text("ui.planAfterOpen")}</p> : null}
       <button type="button" onClick={close}>
         {p.text("ui.close")}
       </button>
@@ -311,7 +313,11 @@ export const Dashboard = () => {
   return (
     <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>
       <RecoveryProvider>
-        <WorkspaceHeader active={active} views={views} locked={locked} />
+        <WorkspaceHeader
+          active={route.screen === "work" ? "work" : active}
+          views={views}
+          locked={locked}
+        />
         <AcceptedToast
           route={route}
           receipt={feedback.receipt}
@@ -326,6 +332,7 @@ export const Dashboard = () => {
               response?.outcome.kind === "SUCCEEDED" && response.outcome.data.maintenance.active
             }
           />
+          <WorkOverview />
           <div ref={content}>
             <WorkspaceRoute
               key={owner}

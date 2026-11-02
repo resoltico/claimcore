@@ -2,6 +2,7 @@ import type { CaseSelector } from "@contracts/client";
 import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
+  | { screen: "work" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector }
   | { screen: "caseAct"; target: CaseSelector; act: string }
@@ -66,6 +67,9 @@ export const parseRoute = (location: Pick<Location, "pathname" | "search">): Rou
   try {
     if (segments.length === 0 || (segments[0] === "cases" && segments.length === 1)) {
       return { screen: "cases", query: location.search };
+    }
+    if (segments[0] === "work" && segments.length === 1) {
+      return { screen: "work" };
     }
     if (segments[0] === "cases") {
       return caseRoute(segments);

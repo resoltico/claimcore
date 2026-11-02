@@ -8,7 +8,8 @@ import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
-import { CaseWork } from "./case/CaseWork";
+import { CaseActivity } from "./work/CaseActivity";
+import { CaseReminders } from "./work/CaseReminders";
 import { CaseFacts } from "./case/CaseFacts";
 import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
 import { CaseProgress } from "./case/CaseProgress";
@@ -26,6 +27,7 @@ type CaseDetailProps = {
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
+  onMutationLockChange: (locked: boolean) => void;
   onAct: (current: CurrentCase, act: ActKind) => void;
 };
 
@@ -47,13 +49,16 @@ const CurrentPresentation = ({
   current,
   definition,
   onAct,
+  onChanged,
+  onMutationLockChange,
 }: {
   current: CurrentCase;
   definition: CatalogDocument;
   onAct: (current: CurrentCase, act: ActKind) => void;
+  onChanged: () => void;
+  onMutationLockChange: (locked: boolean) => void;
 }) => {
   const globalPaused = useRequesterContext()?.maintenance.active === true;
-  const paused = globalPaused || current.advice.maintenance.active;
   return (
     <>
       <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
@@ -62,16 +67,7 @@ const CurrentPresentation = ({
         <CharacterWarning value={current.state.fields.registration.claimantName} />
       </p>
       <CaseProgress current={current} definition={definition} />
-      <CaseWork
-        value={current.work}
-        {...(current.advice.acts.includes("UPDATE_WORK") && !paused
-          ? {
-              onUpdate: () => {
-                onAct(current, "UPDATE_WORK");
-              },
-            }
-          : {})}
-      />
+      <CaseReminders current={current} onChanged={onChanged} onLockChange={onMutationLockChange} />
       <div className="case-workspace">
         <CaseFacts
           values={current.state.fields}
@@ -168,7 +164,13 @@ const CaseHeader = ({
   );
 };
 
-const CaseDisclosure = ({ target, definition, onBack, onAct }: CaseDetailProps) => {
+const CaseDisclosure = ({
+  target,
+  definition,
+  onBack,
+  onAct,
+  onMutationLockChange,
+}: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(target);
   const state = current.value;
@@ -189,13 +191,26 @@ const CaseDisclosure = ({ target, definition, onBack, onAct }: CaseDetailProps) 
         </Button>
       )}
       {lookup === null ? null : (
-        <CurrentPresentation current={lookup} definition={definition} onAct={onAct} />
+        <CurrentPresentation
+          current={lookup}
+          definition={definition}
+          onAct={onAct}
+          onChanged={current.revalidate}
+          onMutationLockChange={onMutationLockChange}
+        />
       )}
       {state?.state.kind === "ERASED" ? (
         <p role="status">
           <bdi dir="ltr">{state.caseReference}</bdi> ·{" "}
           <bdi dir="ltr">{p.integer(state.revision)}</bdi>
         </p>
+      ) : null}
+      {current.historyModes.length ? (
+        <CaseActivity
+          target={target}
+          modes={current.historyModes}
+          onDisclosureRefused={current.revalidate}
+        />
       ) : null}
       {current.historyModes.length ? (
         <CaseHistory

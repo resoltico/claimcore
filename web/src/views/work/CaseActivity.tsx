@@ -1,0 +1,99 @@
+import { useCallback, useState } from "react";
+import type { CaseSelector, CaseActivityPage, ResponseByEndpoint } from "@contracts/client";
+import { useEndpointPage } from "../../hooks/useEndpointPage";
+import { usePresentation } from "../../presentation/context";
+import { renderCatalogKey } from "../../presentation/messages";
+import { NoticeView } from "../../presentation/Message";
+import { productMetadata } from "../../protocol/productMetadata";
+import { ProtocolSummary } from "../../components/ProtocolSummary";
+import { IdentifierValue } from "../../components/IdentifierValue";
+const select = (reply: ResponseByEndpoint["case.activity"]): CaseActivityPage | null =>
+  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+export const CaseActivity = ({
+  target,
+  modes,
+  onDisclosureRefused,
+}: {
+  target: CaseSelector;
+  modes: ReadonlyArray<"SUMMARY" | "FULL">;
+  onDisclosureRefused: () => void;
+}) => {
+  const p = usePresentation();
+  const [detail, setDetail] = useState<"SUMMARY" | "FULL">("SUMMARY");
+  const input = useCallback(
+    (cursor: string | null) => ({
+      target,
+      detail,
+      limit: 50,
+      ...(cursor === null ? {} : { cursor }),
+    }),
+    [target, detail],
+  );
+  const result = useEndpointPage("case.activity", input, select, onDisclosureRefused);
+  return (
+    <section aria-labelledby="case-activity-title" aria-busy={result.loading}>
+      <h2 id="case-activity-title">{p.text("ui.caseActivity")}</h2>
+      {modes.includes("FULL") ? (
+        <label>
+          {p.text("ui.historyDetail")}
+          <select
+            value={detail}
+            onChange={(event) => setDetail(event.target.value as "SUMMARY" | "FULL")}
+          >
+            {modes.map((mode) => (
+              <option key={mode} value={mode}>
+                {p.term("historyDetail", mode)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {result.message === null ? null : (
+        <p role="alert">
+          <NoticeView value={result.message} />
+        </p>
+      )}
+      {result.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      <ol>
+        {result.items.map((event) => {
+          const entry = productMetadata.catalog.entries.find(
+            (candidate) =>
+              candidate.subject === event.subject.kind &&
+              candidate.constants.some(
+                (constant) =>
+                  constant.path.join(".") === "act.kind" && constant.value === event.subject.act,
+              ),
+          );
+          return (
+            <li key={event.operationId}>
+              <p>
+                {entry === undefined ? event.subject.act : renderCatalogKey(p, entry.labelId)} ·{" "}
+                <bdi dir="ltr">{event.recordedAt}</bdi>
+              </p>
+              <details>
+                <summary>{p.text("ui.technicalDetails")}</summary>
+                <p>
+                  {p.text("ui.recordedBy")}: <IdentifierValue value={event.recordedBy} />
+                </p>
+                <IdentifierValue value={event.operationId} />
+                <p>{p.integer(event.subject.revision)}</p>
+              </details>
+              {event.detail === null || entry === undefined ? null : (
+                <ProtocolSummary value={event.detail} entry={entry} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {result.cursor === null ? null : (
+        <button
+          type="button"
+          disabled={result.loading}
+          onClick={() => void result.load(result.cursor)}
+        >
+          {p.text("ui.moreHistory")}
+        </button>
+      )}
+    </section>
+  );
+};

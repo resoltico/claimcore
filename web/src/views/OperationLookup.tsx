@@ -1,3 +1,6 @@
+import { renderCatalogKey } from "../presentation/messages";
+import { operationEntryForInput } from "../protocol/operationCatalog";
+import { WorkReceiptView } from "./work/WorkReceiptView";
 import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
@@ -33,7 +36,13 @@ const ReceiptView = ({
           id="ui.observedReceipt"
           values={{
             operationId: receipt.operationId,
-            act: p.term("act", receipt.subject.act),
+            act: renderCatalogKey(
+              p,
+              operationEntryForInput({
+                kind: receipt.subject.kind,
+                act: { kind: receipt.subject.act },
+              }).labelId,
+            ),
             actor: receipt.recordedBy,
           }}
           argument="operationId"
@@ -42,10 +51,18 @@ const ReceiptView = ({
       {receipt.subject.kind === "AUTHORITY" ? (
         <p>
           {p.text("ui.authorityReceipt", {
-            act: p.term("act", receipt.subject.act),
+            act: renderCatalogKey(
+              p,
+              operationEntryForInput({
+                kind: receipt.subject.kind,
+                act: { kind: receipt.subject.act },
+              }).labelId,
+            ),
             actor: receipt.subject.targetActorId,
           })}
         </p>
+      ) : receipt.subject.kind === "WORK" || receipt.subject.kind === "REMINDER" ? (
+        <WorkReceiptView receipt={receipt} />
       ) : (
         <ReceiptFields
           subject={receipt.subject}

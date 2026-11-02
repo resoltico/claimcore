@@ -1,3 +1,4 @@
+import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -36,7 +37,9 @@ import {
 } from "../../operation/operationState";
 import type { Notice } from "../../protocol/notices";
 type Options = {
-  subject: "CASE" | "AUTHORITY";
+  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER";
+  prefill?: FormValues;
+  targetIdentity?: string;
   kind: string;
   current: CurrentCase | null;
   credential: string;
@@ -54,9 +57,13 @@ type Options = {
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
-  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
+  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}:${options.targetIdentity ?? ""}`;
 const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
-  const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
+  const values = {
+    ...initialOperationValues(options.subject, kind, options.current),
+    ...options.prefill,
+    ...prefill,
+  };
   const context = {
     generation: 0,
     epoch: options.contextEpoch ?? 0,
@@ -105,14 +112,20 @@ const completion = (
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
+    if (
+      (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") &&
+      receiptCorrelates(effect.source.prepared.input, outcome.data)
+    ) {
       return {
         type: "RECORD",
         receipt: outcome.data,
         identity: effect.identity,
       };
     }
-    if (outcome.kind === "REVIEWED") {
+    if (
+      outcome.kind === "REVIEWED" &&
+      replyCorrelates("operation.preview", effect.source.prepared.input, result.value)
+    ) {
       return {
         type: "REVIEW",
         review: outcome.data.review,
@@ -150,7 +163,10 @@ const runNetwork = async (
       installationId,
     );
     if (result.kind === "outcome") {
-      if (result.value.outcome.kind === "ACCEPTED") {
+      if (
+        result.value.outcome.kind === "ACCEPTED" &&
+        receiptCorrelates(effect.source.prepared.input, result.value.outcome.data)
+      ) {
         return {
           type: "RECORD",
           identity: effect.identity,
@@ -343,7 +359,7 @@ const useEffects = (
           if (record === undefined) {
             record = {
               ...scope,
-              format: 1,
+              format: 2,
               attemptId: effect.identity.id,
               operationId,
               subject: effect.source.prepared.input.kind,
@@ -476,7 +492,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
       if (
         !blocked &&
         state.disclosureRead === null &&
-        options.subject === "CASE" &&
+        options.subject !== "AUTHORITY" &&
         options.current !== null
       ) {
         dispatch({
@@ -598,7 +614,7 @@ export const useOperation = (supplied: Options) => {
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.caseObservation : null,
     revalidating: state.disclosureRead !== null,
-    canRevalidateCase: options.subject === "CASE" && options.current !== null,
+    canRevalidateCase: options.subject !== "AUTHORITY" && options.current !== null,
     review: disclosureCurrent ? view.review : null,
     receipt: disclosureCurrent ? view.receipt : null,
     contextChanged: state.target !== target,
