@@ -101,6 +101,13 @@ const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
+const incompleteSuccess = (result: Reply): boolean =>
+  result.kind === "outcome" &&
+  ["ACCEPTED", "ALREADY_ACCEPTED", "REVIEWED"].includes(result.value.outcome.kind);
+const completionNotice = (result: Reply): Notice =>
+  incompleteSuccess(result) ? { kind: "local", reason: "incomplete" } : resultNotice(result);
+const completionUncertain = (effect: { kind: string }, result: Reply): boolean =>
+  effect.kind === "EXECUTE" && (mutationUncertain(result) || incompleteSuccess(result));
 const completion = (
   effect: Extract<
     OperationEffect,
@@ -136,14 +143,14 @@ const completion = (
   return {
     type: "REFUSE",
     identity: effect.identity,
-    notice: resultNotice(result),
+    notice: completionNotice(result),
     target:
       result.kind === "outcome" &&
       result.value.outcome.kind === "REJECTED" &&
       "target" in result.value.outcome.data
         ? result.value.outcome.data.target
         : null,
-    uncertain: effect.kind === "EXECUTE" && mutationUncertain(result),
+    uncertain: completionUncertain(effect, result),
     disclosure: isDisclosureRefused(result),
   };
 };

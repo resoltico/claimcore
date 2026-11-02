@@ -42,8 +42,8 @@ const receipt = {
     kind: "CASE",
     caseId: operation,
     caseReference: "CORRELATION",
-    revision: 1,
-    act: "OPEN",
+    revision: 2,
+    act: "CLOSE",
     snapshot: { kind: "WITHHELD" },
   },
 };
@@ -52,7 +52,7 @@ const prepared = () =>
     kind: "CASE",
     operationId: operation,
     target: { kind: "REFERENCE", caseReference: "CORRELATION" },
-    expectedRevision: 0,
+    expectedRevision: 1,
     act: { kind: "CLOSE" },
   });
 const reply = (value: unknown) =>

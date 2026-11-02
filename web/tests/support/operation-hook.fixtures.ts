@@ -1,3 +1,4 @@
+import type { PreparedRequest } from "../../src/protocol/preparedRequest";
 import { recoveryOptions } from "./recovery.fixtures";
 import { renderHook } from "@testing-library/react";
 import { vi } from "vitest";
@@ -23,19 +24,47 @@ export const hook = () =>
       },
     },
   );
-export const preview = (): ApiResult<ServiceResponse<"operation.preview">> => ({
-  kind: "outcome",
-  status: 200,
-  value: {
-    operationId: "10000000-0000-4000-8000-000000000001",
-    outcome: {
-      kind: "REVIEWED",
-      data: {
-        review,
+export const preview = (
+  prepared?: PreparedRequest<"operation.execute">,
+): ApiResult<ServiceResponse<"operation.preview">> => {
+  const input = prepared?.input;
+  const reference =
+    input !== undefined && input.kind !== "AUTHORITY" && input.target.kind === "REFERENCE"
+      ? input.target.caseReference
+      : current.caseReference;
+  if (review.subject.kind !== "CASE") {
+    throw new Error("Expected independently authored case review.");
+  }
+  const ownerReview = {
+    subject: {
+      ...review.subject,
+      after: {
+        ...review.subject.after,
+        caseReference: reference,
+        state:
+          review.subject.after.state.kind === "ERASED"
+            ? review.subject.after.state
+            : {
+                ...review.subject.after.state,
+                fields: { ...review.subject.after.state.fields, caseReference: reference },
+              },
       },
     },
-  },
-});
+  };
+  return {
+    kind: "outcome",
+    status: 200,
+    value: {
+      operationId: input?.operationId ?? "10000000-0000-4000-8000-000000000001",
+      outcome: {
+        kind: "REVIEWED",
+        data: {
+          review: ownerReview,
+        },
+      },
+    },
+  };
+};
 export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operation.execute">> => ({
   kind: "outcome",
   status: 200,

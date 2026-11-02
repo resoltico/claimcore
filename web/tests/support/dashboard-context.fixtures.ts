@@ -1,7 +1,13 @@
 import { actorContextInput } from "./inputs";
 import { mockEndpoint } from "./endpoint-mocks";
-export const stubDashboardContext = () =>
-  mockEndpoint("context").mockResolvedValue({
+export const stubDashboardContext = () => {
+  // Most dashboard scenarios control another pane. Keep the separate overview explicitly unknown.
+  mockEndpoint("work.overview").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+    dispatched: false,
+  });
+  return mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
@@ -18,3 +24,4 @@ export const stubDashboardContext = () =>
       },
     },
   });
+};

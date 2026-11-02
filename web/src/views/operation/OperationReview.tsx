@@ -179,6 +179,27 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
     </>
   );
 };
+const reviewReference = (review: Review["subject"]): string => {
+  if (review.kind === "CASE") {
+    return review.after.caseReference;
+  }
+  if (review.kind === "WORK" || review.kind === "REMINDER") {
+    return review.caseReference;
+  }
+  return "";
+};
+const ReviewBody = ({ review }: { review: Review["subject"] }) => {
+  switch (review.kind) {
+    case "CASE":
+      return <ReviewValues review={review} />;
+    case "WORK":
+      return <WorkReviewValues review={review} />;
+    case "REMINDER":
+      return <ReminderReviewValues review={review} />;
+    case "AUTHORITY":
+      return <AuthorityValues review={review} />;
+  }
+};
 const ReviewIntent = ({ input, review }: { input: OperationInput; review: Review["subject"] }) => {
   const p = usePresentation();
   if (input.kind === "AUTHORITY") {
@@ -207,12 +228,7 @@ const ReviewIntent = ({ input, review }: { input: OperationInput; review: Review
       </dl>
     );
   }
-  const reference =
-    review.kind === "CASE"
-      ? review.after.caseReference
-      : review.kind === "WORK" || review.kind === "REMINDER"
-        ? review.caseReference
-        : "";
+  const reference = reviewReference(review);
   return (
     <p className="review-intent">
       <bdi dir="ltr" className="identifier-value">
@@ -338,15 +354,7 @@ export const OperationReview = ({
         <h3>{renderCatalogKey(p, act.labelId)}</h3>
         <p>{act.meaningId === null ? null : renderCatalogKey(p, act.meaningId)}</p>
         <ReviewIntent input={input} review={model.review.subject} />
-        {model.review.subject.kind === "CASE" ? (
-          <ReviewValues review={model.review.subject} />
-        ) : model.review.subject.kind === "WORK" ? (
-          <WorkReviewValues review={model.review.subject} />
-        ) : model.review.subject.kind === "REMINDER" ? (
-          <ReminderReviewValues review={model.review.subject} />
-        ) : (
-          <AuthorityValues review={model.review.subject} />
-        )}
+        <ReviewBody review={model.review.subject} />
         <CorrectionIntent input={input} review={model.review.subject} />
         <details className="review-request">
           <summary>{p.text("ui.technicalDetails")}</summary>

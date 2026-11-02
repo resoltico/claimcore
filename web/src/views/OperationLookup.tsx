@@ -21,6 +21,49 @@ type OperationLookupProps = {
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
 };
+const ReceiptBody = ({
+  receipt,
+  definition,
+}: {
+  receipt: OperationReceipt;
+  definition: ProductMetadata;
+}) => {
+  const p = usePresentation();
+  const actLabel =
+    receipt.subject.kind === "REMINDER"
+      ? renderCatalogKey(
+          p,
+          operationEntryForInput({ kind: receipt.subject.kind, act: { kind: receipt.subject.act } })
+            .labelId,
+        )
+      : p.term("act", receipt.subject.act);
+  if (receipt.subject.kind === "AUTHORITY") {
+    return (
+      <p>
+        {p.text("ui.authorityReceipt", {
+          act: actLabel,
+          actor: receipt.subject.targetActorId,
+        })}
+      </p>
+    );
+  }
+  if (receipt.subject.kind === "WORK" || receipt.subject.kind === "REMINDER") {
+    return <WorkReceiptView receipt={receipt} />;
+  }
+  return (
+    <ReceiptFields
+      subject={receipt.subject}
+      fields={definition.catalog.fields}
+      context={
+        <IdentifierMessage
+          id="ui.observedContext"
+          values={{ operationId: receipt.operationId }}
+          argument="operationId"
+        />
+      }
+    />
+  );
+};
 const ReceiptView = ({
   receipt,
   definition,
@@ -36,48 +79,22 @@ const ReceiptView = ({
           id="ui.observedReceipt"
           values={{
             operationId: receipt.operationId,
-            act: renderCatalogKey(
-              p,
-              operationEntryForInput({
-                kind: receipt.subject.kind,
-                act: { kind: receipt.subject.act },
-              }).labelId,
-            ),
+            act:
+              receipt.subject.kind === "REMINDER"
+                ? renderCatalogKey(
+                    p,
+                    operationEntryForInput({
+                      kind: receipt.subject.kind,
+                      act: { kind: receipt.subject.act },
+                    }).labelId,
+                  )
+                : p.term("act", receipt.subject.act),
             actor: receipt.recordedBy,
           }}
           argument="operationId"
         />
       </p>
-      {receipt.subject.kind === "AUTHORITY" ? (
-        <p>
-          {p.text("ui.authorityReceipt", {
-            act: renderCatalogKey(
-              p,
-              operationEntryForInput({
-                kind: receipt.subject.kind,
-                act: { kind: receipt.subject.act },
-              }).labelId,
-            ),
-            actor: receipt.subject.targetActorId,
-          })}
-        </p>
-      ) : receipt.subject.kind === "WORK" || receipt.subject.kind === "REMINDER" ? (
-        <WorkReceiptView receipt={receipt} />
-      ) : (
-        <ReceiptFields
-          subject={receipt.subject}
-          fields={definition.catalog.fields}
-          context={
-            <IdentifierMessage
-              id="ui.observedContext"
-              values={{
-                operationId: receipt.operationId,
-              }}
-              argument="operationId"
-            />
-          }
-        />
-      )}
+      <ReceiptBody receipt={receipt} definition={definition} />
     </>
   );
 };

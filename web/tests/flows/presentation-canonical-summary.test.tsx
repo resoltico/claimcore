@@ -54,6 +54,6 @@ it.each(["en", "lv", "ar"])(
     expect(value).toContain("OPENED");
     expect(
       typeof value === "string" && value.split("\n").filter((line) => line.endsWith(": null")),
-    ).toHaveLength(6);
+    ).toHaveLength(7);
   },
 );

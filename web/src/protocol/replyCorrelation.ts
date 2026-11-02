@@ -60,44 +60,89 @@ const reminderStateAfter = (act: unknown): string | undefined => {
       return undefined;
   }
 };
-/** Permanent bounded effect relationships are checked independently of generated structural schemas. */
+const coherentWorkReceipt = (subject: Record<string, unknown>): boolean => {
+  const snapshot = object(subject["snapshot"]);
+  const value = object(snapshot["view"]);
+  if (!positiveRevision(subject["revision"])) {
+    return false;
+  }
+  if (snapshot["kind"] !== "DISCLOSED") {
+    return snapshot["kind"] === "WITHHELD" || snapshot["kind"] === "ERASED";
+  }
+  return (
+    sameIdentity(subject["caseId"], value["caseId"]) && value["revision"] === subject["revision"]
+  );
+};
+const coherentCompound = (
+  receipt: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  effects: Record<string, unknown>,
+): boolean => {
+  const completed = object(effects["completed"]);
+  const next = object(effects["next"]);
+  return (
+    subject["act"] === "COMPLETE_AND_PLAN_NEXT" &&
+    positiveRevision(completed["revision"]) &&
+    next["revision"] === 1 &&
+    sameIdentity(next["reminderId"], receipt["operationId"]) &&
+    !sameIdentity(completed["reminderId"], next["reminderId"]) &&
+    snapshotMatches(completed, subject["caseId"], "COMPLETED") &&
+    snapshotMatches(next, subject["caseId"], "PENDING")
+  );
+};
+const coherentSingle = (
+  receipt: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  effects: Record<string, unknown>,
+): boolean => {
+  const version = object(effects["reminder"]);
+  if (
+    effects["kind"] !== "SINGLE" ||
+    subject["act"] === "COMPLETE_AND_PLAN_NEXT" ||
+    !positiveRevision(version["revision"]) ||
+    !snapshotMatches(version, subject["caseId"], reminderStateAfter(subject["act"]))
+  ) {
+    return false;
+  }
+  return (
+    subject["act"] !== "CREATE" ||
+    (version["revision"] === 1 && sameIdentity(version["reminderId"], receipt["operationId"]))
+  );
+};
+/** Permanent bounded effect relationships are independent of generated structural schemas. */
 const coherentReceipt = (receipt: Record<string, unknown>): boolean => {
   const subject = object(receipt["subject"]);
   if (subject["kind"] === "WORK") {
-    const snapshot = object(subject["snapshot"]);
-    const value = object(snapshot["view"]);
-    return (
-      positiveRevision(subject["revision"]) &&
-      (snapshot["kind"] !== "DISCLOSED" ||
-        (sameIdentity(subject["caseId"], value["caseId"]) &&
-          value["revision"] === subject["revision"]))
-    );
+    return coherentWorkReceipt(subject);
   }
   if (subject["kind"] !== "REMINDER") {
     return true;
   }
   const effects = object(subject["effects"]);
-  if (effects["kind"] === "COMPLETED_AND_PLANNED") {
-    const completed = object(effects["completed"]);
-    const next = object(effects["next"]);
-    return (
-      subject["act"] === "COMPLETE_AND_PLAN_NEXT" &&
-      positiveRevision(completed["revision"]) &&
-      next["revision"] === 1 &&
-      sameIdentity(next["reminderId"], receipt["operationId"]) &&
-      !sameIdentity(completed["reminderId"], next["reminderId"]) &&
-      snapshotMatches(completed, subject["caseId"], "COMPLETED") &&
-      snapshotMatches(next, subject["caseId"], "PENDING")
-    );
+  return effects["kind"] === "COMPLETED_AND_PLANNED"
+    ? coherentCompound(receipt, subject, effects)
+    : coherentSingle(receipt, subject, effects);
+};
+const receiptEffectMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
+  if (request["kind"] === "AUTHORITY") {
+    return true;
   }
-  const version = object(effects["reminder"]);
+  if (!caseTargetMatches(request, subject)) {
+    return false;
+  }
+  if (request["kind"] === "CASE" || request["kind"] === "WORK") {
+    return nextRevision(request["expectedRevision"], subject["revision"]);
+  }
+  const act = object(request["act"]);
+  const effects = object(subject["effects"]);
+  const changed = object(effects[effects["kind"] === "SINGLE" ? "reminder" : "completed"]);
   return (
-    effects["kind"] === "SINGLE" &&
-    subject["act"] !== "COMPLETE_AND_PLAN_NEXT" &&
-    positiveRevision(version["revision"]) &&
-    snapshotMatches(version, subject["caseId"], reminderStateAfter(subject["act"])) &&
-    (subject["act"] !== "CREATE" ||
-      (version["revision"] === 1 && sameIdentity(version["reminderId"], receipt["operationId"])))
+    act["kind"] === "CREATE" ||
+    (sameIdentity(act["reminderId"], changed["reminderId"]) &&
+      nextRevision(act["expectedRevision"], changed["revision"]))
   );
 };
 /** Frozen source correlation also applies to a passive status answer before clearing its journal. */
@@ -115,22 +160,7 @@ export const receiptCorrelates = (input: unknown, value: unknown): boolean => {
   if (subject["kind"] !== request["kind"] || subject["act"] !== act["kind"]) {
     return false;
   }
-  if (request["kind"] === "AUTHORITY") {
-    return true;
-  }
-  if (!caseTargetMatches(request, subject)) {
-    return false;
-  }
-  if (request["kind"] === "CASE" || request["kind"] === "WORK") {
-    return nextRevision(request["expectedRevision"], subject["revision"]);
-  }
-  const effects = object(subject["effects"]);
-  const changed = object(effects[effects["kind"] === "SINGLE" ? "reminder" : "completed"]);
-  return (
-    act["kind"] === "CREATE" ||
-    (sameIdentity(act["reminderId"], changed["reminderId"]) &&
-      nextRevision(act["expectedRevision"], changed["revision"]))
-  );
+  return receiptEffectMatches(request, subject);
 };
 const receiptMatches = (
   endpoint: EndpointId,
@@ -140,6 +170,25 @@ const receiptMatches = (
   (!["ACCEPTED", "ALREADY_ACCEPTED"].includes(String(outcome["kind"])) &&
     !(endpoint === "operation.observe" && outcome["kind"] === "SUCCEEDED")) ||
   receiptCorrelates(request, outcome["data"]);
+const reminderPageTargetMatches = (
+  request: Record<string, unknown>,
+  data: Record<string, unknown>,
+): boolean => {
+  if (request["target"] === undefined) {
+    return true;
+  }
+  const { items } = data;
+  return (
+    Array.isArray(items) &&
+    items.every((item: unknown) => {
+      const row = object(item);
+      return caseTargetMatches(request, {
+        ...object(row["reminder"]),
+        caseReference: row["caseReference"],
+      });
+    })
+  );
+};
 const readTargetMatches = (
   endpoint: EndpointId,
   request: Record<string, unknown>,
@@ -149,13 +198,95 @@ const readTargetMatches = (
     return true;
   }
   const data = object(outcome["data"]);
-  if (endpoint === "case.get" || endpoint === "case.history") {
+  if (endpoint === "case.get" || endpoint === "case.history" || endpoint === "case.activity") {
     return caseTargetMatches(request, data);
+  }
+  if (endpoint === "work.overview") {
+    return data["mine"] === (request["mine"] === true);
+  }
+  if (endpoint === "reminder.list") {
+    return reminderPageTargetMatches(request, data);
   }
   return (
     endpoint !== "authority.grants" ||
     sameIdentity(request["actorId"], object(data["actor"])["actorId"])
   );
+};
+const previewWorkMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
+  const before = object(subject["before"]);
+  const proposed = object(subject["proposed"]);
+  return (
+    caseTargetMatches(request, { ...proposed, caseReference: subject["caseReference"] }) &&
+    before["revision"] === request["expectedRevision"] &&
+    nextRevision(before["revision"], proposed["revision"]) &&
+    sameIdentity(before["caseId"], proposed["caseId"])
+  );
+};
+const createdReminderMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  effects: Record<string, unknown>,
+  after: Record<string, unknown>,
+): boolean =>
+  subject["before"] === null &&
+  effects["kind"] === "CREATED" &&
+  sameIdentity(after["reminderId"], request["operationId"]) &&
+  after["revision"] === 1 &&
+  after["state"] === "PENDING" &&
+  sameIdentity(after["caseId"], subject["caseId"]);
+const changedReminderMatches = (
+  act: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): boolean =>
+  sameIdentity(before["reminderId"], act["reminderId"]) &&
+  before["revision"] === act["expectedRevision"] &&
+  sameIdentity(after["reminderId"], act["reminderId"]) &&
+  nextRevision(before["revision"], after["revision"]) &&
+  sameIdentity(after["caseId"], subject["caseId"]) &&
+  after["state"] === reminderStateAfter(act["kind"]);
+const previewCompoundMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  effects: Record<string, unknown>,
+  after: Record<string, unknown>,
+): boolean => {
+  const next = object(effects["next"]);
+  return (
+    effects["kind"] === "COMPLETED_AND_PLANNED" &&
+    sameIdentity(next["reminderId"], request["operationId"]) &&
+    !sameIdentity(next["reminderId"], after["reminderId"]) &&
+    next["revision"] === 1 &&
+    next["state"] === "PENDING" &&
+    sameIdentity(next["caseId"], subject["caseId"])
+  );
+};
+const previewReminderMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
+  if (!caseTargetMatches(request, subject)) {
+    return false;
+  }
+  const act = object(request["act"]);
+  const effects = object(subject["effects"]);
+  const before = object(subject["before"]);
+  const after = object(
+    effects[effects["kind"] === "COMPLETED_AND_PLANNED" ? "completed" : "reminder"],
+  );
+  if (act["kind"] === "CREATE") {
+    return createdReminderMatches(request, subject, effects, after);
+  }
+  if (!changedReminderMatches(act, subject, before, after)) {
+    return false;
+  }
+  return act["kind"] === "COMPLETE_AND_PLAN_NEXT"
+    ? previewCompoundMatches(request, subject, effects, after)
+    : effects["kind"] === "CHANGED";
 };
 const previewTargetMatches = (
   endpoint: EndpointId,
@@ -169,63 +300,18 @@ const previewTargetMatches = (
   if (subject["kind"] !== request["kind"]) {
     return false;
   }
-  if (request["kind"] === "AUTHORITY") {
-    return true;
+  switch (request["kind"]) {
+    case "AUTHORITY":
+      return true;
+    case "CASE":
+      return caseTargetMatches(request, object(subject["after"]));
+    case "WORK":
+      return previewWorkMatches(request, subject);
+    case "REMINDER":
+      return previewReminderMatches(request, subject);
+    default:
+      return false;
   }
-  if (request["kind"] === "CASE") {
-    return caseTargetMatches(request, object(subject["after"]));
-  }
-  if (request["kind"] === "WORK") {
-    const before = object(subject["before"]);
-    const proposed = object(subject["proposed"]);
-    return (
-      caseTargetMatches(request, { ...proposed, caseReference: subject["caseReference"] }) &&
-      before["revision"] === request["expectedRevision"] &&
-      nextRevision(before["revision"], proposed["revision"]) &&
-      sameIdentity(before["caseId"], proposed["caseId"])
-    );
-  }
-  if (!caseTargetMatches(request, subject)) {
-    return false;
-  }
-  const act = object(request["act"]);
-  const effects = object(subject["effects"]);
-  const before = object(subject["before"]);
-  const after = object(
-    effects[effects["kind"] === "COMPLETED_AND_PLANNED" ? "completed" : "reminder"],
-  );
-  if (act["kind"] === "CREATE") {
-    return (
-      subject["before"] === null &&
-      effects["kind"] === "CREATED" &&
-      sameIdentity(after["reminderId"], request["operationId"]) &&
-      after["revision"] === 1 &&
-      after["state"] === "PENDING" &&
-      sameIdentity(after["caseId"], subject["caseId"])
-    );
-  }
-  if (
-    !sameIdentity(before["reminderId"], act["reminderId"]) ||
-    before["revision"] !== act["expectedRevision"] ||
-    !sameIdentity(after["reminderId"], act["reminderId"]) ||
-    !nextRevision(before["revision"], after["revision"]) ||
-    !sameIdentity(after["caseId"], subject["caseId"]) ||
-    after["state"] !== reminderStateAfter(act["kind"])
-  ) {
-    return false;
-  }
-  if (act["kind"] !== "COMPLETE_AND_PLAN_NEXT") {
-    return effects["kind"] === "CHANGED";
-  }
-  const next = object(effects["next"]);
-  return (
-    effects["kind"] === "COMPLETED_AND_PLANNED" &&
-    sameIdentity(next["reminderId"], request["operationId"]) &&
-    !sameIdentity(next["reminderId"], after["reminderId"]) &&
-    next["revision"] === 1 &&
-    next["state"] === "PENDING" &&
-    sameIdentity(next["caseId"], subject["caseId"])
-  );
 };
 /** Structural decoding is a prerequisite; these are transport identities, not business rules. */
 export const replyCorrelates = (endpoint: EndpointId, input: unknown, reply: unknown): boolean => {

@@ -1,3 +1,4 @@
+import { preview as preparedPreview } from "../support/operation-hook.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -9,7 +10,6 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
 import { installationOffers } from "../support/installation-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 const session = vi.hoisted(() => ({
   state: { kind: "authenticated", token: "first-token", epoch: 0 } as SessionState,
@@ -98,11 +98,7 @@ it("masks frozen uncertain metadata until the original owner is verified and the
     },
   });
   vi.spyOn(service, "preview").mockImplementation((prepared) =>
-    Promise.resolve({
-      kind: "outcome",
-      status: 200,
-      value: { ...wireReply("operation.preview"), operationId: prepared.input.operationId },
-    }),
+    Promise.resolve(preparedPreview(prepared)),
   );
   const execute = vi.spyOn(service, "execute").mockResolvedValue({
     kind: "deliveryFailure",

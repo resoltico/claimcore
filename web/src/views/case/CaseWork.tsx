@@ -1,3 +1,4 @@
+import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
 import type { CaseWorkView } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { CharacterWarning } from "../../components/BusinessValue";
@@ -114,6 +115,16 @@ export const CaseWork = ({
           zone: value.basis.timeZone,
         })}
       </p>
+      {value.changedAt === null ? null : (
+        <p>
+          {p.text("ui.markedAt")}: <RecordedTime value={value.changedAt} />
+        </p>
+      )}
+      {value.recordedBy === null ? null : (
+        <p>
+          {p.text("ui.markedBy")}: <ActorIdentity actorId={value.recordedBy} />
+        </p>
+      )}
       <details>
         <summary>{p.text("ui.technicalDetails")}</summary>
         <p>{p.text("ui.workRevision", { revision: p.integer(value.revision) })}</p>

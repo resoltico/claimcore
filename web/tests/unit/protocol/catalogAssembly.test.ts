@@ -22,7 +22,10 @@ it("assembles all inventoried captured frames including reads and selected corre
     const entry = productMetadata.catalog.entries.find((item) =>
       act === undefined
         ? item.endpoint === expected.endpoint
-        : item.subject === subject && item.kind === act,
+        : item.subject === subject &&
+          item.constants.some(
+            (constant) => constant.path.join(".") === "act.kind" && constant.value === act,
+          ),
     )!;
     const values: FormValues = Object.fromEntries(
       entry.inputs.flatMap((input) => {
@@ -72,4 +75,48 @@ it("assembles finite worklist sets and omits empty optional sets", () => {
   });
   expect(assembleCatalogInput(entry, { order: "REFERENCE" })).toEqual({ limit: 50 });
   expect(assembleCatalogInput(entry, { order: "RECENT" })).toEqual({ limit: 50, order: "RECENT" });
+});
+
+it("keeps optional narrative omission, explicit clear and exact authored text distinct", () => {
+  const entry = productMetadata.catalog.entries.find(
+    (item) => item.subject === "CASE" && item.kind === "AMEND_REGISTRATION",
+  )!;
+  const description = "act.values.incidentDescription";
+  const omitted = assembleCatalogInput(entry, {});
+  expect(atPath(omitted, ["act", "values", "incidentDescription"])).toBeUndefined();
+  const cleared = assembleCatalogInput(entry, { [description]: null });
+  expect(atPath(cleared, ["act", "values", "incidentDescription"])).toBeNull();
+  const exact = "  العربية\n\n😀  ";
+  expect(
+    atPath(assembleCatalogInput(entry, { [description]: exact }), [
+      "act",
+      "values",
+      "incidentDescription",
+    ]),
+  ).toBe(exact);
+  expect(
+    atPath(assembleCatalogInput(entry, { [description]: "" }), [
+      "act",
+      "values",
+      "incidentDescription",
+    ]),
+  ).toBe("");
+});
+it("a work summary clear is an independent work command with no financial body", () => {
+  const entry = productMetadata.catalog.entries.find(
+    (item) => item.subject === "WORK" && item.kind === "UPDATE_WORK",
+  )!;
+  const input = assembleCatalogInput(entry, {
+    "act.values.handlingSummary": null,
+    expectedRevision: "7",
+    "target.caseReference": "WORK-1",
+    operationId: "10000000-0000-4000-8000-000000000001",
+  });
+  expect(input).toEqual({
+    kind: "WORK",
+    operationId: "10000000-0000-4000-8000-000000000001",
+    target: { kind: "REFERENCE", caseReference: "WORK-1" },
+    expectedRevision: 7,
+    act: { kind: "UPDATE_WORK", values: { handlingSummary: null } },
+  });
 });

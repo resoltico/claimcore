@@ -283,6 +283,8 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     },
   };
 };
+const activeNavigation = (route: Route, active: string): string =>
+  route.screen === "work" ? "work" : active;
 export const Dashboard = () => {
   const route = useRoute();
   const { context, response, views, active } = useWorkspaceAccess(route);
@@ -313,11 +315,7 @@ export const Dashboard = () => {
   return (
     <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>
       <RecoveryProvider>
-        <WorkspaceHeader
-          active={route.screen === "work" ? "work" : active}
-          views={views}
-          locked={locked}
-        />
+        <WorkspaceHeader active={activeNavigation(route, active)} views={views} locked={locked} />
         <AcceptedToast
           route={route}
           receipt={feedback.receipt}

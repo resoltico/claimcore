@@ -25,7 +25,7 @@ it("renders grouped facts with missing decision and payment and retains help and
   const view = render(
     <CaseFacts values={fields} fields={definition.catalog.fields} revision={2} />,
   );
-  expect(screen.getAllByText("Not recorded")).toHaveLength(2);
+  expect(screen.getAllByText("Not recorded")).toHaveLength(3);
   expect(view.container.querySelectorAll(".case-fact-card")).toHaveLength(3);
   await user.click(screen.getAllByRole("button", { name: "Explain fields" })[1]!);
   expect(screen.getAllByRole("button", { name: /Copy/u }).length).toBeGreaterThan(1);
