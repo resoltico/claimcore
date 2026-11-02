@@ -192,7 +192,12 @@ let private frames () =
 let private checkDiscriminators (root: JsonElement) =
     let schemas = root.GetProperty("components").GetProperty "schemas"
 
-    for name, property, count in [ "ReceiptSubject", "kind", 2 ] do
+    for name, property, expected in
+        [
+            "ReceiptSubject", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER" ]
+            "ReviewSubject", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER" ]
+            "OperationInput", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER" ]
+        ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"
 
@@ -202,8 +207,10 @@ let private checkDiscriminators (root: JsonElement) =
             "Closed tag identity"
 
         Expect.equal
-            (discriminator.GetProperty("mapping").EnumerateObject() |> Seq.length)
-            count
+            (discriminator.GetProperty("mapping").EnumerateObject()
+             |> Seq.map _.Name
+             |> Set.ofSeq)
+            (Set.ofList expected)
             "All tag tokens map once"
 
         for branch in union.GetProperty("oneOf").EnumerateArray() do

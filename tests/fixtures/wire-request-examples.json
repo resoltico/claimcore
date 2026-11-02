@@ -2094,6 +2094,34 @@
         "detail": "FULL",
         "limit": 10
       }
+    },
+    {
+      "id": "optional-description-open",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "NARRATIVE-OPEN"
+        },
+        "expectedRevision": 0,
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-02",
+            "incidentCountry": "LV",
+            "claimantName": "Claimant",
+            "insurerName": "Insurer",
+            "claimedAmount": "500",
+            "claimedCurrency": "EUR",
+            "incidentDescription": "  حادث 😀\nSecond paragraph  "
+          }
+        }
+      }
     }
   ]
 }
