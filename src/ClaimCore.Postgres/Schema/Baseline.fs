@@ -13,7 +13,7 @@ type internal InstallationConfigurationException() =
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore-foundation"
+    let identifier = "claimcore-narratives-reminders"
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()

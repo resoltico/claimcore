@@ -15,6 +15,7 @@
     <Compile Include="RegisterMaintenanceStore.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />
+    <Compile Include="Reads/WorkStorage.fs" />
     <Compile Include="Ledger/TransactionPrimitives.fs" />
     <Compile Include="Verification/VerificationRows.fs" />
     <Compile Include="Verification/Verification.fs" />
