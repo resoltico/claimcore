@@ -52,7 +52,12 @@ let internal resultExits () =
             Expect.equal
                 reply.ExitCode
                 (Map.tryFind tag expected |> Option.defaultValue 0)
-                ("Outcome selects exit for " + (Api.id endpoint) + " " + tag + " sample " + string index)
+                ("Outcome selects exit for "
+                 + (Api.id endpoint)
+                 + " "
+                 + tag
+                 + " sample "
+                 + string index)
 
             Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen
