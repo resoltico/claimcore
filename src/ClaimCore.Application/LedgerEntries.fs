@@ -12,6 +12,8 @@ type internal EntryContent =
     | NonAcceptance
     | Case of request: CaseCommand * snapshot: CaseSnapshot option
     | Authority of AuthorityRequestRecord
+    | Work of WorkRequestRecord * CaseWorkSnapshot
+    | Reminder of ReminderRequestRecord * ReminderEffects
     | ErasedCase
 
 [<NoComparison>]
@@ -68,6 +70,8 @@ module LedgerEntries =
 
     let private metadataSubject =
         function
+        | EntryTarget.Work subject -> RecordedTarget.Work subject
+        | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
         | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
         | EntryTarget.Authority(target, act) ->
             RecordedTarget.Authority { TargetActorId = target; Act = act }
@@ -161,6 +165,8 @@ module LedgerEntries =
         function
         | EntryTarget.Case(id, _, _, _) ->
             Authority.can principal actor Capability.ReadHistory (Scope.Case id)
+        | EntryTarget.Work subject -> Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
+        | EntryTarget.Reminder subject -> Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.NonAcceptance _ -> false
         | EntryTarget.Authority _ ->
             Authority.can principal actor Capability.ReadAuthority Scope.Installation
@@ -175,6 +181,16 @@ module LedgerEntries =
             | EntryTarget.NonAcceptance operation ->
                 operation = entry.OperationId && entry.CreationReference.IsNone
             | EntryTarget.Authority _ -> entry.CreationReference.IsNone
+            | EntryTarget.Work subject -> subject.Revision >= Revision.first && entry.CreationReference.IsNone
+            | EntryTarget.Reminder subject ->
+                subject.Revision >= Revision.first && entry.CreationReference.IsNone
+                && ((subject.Act = ReminderActKind.Create) = (subject.Revision = Revision.first))
+                && (if subject.Act = ReminderActKind.Create then subject.ReminderId = ReminderId.ofOperationId entry.OperationId else true)
+                && (match subject.Act, subject.NextReminderId with
+                    | ReminderActKind.CompleteAndPlanNext, Some id -> id = ReminderId.ofOperationId entry.OperationId && id <> subject.ReminderId
+                    | ReminderActKind.CompleteAndPlanNext, None -> false
+                    | _, None -> true
+                    | _, Some _ -> false)
 
         entry.Sequence >= Sequence.first
         && width 32 entry.EntryHash
@@ -193,6 +209,8 @@ module LedgerEntries =
     let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _
+        | EntryTarget.Work _
+        | EntryTarget.Reminder _
         | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
@@ -238,13 +256,35 @@ module LedgerEntries =
                 Error CoreFault.StoreIntegrityError
         | _ -> Error CoreFault.StoreIntegrityError
 
+    let private workContent (entry: StoredEntry) (subject: WorkEntryMetadata) (data: LedgerPayload) =
+        match WorkRecord.decodeRequest data.Request, WorkRecord.decodeSnapshot data.Snapshot with
+        | Ok request, Ok snapshot when
+            request.OperationId = entry.OperationId && request.CaseId = subject.CaseId
+            && Revision.value request.ExpectedRevision < Revision.Maximum
+            && snapshot.CaseId = subject.CaseId && snapshot.Revision = subject.Revision
+            && Revision.successor request.ExpectedRevision = subject.Revision ->
+            Ok(EntryContent.Work(request, snapshot))
+        | _ -> Error CoreFault.StoreIntegrityError
+
+    let private reminderContent (entry: StoredEntry) (subject: ReminderEntryMetadata) (data: LedgerPayload) =
+        match ReminderRecord.decodeRequest data.Request, ReminderRecord.decodeEffects data.Snapshot with
+        | Ok request, Ok effects when
+            request.OperationId = entry.OperationId
+            && ReminderCommand.parent request.Command = subject.CaseId
+            && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
+            && ReminderCommand.resultingRevision request.Command = subject.Revision
+            && ReminderCommand.kind request.Command = subject.Act
+            && HistoricalWorkEffects.boundedReminderRequest request effects ->
+            Ok(EntryContent.Reminder(request, effects))
+        | _ -> Error CoreFault.StoreIntegrityError
+
     let internal validate installationId (entry: StoredEntry) =
         if installationId = Guid.Empty || not (validMetadata entry) then
             Error CoreFault.StoreIntegrityError
         else
             let content =
                 match entry.Subject, entry.Payload, entry.PayloadNonce with
-                | EntryTarget.Case _, None, None -> Ok EntryContent.ErasedCase
+                | (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _), None, None -> Ok EntryContent.ErasedCase
                 | _ ->
                     payload entry
                     |> Result.bind (fun data ->
@@ -258,6 +298,8 @@ module LedgerEntries =
                             else
                                 Error CoreFault.StoreIntegrityError
                         | EntryTarget.Case _ -> caseContent installationId entry data
+                        | EntryTarget.Work subject -> workContent entry subject data
+                        | EntryTarget.Reminder subject -> reminderContent entry subject data
                         | EntryTarget.Authority(target, act) ->
                             authorityContent entry target act data)
 
@@ -303,6 +345,8 @@ module LedgerEntries =
             match validated.Entry.Subject with
             | EntryTarget.Case(id, _, _, _) -> Some(RequestRecord.identity id request)
             | _ -> None
+        | EntryContent.Work(request, _) -> Some(WorkRecord.encodeRequest request)
+        | EntryContent.Reminder(request, _) -> Some(ReminderRecord.encodeRequest request)
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
@@ -332,6 +376,8 @@ module LedgerEntries =
 
         match validated.Entry.Subject with
         | EntryTarget.Authority _
+        | EntryTarget.Work _
+        | EntryTarget.Reminder _
         | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match current with
@@ -368,12 +414,61 @@ module LedgerEntries =
                             Snapshot = snapshot
                         })
 
+    let private canReadVersion principal actor parentId currentRevision revision =
+        Authority.can principal actor Capability.ReadHistoryFull (Scope.Case parentId)
+        || (currentRevision = Some revision && Authority.can principal actor Capability.ReadCase (Scope.Case parentId))
+
+    let private workReceipt principal actor (parent: StoredCase option) (current: StoredWork option) (subject: WorkEntryMetadata) content =
+        match parent with
+        | Some parent when parent.CaseId = subject.CaseId ->
+            let shown =
+                match parent.Snapshot.State, content with
+                | CaseState.Erased, EntryContent.ErasedCase -> Ok WorkDisclosure.Erased
+                | (CaseState.Active _ | CaseState.Voided _), EntryContent.Work(_, snapshot) ->
+                    let revision = current |> Option.map (fun (value: StoredWork) -> value.Revision)
+                    Ok(if canReadVersion principal actor parent.CaseId revision subject.Revision then WorkDisclosure.Disclosed snapshot else WorkDisclosure.Withheld)
+                | _ -> Error CoreFault.StoreIntegrityError
+            shown |> Result.map (fun snapshot -> ReceiptSubject.Work { Reference = parent.Snapshot.Reference; CaseId = subject.CaseId; Revision = subject.Revision; Act = subject.Act; Snapshot = snapshot })
+        | _ -> Error CoreFault.StoreIntegrityError
+
+    let private reminderReceipt principal actor (parent: StoredCase option) (current: Map<ReminderId, StoredReminder>) (subject: ReminderEntryMetadata) content =
+        match parent with
+        | Some parent when parent.CaseId = subject.CaseId ->
+            let version id revision snapshot =
+                let actual = current |> Map.tryFind id |> Option.map (fun (value: StoredReminder) -> value.Revision)
+                let disclosure =
+                    match parent.Snapshot.State, snapshot with
+                    | CaseState.Erased, None -> ReminderDisclosure.Erased
+                    | _, Some value when canReadVersion principal actor parent.CaseId actual revision -> ReminderDisclosure.Disclosed value
+                    | _ -> ReminderDisclosure.Withheld
+                { ReminderVersion.ReminderId = id; Revision = revision; Snapshot = disclosure }
+            let effects =
+                match content with
+                | EntryContent.ErasedCase when parent.Snapshot.State = CaseState.Erased ->
+                    let primary = version subject.ReminderId subject.Revision None
+                    match subject.NextReminderId with
+                    | Some id -> Ok(ReminderReceiptEffects.CompletedAndPlanned(primary, version id Revision.first None))
+                    | None -> Ok(ReminderReceiptEffects.Single primary)
+                | EntryContent.Reminder(_, effects) when CaseState.lifecycle parent.Snapshot.State <> Lifecycle.Erased ->
+                    let shown value = version (Reminder.id value) (Reminder.revision value) (Some value)
+                    match effects with
+                    | ReminderEffects.Created value | ReminderEffects.Changed value -> Ok(ReminderReceiptEffects.Single(shown value))
+                    | ReminderEffects.CompletedAndPlanned(completed, next) -> Ok(ReminderReceiptEffects.CompletedAndPlanned(shown completed, shown next))
+                | _ -> Error CoreFault.StoreIntegrityError
+            effects |> Result.map (fun effects -> ReceiptSubject.Reminder { Reference = parent.Snapshot.Reference; CaseId = subject.CaseId; Act = subject.Act; Effects = effects })
+        | _ -> Error CoreFault.StoreIntegrityError
+
     let internal receipt principal actor current (validated: ValidatedEntry) =
         let entry = validated.Entry
 
         let subject =
             match entry.Subject, validated.Content with
-            | EntryTarget.Case _, _ -> caseReceipt principal actor current validated
+            | EntryTarget.Case _, _ ->
+                match current with ReceiptCurrent.Case record -> caseReceipt principal actor record validated | _ -> Error CoreFault.StoreIntegrityError
+            | EntryTarget.Work subject, content ->
+                match current with ReceiptCurrent.Work(parent, work) -> workReceipt principal actor parent work subject content | _ -> Error CoreFault.StoreIntegrityError
+            | EntryTarget.Reminder subject, content ->
+                match current with ReceiptCurrent.Reminder(parent, reminders) -> reminderReceipt principal actor parent reminders subject content | _ -> Error CoreFault.StoreIntegrityError
             | EntryTarget.Authority(target, act), EntryContent.Authority _ ->
                 Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError

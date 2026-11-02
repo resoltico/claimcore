@@ -11,7 +11,7 @@ type internal LedgerAppend<'projection> =
         ActorId: ActorId
         Subject: EntryTarget
         Snapshot: byte array
-        Current: StoredCase option
+        Current: ReceiptCurrent
         Projection: 'projection
     }
 

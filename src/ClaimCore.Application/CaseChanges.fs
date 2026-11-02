@@ -33,7 +33,6 @@ module internal CaseChanges =
         | CaseEffect.ChangeLifecycle
         | CaseEffect.ErasePayload -> []
         | CaseEffect.RecordFacts
-        | CaseEffect.UpdateWork
         | CaseEffect.ChangeStatus ->
             fields
                 (before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
@@ -65,6 +64,8 @@ module internal CaseChanges =
 
     let history (previous: OperationReceipt option) (receipt: OperationReceipt) =
         match receipt.Subject with
+        | ReceiptSubject.Work _
+        | ReceiptSubject.Reminder _
         | ReceiptSubject.Authority _ -> Error CoreFault.StoreIntegrityError
         | ReceiptSubject.Case current ->
             let before =

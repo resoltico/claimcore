@@ -135,9 +135,6 @@ module Service =
                                             match CaseExecution.complete request view.Case with
                                             | Error refusal -> return Outcome.Rejected refusal
                                             | Ok admitted ->
-                                                let! view =
-                                                    CaseExecution.assignment tx admitted view
-
                                                 return
                                                     CaseExecution.review services admitted view
                                                     |> Verdict.outcome
@@ -186,6 +183,10 @@ module Service =
                 match input with
                 | OperationInput.Case request -> previewCase services request ct
                 | OperationInput.Authority request -> previewAuthority services request ct
+                | OperationInput.Work request ->
+                    match WorkExecution.prepareWork request with Error refusal -> System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal) | Ok prepared -> WorkExecution.preview services prepared ct
+                | OperationInput.Reminder request ->
+                    match WorkExecution.prepareReminder request with Error refusal -> System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal) | Ok prepared -> WorkExecution.preview services prepared ct
 
             return
                 {
@@ -201,6 +202,10 @@ module Service =
                 | OperationInput.Case request ->
                     write ct (fun () -> admitCase request) (fun command ->
                         CaseExecution.run services command ct)
+                | OperationInput.Work request ->
+                    write ct (fun () -> WorkExecution.prepareWork request) (fun prepared -> WorkExecution.run services prepared ct)
+                | OperationInput.Reminder request ->
+                    write ct (fun () -> WorkExecution.prepareReminder request) (fun prepared -> WorkExecution.run services prepared ct)
                 | OperationInput.Authority request ->
                     write ct (fun () -> admitAuthority request) (fun command ->
                         AuthorityExecution.run services command ct)

@@ -27,6 +27,7 @@ module internal Queries =
                 |> Result.map (fun model ->
                     { model with
                         Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
+                        Work = if view.Maintenance.Active then { model.Work with CanAssign = false; CanUpdateSummary = false; CanCreateReminder = false } else model.Work
                     })
                 |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
@@ -276,21 +277,13 @@ module internal Queries =
 
     let private summaries (services: ServiceContext) (tx: IReadTx) basis records =
         task {
-            let mutable result = Ok []
-
-            for record in records do
-                if Result.isOk result then
-                    let! work = CaseWorkReads.view tx basis record
-
-                    result <-
-                        result
-                        |> Result.bind (fun values ->
-                            work
-                            |> Result.bind (fun work ->
-                                summary services.InstallationId work record)
-                            |> Result.map (fun item -> item :: values))
-
-            return result |> Result.map List.rev
+            let! work = CaseWorkReads.views tx basis records
+            return work |> Result.bind (fun work ->
+                records |> List.fold (fun accumulated record ->
+                    accumulated |> Result.bind (fun values ->
+                        summary services.InstallationId (Map.find record.CaseId work) record
+                        |> Result.map (fun value -> value :: values))) (Ok [])
+                |> Result.map List.rev)
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
@@ -444,7 +437,7 @@ module internal Queries =
             all
             |> List.map (fun entry ->
                 LedgerEntries.validate services.InstallationId entry
-                |> Result.bind (LedgerEntries.receipt services.Principal actor (Some current)))
+                |> Result.bind (LedgerEntries.receipt services.Principal actor (ReceiptCurrent.Case(Some current))))
             |> collect
             |> Result.bind (fun receipts ->
                 match receipts with
