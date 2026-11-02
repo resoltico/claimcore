@@ -247,6 +247,18 @@ type private ReadTx
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
 
+        member _.FindWork id = WorkStorage.findWork connection id token
+        member _.FindReminder id = WorkStorage.findReminder connection id token
+        member _.WorkSummaries(ids, today) = WorkStorage.summaries connection ids today token
+        member _.AssignedAccounts pairs = WorkStorage.accounts connection pairs token
+        member _.ReminderPage query = WorkStorage.page connection query token
+        member _.WorkOverview(selection, mine) = WorkStorage.overview connection selection mine token
+        member _.ActivityPage query =
+            task {
+                let! rows = DatabaseSession.rows connection ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3") [| box(CaseId.value query.CaseId); DatabaseSession.parameter(query.BeforeSequence |> Option.map Sequence.value); box(query.Limit+1) |] token
+                return rows |> List.map(StoredEntries.decode installation >> _.Entry) |> TransactionPages.page query.Limit _.Sequence
+            }
+
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
 
@@ -395,6 +407,10 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
         member _.ProjectCase projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.case connection projection token
+
+        member _.ProjectWorkChange projection =
+            FailureDiagnostics.phase FailurePhase.Projection
+            Persistence.workChange connection projection token
 
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection
